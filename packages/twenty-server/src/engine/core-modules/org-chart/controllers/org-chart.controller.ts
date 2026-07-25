@@ -25,7 +25,7 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { MemberLinkedinUnipileConnectionService } from 'src/engine/core-modules/arx-chat/services/member-linkedin-unipile-connection.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
-import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
+import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
@@ -302,7 +302,7 @@ export class OrgChartController {
       await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
         people: normalizedPeopleForAsOf,
         jobName: companyName,
-        jobId: input.normalizedCompanyId,
+        projectId: input.normalizedCompanyId,
         functionRoot: input.functionRoot,
         country: input.country,
       });
@@ -2515,7 +2515,7 @@ export class OrgChartController {
       await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
         people: peopleForAsOf,
         jobName: companyName,
-        jobId: input.companyId,
+        projectId: input.companyId,
         functionRoot: input.functionRoot,
         country: input.country,
         industry: 'Computer Software',
@@ -3196,7 +3196,7 @@ export class OrgChartController {
 
   @Post('from-job')
   async buildOrgChartFromJobCandidates(
-    @Body() body: { jobId: string; jobName?: string },
+    @Body() body: { projectId: string; jobName?: string },
     @Req() req: Request,
   ) {
     const authToken = this.getAuthToken(req);

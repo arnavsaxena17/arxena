@@ -14,10 +14,7 @@ import { useUserTimezone } from '@/ui/input/components/internal/date/hooks/useUs
 import { useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
 import { type Temporal } from 'temporal-polyfill';
-import {
-  ObjectRecordGroupByDateGranularity,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import { ObjectRecordGroupByDateGranularity, type RecordGqlOperationOrderBy } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 export const useRecordCalendarGroupByRecords = (

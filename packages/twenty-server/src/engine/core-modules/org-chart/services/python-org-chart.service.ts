@@ -348,7 +348,7 @@ export class PythonOrgChartService {
   async createOrgChartFromStandardizedPeople(input: {
     people: Record<string, unknown>[];
     jobName?: string;
-    jobId?: string;
+    projectId?: string;
     functionRoot?: string;
     /** Geography hint for orgchart_api (e.g. "united states"); matches LinkedIn search path. */
     country?: string;
@@ -360,7 +360,7 @@ export class PythonOrgChartService {
     const payload = {
       people: input.people,
       job_name: input.jobName ?? '',
-      job_id: input.jobId ?? '',
+      job_id: input.projectId ?? '',
       // Optional hint to Python about which function-root
       // subset is desired (e.g. "human resources").
       function_root: input.functionRoot ?? null,

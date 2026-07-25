@@ -1,10 +1,12 @@
 /* @license Enterprise */
 
 import {
+  Body,
   Controller,
   Headers,
   Logger,
   Post,
+  Query,
   type RawBodyRequest,
   Req,
   Res,
@@ -30,6 +32,9 @@ import { BillingWebhookEvent } from 'src/engine/core-modules/billing/enums/billi
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { StripeWebhookService } from 'src/engine/core-modules/billing/stripe/services/stripe-webhook.service';
+import { RazorpayWebhookService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-webhook.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import * as crypto from 'crypto';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 
@@ -40,6 +45,8 @@ export class BillingWebhookController {
 
   constructor(
     private readonly stripeWebhookService: StripeWebhookService,
+    private readonly razorpayWebhookService: RazorpayWebhookService,
+    private readonly environmentService: EnvironmentService,
     private readonly billingWebhookSubscriptionService: BillingWebhookSubscriptionService,
     private readonly billingWebhookEntitlementService: BillingWebhookEntitlementService,
     private readonly billingSubscriptionService: BillingSubscriptionService,
@@ -87,6 +94,142 @@ export class BillingWebhookController {
         BillingExceptionCode.BILLING_UNHANDLED_ERROR,
       );
     }
+  }
+
+
+  @Post(['webhooks/razorpay', 'billing/webhooks'])
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
+  async handleRazorpayWebhooks(
+    @Headers('x-razorpay-signature') razorpaySignature: string,
+    @Headers('stripe-signature') stripeSignature: string,
+    @Req() req: RawBodyRequest<Request>,
+    @Res() res: Response,
+  ) {
+    if (!req.rawBody) {
+      throw new BillingException(
+        'Missing request body',
+        BillingExceptionCode.BILLING_MISSING_REQUEST_BODY,
+      );
+    }
+
+    if (razorpaySignature) {
+      try {
+        const result = await this.razorpayWebhookService.handlePayload(
+          razorpaySignature,
+          req.rawBody,
+        );
+
+        res.status(200).send(result).end();
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : JSON.stringify(error);
+
+        throw new BillingException(
+          errorMessage,
+          BillingExceptionCode.BILLING_UNHANDLED_ERROR,
+        );
+      }
+
+      return;
+    }
+
+    // Compatibility: if this route receives Stripe by mistake, reject unless signature present
+    if (stripeSignature) {
+      return this.handleWebhooks(stripeSignature, req, res);
+    }
+
+    res.status(400).end();
+  }
+
+  @Post(['billing/razorpay-subscription-callback'])
+  @UseGuards(PublicEndpointGuard, NoPermissionGuard)
+  async razorpaySubscriptionCallback(
+    @Query('return_path') returnPath: string,
+    @Query('return_url') returnUrl: string,
+    @Body()
+    body: {
+      razorpay_payment_id?: string;
+      razorpay_subscription_id?: string;
+      razorpay_order_id?: string;
+      razorpay_signature?: string;
+      error?: { code?: string; description?: string };
+    },
+    @Res() res: Response,
+  ) {
+    const baseRedirect = this.getRazorpayRedirectBase(returnUrl, returnPath);
+
+    if (body.error) {
+      const params = new URLSearchParams({ subscription: 'failed' });
+
+      res.redirect(302, `${baseRedirect}?${params.toString()}`);
+
+      return;
+    }
+
+    const paymentId = body.razorpay_payment_id;
+    const subscriptionId = body.razorpay_subscription_id;
+    const orderId = body.razorpay_order_id;
+    const signature = body.razorpay_signature;
+
+    if (!paymentId || !signature) {
+      const params = new URLSearchParams({ subscription: 'failed' });
+
+      res.redirect(302, `${baseRedirect}?${params.toString()}`);
+
+      return;
+    }
+
+    const keySecret = this.environmentService.get('BILLING_RAZORPAY_KEY_SECRET');
+
+    if (!keySecret) {
+      this.logger.warn('BILLING_RAZORPAY_KEY_SECRET not set');
+      const params = new URLSearchParams({ subscription: 'failed' });
+
+      res.redirect(302, `${baseRedirect}?${params.toString()}`);
+
+      return;
+    }
+
+    const payload = subscriptionId
+      ? `${paymentId}|${subscriptionId}`
+      : orderId
+        ? `${orderId}|${paymentId}`
+        : paymentId;
+    const expected = crypto
+      .createHmac('sha256', keySecret)
+      .update(payload)
+      .digest('hex');
+
+    if (expected !== signature) {
+      this.logger.warn('Razorpay subscription callback signature mismatch');
+      const params = new URLSearchParams({ subscription: 'failed' });
+
+      res.redirect(302, `${baseRedirect}?${params.toString()}`);
+
+      return;
+    }
+
+    const params = new URLSearchParams({ subscription: 'success' });
+
+    res.redirect(302, `${baseRedirect}?${params.toString()}`);
+  }
+
+  private getRazorpayRedirectBase(
+    returnUrl: string | undefined,
+    returnPath: string | undefined,
+  ): string {
+    if (returnUrl && returnUrl.startsWith('http')) {
+      try {
+        return new URL(returnUrl).toString().replace(/\/$/, '');
+      } catch {
+        // fall through
+      }
+    }
+
+    const frontendUrl = this.environmentService.get('FRONTEND_URL') ?? '';
+    const path = returnPath?.startsWith('/') ? returnPath : `/${returnPath ?? 'settings/billing'}`;
+
+    return `${frontendUrl.replace(/\/$/, '')}${path}`;
   }
 
   private async handleStripeEvent(event: Stripe.Event) {

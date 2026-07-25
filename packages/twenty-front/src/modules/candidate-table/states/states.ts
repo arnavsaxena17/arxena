@@ -1,11 +1,14 @@
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
-import { atom, selector } from "recoil";
-import { CandidateNode, LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
+import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomSelector';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import { createAtomWritableSelector } from '@/ui/utilities/state/jotai/utils/createAtomWritableSelector';
+import type { CandidateNode } from 'twenty-shared/arx';
+import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
 import { sortCandidates } from '../utils/customSortUtils';
 import { customSortState } from './customSortState';
 
@@ -35,13 +38,13 @@ export interface SortConfig {
 export interface FilterConfig {
   // Status filter
   conversationStatus?: string | null;
-  
+
   // Search filter
   searchQuery?: string;
-  
+
   // Handsontable column filters
   columnFilters: FilterCondition[];
-  
+
   // Search plan filters (future)
   searchPlanFilters?: {
     searchPlan: any;
@@ -66,61 +69,63 @@ export interface TableState {
 
   undoStack: Change[];
   redoStack: Change[];
-  
+
   // New configuration-based approach
   configuration: TableConfiguration;
-  
+
   // Legacy fields (to be removed after migration)
   activeFilters: FilterCondition[];
   sortConfig: SortConfig[];
 }
-export const jobIdAtom = atom<string>({
-  key: 'candidate-table/jobIdAtom',
-  default: 'job-id',
+
+export type ProjectStateItem = {
+  id: string;
+  name: string;
+  pathPosition?: string;
+  isActive: boolean;
+  createdAt?: string;
+  jobLocation?: string;
+  searchName?: string;
+  assistantThread?: {
+    edges?: Array<{
+      node: {
+        id: string;
+        name: string;
+        messages?: any[];
+        assistantParameters?: any;
+        enrichmentConfigs?: any[];
+        columnFilters?: any[];
+        assistantSearchStrategy?: any;
+        isActive?: boolean;
+        projectId?: string;
+        recruiterId?: string;
+      };
+    }>;
+  };
+  candidates?: {
+    edges?: Array<{
+      node: {
+        id: string;
+      };
+    }>;
+  };
+};
+
+export const projectIdAtom = createAtomState<string>({
+  key: 'candidate-table/projectIdAtom',
+  defaultValue: 'project-id',
 });
 
-// Store the jobs data fetched from the API
-export const jobsState = atom<
-  Array<{
-    id: string;
-    name: string;
-    pathPosition?: string;
-    isActive: boolean;
-    createdAt?: string;
-    jobLocation?: string;
-    searchName?: string;
-    assistantThread?: {
-      edges?: Array<{
-        node: {
-          id: string;
-          name: string;
-          messages?: any[];
-          assistantParameters?: any;
-          enrichmentConfigs?: any[];
-          columnFilters?: any[];
-          assistantSearchStrategy?: any;
-          isActive?: boolean;
-          jobId?: string;
-          recruiterId?: string;
-        }
-      }>
-    };
-    candidates?: {
-      edges?: Array<{
-        node: {
-          id: string;
-        }
-      }>
-    }
-  }>
->({
-  key: 'candidate-table/jobsState',
-  default: [],
+export const jobIdAtom = projectIdAtom;
+
+export const projectsState = createAtomState<ProjectStateItem[]>({
+  key: 'candidate-table/projectsState',
+  defaultValue: [],
 });
 
-export const tableStateAtom = atom<TableState>({
+export const tableStateAtom = createAtomState<TableState>({
   key: 'tableStateAtom',
-  default: {
+  defaultValue: {
     rawData: [],
     selectedRowIds: [],
     isRightPanelOpen: false,
@@ -138,74 +143,67 @@ export const tableStateAtom = atom<TableState>({
       },
       sorting: [],
     },
-    // Legacy fields (to be removed after migration)
     activeFilters: [],
     sortConfig: [],
   },
 });
 
-export const selectedCandidateIdState = atom<string | null>({
+export const selectedCandidateIdState = createAtomState<string | null>({
   key: 'candidate-table/selectedCandidateIdState',
-  default: null,
+  defaultValue: null,
 });
 
-export const unreadMessagesCountsState = atom<Record<string, number>>({
+export const unreadMessagesCountsState = createAtomState<Record<string, number>>({
   key: 'candidate-table/unreadMessagesCountsState',
-  default: {},
+  defaultValue: {},
 });
 
-export const filteredCandidatesCountState = atom<number>({
+export const filteredCandidatesCountState = createAtomState<number>({
   key: 'filteredCandidatesCountState',
-  default: 0,
+  defaultValue: 0,
 });
 
-export const selectedConversationStatusState = atom<string | null>({
+export const selectedConversationStatusState = createAtomState<string | null>({
   key: 'selectedConversationStatusState',
-  default: null,
+  defaultValue: null,
 });
 
-// Raw data without any filtering or sorting - now in table-ready format
-// Raw processed data without any filtering or sorting
-export const processedDataSelector = selector({
+export const processedDataSelector = createAtomSelector({
   key: 'processedDataSelector',
   get: ({ get }) => {
     const { rawData, selectedRowIds } = get(tableStateAtom);
-    
-    // Add safety check for rawData
+
     if (!rawData || !Array.isArray(rawData)) {
       return [];
     }
-    
-    // Return only processed data without filtering/sorting
-    // Removed console.logs to prevent unnecessary re-renders and console noise
+
     return ProcessedData({ rawData, selectedRowIds });
   },
 });
-// Configuration-based filtered and sorted data
-// Configuration-based filtered and sorted data
-export const configuredDataSelector = selector({
+
+export const configuredDataSelector = createAtomSelector({
   key: 'configuredDataSelector',
   get: ({ get }) => {
     const processedData = get(processedDataSelector);
     const { configuration } = get(tableStateAtom);
     const customSort = get(customSortState);
-    
+
     if (!processedData.length) return processedData;
-    
+
     let filteredData = [...processedData];
-    
-    // Apply status filter
+
     if (configuration.filters.conversationStatus) {
-      filteredData = filteredData.filter((candidate: any) => 
-        candidate.candConversationStatus === configuration.filters.conversationStatus
+      filteredData = filteredData.filter(
+        (candidate: any) =>
+          candidate.candConversationStatus ===
+          configuration.filters.conversationStatus,
       );
     }
-    
-    // Apply search filter
+
     if (configuration.filters.searchQuery) {
       const query = configuration.filters.searchQuery.toLowerCase();
       filteredData = filteredData.filter((candidate: any) => {
-        return Object.values(candidate).some(value => {
+        return Object.values(candidate).some((value) => {
           if (typeof value === 'string') {
             return value.toLowerCase().includes(query);
           }
@@ -213,38 +211,34 @@ export const configuredDataSelector = selector({
         });
       });
     }
-    
-    // Apply search plan filters (if active)
-    if (configuration.filters.searchPlanFilters?.isActive) {
-      // Future implementation for search plan filters
-      // filteredData = applySearchPlanFilters(filteredData, configuration.filters.searchPlanFilters);
-    }
-    
-    // Apply custom sorting only if no multi-column sorting is configured
+
     if (configuration.sorting.length === 0) {
       const customEnrichments = get(enrichmentsState);
       const sampleEnrichments = get(sampleEnrichmentsState);
-      const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
-        const exists = acc.find(item => item.modelName === current.modelName);
+      const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<
+        any[]
+      >((accumulator, current) => {
+        const exists = accumulator.find(
+          (item) => item.modelName === current.modelName,
+        );
         if (!exists) {
-          return [...acc, current];
+          return [...accumulator, current];
         }
-        return acc;
+        return accumulator;
       }, []);
-      
-      const aiFilterFields = allAiFilters.flatMap(aiFilter =>
-        aiFilter.fields?.map((field: any) => field.name) || []
+
+      const aiFilterFields = allAiFilters.flatMap(
+        (aiFilter) => aiFilter.fields?.map((field: any) => field.name) || [],
       );
-      
+
       filteredData = sortCandidates(filteredData, customSort, aiFilterFields);
     }
-    
+
     return filteredData;
   },
 });
 
-
-export const columnsSelector = selector({
+export const columnsSelector = createAtomSelector({
   key: 'columnsSelector',
   get: ({ get }) => {
     const unreadMessagesCounts = get(unreadMessagesCountsState);
@@ -252,9 +246,7 @@ export const columnsSelector = selector({
     const searchResults = get(searchResultsState);
     const customEnrichments = get(enrichmentsState);
     const sampleEnrichments = get(sampleEnrichmentsState);
-    
-    // Deduplicate when merging: processedData (saved candidates) takes priority
-    // Create a set of all unique identifiers from processedData using tempId || id (same key as addSearchResults)
+
     const processedDataIds = new Set<string>();
     processedData.forEach((candidate: any) => {
       const candidateId = candidate.tempId || candidate.id;
@@ -262,55 +254,60 @@ export const columnsSelector = selector({
         processedDataIds.add(candidateId);
       }
     });
-    
-    // Filter searchResults to exclude any that are already in processedData
+
     const uniqueSearchResults = searchResults.filter((candidate: any) => {
       const candidateId = candidate.tempId || candidate.id;
       return !candidateId || !processedDataIds.has(candidateId);
     });
-    
-    // Merge with processedData first (saved candidates), then unique searchResults
+
     const mergedData = [...processedData, ...uniqueSearchResults];
-    
-    // Merge AI filters (same logic as in DataTable)
-    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<Enrichment[]>((acc, current) => {
-      const exists = acc.find(item => item.modelName === current.modelName);
+
+    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<
+      Enrichment[]
+    >((accumulator, current) => {
+      const exists = accumulator.find(
+        (item) => item.modelName === current.modelName,
+      );
       if (!exists) {
-        return [...acc, current];
+        return [...accumulator, current];
       }
-      return acc;
+      return accumulator;
     }, []);
-    
-    // Only log when AI filters actually change
+
     if (allAiFilters.length > 0) {
-      console.log("customEnrichments in columnsSelector:", customEnrichments);
-      console.log("sampleEnrichments in columnsSelector:", sampleEnrichments);
-      console.log("merged allAiFilters in columnsSelector:", allAiFilters);
+      console.log('customEnrichments in columnsSelector:', customEnrichments);
+      console.log('sampleEnrichments in columnsSelector:', sampleEnrichments);
+      console.log('merged allAiFilters in columnsSelector:', allAiFilters);
     }
-    
+
     return TableColumns({
       processedData: mergedData,
       unreadMessagesCounts,
-      enrichments: allAiFilters
+      enrichments: allAiFilters,
     });
   },
 });
-// Store the detailed candidate data fetched from GraphQL
-export const candidateDataState = atom<any>({
+
+export const candidateDataState = createAtomState<any>({
   key: 'candidate-table/candidateDataState',
-  default: null,
+  defaultValue: null,
 });
 
-// Global trigger for refetching jobs - increments when jobs need to be refetched
-export const jobsRefetchTriggerState = atom<number>({
-  key: 'candidate-table/jobsRefetchTriggerState',
-  default: 0,
+export const projectsRefetchTriggerState = createAtomState<number>({
+  key: 'candidate-table/projectsRefetchTriggerState',
+  defaultValue: 0,
 });
 
-// Chat messages state - stores chat history for AI assistant
-export const chatMessagesState = atom<Array<{
+type ChatMessage = {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'search_parameters' | 'enrichments' | 'filters' | 'sorts';
+  type:
+    | 'user'
+    | 'assistant'
+    | 'system'
+    | 'search_parameters'
+    | 'enrichments'
+    | 'filters'
+    | 'sorts';
   content: string;
   timestamp: Date;
   metadata?: {
@@ -325,13 +322,14 @@ export const chatMessagesState = atom<Array<{
       disabled?: boolean;
     }>;
   };
-}>>({
+};
+
+export const chatMessagesState = createAtomState<ChatMessage[]>({
   key: 'candidate-table/chatMessagesState',
-  default: [],
+  defaultValue: [],
 });
 
-// Search plans state - stores search plans for the current job
-export const searchPlansState = atom<Array<{
+type SearchPlan = {
   id: string;
   name: string;
   filters: {
@@ -347,95 +345,88 @@ export const searchPlansState = atom<Array<{
   columnFilters: number;
   createdAt: Date;
   updatedAt: Date;
-}>>({
+};
+
+export const searchPlansState = createAtomState<SearchPlan[]>({
   key: 'candidate-table/searchPlansState',
-  default: [],
+  defaultValue: [],
 });
 
-// Resolved parameters state - stores resolved search parameters
-export const resolvedParametersState = atom<any>({
+export const resolvedParametersState = createAtomState<any>({
   key: 'candidate-table/resolvedParametersState',
-  default: null,
+  defaultValue: null,
 });
 
-// Selector for chat messages - derives from assistantThread.messages and merges with stored state
-export const chatMessagesSelector = selector({
+export const chatMessagesSelector = createAtomWritableSelector({
   key: 'candidate-table/chatMessagesSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
     const stored = get(chatMessagesState);
 
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
 
-    // If no job found, return stored messages or empty array
     if (!job) {
       return stored.length > 0 ? stored : [];
     }
 
-    // For now, return stored messages. In the future, this could fetch from assistantThread.messages
-    // via the job's assistantThreadId using a GraphQL query
     return stored;
   },
   set: ({ set }, newValue) => {
-    set(chatMessagesState, newValue as any);
+    set(chatMessagesState, newValue as ChatMessage[]);
   },
 });
 
-// Selector for search plans - derives from assistantThread data and merges with stored state
-export const searchPlansSelector = selector({
+export const searchPlansSelector = createAtomWritableSelector({
   key: 'candidate-table/searchPlansSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
     const stored = get(searchPlansState);
 
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
 
-    // If no job found, return stored plans or empty array
     if (!job) {
       return stored.length > 0 ? stored : [];
     }
 
-    // For now, return stored plans. In the future, this could fetch from assistantThread.enrichmentConfigs
-    // and other assistantThread fields via the job's assistantThreadId using a GraphQL query
     return stored;
   },
   set: ({ set }, newValue) => {
-    set(searchPlansState, newValue as any);
+    set(searchPlansState, newValue as SearchPlan[]);
   },
 });
 
-// Selector for resolved parameters - derives from assistantThread.assistantParameters and merges with stored state
-// Configuration management helpers
-export const updateFilterConfig = (setTableState: any) => (filterUpdates: Partial<FilterConfig>) => {
-  setTableState((prev: TableState) => ({
-    ...prev,
-    configuration: {
-      ...prev.configuration,
-      filters: {
-        ...prev.configuration.filters,
-        ...filterUpdates,
+export const updateFilterConfig =
+  (setTableState: any) => (filterUpdates: Partial<FilterConfig>) => {
+    setTableState((previous: TableState) => ({
+      ...previous,
+      configuration: {
+        ...previous.configuration,
+        filters: {
+          ...previous.configuration.filters,
+          ...filterUpdates,
+        },
       },
-    },
-  }));
-};
+    }));
+  };
 
-export const updateSortConfig = (setTableState: any) => (sortConfig: SortConfig[]) => {
-  setTableState((prev: TableState) => ({
-    ...prev,
-    configuration: {
-      ...prev.configuration,
-      sorting: sortConfig,
-    },
-  }));
-};
+export const updateSortConfig =
+  (setTableState: any) => (sortConfig: SortConfig[]) => {
+    setTableState((previous: TableState) => ({
+      ...previous,
+      configuration: {
+        ...previous.configuration,
+        sorting: sortConfig,
+      },
+    }));
+  };
 
 export const clearAllFilters = (setTableState: any) => () => {
-  setTableState((prev: TableState) => ({
-    ...prev,
+  setTableState((previous: TableState) => ({
+    ...previous,
     configuration: {
-      ...prev.configuration,
+      ...previous.configuration,
       filters: {
         conversationStatus: null,
         searchQuery: '',
@@ -447,38 +438,41 @@ export const clearAllFilters = (setTableState: any) => () => {
 };
 
 export const clearAllSorting = (setTableState: any) => () => {
-  setTableState((prev: TableState) => ({
-    ...prev,
+  setTableState((previous: TableState) => ({
+    ...previous,
     configuration: {
-      ...prev.configuration,
+      ...previous.configuration,
       sorting: [],
     },
   }));
 };
 
-export const resolvedParametersSelector = selector({
+export const resolvedParametersSelector = createAtomWritableSelector({
   key: 'candidate-table/resolvedParametersSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
     const stored = get(resolvedParametersState);
-    const parsedJD = get(parsedJDSelector);
+    const parsedJD = get(parsedJDInternalState);
     const activeId = get(activeAssistantThreadIdState);
 
     if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
+      const activeThread = parsedJD.assistantThreads.find(
+        (thread) => thread.id === activeId,
+      );
       if (activeThread?.assistantParameters?.resolvedSearchParameters) {
-        return activeThread.assistantParameters.resolvedSearchParameters as Record<string, unknown>;
+        return activeThread.assistantParameters.resolvedSearchParameters as Record<
+          string,
+          unknown
+        >;
       }
     }
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
 
-    // If no job found, return stored parameters or null
     if (!job) {
       return stored;
     }
 
-    // PRIORITY 2: Extract resolved parameters from job's assistantThread data (database)
     const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
     if (assistantThreadEdges.length > 0) {
       const threadNode = assistantThreadEdges[0]?.node;
@@ -488,7 +482,6 @@ export const resolvedParametersSelector = selector({
       }
     }
 
-    // PRIORITY 3: Fallback to stored parameters if no database data found
     return stored;
   },
   set: ({ set }, newValue) => {
@@ -496,58 +489,73 @@ export const resolvedParametersSelector = selector({
   },
 });
 
-export const enrichmentsSelector = selector({
+export const enrichmentsSelector = createAtomSelector({
   key: 'candidate-table/enrichmentsSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
-    const parsedJD = get(parsedJDSelector);
-    const activeId = get(activeAssistantThreadIdState)
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
+    const parsedJD = get(parsedJDInternalState);
+    const activeId = get(activeAssistantThreadIdState);
 
     if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
-      if (activeThread?.enrichmentConfigs && activeThread.enrichmentConfigs.length > 0) {
+      const activeThread = parsedJD.assistantThreads.find(
+        (thread) => thread.id === activeId,
+      );
+      if (
+        activeThread?.enrichmentConfigs &&
+        activeThread.enrichmentConfigs.length > 0
+      ) {
         return activeThread.enrichmentConfigs;
       }
     }
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
     if (!job) return [];
 
-    // PRIORITY 2: Extract enrichments from job's assistantThread data (database)
     const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
     if (assistantThreadEdges.length > 0) {
       const threadNode = assistantThreadEdges[0]?.node;
-      if (threadNode?.enrichmentConfigs && threadNode.enrichmentConfigs.length > 0) {
+      if (
+        threadNode?.enrichmentConfigs &&
+        threadNode.enrichmentConfigs.length > 0
+      ) {
         return threadNode.enrichmentConfigs;
       }
     }
 
-    // PRIORITY 3: Fallback to empty array if no database data found
     return [];
   },
 });
 
-export const filtersSelector = selector({
+export const filtersSelector = createAtomSelector({
   key: 'candidate-table/filtersSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
-    const parsedJD = get(parsedJDSelector);
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
+    const parsedJD = get(parsedJDInternalState);
     const activeId = get(activeAssistantThreadIdState);
 
     if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
-      if (activeThread?.columnFilters && Array.isArray(activeThread.columnFilters) && activeThread.columnFilters.length > 0) {
+      const activeThread = parsedJD.assistantThreads.find(
+        (thread) => thread.id === activeId,
+      );
+      if (
+        activeThread?.columnFilters &&
+        Array.isArray(activeThread.columnFilters) &&
+        activeThread.columnFilters.length > 0
+      ) {
         return activeThread.columnFilters;
       }
     }
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
     if (!job) return [];
 
     const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
     if (assistantThreadEdges.length > 0) {
       const threadNode = assistantThreadEdges[0]?.node;
-      if (threadNode?.columnFilters && threadNode.columnFilters.length > 0) {
+      if (
+        threadNode?.columnFilters &&
+        threadNode.columnFilters.length > 0
+      ) {
         return threadNode.columnFilters;
       }
     }
@@ -555,28 +563,32 @@ export const filtersSelector = selector({
   },
 });
 
-export const sortsSelector = selector({
+export const sortsSelector = createAtomSelector({
   key: 'candidate-table/sortsSelector',
   get: ({ get }) => {
-    const jobId = get(jobIdAtom);
-    const jobs = get(jobsState);
-    const parsedJD = get(parsedJDSelector);
+    const projectId = get(projectIdAtom);
+    const projects = get(projectsState);
+    const parsedJD = get(parsedJDInternalState);
     const activeId = get(activeAssistantThreadIdState);
 
     if (parsedJD?.assistantThreads && activeId) {
-      const activeThread = parsedJD.assistantThreads.find(t => t.id === activeId);
-      if (activeThread?.sortColumns && Array.isArray(activeThread.sortColumns) && activeThread.sortColumns.length > 0) {
+      const activeThread = parsedJD.assistantThreads.find(
+        (thread) => thread.id === activeId,
+      );
+      if (
+        activeThread?.sortColumns &&
+        Array.isArray(activeThread.sortColumns) &&
+        activeThread.sortColumns.length > 0
+      ) {
         return activeThread.sortColumns;
       }
     }
-    const job = jobs.find(j => j.id === jobId);
+    const job = projects.find((jobItem) => jobItem.id === projectId);
 
-    // If no job found, return null
     if (!job) {
       return null;
     }
 
-    // PRIORITY 2: Extract sorts from job's assistantThread data (database)
     const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
     if (assistantThreadEdges.length > 0) {
       const threadNode = assistantThreadEdges[0]?.node;
@@ -588,55 +600,52 @@ export const sortsSelector = selector({
       }
     }
 
-    // PRIORITY 3: Fallback to null if no database data found
     return null;
   },
 });
 
-// Search Strategy State Atoms
+export type CandidatePersistenceState = 'fetched' | 'saved';
 
-// Candidate persistence state tracking
-export type CandidatePersistenceState = 'fetched' |  'saved';
-
-export const candidatePersistenceStateAtom = atom<Record<string, CandidatePersistenceState>>({
+export const candidatePersistenceStateAtom = createAtomState<
+  Record<string, CandidatePersistenceState>
+>({
   key: 'candidate-table/candidatePersistenceStateAtom',
-  default: {},
+  defaultValue: {},
 });
 
-// Helper selector to infer candidate state
-export const candidateStateSelector = selector({
+export const candidateStateSelector = createAtomSelector({
   key: 'candidate-table/candidateStateSelector',
   get: ({ get }) => {
     const persistenceStates = get(candidatePersistenceStateAtom);
 
     return (candidate: any): CandidatePersistenceState => {
-      const candidateName = candidate.name || candidate.fullName;
-      
       if (persistenceStates[candidate.id || candidate.linkedinId]) {
-        const explicitState = persistenceStates[candidate.id || candidate.linkedinId];
+        const explicitState =
+          persistenceStates[candidate.id || candidate.linkedinId];
         return explicitState;
       }
-      
-      // Infer state from candidate properties - simplified logic
+
       if (candidate.personId) {
-        return 'saved'; // Has database ID = saved
+        return 'saved';
       }
-      
-      return 'fetched'; // No database ID = fetched from LinkedIn
+
+      return 'fetched';
     };
   },
 });
 
-// Helper to get row border color based on state
-export const getRowBorderColor = (candidate: any, getCandidateState: (candidate: any) => CandidatePersistenceState): string => {
+export const getRowBorderColor = (
+  candidate: any,
+  getCandidateState: (candidate: any) => CandidatePersistenceState,
+): string => {
   const state = getCandidateState(candidate);
-  
+
   switch (state) {
     case 'fetched':
-      return '#3b82f6'; // Blue
+      return '#3b82f6';
     case 'saved':
-      return '#10b981'; // Green
+      return '#10b981';
     default:
-      return '#10b981'; // Default to green
+      return '#10b981';
   }
 };

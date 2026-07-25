@@ -1,11 +1,11 @@
+import type { SnackBarEnqueueFunctions } from '@/candidate-search/types/snackbar.types';
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
 import type { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import type { SortsResponse } from 'twenty-shared';
+import type { SortsResponse } from 'twenty-shared/types';
 import { saveToLocalStorage } from '../utils/storage-helpers';
 
 type ActionHandlerDeps = {
-  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+  snackBars: SnackBarEnqueueFunctions;
   currentSearchParameters: SearchParametersResponse | null;
   currentSorts: SortsResponse | null;
   applyGeneratedSorts: ((sorts: SortsResponse) => void) | null;
@@ -14,7 +14,7 @@ type ActionHandlerDeps = {
   setSearchConfig: (config: { searchType: any; searchCategory: any }) => void;
   setParsedJD?: React.Dispatch<React.SetStateAction<any>>;
   currentAssistantThreadId: string;
-  jobId?: string;
+  projectId?: string;
 };
 
 export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
@@ -53,9 +53,7 @@ export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
           return updated;
         });
         
-        deps.enqueueSnackBar(`Search variation "${selectedVariation.name}" selected and applied to search form`, {
-          variant: SnackBarVariant.Success,
-        });
+        deps.snackBars.enqueueSuccessSnackBar({ message: `Search variation "${selectedVariation.name}" selected and applied to search form` });
       }
     }
   };
@@ -63,18 +61,14 @@ export const createSearchVariationSelectHandler = (deps: ActionHandlerDeps) => {
 
 export const createExecuteAiFiltersHandler = (deps: ActionHandlerDeps) => {
   return () => {
-    deps.enqueueSnackBar('AI filters execution started', {
-      variant: SnackBarVariant.Success,
-    });
+    deps.snackBars.enqueueSuccessSnackBar({ message: 'AI filters execution started' });
     // TODO: Implement AI filter execution
   };
 };
 
 export const createApplyFiltersHandler = (deps: ActionHandlerDeps) => {
   return () => {
-    deps.enqueueSnackBar('Filters applied successfully', {
-      variant: SnackBarVariant.Success,
-    });
+    deps.snackBars.enqueueSuccessSnackBar({ message: 'Filters applied successfully' });
     // TODO: Implement filter application
   };
 };
@@ -86,16 +80,12 @@ export const createApplySortsHandler = (deps: ActionHandlerDeps) => {
     console.log("applyGeneratedSorts:", JSON.stringify(deps.applyGeneratedSorts, null, 2));
     
     if (!deps.currentSorts) {
-      deps.enqueueSnackBar('No sorting configuration available to apply', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No sorting configuration available to apply' });
       return;
     }
 
     if (!deps.applyGeneratedSorts) {
-      deps.enqueueSnackBar('DataTable is not ready yet. Please ensure the candidate table is loaded and try again.', {
-        variant: SnackBarVariant.Warning,
-      });
+      deps.snackBars.enqueueWarningSnackBar({ message: 'DataTable is not ready yet. Please ensure the candidate table is loaded and try again.' });
       console.warn('DataTable applyGeneratedSorts function not available yet');
       console.warn('This might happen if the AIChatAssistant is in a modal and the DataTable is not mounted yet');
       return;
@@ -105,16 +95,12 @@ export const createApplySortsHandler = (deps: ActionHandlerDeps) => {
       // Apply the generated sorts to the DataTable
       deps.applyGeneratedSorts(deps.currentSorts);
       
-      deps.enqueueSnackBar(`Sorting strategy "${deps.currentSorts.sortStrategy.name}" applied successfully`, {
-        variant: SnackBarVariant.Success,
-      });
+      deps.snackBars.enqueueSuccessSnackBar({ message: `Sorting strategy "${deps.currentSorts.sortStrategy.name}" applied successfully` });
       
       console.log('Applied sorts:', deps.currentSorts);
     } catch (error) {
       console.error('Error applying sorts:', error);
-      deps.enqueueSnackBar('Failed to apply sorting configuration', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to apply sorting configuration' });
     }
   };
 };
@@ -198,9 +184,7 @@ export const createApplyParametersHandler = (deps: ActionHandlerDeps) => {
       console.log('Parameters applied successfully');
     } catch (error) {
       console.error('Error applying parameters:', error);
-      deps.enqueueSnackBar('Failed to apply search parameters', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to apply search parameters' });
     }
   };
 };
@@ -208,9 +192,9 @@ export const createApplyParametersHandler = (deps: ActionHandlerDeps) => {
 type ViewStrategyResultsHandlerDeps = {
   setSearchResults: React.Dispatch<React.SetStateAction<any[]>>;
   setSearchMetadata: React.Dispatch<React.SetStateAction<any>>;
-  jobId?: string;
-  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
-  tokenPair?: { accessToken?: { token?: string } } | null;
+  projectId?: string;
+  snackBars: SnackBarEnqueueFunctions;
+  tokenPair?: { accessOrWorkspaceAgnosticToken?: { token?: string } } | null;
 };
 
 export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandlerDeps) => {
@@ -224,7 +208,7 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
       itemCount: preview?.itemCount,
       hasTransformedCandidates: !!preview?.transformedCandidates,
       transformedCandidatesType: Array.isArray(preview?.transformedCandidates) ? 'array' : typeof preview?.transformedCandidates,
-      jobId: deps.jobId,
+      projectId: deps.projectId,
       parameterKey,
       previewStructure: preview ? {
         hasItemCount: 'itemCount' in preview,
@@ -265,12 +249,7 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
         strategyLabel: strategy?.label || strategy?.name,
         error: preview.error
       });
-      deps.enqueueSnackBar(
-        `Search failed for "${strategy?.label || strategy?.name || 'strategy'}": ${preview.error.details || preview.error.message}`,
-        {
-          variant: SnackBarVariant.Error,
-        }
-      );
+      deps.snackBars.enqueueErrorSnackBar({ message: `Search failed for "${strategy?.label || strategy?.name || 'strategy'}": ${preview.error.details || preview.error.message}` });
       return;
     }
 
@@ -284,9 +263,7 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
         hasSearchResultsItems: !!preview?.searchResults?.items,
         searchResultsItemsLength: preview?.searchResults?.items?.length || 0
       });
-      deps.enqueueSnackBar('No candidates found for this strategy', {
-        variant: SnackBarVariant.Warning,
-      });
+      deps.snackBars.enqueueWarningSnackBar({ message: 'No candidates found for this strategy' });
       return;
     }
 
@@ -313,7 +290,7 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
       candidatesToAddCount: candidatesToAdd.length,
       setSearchResultsType: typeof deps.setSearchResults,
       isFunction: typeof deps.setSearchResults === 'function',
-      jobId: deps.jobId
+      projectId: deps.projectId
     });
     
     // Verify setSearchResults is a function before calling
@@ -322,14 +299,12 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
         type: typeof deps.setSearchResults,
         value: deps.setSearchResults
       });
-      deps.enqueueSnackBar('Error: Search results state setter is not available', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Error: Search results state setter is not available' });
       return;
     }
     
     try {
-      const addResultsFn = addSearchResults(deps.setSearchResults, deps.jobId);
+      const addResultsFn = addSearchResults(deps.setSearchResults, deps.projectId);
       console.log('=== addSearchResults function created, calling with candidates ===', {
         addResultsFnType: typeof addResultsFn,
         candidatesCount: candidatesToAdd.length
@@ -355,37 +330,27 @@ export const createViewStrategyResultsHandler = (deps: ViewStrategyResultsHandle
             addedCount: result.added
           });
           
-          persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-          accessToken: deps.tokenPair?.accessToken?.token,
+          persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+          accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
         });
           return newMetadata;
         });
         
         // Show success message with added count (only if candidates were added)
         if (result.added > 0) {
-          deps.enqueueSnackBar(
-            `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from "${strategy.label || strategy.name || 'strategy'}" strategy to search results`,
-            {
-              variant: SnackBarVariant.Success,
-            }
-          );
+          deps.snackBars.enqueueSuccessSnackBar({ message: `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from "${strategy.label || strategy.name || 'strategy'}" strategy to search results` });
         }
         
         // Show duplicate message if there are duplicates
         if (result.duplicates > 0) {
-          deps.enqueueSnackBar(
-            `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from "${strategy.label || strategy.name || 'strategy'}" strategy`,
-            { variant: SnackBarVariant.Info }
-          );
+          deps.snackBars.enqueueInfoSnackBar({ message: `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from "${strategy.label || strategy.name || 'strategy'}" strategy` });
         }
       });
       console.log('=== addSearchResults called successfully ===');
     } catch (error) {
       console.error('=== Error calling addSearchResults ===', error);
       console.error('=== Error stack ===', error instanceof Error ? error.stack : 'No stack trace');
-      deps.enqueueSnackBar('Failed to add candidates to search results', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to add candidates to search results' });
       return;
     }
 

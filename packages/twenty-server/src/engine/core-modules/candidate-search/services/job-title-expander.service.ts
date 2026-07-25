@@ -43,8 +43,8 @@ export class JobTitleExpanderService {
       onTokenUsage(result.usage);
     }
     if (!content) {
-      this.logger.warn('Job title expander returned empty content.');
-      throw new Error('Job title expander returned empty content');
+      this.logger.warn('Project title expander returned empty content.');
+      throw new Error('Project title expander returned empty content');
     }
     const parsed = JSON.parse(content);
     return jobTitleExpanderSchema.parse(parsed) as JobTitleExpanderResult;

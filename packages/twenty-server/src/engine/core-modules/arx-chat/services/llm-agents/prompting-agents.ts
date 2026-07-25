@@ -2,7 +2,7 @@ import {
     allStatusesArray,
     CandidateNode,
     graphqlQueryToFetchPrompts,
-    Job,
+    Project,
     statusesArray
 } from 'twenty-shared';
 import { z } from 'zod';
@@ -45,7 +45,7 @@ export class PromptingAgents {
 
   async getQuestionsToAsk(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     let questions: string[] = [];
@@ -54,16 +54,16 @@ export class PromptingAgents {
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
-    const jobId = candidate?.jobs?.id;
+    const projectId = candidate?.projects?.id;
 
     console.log(
-      'Job Name:',
-      candidate?.jobs?.name,
+      'Project Name:',
+      candidate?.projects?.name,
     );
     const { questionArray, questionIdArray } = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchQuestionsByJobId(jobId, apiToken);
+    ).fetchQuestionsByProjectId(projectId, apiToken);
     // Hardcoded questions to ask if no questions are found in the database
 
     const hardCodedQuestions = [
@@ -97,10 +97,10 @@ export class PromptingAgents {
 
   async getVideoInterviewPrompt(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
-      const jobProfile = candidate?.jobs;
+      const jobProfile = candidate?.projects;
     const current_job_position = jobProfile.name;
     const candidate_conversation_summary =
       'The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for';
@@ -115,7 +115,7 @@ export class PromptingAgents {
 
     console.log('Generated system prompt for getVideoInterviewPrompt:');
     const VIDEO_INTERVIEW_PROMPT_STRINGIFIED =
-      await this.getPromptByJobIdAndName(
+      await this.getPromptByProjectIdAndName(
         jobProfile.id,
         'VIDEO_INTERVIEW_PROMPT',
         apiToken,
@@ -128,16 +128,16 @@ export class PromptingAgents {
     return VIDEO_INTERVIEW_PROMPT;
   }
 
-  async getPromptByJobIdAndName(
-    jobId: string,
+  async getPromptByProjectIdAndName(
+    projectId: string,
     promptName: string,
     apiToken: string,
   ) {
-    console.log('promptName to fetch for jobId::', jobId, promptName);
+    console.log('promptName to fetch for projectId::', projectId, promptName);
 
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFetchPrompts, {
-        filter: { jobId: { eq: jobId }, name: { ilike: `%${promptName}%` } },
+        filter: { projectId: { eq: projectId }, name: { ilike: `%${promptName}%` } },
         limit: 1,
         orderBy: [{ position: 'AscNullsFirst' }],
       }, apiToken);
@@ -150,7 +150,7 @@ export class PromptingAgents {
         if (prompt) {
           return prompt.prompt;
         } else {
-          throw new Error('No prompt found for the given jobId and name.');
+          throw new Error('No prompt found for the given projectId and name.');
         }
       }
     } catch (error) {
@@ -196,7 +196,7 @@ export class PromptingAgents {
 
   async getStartChatPrompt(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     let receiveCV;
@@ -261,7 +261,7 @@ export class PromptingAgents {
     const dayText = this.getCallAvailabilityDayText();
     const variables = {
       candidate: candidateWithProcessedName,
-      jobProfile: candidate?.jobs,
+      jobProfile: candidate?.projects,
       recruiterProfile: recruiterProfile,
       receiveCV: receiveCV,
       formattedQuestions: formattedQuestions,
@@ -270,7 +270,7 @@ export class PromptingAgents {
       dayText,
     };
 
-    const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByJobIdAndName(
+    const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByProjectIdAndName(
       candidateJob.id,
       'START_CHAT_PROMPT',
       apiToken,
@@ -336,7 +336,7 @@ ${firstChatMessage}`;
 
   async getStartMeetingSchedulingPrompt(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     try {
@@ -403,7 +403,7 @@ ${firstChatMessage}`;
       };
 
       const IN_PERSON_MEETING_SCHEDULING_PROMPT_STRINGIFIED =
-        await this.getPromptByJobIdAndName(
+        await this.getPromptByProjectIdAndName(
           candidateJob.id,
           'IN_PERSON_MEETING_SCHEDULING_PROMPT',
           apiToken,
@@ -449,7 +449,7 @@ ${firstChatMessage}`;
         candidate: candidate,
       };
       const ONLINE_MEETING_PROMPT_STRINGIFIED =
-        await this.getPromptByJobIdAndName(
+        await this.getPromptByProjectIdAndName(
           candidateJob.id,
           'ONLINE_MEETING_PROMPT',
           apiToken,
@@ -525,7 +525,7 @@ ${firstChatMessage}`;
         candidate: candidate,
       };
       const WALKIN_MEETING_SCHEDULING_PROMPT_STRINGIFIED =
-        await this.getPromptByJobIdAndName(
+        await this.getPromptByProjectIdAndName(
           candidateJob.id,
           'WALKIN_MEETING_SCHEDULING_PROMPT',
           apiToken,

@@ -1,10 +1,10 @@
 import type { AgentNote } from 'src/engine/core-modules/assistant/assistant.types';
-import type { RecruiterJobContext } from '../../job-context.service';
+import type { RecruiterProjectContext } from '../../project-context.service';
 import { buildRecruiterMessagePrompt } from '../recruiter-message-prompt.template';
 
 describe('buildRecruiterMessagePrompt', () => {
-  const baseContext: RecruiterJobContext = {
-    jobId: 'job-1',
+  const baseContext: RecruiterProjectContext = {
+    projectId: 'job-1',
     jobTitle: 'Senior React Developer',
     companyName: 'Mock Product Co',
     jobLocation: 'Bangalore',
@@ -29,7 +29,7 @@ describe('buildRecruiterMessagePrompt', () => {
     expect(prompt).toContain('**Objectives**');
     expect(prompt).toContain('**Tone and style**');
     expect(prompt).toContain('**Guardrails**');
-    expect(prompt).toContain('**Job context**');
+    expect(prompt).toContain('**Project context**');
     expect(prompt).toContain('Senior React Developer');
     expect(prompt).toContain('Mock Product Co');
     expect(prompt).toContain('Bangalore');

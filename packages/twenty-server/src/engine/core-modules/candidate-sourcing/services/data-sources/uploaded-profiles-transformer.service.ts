@@ -159,7 +159,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
   private processUploadedSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Process distance from job
     if (candidateData.distance_from_job) {
-      // this.addJobProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
+      // this.addProjectProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
     }
 
     // Process creation source and data sources
@@ -169,10 +169,10 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       data_sources: ['data_upload'],
     };
     
-    // this.addJobProcessEvent(userProfile, 'creation_particulars', creationData);
+    // this.addProjectProcessEvent(userProfile, 'creation_particulars', creationData);
 
     // Process social profiles
-    // this.addJobProcessEvent(userProfile, 'linkedin_social_profile', null);
+    // this.addProjectProcessEvent(userProfile, 'linkedin_social_profile', null);
 
     // Process uploaded file specific fields
     const uploadedSpecificFields = [
@@ -187,7 +187,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
 
     uploadedSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addProjectProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -200,7 +200,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
       ];
       
       if (!standardFields.includes(key) && candidateData[key] !== null && candidateData[key] !== undefined) {
-        // this.addJobProcessEvent(userProfile, `uploaded_${key}`, candidateData[key]);
+        // this.addProjectProcessEvent(userProfile, `uploaded_${key}`, candidateData[key]);
       }
     });
   }
@@ -208,7 +208,7 @@ export class UploadedProfilesTransformerService extends BaseDataSourceTransforme
   /**
    * Add event to job process - utility method for UserProfile
    */
-  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
   //   if (value !== null && value !== undefined && value !== '') {
   //     if (!userProfile.job_process_events) {
   //       userProfile.job_process_events = [];

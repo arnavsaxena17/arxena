@@ -1,14 +1,21 @@
-import styled from '@emotion/styled';
-import { useEffect } from 'react';
-import { useRecoilState } from 'recoil';
-
 import { useFetchOtherFieldKeys } from '@/arx-ai-filtering/hooks/useFetchOtherFieldKeys';
 import { ArxEnrichLeftSideContainer } from '@/arx-ai-filtering/left-side/ArxEnrichLeftSideContainer';
 import { ArxEnrichRightSideContainer } from '@/arx-ai-filtering/right-side/ArxEnrichRightSideContainer';
-import { currentJobIdState, isArxEnrichModalMinimizedState, isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
-import { AppHotkeyScope } from '@/ui/utilities/hotkey/types/AppHotkeyScope';
+import {
+  currentProjectIdState,
+  isArxEnrichModalMinimizedState,
+  isArxEnrichModalOpenState,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { styled } from '@linaria/react';
+import { useEffect } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useAiFilteringProgress } from '../websocket-context/useAiFilteringProgress';
+
+const ARX_ENRICHMENT_MODAL_FOCUS_ID = 'arx-enrichment-modal';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -22,7 +29,7 @@ const StyledModalContainer = styled.div`
   height: 80vh;
   width: 80vw;
   z-index: 500;
-  pointer-events: none; /* This ensures clicks pass through to the backdrop */
+  pointer-events: none;
 `;
 
 const StyledMinimizedModalContainer = styled.div`
@@ -31,9 +38,9 @@ const StyledMinimizedModalContainer = styled.div`
   left: 0;
   right: 0;
   height: 60px;
-  background: ${({ theme }) => theme.background.tertiary};
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  background: ${themeCssVariables.background.tertiary};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   z-index: 500;
   display: flex;
   align-items: center;
@@ -47,9 +54,9 @@ const StyledModalBackdrop = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-  z-index: 499; /* Just below your modal container */
-  pointer-events: all; /* Ensures clicks are captured by this element */
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 499;
+  pointer-events: all;
 `;
 
 const StyledAdjuster = styled.div`
@@ -61,11 +68,10 @@ const StyledAdjuster = styled.div`
   align-items: center;
 `;
 
-export interface Enrichment {
+export type Enrichment = {
   modelName: string;
   prompt: string;
   filterDescription: string;
-
   fields: Array<{
     id: number;
     name: string;
@@ -75,11 +81,11 @@ export interface Enrichment {
   }>;
   selectedModel: string;
   selectedMetadataFields: string[];
-}
+};
 
 const StyledModal = styled.div`
-  background-color: ${({ theme }) => theme.background.tertiary};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
+  background-color: ${themeCssVariables.background.tertiary};
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
   display: flex;
   flex-direction: row;
@@ -89,40 +95,37 @@ const StyledModal = styled.div`
   overflow: hidden;
   max-height: 680px;
   box-sizing: border-box;
-  position: relative;  // Ensure this is present
+  position: relative;
   pointer-events: auto;
-  user-select: none;  // Prevent text selection
+  user-select: none;
 
-    & * {
+  & * {
     pointer-events: auto;
   }
 
-  /* Add custom scrollbar styling */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    background: ${themeCssVariables.background.quaternary};
     border-radius: 4px;
-    
+
     &:hover {
-      background: ${({ theme }) => theme.background.noisy || '#666'};
+      background: ${themeCssVariables.background.noisy};
     }
   }
 
-  /* For Firefox */
   scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+  scrollbar-color: ${themeCssVariables.background.quaternary}
+    ${themeCssVariables.background.tertiary};
 `;
-
-
 
 export const ArxEnrichmentModal = ({
   objectNameSingular,
@@ -133,52 +136,65 @@ export const ArxEnrichmentModal = ({
   objectRecordId: string;
   onRefresh?: () => void;
 }) => {
-  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(isArxEnrichModalOpenState);
-  const [isMinimized, setIsMinimized] = useRecoilState(isArxEnrichModalMinimizedState);
-  const [currentJobId] = useRecoilState(currentJobIdState);
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(
+    isArxEnrichModalOpenState,
+  );
+  const [isMinimized, setIsMinimized] = useAtomState(
+    isArxEnrichModalMinimizedState,
+  );
+  const [currentProjectId] = useAtomState(currentProjectIdState);
   const { otherFieldKeys, isLoadingFields, apiError, fetchOtherFieldKeys } =
     useFetchOtherFieldKeys();
-  
-  // Initialize SSE connection at modal level to ensure it persists
-  const { aiFilteringProgress, isConnected, error: sseError, reconnect } = useAiFilteringProgress();
-  
-  const {
-    setHotkeyScopeAndMemorizePreviousScope,
-    goBackToPreviousHotkeyScope,
-  } = usePreviousHotkeyScope();
+
+  const { aiFilteringProgress, isConnected, error: sseError, reconnect } =
+    useAiFilteringProgress();
+
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
 
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
     setIsMinimized(false);
-    goBackToPreviousHotkeyScope();
-    // Call refresh when modal is closed
+    removeFocusItemFromFocusStackById({
+      focusId: ARX_ENRICHMENT_MODAL_FOCUS_ID,
+    });
     onRefresh?.();
   };
 
   useEffect(() => {
     if (isArxEnrichModalOpen) {
-      setHotkeyScopeAndMemorizePreviousScope(AppHotkeyScope.App, {
-        commandMenu: false,
-        goto: false,
-        keyboardShortcutMenu: false,
+      pushFocusItemToFocusStack({
+        focusId: ARX_ENRICHMENT_MODAL_FOCUS_ID,
+        component: {
+          type: FocusComponentType.MODAL,
+          instanceId: ARX_ENRICHMENT_MODAL_FOCUS_ID,
+        },
+        globalHotkeysConfig: {
+          enableGlobalHotkeysWithModifiers: false,
+          enableGlobalHotkeysConflictingWithKeyboard: false,
+        },
       });
-      if (currentJobId) {
-        fetchOtherFieldKeys(currentJobId);
+      if (currentProjectId) {
+        fetchOtherFieldKeys(currentProjectId);
       }
     }
-  }, [isArxEnrichModalOpen, setHotkeyScopeAndMemorizePreviousScope, fetchOtherFieldKeys, currentJobId]);
+  }, [
+    isArxEnrichModalOpen,
+    pushFocusItemToFocusStack,
+    fetchOtherFieldKeys,
+    currentProjectId,
+  ]);
 
-  // Debug SSE connection at modal level
   useEffect(() => {
     console.log('🔗 [ArxEnrichmentModal] SSE Connection Status:', {
       isConnected,
       sseError,
       hasProgress: !!aiFilteringProgress,
-      modalOpen: isArxEnrichModalOpen
+      modalOpen: isArxEnrichModalOpen,
     });
   }, [isConnected, sseError, aiFilteringProgress, isArxEnrichModalOpen]);
 
-  // Track modal mount/unmount
   useEffect(() => {
     console.log('🔗 [ArxEnrichmentModal] Modal mounted');
     return () => {
@@ -190,7 +206,6 @@ export const ArxEnrichmentModal = ({
     return null;
   }
 
-  // If minimized, render the minimized version at the bottom
   if (isMinimized) {
     return (
       <StyledMinimizedModalContainer>
@@ -211,13 +226,12 @@ export const ArxEnrichmentModal = ({
     );
   }
 
-  // Normal modal rendering
   return (
     <>
       <StyledModalBackdrop onClick={closeModal} />
       <StyledModalContainer>
         <StyledAdjuster>
-          <StyledModal onClick={(e) => e.stopPropagation()}>
+          <StyledModal onClick={(event) => event.stopPropagation()}>
             <ArxEnrichLeftSideContainer />
             <ArxEnrichRightSideContainer
               closeModal={closeModal}

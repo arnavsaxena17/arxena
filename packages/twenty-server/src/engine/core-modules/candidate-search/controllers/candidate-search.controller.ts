@@ -59,13 +59,13 @@ export class CandidateSearchController {
       }
 
       this.logger.log(`Fetching LinkedIn parameters for type: ${type}`);
-      
+
       // Validate and parse limit parameter
       const parsedLimit = limit ? parseInt(limit, 10) : undefined;
       if (parsedLimit && (isNaN(parsedLimit) || parsedLimit <= 0)) {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
       }
-      
+
       const result = await this.candidateSearchBaseService.fetchLinkedInParameters(
         type,
         keywords,
@@ -111,10 +111,10 @@ export class CandidateSearchController {
       }
 
       this.logger.log(`Resolving parameter IDs for ${body.searchType} ${body.searchCategory}`);
-      
+
       // Get LinkedIn account ID from workspace
       const accountId = await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
-      
+
       const result = await this.linkedinParameterResolver.resolveParameterIds(
         body.searchParameters,
         accountId,
@@ -285,7 +285,7 @@ export class CandidateSearchController {
         apiToken,
       );
       const enrichment = thread.enrichmentConfigs?.find((e: { id: string }) => e.id === enrichmentId);
-      
+
       if (!enrichment) {
         throw new HttpException('AI filter not found', HttpStatus.NOT_FOUND);
       }
@@ -298,7 +298,7 @@ export class CandidateSearchController {
         cost: 0.01, // Mock value
         model: enrichment.selectedModel || 'gpt-5.1-chat-latest',
       };
-      
+
       return tokenAnalysis;
     } catch (error) {
       console.error('Error in computeTokens:', error);
@@ -314,9 +314,9 @@ export class CandidateSearchController {
     try {
       const apiToken = headers.authorization.split(' ')[1];
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      
+
       const status = await this.linkedInRequestTracker.getRequestStatus(workspaceId);
-      
+
       return {
         success: true,
         ...status,
@@ -335,7 +335,7 @@ export class CandidateSearchController {
    */
   @Get('cache/results')
   async getSearchResultsCache(
-    @Query('jobId') jobId: string,
+    @Query('projectId') projectId: string,
     @Req() req: any,
   ) {
     try {
@@ -343,20 +343,27 @@ export class CandidateSearchController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-      if (!jobId || jobId === 'job-id') {
-        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      if (
+        !projectId ||
+        projectId === 'job-id' ||
+        projectId === 'project-id'
+      ) {
+        throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
       }
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const payload =
-        await this.searchResultsCacheService.get(workspaceId, jobId);
+        await this.searchResultsCacheService.get(workspaceId, projectId);
       if (!payload) {
-        throw new HttpException('No cached results for this job', HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          'No cached results for this project',
+          HttpStatus.NOT_FOUND,
+        );
       }
       return {
         results: payload.results,
         metadata: payload.metadata,
-        jobId: payload.jobId,
+        projectId: payload.projectId,
         cachedAt: payload.cachedAt,
       };
     } catch (error) {
@@ -376,7 +383,7 @@ export class CandidateSearchController {
   async setSearchResultsCache(
     @Body()
     body: {
-      jobId: string;
+      projectId: string;
       results: any[];
       metadata: {
         totalCount: number;
@@ -395,14 +402,18 @@ export class CandidateSearchController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
-      if (!body?.jobId || body.jobId === 'job-id') {
-        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      if (
+        !body?.projectId ||
+        body.projectId === 'job-id' ||
+        body.projectId === 'project-id'
+      ) {
+        throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
       }
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       await this.searchResultsCacheService.set(
         workspaceId,
-        body.jobId,
+        body.projectId,
         body.results ?? [],
         body.metadata ?? {
           totalCount: 0,
@@ -484,5 +495,5 @@ export class CandidateSearchController {
     }
   }
 
- 
+
 }

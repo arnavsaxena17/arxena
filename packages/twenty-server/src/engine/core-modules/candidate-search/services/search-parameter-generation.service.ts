@@ -119,7 +119,7 @@ export class SearchParameterGenerationService {
   }
 
   /**
-   * Stream generation of LinkedIn Classic Jobs Search parameters
+   * Stream generation of LinkedIn Classic Projects Search parameters
    */
   async streamJobsSearchParameters(
     openaiClient: OpenAI,

@@ -4,11 +4,7 @@ import { mapFieldMetadataToGraphQLQuery } from '@/object-metadata/utils/mapField
 import { shouldFieldBeQueried } from '@/object-metadata/utils/shouldFieldBeQueried';
 import { type RecordGqlFields } from '@/object-record/graphql/record-gql-fields/types/RecordGqlFields';
 import { isRecordGqlFieldsNode } from '@/object-record/graphql/utils/isRecordGraphlFieldsNode';
-import {
-  FieldMetadataType,
-  RelationType,
-  type ObjectPermissions,
-} from 'twenty-shared/types';
+import { FieldMetadataType, RelationType, type ObjectPermissions } from 'twenty-shared/types';
 import {
   computeMorphRelationGqlFieldJoinColumnName,
   computeMorphRelationGqlFieldName,

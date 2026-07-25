@@ -418,6 +418,46 @@ const SettingsAccountsCalendars = lazy(() =>
   ),
 );
 
+const SettingsAccountsContacts = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsContacts').then(
+    (module) => ({
+      default: module.SettingsAccountsContacts,
+    }),
+  ),
+);
+
+const SettingsAccountsWhatsappUnipile = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsWhatsappUnipile').then(
+    (module) => ({
+      default: module.SettingsAccountsWhatsappUnipile,
+    }),
+  ),
+);
+
+const SettingsAccountsFacebookSignUp = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsFacebookSignUp').then(
+    (module) => ({
+      default: module.SettingsAccountsFacebookSignUp,
+    }),
+  ),
+);
+
+const SettingsAccountsBaileys = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsBaileys').then(
+    (module) => ({
+      default: module.SettingsAccountsBaileys,
+    }),
+  ),
+);
+
+const SettingsAccountsLinkedinSignUp = lazy(() =>
+  import('~/pages/settings/accounts/SettingsAccountsLinkedinSignUp').then(
+    (module) => ({
+      default: module.SettingsAccountsLinkedinSignUp,
+    }),
+  ),
+);
+
 const SettingsBilling = lazy(() =>
   import('~/pages/settings/billing/SettingsBilling').then((module) => ({
     default: module.SettingsBilling,
@@ -678,6 +718,26 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
         <Route
           path={SettingsPath.AccountsCalendars}
           element={<SettingsAccountsCalendars />}
+        />
+        <Route
+          path={SettingsPath.AccountsContacts}
+          element={<SettingsAccountsContacts />}
+        />
+        <Route
+          path={SettingsPath.WhatsappUnipile}
+          element={<SettingsAccountsWhatsappUnipile />}
+        />
+        <Route
+          path={SettingsPath.FacebookSignUp}
+          element={<SettingsAccountsFacebookSignUp />}
+        />
+        <Route
+          path={SettingsPath.Baileys}
+          element={<SettingsAccountsBaileys />}
+        />
+        <Route
+          path={SettingsPath.LinkedinSignUp}
+          element={<SettingsAccountsLinkedinSignUp />}
         />
         <Route
           path={SettingsPath.NewAccount}

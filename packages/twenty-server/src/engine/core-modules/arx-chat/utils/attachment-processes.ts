@@ -53,27 +53,29 @@ export class AttachmentProcessingService {
   async createOneAttachmentFromFilePath(
     documentObj: {
       input: {
-        authorId: string;
         name: string;
         fullPath: string;
-        type: string;
+        fileCategory: string;
         candidateId?: string;
         responseId?: string;
+        personId?: string;
+        cvSentId?: string;
+        videoInterviewResponseId?: string;
       };
     },
     apiToken: string,
   ) {
- 
+
     const response = await this.staticGraphQLService.executeGraphQL(graphQLtoCreateOneAttachmentFromFilePath, documentObj, apiToken);
 
     return response.data;
   }
 
-  async fetchAllAttachmentsByJobId(jobId: string, apiToken: string) {
-    console.log('Received Job ID:', jobId);
+  async fetchAllAttachmentsByProjectId(projectId: string, apiToken: string) {
+    console.log('Received Project ID:', projectId);
 
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { jobId: { eq: jobId } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { projectId: { eq: projectId } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken);
       const attachments = response?.data?.data?.attachments?.edges[0];
 
       console.log('Attachments:', attachments);

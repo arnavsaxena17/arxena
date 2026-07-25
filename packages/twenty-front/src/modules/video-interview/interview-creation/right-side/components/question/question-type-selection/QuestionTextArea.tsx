@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -8,18 +9,18 @@ const StyledContainer = styled.div`
 `;
 
 const StyledTextArea = styled.textarea`
-  background-color: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   font-family: inherit;
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   line-height: 16px;
   overflow: auto;
-  padding: ${({ theme }) => theme.spacing(2)};
-  padding-top: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[2]};
+  padding-top: ${themeCssVariables.spacing[3]};
   resize: none;
   width: 100%;
   height: min-content;
@@ -29,13 +30,13 @@ const StyledTextArea = styled.textarea`
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.light};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
-    font-size: ${({ theme }) => theme.font.size.md};
+    color: ${themeCssVariables.font.color.light};
+    font-weight: ${themeCssVariables.font.weight.regular};
+    font-size: ${themeCssVariables.font.size.md};
   }
 
   &:disabled {
-    color: ${({ theme }) => theme.font.color.tertiary};
+    color: ${themeCssVariables.font.color.tertiary};
   }
 `;
 

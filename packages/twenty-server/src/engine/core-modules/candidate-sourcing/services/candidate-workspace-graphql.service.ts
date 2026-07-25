@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import {
     FindManyVideoInterviewModels,
-    getGraphqlToFindManyJobs,
-    Job,
+    getGraphqlToFindManyProjects,
+    Project,
     PageInfo,
     resolveIsOrgChartEnabledFromWorkspace,
 } from 'twenty-shared';
@@ -47,11 +47,11 @@ export class CandidateWorkspaceGraphQLService {
 
 
   async getJobDetails(
-    jobId: string,
+    projectId: string,
     jobName: string,
     apiToken: string,
-  ): Promise<Job> {
-    console.log('Getting job details - jobId:', jobId, 'jobName:', jobName);
+  ): Promise<Project> {
+    console.log('Getting job details - projectId:', projectId, 'jobName:', jobName);
 
     function isValidMongoDBId(str: string) {
       if (!str || str.length !== 24) {
@@ -70,22 +70,22 @@ export class CandidateWorkspaceGraphQLService {
     let queryType = '';
     let variables: Record<string, unknown>;
 
-    if (isValidUUIDv4(jobId)) {
+    if (isValidUUIDv4(projectId)) {
       queryType = 'UUID';
       variables = {
-        filter: { id: { in: [jobId] } },
+        filter: { id: { in: [projectId] } },
         limit: 30,
         orderBy: [{ position: 'AscNullsFirst' }],
       };
-    } else if (isValidMongoDBId(jobId)) {
+    } else if (isValidMongoDBId(projectId)) {
       queryType = 'MongoDB ID';
       variables = {
-        filter: { arxenaSiteId: { in: [jobId] } },
+        filter: { arxenaSiteId: { in: [projectId] } },
         limit: 30,
         orderBy: [{ position: 'AscNullsFirst' }],
       };
     } else if (jobName) {
-      queryType = 'Job Name';
+      queryType = 'Project Name';
       variables = {
         filter: { name: { in: [jobName] } },
         limit: 30,
@@ -105,23 +105,23 @@ export class CandidateWorkspaceGraphQLService {
       const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
         workspaceKeys?.is_org_chart_enabled,
       );
-      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+      const query = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
       const response = await this.staticGraphQLService.executeGraphQL(
         query,
         variables,
         apiToken,
       );
-      const job = response?.data?.data?.jobs?.edges[0]?.node;
+      const job = response?.data?.data?.projects?.edges[0]?.node;
 
       if (!job) {
         console.error('No job found in response:', response?.data);
-        throw new Error(`Job not found using ${queryType}`);
+        throw new Error(`Project not found using ${queryType}`);
       }
 
       if (!job.id) {
         console.error('Invalid job data returned:', job);
-        throw new Error('Job found but missing ID');
+        throw new Error('Project found but missing ID');
       }
 
       console.log('Successfully found job:', {

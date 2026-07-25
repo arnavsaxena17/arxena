@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
-import { Select, SelectOption } from '@/ui/input/components/Select';
+import { Select } from '@/ui/input/components/Select';
+import { type SelectOption } from 'twenty-ui/input';
 
 import { SELECT_ETHNICITY_LANGUAGE_DROPDOWN_ID } from './selectEthnicityLanguageDropdownId';
 

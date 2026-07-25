@@ -8,10 +8,7 @@ import {
   MULTI_ITEM_FIELD_DEFAULT_MAX_VALUES,
   MULTI_ITEM_FIELD_MIN_MAX_VALUES,
 } from 'twenty-shared/constants';
-import {
-  FieldMetadataType,
-  type FieldMetadataMultiItemSettings,
-} from 'twenty-shared/types';
+import { FieldMetadataType, type FieldMetadataMultiItemSettings } from 'twenty-shared/types';
 import { IconNumber } from 'twenty-ui/icon';
 
 type SettingsDataModelFieldMaxValuesFormProps = {

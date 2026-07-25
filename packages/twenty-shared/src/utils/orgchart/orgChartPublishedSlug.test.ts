@@ -31,6 +31,16 @@ describe('orgChartPublishedSlug', () => {
     expect(buildDefaultPublishSlug({ companyId: 'acme_inc' })).toBe('acme-inc');
   });
 
+  it('resolveBrandPublishSlug tolerates missing companyId', () => {
+    expect(
+      resolveBrandPublishSlug({
+        companyId: undefined,
+        companyName: 'Acme Corp',
+      }),
+    ).toBe('acme-corp');
+    expect(resolveBrandPublishSlug({ companyId: null })).toBe('company');
+  });
+
   it('validatePublishSlug accepts brand slugs', () => {
     expect(validatePublishSlug('acme-corp')).toEqual({
       ok: true,

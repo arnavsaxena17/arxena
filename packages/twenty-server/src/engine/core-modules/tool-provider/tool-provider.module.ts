@@ -1,6 +1,10 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ArxenaToolsModule } from 'src/engine/core-modules/arxena-tools/arxena-tools.module';
+import { ArxenaToolProvider } from 'src/engine/core-modules/arxena-tools/providers/arxena-tool.provider';
+import { McpFederationModule } from 'src/engine/core-modules/mcp-federation/mcp-federation.module';
+import { DownstreamMcpToolProvider } from 'src/engine/core-modules/mcp-federation/providers/downstream-mcp-tool.provider';
 import { RecordCrudModule } from 'src/engine/core-modules/record-crud/record-crud.module';
 import { TOOL_PROVIDERS } from 'src/engine/core-modules/tool-provider/constants/tool-providers.token';
 import { ActionToolProvider } from 'src/engine/core-modules/tool-provider/providers/action-tool.provider';
@@ -63,6 +67,8 @@ import { ToolRegistryService } from './services/tool-registry.service';
     NavigationMenuItemModule,
     WebhookModule,
     UserRoleModule,
+    ArxenaToolsModule,
+    McpFederationModule,
     TypeOrmModule.forFeature([UserEntity]),
   ],
   providers: [
@@ -93,6 +99,8 @@ import { ToolRegistryService } from './services/tool-registry.service';
         webhookProvider: WebhookToolProvider,
         workflowProvider: WorkflowToolProvider,
         dashboardProvider: DashboardToolProvider,
+        arxenaProvider: ArxenaToolProvider,
+        downstreamMcpProvider: DownstreamMcpToolProvider,
       ) => [
         actionProvider,
         databaseProvider,
@@ -103,6 +111,8 @@ import { ToolRegistryService } from './services/tool-registry.service';
         webhookProvider,
         workflowProvider,
         dashboardProvider,
+        arxenaProvider,
+        downstreamMcpProvider,
       ],
       inject: [
         ActionToolProvider,
@@ -114,6 +124,8 @@ import { ToolRegistryService } from './services/tool-registry.service';
         WebhookToolProvider,
         WorkflowToolProvider,
         DashboardToolProvider,
+        ArxenaToolProvider,
+        DownstreamMcpToolProvider,
       ],
     },
     ToolRegistryService,

@@ -1,8 +1,4 @@
-import {
-  isValidLinkedInProfileUrl,
-  toTitleCase,
-  OrgChartNodeData,
-} from 'twenty-shared';
+import { isValidLinkedInProfileUrl, toTitleCase, type OrgChartNodeData } from 'twenty-shared/utils';
 
 import { ContextResultItem } from '../types';
 
@@ -337,7 +333,7 @@ export type UploadOrgChartProfilesParams = {
   baseUrl: string;
   accessToken: string;
   items: ContextResultItem[];
-  jobId: string;
+  projectId: string;
   jobName: string;
   recruiterId?: string;
   queueStartChatAfter: boolean;
@@ -358,7 +354,7 @@ export const uploadOrgChartCandidatesToJob = async (
     baseUrl,
     accessToken,
     items,
-    jobId,
+    projectId,
     jobName,
     recruiterId,
     queueStartChatAfter,
@@ -371,11 +367,11 @@ export const uploadOrgChartCandidatesToJob = async (
   const body: Record<string, unknown> = {
     candidates: candidatesPayload,
     data_source: 'linkedin_premium',
-    job_id: jobId,
+    job_id: projectId,
     job_name: jobName,
     recruiterId,
     job: {
-      id: jobId,
+      id: projectId,
       name: jobName,
       recruiterId,
     },
@@ -425,7 +421,7 @@ export type PollCandidateOnJobParams = {
   baseUrl: string;
   accessToken: string;
   linkedinUrl: string;
-  jobId: string;
+  projectId: string;
   maxAttempts?: number;
   delayMs?: number;
 };
@@ -440,14 +436,14 @@ export const pollCandidateIdOnJob = async (
     baseUrl,
     accessToken,
     linkedinUrl,
-    jobId,
+    projectId,
     maxAttempts = 30,
     delayMs = 1000,
   } = params;
   const root = baseUrl.replace(/\/$/, '');
   const encoded = encodeURIComponent(linkedinUrl);
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const url = `${root}/candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=${encoded}&jobId=${encodeURIComponent(jobId)}`;
+    const url = `${root}/candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=${encoded}&projectId=${encodeURIComponent(projectId)}`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
       // Avoid 304 + cached bodies that omit or mismatch `results` while polling after upload.

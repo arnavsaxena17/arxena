@@ -1,170 +1,171 @@
 import { Button } from 'twenty-ui';
-import { IconCheck, IconFilter } from 'twenty-ui/icons';
+import { IconCheck, IconFilter } from 'twenty-ui/icon';
 import { CandidateSearchFilter } from '@/candidate-search/types/candidate-search.types';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
-import { FiltersResponse } from 'twenty-shared';
+import type { FiltersResponse } from 'twenty-shared/types';
 
 const StyledMessageContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledContent = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${themeCssVariables.spacing[3]};
   line-height: 1.6;
 `;
 
 const StyledStrategyCard = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledStrategyHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStrategyName = styled.h4`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledStrategyPriority = styled.span<{ priority: 'quality' | 'quantity' | 'balanced' }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ priority, theme }) => {
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${({ priority }) => {
     switch (priority) {
-      case 'quality': return theme.color.green10;
-      case 'quantity': return theme.color.blue10;
-      case 'balanced': return theme.color.orange10;
-      default: return theme.background.secondary;
+      case 'quality': return themeCssVariables.color.green10;
+      case 'quantity': return themeCssVariables.color.blue10;
+      case 'balanced': return themeCssVariables.color.orange10;
+      default: return themeCssVariables.background.secondary;
     }
   }};
-  color: ${({ priority, theme }) => {
+  color: ${({ priority }) => {
     switch (priority) {
-      case 'quality': return theme.color.green80;
-      case 'quantity': return theme.color.blue80;
-      case 'balanced': return theme.color.orange80;
-      default: return theme.font.color.primary;
+      case 'quality': return themeCssVariables.color.green8;
+      case 'quantity': return themeCssVariables.color.blue8;
+      case 'balanced': return themeCssVariables.color.orange8;
+      default: return themeCssVariables.font.color.primary;
     }
   }};
 `;
 
 const StyledStrategyDescription = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledStrategyDetails = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(3)};
-  margin: ${({ theme }) => theme.spacing(1)} 0;
+  gap: ${themeCssVariables.spacing[3]};
+  margin: ${themeCssVariables.spacing[1]} 0;
 `;
 
 const StyledDetailItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledDetailLabel = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledDetailValue = styled.span`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledFiltersSection = styled.div`
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledFiltersHeader = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledFiltersList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledFilterItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledFilterColumn = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledFilterCondition = styled.span`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledFilterValue = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledActionButtons = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledReasoning = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledReasoningTitle = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledReasoningText = styled.p`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
 `;
 
@@ -275,9 +276,7 @@ export const FiltersMessage: React.FC<FiltersMessageProps> = ({
           variant="primary"
           onClick={onApplyFilters}
           Icon={IconCheck}
-        >
-          Apply Filters
-        </Button>
+         title="Apply Filters" />
       </StyledActionButtons>
     </StyledMessageContainer>
   );

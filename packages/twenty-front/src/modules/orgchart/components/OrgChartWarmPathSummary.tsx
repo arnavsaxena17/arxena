@@ -1,11 +1,12 @@
 import { useWarmPathResolve } from '@/candidate-table/hooks/useWarmPathResolve';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useEffect } from 'react';
 
 const StyledWarmPathMeta = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
 `;
 
 type OrgChartWarmPathSummaryProps = {

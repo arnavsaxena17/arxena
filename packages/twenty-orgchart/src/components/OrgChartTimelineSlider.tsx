@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OrgChartNodeData } from 'twenty-shared/utils';
 
 const StyledAsOfMonthSliderContainer = styled.div`
   display: inline-flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
   max-width: 320px;
 `;
 
 const StyledAsOfMonthSliderMainRow = styled.div`
   align-items: center;
   display: inline-flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing['1']};
 `;
 
 const StyledAsOfMonthSliderTimeline = styled.div`
@@ -30,30 +31,32 @@ const StyledAsOfMonthSlider = styled.input`
 const StyledAsOfMonthSliderRangeLabels = styled.div`
   display: flex;
   justify-content: space-between;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  padding-left: ${({ theme }) => theme.spacing(4.5)};
-  padding-right: ${({ theme }) => theme.spacing(9)};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding-left: calc(
+    ${themeCssVariables.spacing['4']} + ${themeCssVariables.spacing['0.5']}
+  );
+  padding-right: ${themeCssVariables.spacing['9']};
 `;
 
 const StyledAsOfMonthSliderValue = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   min-width: 68px;
   text-align: right;
 `;
 
 const StyledAsOfMonthLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   white-space: nowrap;
 `;
 
 const StyledAsOfMonthSliderDot = styled.div`
-  width: ${({ theme }) => theme.spacing(2)};
-  height: ${({ theme }) => theme.spacing(2)};
+  width: ${themeCssVariables.spacing['2']};
+  height: ${themeCssVariables.spacing['2']};
   border-radius: 50%;
-  background: ${({ theme }) => theme.color.blue};
+  background: ${themeCssVariables.color.blue};
 `;
 
 export type OrgChartTimelineSliderProps = {

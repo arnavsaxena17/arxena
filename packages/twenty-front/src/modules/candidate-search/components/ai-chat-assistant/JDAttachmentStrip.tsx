@@ -1,28 +1,29 @@
-import { IconFile } from 'twenty-ui/icons';
+import { IconFile } from 'twenty-ui/icon';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
-import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
-import styled from '@emotion/styled';
+import { useFindManyAttachments } from '@/candidate-search/hooks/useFindManyAttachments';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useEffect, useState } from 'react';
 
 const StyledAttachmentStrip = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  font-size: ${themeCssVariables.font.size.sm};
   flex-shrink: 0;
 `;
 
 const StyledFileInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   flex: 1;
 `;
 
 const StyledFileName = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 type JDAttachmentStripProps = {
@@ -52,7 +53,7 @@ export const JDAttachmentStrip = ({
       try {
         setIsLoadingAttachments(true);
         const fetchedAttachments = await findManyAttachments({
-          filter: { jobId: { eq: parsedJD.id } },
+          filter: { projectId: { eq: parsedJD.id } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
           limit: 1,
         });
@@ -81,7 +82,7 @@ export const JDAttachmentStrip = ({
     }
     
     // Final fallback: show generic name
-    return 'Job Description';
+    return 'Project Description';
   };
 
   const fileName = getFileName();
@@ -115,7 +116,7 @@ export const JDAttachmentStrip = ({
               : fileName
             : `${(parsedJD?.name?.length ?? 0) > 40
                 ? `${parsedJD?.name.substring(0, 37)}...` 
-                : parsedJD?.name || 'Job Description'
+                : parsedJD?.name || 'Project Description'
               } (No file attached)`}
         </StyledFileName>
       </StyledFileInfo>

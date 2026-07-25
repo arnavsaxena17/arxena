@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Job } from 'twenty-shared';
+import { Project } from 'twenty-shared';
 
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -20,7 +20,7 @@ export type OrgChartOutreachChannel =
 
 export type OrgChartOutreachRunParams = {
   channel: OrgChartOutreachChannel;
-  jobId?: string;
+  projectId?: string;
   message: string;
   templateId?: string;
   linkedinUrl?: string;
@@ -64,22 +64,22 @@ export class OrgChartOutreachService {
   }
 
   async run(params: OrgChartOutreachRunParams): Promise<Record<string, unknown>> {
-    const jobId = params.jobId?.trim();
+    const projectId = params.projectId?.trim();
     const job =
-      jobId && jobId.length > 0
+      projectId && projectId.length > 0
         ? await this.candidateWorkspaceGraphQLService.getJobDetails(
-            jobId,
+            projectId,
             '',
             params.apiToken,
           )
         : null;
-    if (jobId && !job) {
-      throw new BadRequestException('Job not found');
+    if (projectId && !job) {
+      throw new BadRequestException('Project not found');
     }
     if (!job && params.channel !== 'linkedin_invite') {
-      throw new BadRequestException('jobId required');
+      throw new BadRequestException('projectId required');
     }
-    const candidateJob = job as Job | null;
+    const candidateJob = job as Project | null;
 
     switch (params.channel) {
       case 'linkedin_invite': {
@@ -106,7 +106,7 @@ export class OrgChartOutreachService {
       }
       case 'whatsapp': {
         if (!candidateJob) {
-          throw new BadRequestException('jobId required');
+          throw new BadRequestException('projectId required');
         }
         const phone = params.phone?.trim();
         if (!phone) {
@@ -171,7 +171,7 @@ export class OrgChartOutreachService {
       }
       case 'email': {
         if (!candidateJob) {
-          throw new BadRequestException('jobId required');
+          throw new BadRequestException('projectId required');
         }
         const to = params.email?.trim();
         if (!to) {

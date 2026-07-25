@@ -1,7 +1,4 @@
-import {
-  type RecordGqlOperationFilter,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { RecordGqlOperationFilter, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 
 export type RecordGqlOperationGroupByVariables = {
   groupBy: Record<string, any>[] | Record<string, any>;

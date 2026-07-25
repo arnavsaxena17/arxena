@@ -462,26 +462,26 @@ export class AdminPanelResolver {
   async retryJobs(
     @Args('queueName', { type: () => String })
     queueName: string,
-    @Args('jobIds', { type: () => [String] })
-    jobIds: string[],
+    @Args('projectIds', { type: () => [String] })
+    projectIds: string[],
   ): Promise<RetryJobsResponseDTO> {
     return await this.adminPanelQueueService.retryJobs(
       queueName as MessageQueue,
-      jobIds,
+      projectIds,
     );
   }
 
   @UseGuards(AdminPanelGuard)
   @Mutation(() => DeleteJobsResponseDTO)
-  async deleteJobs(
+  async deleteProjects(
     @Args('queueName', { type: () => String })
     queueName: string,
-    @Args('jobIds', { type: () => [String] })
-    jobIds: string[],
+    @Args('projectIds', { type: () => [String] })
+    projectIds: string[],
   ): Promise<DeleteJobsResponseDTO> {
-    return await this.adminPanelQueueService.deleteJobs(
+    return await this.adminPanelQueueService.deleteProjects(
       queueName as MessageQueue,
-      jobIds,
+      projectIds,
     );
   }
 

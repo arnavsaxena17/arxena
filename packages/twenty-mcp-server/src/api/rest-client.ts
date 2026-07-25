@@ -165,7 +165,7 @@ export async function callRestAPI(
 }
 
 /**
- * Call any REST API with PATCH (e.g. update assistant thread with jobId).
+ * Call any REST API with PATCH (e.g. update assistant thread with projectId).
  */
 export async function callRestAPIPatch(
   baseUrl: string,

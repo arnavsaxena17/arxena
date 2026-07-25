@@ -2,11 +2,7 @@ import { useMutation } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 
-import {
-  type MessageChannelContactAutoCreationPolicy,
-  MessageChannelType,
-  type MessageFolderImportPolicy,
-} from 'twenty-shared/types';
+import { MessageChannelType, type MessageChannelContactAutoCreationPolicy, type MessageFolderImportPolicy } from 'twenty-shared/types';
 import { IconBriefcase, IconUsers } from 'twenty-ui/icon';
 import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';

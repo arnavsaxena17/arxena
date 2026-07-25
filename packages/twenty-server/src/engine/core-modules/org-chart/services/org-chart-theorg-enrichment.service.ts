@@ -163,7 +163,7 @@ export class OrgChartTheOrgEnrichmentService {
         await this.pythonOrgChartService.createOrgChartFromStandardizedPeople({
           people: pythonPeople,
           jobName: resolvedCompanyName,
-          jobId: companyId,
+          projectId: companyId,
           functionRoot: options.functionRoot,
           country: chartCountryHint,
         });

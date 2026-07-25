@@ -6,38 +6,37 @@ import {
   SystemInfo,
   triggerArxenaAppDownload,
 } from '@/candidate-table/utils/arxena-app-download';
-import { Modal } from '@/ui/layout/modal/components/Modal';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { Modal } from 'twenty-ui/surfaces';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useEffect, useState } from 'react';
-import { Button } from 'twenty-ui';
+import { Button } from 'twenty-ui/input';
 
 const StyledModalContent = styled.div`
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
   min-width: 220px;
   max-width: 500px;
 `;
 
 const StyledTitle = styled.h2`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.color.gray[900]};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledDescription = styled.p`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   line-height: 1.5;
-  color: ${({ theme }) => theme.color.gray[600]};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
-const StyledButtonContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  text-align: center;
+const StyledFullWidthButton = styled(Button)`
+  width: 100%;
 `;
 
 type ArxDownloadModalProps = {
@@ -49,7 +48,6 @@ export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => 
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const theme = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -80,39 +78,41 @@ export const ArxDownloadModal = ({ isOpen, onClose }: ArxDownloadModalProps) => 
     }
   };
 
-  return isOpen ? (
-    <Modal 
-      isClosable 
-      onClose={onClose}
-      size="small"
-    >
+  return (
+    <Modal isOpen={isOpen} size="medium" padding="medium">
       <StyledModalContent>
         <StyledTitle>Download Arxena App</StyledTitle>
         {error ? (
-          <StyledDescription style={{ color: theme.color.red[500] }}>{error}</StyledDescription>
+          <StyledDescription style={{ color: themeCssVariables.color.red }}>
+            {error}
+          </StyledDescription>
         ) : systemInfo ? (
           <>
             <StyledDescription>
-              We've detected that you're using {getOSName(systemInfo.os)} ({systemInfo.arch}).
-              We'll download the recommended {getFormatLabel(systemInfo.os, getRecommendedFormat(systemInfo.os))} for your system.
+              We've detected that you're using {getOSName(systemInfo.os)} (
+              {systemInfo.arch}). We'll download the recommended{' '}
+              {getFormatLabel(
+                systemInfo.os,
+                getRecommendedFormat(systemInfo.os),
+              )}{' '}
+              for your system.
             </StyledDescription>
 
-            <StyledButtonContainer>
-              <Button
-                variant="primary"
-                onClick={handleDownload}
-                disabled={isDownloading}
-                fullWidth
-                title={`Download for ${getOSName(systemInfo.os)}`}
-              >
-                {isDownloading ? 'Starting Download...' : `Download for ${getOSName(systemInfo.os)}`}
-              </Button>
-            </StyledButtonContainer>
+            <StyledFullWidthButton
+              variant="primary"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              title={`Download for ${getOSName(systemInfo.os)}`}
+            >
+              {isDownloading
+                ? 'Starting Download...'
+                : `Download for ${getOSName(systemInfo.os)}`}
+            </StyledFullWidthButton>
           </>
         ) : (
           <StyledDescription>Detecting your system...</StyledDescription>
         )}
       </StyledModalContent>
     </Modal>
-  ) : null;
+  );
 }; 

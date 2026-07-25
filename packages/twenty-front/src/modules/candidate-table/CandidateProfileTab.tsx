@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
-import { IconBuilding, IconCalendar, IconCurrencyRupee, IconMail, IconMapPin, IconPhone, IconUser } from 'twenty-ui/icons';
-import { getCandidateCustomField } from 'twenty-shared';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconBuildingSkyscraper, IconCalendar, IconCurrencyRupee, IconMail, IconMap, IconPhone, IconUser } from 'twenty-ui/icon';
+import { getCandidateCustomField } from 'twenty-shared/utils';
 
 type CandidateProfileTabProps = {
   candidateData: any;
@@ -8,86 +9,86 @@ type CandidateProfileTabProps = {
 };
 
 const StyledContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   height: 100%;
   overflow-y: auto;
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
 `;
 
 const StyledSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledSectionTitle = styled.h3`
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
-  border-bottom: 2px solid ${({ theme }) => theme.border.color.light};
-  padding-bottom: ${({ theme }) => theme.spacing(1)};
+  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  border-bottom: 2px solid ${themeCssVariables.border.color.light};
+  padding-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledField = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledFieldLabel = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
   min-width: 120px;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledFieldValue = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   flex: 1;
 `;
 
 const StyledIconWrapper = styled.div`
   display: flex;
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   width: 20px;
 `;
 
 const StyledExperienceItem = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border-left: 4px solid ${({ theme }) => theme.color.blue80};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border-left: 4px solid ${themeCssVariables.color.blue8};
 `;
 
 const StyledEducationItem = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border-left: 4px solid ${({ theme }) => theme.color.green80};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border-left: 4px solid ${themeCssVariables.color.green8};
 `;
 
 const StyledSkillsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[1]};
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSkillTag = styled.span`
-  background-color: ${({ theme }) => theme.color.blue20};
-  color: ${({ theme }) => theme.color.blue80};
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  background-color: ${themeCssVariables.color.blue2};
+  color: ${themeCssVariables.color.blue8};
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledLoadingContainer = styled.div`
@@ -95,7 +96,7 @@ const StyledLoadingContainer = styled.div`
   justify-content: center;
   align-items: center;
   height: 200px;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfileTabProps) => {
@@ -193,7 +194,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         {getFieldValue('location_name') && (
           <StyledField>
             <StyledIconWrapper>
-              <IconMapPin size={16} />
+              <IconMap size={16} />
             </StyledIconWrapper>
             <StyledFieldLabel>Location:</StyledFieldLabel>
             <StyledFieldValue>{getFieldValue('location_name')}</StyledFieldValue>
@@ -223,7 +224,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         {getFieldValue('industry') && (
           <StyledField>
             <StyledIconWrapper>
-              <IconBuilding size={16} />
+              <IconBuildingSkyscraper size={16} />
             </StyledIconWrapper>
             <StyledFieldLabel>Industry:</StyledFieldLabel>
             <StyledFieldValue>{getFieldValue('industry')}</StyledFieldValue>

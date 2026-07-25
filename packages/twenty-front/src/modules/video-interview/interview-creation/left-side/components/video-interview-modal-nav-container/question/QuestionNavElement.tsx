@@ -1,6 +1,7 @@
-import { IconTrash } from 'twenty-ui/icons';
+import { IconTrash } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
-import styled from '@emotion/styled';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
 
@@ -8,19 +9,19 @@ const StyledQuestionNavElement = styled.div`
   display: flex;
   flex-direction: row;
   max-width: 200px;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
   padding: 6px;
   justify-content: space-between;
   transition: background-color 0.3s ease;
   &:hover {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
   &.active {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${({ theme }) => theme.grayScale.gray50};
+  color: ${themeCssVariables.grayScale.gray5};
   border-radius: 4px;
   &:hover #question-delete-icon {
     opacity: 1;
@@ -33,8 +34,8 @@ const StyledQuestionNavElement = styled.div`
 const StyledTrashIconContainer = styled.div`
   display: flex;
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  gap: ${({ theme }) => theme.spacing(1)};
+  color: ${themeCssVariables.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[1]};
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s ease;

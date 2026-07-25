@@ -1,25 +1,25 @@
-import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { Country } from '@/ui/input/components/internal/types/Country';
-import { DropdownMenu } from '@/ui/layout/dropdown/components/DropdownMenu';
+import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSearchInput } from '@/ui/layout/dropdown/components/DropdownMenuSearchInput';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
-import { MenuItem } from 'twenty-ui';
-import { MenuItemSelectAvatar } from 'twenty-ui';
+import { MenuItem, MenuItemSelectAvatar } from 'twenty-ui/navigation';
 
 import 'react-phone-number-input/style.css';
 
 const StyledIconContainer = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
-  padding-right: ${({ theme }) => theme.spacing(1)};
+  padding-right: ${themeCssVariables.spacing[1]};
 
   svg {
     align-items: center;
-    border-radius: ${({ theme }) => theme.border.radius.xs};
+    border-radius: ${themeCssVariables.border.radius.xs};
     display: flex;
     height: 12px;
     justify-content: center;
@@ -50,7 +50,7 @@ export const EthnicityCountryPickerDropdownSelect = ({
   console.log("searchFilter::", searchFilter)
 
   return (
-    <DropdownMenu width="200px">
+    <DropdownContent>
       <DropdownMenuSearchInput
         value={searchFilter}
         onChange={(event) => setSearchFilter(event.currentTarget.value)}
@@ -93,6 +93,6 @@ export const EthnicityCountryPickerDropdownSelect = ({
           </>
         )}
       </DropdownMenuItemsContainer>
-    </DropdownMenu>
+    </DropdownContent>
   );
 };

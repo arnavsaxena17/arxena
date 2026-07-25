@@ -1,12 +1,14 @@
-import { IconChevronDown, IconWorld } from 'twenty-ui/icons';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { IconChevronDown, IconWorld } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
-import { CountryPickerHotkeyScope } from '@/ui/input/components/internal/phone/types/CountryPickerHotkeyScope';
 import { Country } from '@/ui/input/components/internal/types/Country';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
-import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
+import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
+import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 
+import { ETHNICITY_COUNTRY_PICKER_DROPDOWN_ID } from './ethnicityCountryPickerDropdownId';
 import { EthnicityCountryPickerDropdownSelect } from './EthnicityCountryPickerDropdownSelect';
 
 type StyledDropdownButtonProps = {
@@ -15,20 +17,20 @@ type StyledDropdownButtonProps = {
 
 export const StyledDropdownButtonContainer = styled.div<StyledDropdownButtonProps>`
   align-items: center;
-  background-color: ${({ theme }) => theme.background.transparent.lighter};
+  background-color: ${themeCssVariables.background.transparent.lighter};
   color: ${({ color }) => color ?? 'none'};
   cursor: pointer;
   display: flex;
   width: min-content;
   height: 32px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding-left: ${({ theme }) => theme.spacing(2)};
-  padding-right: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding-left: ${themeCssVariables.spacing[2]};
+  padding-right: ${themeCssVariables.spacing[2]};
 
   user-select: none;
 
-  border-right: 1px solid ${({ theme }) => theme.border.color.light};
+  border-right: 1px solid ${themeCssVariables.border.color.light};
 
   &:hover {
     filter: brightness(0.95);
@@ -37,9 +39,9 @@ export const StyledDropdownButtonContainer = styled.div<StyledDropdownButtonProp
 
 const StyledIconContainer = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   justify-content: center;
 
   svg {
@@ -60,13 +62,14 @@ export const EthnicityCountryPickerDropdownButton = ({
   onChange: (countryCode: string) => void;
 }) => {
   const theme = useTheme();
-
-  const { isDropdownOpen, closeDropdown } = useDropdown(
-    'ethnicity-country-picker',
+  const isDropdownOpen = useAtomComponentStateValue(
+    isDropdownOpenComponentState,
+    ETHNICITY_COUNTRY_PICKER_DROPDOWN_ID,
   );
+  const { closeDropdown } = useCloseDropdown();
 
   const handleChange = (code: string) => {
-    closeDropdown();
+    closeDropdown(ETHNICITY_COUNTRY_PICKER_DROPDOWN_ID);
     onChange(code);
   };
 
@@ -75,9 +78,7 @@ export const EthnicityCountryPickerDropdownButton = ({
 
   return (
     <Dropdown
-      dropdownMenuWidth={200}
-      dropdownId="ethnicity-country-picker-dropdown-id"
-      dropdownHotkeyScope={{ scope: CountryPickerHotkeyScope.CountryPicker }}
+      dropdownId={ETHNICITY_COUNTRY_PICKER_DROPDOWN_ID}
       clickableComponent={
         <StyledDropdownButtonContainer isUnfolded={isDropdownOpen}>
           <StyledIconContainer>

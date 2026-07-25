@@ -6,23 +6,13 @@
  *
  * Background
  * ----------
- * GoJS 3.x ships three kill-switch mechanisms in its minified bundles:
+ * GoJS 3.x ships kill-switch mechanisms in its minified bundles that can:
+ *  - create a watermark <canvas>
+ *  - replace Transform.prototype.<inverse> with a deliberately broken
+ *    Transform.prototype.Mu that distorts coordinates by 1.25× / 1.2×
  *
- *  1. Diagram.RP() – static function called on first Diagram construction.
- *     It creates a watermark <canvas> and, when the license check fails,
- *     executes:  Transform.prototype.Ci = Transform.prototype.Mu
- *     Mu is a deliberately broken inverse-transform that distorts every
- *     coordinate by 1.25× / 1.2×, making hit-testing and layout unusable.
- *
- *  2. Diagram.IO() – alternate license path with the same assignment.
- *
- *  3. Rendering-path kill switch – two sites in the paint loop that run
- *     Transform.prototype.Ci = Transform.prototype.Mu when the license
- *     validator returns an unexpected value.
- *
- * This script surgically replaces those assignments with no-ops and
- * replaces Diagram.RP / Diagram.IO with empty arrow functions so the
- * watermark canvas is never created.
+ * Minified symbol names change between GoJS patch versions, so this script
+ * tries known name sets (3.1.0-era and 3.1.10-era) for each site.
  *
  * Files patched: release/go.mjs
  *                release/go.js
@@ -35,8 +25,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const KILL_SWITCH = 'Transform.prototype.Ci=Transform.prototype.Mu';
-const NOOP_EXPR   = '(0)'; // safe no-op expression
+const NOOP_EXPR = '(0)'; // safe no-op expression
+
+// Production / debug kill-switch assignments seen across GoJS 3.1.x
+const KILL_SWITCHES = [
+  'Transform.prototype.Ni=Transform.prototype.Mu', // 3.1.10
+  'Transform.prototype.Ci=Transform.prototype.Mu', // earlier 3.1.x
+  'Transform.prototype.De=Transform.prototype.Lu', // earlier debug
+];
 
 /** Replace a minified `static Name=()=>{ ... }` with a no-op, preserving surrounding syntax. */
 function replaceStaticArrowMethod(src, signature, replacement) {
@@ -60,17 +56,45 @@ function replaceStaticArrowMethod(src, signature, replacement) {
   return src;
 }
 
-// Debug bundles use different internal names:
-//   RP→Yk, IO→KO, Ph→Aa (static), Ph()→Aa() (DiagramHelper method),
-//   jw→Zw, Ci→De, Mu→Lu
-const DEBUG_NAMES = {
-  KILL_SWITCH: 'Transform.prototype.De=Transform.prototype.Lu',
-  RP_FN:       'static Yk=()=>{',
-  IO_PREFIX:   'static KO=',
-  IO_FN:       'static KO=()=>{',
-  PH_ORIG:     'Aa(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),this.ke===null&&this.UO(t,!0),0<this.ke&&this!==this.zL}',
-  PH_PATCHED:  'Aa(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),!1}',
-};
+// Watermark helper: keep setTransform side-effects, always return false
+const PH_REPLACEMENTS = [
+  // 3.1.10 production (Sh)
+  {
+    from: 'Sh(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),this.bi===null&&this.UO(t,!0),0<this.bi&&this!==this.OT}',
+    to: 'Sh(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),!1}',
+  },
+  // earlier 3.1.x production (Ph)
+  {
+    from: 'Ph(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),this.xi===null&&this.EO(t,!0),0<this.xi&&this!==this.RT}',
+    to: 'Ph(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),!1}',
+  },
+  // 3.1.10 debug (La)
+  {
+    from: 'La(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),this.Pe===null&&this.GO(t,!0),0<this.Pe&&this!==this.XL}',
+    to: 'La(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),!1}',
+  },
+  // earlier debug (Aa)
+  {
+    from: 'Aa(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),this.ke===null&&this.UO(t,!0),0<this.ke&&this!==this.zL}',
+    to: 'Aa(t,i){return i.setTransform(t.te/2,0,0,t.te/2,0,0),i.commitTransform(),!1}',
+  },
+];
+
+// License bootstrap statics that create the watermark canvas
+const LICENSE_STATICS = [
+  // 3.1.10 production: DP (was RP), EO (was the IO function)
+  { signature: 'static DP=()=>{', replacement: 'static DP=()=>{};' },
+  { signature: 'static EO=()=>{', replacement: 'static EO=()=>{};' },
+  // earlier 3.1.x production
+  { signature: 'static RP=()=>{', replacement: 'static RP=()=>{};' },
+  { signature: 'static IO=()=>{', replacement: 'static IO=()=>{};' },
+  // 3.1.10 debug: Bk (was RP/DP), UO (was EO)
+  { signature: 'static Bk=()=>{', replacement: 'static Bk=()=>{};' },
+  { signature: 'static UO=()=>{', replacement: 'static UO=()=>{};' },
+  // earlier debug
+  { signature: 'static Yk=()=>{', replacement: 'static Yk=()=>{};' },
+  { signature: 'static KO=()=>{', replacement: 'static KO=()=>{};' },
+];
 
 const files = [
   path.join(__dirname, '../node_modules/gojs/release/go.mjs'),
@@ -92,52 +116,41 @@ for (const filePath of files) {
   let src = fs.readFileSync(filePath, 'utf8');
   const original = src;
 
-  // ── 1–2. Neutralize Diagram.RP / Diagram.IO ─────────────────────────
-  src = replaceStaticArrowMethod(src, 'static RP=()=>{', 'static RP=()=>{};');
-  src = replaceStaticArrowMethod(src, 'static IO=()=>{', 'static IO=()=>{};');
-
-  // ── 3. Patch DiagramHelper.Ph() to always return false ───────────────
-  // EO() (the license validator) has an early-return branch when no key is
-  // set that leaves xi = true for localhost/dev URLs.  That causes Ph() to
-  // return true, triggering dp() = ctx.drawImage(Diagram.Ph, …).  Making
-  // Ph() unconditionally return false keeps the required canvas-transform
-  // side-effects but prevents the watermark drawImage from ever being called.
-  const PH_ORIG    = 'Ph(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),this.xi===null&&this.EO(t,!0),0<this.xi&&this!==this.RT}';
-  const PH_PATCHED = 'Ph(t,e){return e.setTransform(t.$e/2,0,0,t.$e/2,0,0),e.commitTransform(),!1}';
-  if (src.includes(PH_ORIG)) {
-    src = src.split(PH_ORIG).join(PH_PATCHED);
+  for (const { signature, replacement } of LICENSE_STATICS) {
+    src = replaceStaticArrowMethod(src, signature, replacement);
   }
 
-  // ── 4. Debug bundles use different internal names — patch those too ─────
-  const isDebug =
-    filePath.endsWith('go-debug.mjs') ||
-    filePath.endsWith('go-debug.js') ||
-    filePath.endsWith('go-debug-module.js');
-  if (isDebug) {
-    // Yk = RP, KO = IO, Aa() = Ph() method, De/Lu = Ci/Mu
-    src = replaceStaticArrowMethod(src, 'static Yk=()=>{', 'static Yk=()=>{};');
-    src = replaceStaticArrowMethod(src, 'static KO=()=>{', 'static KO=()=>{};');
-
-    if (src.includes(DEBUG_NAMES.PH_ORIG))
-      src = src.split(DEBUG_NAMES.PH_ORIG).join(DEBUG_NAMES.PH_PATCHED);
-
-    src = src.split(DEBUG_NAMES.KILL_SWITCH).join(NOOP_EXPR);
+  for (const { from, to } of PH_REPLACEMENTS) {
+    if (src.includes(from)) {
+      src = src.split(from).join(to);
+    }
   }
 
-  // ── 5. Neutralize remaining production-build kill switches ───────────
-  const remaining = (src.match(new RegExp(KILL_SWITCH.replace(/\./g, '\\.'), 'g')) || []).length;
-  if (remaining > 0) {
-    src = src.split(KILL_SWITCH).join(NOOP_EXPR);
+  for (const killSwitch of KILL_SWITCHES) {
+    if (src.includes(killSwitch)) {
+      src = src.split(killSwitch).join(NOOP_EXPR);
+    }
   }
 
   if (src === original) {
-    console.log(`[patch-gojs] already patched or pattern not found: ${path.basename(filePath)}`);
+    console.log(
+      `[patch-gojs] already patched or pattern not found: ${path.basename(filePath)}`,
+    );
     continue;
   }
 
-  const leftover = (src.match(new RegExp(KILL_SWITCH.replace(/\./g, '\\.'), 'g')) || []).length;
+  const leftover = KILL_SWITCHES.reduce(
+    (count, killSwitch) =>
+      count +
+      (
+        src.match(new RegExp(killSwitch.replace(/\./g, '\\.'), 'g')) || []
+      ).length,
+    0,
+  );
   if (leftover > 0) {
-    console.error(`[patch-gojs] ERROR: ${leftover} kill switches still present in ${path.basename(filePath)}`);
+    console.error(
+      `[patch-gojs] ERROR: ${leftover} kill switches still present in ${path.basename(filePath)}`,
+    );
     process.exitCode = 1;
     continue;
   }

@@ -14,6 +14,15 @@ import {
 import { BillingMeterEntity } from 'src/engine/core-modules/billing/entities/billing-meter.entity';
 import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
 import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/billing-product.entity';
+import { BillingPriceBillingScheme } from 'src/engine/core-modules/billing/enums/billing-price-billing-scheme.enum';
+import { BillingPriceTaxBehavior } from 'src/engine/core-modules/billing/enums/billing-price-tax-behavior.enum';
+import { BillingPriceType } from 'src/engine/core-modules/billing/enums/billing-price-type.enum';
+import { SubscriptionInterval } from 'src/engine/core-modules/billing/enums/billing-subscription-interval.enum';
+import { BillingUsageType } from 'src/engine/core-modules/billing/enums/billing-usage-type.enum';
+import {
+  type RazorpayPlan,
+  RazorpayPlanService,
+} from 'src/engine/core-modules/billing/razorpay/services/razorpay-plan.service';
 import { BillingStripeCatalogService } from 'src/engine/core-modules/billing/services/billing-stripe-catalog.service';
 import { StripeBillingMeterService } from 'src/engine/core-modules/billing/stripe/services/stripe-billing-meter.service';
 import { StripePriceService } from 'src/engine/core-modules/billing/stripe/services/stripe-price.service';
@@ -22,11 +31,14 @@ import { isStripeValidProductMetadata } from 'src/engine/core-modules/billing/ut
 import { transformStripeMeterToDatabaseMeter } from 'src/engine/core-modules/billing/utils/transform-stripe-meter-to-database-meter.util';
 import { transformStripePriceToDatabasePrice } from 'src/engine/core-modules/billing/utils/transform-stripe-price-to-database-price.util';
 import { transformStripeProductToDatabaseProduct } from 'src/engine/core-modules/billing/utils/transform-stripe-product-to-database-product.util';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+
+const RAZORPAY_BASE_PRODUCT_ID = 'razorpay_base';
 
 @Command({
   name: 'billing:sync-plans-data',
   description:
-    'Fetches from stripe the plans data (meter, product and price) and upserts it into the database',
+    'Fetches from Stripe or Razorpay the plans data and upserts it into the database',
 })
 export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
   private readonly batchSize = 5;
@@ -39,10 +51,12 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     private readonly billingProductRepository: Repository<BillingProductEntity>,
     @InjectRepository(BillingMeterEntity)
     private readonly billingMeterRepository: Repository<BillingMeterEntity>,
+    private readonly environmentService: EnvironmentService,
     private readonly stripeBillingMeterService: StripeBillingMeterService,
     private readonly stripeProductService: StripeProductService,
     private readonly stripePriceService: StripePriceService,
     private readonly billingStripeCatalogService: BillingStripeCatalogService,
+    private readonly razorpayPlanService: RazorpayPlanService,
   ) {
     super();
   }
@@ -155,10 +169,105 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     return prices;
   }
 
+  private resolveRazorpaySubscriptionInterval(
+    plan: RazorpayPlan,
+  ): SubscriptionInterval {
+    if (plan.period === 'yearly') {
+      return SubscriptionInterval.Year;
+    }
+
+    return SubscriptionInterval.Month;
+  }
+
+  private resolveRazorpayRecurring(
+    plan: RazorpayPlan,
+  ): Stripe.Price.Recurring {
+    const interval =
+      plan.period === 'yearly'
+        ? 'year'
+        : plan.period === 'weekly'
+          ? 'week'
+          : plan.period === 'daily'
+            ? 'day'
+            : 'month';
+
+    return {
+      interval,
+      interval_count: plan.interval,
+      usage_type: 'licensed',
+      meter: null,
+      trial_period_days: null,
+    };
+  }
+
+  private async syncRazorpayPlans(
+    options: MigrationCommandOptions,
+  ): Promise<void> {
+    const plans = await this.razorpayPlanService.getAllPlans();
+
+    this.logger.log(`Fetched ${plans.length} Razorpay plans`);
+
+    const productExists = await this.billingProductRepository.findOne({
+      where: { stripeProductId: RAZORPAY_BASE_PRODUCT_ID },
+    });
+
+    if (!productExists && !options.dryRun) {
+      await this.billingProductRepository.insert({
+        stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
+        name: 'Razorpay Base',
+        active: true,
+        description: '',
+        images: [],
+        marketingFeatures: [],
+        metadata: {},
+      });
+      this.logger.log(`Created BillingProduct ${RAZORPAY_BASE_PRODUCT_ID}`);
+    }
+
+    for (const plan of plans) {
+      const stripePriceId = `razorpay_plan_${plan.id}`;
+      const priceRow: Partial<BillingPriceEntity> = {
+        stripePriceId,
+        razorpayPlanId: plan.id,
+        stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
+        active: true,
+        currency: plan.item.currency,
+        nickname: plan.item.name,
+        taxBehavior: BillingPriceTaxBehavior.UNSPECIFIED,
+        type: BillingPriceType.RECURRING,
+        billingScheme: BillingPriceBillingScheme.PER_UNIT,
+        usageType: BillingUsageType.LICENSED,
+        interval: this.resolveRazorpaySubscriptionInterval(plan),
+        recurring: this.resolveRazorpayRecurring(plan),
+        unitAmount: plan.item.amount,
+        unitAmountDecimal: String(plan.item.amount),
+        metadata: {},
+      };
+
+      if (!options.dryRun) {
+        await this.billingPriceRepository.upsert(priceRow, {
+          conflictPaths: ['stripePriceId'],
+        });
+      }
+
+      this.logger.log(
+        `Upserted price ${stripePriceId} (Razorpay plan ${plan.id})`,
+      );
+    }
+  }
+
   override async runMigrationCommand(
     _passedParams: string[],
     options: MigrationCommandOptions,
   ): Promise<void> {
+    const provider = this.environmentService.get('BILLING_PROVIDER');
+
+    if (provider === 'razorpay') {
+      await this.syncRazorpayPlans(options);
+
+      return;
+    }
+
     if (this.ensureCatalog) {
       this.logger.log('Ensuring required Stripe billing catalog...');
       await this.billingStripeCatalogService.ensureRequiredCatalog({

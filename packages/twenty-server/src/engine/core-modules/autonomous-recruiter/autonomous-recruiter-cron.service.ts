@@ -12,7 +12,7 @@ const CRON_DISABLED = true;
 const HEARTBEAT_CRON = '0 */15 * * * *';
 /** Workspace IDs to skip when enqueuing heartbeat jobs. */
 const WORKSPACES_TO_IGNORE: string[] = [];
-/** If non-empty, only these workspace IDs receive heartbeat jobs (single-workspace rollout). */
+/** If non-empty, only these workspace IDs receive heartbeat projects(single-workspace rollout). */
 const SPECIFIC_WORKSPACES_TO_EXECUTE: string[] = [];
 
 @Injectable()

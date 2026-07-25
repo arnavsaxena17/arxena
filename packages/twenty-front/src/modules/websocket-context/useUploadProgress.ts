@@ -1,7 +1,9 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 import { uploadProgressSseSessionCountState } from './states/uploadProgressSseSessionCountState';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export interface UploadProgressData {
   step: string;
@@ -19,8 +21,10 @@ export const useUploadProgress = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
-  const uploadProgressSessionCount = useRecoilValue(uploadProgressSseSessionCountState);
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const uploadProgressSessionCount = useAtomStateValue(
+    uploadProgressSseSessionCountState,
+  );
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef<number>(0);
   const maxReconnectAttempts = 2; // Reduce max attempts to prevent excessive reconnections
@@ -30,11 +34,11 @@ export const useUploadProgress = () => {
   const lastTokenPairRef = useRef<any>(null);
 
   useEffect(() => {
-    const currentToken = tokenPair?.accessToken?.token;
+    const currentToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
     const tokenChanged = lastTokenRef.current !== currentToken;
     const tokenPairChanged = lastTokenPairRef.current !== tokenPair;
     const shouldConnect =
-      uploadProgressSessionCount > 0 && !!tokenPair?.accessToken?.token;
+      uploadProgressSessionCount > 0 && !!tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
     console.log('🔄 useUploadProgress useEffect triggered', {
       hasToken: !!currentToken,
@@ -97,11 +101,11 @@ export const useUploadProgress = () => {
     lastTokenPairRef.current = tokenPair;
     
     // Note: EventSource doesn't support custom headers, so we pass token as query parameter
-    const url = new URL(`${process.env.REACT_APP_SERVER_BASE_URL}/upload-progress/stream`);
-    url.searchParams.set('token', tokenPair.accessToken.token);
+    const url = new URL(`${REACT_APP_SERVER_BASE_URL}/upload-progress/stream`);
+    url.searchParams.set('token', tokenPair.accessOrWorkspaceAgnosticToken.token);
     url.searchParams.set('origin', window.location.origin);
     console.log('🔗 Connecting to SSE endpoint:', url.toString());
-    console.log('🔗 Token available:', !!tokenPair.accessToken.token);
+    console.log('🔗 Token available:', !!tokenPair.accessOrWorkspaceAgnosticToken.token);
     console.log('🔗 Origin:', window.location.origin);
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;
@@ -198,7 +202,7 @@ export const useUploadProgress = () => {
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessToken?.token, uploadProgressSessionCount]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token, uploadProgressSessionCount]);
 
   // Cleanup on unmount
   useEffect(() => {

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { OrgChartNodeData } from 'twenty-shared';
+import { OrgChartNodeData } from 'twenty-shared/utils';
 
 import { OrgChartStaticPageDiagramReadySignal } from '@/app/_components/cookie-consent/OrgChartStaticPageDiagramReadySignal';
 

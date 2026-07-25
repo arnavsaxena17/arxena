@@ -143,50 +143,49 @@ export class EngagedCandidateQueueService {
         throw new Error('No workspace ID found for processing engagement');
       }
 
-      const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-
       // Step 3: Check for duplicate messages for this specific candidate and job context
       if (replyObject.whatsappMessageId && replyObject.chatReply) {
+        const whatsappMessageRepository =
+          await this.workspaceQueryService.getObjectRepository<{
+            id: string;
+            whatsappMessageId?: string;
+            message?: string;
+            phoneFrom?: string;
+            phoneTo?: string;
+            candidateId?: string;
+            projectsId?: string;
+          }>(workspaceId, 'whatsappMessage');
+
         // For messages with actual WhatsApp message IDs (not 'NA'), check by message ID
         if (replyObject.whatsappMessageId !== 'NA') {
-          const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_whatsappMessage" WHERE "whatsappMessageId" = $1 AND "message" = $2 LIMIT 1`;
-          const duplicateResult = await this.workspaceQueryService.executeRawQuery(
-            duplicateCheckQuery,
-            [replyObject.whatsappMessageId, replyObject.chatReply],
-            workspaceId,
-          );
+          const duplicateResult = await whatsappMessageRepository.findOne({
+            where: {
+              whatsappMessageId: replyObject.whatsappMessageId,
+              message: replyObject.chatReply,
+            },
+            select: { id: true },
+          });
           
-          if (duplicateResult.length > 0) {
+          if (duplicateResult) {
             console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
             return null;
           }
         } else {
           // For interim messages (like 'startChat'), check by candidate ID, job ID, and message content
-          // This allows the same message content for different jobs or candidates
-          const candidateBasedDuplicateQuery = `
-            SELECT id 
-            FROM ${dataSourceSchema}."_whatsappMessage" 
-            WHERE "message" = $1 
-            AND "phoneFrom" = $2 
-            AND "phoneTo" = $3
-            AND "candidateId" = $4
-            AND "jobsId" = $5
-            LIMIT 1
-          `;
+          const duplicateResult = await whatsappMessageRepository.findOne({
+            where: {
+              message: replyObject.chatReply,
+              phoneFrom: replyObject.phoneNumberFrom,
+              phoneTo:
+                candidateProfileDataNodeObj.people?.phones
+                  ?.primaryPhoneNumber || '',
+              candidateId: candidateProfileDataNodeObj.id,
+              projectsId: candidateJob.id,
+            },
+            select: { id: true },
+          });
           
-          const duplicateResult = await this.workspaceQueryService.executeRawQuery(
-            candidateBasedDuplicateQuery,
-            [
-              replyObject.chatReply,
-              replyObject.phoneNumberFrom,
-              candidateProfileDataNodeObj.people?.phones?.primaryPhoneNumber || '',
-              candidateProfileDataNodeObj.id,
-              candidateJob.id
-            ],
-            workspaceId,
-          );
-          
-          if (duplicateResult.length > 0) {
+          if (duplicateResult) {
             console.log(`Message '${replyObject.chatReply}' already exists for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, skipping creation`);
             return null;
           }

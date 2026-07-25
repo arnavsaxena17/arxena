@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewJob,
+    graphqlToAddNewProject,
     OrgChartData,
     OrgchartSearchMode,
 } from 'twenty-shared';
@@ -1700,19 +1700,19 @@ export class OrgChartLinkedInBuildService {
   }
 
   async buildOrgChartFromJobCandidates(
-    body: { jobId: string; jobName?: string },
+    body: { projectId: string; jobName?: string },
     apiToken: string,
   ) {
     try {
-      const jobId = body?.jobId;
+      const projectId = body?.projectId;
 
-      if (!jobId || jobId === 'job-id') {
-        throw new HttpException('jobId is required', HttpStatus.BAD_REQUEST);
+      if (!projectId || projectId === 'job-id') {
+        throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
       }
 
       // Fetch all candidates currently attached to this job
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
-        jobId,
+        projectId,
         [],
         apiToken,
       );
@@ -1722,7 +1722,7 @@ export class OrgChartLinkedInBuildService {
           success: true,
           mode: 'entire_company' as OrgchartSearchMode,
           searchType: 'classic' as OrgchartSearchType,
-          jobId,
+          projectId,
           itemCount: 0,
           items: [],
           orgChart: undefined,
@@ -1759,11 +1759,11 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (!primaryCompanyName) {
-        primaryCompanyName = body.jobName?.trim() || 'OrgChart Job';
+        primaryCompanyName = body.jobName?.trim() || 'OrgChart Project';
       }
 
       this.logger.log(
-        `Building job org chart from ${candidates.length} candidates for jobId="${jobId}", primaryCompany="${primaryCompanyName}"`,
+        `Building job org chart from ${candidates.length} candidates for projectId="${projectId}", primaryCompany="${primaryCompanyName}"`,
       );
 
       const orgChart =
@@ -1781,7 +1781,7 @@ export class OrgChartLinkedInBuildService {
         success: true,
         mode: 'entire_company' as OrgchartSearchMode,
         searchType: 'classic' as OrgchartSearchType,
-        jobId,
+        projectId,
         companyName: primaryCompanyName,
         itemCount: candidates.length,
         items: candidates,
@@ -3223,7 +3223,7 @@ export class OrgChartLinkedInBuildService {
 
         try {
           await this.staticGraphQLService.executeGraphQL(
-            graphqlToAddNewJob,
+            graphqlToAddNewProject,
             { input: { name: orgChartJobName, position: 'first' } },
             apiToken,
           );
@@ -4469,7 +4469,7 @@ export class OrgChartLinkedInBuildService {
 
       try {
         await this.staticGraphQLService.executeGraphQL(
-          graphqlToAddNewJob,
+          graphqlToAddNewProject,
           { input: { name: orgChartJobName, position: 'first' } },
           apiToken,
         );
@@ -4701,7 +4701,7 @@ export class OrgChartLinkedInBuildService {
 
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
-    console.log('Job Data for Org chart build:', jobData);
+    console.log('Project Data for Org chart build:', jobData);
     const requestedSources = this.normalizeMultiSources(jobData.sources);
     const isMultiSourceRequested =
       jobData.multiSource === true && requestedSources.length > 0;

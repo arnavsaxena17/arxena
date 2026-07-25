@@ -8,6 +8,7 @@ import { IconPhotoUp, IconTrash, IconUpload, IconX } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: row;

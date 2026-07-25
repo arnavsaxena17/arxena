@@ -1,5 +1,5 @@
 export const graphqlQueryToUpdateOneReminder = `
-  mutation UpdateOneCandidateReminder($idToUpdate: ID!, $input: CandidateReminderUpdateInput!) {
+  mutation UpdateOneCandidateReminder($idToUpdate: UUID!, $input: CandidateReminderUpdateInput!) {
   updateCandidateReminder(id: $idToUpdate, data: $input) {
     __typename
   }
@@ -23,7 +23,7 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
 
 
 
-export const deleteOneWhatsappMessage = `mutation DeleteOneWhatsappMessage($idToDelete: ID!) {
+export const deleteOneWhatsappMessage = `mutation DeleteOneWhatsappMessage($idToDelete: UUID!) {
   deleteWhatsappMessage(id: $idToDelete) {
     __typename
     deletedAt
@@ -70,7 +70,7 @@ mutation DeleteManyPeople($filter: PersonFilterInput!) {
 `;
 
 export const graphqlToUpdateWhatsappMessageId = `
-mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
+mutation UpdateOneWhatsappMessage($idToUpdate: UUID!, $input: WhatsappMessageUpdateInput!) {
   updateWhatsappMessage(id: $idToUpdate, data: $input) {
    id
    createdAt
@@ -106,7 +106,7 @@ export const graphqlMutationCreateOneInterviewSchedule = `mutation CreateOneInte
   }
 }`;
 
-export const graphqlToUpdateOneClientInterview = `mutation UpdateOneClientInterview($idToUpdate: ID!, $input: ClientInterviewUpdateInput!) {
+export const graphqlToUpdateOneClientInterview = `mutation UpdateOneClientInterview($idToUpdate: UUID!, $input: ClientInterviewUpdateInput!) {
   updateClientInterview(id: $idToUpdate, data: $input) {
     __typename
     createdAt
@@ -117,7 +117,7 @@ export const graphqlToUpdateOneClientInterview = `mutation UpdateOneClientInterv
       name
       slotsAvailable
       id
-      jobsId
+      projectsId
       updatedAt
       createdAt
     }
@@ -150,7 +150,7 @@ export const mutationToCreateOnePhoneCall = `mutation CreateOnePhoneCall($input:
   }
 }`;
 
-export const updateOneVideoInterviewMutation = `mutation UpdateOneVideoInterview($idToUpdate: ID!, $input: VideoInterviewUpdateInput!) {
+export const updateOneVideoInterviewMutation = `mutation UpdateOneVideoInterview($idToUpdate: UUID!, $input: VideoInterviewUpdateInput!) {
   updateVideoInterview(id: $idToUpdate, data: $input) {
       id
       interviewStarted
@@ -179,7 +179,7 @@ export const graphqlToCreateOnePrompt = `mutation CreateOnePrompt($input: Prompt
               }
               position
               id
-              jobId
+              projectId
               job {
                 yearsOfExperience
                 id
@@ -225,7 +225,7 @@ export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorks
   }`;
 
 
-  export const graphQLToUpdateOneWorkspaceMemberProfile = `mutation UpdateOneWorkspaceMemberProfile($idToUpdate: ID!, $input: WorkspaceMemberProfileUpdateInput!) {
+  export const graphQLToUpdateOneWorkspaceMemberProfile = `mutation UpdateOneWorkspaceMemberProfile($idToUpdate: UUID!, $input: WorkspaceMemberProfileUpdateInput!) {
     updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
       id
       workspaceMemberId
@@ -245,7 +245,7 @@ export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorks
     }
   }`;
 
-export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation UpdateWorkspaceMemberLinkedinCookieTokens($idToUpdate: ID!, $input: WorkspaceMemberProfileUpdateInput!) {
+export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation UpdateWorkspaceMemberLinkedinCookieTokens($idToUpdate: UUID!, $input: WorkspaceMemberProfileUpdateInput!) {
   updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
     id
     linkedinLiAtToken
@@ -331,7 +331,7 @@ export const CreateOneVideoInterviewTemplate = `
             id
             name
             videoInterviewModelId
-            jobId
+            projectId
             introduction
             instructions
             createdAt
@@ -407,7 +407,7 @@ mutation CreateSMS($input: CreateSMSInput!) {
 }`;
 
 export const graphqlMutationToUpdateSMS = `
-mutation UpdateSMS($id: ID!, $input: UpdateSMSInput!) {
+mutation UpdateSMS($id: UUID!, $input: UpdateSMSInput!) {
     updateSMS(id: $id, data: $input) {
         id
         personId
@@ -429,8 +429,8 @@ export const mutationToCreateOneCandidateEnrichment = `mutation CreateOneCandida
       }`;
 
 
-export const UpdateOneJob = `mutation UpdateOneJob($idToUpdate: ID!, $input: JobUpdateInput!) {
- updateJob(id: $idToUpdate, data: $input) {
+export const UpdateOneProject = `mutation UpdateOneProject($idToUpdate: UUID!, $input: ProjectUpdateInput!) {
+ updateProject(id: $idToUpdate, data: $input) {
    __typename
    recruiterId
    id
@@ -463,7 +463,7 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
   }
 }`;
 
-export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: ID!, $input: PersonUpdateInput!) {
+export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: UUID!, $input: PersonUpdateInput!) {
   updatePerson(id: $idToUpdate, data: $input) {
     __typename
     city
@@ -487,7 +487,7 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
       message
       phoneFrom
       phoneTo
-      jobsId
+      projectsId
       candidateId
       name
       messageObj
@@ -499,12 +499,12 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
     }
   }`;
 
-export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: ID!, $input: CandidateUpdateInput!) {
+export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: UUID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
       __typename
       engagementStatus
       whatsappProvider
-      jobsId
+      projectsId
       updatedAt
       startChat
       stopChat
@@ -518,7 +518,7 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
     }
   }`;
 
-export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: ID!, $input: ReminderUpdateInput!) {
+export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: UUID!, $input: ReminderUpdateInput!) {
     updateReminder(id: $idToUpdate, data: $input) {
       updatedAt
       id
@@ -543,8 +543,8 @@ export const graphqlToAddNewPerson = `mutation CreateOnePerson($input: PersonCre
 }
 `;
 
-export const graphqlToAddNewJob = `mutation CreateOneJob($input: JobCreateInput!) {
-  createJob(data: $input) {
+export const graphqlToAddNewProject = `mutation CreateOneProject($input: ProjectCreateInput!) {
+  createProject(data: $input) {
     __typename
     id
   }
@@ -580,14 +580,14 @@ export const graphqlToAddNewCandidate = `mutation CreateOneCandidate($input: Can
     id
     name
     status
-    jobsId
+    projectsId
     peopleId
   }
 }
 `;
 
 export const mutationToUpdateOnePhoneCall = `
-mutation UpdatePhoneCall($id: ID!, $input: UpdatePhoneCallInput!) {
+mutation UpdatePhoneCall($id: UUID!, $input: UpdatePhoneCallInput!) {
     updatePhoneCall(id: $id, data: $input) {
         id
         personId
@@ -603,7 +603,7 @@ mutation UpdatePhoneCall($id: ID!, $input: UpdatePhoneCallInput!) {
 }`;
 
 
-export const updateOneShortlistMutation = `mutation UpdateOneShortlist($idToUpdate: ID!, $input: ShortlistUpdateInput!) {
+export const updateOneShortlistMutation = `mutation UpdateOneShortlist($idToUpdate: UUID!, $input: ShortlistUpdateInput!) {
   updateShortlist(id: $idToUpdate, data: $input) {
     __typename
     age
@@ -621,7 +621,7 @@ export const updateOneShortlistMutation = `mutation UpdateOneShortlist($idToUpda
     fullName
     functionsReportingTo
     id
-    jobId
+    projectId
     name
     noticePeriod
     position
@@ -661,7 +661,7 @@ export const createManyShortlistsMutation = `
             id
             name
             candidateId
-            jobId
+            projectId
             currentJobTitle
             yearsOfExperience
             currentCompany
@@ -722,13 +722,13 @@ export const createOneAssistantThread = `mutation CreateOneAssistantThread($inpu
   }
 }`;
 
-export const updateOneAssistantThread = `mutation UpdateOneAssistantThread($id: ID!, $input: AssistantThreadUpdateInput!) {
+export const updateOneAssistantThread = `mutation UpdateOneAssistantThread($id: UUID!, $input: AssistantThreadUpdateInput!) {
   updateAssistantThread(id: $id, data: $input) {
     id
     name
     messages
     lastTableData
-    jobId
+    projectId
     agentNotes
     assistantParameters
     enrichmentConfigs

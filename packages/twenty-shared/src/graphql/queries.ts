@@ -15,7 +15,7 @@ export const graphqlQueryToFindCvsent = `query FindManyCvsent($filter: CvSentFil
         id
         name
         position
-        jobId
+        projectId
         createdAt
         updatedAt
       }
@@ -39,7 +39,7 @@ export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: S
       node {
         id
         candidateId
-        jobId
+        projectId
         cvSentsId
         name
         currentJobTitle
@@ -118,7 +118,7 @@ export const graphqlQueryToFindManyClientContacts = `query FindManyClientContact
       node {
         id
         name
-        jobsId
+        projectsId
         peopleId
         createdAt
         updatedAt
@@ -134,7 +134,7 @@ export const graphqlQueryToFindManyInterviewSchedules = `query FindManyInterview
       node {
         id
         name
-        jobsId
+        projectsId
         meetingType
         position
         slotsAvailable
@@ -158,7 +158,7 @@ export const graphqlQueryToFetchPrompts = `
   }
 `;
 
-export const graphqlQueryToFindVideoInterviewTemplatesByJobId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
+export const graphqlQueryToFindVideoInterviewTemplatesByProjectId = `query FindManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput, $orderBy: [VideoInterviewTemplateOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviewTemplates(
     filter: $filter
     orderBy: $orderBy
@@ -241,8 +241,8 @@ export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: Comp
   }
 }`;
 
-const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -286,7 +286,7 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
               columnFilters
               assistantSearchStrategy
               isActive
-              jobId
+              projectId
               recruiterId
             }
           }
@@ -315,8 +315,8 @@ const graphqlToFindManyJobsFull = `query FindManyJobs($filter: JobFilterInput, $
   }
 }`;
 
-const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+const graphqlToFindManyProjectsOrgChart = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -373,7 +373,7 @@ const graphqlToFindManyJobsOrgChart = `query FindManyJobs($filter: JobFilterInpu
   }
 }`;
 
-/** Toggle org-chart Job GraphQL variants in this bundle. Runtime behavior uses workspace `is_org_chart_enabled` and `getGraphqlToFindManyJobs`. */
+/** Toggle org-chart Project GraphQL variants in this bundle. Runtime behavior uses workspace `is_org_chart_enabled` and `getGraphqlToFindManyProjects`. */
 export const isOrgChartEnabledEnv = false;
 
 export function resolveIsOrgChartEnabledFromWorkspace(
@@ -385,15 +385,15 @@ export function resolveIsOrgChartEnabledFromWorkspace(
   return String(workspaceValue).trim() === 'true';
 }
 
-export function getGraphqlToFindManyJobs(isOrgChartEnabled: boolean): string {
-  return isOrgChartEnabled ? graphqlToFindManyJobsOrgChart : graphqlToFindManyJobsFull;
+export function getGraphqlToFindManyProjects(isOrgChartEnabled: boolean): string {
+  return isOrgChartEnabled ? graphqlToFindManyProjectsOrgChart : graphqlToFindManyProjectsFull;
 }
 
-export const graphqlToFindManyJobs = isOrgChartEnabledEnv
-  ? graphqlToFindManyJobsOrgChart
-  : graphqlToFindManyJobsFull;
-const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlToFindManyProjects = isOrgChartEnabledEnv
+  ? graphqlToFindManyProjectsOrgChart
+  : graphqlToFindManyProjectsFull;
+const graphqlToFindManyProjectsWithPromptsFull = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -444,7 +444,7 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
               columnFilters
               assistantSearchStrategy
               isActive
-              jobId
+              projectId
               recruiterId
             }
           }
@@ -476,8 +476,8 @@ const graphqlToFindManyJobsWithPromptsFull = `query FindManyJobs($filter: JobFil
   }
 }`;
 
-const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+const graphqlToFindManyProjectsWithPromptsOrgChart = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -535,19 +535,19 @@ const graphqlToFindManyJobsWithPromptsOrgChart = `query FindManyJobs($filter: Jo
   }
 }`;
 
-export function getGraphqlToFindManyJobsWithPrompts(
+export function getGraphqlToFindManyProjectsWithPrompts(
   isOrgChartEnabled: boolean,
 ): string {
   return isOrgChartEnabled
-    ? graphqlToFindManyJobsWithPromptsOrgChart
-    : graphqlToFindManyJobsWithPromptsFull;
+    ? graphqlToFindManyProjectsWithPromptsOrgChart
+    : graphqlToFindManyProjectsWithPromptsFull;
 }
 
-export const graphqlToFindManyJobsWithPrompts = isOrgChartEnabledEnv
-  ? graphqlToFindManyJobsWithPromptsOrgChart
-  : graphqlToFindManyJobsWithPromptsFull;
-const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlToFindManyProjectsWithPrompts = isOrgChartEnabledEnv
+  ? graphqlToFindManyProjectsWithPromptsOrgChart
+  : graphqlToFindManyProjectsWithPromptsFull;
+const graphqlToFindManyProjectsWithCandidateValuesFull = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -646,8 +646,8 @@ const graphqlToFindManyJobsWithCandidateValuesFull = `query FindManyJobs($filter
   }
 }`;
 
-const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+const graphqlToFindManyProjectsWithCandidateValuesOrgChart = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -746,19 +746,19 @@ const graphqlToFindManyJobsWithCandidateValuesOrgChart = `query FindManyJobs($fi
   }
 }`;
 
-export function getGraphqlToFindManyJobsWithCandidateValues(
+export function getGraphqlToFindManyProjectsWithCandidateValues(
   isOrgChartEnabled: boolean,
 ): string {
   return isOrgChartEnabled
-    ? graphqlToFindManyJobsWithCandidateValuesOrgChart
-    : graphqlToFindManyJobsWithCandidateValuesFull;
+    ? graphqlToFindManyProjectsWithCandidateValuesOrgChart
+    : graphqlToFindManyProjectsWithCandidateValuesFull;
 }
 
-export const graphqlToFindManyJobsWithCandidateValues = isOrgChartEnabledEnv
-  ? graphqlToFindManyJobsWithCandidateValuesOrgChart
-  : graphqlToFindManyJobsWithCandidateValuesFull;
-const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+export const graphqlToFindManyProjectsWithCandidateValues = isOrgChartEnabledEnv
+  ? graphqlToFindManyProjectsWithCandidateValuesOrgChart
+  : graphqlToFindManyProjectsWithCandidateValuesFull;
+const graphqlToFindManyProjectsWithCandidatesFull = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -857,8 +857,8 @@ const graphqlToFindManyJobsWithCandidatesFull = `query FindManyJobs($filter: Job
   }
 }`;
 
-const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+const graphqlToFindManyProjectsWithCandidatesOrgChart = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     edges {
       node {
         __typename
@@ -945,17 +945,17 @@ const graphqlToFindManyJobsWithCandidatesOrgChart = `query FindManyJobs($filter:
   }
 }`;
 
-export function getGraphqlToFindManyJobsWithCandidates(
+export function getGraphqlToFindManyProjectsWithCandidates(
   isOrgChartEnabled: boolean,
 ): string {
   return isOrgChartEnabled
-    ? graphqlToFindManyJobsWithCandidatesOrgChart
-    : graphqlToFindManyJobsWithCandidatesFull;
+    ? graphqlToFindManyProjectsWithCandidatesOrgChart
+    : graphqlToFindManyProjectsWithCandidatesFull;
 }
 
-export const graphqlToFindManyJobsWithCandidates = isOrgChartEnabledEnv
-  ? graphqlToFindManyJobsWithCandidatesOrgChart
-  : graphqlToFindManyJobsWithCandidatesFull;
+export const graphqlToFindManyProjectsWithCandidates = isOrgChartEnabledEnv
+  ? graphqlToFindManyProjectsWithCandidatesOrgChart
+  : graphqlToFindManyProjectsWithCandidatesFull;
 
 export const FindManyVideoInterviewModels = `query FindManyVideoInterviewModels($filter: VideoInterviewModelFilterInput, $orderBy: [VideoInterviewModelOrderByInput], $lastCursor: String, $limit: Int) {
   videoInterviewModels(
@@ -1007,7 +1007,11 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
       edges {
         node {
           whatsappMessageId
-          authorId
+          createdBy {
+            workspaceMemberId
+            name
+            source
+          }
           candidateId
           fullPath
           personId
@@ -1016,8 +1020,8 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
           cvSentId
           updatedAt
           createdAt
-          jobId
-          type
+          projectId
+          fileCategory
           companyId
           screeningId
           clientInterviewId
@@ -1205,7 +1209,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           introduction
           id
           createdAt
-          jobId
+          projectId
           name
           videoInterviewModelId
           videoInterviewQuestions {
@@ -1249,7 +1253,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           status
           jobSpecificFields
           otherFields
-          jobsId
+          projectsId
           createdAt
           source
           campaign
@@ -1281,7 +1285,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             primaryLinkUrl
             __typename
           }
-          jobs {
+          projects {
             name
             id
             recruiterId
@@ -1297,7 +1301,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             }
             emails{
               primaryEmail
-            }            
+            }
             phones{
               primaryPhoneNumber
             }
@@ -1500,7 +1504,7 @@ export const graphQlTofindManyCandidateEnrichments = `query FindManyCandidateEnr
                 prompt
                 modelName
                 createdAt
-                fields
+                fields: filterFields
                 id
                 name
                 selectedModel
@@ -1604,7 +1608,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                             node{
 //                                 id
 //                                 name
-//                                 jobId
+//                                 projectId
 //                                 createdAt
 //                                 updatedAt
 //                                 candidateId
@@ -1615,7 +1619,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                     whatsappProvider
 //                     lastEngagementChatControl
 //                     candConversationStatus
-//                     jobs {
+//                     projects {
 //                        name
 //                        id
 //                        isActive
@@ -1690,7 +1694,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                           recruiterId
 //                           message
 //                           candidateId
-//                           jobsId
+//                           projectsId
 //                           position
 //                           phoneTo
 //                           messageObj
@@ -1727,7 +1731,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //         jobTitle
 //         id
 //         uniqueStringKey
-//         position 
+//         position
 //       }
 //     }
 //   }
@@ -1764,7 +1768,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     whatsappProvider
                     lastEngagementChatControl
                     candConversationStatus
-                    jobs {
+                    projects {
                        name
                        id
                        isActive
@@ -1807,7 +1811,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                           recruiterId
                           message
                           candidateId
-                          jobsId
+                          projectsId
                           position
                           phoneTo
                           messageObj
@@ -1844,14 +1848,14 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
         jobTitle
         id
         uniqueStringKey
-        position 
+        position
       }
     }
   }
 }`;
 
-export const graphqlToFetchAllJobData = `query FindManyJobs($filter: JobFilterInput, $orderBy: [JobOrderByInput], $lastCursor: String, $limit: Int) {
-  jobs(
+export const graphqlToFetchAllProjectData = `query FindManyProjects($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -1887,9 +1891,9 @@ export const graphqlToFetchAllJobData = `query FindManyJobs($filter: JobFilterIn
   }
 }`;
 
-export const FindOneJob = `
-  query FindOneJob($objectRecordId: ID!) {
-    job(filter: {id: {eq: $objectRecordId}}) {
+export const FindOneProject = `
+  query FindOneProject($objectRecordId: UUID!) {
+    project(filter: {id: {eq: $objectRecordId}}) {
         updatedAt
         isActive
         recruiterId
@@ -1967,7 +1971,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         recruiterId
         messageObj
         phoneTo
-        jobsId
+        projectsId
         whatsappProvider
         lastEngagementChatControl
         candidate {
@@ -2121,10 +2125,10 @@ fragment WorkspaceMemberQueryFragment on WorkspaceMember {
   }`;
 
 export const graphqlQueryToFindOneWorkspaceMember = `
-query FindOneWorkspaceMember($objectRecordId: ID!) {
+query FindOneWorkspaceMember($objectRecordId: UUID!) {
   workspaceMember(filter: {id: {eq: $objectRecordId}}) {
     __typename
-    
+
     connectedAccounts {
       edges {
         node {
@@ -2181,7 +2185,7 @@ export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders
   }
 }`;
 
-export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: ID!) {
+export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: UUID!) {
   videoInterview(filter: {id: {eq: $objectRecordId}}) {
     attachments {
       edges {
@@ -2195,10 +2199,14 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           name
           videoInterviewId
           updatedAt
-          authorId
+          createdBy {
+            workspaceMemberId
+            name
+            source
+          }
           clientContactId
-          jobId
-          type
+          projectId
+          fileCategory
           id
           createdAt
           textMessageId
@@ -2245,7 +2253,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       campaign
       jobCompanyName
       jobSpecificFields
-      jobsId
+      projectsId
       createdAt
       updatedAt
       engagementStatus
@@ -2274,7 +2282,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
         primaryLinkUrl
         __typename
       }
-      jobs {
+      projects {
         name
         id
         recruiterId
@@ -2290,7 +2298,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
         }
         emails{
           primaryEmail
-        }            
+        }
         phones{
           primaryPhoneNumber
         }
@@ -2310,7 +2318,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           name
           feedback
           candidateId
-          jobId
+          projectId
           position
           personId
           updatedAt
@@ -2324,7 +2332,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
             edges {
               node {
                 id
-                type
+                fileCategory
                 fullPath
                 name
               }
@@ -2336,7 +2344,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
     candidateId
     position
     videoInterviewTemplate {
-      jobId
+      projectId
       id
       name
       updatedAt
@@ -2413,7 +2421,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //               node{
 //                 id
 //                 name
-//                 jobId
+//                 projectId
 //                 createdAt
 //                 updatedAt
 //                 clientInterviewCompleted
@@ -2514,7 +2522,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //                 primaryEmail
 //             }
 //             jobTitle
-//             uniqueStringKey  
+//             uniqueStringKey
 //             phoneCall {
 //                 edges {
 //                     node {
@@ -2554,14 +2562,14 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //                 recruiterId
 //                 message
 //                 candidateId
-//                 jobsId
+//                 projectsId
 //                 position
 //                 phoneTo
 //                 phoneFrom
 //               }
 //             }
 //           }
-//           jobs {
+//           projects {
 //             id
 //             name
 //             jobLocation
@@ -2642,12 +2650,16 @@ export const graphqlToFetchAllCandidateData = `
           attachments {
             edges {
               node {
-                authorId
+                createdBy {
+                  workspaceMemberId
+                  name
+                  source
+                }
                 createdAt
                 fullPath
                 id
                 name
-                type
+                fileCategory
               }
             }
           }
@@ -2682,7 +2694,7 @@ export const graphqlToFetchAllCandidateData = `
                 primaryEmail
             }
             jobTitle
-            uniqueStringKey  
+            uniqueStringKey
           }
           startChat
           remarks
@@ -2704,14 +2716,14 @@ export const graphqlToFetchAllCandidateData = `
                 recruiterId
                 message
                 candidateId
-                jobsId
+                projectsId
                 position
                 phoneTo
                 phoneFrom
               }
             }
           }
-          jobs {
+          projects {
             id
             name
             jobLocation
@@ -2764,7 +2776,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           source
           campaign
           jobCompanyName
-          jobsId
+          projectsId
           jobTitle
           remarks
           messagingChannel
@@ -2777,12 +2789,16 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           attachments {
             edges {
               node {
-                authorId
+                createdBy {
+                  workspaceMemberId
+                  name
+                  source
+                }
                 createdAt
                 fullPath
                 id
                 name
-                type
+                fileCategory
               }
             }
           }
@@ -2811,7 +2827,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 recruiterId
                 message
                 candidateId
-                jobsId
+                projectsId
                 position
                 phoneTo
                 phoneFrom
@@ -2863,7 +2879,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           startVideoInterviewChat
           source
           campaign
-          jobsId
+          projectsId
           jobTitle
           remarks
           messagingChannel
@@ -2876,12 +2892,16 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           attachments {
             edges {
               node {
-                authorId
+                createdBy {
+                  workspaceMemberId
+                  name
+                  source
+                }
                 createdAt
                 fullPath
                 id
                 name
-                type
+                fileCategory
               }
             }
           }
@@ -2967,7 +2987,7 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
         cvSents {
           __typename
           position
-          jobId
+          projectId
           id
           createdAt
           candidateId
@@ -2976,7 +2996,7 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
         }
         id
         candidateId
-        jobId
+        projectId
         yearsOfExperience
         reasonForLeaving
         position
@@ -3022,7 +3042,7 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
 }
 `;
 
-export const findOneCandidate = `query FindOneCandidate($objectRecordId: ID!) {
+export const findOneCandidate = `query FindOneCandidate($objectRecordId: UUID!) {
 candidate(filter: {id: {eq: $objectRecordId}}) {
   whatsappProvider
   people {
@@ -3081,7 +3101,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
 `;
 
 export const findOnePersonQuery = `
-  query FindOnePerson($objectRecordId: ID!) {
+  query FindOnePerson($objectRecordId: UUID!) {
     person(filter: { id: { eq: $objectRecordId } }) {
       xLink {
         primaryLinkLabel
@@ -3100,7 +3120,7 @@ export const findOnePersonQuery = `
         }
         emails{
             primaryEmail
-        }      
+        }
         linkedinLink {
             primaryLinkLabel
             primaryLinkUrl
@@ -3126,7 +3146,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                     whatsappProvider
                     lastEngagementChatControl
                     candConversationStatus
-                    jobs {
+                    projects {
                        name
                        id
                        isActive
@@ -3177,7 +3197,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                           recruiterId
                           message
                           candidateId
-                          jobsId
+                          projectsId
                           messageObj
                           position
                           phoneTo
@@ -3210,7 +3230,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
         jobTitle
         id
         uniqueStringKey
-        position 
+        position
       }
     }
   }
@@ -3218,8 +3238,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
 
 
 
-export const getExistingRelationsQuery = `query GetExistingRelations($objectMetadataId: ID!) {
-  relations(filter: { 
+export const getExistingRelationsQuery = `query GetExistingRelations($objectMetadataId: UUID!) {
+  relations(filter: {
     or: [
       { fromObjectMetadataId: { eq: $objectMetadataId } },
       { toObjectMetadataId: { eq: $objectMetadataId } }
@@ -3293,7 +3313,7 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
       node {
         id
         name
-        jobId
+        projectId
         job {
           id
           name
@@ -3323,13 +3343,13 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
   }
 }`;
 
-export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
+export const findOneAssistantThread = `query FindOneAssistantThread($id: UUID!) {
   assistantThread(filter: { id: { eq: $id } }) {
     id
     name
     messages
     lastTableData
-    jobId
+    projectId
     job {
       id
       name
@@ -3357,9 +3377,9 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: ID!) {
 
 
 
-// export const FindOneJob = `
-//   query FindOneJob($objectRecordId: ID!) {
-//     job(filter: {id: {eq: $objectRecordId}}) {
+// export const FindOneProject = `
+//   query FindOneProject($objectRecordId: UUID!) {
+//     project(filter: {id: {eq: $objectRecordId}}) {
 //         updatedAt
 //         isActive
 //         recruiterId

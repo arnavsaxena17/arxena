@@ -1,4 +1,3 @@
-import { useRecoilState } from 'recoil';
 import { v4 as uid } from 'uuid';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
@@ -6,10 +5,11 @@ import { QuestionNavElement } from '@/video-interview/interview-creation/left-si
 import { VideoInterviewQuestion } from '@/video-interview/interview-creation/right-side/components/question/VideoInterviewQuestion';
 import { questionsArrState } from '@/video-interview/interview-creation/states/questionsArrState';
 import { leftAndRightCombined } from '@/video-interview/interview-creation/types/leftAndRightCombined';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 export const useAddRemoveVideoInterviewQuestion = () => {
   const [questionsArr, setQuestionsArr] =
-    useRecoilState<leftAndRightCombined[]>(questionsArrState);
+    useAtomState<leftAndRightCombined[]>(questionsArrState);
 
   const { changeQuestionToDisplay } = useQuestionToDisplay();
 

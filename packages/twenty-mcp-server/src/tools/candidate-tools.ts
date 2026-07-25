@@ -1,4 +1,17 @@
-import type { CandidateNode, Candidates, People } from 'twenty-shared';
+import type { CandidateNode, Candidates, People } from 'twenty-shared/arx';
+import {
+  graphqlQueryToFindManyPeople,
+  graphqlToAddNewCandidate,
+  graphqlToAddNewPerson,
+  graphqlToFetchAllCandidateData,
+  graphQltoUpdateOneCandidate,
+  mutationToUpdateOnePerson,
+} from 'twenty-shared/graphql';
+
+import { executeGraphQL } from '../api/graphql-client';
+import { callRestAPI } from '../api/rest-client';
+import { McpTool } from '../types/tool-types';
+import { descriptorToInputSchema } from '../utils/input-schema';
 import {
   CREATE_CANDIDATE_INPUT_DESCRIPTOR,
   FIND_CANDIDATE_INPUT_DESCRIPTOR,
@@ -16,12 +29,6 @@ import {
   UPLOAD_PROFILES_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
 
-import { graphqlQueryToFindManyPeople, graphqlToAddNewCandidate, graphqlToAddNewPerson, graphqlToFetchAllCandidateData, graphQltoUpdateOneCandidate, mutationToUpdateOnePerson } from 'twenty-shared';
-import { executeGraphQL } from '../api/graphql-client';
-import { callRestAPI } from '../api/rest-client';
-import { McpTool } from '../types/tool-types';
-import { descriptorToInputSchema } from '../utils/input-schema';
-
 function extractCandidates(data: unknown): CandidateNode[] {
   const result = data as { candidates: Candidates };
   return result?.candidates?.edges?.map((e) => e.node) ?? [];
@@ -37,17 +44,17 @@ function parseName(fullName: string): { firstName: string; lastName: string } {
 export const candidateTools: McpTool[] = [
   {
     definition: {
-      name: 'list_candidates_for_job',
+      name: 'list_candidates_for_project',
       description:
         'List candidates for a specific job. Optionally filter by status. Returns names, contact info, and current status of each candidate.',
       inputSchema: descriptorToInputSchema(LIST_CANDIDATES_FOR_JOB_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const status = args.status as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
 
-      const filter: Record<string, unknown> = { jobsId: { eq: jobId } };
+      const filter: Record<string, unknown> = { projectsId: { eq: projectId } };
       if (status) {
         filter.status = { eq: status };
       }
@@ -142,8 +149,8 @@ export const candidateTools: McpTool[] = [
               candidateId: ce.node.id,
               candidateName: ce.node.name,
               status: ce.node.status,
-              jobId: ce.node.jobs?.id,
-              jobName: ce.node.jobs?.name,
+              projectId: ce.node.projects?.id,
+              jobName: ce.node.projects?.name,
             })) ?? [],
         })),
       };
@@ -179,8 +186,8 @@ export const candidateTools: McpTool[] = [
         engagementStatus: c.engagementStatus,
         remarks: c.remarks,
         peopleId: c.peopleId,
-        jobId: c.jobsId,
-        jobName: c.jobs?.name,
+        projectId: c.projectsId,
+        jobName: c.projects?.name,
         phone: c.people?.phones?.primaryPhoneNumber,
         email: c.people?.emails?.primaryEmail,
         city: c.people?.city,
@@ -196,11 +203,11 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'create_candidate',
       description:
-        'Create a new candidate in the Arxena Internal Database and link them to a job. Uses the post-candidates flow which creates both the person record and candidate node. Use list_active_jobs first to get the correct jobId.',
+        'Create a new candidate in the Arxena Internal Database and link them to a job. Uses the post-candidates flow which creates both the person record and candidate node. Use list_active_projects first to get the correct projectId.',
       inputSchema: descriptorToInputSchema(CREATE_CANDIDATE_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const fullName = args.name as string;
       const phoneNumber = args.phoneNumber as string | undefined;
       const email = args.email as string | undefined;
@@ -242,7 +249,7 @@ export const candidateTools: McpTool[] = [
       // Step 2: Create candidate linked to person and job
       const candidateInput: Record<string, unknown> = {
         name: fullName,
-        jobsId: jobId,
+        projectsId: projectId,
         status,
         peopleId,
       };
@@ -264,7 +271,7 @@ export const candidateTools: McpTool[] = [
         success: true,
         candidate: candidateResult?.createCandidate,
         peopleId,
-        message: `Successfully created candidate "${fullName}" linked to job ${jobId}`,
+        message: `Successfully created candidate "${fullName}" linked to job ${projectId}`,
       };
     },
   },
@@ -353,7 +360,7 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'update_candidate_salary',
       description:
-        'Update the salary or salary expectation for a candidate using custom field values. Use get_candidate_fields_for_job first to see available field names for the job.',
+        'Update the salary or salary expectation for a candidate using custom field values. Use get_candidate_fields_for_project first to see available field names for the job.',
       inputSchema: descriptorToInputSchema(UPDATE_CANDIDATE_SALARY_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
@@ -400,7 +407,7 @@ export const candidateTools: McpTool[] = [
 
   {
     definition: {
-      name: 'get_candidates_by_job_id',
+      name: 'get_candidates_by_project_id',
       description: 'Get candidates linked to a job.',
       inputSchema: descriptorToInputSchema(GET_CANDIDATES_BY_JOB_ID_INPUT_DESCRIPTOR),
     },
@@ -410,7 +417,7 @@ export const candidateTools: McpTool[] = [
         config.baseUrl,
         config.apiToken,
         'candidate-sourcing',
-        'get-candidates-by-job-id',
+        'get-candidates-by-project-id',
         body,
       );
     },
@@ -420,7 +427,7 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'upload_profiles',
       description:
-        'Upload candidate profiles to a job (e.g. from Naukri, LinkedIn search, or JSON). Pass candidates array, jobId, jobName, and data_source. Progress is reported via SSE; table updates when processing completes.',
+        'Upload candidate profiles to a project(e.g. from Naukri, LinkedIn search, or JSON). Pass candidates array, projectId, jobName, and data_source. Progress is reported via SSE; table updates when processing completes.',
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(UPLOAD_PROFILES_INPUT_DESCRIPTOR);
         return {
@@ -484,7 +491,7 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'process_ai_filters',
       description:
-        'Queue AI filter processing for candidates in a job. Pass jobId and aiFilters (or enrichments). Selected record IDs and object metadata are optional.',
+        'Queue AI filter processing for candidates in a job. Pass projectId and aiFilters (or enrichments). Selected record IDs and object metadata are optional.',
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(PROCESS_AI_FILTERS_INPUT_DESCRIPTOR);
         return {

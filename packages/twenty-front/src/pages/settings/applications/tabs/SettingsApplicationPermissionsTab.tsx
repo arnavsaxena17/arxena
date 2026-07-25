@@ -10,15 +10,8 @@ import { useSetAtomFamilyState } from '@/ui/utilities/state/jotai/hooks/useSetAt
 import { t } from '@lingui/core/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import {
-  type ObjectFieldManifest,
-  type ObjectManifest,
-  type RoleManifest,
-} from 'twenty-shared/application';
-import {
-  type PermissionFlagType,
-  SystemPermissionFlag,
-} from 'twenty-shared/constants';
+import type { ObjectFieldManifest, ObjectManifest, RoleManifest } from 'twenty-shared/application';
+import { SystemPermissionFlag, type PermissionFlagType } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { FieldMetadataType } from '~/generated-metadata/graphql';

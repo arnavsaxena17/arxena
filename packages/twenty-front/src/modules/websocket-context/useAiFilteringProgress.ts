@@ -1,6 +1,8 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export type AiFilteringProgressData = {
   step: string;
@@ -18,10 +20,10 @@ export const useAiFilteringProgress = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
 
   useEffect(() => {
-    if (!tokenPair?.accessToken?.token) {
+    if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       console.warn('No access token available for AI filtering progress streaming');
       return;
     }
@@ -30,8 +32,8 @@ export const useAiFilteringProgress = () => {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
-    const url = new URL(`${process.env.REACT_APP_SERVER_BASE_URL}/ai-filtering-progress/stream`);
-    url.searchParams.set('token', tokenPair.accessToken.token);
+    const url = new URL(`${REACT_APP_SERVER_BASE_URL}/ai-filtering-progress/stream`);
+    url.searchParams.set('token', tokenPair.accessOrWorkspaceAgnosticToken.token);
     url.searchParams.set('origin', window.location.origin);
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;
@@ -69,7 +71,7 @@ export const useAiFilteringProgress = () => {
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   useEffect(() => {
     return () => {

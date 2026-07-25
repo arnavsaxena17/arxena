@@ -284,7 +284,7 @@ export class CandidateSearchHandlerService {
           apiToken,
           userMessage,
           parsedJD,
-          context.jobId,
+          context.projectId,
           sendEvent,
           includeJd,
           accumulateTokens,
@@ -396,7 +396,7 @@ export class CandidateSearchHandlerService {
       accountId: string;
       searchParamKey: string;
       searchFilter: AssistantThreadContext;
-      jobId?: string;
+      projectId?: string;
     };
   }): Promise<{
     unresolvedSearchParams: GeneratedSearchParameters;
@@ -623,7 +623,7 @@ export class CandidateSearchHandlerService {
       accountId: string;
       searchParamKey: string;
       searchFilter: AssistantThreadContext;
-      jobId?: string;
+      projectId?: string;
     },
     apiToken: string,
     userMessage: string,
@@ -651,7 +651,7 @@ export class CandidateSearchHandlerService {
         context.searchParamKey,
         context.accountId,
         userMessage,
-        context.jobId,
+        context.projectId,
         apiToken,
         sendEvent,
         includeJd,
@@ -760,7 +760,7 @@ export class CandidateSearchHandlerService {
     accountId: string;
     searchParamKey: string;
     searchFilter: AssistantThreadContext;
-    jobId?: string;
+    projectId?: string;
   }> {
     const accountId =
       await this.candidateSearchBaseService.getLinkedInAccountId(apiToken);
@@ -770,7 +770,7 @@ export class CandidateSearchHandlerService {
         assistantThreadId,
         apiToken,
       );
-    const jobId = searchFilter?.jobId;
+    const projectId = searchFilter?.projectId;
 
     this.logger.log(
       `assistantThread context:: ${JSON.stringify(searchFilter, null, 2)}`,
@@ -778,13 +778,13 @@ export class CandidateSearchHandlerService {
     this.logger.log(
       `Generating search parameters for ${searchType} ${searchCategory}`,
     );
-    this.logger.log(`JobId: ${jobId}`);
+    this.logger.log(`ProjectId: ${projectId}`);
 
     if (userMessage) {
       this.logger.log(`User message: ${userMessage}`);
     }
 
-    return { accountId, searchParamKey, searchFilter, jobId };
+    return { accountId, searchParamKey, searchFilter, projectId };
   }
 
   private async generateResolvedSearchParameters(
@@ -796,7 +796,7 @@ export class CandidateSearchHandlerService {
     searchParamKey: string,
     accountId: string,
     userMessage: string,
-    jobId?: string,
+    projectId?: string,
     apiToken?: string,
     sendEvent?: (event: string, data: any) => void,
     includeJd: boolean = true,
@@ -821,7 +821,7 @@ export class CandidateSearchHandlerService {
         apiToken!,
         userMessage,
         parsedJD,
-        jobId,
+        projectId,
         sendEvent,
         includeJd,
         onTokenUsage,
@@ -965,11 +965,11 @@ export class CandidateSearchHandlerService {
     const chatHistory = thread.messages ?? [];
 
     let rawJDText = '';
-    if (body.includeJd !== false && thread.jobId) {
+    if (body.includeJd !== false && thread.projectId) {
       try {
         rawJDText =
           (await this.jobDescriptionService.getJDContentFromJobAttachments(
-            thread.jobId,
+            thread.projectId,
             apiToken,
           )) ?? '';
       } catch (err) {
@@ -1191,7 +1191,7 @@ export class CandidateSearchHandlerService {
     apiToken: string,
     userMessage: string,
     parsedJobDescription?: ParsedJobDescription,
-    jobId?: string,
+    projectId?: string,
     sendEvent?: (event: string, data: any) => boolean | void,
     includeJd: boolean = true,
     onTokenUsage?: (usage: TokenUsage) => void,
@@ -1222,9 +1222,9 @@ export class CandidateSearchHandlerService {
       if (userMessage) this.logger.log(`User message: ${userMessage}`);
 
       const rawJDText =
-        includeJd && jobId
+        includeJd && projectId
           ? await this.jobDescriptionService.getJDContentFromJobAttachments(
-              jobId,
+              projectId,
               apiToken,
             )
           : '';
@@ -1407,7 +1407,7 @@ export class CandidateSearchHandlerService {
             apiToken,
             userMessage,
             parsedJobDescription,
-            jobId,
+            projectId,
             sendEvent,
             includeJd,
             onTokenUsage,

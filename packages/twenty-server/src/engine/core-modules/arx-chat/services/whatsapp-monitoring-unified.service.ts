@@ -5,9 +5,8 @@ import { WhatsappUnipileRequestService } from 'src/engine/core-modules/arx-chat/
 import { WhatsAppHealthStatus } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-health-status.dto';
 import { WhatsAppSessionStats } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-session-stats.dto';
 import { WhatsAppSessions } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-sessions.dto';
-import { EventsGateway } from 'src/engine/core-modules/whiskeysocket-baileys/events-gateway-module/events-gateway';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 type UnipileAccountRow = {
   id?: string;
@@ -16,6 +15,26 @@ type UnipileAccountRow = {
   phone_number?: string;
   status?: 'connected' | 'disconnected' | 'pending' | 'connecting';
   created_at?: string;
+};
+
+// Optional Baileys gateway — module may be absent on this branch
+type BaileysEventsGateway = {
+  getRegisteredSessionCount: () => number;
+  getActiveSessionCount: () => number;
+  getSessionCount: () => number;
+  getSessionMetrics: () => Promise<
+    Array<{
+      recruiterId: string;
+      lastActivity: number;
+      connectionCount: number;
+      isActive: boolean;
+      memoryUsage: number;
+      isRegistered: boolean;
+      hasAuthFiles: boolean;
+      hasWebSocketConnection: boolean;
+      whatsappConnectionStatus: string;
+    }>
+  >;
 };
 
 @Injectable()
@@ -29,7 +48,7 @@ export class WhatsAppMonitoringUnifiedService {
   ) {}
 
   async getWhatsAppHealthStatus(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppHealthStatus> {
     const fromBaileys = await this.tryBaileysHealth();
     if (fromBaileys) {
@@ -39,7 +58,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   async getWhatsAppSessionStats(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessionStats> {
     const fromBaileys = await this.tryBaileysStats();
     if (fromBaileys) {
@@ -48,7 +67,7 @@ export class WhatsAppMonitoringUnifiedService {
     return this.buildVendorSessionStats(workspace);
   }
 
-  async getWhatsAppSessions(workspace: Workspace): Promise<WhatsAppSessions> {
+  async getWhatsAppSessions(workspace: WorkspaceEntity): Promise<WhatsAppSessions> {
     const fromBaileys = await this.tryBaileysSessions();
     if (fromBaileys) {
       return fromBaileys;
@@ -56,8 +75,15 @@ export class WhatsAppMonitoringUnifiedService {
     return this.buildVendorSessions(workspace);
   }
 
-  private getEventsGateway(): EventsGateway | undefined {
-    return this.moduleRef.get(EventsGateway, { strict: false });
+  private getEventsGateway(): BaileysEventsGateway | undefined {
+    try {
+      return this.moduleRef.get<BaileysEventsGateway | undefined>(
+        'EventsGateway',
+        { strict: false },
+      );
+    } catch {
+      return undefined;
+    }
   }
 
   private async tryBaileysHealth(): Promise<WhatsAppHealthStatus | null> {
@@ -148,7 +174,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async buildVendorHealth(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppHealthStatus> {
     const unipile = await this.tryUnipileHealth(workspace);
     if (unipile && unipile.metrics.length > 0) {
@@ -165,7 +191,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async buildVendorSessionStats(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessionStats> {
     const unipile = await this.tryUnipileSessionStats(workspace);
     if (unipile && unipile.totalSessions > 0) {
@@ -190,7 +216,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async buildVendorSessions(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessions> {
     const unipile = await this.tryUnipileSessions(workspace);
     if (unipile && unipile.sessions.length > 0) {
@@ -220,7 +246,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryUnipileHealth(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppHealthStatus | null> {
     const accounts = await this.fetchUnipileAccounts(workspace);
     if (accounts === null) {
@@ -242,7 +268,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryUnipileSessionStats(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessionStats | null> {
     const accounts = await this.fetchUnipileAccounts(workspace);
     if (accounts === null) {
@@ -264,7 +290,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryUnipileSessions(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessions | null> {
     const accounts = await this.fetchUnipileAccounts(workspace);
     if (accounts === null) {
@@ -293,7 +319,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async fetchUnipileAccounts(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<UnipileAccountRow[] | null> {
     const keys = await this.workspaceQueryService.getWorkspaceKeys(
       workspace.id,
@@ -366,7 +392,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryMetaHealth(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppHealthStatus | null> {
     const row = await this.buildMetaMetric(workspace);
     if (!row) {
@@ -398,7 +424,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryMetaSessionStats(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessionStats | null> {
     const row = await this.buildMetaMetric(workspace);
     if (!row) {
@@ -417,7 +443,7 @@ export class WhatsAppMonitoringUnifiedService {
   }
 
   private async tryMetaSessions(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<WhatsAppSessions | null> {
     const row = await this.buildMetaMetric(workspace);
     if (!row) {
@@ -442,7 +468,7 @@ export class WhatsAppMonitoringUnifiedService {
     };
   }
 
-  private async buildMetaMetric(workspace: Workspace): Promise<{
+  private async buildMetaMetric(workspace: WorkspaceEntity): Promise<{
     recruiterId: string;
     lastActivity: string;
     connectionCount: number;

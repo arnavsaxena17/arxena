@@ -1,20 +1,21 @@
 import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
+import type { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared/types';
 import { AiFiltersMessage } from './AiFiltersMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
 import { SortsMessage } from './SortsMessage';
-import { JsonMessageViewer } from '@/utils/JsonMessageViewer';
+import { JsonMessageViewer } from '~/utils/JsonMessageViewer';
 
 const StyledChatMessages = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   min-height: 0;
   max-height: 100%;
 `;
@@ -22,31 +23,31 @@ const StyledChatMessages = styled.div`
 const StyledThinkingIndicator = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledThinkingContent = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledTerminationMessage = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.color.orange};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.color.orange};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.color.orange};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.color.orange};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledDotsContainer = styled.div`
@@ -59,7 +60,7 @@ const StyledDot = styled.span<{ delay: number }>`
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.font.color.tertiary};
+  background-color: ${themeCssVariables.font.color.tertiary};
   animation: bounce 1.4s infinite ease-in-out both;
   animation-delay: ${({ delay }) => delay}s;
 
@@ -74,8 +75,8 @@ const StyledDot = styled.span<{ delay: number }>`
 `;
 
 const StyledElapsedTime = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   font-variant-numeric: tabular-nums;
   min-width: 28px;
   text-align: right;
@@ -84,25 +85,27 @@ const StyledElapsedTime = styled.span`
 const StyledMessage = styled.div<{ isUser?: boolean }>`
   display: flex;
   align-items: flex-start;
-  gap: ${({ theme }) => theme.spacing(2)};
-  ${({ isUser }) => isUser && 'flex-direction: row-reverse;'}
+  gap: ${themeCssVariables.spacing[2]};
+  ${({ isUser }) => (isUser ? 'flex-direction: row-reverse;' : '')}
 `;
 
 const StyledMessageContent = styled.div<{ isUser?: boolean; isStreaming?: boolean }>`
-  background-color: ${({ isUser, theme }) => 
-    isUser ? theme.color.blue10 : theme.background.secondary};
-  border: 1px solid ${({ isUser, theme }) => 
-    isUser ? theme.color.blue20 : theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(2)};
+  background-color: ${({ isUser }) => 
+    isUser ? themeCssVariables.color.blue10 : themeCssVariables.background.secondary};
+  border: 1px solid ${({ isUser }) => 
+    isUser ? themeCssVariables.color.blue2 : themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[2]};
   max-width: 80%;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   position: relative;
-  ${({ isStreaming }) => isStreaming && `
+  ${({ isStreaming }) =>
+    isStreaming
+      ? `
     &::after {
       content: '▋';
       animation: blink 1s infinite;
@@ -113,14 +116,15 @@ const StyledMessageContent = styled.div<{ isUser?: boolean; isStreaming?: boolea
       0%, 50% { opacity: 1; }
       51%, 100% { opacity: 0; }
     }
-  `}
+  `
+      : ''}
 `;
 
 const StyledMessageIcon = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.background.tertiary};
+  background-color: ${themeCssVariables.background.tertiary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,25 +133,25 @@ const StyledMessageIcon = styled.div`
 
 const StyledScrollToBottomButton = styled.button`
   position: absolute;
-  bottom: ${({ theme }) => theme.spacing(3)};
-  right: ${({ theme }) => theme.spacing(3)};
+  bottom: ${themeCssVariables.spacing[3]};
+  right: ${themeCssVariables.spacing[3]};
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
+  background-color: ${themeCssVariables.color.blue};
+  color: ${themeCssVariables.font.color.inverted};
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 10;
   
   &:hover {
     transform: scale(1.1);
-    background-color: ${({ theme }) => theme.color.blue20};
+    background-color: ${themeCssVariables.color.blue2};
   }
   
   &:active {

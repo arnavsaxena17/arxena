@@ -168,6 +168,9 @@ export class Billing {
   @Field(() => String, { nullable: true })
   stripePublishableKey?: string;
 
+  @Field(() => String, { nullable: true })
+  provider?: 'razorpay' | 'stripe';
+
   @Field(() => [BillingTrialPeriodDTO])
   trialPeriods: BillingTrialPeriodDTO[];
 }

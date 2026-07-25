@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import { v4 as uid } from 'uuid';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useAddRemoveVideoInterviewQuestion } from '@/video-interview/interview-creation/hooks/useAddRemoveVideoInterviewQuestionHook';
 import { useCreateOneVideoInterviewQuery } from '@/video-interview/interview-creation/hooks/useCreateOneVideoInterviewQuery';
@@ -9,7 +10,7 @@ import { VideoInterviewIntroduction } from '@/video-interview/interview-creation
 import { VideoInterviewName } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewName';
 
 const StyledAllContainer = styled.div`
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
   gap: 44px;
@@ -44,9 +45,9 @@ const StyledListItem = styled.li`
   &::marker {
     display: none;
     font-family: inherit;
-    color: ${({ theme }) => theme.font.color.light};
-    font-size: ${({ theme }) => theme.font.size.md};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
+    color: ${themeCssVariables.font.color.light};
+    font-size: ${themeCssVariables.font.size.md};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 `;
 

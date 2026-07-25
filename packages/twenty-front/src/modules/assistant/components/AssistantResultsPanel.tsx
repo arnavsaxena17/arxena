@@ -1,6 +1,5 @@
-import { LightButton } from 'twenty-ui';
-import { IconBriefcase, IconFileText, IconMessage } from 'twenty-ui/icons';
-import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
+import { LightButton } from 'twenty-ui/input';
+import { IconBriefcase, IconFileText, IconMessage } from 'twenty-ui/icon';
 import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import type { OrgChartPreview } from '@/assistant/types/assistant.types';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
@@ -8,17 +7,15 @@ import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
-import { AppPath } from '@/types/AppPath';
-import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
-import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
-import styled from '@emotion/styled';
-import { Loader } from 'twenty-ui';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Loader } from 'twenty-ui/feedback';
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
-
-import { getAppPath } from '~/utils/navigation/getAppPath';
+import { AppPath } from 'twenty-shared/types';
+import { getAppPath } from 'twenty-shared/utils';
 
 const LazyArxOrgChart = React.lazy(() =>
   import('@/orgchart/ArxOrgChart').then((m) => ({ default: m.ArxOrgChart })),
@@ -36,7 +33,7 @@ const AssistantDetailsTable = lazy(() =>
   })),
 );
 
-/** Virtual jobId used for assistant-fetched LinkedIn candidates in DataTable. */
+/** Virtual projectId used for assistant-fetched LinkedIn candidates in DataTable. */
 export const ASSISTANT_SEARCH_JOB_ID = '__search__';
 
 const StyledResultsPanel = styled.div`
@@ -44,7 +41,7 @@ const StyledResultsPanel = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
   overflow: auto;
 `;
 
@@ -52,24 +49,24 @@ const StyledResultsHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledResultsTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledResultsEmpty = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledActionsBar = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   flex-wrap: wrap;
 `;
 
@@ -84,10 +81,10 @@ const StyledOrgChartPanel = styled.div`
   flex-direction: column;
   flex: 1;
   min-height: 400px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
   overflow: hidden;
-  background: ${({ theme }) => theme.background.secondary};
+  background: ${themeCssVariables.background.secondary};
 `;
 
 const StyledOrgChartLoader = styled.div`
@@ -100,7 +97,7 @@ const StyledOrgChartLoader = styled.div`
 const StyledActionButton = styled(LightButton)`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 type AssistantResultsPanelProps = {
@@ -108,7 +105,7 @@ type AssistantResultsPanelProps = {
   maxTableHeight?: number;
   threadId?: string;
   onSync?: () => Promise<void>;
-  jobIdFromThread?: string | null;
+  projectIdFromThread?: string | null;
   onSelectionChange?: (ids: string[]) => void;
   orgChart?: OrgChartPreview | null;
   onDismissOrgChart?: () => void;
@@ -119,15 +116,15 @@ function getRowId(row: Record<string, unknown>): string | undefined {
   return typeof id === 'string' ? id : undefined;
 }
 
-function getJobIdFromRow(row: Record<string, unknown>): string | undefined {
-  const jobId = row.jobId ?? row.job_id ?? row.jobsId ?? row.jobs_id;
-  return typeof jobId === 'string' ? jobId : undefined;
+function getProjectIdFromRow(row: Record<string, unknown>): string | undefined {
+  const projectId = row.projectId ?? row.job_id ?? row.projectsId ?? row.jobs_id;
+  return typeof projectId === 'string' ? projectId : undefined;
 }
 
-function getJobIdFromTableData(tableData: AssistantTableData | null): string | undefined {
+function getProjectIdFromTableData(tableData: AssistantTableData | null): string | undefined {
   if (!tableData?.rows?.length) return undefined;
   const first = tableData.rows[0] as Record<string, unknown>;
-  return getJobIdFromRow(first);
+  return getProjectIdFromRow(first);
 }
 
 function parseCompanyFromHeadline(headline: string): string {
@@ -211,7 +208,7 @@ export const AssistantResultsPanel = ({
   maxTableHeight = 600,
   threadId,
   onSync,
-  jobIdFromThread,
+  projectIdFromThread,
   onSelectionChange,
   orgChart,
   onDismissOrgChart,
@@ -219,27 +216,26 @@ export const AssistantResultsPanel = ({
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const [syncing, setSyncing] = useState(false);
   const navigate = useNavigate();
-  const { openRightDrawer } = useRightDrawer();
-  const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
-  const setSearchResults = useSetRecoilState(searchResultsState);
+  const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
+  const setSearchResults = useSetAtomState(searchResultsState);
 
   useEffect(() => {
     setSelectedRowIndex(null);
   }, [tableData]);
 
-  const jobIdFromRows = getJobIdFromTableData(tableData);
+  const projectIdFromRows = getProjectIdFromTableData(tableData);
   // Thread job is for navigation (e.g. “View in job”) — not for binding DataTable data.
-  // LinkedIn search rows usually omit jobId; falling back to thread jobId made the panel
+  // LinkedIn search rows usually omit projectId; falling back to thread projectId made the panel
   // load the job’s GraphQL candidates instead of hydrating these snapshot rows (wrong count).
-  const jobIdForThreadActions = jobIdFromRows ?? jobIdFromThread ?? undefined;
-  const dataTableJobId = jobIdFromRows ?? ASSISTANT_SEARCH_JOB_ID;
+  const projectIdForThreadActions = projectIdFromRows ?? projectIdFromThread ?? undefined;
+  const dataTableProjectId = projectIdFromRows ?? ASSISTANT_SEARCH_JOB_ID;
 
-  // When rows are not tied to a CRM job (no jobId on data), push snapshot rows into Recoil
+  // When rows are not tied to a CRM project(no projectId on data), push snapshot rows into Recoil
   // so DataTable (__search__) shows the same people as the chat preview.
   useEffect(() => {
     if (
       tableData?.tableType !== 'candidates' ||
-      jobIdFromRows ||
+      projectIdFromRows ||
       !tableData?.rows?.length
     ) {
       return;
@@ -251,11 +247,11 @@ export const AssistantResultsPanel = ({
     return () => {
       setSearchResults([]);
     };
-  }, [tableData, jobIdFromRows, setSearchResults]);
+  }, [tableData, projectIdFromRows, setSearchResults]);
 
-  // Read selection from the DataTable's context store for the active jobId instance.
-  const activeContextKey = dataTableJobId;
-  const searchTableRule = useRecoilComponentValueV2(
+  // Read selection from the DataTable's context store for the active projectId instance.
+  const activeContextKey = dataTableProjectId;
+  const searchTableRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
     activeContextKey,
   );
@@ -289,27 +285,19 @@ export const AssistantResultsPanel = ({
     const candidateId = getRowId(selectedRow);
     if (!candidateId) return;
     setSelectedCandidateId(candidateId);
-    openRightDrawer(RightDrawerPages.CandidateChat, {
-      title: `Chat with ${String(selectedRow.name ?? selectedRow.fullName ?? 'Candidate')}`,
-      Icon: IconMessage,
-    });
-  }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
+  }, [selectedRow, setSelectedCandidateId]);
 
   const handleOpenClientChat = useCallback(() => {
-    if (!jobIdForThreadActions) return;
-    openRightDrawer(RightDrawerPages.ClientChat, {
-      title: 'Client chat (mock)',
-      Icon: IconMessage,
-    });
-  }, [jobIdForThreadActions, openRightDrawer]);
+    if (!projectIdForThreadActions) return;
+  }, [projectIdForThreadActions]);
 
   const handleOpenInJobs = useCallback(() => {
-    navigate(getAppPath(AppPath.Jobs));
+    navigate(getAppPath(AppPath.Projects));
   }, [navigate]);
   const handleViewInJob = useCallback(() => {
-    if (!jobIdForThreadActions) return;
-    navigate(`/job/${jobIdForThreadActions}`);
-  }, [navigate, jobIdForThreadActions]);
+    if (!projectIdForThreadActions) return;
+    navigate(`/project/${projectIdForThreadActions}`);
+  }, [navigate, projectIdForThreadActions]);
 
   const handleViewAttachments = useCallback(() => {
     if (!selectedRow) return;
@@ -317,11 +305,7 @@ export const AssistantResultsPanel = ({
     if (!candidateId) return;
     setSelectedCandidateId(candidateId);
     window.dispatchEvent(new CustomEvent('openAttachmentPanel', { detail: { candidateId } }));
-    openRightDrawer(RightDrawerPages.CandidateChat, {
-      title: `Chat with ${String(selectedRow.name ?? 'Candidate')}`,
-      Icon: IconMessage,
-    });
-  }, [selectedRow, openRightDrawer, setSelectedCandidateId]);
+  }, [selectedRow, setSelectedCandidateId]);
 
   // Full CRM candidate DataTable only for candidate-shaped tool results; jobs, companies,
   // interviews, etc. use plain Handsontable (AssistantDetailsTable).
@@ -394,16 +378,12 @@ export const AssistantResultsPanel = ({
       </StyledResultsHeader>
       {showDataTable && (
         <ContextStoreComponentInstanceContext.Provider
-          value={{ instanceId: dataTableJobId }}
+          value={{ instanceId: dataTableProjectId }}
         >
-          <ActionMenuComponentInstanceContext.Provider
-            value={{ instanceId: dataTableJobId }}
-          >
-            <HotTableActionMenu tableId={dataTableJobId} />
-          </ActionMenuComponentInstanceContext.Provider>
+          <HotTableActionMenu tableId={dataTableProjectId} />
         </ContextStoreComponentInstanceContext.Provider>
       )}
-      {(jobIdForThreadActions ||
+      {(projectIdForThreadActions ||
         (hasSelection && tableData?.tableType === 'candidates')) && (
         <StyledActionsBar>
           {hasSelection && tableData?.tableType === 'candidates' && (
@@ -420,14 +400,14 @@ export const AssistantResultsPanel = ({
               />
             </>
           )}
-          {jobIdForThreadActions && (
+          {projectIdForThreadActions && (
             <StyledActionButton
               title="View in job"
               onClick={handleViewInJob}
               Icon={IconBriefcase}
             />
           )}
-          {jobIdForThreadActions && (
+          {projectIdForThreadActions && (
             <StyledActionButton
               title="View client chat"
               onClick={handleOpenClientChat}
@@ -435,7 +415,7 @@ export const AssistantResultsPanel = ({
             />
           )}
           <StyledActionButton
-            title="Open in Jobs"
+            title="Open in Projects"
             onClick={handleOpenInJobs}
             Icon={IconBriefcase}
           />
@@ -444,7 +424,7 @@ export const AssistantResultsPanel = ({
       <StyledTableWrapper>
         <Suspense fallback={<Loader />}>
           {showDataTable ? (
-            <DataTable jobId={dataTableJobId} />
+            <DataTable projectId={dataTableProjectId} />
           ) : (
             <AssistantDetailsTable
               data={tableData!}

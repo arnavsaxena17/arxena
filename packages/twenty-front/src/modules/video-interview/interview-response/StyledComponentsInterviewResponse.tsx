@@ -1,9 +1,10 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  // background-color: ${({ theme }) => theme.background.tertiary};
+  // background-color: ${themeCssVariables.background.tertiary};
   max-width: 100%;
   overflow-x: hidden;
   min-height: 100%;
@@ -15,7 +16,7 @@ export const StyledContainer = styled.div`
 export const EndInterviewStyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  // background-color: ${({ theme }) => theme.background.tertiary};
+  // background-color: ${themeCssVariables.background.tertiary};
   max-width: 100%;
   overflow-x: hidden;
   min-height: 100%;
@@ -42,42 +43,42 @@ export const SnapScrollContainer = styled.div`
   }
 `;
 export const StyledLeftPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  background-color: ${themeCssVariables.background.secondary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   padding: 16px;
   width: 30%;
 
   @media (max-width: 767px) {
     width: 90%;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 export const StartInterviewStyledLeftPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  background-color: ${themeCssVariables.background.secondary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   padding: 16px;
   width: 30%;
 
   @media (max-width: 767px) {
     width: 90%;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 
 export const EndInterviewStyledLeftPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  background-color: ${themeCssVariables.background.secondary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   height: 100vh;
   padding: 16px;
   width: 30%;
@@ -86,7 +87,7 @@ export const EndInterviewStyledLeftPanel = styled.div`
     width: 90%;
     height: auto;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 
@@ -295,7 +296,7 @@ export const FeedbackContainer = styled.div`
 export const StyledTextArea = styled.textarea`
   border: 1px solid #ccc;
   border-radius: 8px;
-  font-family: ${({ theme }) => theme.font.family};
+  font-family: ${themeCssVariables.font.family};
   font-size: 16px;
   height: 150px;
   padding: 12px;
@@ -340,11 +341,11 @@ export const FeedbackPrompt = styled.p`
 
 export const StyledTextLeftPaneldisplay = styled.div`
   color: #808080;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   line-height: 150%;
 
   @media (max-width: 767px) {
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
     line-height: 140%;
   }
 `;
@@ -387,12 +388,12 @@ export const SubTitle = styled.h2`
 `;
 
 export const StyledRightPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   color: #808080;
   display: flex;
   flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
   font-style: normal;
   font-weight: 400;
   gap: 16px;
@@ -404,17 +405,17 @@ export const StyledRightPanel = styled.div`
   @media (max-width: 767px) {
     width: 93%;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
     gap: 12px;
   }
 `;
 export const StartInterviewStyledRightPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   color: #808080;
   display: flex;
   flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
   font-style: normal;
   font-weight: 400;
   gap: 16px;
@@ -426,17 +427,17 @@ export const StartInterviewStyledRightPanel = styled.div`
   @media (max-width: 767px) {
     width: 93%;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
     gap: 12px;
   }
 `;
 export const EndInterviewStyledRightPanel = styled.div`
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   color: #808080;
   display: flex;
   flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
   font-style: normal;
   font-weight: 400;
   gap: 16px;
@@ -448,7 +449,7 @@ export const EndInterviewStyledRightPanel = styled.div`
     width: 93%;
     height: 100vh;
     padding: 16px;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
     gap: 12px;
   }
 `;
@@ -485,13 +486,13 @@ export const StyledMessage = styled.div`
   padding: 10px;
   background-color: #e8f5e9;
   border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   text-align: center;
 `;
 
 export const StyledTimer = styled.div`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   margin-top: 20px;
   text-align: center;
 `;
@@ -500,7 +501,7 @@ export const StyledError = styled.div`
   background-color: black;
   border-radius: 4px;
   color: white;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   margin-top: 20px;
   padding: 10px;
 `;

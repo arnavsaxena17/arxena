@@ -19,29 +19,29 @@ import {
   CandidateEnrichmentEdge,
   CreateOneVideoInterviewTemplate,
   findWorkspaceMemberProfiles,
-  getGraphqlToFindManyJobs,
+  getGraphqlToFindManyProjects,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
   graphqlQueryToFindManyPeople,
-  graphqlToAddNewJob,
+  graphqlToAddNewProject,
   graphqlToCreateOnePrompt,
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlTofindManyCandidateEnrichments,
-  graphqlToFindManyJobs,
+  graphqlToFindManyProjects,
   graphQltoUpdateOneCandidate,
   graphQLToUpdateOneWorkspaceMemberProfile,
-  Job,
-  JobEdge,
   mergeChatQuestionsPreservingOrder,
   mutations,
   PageInfo,
   parseRowOtherFields,
   PersonEdge,
   PersonNode,
+  Project,
+  ProjectEdge,
   queries,
   resolveIsOrgChartEnabledFromWorkspace,
-  UpdateOneJob,
+  UpdateOneProject,
   UserProfile
 } from 'twenty-shared';
 import { v4 } from 'uuid';
@@ -64,7 +64,11 @@ import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/s
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import {
+  createProjectIdErrorResponse,
+  validateAndExtractProjectId,
+} from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
@@ -171,9 +175,11 @@ export class CandidateSourcingController {
 
       return {
         status: 'Success',
-        data: candidateEnrichments?.edges?.map(
-          (edge: any) => edge.node,
-        ),
+        data:
+          candidateEnrichments?.edges?.map((edge: any) => ({
+            ...edge.node,
+            fields: edge.node.fields ?? edge.node.filterFields ?? [],
+          })) ?? [],
       };
     } catch (err) {
       console.error('Error in findManyAiFilters:', err);
@@ -269,7 +275,7 @@ export class CandidateSourcingController {
   }
 
 
-  
+
   async findJob(path_position: string, apiToken: string): Promise<any> {
     console.log('Going to find job by path_position id:', path_position);
     const workspaceId =
@@ -279,7 +285,7 @@ export class CandidateSourcingController {
     const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
       workspaceKeys?.is_org_chart_enabled,
     );
-    const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+    const query = getGraphqlToFindManyProjects(isOrgChartEnabled);
     const variables = {
       filter: { pathPosition: { in: [path_position] } },
       limit: 30,
@@ -290,13 +296,13 @@ export class CandidateSourcingController {
       variables,
       apiToken,
     );
-    const jobs = response?.data?.data?.jobs as {
-      edges: JobEdge[];
+    const projects = response?.data?.data?.projects as {
+      edges: ProjectEdge[];
       pageInfo: PageInfo;
     } | undefined;
-    const job = jobs?.edges[0]?.node;
-    console.log('This is the job:', job);
-    return job;
+    const project = projects?.edges[0]?.node;
+    console.log('This is the project:', project);
+    return project;
   }
 
   @Post('process-job-candidate-refresh-data')
@@ -380,7 +386,7 @@ export class CandidateSourcingController {
       .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
   }
 
-  @Post('create-job-in-arxena-and-sheets')
+  @Post(['create-project-in-arxena-and-sheets', 'create-job-in-arxena-and-sheets'])
   @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to create job in arxena');
@@ -464,13 +470,13 @@ export class CandidateSourcingController {
         input: {
           name: jobName + ' Interview Template',
           jobId: jobId,
-          introduction: `Hi, I am Arnav Saxena. I am a Director at Arxena, a US based recruitment firm. 
-          Thanks so much for your application for the role of a ${jobName}. 
+          introduction: `Hi, I am Arnav Saxena. I am a Director at Arxena, a US based recruitment firm.
+          Thanks so much for your application for the role of a ${jobName}.
           We are excited to get to know you a little better!
           So we have 3 questions in the steps ahead!
           You'll need about 10 to 15 minutes and a strong signal to complete this.
-          When you click the I'm ready lets go button, you'll be taken to the first question, you'll have 4 minutes to record your answer. 
-          If this is your first time doing this interview this way, please don't stress about getting the perfect video. We are more interested in getting to know you and not getting the perfect video. 
+          When you click the I'm ready lets go button, you'll be taken to the first question, you'll have 4 minutes to record your answer.
+          If this is your first time doing this interview this way, please don't stress about getting the perfect video. We are more interested in getting to know you and not getting the perfect video.
           So relax, take a breath and get started!`,
           instructions: `Before you begin the interview:
           1. Find a quiet place with good internet connectivity
@@ -516,7 +522,7 @@ export class CandidateSourcingController {
 
 
       const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(
-        UpdateOneJob,
+        UpdateOneProject,
         {
           idToUpdate: idToUpdate,
           input: {
@@ -646,10 +652,10 @@ export class CandidateSourcingController {
     console.log('Called upload profiles API');
     const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const origin = req.headers['x-origin-domain'] || req.headers.origin;
-    
+
     try {
       const data = req.body;
-      
+
       if (!data) {
         return {
           status: 'fail',
@@ -662,7 +668,7 @@ export class CandidateSourcingController {
       console.log('Popup data:', data.popup_data);
       console.log('Job data:', data.job);
       console.log('JSON data type:', typeof data.json_data);
-      
+
       // Handle different data source formats similar to Python implementation
       let candidates: any[] = [];
       let dataSource = '';
@@ -739,7 +745,7 @@ export class CandidateSourcingController {
             error: parseError.message
           };
         }
-        
+
         dataSource = data.data_source || '';
         // Try multiple sources for job information
         jobId = data.popup_data?.job_id || data.job?.job_id || data.job?.id || data.job_id || '';
@@ -754,7 +760,7 @@ export class CandidateSourcingController {
 
       console.log(`Processing ${candidates.length} candidates from data source: ${dataSource}`);
       console.log(`Job ID: ${jobId}, Job Name: ${jobName}, Recruiter ID: ${recruiterId}`);
-      
+
       // Additional debugging for job information extraction
       console.log('Job information extraction debug:');
       console.log('- data.popup_data:', data.popup_data);
@@ -846,7 +852,7 @@ export class CandidateSourcingController {
         );
       } else {
         console.log(`Data source ${dataSource} not supported by new pipeline, using legacy processing`);
-        
+
         // For backward compatibility, fall back to legacy processing
         await this.processCandidatesService.send(
           candidates,
@@ -868,7 +874,7 @@ export class CandidateSourcingController {
 
     } catch (error) {
       console.error('Error in uploadProfiles:', error);
-      
+
       // Publish upload error notification
       try {
         const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
@@ -882,7 +888,7 @@ export class CandidateSourcingController {
       } catch (pubSubError) {
         console.warn('Pub-sub error notification failed:', pubSubError.message);
       }
-      
+
       return {
         status: 'fail',
         message: 'Failed to perform operation',
@@ -925,7 +931,7 @@ export class CandidateSourcingController {
 
       // Note: Progress notifications are now handled via Redis pub-sub
       console.log('Candidates processing started for job:', jobId);
-  
+
       return {
         status: 'success',
         message: 'Candidate processing queued successfully',
@@ -942,17 +948,17 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('get-job-by-id')
+  @Post(['get-project-by-id', 'get-job-by-id'])
   @UseGuards(JwtAuthGuard)
   async getJobById(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { jobId } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
 
-      if (!jobId) {
+      if (!projectId) {
         return {
           status: 'Failed',
-          message: 'Missing required field: jobId',
+          message: 'Missing required field: projectId',
         };
       }
       const workspaceId =
@@ -962,35 +968,36 @@ export class CandidateSourcingController {
       const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
         workspaceKeys?.is_org_chart_enabled,
       );
-      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+      const query = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
-      // Use the same GraphQL query as get-all-jobs but with a filter
       const response = await this.staticGraphQLService.executeGraphQL(
         query,
         {
-          filter: { id: { eq: jobId } },
+          filter: { id: { eq: projectId } },
           limit: 1,
           orderBy: [{ position: 'AscNullsFirst' }],
         },
         apiToken,
       );
 
-      const jobs = response?.data?.data?.jobs?.edges || [];
-      const job = jobs.length > 0 ? jobs[0].node : null;
+      const projects = response?.data?.data?.projects?.edges || [];
+      const project = projects.length > 0 ? projects[0].node : null;
 
-      if (!job) {
+      if (!project) {
         return {
           status: 'Failed',
-          message: 'Job not found',
+          message: 'Project not found',
         };
       }
 
       return {
         status: 'Success',
-        job: job,
+        project,
+        // Legacy alias for callers still reading `.job`
+        job: project,
       };
     } catch (err) {
-      console.error('Error fetching job by ID:', err);
+      console.error('Error fetching project by ID:', err);
       return {
         status: 'Failed',
         error: err.message,
@@ -998,14 +1005,12 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('get-all-jobs')
+  @Post(['get-all-projects', 'get-all-jobs'])
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ; 
+    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ;
     const hasApiToken = !!apiToken;
-    // const workspaceId =
-    //   await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    let jobs = [];
+    let projects = [];
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -1014,24 +1019,24 @@ export class CandidateSourcingController {
       const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
         workspaceKeys?.is_org_chart_enabled,
       );
-      const query = getGraphqlToFindManyJobs(isOrgChartEnabled);
+      const query = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
-      const responseFromGetAllJobs =
+      const responseFromGetAllProjects =
         await this.staticGraphQLService.executeGraphQL(
           query,
           { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
           apiToken,
         );
-      jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
-      console.log('Number of jobs in get all jobs:', jobs.length);
+      projects = responseFromGetAllProjects?.data?.data?.projects?.edges || [];
+      console.log('Number of projects in get all projects:', projects.length);
     } catch (error) {
-      console.error('Error fetching jobs in get all jobs:', error);
-      jobs = [];
+      console.error('Error fetching projects in get all projects:', error);
+      projects = [];
     }
-    return { jobs: jobs };
+    return { projects, jobs: projects };
   }
 
-  @Post('post-job')
+  @Post(['post-project', 'post-job'])
   @UseGuards(JwtAuthGuard)
   async postJob(@Req() request: any) {
     let uuid;
@@ -1052,17 +1057,17 @@ export class CandidateSourcingController {
         },
       };
 
-      const responseNew = await this.staticGraphQLService.executeGraphQL(graphqlToAddNewJob, graphqlVariables, apiToken);
+      const responseNew = await this.staticGraphQLService.executeGraphQL(graphqlToAddNewProject, graphqlVariables, apiToken);
       console.log('responseNew:', responseNew);
       await this.markOldJobsInactive(apiToken);
 
-      const createJob = responseNew?.data?.data?.createJob as {
+      const createProject = responseNew?.data?.data?.createProject as {
         id: string;
       } | undefined;
-      console.log('Response from create job', responseNew.data);
-      uuid = createJob?.id;
+      console.log('Response from create project', responseNew.data);
+      uuid = createProject?.id;
 
-      return { status: 'success', job_uuid: uuid };
+      return { status: 'success', job_uuid: uuid, project_uuid: uuid };
     } catch (error) {
       console.log('Error in postJob', error);
 
@@ -1071,33 +1076,35 @@ export class CandidateSourcingController {
   }
 
 
-  @Post('mark-old-jobs-inactive')
+  @Post(['mark-old-projects-inactive', 'mark-old-jobs-inactive'])
   @UseGuards(JwtAuthGuard)
   async markOldJobsInactive(@Req() req: any) {
     console.log('markOldJobsInactive');
 
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
-    console.log('Marking old jobs inactive in this function');
-    const responseForAllJobs = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, {}, apiToken);
-    console.log('responseForAllJobs:', responseForAllJobs);
-    const jobs = responseForAllJobs?.data?.data?.jobs?.edges || [];
+    const apiToken =
+      typeof req === 'string'
+        ? req
+        : req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    console.log('Marking old projects inactive in this function');
+    const responseForAllProjects = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyProjects, {}, apiToken);
+    console.log('responseForAllProjects:', responseForAllProjects);
+    const projects = responseForAllProjects?.data?.data?.projects?.edges || [];
 
-    const sortedJobs = jobs.sort((a, b) => {
+    const sortedProjects = projects.sort((a, b) => {
       const dateA = new Date(a.node.createdAt);
       const dateB = new Date(b.node.createdAt);
       return dateB.getTime() - dateA.getTime();
     });
-    // console.log('sortedJobs:', sortedJobs);
-    for (let i = 0; i < sortedJobs.length; i++) {
-      const jobId = sortedJobs[i].node.id;
-      const isActive = sortedJobs[i].node.isActive;
+    for (let i = 0; i < sortedProjects.length; i++) {
+      const projectId = sortedProjects[i].node.id;
+      const isActive = sortedProjects[i].node.isActive;
       if (isActive && i >= 5) {
-        console.log('Marking job inactive:', jobId);
-        await this.staticGraphQLService.executeGraphQL(UpdateOneJob,
+        console.log('Marking project inactive:', projectId);
+        await this.staticGraphQLService.executeGraphQL(UpdateOneProject,
           {
-            idToUpdate: jobId,
+            idToUpdate: projectId,
             input: {
-              id: jobId,
+              id: projectId,
               isActive: false
             }
           },
@@ -1105,7 +1112,7 @@ export class CandidateSourcingController {
         );
       }
     }
-  } 
+  }
 
 
 
@@ -1118,7 +1125,7 @@ export class CandidateSourcingController {
       const data = request.body;
       const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject: Job = await this.candidateWorkspaceGraphQLService.getJobDetails(
+      const jobObject: Project = await this.candidateWorkspaceGraphQLService.getJobDetails(
         arxenaSiteId,
         jobName,
         apiToken,
@@ -1230,7 +1237,7 @@ export class CandidateSourcingController {
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
       const { candidateId, fieldName, value, personId } = request.body;
-      
+
 
       if (!candidateId || !fieldName) {
         return {
@@ -1263,29 +1270,29 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('get-candidate-fields-by-job')
+  @Post(['get-candidate-fields-by-project', 'get-candidate-fields-by-job'])
   @UseGuards(JwtAuthGuard)
   async getCandidateFieldsByJob(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { jobId } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
 
-      console.log('Fetching candidate fields for jobId:', jobId);
+      console.log('Fetching candidate fields for projectId:', projectId);
 
-      const jobIdValidation = validateAndExtractJobId(jobId);
-      if (!jobIdValidation.isValid) {
-        return createJobIdErrorResponse(jobIdValidation.error!);
+      const projectIdValidation = validateAndExtractProjectId(projectId);
+      if (!projectIdValidation.isValid) {
+        return createProjectIdErrorResponse(projectIdValidation.error!);
       }
 
-      const actualJobId = jobIdValidation.jobId!;
-      console.log('Using actual jobId:', actualJobId);
+      const actualProjectId = projectIdValidation.projectId!;
+      console.log('Using actual projectId:', actualProjectId);
 
-      const candidateFields = await this.candidateService.getCandidateFieldsByJobId(
-        actualJobId,
+      const candidateFields = await this.candidateService.getCandidateFieldsByProjectId(
+        actualProjectId,
         apiToken,
       );
 
-      console.log(`Found ${candidateFields?.length || 0} candidate fields for job ${actualJobId}`);
+      console.log(`Found ${candidateFields?.length || 0} candidate fields for project ${actualProjectId}`);
 
       const formattedFields = candidateFields.map(field => ({
         name: field || '',
@@ -1303,7 +1310,7 @@ export class CandidateSourcingController {
         otherFieldKeys: formattedFields,
       };
     } catch (err) {
-      console.error('Error fetching candidate fields by job:', err);
+      console.error('Error fetching candidate fields by project:', err);
       return {
         status: 'Failed',
         error: err.message,
@@ -1340,7 +1347,7 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post('update-job-in-arxena-and-sheets')
+  @Post(['update-project-in-arxena-and-sheets', 'update-job-in-arxena-and-sheets'])
   @UseGuards(JwtAuthGuard)
   async updateJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to update job in arxena');
@@ -1353,7 +1360,7 @@ export class CandidateSourcingController {
 
       console.log('this is the job name:', req.body.job_name);
       console.log('this is the arxena site id:', req.body.arxena_site_id);
-      
+
       const response = await this.callUpdateJobInArxena(
         req.body.job_name,
         req.body.arxena_site_id,
@@ -1382,7 +1389,7 @@ export class CandidateSourcingController {
         process.env.ENV_NODE === 'production'
           ? 'https://arxena.com/update_one_job'
           : 'http://localhost:5050/update_one_job';
-      
+
       console.log('url:', url);
       const response = await axios.post(
         url,
@@ -1633,7 +1640,7 @@ export class CandidateSourcingController {
 
       if (!recruiterId) {
         return {
-          status: 'Failed', 
+          status: 'Failed',
           message: 'Missing required field: recruiterId'
         };
       }
@@ -1679,9 +1686,9 @@ export class CandidateSourcingController {
           message: 'Missing required field: recruiterId'
         };
       }
-      
+
       console.log("recruiterId::", recruiterId);
-      
+
       // Note: Notifications are now handled via Redis pub-sub
       console.log('Notification request received:', {
         recruiterId,
@@ -1771,9 +1778,9 @@ export class CandidateSourcingController {
       console.log("Going to update candidate status");
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const { phone_number, candidate_status, candidate_id } = request.body;
-      
+
       console.log(`Got phone number: ${phone_number}, status: ${candidate_status}, candidate_id: ${candidate_id}`);
-      
+
       // Status mapping from labels to values (matching the STATUS_LABELS_REVERSE)
       const STATUS_LABELS_REVERSE = {
         'Not Interested': 'NOT_INTERESTED',
@@ -1786,11 +1793,11 @@ export class CandidateSourcingController {
         'Client Interview': 'CLIENT_INTERVIEW',
         'Negotiation': 'NEGOTIATION'
       };
-      
+
       // Map status from label to value
       const status_value = STATUS_LABELS_REVERSE[candidate_status] || candidate_status;
       console.log(`Mapped status from '${candidate_status}' to '${status_value}'`);
-      
+
       if (!candidate_id) {
         console.error("No candidate_id provided for status update");
         return {
@@ -1798,9 +1805,9 @@ export class CandidateSourcingController {
           message: 'Missing required field: candidate_id'
         };
       }
-      
+
       // Use the imported GraphQL mutation
-      
+
       // Prepare the GraphQL variables
       const variables = {
         idToUpdate: candidate_id,
@@ -1808,19 +1815,19 @@ export class CandidateSourcingController {
           status: status_value
         }
       };
-      
+
       console.log("Making GraphQL request to update candidate status:", { variables });
-      
+
       // Make the GraphQL request
       const response = await this.staticGraphQLService.executeGraphQL(
-        graphQltoUpdateOneCandidate, 
-        variables, 
+        graphQltoUpdateOneCandidate,
+        variables,
         apiToken
       );
-      
+
       if (response?.data?.data?.updateCandidate) {
         console.log("Successfully updated candidate status in Twenty:", response.data);
-        
+
         return {
           status: 'Success',
           candidate_id: candidate_id,
@@ -1835,7 +1842,7 @@ export class CandidateSourcingController {
           error: response?.data?.errors || 'Unknown error'
         };
       }
-      
+
     } catch (err) {
       console.error('Error updating candidate status:', err);
       return {
@@ -1856,7 +1863,7 @@ export class CandidateSourcingController {
 
 
       let chromeExtensionId = 'najjmciobphkllanmfgffjjjcbejnbci'; // default
-      
+
       // Extract extension ID from origin if it's a chrome extension
       if (origin && origin.startsWith('chrome-extension://')) {
         chromeExtensionId = origin.replace('chrome-extension://', '');
@@ -1866,11 +1873,11 @@ export class CandidateSourcingController {
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       // Get all jobs for the user using staticGraphQLService
       const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFindManyJobs,
+        graphqlToFindManyProjects,
         { filter: { isActive: { eq: true } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
         apiToken,
       );
-      const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges || [];
+      const jobs = responseFromGetAllJobs?.data?.data?.projects?.edges || [];
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
@@ -2138,11 +2145,11 @@ export class CandidateSourcingController {
       const contactData = request.body || {};
       const origin = request.headers['x-origin-domain'] || request.headers.origin;
       console.log('This is the data in update contact:', contactData);
-      
+
       // Check if this is a direct download (skip processing if true)
       const directDownload = contactData.direct_download || false;
       console.log('This is the direct_download in update contact:', directDownload);
-      
+
       if (!directDownload) {
         // Process the contact data using candidateService
         // This is similar to the Flask implementation's update_contact_with_contact_data
@@ -2150,14 +2157,14 @@ export class CandidateSourcingController {
       } else {
         console.log('Ignoring the update of contact as direct_download is true');
       }
-      
+
       const responseObj = {
         status: 'success'
       };
-      
+
       console.log('This is the response_obj from update_contact:', responseObj);
       return responseObj;
-      
+
     } catch (error) {
       console.error('Error in update-contact:', error);
       return {
@@ -2285,7 +2292,7 @@ export class CandidateSourcingController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     try {
-      
+
       if (!file) {
         console.error('No file provided in request');
         return {
@@ -2299,7 +2306,7 @@ export class CandidateSourcingController {
         mimetype: file.mimetype,
         size: file.size
       });
-      
+
       return {
         status: 'success',
         message: 'CV upload test successful (no auth)',
@@ -2307,7 +2314,7 @@ export class CandidateSourcingController {
         candidateData: request.body.candidate_data,
         uniqueStringKey: request.body.uniqueStringKey
       };
-      
+
     } catch (error) {
       console.error('Error processing CV upload test:', error);
       return {
@@ -2364,7 +2371,7 @@ export class CandidateSourcingController {
       let resdex_doubleEncryptedUserName: string | undefined;
       let resdex_download_resId: string | undefined;
       let resdex_download_uname: string | undefined;
-      
+
       try {
         const candidateDataStr = request.body.candidate_data || '{}';
         candidateData = JSON.parse(candidateDataStr);
@@ -2385,10 +2392,10 @@ export class CandidateSourcingController {
           error: parseError.message
         };
       }
-      
+
       let jobName = 'default_job';
       let jobProcess = {};
-      
+
       // Process profile data if provided
       if (profileDataStr) {
         try {
@@ -2400,7 +2407,7 @@ export class CandidateSourcingController {
           if (profileData.popup_data?.job_name) {
             jobName = profileData.popup_data.job_name;
           }
-          
+
           if (!directDownload) {
             console.log('This is the direct_download in updateContactWithCv if condition:', directDownload);
             const contactData = {
@@ -2426,7 +2433,7 @@ export class CandidateSourcingController {
             // This ensures the candidate exists in the job before CV upload
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          
+
           // Extract job info from profile data
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
@@ -2444,20 +2451,20 @@ export class CandidateSourcingController {
           if (profileUrl) {
             console.log('Profile URL found:', profileUrl);
           }
-          
+
         } catch (error) {
           console.error('Error extracting job info from profile data:', error);
           // Continue processing even if profile data parsing fails
         }
       }
-      
+
       // Use job name from candidate data if not found in profile
       if (!jobName || jobName === 'default_job') {
         jobName = candidateData.job_name || 'default_job';
       }
-      
+
       // Generate unique string key if not provided
-      
+
       // Get workspace information
       let workspaceId;
       try {
@@ -2473,10 +2480,10 @@ export class CandidateSourcingController {
           error: error.message
         };
       }
-      
+
       const fileName = file.originalname || request.body.file_name || `cv_${uniqueStringKey}.pdf`;
       const filePath = `workspace-${workspaceId}/client_uploads/client_cv_uploads/${jobName}/${fileName}`;
-      
+
       try {
         // Ensure the file buffer is valid
         if (!file.buffer || file.buffer.length === 0) {
@@ -2500,11 +2507,11 @@ export class CandidateSourcingController {
           error: fileError.message
         };
       }
-      
+
       // Process the contact data - use profileData if available, otherwise fallback to candidateData
       let contactData: any;
       let profileUrl = '';
-      
+
       // Prepare popup_data with job information
       let popupData: any = {};
       if (profileDataStr) {
@@ -2515,7 +2522,7 @@ export class CandidateSourcingController {
           console.warn('Error parsing profileData for popup_data:', error);
         }
       }
-      
+
       // Add job information to popup_data if not already present
       if (!popupData.job_name && jobName && jobName !== 'default_job') {
         popupData.job_name = jobName;
@@ -2534,14 +2541,14 @@ export class CandidateSourcingController {
           console.warn('Could not get recruiter ID for popup_data:', error);
         }
       }
-      
+
       if (profileDataStr) {
         try {
           const profileData = JSON.parse(profileDataStr);
           const jsonDataStr = profileData.json_data || '{}';
           const jsonData = JSON.parse(jsonDataStr);
           profileUrl = jsonData.profile_url || jsonData.candidate_profile || '';
-          
+
           contactData = {
             profile_url: profileUrl,
             json_data: jsonDataStr,
@@ -2561,7 +2568,7 @@ export class CandidateSourcingController {
         // Fallback to candidateData if no profileData
         profileUrl = candidateData.profile_url || '';
         console.log('Using candidateData for contact processing, profile_url:', profileUrl);
-        
+
         contactData = {
           profile_url: profileUrl,
           json_data: JSON.stringify(candidateData),
@@ -2586,8 +2593,8 @@ export class CandidateSourcingController {
           console.warn('[updateContactWithCv] Failed to strip phone/email on identifier mismatch:', stripError);
         }
       }
-      
-      
+
+
       // Process the CV upload with error handling
       try {
         await this.candidateService.processCvUploadToTwenty(
@@ -2608,19 +2615,19 @@ export class CandidateSourcingController {
           uniqueStringKey,
         };
       }
-      
+
       // Update table data with error handling
       try {
         const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
             .getRecruiterProfileFromCurrentUser(apiToken, origin);
-        
+
         await this.candidateService.updateTableData(recruiterProfile?.workspaceMemberId || workspaceId, apiToken);
         console.log('[CV-Upload] Update table data completed');
       } catch (error) {
         console.error('[CV-Upload] Error updating table data:', error);
         // Don't fail the whole request if table update fails
       }
-      
+
       // Return response similar to original update_contact
       const responseObj = {
         status: 'success',
@@ -2628,7 +2635,7 @@ export class CandidateSourcingController {
         file_path: filePath,
         uniqueStringKey: uniqueStringKey
       };
-      
+
       // Add job info to response if available
       if (jobName && jobName !== 'default_job') {
         responseObj['job_name'] = jobName;
@@ -2636,10 +2643,10 @@ export class CandidateSourcingController {
       if (Object.keys(jobProcess).length > 0) {
         responseObj['job_process'] = jobProcess;
       }
-      
+
       console.log('CV upload completed successfully:', responseObj);
       return responseObj;
-      
+
     } catch (error) {
       console.error('Error processing CV upload:', error);
       return {
@@ -2666,7 +2673,7 @@ export class CandidateSourcingController {
 
       // Use OpenAI API to create a ChatKit session
       const openaiApiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
-      
+
       if (!openaiApiKey) {
         return {
           status: 'Failed',
@@ -2747,7 +2754,7 @@ export class CandidateSourcingController {
       } else {
         // Find by profile URL within the job
         candidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
-        
+
         // Filter by jobId if provided
         if (jobId && candidates.length > 0) {
           // Get job details to verify candidates belong to this job
@@ -2780,7 +2787,7 @@ export class CandidateSourcingController {
         if (emails && Array.isArray(emails) && emails.length > 0) {
           const primaryEmail = emails[0];
           const additionalEmails = emails.slice(1);
-          
+
           await this.candidateService.handleEmailUpdateWithStructure(
             candidate.id,
             personId,
@@ -2937,8 +2944,13 @@ export class CandidateSourcingController {
       timings['extract_and_token'] = performance.now() - lastStepTime;
       lastStepTime = performance.now();
 
-      if (!body.filter?.jobsId?.in || !Array.isArray(body.filter.jobsId.in)) {
-        throw new HttpException('Invalid jobsId filter', HttpStatus.BAD_REQUEST);
+      const projectIdsFilter =
+        body.filter?.projectsId?.in ?? body.filter?.jobsId?.in;
+      if (!projectIdsFilter || !Array.isArray(projectIdsFilter)) {
+        throw new HttpException(
+          'Invalid projectsId/jobsId filter',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       if (!body.limit || typeof body.limit !== 'number') {
         throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
@@ -2946,17 +2958,17 @@ export class CandidateSourcingController {
 
       const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(payload);
       const sql = `
-        SELECT 
+        SELECT
           c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
           c."candConversationStatus", c."peopleId", c."startVideoInterviewChat", c.source, c.campaign,
-          c."jobsId", c.remarks, c."messagingChannel", c."engagementStatus", c."lastEngagementChatControl",
+          c."projectsId", c.remarks, c."messagingChannel", c."engagementStatus", c."lastEngagementChatControl",
           c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
           c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
           c."otherFields",
-          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'jobsId', wm."jobsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
+          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectsId', wm."projectsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
         FROM ${dataSourceSchema}."_candidate" c
         LEFT JOIN ${dataSourceSchema}."_whatsappMessage" wm ON c.id = wm."candidateId"
-        WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."jobsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
+        WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."projectsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
         GROUP BY c.id
         ORDER BY c."updatedAt" DESC
         LIMIT $2
@@ -2971,8 +2983,8 @@ export class CandidateSourcingController {
       const maxPages = body.maxPages || 100;
 
       while (hasMorePages && pageCount < maxPages) {
-        const params = [body.filter.jobsId.in, body.limit, ...(currentCursor ? [new Date(currentCursor)] : [])];
-        const batch = await this.workspaceQueryService.executeRawQuery(sql, params, payload);
+        const params = [projectIdsFilter, body.limit, ...(currentCursor ? [new Date(currentCursor)] : [])];
+        const batch = await this.workspaceQueryService.executeWorkspaceRawQuery(sql, params, payload);
         lastBatchLength = batch.length;
         allResults = allResults.concat(batch);
         hasMorePages = batch.length === body.limit;
@@ -3000,7 +3012,7 @@ export class CandidateSourcingController {
           peopleId: row.peopleId,
           source: row.source,
           campaign: row.campaign,
-          jobsId: row.jobsId,
+          jobsId: row.projectsId ?? row.jobsId,
           remarks: row.remarks,
           messagingChannel: row.messagingChannel,
           engagementStatus: row.engagementStatus,
@@ -3365,19 +3377,19 @@ export class CandidateSourcingController {
     return { candidateId: candidateId as string };
   }
 
-  @Post('get-candidates-by-job-id')
+  @Post(['get-candidates-by-project-id', 'get-candidates-by-job-id'])
   @UseGuards(JwtAuthGuard)
   async getCandidatesByJobId(@Req() request: any): Promise<object> {
-    const { jobId } = request.body;
-    const jobIdValidation = validateAndExtractJobId(jobId);
-    if (!jobIdValidation.isValid) {
-      return createJobIdErrorResponse(jobIdValidation.error!);
+    const projectId = request.body.projectId ?? request.body.jobId;
+    const projectIdValidation = validateAndExtractProjectId(projectId);
+    if (!projectIdValidation.isValid) {
+      return createProjectIdErrorResponse(projectIdValidation.error!);
     }
-    const actualJobId = jobIdValidation.jobId!;
+    const actualProjectId = projectIdValidation.projectId!;
     const authHeader = request?.headers?.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
-      return createJobIdErrorResponse('Missing authorization token');
+      return createProjectIdErrorResponse('Missing authorization token');
     }
 
     const apiToken = authHeader.split(' ')[1].replace(/[\r\n]+/g, '');
@@ -3385,7 +3397,7 @@ export class CandidateSourcingController {
     const allCandidates: any[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
-    const timestampedFilter = { jobsId: { eq: actualJobId } };
+    const timestampedFilter = { projectsId: { eq: actualProjectId } };
 
     while (hasNextPage) {
       const response = await this.staticGraphQLService.executeGraphQL(

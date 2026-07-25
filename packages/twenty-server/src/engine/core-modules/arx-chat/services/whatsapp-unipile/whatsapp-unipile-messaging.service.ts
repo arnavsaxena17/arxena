@@ -5,7 +5,7 @@ import {
     CandidateNode,
     ChatControlsObjType,
     ChatHistoryItem,
-    Job,
+    Project,
     whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -52,7 +52,7 @@ export class WhatsappUnipileMessagingService {
 
   private async applyOutboundRateLimit(
     accountId: string,
-    candidateJob?: Job | null,
+    candidateJob?: Project | null,
   ): Promise<void> {
     const rateLimiter = this.resolveRateLimiter();
     if (!rateLimiter) {
@@ -107,10 +107,10 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
-   * Job.recruiterId is the workspace member id of the assigned recruiter (see RecruiterProfileService).
+   * Project.recruiterId is the workspace member id of the assigned recruiter (see RecruiterProfileService).
    */
   private jobRecruiterAsWorkspaceMemberId(
-    candidateJob: Job | undefined | null,
+    candidateJob: Project | undefined | null,
   ): string | null {
     const id = candidateJob?.recruiterId?.trim();
     return id || null;
@@ -124,7 +124,7 @@ export class WhatsappUnipileMessagingService {
    */
   private async resolveWhatsappUnipileAccountId(
     apiToken: string,
-    candidateJob: Job | undefined | null,
+    candidateJob: Project | undefined | null,
   ): Promise<string | null> {
     if (!this.workspaceMemberProfileUnipileService) {
       return null;
@@ -150,7 +150,7 @@ export class WhatsappUnipileMessagingService {
    */
   async sendTextToPhoneForJob(
     apiToken: string,
-    candidateJob: Job,
+    candidateJob: Project,
     phone: string,
     message: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
@@ -242,7 +242,7 @@ export class WhatsappUnipileMessagingService {
     attendeesIds: string[],
     message: string,
     attachments?: any[],
-    candidateJob?: Job | null,
+    candidateJob?: Project | null,
   ): Promise<any> {
     await this.applyOutboundRateLimit(accountId, candidateJob);
 
@@ -269,7 +269,7 @@ export class WhatsappUnipileMessagingService {
   async sendWhatsappMessageVIAUnipileAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -379,7 +379,7 @@ export class WhatsappUnipileMessagingService {
       message?: string;
     },
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     try {

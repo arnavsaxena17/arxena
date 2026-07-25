@@ -26,10 +26,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { styled } from '@linaria/react';
-import {
-  ENTERPRISE_INSTANCE_TYPE,
-  type EnterpriseInstanceType,
-} from 'twenty-shared/constants';
+import { ENTERPRISE_INSTANCE_TYPE, type EnterpriseInstanceType } from 'twenty-shared/constants';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import {

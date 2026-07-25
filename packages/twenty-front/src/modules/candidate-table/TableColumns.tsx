@@ -1,7 +1,8 @@
 import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import Handsontable from "handsontable";
-import { TransformedCandidateForTable } from 'twenty-shared';
+import type { TransformedCandidateForTable } from 'twenty-shared/arx';
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
 // Import STATUS_LABELS from CandidateInfoHeader
@@ -37,7 +38,7 @@ export type CandidateDataItem = (ProcessedDataItem | TransformedCandidateForTabl
 
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
-    background-color: ${({ theme }) => theme.background.tertiary} !important;
+    background-color: ${themeCssVariables.background.tertiary} !important;
   }
 `;
 

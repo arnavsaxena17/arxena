@@ -11,7 +11,7 @@ export const CompanyFilters = ({
 }: CompanyFiltersProps) => {
   return (
     <StyledSection>
-      <StyledLabel>Has Job Offers</StyledLabel>
+      <StyledLabel>Has Project Offers</StyledLabel>
       <StyledSelect
         value={hasJobOffers === undefined ? '' : hasJobOffers.toString()}
         onChange={(e) => onHasJobOffersChange(e.target.value === '' ? undefined : e.target.value === 'true')}

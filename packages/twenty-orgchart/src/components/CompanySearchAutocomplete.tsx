@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -41,6 +42,9 @@ const DROPDOWN_MIN_WIDTH = 520;
 const DROPDOWN_MAX_HEIGHT = 360;
 const DROPDOWN_PORTAL_Z_INDEX = 10000;
 
+const INPUT_DENSE_FONT_SIZE = themeCssVariables.font.size.sm;
+const INPUT_NORMAL_FONT_SIZE = themeCssVariables.font.size.md;
+
 type DropdownPosition = {
   top: number;
   left: number;
@@ -54,27 +58,36 @@ const StyledWrapper = styled.div`
 
 const StyledInput = styled.input<{ $hasStartIcon?: boolean; $dense?: boolean }>`
   width: 100%;
-  padding: ${({ theme, $dense }) =>
-    $dense
-      ? `${theme.spacing(1)} ${theme.spacing(2)}`
-      : `${theme.spacing(2)} ${theme.spacing(3)}`};
-  ${({ $hasStartIcon, $dense }) =>
-    $hasStartIcon && ($dense ? 'padding-left: 34px;' : 'padding-left: 44px;')}
-  font-size: ${({ theme, $dense }) =>
-    $dense ? theme.font.size.sm : theme.font.size.md};
-  font-family: ${({ theme }) => theme.font.family};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  padding-top: ${({ $dense }) =>
+    $dense ? themeCssVariables.spacing['1'] : themeCssVariables.spacing['2']};
+  padding-bottom: ${({ $dense }) =>
+    $dense ? themeCssVariables.spacing['1'] : themeCssVariables.spacing['2']};
+  padding-right: ${({ $dense }) =>
+    $dense ? themeCssVariables.spacing['2'] : themeCssVariables.spacing['3']};
+  padding-left: ${({ $hasStartIcon, $dense }) => {
+    if ($hasStartIcon) {
+      return $dense ? '34px' : '44px';
+    }
+
+    return $dense
+      ? themeCssVariables.spacing['2']
+      : themeCssVariables.spacing['3'];
+  }};
+  font-size: ${({ $dense }) =>
+    $dense ? INPUT_DENSE_FONT_SIZE : INPUT_NORMAL_FONT_SIZE};
+  font-family: ${themeCssVariables.font.family};
+  color: ${themeCssVariables.font.color.primary};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
 
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.tertiary};
+    color: ${themeCssVariables.font.color.tertiary};
   }
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 
   &:disabled {
@@ -98,13 +111,13 @@ const StyledDropdown = styled.ul<{
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing['2']};
   list-style: none;
   text-align: left;
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.xl};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   z-index: ${DROPDOWN_PORTAL_Z_INDEX};
 
   @media (max-width: 809px) {
@@ -115,50 +128,52 @@ const StyledDropdown = styled.ul<{
 const StyledDropdownItem = styled.li`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2.5)}
-    ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing['3']};
+  padding: calc(
+      ${themeCssVariables.spacing['2']} + ${themeCssVariables.spacing['0.5']}
+    )
+    ${themeCssVariables.spacing['3']};
   cursor: pointer;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   transition:
     background 0.15s ease,
     color 0.15s ease;
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  margin-bottom: ${themeCssVariables.spacing['0.5']};
 
   &:last-of-type {
     margin-bottom: 0;
   }
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 
   &:active {
-    background: ${({ theme }) => theme.background.transparent.medium};
+    background: ${themeCssVariables.background.transparent.medium};
   }
 `;
 
 const StyledLogo = styled.img`
   width: 40px;
   height: 40px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   object-fit: contain;
   flex-shrink: 0;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
 `;
 
 const StyledLogoPlaceholder = styled.div`
   width: 40px;
   height: 40px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   flex-shrink: 0;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledItemContent = styled.div`
@@ -167,39 +182,39 @@ const StyledItemContent = styled.div`
 `;
 
 const StyledCompanyName = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  font-size: ${({ theme }) => theme.font.size.md};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.md};
+  color: ${themeCssVariables.font.color.primary};
+  margin-bottom: ${themeCssVariables.spacing['1']};
   line-height: 1.3;
   overflow-wrap: break-word;
   word-break: break-word;
 `;
 
 const StyledCompanyMeta = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   line-height: 1.4;
   overflow-wrap: break-word;
   word-break: break-word;
 
   span:not(:last-child)::after {
     content: ' · ';
-    margin: 0 ${({ theme }) => theme.spacing(1)};
+    margin: 0 ${themeCssVariables.spacing['1']};
   }
 `;
 
 const StyledEmptyMessage = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing['3']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   text-align: center;
 `;
 
 const StyledErrorMessage = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing['3']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   text-align: center;
 `;
 
@@ -207,7 +222,7 @@ const StyledSpinner = styled.div`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.border.color.light};
+  border: 2px solid ${themeCssVariables.border.color.light};
   border-top-color: black;
   animation: company-search-spin 0.8s linear infinite;
 
@@ -228,20 +243,20 @@ const StyledInputWrapper = styled.div`
 
 const StyledStartIcon = styled.span<{ $dense?: boolean }>`
   position: absolute;
-  left: ${({ theme, $dense }) =>
-    $dense ? theme.spacing(1) : theme.spacing(2)};
+  left: ${({ $dense }) =>
+    $dense ? themeCssVariables.spacing['1'] : themeCssVariables.spacing['2']};
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   pointer-events: none;
 `;
 
 const StyledInputSpinner = styled.div`
   position: absolute;
-  right: ${({ theme }) => theme.spacing(3)};
+  right: ${themeCssVariables.spacing['3']};
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;

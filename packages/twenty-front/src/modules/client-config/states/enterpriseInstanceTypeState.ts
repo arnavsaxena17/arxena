@@ -1,8 +1,5 @@
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
-import {
-  ENTERPRISE_INSTANCE_TYPE,
-  type EnterpriseInstanceType,
-} from 'twenty-shared/constants';
+import { ENTERPRISE_INSTANCE_TYPE, type EnterpriseInstanceType } from 'twenty-shared/constants';
 
 export const enterpriseInstanceTypeState =
   createAtomState<EnterpriseInstanceType>({

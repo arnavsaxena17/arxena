@@ -44,7 +44,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
 
   override transformSearchResultsToTableFormat(
     searchResults: LinkedInSearchResult[],
-    jobId: string,
+    projectId: string,
     jobName = 'LinkedIn Recruiter Search Results',
   ): TransformedCandidateForTable[] {
     return searchResults.map((result, index) => {
@@ -52,7 +52,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
       const timestamp = new Date().toISOString();
       const peopleId = `people_${peopleResult.id}_${Date.now()}_${index}`;
       const userProfile = this.transformToUserProfile(result, {
-        jobId,
+        projectId,
         jobName,
         userId: 'linkedin_recruiter_search_user',
         dataSource: 'linkedin_search',
@@ -96,7 +96,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         emailMessages: { edges: [] },
         otherFields: {},
         candidateReminders: { edges: [] },
-        jobs: { id: jobId, name: jobName },
+        projects: { id: projectId, name: jobName },
         people: { id: peopleId },
         attachments: { edges: [] },
         videoInterview: { edges: [] },

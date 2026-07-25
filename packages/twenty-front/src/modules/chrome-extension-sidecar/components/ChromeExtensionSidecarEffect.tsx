@@ -1,18 +1,19 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { isDefined } from 'twenty-shared/utils';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { isLoadingTokensFromExtensionState } from '@/chrome-extension-sidecar/states/isLoadingTokensFromExtensionState';
+import { isInFrame } from '@/chrome-extension-sidecar/utils/is-in-frame';
 import { chromeExtensionIdState } from '@/client-config/states/chromeExtensionIdState';
-import { isDefined } from 'twenty-shared';
-import { isInFrame } from '~/utils/isInIframe';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 export const ChromeExtensionSidecarEffect = () => {
   const navigate = useNavigate();
-  const setTokenPair = useSetRecoilState(tokenPairState);
-  const chromeExtensionId = useRecoilValue(chromeExtensionIdState);
-  const setIsLoadingTokensFromExtension = useSetRecoilState(
+  const setTokenPair = useSetAtomState(tokenPairState);
+  const chromeExtensionId = useAtomStateValue(chromeExtensionIdState);
+  const setIsLoadingTokensFromExtension = useSetAtomState(
     isLoadingTokensFromExtensionState,
   );
 
@@ -23,7 +24,7 @@ export const ChromeExtensionSidecarEffect = () => {
         `chrome-extension://${chromeExtensionId}`,
       );
 
-      const handleWindowEvents = (event: MessageEvent<any>) => {
+      const handleWindowEvents = (event: MessageEvent) => {
         if (event.origin === `chrome-extension://${chromeExtensionId}`) {
           switch (event.data.type) {
             case 'tokens': {

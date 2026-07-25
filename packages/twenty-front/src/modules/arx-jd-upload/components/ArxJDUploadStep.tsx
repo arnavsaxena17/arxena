@@ -1,8 +1,8 @@
 import { Button } from 'twenty-ui';
-import { IconTrash } from 'twenty-ui/icons';
+import { IconTrash } from 'twenty-ui/icon';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
@@ -20,34 +20,34 @@ const StyledContent = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledInstructions = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.md};
   line-height: 1.5;
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledList = styled.ul`
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  margin-left: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing[2]};
+  margin-left: ${themeCssVariables.spacing[4]};
   list-style-type: disc;
 `;
 
 const StyledListItem = styled.li`
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledExistingFileSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
-  padding: ${({ theme }) => theme.spacing(3)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[4]};
+  padding: ${themeCssVariables.spacing[3]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
 `;
 
 const StyledFileInfo = styled.div`
@@ -57,17 +57,17 @@ const StyledFileInfo = styled.div`
 `;
 
 const StyledFileName = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledFileActions = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledNextButton = styled(Button)`
-  margin-top: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing[4]};
   align-self: flex-end;
 `;
 
@@ -101,13 +101,11 @@ export const ArxJDUploadStep = ({
   currentStep = 1,
   onCreateJobFromName,
 }: ArxJDUploadStepProps) => {
-  const theme = useTheme();
-
   // Fetch attachments for the current parsedJD
   const { records: attachments } = useFindManyRecords({
     objectNameSingular: 'attachment',
     filter: parsedJD?.id ? {
-      jobId: { eq: parsedJD.id }
+      projectId: { eq: parsedJD.id }
     } : undefined,
     skip: !parsedJD?.id,
   });
@@ -117,9 +115,9 @@ export const ArxJDUploadStep = ({
     if (attachments && attachments.length > 0 && attachments[0]?.name) {
       return attachments[0].name as unknown as string;
     }
-    
+
     if (!parsedJD || !parsedJD.name || parsedJD.name.trim() === '') return null;
-    
+
     const jobCode = parsedJD.jobCode ? `${parsedJD.jobCode} - ` : '';
     return `${jobCode}${parsedJD.name}.pdf`;
   };
@@ -137,9 +135,9 @@ export const ArxJDUploadStep = ({
     <StyledContainer>
       <StyledContent>
         <ArxJDStepHeading
-          title={isEditMode ? "Manage Job Description File" : "Upload Job Description"}
-          // description={isEditMode 
-            // ? "View, replace, or remove the current job description file" 
+          title={isEditMode ? "Manage Project Description File" : "Upload Project Description"}
+          // description={isEditMode
+            // ? "View, replace, or remove the current job description file"
             // : "Upload a job description file to get started"}
           currentStep={currentStep}
           totalSteps={totalSteps}
@@ -147,7 +145,7 @@ export const ArxJDUploadStep = ({
 
         {hasFile && (
           <StyledExistingFileSection>
-            <h3>{isEditMode ? "Current Job Description File" : "Uploaded Job Description File"}</h3>
+            <h3>{isEditMode ? "Current Project Description File" : "Uploaded Project Description File"}</h3>
             <StyledFileInfo>
               <StyledFileName>{fileName}</StyledFileName>
               <StyledFileActions>
@@ -180,7 +178,6 @@ export const ArxJDUploadStep = ({
               isDragActive={isDragActive}
               isUploading={isUploading}
               error={error}
-              theme={theme}
               uploadButtonLabel="Upload File"
               onCreateJobFromName={onCreateJobFromName}
             />
@@ -191,11 +188,9 @@ export const ArxJDUploadStep = ({
         {hasFile && !isEditMode && onNext && (
           <StyledNextButton
             variant="primary"
-            title="Continue to Job Details"
+            title="Continue to Project Details"
             onClick={onNext}
-          >
-            Continue to Job Details
-          </StyledNextButton>
+          />
         )}
       </StyledContent>
     </StyledContainer>

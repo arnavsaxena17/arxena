@@ -6,15 +6,19 @@ import { SearchParametersManager } from '@/candidate-search/components/search-co
 import { activeAssistantThreadIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { chatMessagesSelector, resolvedParametersSelector } from '@/candidate-table/states/states';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from '@/candidate-search/types/candidate-search.types';
 
 import { StyledAdvancedSection, StyledForm } from '../../styles/SearchFormComponents.styled';
 import { CompanyFilters } from './CompanyFilters';
-import { JobFilters } from './JobFilters';
+import { ProjectFilters } from './ProjectFilters';
 import { LoadingStatus } from './LoadingStatus';
 import { SearchCategorySelector } from './SearchCategorySelector';
 import { SearchTypeSelector } from './SearchTypeSelector';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 type SearchParametersFormProps = {
   onSearch: (searchType: LinkedInSearchType, searchCategory: LinkedInSearchCategory, parameters: any) => void;
@@ -42,13 +46,13 @@ export const SearchParametersForm = ({
   searchCategory: propSearchCategory,
   initialParameters,
 }: SearchParametersFormProps) => {
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
-  const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
-  const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
+  const [tokenPair] = useAtomState(tokenPairState);
+  const [searchConfig, setSearchConfig] = useAtomState(searchConfigState);
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
+  const [resolvedParameters, setResolvedParameters] = useAtomState(resolvedParametersSelector);
+  const [chatMessages, setChatMessages] = useAtomState(chatMessagesSelector);
   
-  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
+  const activeAssistantThreadId = useAtomStateValue(activeAssistantThreadIdState);
   const assistantThreadId =
     activeAssistantThreadId || parsedJD?.assistantThreads?.[0]?.id;
   
@@ -449,7 +453,7 @@ const handleClear = async () => {
       /> */}
 
       {searchCategory === 'jobs' && (
-        <JobFilters
+        <ProjectFilters
           sortBy={sortBy}
           onSortByChange={setSortBy}
           datePosted={datePosted}

@@ -3,11 +3,7 @@ import {
   useLogicFunctionUpdateFormState,
 } from '@/logic-functions/hooks/useLogicFunctionUpdateFormState';
 import { usePersistLogicFunction } from '@/logic-functions/hooks/usePersistLogicFunction';
-import {
-  getInputSchemaFromSourceCode,
-  jsonSchemaToInputSchema,
-  type InputJsonSchema,
-} from 'twenty-shared/logic-function';
+import { getInputSchemaFromSourceCode, jsonSchemaToInputSchema, type InputJsonSchema } from 'twenty-shared/logic-function';
 import { useDebouncedCallback } from 'use-debounce';
 
 export const useLogicFunctionForm = ({

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * Zod schema for LinkedIn Classic Jobs Search parameters
+ * Zod schema for LinkedIn Classic Projects Search parameters
  */
 export const classicJobsSearchSchema = z.object({
   keywords: z.string().nullable(),

@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { AnswerTypeSelect } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/AnswerTypeSelect';
 import { SELECT_ANSWER_TYPE_DROPDOWN_ID } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/selectAnswerTypeDropdownId';
 import { QuestionTypeSelectionContainer } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTypeSelectionContainer';

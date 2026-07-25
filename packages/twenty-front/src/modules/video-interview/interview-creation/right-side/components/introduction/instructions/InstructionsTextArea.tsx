@@ -1,20 +1,20 @@
-import { IconTrash } from 'twenty-ui/icons';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { IconTrash } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
 const StyledInputArea = styled.input`
-  background-color: ${({ theme }) => theme.background.transparent.lighter};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   font-family: inherit;
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   line-height: 16px;
   overflow: auto;
-  padding: ${({ theme }) => theme.spacing(2)};
-  padding-top: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[2]};
+  padding-top: ${themeCssVariables.spacing[3]};
   resize: none;
   width: 100%;
 
@@ -23,12 +23,12 @@ const StyledInputArea = styled.input`
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.light};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
+    color: ${themeCssVariables.font.color.light};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 
   &:disabled {
-    color: ${({ theme }) => theme.font.color.tertiary};
+    color: ${themeCssVariables.font.color.tertiary};
   }
 `;
 
@@ -43,9 +43,9 @@ const StyledContainer = styled.div`
 
 const StyledTrashIconContainer = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   justify-content: center;
 `;
 
@@ -59,9 +59,7 @@ export const InstructionsTextArea = ({
   instructionNumber: number;
 }) => {
   const thisInstructionId = id;
-
   const theme = useTheme();
-
   const deleteIns = () => {
     deleteInstruction(thisInstructionId);
   };

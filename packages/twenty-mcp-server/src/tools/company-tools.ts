@@ -1,4 +1,7 @@
-import { CreateOneCompany, graphqlToFindManyCompanies } from 'twenty-shared';
+import {
+  CreateOneCompany,
+  graphqlToFindManyCompanies,
+} from 'twenty-shared/graphql';
 
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';

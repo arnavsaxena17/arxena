@@ -1,5 +1,5 @@
 /**
- * Transforms a candidate node (from get-candidates-by-job-id) to linkedin_premium
+ * Transforms a candidate node (from get-candidates-by-project-id) to linkedin_premium
  * format for upload-profiles. Used when merging candidates from multiple jobs.
  */
 export type CandidateNodeFromApi = {

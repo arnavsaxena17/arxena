@@ -1,8 +1,4 @@
-import {
-  type StepFilter,
-  type StepFilterGroup,
-  type StepFilterWithPotentiallyDeprecatedOperand,
-} from 'twenty-shared/types';
+import type { StepFilter, StepFilterGroup, StepFilterWithPotentiallyDeprecatedOperand } from 'twenty-shared/types';
 
 export type FilterSettings = {
   stepFilterGroups?: StepFilterGroup[];

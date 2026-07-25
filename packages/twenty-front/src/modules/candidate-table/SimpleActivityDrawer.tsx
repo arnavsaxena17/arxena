@@ -1,17 +1,18 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledTitle = styled.h2`
-  font-size: ${({ theme }) => theme.font.size.xl};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  font-size: ${themeCssVariables.font.size.xl};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledContent = styled.div`
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 export const SimpleActivityDrawer = () => {

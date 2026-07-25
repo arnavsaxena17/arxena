@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import { ReactNode, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OrgChartFilters, OrgChartFiltersProps } from 'twenty-orgchart';
 
@@ -15,45 +16,45 @@ import {
 
 const StyledHeader = styled.div`
   align-items: flex-start;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   container-name: orgchart-header;
   container-type: inline-size;
   display: flex;
   flex-shrink: 0;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[4]};
   position: relative;
 `;
 
 const StyledMonthPickerCenter = styled.div`
   position: absolute;
   left: 50%;
-  top: ${({ theme }) => theme.spacing(2)};
+  top: ${themeCssVariables.spacing[2]};
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)}
-    ${({ theme }) => theme.spacing(1.5)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]}
+    ${themeCssVariables.spacing[1.5]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.primary};
 `;
 
 const StyledMonthLabel = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   white-space: nowrap;
 `;
 
 const StyledMonthInput = styled.input`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  padding: ${({ theme }) => theme.spacing(0.5)}
-    ${({ theme }) => theme.spacing(1)};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[0.5]}
+    ${themeCssVariables.spacing[1]};
 `;
 
 const StyledOrgChartToolbar = styled.div`
@@ -61,27 +62,27 @@ const StyledOrgChartToolbar = styled.div`
   display: flex;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   flex-shrink: 0;
-  padding: ${({ theme }) => theme.spacing(1.5)}
-    ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  background: ${({ theme }) => theme.background.transparent.light};
+  padding: ${themeCssVariables.spacing[1.5]}
+    ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  background: ${themeCssVariables.background.transparent.light};
 `;
 
 const StyledBackButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  margin-right: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  margin-right: ${themeCssVariables.spacing[2]};
   cursor: pointer;
   background: transparent;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 

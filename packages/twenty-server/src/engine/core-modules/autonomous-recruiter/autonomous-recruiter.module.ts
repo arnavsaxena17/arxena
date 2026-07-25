@@ -11,7 +11,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { AutonomousRecruiterCronService } from './autonomous-recruiter-cron.service';
 import { AutonomousRecruiterController } from './autonomous-recruiter.controller';
 import { AutonomousRecruiterProcessor } from './autonomous-recruiter.processor';
-import { JobContextService } from './job-context.service';
+import { ProjectContextService } from './project-context.service';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { JobContextService } from './job-context.service';
   providers: [
     AutonomousRecruiterProcessor,
     AutonomousRecruiterCronService,
-    JobContextService,
+    ProjectContextService,
     RecruiterMessageService,
     WorkspaceCacheStorageService,
   ],

@@ -6,10 +6,10 @@ const allObjects = [
         "object": {
             "description": "",
             "icon": "IconUsers",
-            "labelPlural": "Jobs",
-            "labelSingular": "Job",
-            "nameSingular": "job",
-            "namePlural": "jobs"
+            "labelPlural": "Projects",
+            "labelSingular": "Project",
+            "nameSingular": "project",
+            "namePlural": "projects"
         }
     },
     //     {

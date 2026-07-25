@@ -914,11 +914,49 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.BILLING_CONFIG,
+    description: 'Payment provider for workspace billing: razorpay or stripe',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BILLING_PROVIDER: 'razorpay' | 'stripe' = 'razorpay';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    description:
+      'Staging only: expose ~$1 Razorpay credit packs. Must stay false in production.',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  SMALL_PAYMENT_TESTING = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    description: 'Free org-chart credits granted on workspace signup',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  FREE_SIGNUP_ORG_CHART_CREDITS = 3;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    description: 'Free reveal credits granted on workspace signup',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  FREE_SIGNUP_REVEAL_CREDITS = 0;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
     isSensitive: true,
     description: 'Stripe API key for billing',
     type: ConfigVariableType.STRING,
   })
-  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
+  )
   BILLING_STRIPE_API_KEY: string;
 
   @ConfigVariablesMetadata({
@@ -927,7 +965,10 @@ export class ConfigVariables {
     description: 'Stripe webhook secret for billing',
     type: ConfigVariableType.STRING,
   })
-  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
+  )
   BILLING_STRIPE_WEBHOOK_SECRET: string;
 
   @ConfigVariablesMetadata({
@@ -936,7 +977,10 @@ export class ConfigVariables {
       'Stripe publishable key for billing, exposed to the frontend to mount Stripe Elements',
     type: ConfigVariableType.STRING,
   })
-  @ValidateIf((env) => env.IS_BILLING_ENABLED === true)
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'stripe',
+  )
   BILLING_STRIPE_PUBLISHABLE_KEY: string;
 
   @ConfigVariablesMetadata({
@@ -947,6 +991,53 @@ export class ConfigVariables {
   })
   @IsOptional()
   BILLING_STRIPE_BASE_PLAN_PRODUCT_ID?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    isSensitive: true,
+    description: 'Razorpay key ID for billing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'razorpay',
+  )
+  BILLING_RAZORPAY_KEY_ID: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    isSensitive: true,
+    description: 'Razorpay key secret for billing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'razorpay',
+  )
+  BILLING_RAZORPAY_KEY_SECRET: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    isSensitive: true,
+    description: 'Razorpay webhook secret for billing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @ValidateIf(
+    (env) =>
+      env.IS_BILLING_ENABLED === true && env.BILLING_PROVIDER === 'razorpay',
+  )
+  BILLING_RAZORPAY_WEBHOOK_SECRET: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.BILLING_CONFIG,
+    description: 'Default Razorpay plan ID for subscription checkout',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BILLING_RAZORPAY_BASE_PLAN_ID?: string;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.BILLING_CONFIG,
@@ -2143,6 +2234,590 @@ export class ConfigVariables {
   })
   @IsOptional()
   APP_REGISTRY_TOKEN: string;
+
+  // ——— Arxena (ported from workflows) ———
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.EMAIL_SETTINGS,
+    description: 'System email address used for BCC / internal notifications',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  EMAIL_SYSTEM_ADDRESS?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    description: 'LLM chat model driver (e.g. openai)',
+    type: ConfigVariableType.ENUM,
+    options: ['openai'],
+  })
+  @IsOptional()
+  LLM_CHAT_MODEL_DRIVER?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    description: 'LLM tracing driver',
+    type: ConfigVariableType.ENUM,
+    options: ['console', 'langfuse'],
+  })
+  @IsOptional()
+  LLM_TRACING_DRIVER = 'console';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    isSensitive: true,
+    description: 'Langfuse public key for LLM tracing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  LANGFUSE_PUBLIC_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    isSensitive: true,
+    description: 'Langfuse secret key for LLM tracing',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  LANGFUSE_SECRET_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.RATE_LIMITING,
+    description: 'Contact enrichment rate limit for PDL (requests per minute)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  CONTACT_ENRICHMENT_RATE_LIMIT_PDL = 60;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.RATE_LIMITING,
+    description:
+      'Contact enrichment rate limit for ContactOut (requests per minute)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  CONTACT_ENRICHMENT_RATE_LIMIT_CONTACTOUT = 150;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.RATE_LIMITING,
+    description: 'Contact enrichment rate limit for Lusha (requests per minute)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  CONTACT_ENRICHMENT_RATE_LIMIT_LUSHA = 1500;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.RATE_LIMITING,
+    description:
+      'Contact enrichment rate limit for Apollo (requests per minute)',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  CONTACT_ENRICHMENT_RATE_LIMIT_APOLLO = 60;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Base URL for the Arxena site (org chart Python services)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ARXENA_SITE_URL = 'http://localhost:5050';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Arxena site org-chart API base URL (falls back to ARXENA_SITE_URL when unset in call sites)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ARXENA_SITE_ORGCHART_URL?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Arxena site public base URL used in messaging / assistant links',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ARXENA_SITE_BASE_URL = 'http://localhost:5050';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Elasticsearch endpoint for people / companies / org charts',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ES_ENDPOINT?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Elasticsearch index for people records',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  PEOPLE_ES_INDEX = 'people_all';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Elasticsearch index for org charts',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ORGCHARTS_ES_INDEX = 'org-charts-all';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Elasticsearch index for companies (legacy text index)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  COMPANIES_ES_INDEX = 'companies_index_text';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Elasticsearch index for company scores search',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  COMPANIES_SCORES_ES_INDEX = 'std_company_data_scores';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Apify API token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APIFY_API_TOKEN?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Apollo.io API key',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APOLLO_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apollo enrichment webhook callback URL',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APOLLO_WEBHOOK_URL?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apollo org search cache TTL in seconds',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  APOLLO_ORG_SEARCH_CACHE_TTL_SEC = 86400;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apollo org resolution positive cache TTL in seconds',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  APOLLO_ORG_RESOLUTION_CACHE_TTL_SEC = 86400;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apollo org resolution negative cache TTL in seconds',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  APOLLO_ORG_RESOLUTION_NEGATIVE_CACHE_TTL_SEC = 3600;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Skip Apollo mixed_companies resolution and pass companyDomain directly',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  ORGCHART_APOLLO_SKIP_RESOLUTION = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Expose Arxena GTM tools (prospecting, enrichment, org charts, outreach) via ToolProvider / Ask AI',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_ARXENA_TOOLS_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'RapidAPI key for Apollo org search proxy',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RAPIDAPI_APOLLO_ORG_SEARCH_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'RapidAPI host for Apollo org search proxy',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RAPIDAPI_APOLLO_ORG_SEARCH_HOST =
+    'apollo-io-no-cookies-required.p.rapidapi.com';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'ContactOut API token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  CONTACTOUT_API_TOKEN?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'People Data Labs (PDL) API key',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  PDL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Lusha API key',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  LUSHA_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Nubela (Proxycurl) API key for company logos',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  NUBELA_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'CoreSignal API key',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  CORESIGNAL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'CoreSignal employee API variant',
+    type: ConfigVariableType.ENUM,
+    options: ['multi_source', 'employee_base'],
+  })
+  @IsOptional()
+  CORESIGNAL_EMPLOYEE_API = 'multi_source';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Harvest API key for LinkedIn profile enrichment',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  HARVEST_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Harvest API base URL',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  HARVEST_API_BASE_URL = 'https://api.harvest-api.com';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Unipile API base URL',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  UNIPILE_API_URL?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Unipile API access token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  UNIPILE_ACCESS_TOKEN?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Fallback Unipile LinkedIn account id (testing / legacy env mode)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  UNIPILE_LINKEDIN_ACCOUNT_ID?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Connect LinkedIn sessions to Unipile automatically from the extension',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  CONNECT_LINKEDIN_TO_UNIPILE_AUTOMATICALLY = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Create Unipile LinkedIn accounts on demand and tear them down when idle',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  LINKEDIN_UNIPILE_ON_DEMAND = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Validate stored LinkedIn cookies then disconnect the Unipile account',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  LINKEDIN_UNIPILE_VALIDATE_THEN_DISCONNECT = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Infer LinkedIn search type (classic / sales navigator / recruiter) from Unipile owner profile',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  LINKEDIN_UNIPILE_INFER_SEARCH_TYPE = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Idle TTL (ms) before tearing down on-demand Unipile LinkedIn sessions',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  LINKEDIN_UNIPILE_SESSION_IDLE_TTL_MS = 300_000;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Account mode for org-chart / estimate Unipile LinkedIn sessions (session, shared_sales_navigator_pool, env_account_id)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  LINKEDIN_UNIPILE_ESTIMATE_ACCOUNT_MODE?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Account mode for outreach Unipile LinkedIn sessions (session, shared_sales_navigator_pool, env_account_id)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  LINKEDIN_UNIPILE_OUTREACH_ACCOUNT_MODE?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Company autocomplete source for org-chart super-impose',
+    type: ConfigVariableType.ENUM,
+    options: ['linkedin_parameters', 'linkedin_company_search'],
+  })
+  @IsOptional()
+  SUPER_IMPOSE_COMPANY_AUTOCOMPLETE_SOURCE = 'linkedin_parameters';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Workspace id that receives free-trial website leads in the CRM',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  FREE_TRIAL_LEAD_WORKSPACE_ID?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description:
+      'Shared secret for twenty-website → twenty-server proxy auth (org-chart PDL proxy, free-trial lead, Calendly booking, privacy consent). Must match ORG_CHART_PDL_PROXY_SECRET on twenty-website.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ORG_CHART_PDL_PROXY_SECRET?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Inbox that receives free-trial lead notification emails from the website form',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  FREE_TRIAL_LEAD_NOTIFICATION_EMAIL = 'arnav@arxena.com';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Gmail connected-account UUID used by the free-trial follow-up workflow SEND_EMAIL steps',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  FREE_TRIAL_WORKFLOW_CONNECTED_ACCOUNT_ID?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Skip sending the workspace setup complete email',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  SKIP_WORKSPACE_SETUP_COMPLETE_EMAIL = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Bright Data API key (SERP, LinkedIn profile scrape, unlocker)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Bright Data SERP zone name',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_SERP_ZONE = 'serp_api';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Bright Data SERP dataset id',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_SERP_DATASET_ID = 'gd_mfz5x93lmsjjjylob';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Bright Data LinkedIn profile scrape dataset id',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_LINKEDIN_PROFILE_DATASET_ID = 'gd_l1viktl72bvl7bjuj0';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Enable Bright Data LinkedIn profile enrichment during org-chart build',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  BRIGHT_DATA_LINKEDIN_PROFILE_ENRICH_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Concurrency for Bright Data LinkedIn profile scrape during org-chart build',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  BRIGHT_DATA_LINKEDIN_PROFILE_SCRAPE_CONCURRENCY = 8;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Bright Data unlocker zone name',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_UNLOCKER_ZONE?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apify actor id for LinkedIn company profile scrape',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID = 'Vb6LZkh4EqRlR0Ka9';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Apify actor id for LinkedIn employee search',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APIFY_LINKEDIN_EMPLOYEE_SEARCH_ACTOR_ID = 'M2FMdjRVeF1HPGFcc';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Org-chart public access guard mode (off | log | enforce)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ORG_CHART_GUARD_MODE?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'TTL seconds for company org-chart cache entries',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  ORG_CHART_COMPANY_CACHE_TTL_SECONDS?: number;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Minimum people count before caching an org-chart company',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  ORG_CHART_MIN_PEOPLE_TO_CACHE?: number;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'TTL seconds for company candidates cache entries',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  ORG_CHART_COMPANY_CANDIDATES_CACHE_TTL_SECONDS?: number;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'TTL seconds for function/grade org-chart cache entries',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  ORG_CHART_FUNCTION_GRADE_CACHE_TTL_SECONDS?: number;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'Monthly view limit for org-chart embeds',
+    type: ConfigVariableType.NUMBER,
+  })
+  @CastToPositiveNumber()
+  @IsOptional()
+  ORG_CHART_EMBED_MONTHLY_VIEW_LIMIT?: number;
 }
 
 export const validate = (config: Record<string, unknown>): ConfigVariables => {

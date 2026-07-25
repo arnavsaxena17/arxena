@@ -1,16 +1,17 @@
-import { Button } from 'twenty-ui';
-import { IconArrowLeft, IconRefresh } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { Button } from 'twenty-ui/input';
+import { IconArrowLeft, IconRefresh } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.border.color.medium};
+  border-top: 1px solid ${themeCssVariables.border.color.medium};
   display: flex;
   align-items: center;
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[4]};
   position: sticky;
   bottom: 0;
-  background-color: ${({ theme }) => theme.background.tertiary};
+  background-color: ${themeCssVariables.background.tertiary};
   z-index: 1;
 `;
 
@@ -21,25 +22,25 @@ const StyledButtonContainer = styled.div`
 `;
 
 const StyledValidationMessage = styled.div`
-  color: ${({ theme }) => theme.color.red};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin-right: ${({ theme }) => theme.spacing(2)};
+  color: ${themeCssVariables.color.red};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin-right: ${themeCssVariables.spacing[2]};
   flex: 1;
 `;
 
 const StyledButtonGroup = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledLeftButtonGroup = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledRightButtonGroup = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 type ArxJDStepNavigationProps = {

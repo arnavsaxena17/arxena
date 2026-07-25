@@ -1,18 +1,20 @@
 import { Button, IconButton } from 'twenty-ui';
-import { IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconX } from 'twenty-ui/icon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
-import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
+import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
-import type { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared/utils';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
 import {
@@ -30,9 +32,11 @@ import {
   OrgChartModalTightHeader,
 } from './OrgChartModalTightContent';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 const StyledOrgChartOutreachModal = styled(Modal)`
   max-height: 90dvh;
-  width: min(640px, 100vw - ${({ theme }) => theme.spacing(8)});
+  width: min(640px, 100vw - ${themeCssVariables.spacing[8]});
 `;
 
 const StyledHeaderContainer = styled.div`
@@ -43,15 +47,15 @@ const StyledHeaderContainer = styled.div`
 `;
 
 const StyledModalTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   max-height: min(560px, calc(90dvh - 200px));
   overflow-y: auto;
   width: 100%;
@@ -59,82 +63,82 @@ const StyledBody = styled.div`
 
 const StyledOutreachModalFooter = styled(Modal.Footer)`
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   height: auto;
   justify-content: flex-end;
   min-height: 60px;
 `;
 
 const StyledCandidateHeaderCard = styled.div`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.secondary};
-  padding: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.75)};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledCandidateHeaderTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCandidateHeaderSubline = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledTaskBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.75)};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledTaskHeading = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledSectionLabel = styled.label`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
 `;
 
 const StyledTextarea = styled.textarea`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   min-height: 120px;
   resize: vertical;
   font-family: inherit;
 `;
 
 const StyledInput = styled.input`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
 `;
 
@@ -158,19 +162,19 @@ export const OrgChartOutreachModal = ({
   companyName,
   allowSkipJob = false,
 }: OrgChartOutreachModalProps) => {
-  const { enqueueSnackBar } = useSnackBar();
-  const tokenPair = useRecoilValue(tokenPairState);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const currentJobId = useRecoilValue(jobIdAtom);
-  const setJobId = useSetRecoilState(jobIdAtom);
-  const jobs = useRecoilValue(jobsState);
-  const { refetchJobs } = useJobRefetch();
+  const { enqueueSnackBar } = useOrgChartSnackBar();
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
+  const currentProjectId = useAtomStateValue(projectIdAtom);
+  const setProjectId = useSetAtomState(projectIdAtom);
+  const projects = useAtomStateValue(projectsState);
+  const { refetchJobs } = useProjectRefetch();
   const {
     beginUploadProgressSseSession,
     endUploadProgressSseSessionAfterDelay,
   } = useUploadProgressSseSession();
 
-  const [selectedJobId, setSelectedJobId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [templateId, setTemplateId] = useState<string>('');
   const [message, setMessage] = useState('');
   const [emailSubject, setEmailSubject] = useState(
@@ -182,14 +186,14 @@ export const OrgChartOutreachModal = ({
 
   const activeJobs = useMemo(
     () =>
-      [...jobs]
+      [...projects]
         .filter((j) => j.isActive)
         .sort((a, b) => {
           const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return bTime - aTime;
         }),
-    [jobs],
+    [projects],
   );
 
   const templates = channel ? OUTREACH_TEMPLATES[channel] : [];
@@ -223,19 +227,19 @@ export const OrgChartOutreachModal = ({
       return;
     }
     if (
-      currentJobId &&
-      currentJobId !== 'job-id' &&
-      activeJobs.some((job) => job.id === currentJobId)
+      currentProjectId &&
+      currentProjectId !== 'project-id' &&
+      activeJobs.some((job) => job.id === currentProjectId)
     ) {
-      setSelectedJobId(currentJobId);
+      setSelectedProjectId(currentProjectId);
       return;
     }
-    setSelectedJobId('');
-  }, [activeJobs, currentJobId, isOpen]);
+    setSelectedProjectId('');
+  }, [activeJobs, currentProjectId, isOpen]);
 
   const selectedJob = useMemo(
-    () => activeJobs.find((j) => j.id === selectedJobId),
-    [activeJobs, selectedJobId],
+    () => activeJobs.find((j) => j.id === selectedProjectId),
+    [activeJobs, selectedProjectId],
   );
 
   const onTemplateChange = useCallback(
@@ -249,14 +253,14 @@ export const OrgChartOutreachModal = ({
     [templates],
   );
 
-  const onJobChange = useCallback(
-    (jobId: string) => {
-      setSelectedJobId(jobId);
-      if (jobId.trim()) {
-        setJobId(jobId);
+  const onProjectChange = useCallback(
+    (projectId: string) => {
+      setSelectedProjectId(projectId);
+      if (projectId.trim()) {
+        setProjectId(projectId);
       }
     },
-    [setJobId],
+    [setProjectId],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -275,8 +279,8 @@ export const OrgChartOutreachModal = ({
       });
       return;
     }
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
-    const accessToken = tokenPair?.accessToken?.token ?? '';
+    const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
+    const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
     if (!baseUrl.trim() || !accessToken) {
       enqueueSnackBar('Sign in and ensure the server URL is configured.', {
         variant: SnackBarVariant.Error,
@@ -339,7 +343,7 @@ export const OrgChartOutreachModal = ({
               company: contextItem.company || companyName || '',
             },
           ],
-          jobId: selectedJob.id,
+          projectId: selectedJob.id,
           jobName: selectedJob.name,
           recruiterId: currentWorkspaceMember?.id,
           queueStartChatAfter: false,
@@ -362,7 +366,7 @@ export const OrgChartOutreachModal = ({
             baseUrl,
             accessToken,
             linkedinUrl: contextItem.linkedinUrl.trim(),
-            jobId: selectedJob.id,
+            projectId: selectedJob.id,
             maxAttempts: 25,
             delayMs: 1200,
           });
@@ -395,7 +399,7 @@ export const OrgChartOutreachModal = ({
                     linkedinUrl: contextItem.linkedinUrl.trim(),
                     emails,
                     phones,
-                    jobId: selectedJob.id,
+                    projectId: selectedJob.id,
                     candidateId,
                   }),
                   credentials: 'include',
@@ -423,7 +427,7 @@ export const OrgChartOutreachModal = ({
         companyName: contextItem.company || companyName,
       };
       if (selectedJob && requiresJob) {
-        outreachBody.jobId = selectedJob.id;
+        outreachBody.projectId = selectedJob.id;
       }
       if (channel === 'email') {
         outreachBody.subject = emailSubject.trim();
@@ -496,7 +500,7 @@ export const OrgChartOutreachModal = ({
     refetchJobs,
     selectedJob,
     templateId,
-    tokenPair?.accessToken?.token,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
   ]);
 
   if (!isOpen || !channel || !contextItem) {
@@ -539,8 +543,8 @@ export const OrgChartOutreachModal = ({
                 <StyledSectionLabel>Choose a job</StyledSectionLabel>
                 <StyledSelect
                   data-testid="orgchart-outreach-job-select"
-                  value={selectedJobId}
-                  onChange={(e) => onJobChange(e.target.value)}
+                  value={selectedProjectId}
+                  onChange={(e) => onProjectChange(e.target.value)}
                   disabled={isJobsLoading}
                 >
                   <option value="">Select a job</option>
@@ -583,8 +587,8 @@ export const OrgChartOutreachModal = ({
                     <StyledSectionLabel>Choose a job</StyledSectionLabel>
                     <StyledSelect
                       data-testid="orgchart-outreach-job-select"
-                      value={selectedJobId}
-                      onChange={(e) => onJobChange(e.target.value)}
+                      value={selectedProjectId}
+                      onChange={(e) => onProjectChange(e.target.value)}
                       disabled={isJobsLoading}
                     >
                       <option value="">Select a job</option>
@@ -666,7 +670,7 @@ export const OrgChartOutreachModal = ({
           disabled={
             isSubmitting ||
             ((!(allowSkipJob && channel === 'linkedin_invite' && !alsoAddToJob) &&
-              !selectedJobId) ||
+              !selectedProjectId) ||
               (channel !== 'google_contact' && !message.trim()))
           }
           dataTestId="orgchart-outreach-send"

@@ -1,11 +1,6 @@
 import { render } from '@testing-library/react';
 import { act } from 'react';
-import {
-  type StepFilter,
-  type StepFilterGroup,
-  StepLogicalOperator,
-  ViewFilterOperand,
-} from 'twenty-shared/types';
+import { StepLogicalOperator, ViewFilterOperand, type StepFilter, type StepFilterGroup } from 'twenty-shared/types';
 import { convertViewFilterOperandToCoreOperand } from 'twenty-shared/utils';
 
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';

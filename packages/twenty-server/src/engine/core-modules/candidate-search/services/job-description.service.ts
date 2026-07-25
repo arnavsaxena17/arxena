@@ -139,17 +139,17 @@ export class JobDescriptionService {
    * Fetch and extract raw JD text from job attachments
    */
   async getJDContentFromJobAttachments(
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<string> {
     try {
-      this.logger.log(`Fetching JD content from job attachments for jobId: ${jobId}`);
+      this.logger.log(`Fetching JD content from job attachments for projectId: ${projectId}`);
 
       // Fetch job attachments
       const response = await this.staticGraphQLService.executeGraphQL(
         findManyAttachmentsQuery,
         {
-          filter: { jobId: { eq: jobId } },
+          filter: { projectId: { eq: projectId } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
         },
         apiToken,
@@ -158,14 +158,14 @@ export class JobDescriptionService {
       const attachments = response?.data?.data?.attachments?.edges || [];
       
       if (attachments.length === 0) {
-        this.logger.log(`No attachments found for jobId: ${jobId}`);
+        this.logger.log(`No attachments found for projectId: ${projectId}`);
         return '';
       }
 
       // Get the first attachment (assuming it's the JD file)
       const attachment = attachments[0].node;
       if (!attachment.fullPath) {
-        this.logger.log(`No valid attachment path for jobId: ${jobId}`);
+        this.logger.log(`No valid attachment path for projectId: ${projectId}`);
         return '';
       }
 
@@ -173,13 +173,13 @@ export class JobDescriptionService {
       const jdContent = await this.downloadAndProcessJD(
         attachment.fullPath,
         attachment.name,
-        jobId,
+        projectId,
         apiToken,
       );
 
       return jdContent;
     } catch (error) {
-      this.logger.error(`Error fetching JD content for jobId ${jobId}:`, error);
+      this.logger.error(`Error fetching JD content for projectId ${projectId}:`, error);
       return '';
     }
   }
@@ -190,7 +190,7 @@ export class JobDescriptionService {
   async downloadAndProcessJD(
     fullPath: string,
     fileName: string,
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<string> {
     try {
@@ -214,14 +214,14 @@ export class JobDescriptionService {
         fs.mkdirSync(tempDir, { recursive: true });
       }
       
-      const tempFilePath = path.join(tempDir, `${jobId}_${fileName}`);
+      const tempFilePath = path.join(tempDir, `${projectId}_${fileName}`);
       fs.writeFileSync(tempFilePath, new Uint8Array(fileBuffer));
       
-      this.logger.log(`Downloaded JD file: ${fileName} for jobId: ${jobId}`);
+      this.logger.log(`Downloaded JD file: ${fileName} for projectId: ${projectId}`);
       
       // Check if the file format is supported
       if (!this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)) {
-        this.logger.log(`Unsupported JD format: ${fileName} for jobId: ${jobId}`);
+        this.logger.log(`Unsupported JD format: ${fileName} for projectId: ${projectId}`);
         // Clean up temp file
         fs.unlinkSync(tempFilePath);
         return `[Unsupported JD format: ${fileName}]`;
@@ -233,14 +233,14 @@ export class JobDescriptionService {
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
       
-      this.logger.log(`Successfully processed JD: ${fileName} for jobId: ${jobId}`);
+      this.logger.log(`Successfully processed JD: ${fileName} for projectId: ${projectId}`);
       return jdContent.text;
     } catch (error) {
-      this.logger.error(`Error downloading and processing JD for jobId ${jobId}:`, error);
+      this.logger.error(`Error downloading and processing JD for projectId ${projectId}:`, error);
       
       // Clean up temp file if it exists
       try {
-        const tempFilePath = path.join(process.cwd(), 'temp', `${jobId}_${fileName}`);
+        const tempFilePath = path.join(process.cwd(), 'temp', `${projectId}_${fileName}`);
         if (fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
         }

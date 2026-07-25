@@ -27,15 +27,21 @@ import { MainAppLayoutWithSidePanel } from '@/ui/layout/page/components/MainAppL
 import { Verify } from '~/pages/onboarding/Verify';
 import { lazyWithPreload } from '~/utils/lazyWithPreload';
 
-const ArxOrgChart = lazy(() =>
-  import('@/orgchart/ArxOrgChart').then((module) => ({
-    default: module.ArxOrgChart,
+const OrgChartRoute = lazy(() =>
+  import('@/orgchart/components/OrgChartRoute').then((module) => ({
+    default: module.OrgChartRoute,
   })),
 );
 
-const Jobs = lazy(() =>
-  import('@/candidate-table/Jobs').then((module) => ({
-    default: module.Jobs,
+const Projects = lazy(() =>
+  import('@/candidate-table/Projects').then((module) => ({
+    default: module.Projects,
+  })),
+);
+
+const ProjectPage = lazy(() =>
+  import('@/candidate-table/ProjectPage').then((module) => ({
+    default: module.ProjectPage,
   })),
 );
 
@@ -231,17 +237,47 @@ const createWorkspaceAppRouter = (
                 element={
                   <LazyRoute>
                     <Suspense fallback={null}>
-                      <ArxOrgChart />
+                      <OrgChartRoute />
                     </Suspense>
                   </LazyRoute>
                 }
               />
               <Route
-                path={AppPath.Jobs}
+                path={AppPath.Projects}
                 element={
                   <LazyRoute>
                     <Suspense fallback={null}>
-                      <Jobs />
+                      <Projects />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={`${AppPath.Projects}/:candidateId`}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <Projects />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.Project}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <ProjectPage />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={`${AppPath.Project}/:candidateId`}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <ProjectPage />
                     </Suspense>
                   </LazyRoute>
                 }

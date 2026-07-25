@@ -45,13 +45,10 @@ export class CompaniesEsService {
 
   constructor(private readonly environmentService: EnvironmentService) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
-    this.companiesSearchIndex =
-      (this.environmentService.get('COMPANIES_SCORES_ES_INDEX') as
-        | string
-        | undefined) ?? 'std_company_data_scores';
-    this.companiesLegacyIndex =
-      (this.environmentService.get('COMPANIES_ES_INDEX') as string | undefined) ??
-      'companies_index_text';
+    this.companiesSearchIndex = this.environmentService.get(
+      'COMPANIES_SCORES_ES_INDEX',
+    );
+    this.companiesLegacyIndex = this.environmentService.get('COMPANIES_ES_INDEX');
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
       this.client = new Client({ node: endpoint });

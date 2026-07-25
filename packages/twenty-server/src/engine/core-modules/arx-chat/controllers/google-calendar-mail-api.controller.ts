@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import moment from 'moment-timezone';
-import { Job, PersonNode } from 'twenty-shared';
+import { Project, PersonNode } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -175,7 +175,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Job = candidateNode?.jobs;
+    const candidateJob: Project = candidateNode?.projects;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -220,7 +220,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Job = candidateNode?.jobs;
+    const candidateJob: Project = candidateNode?.projects;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -259,14 +259,14 @@ export class GoogleControllers {
     console.log('This is the candidateId:', candidateId);
     let person: PersonNode;
     const candidateIds = [candidateId];
-    const jobIds = await new FilterCandidates(
+    const projectIds = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      ).getJobIdsFromCandidateIds(candidateIds, apiToken);
-    console.log('This is the jobIds:', jobIds);
+      ).getProjectIdsFromCandidateIds(candidateIds, apiToken);
+    console.log('This is the projectIds:', projectIds);
 
-    const candidateJob: Job = await this.candidateWorkspaceGraphQLService.getJobDetails(
-      jobIds[0] || '',
+    const candidateJob: Project = await this.candidateWorkspaceGraphQLService.getJobDetails(
+      projectIds[0] || '',
       '',
       apiToken,
     );
@@ -427,7 +427,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Job = candidateNode?.jobs;
+    const candidateJob: Project = candidateNode?.projects;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,

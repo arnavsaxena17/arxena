@@ -1,4 +1,7 @@
-import { graphqlQueryToCreateOneReminder, graphqlQueryToFindManyReminders } from 'twenty-shared';
+import {
+  graphqlQueryToCreateOneReminder,
+  graphqlQueryToFindManyReminders,
+} from 'twenty-shared/graphql';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
 

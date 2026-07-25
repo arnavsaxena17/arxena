@@ -1,4 +1,4 @@
-import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui/icons';
+import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui/icon';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
@@ -24,14 +24,18 @@ import {
     recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { useTheme } from 'twenty-ui/theme-constants';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from '@/candidate-search/types/candidate-search.types';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   position: fixed;
@@ -39,8 +43,8 @@ const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   left: 0;
   height: 100vh;
   width: ${({ isOpen, width }) => isOpen ? `${width}px` : '0px'};
-  background-color: ${({ theme }) => theme.background.primary};
-  border-right: 1px solid ${({ theme }) => theme.border.color.light};
+  background-color: ${themeCssVariables.background.primary};
+  border-right: 1px solid ${themeCssVariables.border.color.light};
   z-index: 1001;
   transition: width 300ms ease;
   overflow: hidden;
@@ -52,47 +56,47 @@ const StyledPanelHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  background-color: ${({ theme }) => theme.background.secondary};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  background-color: ${themeCssVariables.background.secondary};
   min-height: 40px;
 `;
 
 const StyledPanelTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
   margin: 0;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledPanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledDataSourceSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledDataSourceLabel = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledDataSourceTrack = styled.div`
   display: flex;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.tertiary};
-  padding: ${({ theme }) => theme.spacing(0.5)};
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.tertiary};
+  padding: ${themeCssVariables.spacing['0.5']};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledDataSourceOption = styled.button<{ isActive: boolean }>`
@@ -100,35 +104,35 @@ const StyledDataSourceOption = styled.button<{ isActive: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: pointer;
   min-height: 32px;
-  padding: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  padding: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   font-family: inherit;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 
-  ${({ theme, isActive }) =>
+  ${({ isActive }) =>
     isActive
       ? `
-    background: ${theme.background.primary};
-    color: ${theme.font.color.primary};
-    box-shadow: ${theme.boxShadow.light};
+    background: ${themeCssVariables.background.primary};
+    color: ${themeCssVariables.font.color.primary};
+    box-shadow: ${themeCssVariables.boxShadow.light};
   `
       : `
     background: transparent;
-    color: ${theme.font.color.secondary};
+    color: ${themeCssVariables.font.color.secondary};
     &:hover {
-      background: ${theme.background.transparent.light};
-      color: ${theme.font.color.primary};
+      background: ${themeCssVariables.background.transparent.light};
+      color: ${themeCssVariables.font.color.primary};
     }
   `}
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline: 2px solid ${themeCssVariables.color.blue};
     outline-offset: 1px;
   }
 `;
@@ -137,94 +141,94 @@ const StyledCloseButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  padding: ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
-  
+  padding: ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
+
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledSearchTypeSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledSearchTypeTitle = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledRadioGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledRadioOption = styled.label`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   cursor: pointer;
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.light};
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.medium};
   }
-  
+
   input[type="radio"] {
     margin: 0;
   }
-  
+
   input[type="radio"]:checked + span {
-    color: ${({ theme }) => theme.color.blue};
-    font-weight: ${({ theme }) => theme.font.weight.medium};
+    color: ${themeCssVariables.color.blue};
+    font-weight: ${themeCssVariables.font.weight.medium};
   }
 `;
 
 const StyledStrategySection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.light};
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
 `;
 
 const StyledStrategyTitle = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
 `;
 
 const StyledStrategyInfo = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   line-height: 1.3;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
   white-space: normal;
-  
+
   div {
-    margin: ${({ theme }) => theme.spacing(0.25)} 0;
+    margin: ${themeCssVariables.spacing['1']} 0;
     word-wrap: break-word;
     overflow-wrap: break-word;
     word-break: break-word;
     white-space: normal;
   }
-  
+
   strong {
     white-space: normal;
   }
@@ -233,30 +237,30 @@ const StyledStrategyInfo = styled.div`
 const StyledStrategyList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStrategyItem = styled.div`
-  padding: ${({ theme }) => theme.spacing(1.5)};
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing['1.5']};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
 `;
 
 const StyledStrategyItemHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  margin-bottom: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledStrategyItemName = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.xs};
   flex: 1;
-  margin-right: ${({ theme }) => theme.spacing(1)};
+  margin-right: ${themeCssVariables.spacing[1]};
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -264,28 +268,28 @@ const StyledStrategyItemName = styled.div`
 `;
 
 const StyledStrategyItemBadge = styled.span<{ aggressiveness?: string }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ aggressiveness, theme }) => {
-    if (aggressiveness === 'focused') return theme.color.blue10;
-    if (aggressiveness === 'balanced') return theme.color.green10;
-    if (aggressiveness === 'broad') return theme.color.orange10;
-    return theme.background.secondary;
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${({ aggressiveness }) => {
+    if (aggressiveness === 'focused') return themeCssVariables.color.blue10;
+    if (aggressiveness === 'balanced') return themeCssVariables.color.green10;
+    if (aggressiveness === 'broad') return themeCssVariables.color.orange10;
+    return themeCssVariables.background.secondary;
   }};
-  color: ${({ aggressiveness, theme }) => {
-    if (aggressiveness === 'focused') return theme.color.blue80;
-    if (aggressiveness === 'balanced') return theme.color.green80;
-    if (aggressiveness === 'broad') return theme.color.orange80;
-    return theme.font.color.secondary;
+  color: ${({ aggressiveness }) => {
+    if (aggressiveness === 'focused') return themeCssVariables.color.blue8;
+    if (aggressiveness === 'balanced') return themeCssVariables.color.green8;
+    if (aggressiveness === 'broad') return themeCssVariables.color.orange8;
+    return themeCssVariables.font.color.secondary;
   }};
 `;
 
 const StyledStrategyItemDetails = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  margin-top: ${themeCssVariables.spacing['0.5']};
   line-height: 1.3;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -294,12 +298,12 @@ const StyledStrategyItemDetails = styled.div`
 `;
 
 const StyledStrategyItemDetailRow = styled.div`
-  margin: ${({ theme }) => theme.spacing(0.25)} 0;
+  margin: ${themeCssVariables.spacing['1']} 0;
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
   white-space: normal;
-  
+
   span {
     white-space: normal;
     word-wrap: break-word;
@@ -309,44 +313,44 @@ const StyledStrategyItemDetailRow = styled.div`
 `;
 
 const StyledStrategyItemDetailLabel = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  margin-right: ${({ theme }) => theme.spacing(1)};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  margin-right: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledRecentSearches = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledRecentSearchesTitle = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledRecentSearchItem = styled.button`
   display: block;
   width: 100%;
   text-align: left;
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]};
   border: none;
   background: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: pointer;
   transition: background-color 0.2s ease;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
-  
+
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
 `;
 
 const StyledRecentSearchName = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -354,9 +358,9 @@ const StyledRecentSearchName = styled.div`
 `;
 
 const StyledRecentSearchMeta = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  margin-top: ${themeCssVariables.spacing[1]};
   word-wrap: break-word;
   overflow-wrap: break-word;
   word-break: break-word;
@@ -403,26 +407,34 @@ function extractApolloOrganizationList(
 
 export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   const theme = useTheme();
-  const [isOpen, setIsOpen] = useRecoilState(isSearchPanelOpenState);
-  const [searchConfig, setSearchConfig] = useRecoilState(persistentSearchConfigState);
-  const [searchParameters, setSearchParameters] = useRecoilState(persistentSearchParametersState);
-  const [recentSearches, setRecentSearches] = useRecoilState(recentSearchesState);
-  const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
-  const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
+  const [isOpen, setIsOpen] = useAtomState(isSearchPanelOpenState);
+  const [searchConfig, setSearchConfig] = useAtomState(persistentSearchConfigState);
+  const [searchParameters, setSearchParameters] = useAtomState(persistentSearchParametersState);
+  const [recentSearches, setRecentSearches] = useAtomState(recentSearchesState);
+  const [searchResults, setSearchResults] = useAtomState(searchResultsState);
+  const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
   const [candidateSearchDataSource, setCandidateSearchDataSource] =
-    useRecoilState(candidateSearchDataSourceState);
+    useAtomState(candidateSearchDataSourceState);
 
-  const parsedJD = useRecoilValue(parsedJDSelector);
-  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
-  const { updateAssistantThreadRecord } = useArxJDUpload('job');
-  const { enqueueSnackBar } = useSnackBar();
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const jobId = useRecoilValue(jobIdAtom);
-  const jobs = useRecoilValue(jobsState);
+  const parsedJD = useAtomStateValue(parsedJDSelector);
+  const activeAssistantThreadId = useAtomStateValue(activeAssistantThreadIdState);
+  const { updateAssistantThreadRecord } = useArxJDUpload('project');
+  const {
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueInfoSnackBar,
+    enqueueWarningSnackBar,
+  } = useSnackBar();
+  const [tokenPair] = useAtomState(tokenPairState);
+  const projectId = useAtomStateValue(projectIdAtom);
+  const projects = useAtomStateValue(projectsState);
 
   // Check if job is still loading
-  const currentJob = jobs.find(job => job.id === jobId);
-  const isJobLoading = jobId && jobId !== 'job-id' && !currentJob;
+  const currentProject = projects.find(
+    (project) => project.id === projectId,
+  );
+  const isJobLoading =
+    projectId && projectId !== 'project-id' && !currentProject;
 
   // Track if we've initialized from localStorage (only do this once on mount)
   const [hasInitializedFromStorage, setHasInitializedFromStorage] = useState(false);
@@ -432,22 +444,22 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     if (!hasInitializedFromStorage) {
       const savedConfig = loadSearchConfigFromStorage();
       const savedParameters = loadSearchParametersFromStorage();
-      
+
       console.log('Initial load from localStorage (one-time):', {
         savedConfig,
         savedParameters,
         note: 'This only happens once on mount, not on every panel open'
       });
-      
+
       // Only load if we have saved data
       if (savedConfig) {
         setSearchConfig(savedConfig);
       }
-      
+
       if (savedParameters) {
         setSearchParameters(savedParameters);
       }
-      
+
       setHasInitializedFromStorage(true);
     }
   }, [hasInitializedFromStorage, setSearchConfig, setSearchParameters]); // Only run once
@@ -490,7 +502,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
   ) => {
     const currentParsedJD = parsedJD;
     const assistantThreads = currentParsedJD?.assistantThreads;
-    
+
     if (assistantThreads && assistantThreads.length > 0) {
       try {
         const assistantThreadId =
@@ -539,38 +551,30 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
     // Persist the search configuration and parameters
     persistSearchConfig(setSearchConfig)({ searchType, searchCategory });
     persistSearchParameters(setSearchParameters)(searchParameters);
-    
+
     if (!parsedJD) {
       if (isJobLoading) {
-        console.log('Job is still loading, waiting for job data...');
-        enqueueSnackBar('Loading job data, please wait...', {
-          variant: SnackBarVariant.Info,
-        });
+        console.log('Project is still loading, waiting for job data...');
+        enqueueInfoSnackBar({ message: 'Loading job data, please wait...' });
         return;
       } else {
         console.error('No parsedJD available for search');
-        enqueueSnackBar('No job description available for search', {
-          variant: SnackBarVariant.Error,
-        });
+        enqueueErrorSnackBar({ message: 'No job description available for search' });
         return;
       }
     }
 
     try {
-      const authToken = tokenPair?.accessToken?.token;
+      const authToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
       if (candidateSearchDataSource === 'apollo') {
         if (!authToken) {
-          enqueueSnackBar('Sign in to run Apollo search.', {
-            variant: SnackBarVariant.Error,
-          });
+          enqueueErrorSnackBar({ message: 'Sign in to run Apollo search.' });
           return;
         }
 
         if (searchCategory === 'posts') {
-          enqueueSnackBar('Apollo does not support post search in this panel.', {
-            variant: SnackBarVariant.Warning,
-          });
+          enqueueWarningSnackBar({ message: 'Apollo does not support post search in this panel.' });
           return;
         }
 
@@ -604,7 +608,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
               searchResponse.searchResults?.paging?.total_count ||
               transformedCandidates.length;
 
-            addSearchResults(setSearchResults, jobId)(transformedCandidates);
+            addSearchResults(setSearchResults, projectId)(transformedCandidates);
 
             const newMetadata = {
               totalCount,
@@ -617,7 +621,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
                 searchResponse.resolvedSearchParameters || searchParameters,
             };
             setSearchMetadata(newMetadata);
-            persistSearchMetadataToStorage(newMetadata, jobId, {
+            persistSearchMetadataToStorage(newMetadata, projectId, {
               accessToken: authToken,
               results: searchResults,
             });
@@ -630,14 +634,12 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
               resultCount: transformedCandidates.length,
             });
 
-            enqueueSnackBar(`Found ${transformedCandidates.length} candidates`, {
-              variant: SnackBarVariant.Success,
-            });
+            enqueueSuccessSnackBar({ message: `Found ${transformedCandidates.length} candidates` });
           } else if (searchResponse.searchResults?.items) {
             const { items, cursor, paging } = searchResponse.searchResults;
             const totalCount = paging?.total_count || 0;
 
-            addSearchResults(setSearchResults, jobId)(items);
+            addSearchResults(setSearchResults, projectId)(items);
 
             const newMetadata = {
               totalCount,
@@ -650,7 +652,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
                 searchResponse.resolvedSearchParameters || searchParameters,
             };
             setSearchMetadata(newMetadata);
-            persistSearchMetadataToStorage(newMetadata, jobId, {
+            persistSearchMetadataToStorage(newMetadata, projectId, {
               accessToken: authToken,
               results: searchResults,
             });
@@ -663,13 +665,9 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
               resultCount: items.length,
             });
 
-            enqueueSnackBar(`Found ${items.length} candidates`, {
-              variant: SnackBarVariant.Success,
-            });
+            enqueueSuccessSnackBar({ message: `Found ${items.length} candidates` });
           } else {
-            enqueueSnackBar('No search results found', {
-              variant: SnackBarVariant.Warning,
-            });
+            enqueueWarningSnackBar({ message: 'No search results found' });
           }
           return;
         }
@@ -679,9 +677,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             (searchParameters.keywords ?? '').trim() ||
             (parsedJD.companyName ?? '').trim();
           if (!orgName) {
-            enqueueSnackBar('Enter keywords or ensure the job has a company name.', {
-              variant: SnackBarVariant.Warning,
-            });
+            enqueueWarningSnackBar({ message: 'Enter keywords or ensure the job has a company name.' });
             return;
           }
 
@@ -728,7 +724,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             };
           });
 
-          addSearchResults(setSearchResults, jobId)(items);
+          addSearchResults(setSearchResults, projectId)(items);
           const newMetadata = {
             totalCount: items.length,
             currentPage: 1,
@@ -738,7 +734,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             searchParameters,
           };
           setSearchMetadata(newMetadata);
-          persistSearchMetadataToStorage(newMetadata, jobId, {
+          persistSearchMetadataToStorage(newMetadata, projectId, {
             accessToken: authToken,
             results: searchResults,
           });
@@ -749,9 +745,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             parameters: searchParameters,
             resultCount: items.length,
           });
-          enqueueSnackBar(`Found ${items.length} companies`, {
-            variant: SnackBarVariant.Success,
-          });
+          enqueueSuccessSnackBar({ message: `Found ${items.length} companies` });
           return;
         }
 
@@ -760,9 +754,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             (parsedJD.companyName ?? '').trim() ||
             (searchParameters.keywords ?? '').trim();
           if (!companyQuery) {
-            enqueueSnackBar('Set a company name on the job or enter keywords.', {
-              variant: SnackBarVariant.Warning,
-            });
+            enqueueWarningSnackBar({ message: 'Set a company name on the job or enter keywords.' });
             return;
           }
 
@@ -793,9 +785,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             : '';
 
           if (!orgId) {
-            enqueueSnackBar('No Apollo organization matched for job postings.', {
-              variant: SnackBarVariant.Warning,
-            });
+            enqueueWarningSnackBar({ message: 'No Apollo organization matched for job postings.' });
             return;
           }
 
@@ -835,7 +825,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             };
           });
 
-          addSearchResults(setSearchResults, jobId)(items);
+          addSearchResults(setSearchResults, projectId)(items);
           const newMetadata = {
             totalCount: items.length,
             currentPage: 1,
@@ -845,7 +835,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             searchParameters,
           };
           setSearchMetadata(newMetadata);
-          persistSearchMetadataToStorage(newMetadata, jobId, {
+          persistSearchMetadataToStorage(newMetadata, projectId, {
             accessToken: authToken,
             results: searchResults,
           });
@@ -856,9 +846,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             parameters: searchParameters,
             resultCount: items.length,
           });
-          enqueueSnackBar(`Found ${items.length} job postings`, {
-            variant: SnackBarVariant.Success,
-          });
+          enqueueSuccessSnackBar({ message: `Found ${items.length} job postings` });
           return;
         }
 
@@ -894,15 +882,15 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
       }
 
       const searchResponse = await response.json();
-      
+
       // Prioritize transformed candidates when available (these extend UserProfile)
       if (searchResponse.transformedCandidates) {
         const transformedCandidates = searchResponse.transformedCandidates;
         const totalCount = searchResponse.searchResults?.paging?.total_count || transformedCandidates.length;
-        
+
         // Add transformed candidates to search results state
-        addSearchResults(setSearchResults, jobId)(transformedCandidates);
-        
+        addSearchResults(setSearchResults, projectId)(transformedCandidates);
+
         // Update metadata
         const newMetadata = {
           totalCount,
@@ -914,8 +902,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata, jobId, {
-          accessToken: tokenPair?.accessToken?.token,
+        persistSearchMetadataToStorage(newMetadata, projectId, {
+          accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
           results: searchResults,
         });
 
@@ -927,18 +915,16 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           parameters: searchParameters,
           resultCount: transformedCandidates.length,
         });
-        
-        enqueueSnackBar(`Found ${transformedCandidates.length} candidates`, {
-          variant: SnackBarVariant.Success,
-        });
+
+        enqueueSuccessSnackBar({ message: `Found ${transformedCandidates.length} candidates` });
       } else if (searchResponse.searchResults?.items) {
         // Fallback to raw search results if no transformed candidates
         const { items, cursor, paging } = searchResponse.searchResults;
         const totalCount = paging?.total_count || 0;
-        
+
         // Add results to search results state
-        addSearchResults(setSearchResults, jobId)(items);
-        
+        addSearchResults(setSearchResults, projectId)(items);
+
         // Update metadata
         const newMetadata = {
           totalCount,
@@ -950,8 +936,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           searchParameters: searchResponse.resolvedSearchParameters || searchParameters,
         };
         setSearchMetadata(newMetadata);
-        persistSearchMetadataToStorage(newMetadata, jobId, {
-          accessToken: tokenPair?.accessToken?.token,
+        persistSearchMetadataToStorage(newMetadata, projectId, {
+          accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
           results: searchResults,
         });
 
@@ -963,42 +949,36 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           parameters: searchParameters,
           resultCount: items.length,
         });
-        
-        enqueueSnackBar(`Found ${items.length} candidates`, {
-          variant: SnackBarVariant.Success,
-        });
+
+        enqueueSuccessSnackBar({ message: `Found ${items.length} candidates` });
       } else {
-        enqueueSnackBar('No search results found', {
-          variant: SnackBarVariant.Warning,
-        });
+        enqueueWarningSnackBar({ message: 'No search results found' });
       }
     } catch (error) {
       console.error('Search error:', error);
-      enqueueSnackBar('Search failed. Please try again.', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Search failed. Please try again.' });
     }
   }, [
     parsedJD,
     candidateSearchDataSource,
-    tokenPair?.accessToken?.token,
-    jobId,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    projectId,
     searchResults,
     setSearchResults,
     setSearchMetadata,
     setRecentSearches,
-    enqueueSnackBar,
+
     isJobLoading,
   ]);
 
   const handleRecentSearchClick = useCallback((recentSearch: any) => {
     // Update persistent state
-    persistSearchConfig(setSearchConfig)({ 
-      searchType: recentSearch.searchType, 
-      searchCategory: recentSearch.searchCategory 
+    persistSearchConfig(setSearchConfig)({
+      searchType: recentSearch.searchType,
+      searchCategory: recentSearch.searchCategory
     });
     persistSearchParameters(setSearchParameters)(recentSearch.parameters);
-    
+
     // Trigger search with recent parameters
     handleSearch(recentSearch.searchType, recentSearch.searchCategory, recentSearch.parameters);
   }, [handleSearch, setSearchConfig, setSearchParameters]);
@@ -1011,17 +991,17 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
       activeAssistantThreadId,
       parsedJD
     });
-    
+
     // Get the active assistant thread or first available
     const currentAssistantThreadId = activeAssistantThreadId || parsedJD.assistantThreads[0]?.id;
     console.log('SearchPanel - Current assistant thread ID:', currentAssistantThreadId);
     const thread = parsedJD.assistantThreads.find(t => t.id === currentAssistantThreadId) || parsedJD.assistantThreads[0];
     console.log('SearchPanel - Assistant thread:', thread);
-    
+
     if (!thread) {
       return [];
     }
-    
+
     const generatedParams = (thread.assistantParameters as any)?.generatedSearchParameters as any || {};
     const resolvedParamsRoot = (thread.assistantParameters as any)?.resolvedSearchParameters as any || {};
 
@@ -1155,7 +1135,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
         {/* Search Strategy */}
         {isJobLoading ? (
           <StyledStrategySection>
-            <StyledStrategyTitle>Loading Job Data...</StyledStrategyTitle>
+            <StyledStrategyTitle>Loading Project Data...</StyledStrategyTitle>
             <StyledStrategyInfo>
               <div>Please wait while we load the job information...</div>
             </StyledStrategyInfo>
@@ -1166,7 +1146,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
             {searchStrategies.length > 0 ? (
               <>
                 <StyledStrategyInfo>
-                  <div><strong>Job:</strong> {parsedJD.name}</div>
+                  <div><strong>Project:</strong> {parsedJD.name}</div>
                   <div><strong>Company:</strong> {parsedJD.companyName || 'N/A'}</div>
                   <div><strong>Location:</strong> {parsedJD.jobLocation || 'N/A'}</div>
                 </StyledStrategyInfo>
@@ -1200,8 +1180,8 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
                           <StyledStrategyItemDetailRow>
                             <StyledStrategyItemDetailLabel>Keywords:</StyledStrategyItemDetailLabel>
                             <span style={{ fontFamily: 'monospace', fontSize: '10px' }}>
-                              {strategy.parameters.keywords.length > 80 
-                                ? `${strategy.parameters.keywords.substring(0, 80)}...` 
+                              {strategy.parameters.keywords.length > 80
+                                ? `${strategy.parameters.keywords.substring(0, 80)}...`
                                 : strategy.parameters.keywords}
                             </span>
                           </StyledStrategyItemDetailRow>
@@ -1213,7 +1193,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
               </>
             ) : (
               <StyledStrategyInfo>
-                <div><strong>Job:</strong> {parsedJD.name}</div>
+                <div><strong>Project:</strong> {parsedJD.name}</div>
                 <div><strong>Company:</strong> {parsedJD.companyName || 'N/A'}</div>
                 <div><strong>Location:</strong> {parsedJD.jobLocation || 'N/A'}</div>
                 <div style={{ marginTop: '4px', fontSize: '11px', color: '#888' }}>
@@ -1224,7 +1204,7 @@ export const SearchPanel = ({ width = 350 }: SearchPanelProps) => {
           </StyledStrategySection>
         ) : (
           <StyledStrategySection>
-            <StyledStrategyTitle>No Job Data</StyledStrategyTitle>
+            <StyledStrategyTitle>No Project Data</StyledStrategyTitle>
             <StyledStrategyInfo>
               <div>No job description available. Please select a job first.</div>
             </StyledStrategyInfo>

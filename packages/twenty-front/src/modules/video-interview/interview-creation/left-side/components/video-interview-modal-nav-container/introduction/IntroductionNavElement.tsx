@@ -1,21 +1,22 @@
-import styled from '@emotion/styled';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledIntroductionNavElement = styled.div`
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
   padding: 6px;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
   &.active {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${({ theme }) => theme.grayScale.gray50};
+  color: ${themeCssVariables.grayScale.gray5};
   border-radius: 4px;
   width: 200px;
   cursor: pointer;

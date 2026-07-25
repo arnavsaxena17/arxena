@@ -1,9 +1,12 @@
-import { IconX } from 'twenty-ui/icons';
+import { IconX } from 'twenty-ui/icon';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { ChatKit, useChatKit } from '@openai/chatkit-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledChatKitContainer = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -11,10 +14,10 @@ const StyledChatKitContainer = styled.div<{ isOpen: boolean }>`
   right: 20px;
   width: ${({ isOpen }) => (isOpen ? '400px' : '0')};
   height: ${({ isOpen }) => (isOpen ? '600px' : '0')};
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.xl};
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   z-index: 1001;
   transition: all 200ms ease;
   overflow: hidden;
@@ -26,17 +29,17 @@ const StyledChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   min-height: 50px;
   flex-shrink: 0;
 `;
 
 const StyledChatTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCloseButton = styled.button`
@@ -47,14 +50,14 @@ const StyledCloseButton = styled.button`
   height: 32px;
   border: none;
   background-color: transparent;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: pointer;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
@@ -72,7 +75,7 @@ type ChatKitWidgetProps = {
 };
 
 export const ChatKitWidget = ({ isOpen, onClose, workflowId }: ChatKitWidgetProps) => {
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +111,7 @@ export const ChatKitWidget = ({ isOpen, onClose, workflowId }: ChatKitWidgetProp
         return '';
       }
 
-      if (!tokenPair?.accessToken?.token) {
+      if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
         throw new Error('No authentication token available');
       }
 
@@ -117,26 +120,25 @@ export const ChatKitWidget = ({ isOpen, onClose, workflowId }: ChatKitWidgetProp
       setError(null);
 
       try {
-        const serverBaseUrl = 
-          window._env_?.REACT_APP_SERVER_BASE_URL ||
-          process.env.REACT_APP_SERVER_BASE_URL ||
-          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:3000'
-            : `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}`);
-        
-        console.log('[ChatKit] Requesting new session from:', `${serverBaseUrl}/candidate-sourcing/chatkit-session`);
-        
-        const response = await fetch(`${serverBaseUrl}/candidate-sourcing/chatkit-session`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+        console.log(
+          '[ChatKit] Requesting new session from:',
+          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/chatkit-session`,
+        );
+
+        const response = await fetch(
+          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/chatkit-session`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
+            },
+            body: JSON.stringify({
+              workflowId: defaultWorkflowId,
+              userId: userIdRef.current,
+            }),
           },
-          body: JSON.stringify({
-            workflowId: defaultWorkflowId,
-            userId: userIdRef.current,
-          }),
-        });
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -161,7 +163,7 @@ export const ChatKitWidget = ({ isOpen, onClose, workflowId }: ChatKitWidgetProp
         setIsLoading(false);
       }
     },
-    [tokenPair?.accessToken?.token, defaultWorkflowId, clientSecret]
+    [tokenPair?.accessOrWorkspaceAgnosticToken?.token, defaultWorkflowId, clientSecret]
   );
 
   // Initialize ChatKit - component only renders when isOpen is true

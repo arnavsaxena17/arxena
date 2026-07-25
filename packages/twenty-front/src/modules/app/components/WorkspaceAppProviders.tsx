@@ -9,6 +9,7 @@ import { InitializeQueryParamStateEffect } from '@/app/effect-components/Initial
 import { PageChangeEffect } from '@/app/effect-components/PageChangeEffect';
 import { AuthProvider } from '@/auth/components/AuthProvider';
 import { SignOutOnOtherTabSignOutEffect } from '@/auth/effect-components/SignOutOnOtherTabSignOutEffect';
+import { BaileysProvider } from '@/baileys/contexts/BaileysContext';
 import { CaptchaProvider } from '@/captcha/components/CaptchaProvider';
 import { RequestFreshCaptchaTokenEffect } from '@/captcha/components/RequestFreshCaptchaTokenEffect';
 import { CommandMenuConfirmationModalManager } from '@/command-menu-item/confirmation-modal/components/CommandMenuConfirmationModalManager';
@@ -27,12 +28,16 @@ import { SSEProvider } from '@/sse-db-event/components/SSEProvider';
 import { SupportChatEffect } from '@/support/components/SupportChatEffect';
 import { DialogManager } from '@/ui/feedback/dialog-manager/components/DialogManager';
 import { DialogComponentInstanceContext } from '@/ui/feedback/dialog-manager/contexts/DialogComponentInstanceContext';
+import { NotificationProvider } from '@/notification-context/NotificationContextProvider';
 import { SnackBarProvider } from '@/ui/feedback/snack-bar-manager/components/SnackBarProvider';
 import { GlobalFilePreviewModal } from '@/ui/field/display/components/GlobalFilePreviewModal';
 import { UserThemeProviderEffect } from '@/ui/theme/components/UserThemeProviderEffect';
 import { PageFavicon } from '@/ui/utilities/page-favicon/components/PageFavicon';
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
+import { UnipileProvider } from '@/unipile/contexts/UnipileContext';
+import { WorkspaceMemberProfileUnipileSyncEffect } from '@/unipile/components/WorkspaceMemberProfileUnipileSyncEffect';
 import { UserContextProvider } from '@/users/components/UserContextProvider';
+import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
 import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProviderEffect';
 import { getPageTitleFromPath } from '~/utils/title-utils';
 
@@ -55,25 +60,34 @@ export const WorkspaceAppProviders = () => {
                   <UserThemeProviderEffect />
                   <SnackBarProvider>
                     <ErrorMessageEffect />
-                    <AgentChatProvider>
-                      <DialogComponentInstanceContext.Provider
-                        value={{ instanceId: 'dialog-manager' }}
-                      >
-                        <DialogManager>
-                          <StrictMode>
-                            <PromiseRejectionEffect />
-                            <EndTrialAfterPaymentMethodGater />
-                            <GotoHotkeysEffectsProvider />
-                            <PageTitle title={pageTitle} />
-                            <PageFavicon />
-                            <Outlet />
-                            <GlobalFilePreviewModal />
-                            <CommandMenuConfirmationModalManager />
-                            <CommandRunner />
-                          </StrictMode>
-                        </DialogManager>
-                      </DialogComponentInstanceContext.Provider>
-                    </AgentChatProvider>
+                    <WebSocketProvider>
+                      <NotificationProvider>
+                        <UnipileProvider>
+                          <BaileysProvider>
+                            <WorkspaceMemberProfileUnipileSyncEffect />
+                            <AgentChatProvider>
+                              <DialogComponentInstanceContext.Provider
+                                value={{ instanceId: 'dialog-manager' }}
+                              >
+                                <DialogManager>
+                                  <StrictMode>
+                                    <PromiseRejectionEffect />
+                                    <EndTrialAfterPaymentMethodGater />
+                                    <GotoHotkeysEffectsProvider />
+                                    <PageTitle title={pageTitle} />
+                                    <PageFavicon />
+                                    <Outlet />
+                                    <GlobalFilePreviewModal />
+                                    <CommandMenuConfirmationModalManager />
+                                    <CommandRunner />
+                                  </StrictMode>
+                                </DialogManager>
+                              </DialogComponentInstanceContext.Provider>
+                            </AgentChatProvider>
+                          </BaileysProvider>
+                        </UnipileProvider>
+                      </NotificationProvider>
+                    </WebSocketProvider>
                   </SnackBarProvider>
                   <MainContextStoreProvider />
                   <SupportChatEffect />

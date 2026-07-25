@@ -1,5 +1,8 @@
-import { atom, selector } from 'recoil';
-import { TransformedCandidateForTable } from 'twenty-shared';
+import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomSelector';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import type { TransformedCandidateForTable } from 'twenty-shared/arx';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export type SearchMetadata = {
   totalCount: number;
@@ -18,7 +21,7 @@ const DEFAULT_METADATA: SearchMetadata = {
 };
 
 function getBaseUrl(): string {
-  return process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  return REACT_APP_SERVER_BASE_URL ?? '';
 }
 
 /**
@@ -26,15 +29,15 @@ function getBaseUrl(): string {
  * Returns null when not found or when accessToken is missing.
  */
 export const fetchSearchResultsCache = async (
-  jobId: string | undefined,
+  projectId: string | undefined,
   accessToken: string | undefined,
 ): Promise<{ results: any[]; metadata: SearchMetadata } | null> => {
-  if (!jobId || jobId === 'job-id' || jobId === '__search__' || !accessToken) return null;
+  if (!projectId || projectId === 'project-id' || projectId === '__search__' || !accessToken) return null;
   const baseUrl = getBaseUrl();
   if (!baseUrl) return null;
   try {
     const res = await fetch(
-      `${baseUrl}/candidate-search/cache/results?jobId=${encodeURIComponent(jobId)}`,
+      `${baseUrl}/candidate-search/cache/results?projectId=${encodeURIComponent(projectId)}`,
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     if (res.status === 404) return null;
@@ -56,10 +59,10 @@ export const fetchSearchResultsCache = async (
  * No-op when accessToken is missing.
  */
 export const persistSearchResultsCache = async (
-  payload: { jobId: string; results: any[]; metadata: SearchMetadata },
+  payload: { projectId: string; results: any[]; metadata: SearchMetadata },
   accessToken: string | undefined,
 ): Promise<void> => {
-  if (!payload.jobId || payload.jobId === 'job-id' || !accessToken) return;
+  if (!payload.projectId || payload.projectId === 'project-id' || !accessToken) return;
   const baseUrl = getBaseUrl();
   if (!baseUrl) return;
   try {
@@ -70,7 +73,7 @@ export const persistSearchResultsCache = async (
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        jobId: payload.jobId,
+        projectId: payload.projectId,
         results: payload.results,
         metadata: payload.metadata,
       }),
@@ -83,10 +86,10 @@ export const persistSearchResultsCache = async (
 
 // Helper to load search metadata from backend cache (job-aware)
 export const loadSearchMetadataFromStorage = async (
-  jobId?: string,
+  projectId?: string,
   accessToken?: string,
 ): Promise<SearchMetadata> => {
-  const cached = await fetchSearchResultsCache(jobId, accessToken);
+  const cached = await fetchSearchResultsCache(projectId, accessToken);
   return cached?.metadata ?? DEFAULT_METADATA;
 };
 
@@ -100,14 +103,16 @@ export const loadSearchMetadataFromStorage = async (
  * - Display aliases (jobTitle, company, location)
  * - UI state fields (candConversationStatus, status, etc.)
  */
-export const searchResultsState = atom<TransformedCandidateForTable[]>({
+export const searchResultsState = createAtomState<
+  TransformedCandidateForTable[]
+>({
   key: 'candidate-search/searchResultsState',
-  default: [],
+  defaultValue: [],
 });
 
 // State for search metadata
-// Note: This atom is initialized with empty default. Metadata should be loaded per-jobId in components.
-export const searchMetadataState = atom<{
+// Note: This atom is initialized with empty default. Metadata should be loaded per-projectId in components.
+export const searchMetadataState = createAtomState<{
   totalCount: number;
   currentPage: number;
   totalPages: number;
@@ -117,7 +122,7 @@ export const searchMetadataState = atom<{
   searchParameters?: any;
 }>({
   key: 'candidate-search/searchMetadataState',
-  default: {
+  defaultValue: {
     totalCount: 0,
     currentPage: 0,
     totalPages: 0,
@@ -125,7 +130,7 @@ export const searchMetadataState = atom<{
 });
 
 // Selector to get count of fetched candidates
-export const fetchedCandidatesCountSelector = selector({
+export const fetchedCandidatesCountSelector = createAtomSelector({
   key: 'candidate-search/fetchedCandidatesCountSelector',
   get: ({ get }) => {
     const searchResults = get(searchResultsState);
@@ -134,9 +139,9 @@ export const fetchedCandidatesCountSelector = selector({
 });
 
 // Selector to get count of saved candidates (from database)
-export const savedCandidatesCountSelector = selector({
+export const savedCandidatesCountSelector = createAtomSelector({
   key: 'candidate-search/savedCandidatesCountSelector',
-  get: ({ get }) => {
+  get: () => {
     // This will be used with the main table data to count saved candidates
     // Implementation will be added when integrating with DataTable
     return 0;
@@ -144,13 +149,13 @@ export const savedCandidatesCountSelector = selector({
 });
 
 // Helper to add search results (transformed candidates from backend)
-export const addSearchResults = (setSearchResults: any, jobId?: string) => (newResults: any[], onComplete?: (result: { added: number; duplicates: number }) => void, sortByScore?: boolean) => {
-  // Validate jobId before proceeding - don't add results if jobId is invalid
-  if (!jobId || jobId === 'job-id') {
-    console.error('=== addSearchResults - INVALID jobId, skipping ===', {
-      jobId,
+export const addSearchResults = (setSearchResults: any, projectId?: string) => (newResults: any[], onComplete?: (result: { added: number; duplicates: number }) => void, sortByScore?: boolean) => {
+  // Validate projectId before proceeding - don't add results if projectId is invalid
+  if (!projectId || projectId === 'project-id') {
+    console.error('=== addSearchResults - INVALID projectId, skipping ===', {
+      projectId,
       newResultsCount: newResults.length,
-      error: 'Cannot add search results without a valid jobId'
+      error: 'Cannot add search results without a valid projectId'
     });
     if (onComplete) {
       setTimeout(() => {
@@ -162,7 +167,7 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
 
   console.log('=== addSearchResults function called ===', {
     newResultsCount: newResults.length,
-    jobId,
+    projectId,
     sortByScore,
     newResultsSample: newResults.slice(0, 2).map((r: any) => ({
       id: r.id,
@@ -173,14 +178,14 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
     }))
   });
 
-  // Capture jobId at call time to ensure we use the correct one
-  const currentJobId = jobId;
+  // Capture projectId at call time to ensure we use the correct one
+  const currentProjectId = projectId;
 
   setSearchResults((prev: any[]) => {
     console.log('=== addSearchResults - inside setSearchResults callback ===', {
       prevCount: prev.length,
       newResultsCount: newResults.length,
-      currentJobId,
+      currentProjectId,
       sortByScore,
       prevSample: prev.slice(0, 2).map((r: any) => ({
         id: r.id,
@@ -190,11 +195,11 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
       }))
     });
 
-    // Re-validate jobId inside the callback to ensure it hasn't changed
-    // If jobId is invalid, don't merge with existing results
-    if (!currentJobId || currentJobId === 'job-id') {
-      console.error('=== addSearchResults - jobId became invalid during execution, aborting ===', {
-        currentJobId,
+    // Re-validate projectId inside the callback to ensure it hasn't changed
+    // If projectId is invalid, don't merge with existing results
+    if (!currentProjectId || currentProjectId === 'project-id') {
+      console.error('=== addSearchResults - projectId became invalid during execution, aborting ===', {
+        currentProjectId,
         prevCount: prev.length,
         newResultsCount: newResults.length
       });
@@ -253,19 +258,19 @@ export const addSearchResults = (setSearchResults: any, jobId?: string) => (newR
       newResultsOnTop: uniqueNewResults.length,
       existingResults: prev.length,
       sorted: sortByScore,
-      currentJobId
+      currentProjectId
     });
     
-    // Persist to localStorage with currentJobId (captured at call time)
-    // This ensures we always use the jobId that was valid when addSearchResults was called
+    // Persist to localStorage with currentProjectId (captured at call time)
+    // This ensures we always use the projectId that was valid when addSearchResults was called
     // Fire and forget - don't block state update on storage operation
-    persistSearchResultsToStorage(updatedResults, currentJobId).catch((error) => {
+    persistSearchResultsToStorage(updatedResults, currentProjectId).catch((error) => {
       console.error('Failed to persist search results (non-blocking):', error);
     });
     
     console.log('=== addSearchResults - returning updated results ===', {
       count: updatedResults.length,
-      persistedWithJobId: currentJobId
+      persistedWithProjectId: currentProjectId
     });
     
     // Defer onComplete callback to avoid triggering state updates within a state updater
@@ -293,23 +298,23 @@ export const clearPersistedSearchResultsFromStorage = async () => {};
 // Pass options.accessToken and options.metadata to persist; otherwise no-op.
 export const persistSearchResultsToStorage = async (
   results: any[],
-  jobId?: string,
+  projectId?: string,
   options?: { accessToken?: string; metadata?: SearchMetadata },
 ) => {
-  if (jobId === 'job-id' || !jobId || !options?.accessToken) return;
+  if (projectId === 'project-id' || !projectId || !options?.accessToken) return;
   const metadata = options.metadata ?? DEFAULT_METADATA;
   await persistSearchResultsCache(
-    { jobId, results, metadata: { ...DEFAULT_METADATA, ...metadata } },
+    { projectId, results, metadata: { ...DEFAULT_METADATA, ...metadata } },
     options.accessToken,
   );
 };
 
 // Helper to load search results from backend cache (job-aware)
 export const loadSearchResultsFromStorage = async (
-  jobId?: string,
+  projectId?: string,
   accessToken?: string,
 ): Promise<any[]> => {
-  const cached = await fetchSearchResultsCache(jobId, accessToken);
+  const cached = await fetchSearchResultsCache(projectId, accessToken);
   if (!cached?.results?.length) return [];
   const results = cached.results;
   const seen = new Map<string, any>();
@@ -326,30 +331,30 @@ export const loadSearchResultsFromStorage = async (
 };
 
 // No-op when using backend cache (cache expires after 3 months)
-export const clearSearchResultsFromStorage = (_jobId?: string) => {};
+export const clearSearchResultsFromStorage = (_projectId?: string) => {};
 
 // Helper to persist search metadata to backend cache (3 months TTL).
 // When accessToken is provided, uses options.results or fetches current cache then PUTs merged results + metadata.
 export const persistSearchMetadataToStorage = (
   metadata: SearchMetadata,
-  jobId?: string,
+  projectId?: string,
   options?: { accessToken?: string; results?: any[] },
 ) => {
-  if (!options?.accessToken || !jobId || jobId === 'job-id') return;
+  if (!options?.accessToken || !projectId || projectId === 'project-id') return;
   const mergedMetadata = { ...DEFAULT_METADATA, ...metadata };
   if (options.results !== undefined) {
     persistSearchResultsCache(
-      { jobId, results: options.results, metadata: mergedMetadata },
+      { projectId, results: options.results, metadata: mergedMetadata },
       options.accessToken,
     ).catch((err) =>
       console.error('Failed to persist search metadata to cache:', err),
     );
     return;
   }
-  fetchSearchResultsCache(jobId, options.accessToken).then((cached) => {
+  fetchSearchResultsCache(projectId, options.accessToken).then((cached) => {
     const results = cached?.results ?? [];
     return persistSearchResultsCache(
-      { jobId, results, metadata: mergedMetadata },
+      { projectId, results, metadata: mergedMetadata },
       options.accessToken,
     );
   }).catch((err) =>
@@ -358,10 +363,10 @@ export const persistSearchMetadataToStorage = (
 };
 
 // No-op when using backend cache
-export const clearSearchMetadataFromStorage = (_jobId?: string) => {};
+export const clearSearchMetadataFromStorage = (_projectId?: string) => {};
 
 // Helper to remove saved candidates from search results
-export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: string) => (savedCandidates: any[]) => {
+export const removeSavedFromSearchResults = (setSearchResults: any, projectId?: string) => (savedCandidates: any[]) => {
   setSearchResults((prev: any[]) => {
     // Extract unique string keys from saved candidates
     const savedUniqueKeys = new Set(savedCandidates.map(candidate => candidate.uniqueStringKey).filter(Boolean));
@@ -375,9 +380,9 @@ export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: stri
     
     console.log(`Removed ${prev.length - filteredResults.length} saved candidates from search results`);
     
-    // Update localStorage with jobId
+    // Update localStorage with projectId
     // Fire and forget - don't block state update on storage operation
-    persistSearchResultsToStorage(filteredResults, jobId).catch((error) => {
+    persistSearchResultsToStorage(filteredResults, projectId).catch((error) => {
       console.error('Failed to persist search results after removal (non-blocking):', error);
     });
     
@@ -386,12 +391,12 @@ export const removeSavedFromSearchResults = (setSearchResults: any, jobId?: stri
 };
 
 // Helper to handle successful upload-profiles response
-export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMetadata: any, jobId?: string) => (response: any) => {
+export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMetadata: any, projectId?: string) => (response: any) => {
   if (response.status === 'ok' && response.savedCandidates) {
     console.log(`Successfully saved ${response.savedCandidates.length} candidates`);
     
     // Remove saved candidates from search results
-    removeSavedFromSearchResults(setSearchResults, jobId)(response.savedCandidates);
+    removeSavedFromSearchResults(setSearchResults, projectId)(response.savedCandidates);
     
     // Update search metadata to reflect the reduced count
     setSearchMetadata((prev: any) => ({
@@ -404,8 +409,8 @@ export const handleUploadProfilesSuccess = (setSearchResults: any, setSearchMeta
 };
 
 // Helper to clear all search results
-export const clearSearchResults = (setSearchResults: any, jobId?: string) => () => {
+export const clearSearchResults = (setSearchResults: any, projectId?: string) => () => {
   setSearchResults([]);
-  clearSearchResultsFromStorage(jobId);
-  clearSearchMetadataFromStorage(jobId);
+  clearSearchResultsFromStorage(projectId);
+  clearSearchMetadataFromStorage(projectId);
 };

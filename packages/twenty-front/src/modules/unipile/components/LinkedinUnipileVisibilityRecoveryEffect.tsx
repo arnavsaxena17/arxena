@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useEffect, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 import { useUnipile } from '../contexts/UnipileContext';
@@ -12,8 +12,8 @@ const VISIBILITY_RECOVERY_MIN_INTERVAL_MS = 90_000;
  * When the user returns to the tab (e.g. after signing in on LinkedIn), retry extension→Unipile sync once.
  */
 export const LinkedinUnipileVisibilityRecoveryEffect = () => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? '';
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
   const { isLinkedinConnected, refreshAccounts } = useUnipile();
   const lastRunRef = useRef<number>(0);
 

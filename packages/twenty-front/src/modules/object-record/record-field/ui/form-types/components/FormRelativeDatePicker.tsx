@@ -9,10 +9,7 @@ import { useId } from 'react';
 import { DEFAULT_RELATIVE_DATE_FILTER_VALUE } from 'twenty-shared/constants';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import {
-  type RelativeDateFilter,
-  resolveRelativeDateFilterStringified,
-} from 'twenty-shared/utils';
+import { resolveRelativeDateFilterStringified, type RelativeDateFilter } from 'twenty-shared/utils';
 
 const StyledContainer = styled.div`
   display: flex;

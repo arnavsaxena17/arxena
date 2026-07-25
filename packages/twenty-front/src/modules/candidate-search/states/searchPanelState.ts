@@ -1,48 +1,53 @@
-import { atom } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from '../types/candidate-search.types';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from '../types/candidate-search.types';
 
 // State for search panel open/close
-export const isSearchPanelOpenState = atom<boolean>({
+export const isSearchPanelOpenState = createAtomState<boolean>({
   key: 'candidate-search/isSearchPanelOpenState',
-  default: false,
+  defaultValue: false,
 });
 
 // State for search panel width (for responsive behavior)
-export const searchPanelWidthState = atom<number>({
+export const searchPanelWidthState = createAtomState<number>({
   key: 'candidate-search/searchPanelWidthState',
-  default: 350, // Default desktop width
+  defaultValue: 350,
 });
 
 // State for persistent search configuration
-export const persistentSearchConfigState = atom<{
+export const persistentSearchConfigState = createAtomState<{
   searchType: LinkedInSearchType;
   searchCategory: LinkedInSearchCategory;
 }>({
   key: 'candidate-search/persistentSearchConfigState',
-  default: {
+  defaultValue: {
     searchType: 'classic',
     searchCategory: 'people',
   },
 });
 
 // State for persistent search parameters
-export const persistentSearchParametersState = atom<any>({
+export const persistentSearchParametersState = createAtomState<any>({
   key: 'candidate-search/persistentSearchParametersState',
-  default: null,
+  defaultValue: null,
 });
 
 // State for recent searches
-export const recentSearchesState = atom<Array<{
-  id: string;
-  name: string;
-  searchType: string;
-  searchCategory: string;
-  parameters: any;
-  resultCount: number;
-  timestamp: Date;
-}>>({
+export const recentSearchesState = createAtomState<
+  Array<{
+    id: string;
+    name: string;
+    searchType: string;
+    searchCategory: string;
+    parameters: any;
+    resultCount: number;
+    timestamp: Date;
+  }>
+>({
   key: 'candidate-search/recentSearchesState',
-  default: [],
+  defaultValue: [],
 });
 
 // Helper to add a recent search

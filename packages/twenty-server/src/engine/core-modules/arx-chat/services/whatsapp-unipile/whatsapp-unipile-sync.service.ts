@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Job } from 'twenty-shared';
+import { Project } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
@@ -102,7 +102,7 @@ export class WhatsappUnipileSyncService {
       throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
     }
 
-    const candidateJob = candidate.jobs as Job | undefined;
+    const candidateJob = candidate.projects as Project | undefined;
     if (!candidateJob?.id) {
       throw new HttpException(
         'Candidate job not found for sync',
@@ -190,7 +190,7 @@ export class WhatsappUnipileSyncService {
 
   private async resolveWhatsappUnipileAccountId(
     apiToken: string,
-    candidateJob: Job,
+    candidateJob: Project,
   ): Promise<string | null> {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);

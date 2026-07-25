@@ -7,7 +7,7 @@ import {
   FeedbackPrompt,
   StyledMessage
 } from './StyledComponentsInterviewResponse';
-import { InterviewData } from './types/interviewResponseTypes';
+import type { InterviewData } from 'twenty-shared/arx';
 
 interface EndInterviewPageProps {
   interviewData: InterviewData;
@@ -46,7 +46,7 @@ export const EndInterviewPage: React.FC<EndInterviewPageProps> = ({
   return (
     <EndInterviewStyledContainer>
       <EndInterviewStyledLeftPanel>
-        <h2>{interviewData.candidate.jobs.name}</h2>
+        <h2>{interviewData.candidate.projects.name}</h2>
         <p>Interview Complete</p>
       </EndInterviewStyledLeftPanel>
       <EndInterviewStyledRightPanel>

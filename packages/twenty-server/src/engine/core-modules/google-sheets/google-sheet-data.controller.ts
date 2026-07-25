@@ -21,7 +21,7 @@ import { CandidateWorkspaceGraphQLService } from '../candidate-sourcing/services
 import { JDParserService } from '../candidate-sourcing/services/jd-parser.service';
 import { OtherFieldsService } from '../candidate-sourcing/services/other-fields.service';
 import { UploadProgressPubSubService } from '../candidate-sourcing/services/upload-progress-pubsub.service';
-import { FileStorageService } from '../file-storage/file-storage.service';
+import { FileStorageService } from '../file-storage/services/file-storage.service';
 
 @Controller('fetch-google-apps-data')
 export class GoogleSheetsDataController {
@@ -96,21 +96,20 @@ export class GoogleSheetsDataController {
   private async getWorkspaceTokenForGoogleSheet(spreadsheetId: string) {
     console.log("gpong to get workspace token for google sheet with id :", spreadsheetId);
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      async (workspaceId, dataSourceSchema, transactionManager) => {
+      async (workspaceId, _dataSourceSchema, _transactionManager) => {
         console.log("workspaceId:", workspaceId);
-        const sheetIntegration = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}."_job" 
-           WHERE "googleSheetId" = $1`,
-          [spreadsheetId],
-          workspaceId,
-          transactionManager
-        );
+        const projectRepository =
+          await this.workspaceQueryService.getObjectRepository<{
+            id: string;
+            googleSheetId?: string;
+          }>(workspaceId, 'project');
+        const sheetIntegration = await projectRepository.find({
+          where: { googleSheetId: spreadsheetId },
+        });
         if (sheetIntegration.length > 0) {
           // Get API keys for the workspace
           const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId, 
-            dataSourceSchema, 
-            transactionManager
+            workspaceId,
           );
           if (apiKeys && apiKeys.length > 0) {
             // Generate token using the first available API key
@@ -128,11 +127,11 @@ export class GoogleSheetsDataController {
         return null;
       }
     );
-  
+
     // Return first non-null result
     return results.find(result => result !== null);
   }
-  
+
   sheetUpdateExternalTasks(field: string, value: any, candidateId: string, personId: string, uniqueStringKey:string, apiToken: string, spreadsheetId:string) {
     console.log("Field:", field, "Value:", value, "candidateId:", candidateId, "personId:", personId, "uniqueStringKey:", uniqueStringKey);
     switch (field) {
@@ -155,8 +154,8 @@ export class GoogleSheetsDataController {
 
 
   @Post('post-batch-data')
-  async postBatchData(@Body() data: { 
-      spreadsheetId: string, 
+  async postBatchData(@Body() data: {
+      spreadsheetId: string,
       updates: Array<{
           candidateId: string,
           personId: string,
@@ -166,7 +165,7 @@ export class GoogleSheetsDataController {
       }>
   }) {
       console.log("Batch data received:", data);
-      
+
       const tokenData = await this.getWorkspaceTokenForGoogleSheet(data.spreadsheetId);
       if (!tokenData) {
           throw new Error('No valid workspace found for this spreadsheet');
@@ -193,7 +192,7 @@ export class GoogleSheetsDataController {
           // console.log("transformed Field:: field", transformedField, "for transformed field:", update.field, "update value is :", update.value);
           // const transformedValue = transformFieldValue(update.field, update.value);
           // console.log("transformed Field:: value", transformedValue, "for transformed field:", update.value);
-  
+
           // if (this.isPersonField(update.field)) {
           //     acc[update.candidateId].personUpdates[transformedField] = transformedValue;
           // } else {
@@ -212,7 +211,7 @@ export class GoogleSheetsDataController {
 
 
 
-      
+
       console.log("updates:", updates);
       const results: Array<{
           candidateId: string;
@@ -221,17 +220,17 @@ export class GoogleSheetsDataController {
           timestamp?: string;
           error?: any
       }> = [];
-  
+
       const candidateIds = Object.keys(updates);
       const batchSize = 10;
-  
+
       for (let i = 0; i < candidateIds.length; i += batchSize) {
           const batch = candidateIds.slice(i, i + batchSize);
-          
+
           const batchPromises = batch.map(async (candidateId) => {
               try {
                   const updateData = updates[candidateId];
-                  
+
                   // Update candidate if there are candidate fields
                   if (Object.keys(updateData.candidateUpdates).length > 0) {
                       const candidateUpdateMutation = {
@@ -280,7 +279,7 @@ export class GoogleSheetsDataController {
           results: results
       };
   }
-  
+
   // Helper method to determine if a field belongs to person
   private isPersonField(field: string): boolean {
       const personFields = [
@@ -289,9 +288,9 @@ export class GoogleSheetsDataController {
       ];
       return personFields.includes(field);
   }
-  
-  
-  
+
+
+
   @Post('post-data')
   async postData(@Body() data: { spreadsheetId: string, full_name: string, uniqueStringKey: string }) {
     console.log("data:::: of post-data:", data);
@@ -301,13 +300,13 @@ export class GoogleSheetsDataController {
       throw new Error('No valid workspace found for this spreadsheet');
     }
 
-    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.uniqueStringKey }, }, limit: 1 } , tokenData?.token || ''); 
-    
+    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.uniqueStringKey }, }, limit: 1 } , tokenData?.token || '');
+
     const candidate = candidateResponse.data?.data?.candidates?.edges[0]?.node;
     if (!candidate) {
       throw new NotFoundException('Candidate not found');
     }
-    
+
     const updateMutation = {
       query: graphQltoUpdateOneCandidate,
       variables: {
@@ -315,17 +314,17 @@ export class GoogleSheetsDataController {
       input: data
       }
     };
-    
+
       const updateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidate.id, input: data }, tokenData?.token || '');
-    
+
       if (updateResponse.data?.errors) {
         throw new InternalServerErrorException('Failed to update candidate');
       }
-    
+
       return {
         success: true,
         candidateId: candidate.id,
         timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
       };
-    } 
+    }
 }

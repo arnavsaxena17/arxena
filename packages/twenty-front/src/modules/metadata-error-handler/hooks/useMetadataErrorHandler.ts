@@ -3,10 +3,7 @@ import { t } from '@lingui/core/macro';
 
 import { classifyMetadataError } from '@/metadata-error-handler/utils/classifyMetadataError';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import {
-  type AllMetadataName,
-  WorkspaceMigrationV2ExceptionCode,
-} from 'twenty-shared/metadata';
+import { WorkspaceMigrationV2ExceptionCode, type AllMetadataName } from 'twenty-shared/metadata';
 import { CrudOperationType } from 'twenty-shared/types';
 
 export const useMetadataErrorHandler = () => {

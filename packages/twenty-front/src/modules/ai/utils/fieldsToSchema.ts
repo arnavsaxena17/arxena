@@ -1,8 +1,5 @@
 import { type OutputSchemaField } from '@/ai/constants/OutputFieldTypeOptions';
-import {
-  type AgentResponseFieldType,
-  type AgentResponseSchema,
-} from 'twenty-shared/ai';
+import type { AgentResponseFieldType, AgentResponseSchema } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
 export const fieldsToSchema = (

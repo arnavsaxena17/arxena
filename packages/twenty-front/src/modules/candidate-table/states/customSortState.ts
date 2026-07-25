@@ -1,9 +1,10 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+
 import { CustomSortState } from '../types/sortTypes';
 
-export const customSortState = atom<CustomSortState>({
+export const customSortState = createAtomState<CustomSortState>({
   key: 'customSortState',
-  default: {
+  defaultValue: {
     field: 'updatedAt',
     direction: 'desc',
   },

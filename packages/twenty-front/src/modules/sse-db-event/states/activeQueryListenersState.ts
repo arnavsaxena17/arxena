@@ -1,8 +1,5 @@
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
-import {
-  type MetadataGqlOperationSignature,
-  type RecordGqlOperationSignature,
-} from 'twenty-shared/types';
+import type { MetadataGqlOperationSignature, RecordGqlOperationSignature } from 'twenty-shared/types';
 
 export const activeQueryListenersState = createAtomState<
   {

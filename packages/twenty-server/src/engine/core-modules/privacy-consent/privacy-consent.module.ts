@@ -10,7 +10,7 @@ import { WebsitePrivacyConsentController } from './website-privacy-consent.contr
 @Module({
   imports: [
     EnvironmentModule,
-    TypeOrmModule.forFeature([PrivacyConsentEventEntity], 'core'),
+    TypeOrmModule.forFeature([PrivacyConsentEventEntity]),
   ],
   controllers: [WebsitePrivacyConsentController],
   providers: [PrivacyConsentService],

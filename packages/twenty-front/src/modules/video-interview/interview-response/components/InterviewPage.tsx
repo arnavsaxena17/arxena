@@ -1,10 +1,10 @@
-import styled from '@emotion/styled';
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 
-import { Button } from 'twenty-ui';
-import { ButtonGroup } from 'twenty-ui';
+import { Button, ButtonGroup } from 'twenty-ui/input';
 import { v4 as uuid } from 'uuid';
 import {
   SnapScrollContainer,
@@ -20,8 +20,8 @@ import {
 import VideoContainer from '../VideoContainer';
 import { VideoPlayer } from '../utils/videoPlaybackUtils';
 
-import { IconCommand, IconRewindBackward5 } from 'twenty-ui/icons';
-import { InterviewPageProps } from 'twenty-shared';
+import { IconArrowBackUp, IconCommand } from 'twenty-ui/icon';
+import type { InterviewPageProps } from 'twenty-shared/arx';
 import { Mixpanel } from '~/mixpanel';
 
 const ffmpeg = createFFmpeg({
@@ -98,7 +98,7 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
   const [hasCamera, setHasCamera] = useState(false);
   const [timer, setTimer] = useState<number | null>(null);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
-  const webcamRef = useRef<Webcam>(null);
+  const webcamRef = useRef<React.ElementRef<typeof Webcam>>(null);
   const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -160,8 +160,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
     if (InterviewData?.candidate?.id) {
       Mixpanel.identify(InterviewData.candidate.id);
       Mixpanel.track('Interview Page View', {
-        jobTitle: InterviewData?.candidate?.jobs?.name,
-        company: InterviewData?.candidate?.jobs?.companyName,
+        jobTitle: InterviewData?.candidate?.projects?.name,
+        company: InterviewData?.candidate?.projects?.companyName,
         questionCount: questions.length,
       });
     }
@@ -395,8 +395,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
             '16000',
             `${unique_id}.wav`,
           );
-          const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`);
-          audioBlob = new Blob([fileData], {
+          const fileData = ffmpeg.FS('readFile', `${unique_id}.wav`) as Uint8Array;
+          audioBlob = new Blob([fileData as BlobPart], {
             type: 'audio/wav',
           });
         } catch (ffmpegError) {
@@ -473,8 +473,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
     <SnapScrollContainer>
       <StyledLeftPanel>
         <h2>
-          {InterviewData?.candidate?.jobs?.name} at{' '}
-          {InterviewData?.candidate?.jobs?.companyName}
+          {InterviewData?.candidate?.projects?.name} at{' '}
+          {InterviewData?.candidate?.projects?.companyName}
         </h2>
         <StyledLeftPanelContentBox>
           <StyledTextLeftPanelTextHeadline>
@@ -534,20 +534,18 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
                 <PreviewControls>
                   <ButtonGroup variant="primary" size="medium" accent="blue">
                     <Button
-                      Icon={IconRewindBackward5}
+                      Icon={IconArrowBackUp}
                       title="Re-record"
                       fullWidth={false}
                       variant="secondary"
                       size="medium"
-                      position="left" // Changed from 'left' to 'standalone'
+                      position="left"
                       accent="blue"
                       soon={false}
                       disabled={false}
                       focus={true}
                       onClick={handleReRecord}
-                      style={{ marginRight: '16px' }} // Add direct margin if needed
-
-                      // className="mr-3"  // Add margin-right utility class if available in your system
+                      className="mr-3"
                     />
                     <Button
                       Icon={IconCommand}

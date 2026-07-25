@@ -1,4 +1,4 @@
-import { RecruiterDetails } from '../components/JobDetailsForm';
+import { RecruiterDetails } from '../components/ProjectDetailsForm';
 import { ParsedJD } from './ParsedJD';
 
 export type FormComponentProps = {

@@ -207,7 +207,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     email: EnhancedEmailsValue;
   } = {
     name: `${firstName} ${lastName}`.trim() || "",
-    jobsId: jobNode?.id,
+    projectsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
     phoneNumber: { 

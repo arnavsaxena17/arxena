@@ -1,6 +1,6 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const isCandidateSearchModalOpenState = atom<boolean>({
+export const isCandidateSearchModalOpenState = createAtomState<boolean>({
   key: 'isCandidateSearchModalOpenState',
-  default: false,
+  defaultValue: false,
 });

@@ -1,6 +1,7 @@
-import { Button } from 'twenty-ui';
-import { IconUpload } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { Button } from 'twenty-ui/input';
+import { IconUpload } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useState } from 'react';
 
 import { StyledDropzoneArea } from './ArxJDUploadModal.styled';
@@ -8,56 +9,56 @@ import { StyledDropzoneArea } from './ArxJDUploadModal.styled';
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
   width: 100%;
 `;
 
 const StyledOrSeparator = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  
+  gap: ${themeCssVariables.spacing[2]};
+  margin: ${themeCssVariables.spacing[2]} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+
   &::before,
   &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${themeCssVariables.border.color.medium};
   }
 `;
 
 const StyledNameInputContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
 `;
 
 const StyledNameInput = styled.input`
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.md};
-  color: ${({ theme }) => theme.font.color.primary};
-  
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.md};
+  color: ${themeCssVariables.font.color.primary};
+
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 const StyledLabel = styled.label`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 type UploadFormProps = {
@@ -66,7 +67,6 @@ type UploadFormProps = {
   isDragActive: boolean;
   isUploading: boolean;
   error: string | null;
-  theme: any;
   uploadButtonLabel?: string;
   onCreateJobFromName?: (jobName: string) => Promise<void>;
 };
@@ -77,7 +77,6 @@ export const UploadForm = ({
   isDragActive,
   isUploading,
   error,
-  theme,
   uploadButtonLabel = "Upload File",
   onCreateJobFromName,
 }: UploadFormProps) => {
@@ -95,7 +94,7 @@ export const UploadForm = ({
     if (!jobName.trim()) {
       return;
     }
-    
+
     if (!onCreateJobFromName) {
       return;
     }
@@ -144,10 +143,10 @@ export const UploadForm = ({
         {error && (
           <p
             style={{
-              color: theme.color.red,
+              color: themeCssVariables.color.red,
               marginTop: '8px',
               padding: '8px',
-              backgroundColor: theme.background.danger,
+              backgroundColor: themeCssVariables.background.danger,
               borderRadius: '4px',
               maxWidth: '80%',
               textAlign: 'center',
@@ -161,7 +160,7 @@ export const UploadForm = ({
       <StyledOrSeparator>or</StyledOrSeparator>
 
       <StyledNameInputContainer>
-        <StyledLabel htmlFor="job-name-input">Enter Job Name</StyledLabel>
+        <StyledLabel htmlFor="job-name-input">Enter Project Name</StyledLabel>
         <StyledNameInput
           id="job-name-input"
           type="text"
@@ -172,7 +171,7 @@ export const UploadForm = ({
           disabled={isCreatingJob || isUploading}
         />
         <Button
-          title="Create Job"
+          title={isCreatingJob ? 'Creating...' : 'Create Project'}
           fullWidth={false}
           size="small"
           position="middle"
@@ -181,9 +180,8 @@ export const UploadForm = ({
           variant="secondary"
           onClick={handleCreateJobFromName}
           disabled={!jobName.trim() || isCreatingJob || isUploading}
-        >
-          {isCreatingJob ? 'Creating...' : 'Create Job'}
-        </Button>
+          isLoading={isCreatingJob}
+        />
       </StyledNameInputContainer>
     </StyledContainer>
   );

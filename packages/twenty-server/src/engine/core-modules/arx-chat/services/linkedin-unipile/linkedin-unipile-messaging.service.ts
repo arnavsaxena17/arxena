@@ -4,7 +4,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
-  Job,
+  Project,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -35,9 +35,9 @@ export class LinkedinUnipileMessagingService {
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
   }
 
-  /** Job.recruiterId is the workspace member id of the job's recruiter (see RecruiterProfileService). */
+  /** Project.recruiterId is the workspace member id of the job's recruiter (see RecruiterProfileService). */
   private jobRecruiterAsWorkspaceMemberId(
-    candidateJob: Job | undefined | null,
+    candidateJob: Project | undefined | null,
   ): string | null {
     const id = candidateJob?.recruiterId?.trim();
     return id || null;
@@ -48,7 +48,7 @@ export class LinkedinUnipileMessagingService {
    * then workspace-level linkedin_unipile_account_id (legacy single-account workspaces).
    */
   private async resolveLinkedinUnipileAccountId(
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<string | null> {
     const workspaceId =
@@ -74,7 +74,7 @@ export class LinkedinUnipileMessagingService {
   }
 
 
-  async truncateLinkedInInvitationMessage(message: string, whatappUpdateMessageObj: whatappUpdateMessageObjType, candidateJob: Job, apiToken: string): Promise<string> {
+  async truncateLinkedInInvitationMessage(message: string, whatappUpdateMessageObj: whatappUpdateMessageObjType, candidateJob: Project, apiToken: string): Promise<string> {
     const maxLength = 300;
     
     if (message.length <= maxLength) {
@@ -346,7 +346,7 @@ export class LinkedinUnipileMessagingService {
    */
   async sendLinkedinInviteForJob(
     apiToken: string,
-    candidateJob: Job,
+    candidateJob: Project,
     linkedinProfileIdentifier: string,
     rawMessage: string,
   ): Promise<{ success: boolean; error?: string }> {
@@ -442,7 +442,7 @@ export class LinkedinUnipileMessagingService {
    */
   async sendMessageOrInvitation(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
     accountId: string,
     attendeesIds: string[],
@@ -554,7 +554,7 @@ export class LinkedinUnipileMessagingService {
   async sendLinkedinMessageVIAUnipileAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -651,7 +651,7 @@ export class LinkedinUnipileMessagingService {
   async sendLinkedinInMailVIAUnipileAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -762,7 +762,7 @@ export class LinkedinUnipileMessagingService {
       message?: string;
     },
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     let linkedinAccountId: string | null = null;
@@ -880,7 +880,7 @@ export class LinkedinUnipileMessagingService {
       message?: string;
     },
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     let linkedinAccountId: string | null = null;

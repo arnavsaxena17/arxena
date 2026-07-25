@@ -1,4 +1,4 @@
-import { LinkedInSearchType } from 'twenty-shared';
+import { LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
 import { StyledLabel, StyledSection, StyledSelect } from '../../styles/SearchFormComponents.styled';
 
 type SearchTypeSelectorProps = {

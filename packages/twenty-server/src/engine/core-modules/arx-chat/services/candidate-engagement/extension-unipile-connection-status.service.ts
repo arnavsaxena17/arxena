@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { type LinkedInSearchType } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from '../linkedin-unipile-request.service';
@@ -43,7 +43,7 @@ export class ExtensionUnipileConnectionStatusService {
   ) {}
 
   async getConnectionStatusForCurrentUser(
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
     apiToken: string,
     workspaceMemberId: string | undefined,
   ): Promise<{
@@ -103,7 +103,7 @@ export class ExtensionUnipileConnectionStatusService {
   }
 
   private async buildConnectionStatusForCurrentUser(
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
     apiToken: string,
     workspaceMemberId: string,
   ): Promise<{

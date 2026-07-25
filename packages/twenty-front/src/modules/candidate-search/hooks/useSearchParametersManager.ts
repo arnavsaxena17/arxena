@@ -1,8 +1,11 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { DefaultParameters } from '@/candidate-search/types/candidate-search.types';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared';
+import {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from '../types/candidate-search.types';
 
 export const useSearchParametersManager = (
   searchType: LinkedInSearchType,
@@ -18,7 +21,7 @@ export const useSearchParametersManager = (
   ) => Promise<void>,
   initialParameters?: any
 ) => {
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
   const assistantThreadId = parsedJD?.assistantThreads?.[0]?.id;
   
   // Helper function to construct parameter key matching backend logic

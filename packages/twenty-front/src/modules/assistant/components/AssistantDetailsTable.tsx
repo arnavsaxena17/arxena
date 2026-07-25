@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { HotTable } from '@handsontable/react-wrapper';
 import '@/candidate-table/initHandsontable';
 import Handsontable from 'handsontable';
@@ -6,19 +7,19 @@ import { useMemo } from 'react';
 
 const StyledTableWrapper = styled.div`
   width: 100%;
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  margin-top: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
   overflow: hidden;
-  background: ${({ theme }) => theme.background.primary};
+  background: ${themeCssVariables.background.primary};
 
   .handsontable {
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 
   .handsontable th {
-    background-color: ${({ theme }) => theme.background.secondary};
-    font-weight: ${({ theme }) => theme.font.weight.medium};
+    background-color: ${themeCssVariables.background.secondary};
+    font-weight: ${themeCssVariables.font.weight.medium};
   }
 
   .handsontable td {

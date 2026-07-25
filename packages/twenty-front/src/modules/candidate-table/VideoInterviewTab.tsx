@@ -1,6 +1,6 @@
 import VideoDownloaderPlayer from '@/video-interview/interview-response/VideoDownloaderPlayer';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
 
 const StyledContainer = styled.div`
@@ -8,51 +8,51 @@ const StyledContainer = styled.div`
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const CompanyInfo = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const QuestionContainer = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(6)};
+  margin-bottom: ${themeCssVariables.spacing[6]};
 `;
 
 const QuestionText = styled.h3`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+  font-size: ${themeCssVariables.font.size.lg};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const VideoContainer = styled.div`
   width: 100%;
   max-width: 100%;
-  margin: ${({ theme }) => theme.spacing(2)} 0;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
+  border-radius: ${themeCssVariables.border.radius.md};
   overflow: hidden;
 `;
 
 const TranscriptContainer = styled.div`
-  background-color: ${({ theme }) => theme.background.tertiary};
-  padding: ${({ theme }) => theme.spacing(3)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  background-color: ${themeCssVariables.background.tertiary};
+  padding: ${themeCssVariables.spacing[3]};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin-top: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const TranscriptHeading = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: 600;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.font.color.primary};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const TranscriptText = styled.p`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   white-space: pre-wrap;
 `;
 
@@ -62,9 +62,9 @@ const EmptyState = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: ${({ theme }) => theme.font.color.light};
+  color: ${themeCssVariables.font.color.light};
   text-align: center;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 type VideoInterviewTabProps = {
@@ -119,9 +119,10 @@ const cleanVideoAttachmentPath = (videoAttachment: { node: { fullPath: string } 
   }
 };
 
-const VideoInterviewTab: React.FC<VideoInterviewTabProps> = ({ candidateData, isLoading }) => {
-  const theme = useTheme();
-  
+const VideoInterviewTab: React.FC<VideoInterviewTabProps> = ({
+  candidateData,
+  isLoading,
+}) => {
   if (isLoading) {
     return <EmptyState>Loading video interview data...</EmptyState>;
   }
@@ -161,10 +162,10 @@ const VideoInterviewTab: React.FC<VideoInterviewTabProps> = ({ candidateData, is
   }
 
   return (
-    <StyledContainer theme={theme}>
+    <StyledContainer>
       <CompanyInfo>
-        <h2>{candidateData.jobs?.company?.name || 'Company'}</h2>
-        <h3>{candidateData.jobs?.name || 'Job'}</h3>
+        <h2>{candidateData.projects?.company?.name || 'Company'}</h2>
+        <h3>{candidateData.projects?.name || 'Project'}</h3>
       </CompanyInfo>
 
       {questionsWithResponses.map(({ question, responses }: QuestionWithResponses, index: number) => (

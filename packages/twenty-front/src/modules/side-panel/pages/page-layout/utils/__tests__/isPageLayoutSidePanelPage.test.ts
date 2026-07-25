@@ -24,6 +24,8 @@ describe('isPageLayoutSidePanelPage', () => {
     SidePanelPages.ViewRecord,
     SidePanelPages.AskAI,
     SidePanelPages.ComposeEmail,
+    SidePanelPages.ComposeCampaign,
+    SidePanelPages.CandidateChat,
     SidePanelPages.SearchRecords,
     SidePanelPages.ViewFrontComponent,
   ];

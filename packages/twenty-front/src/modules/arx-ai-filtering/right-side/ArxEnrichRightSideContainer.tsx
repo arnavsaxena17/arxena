@@ -1,25 +1,31 @@
-import { IconAlertCircle } from 'twenty-ui/icons';
-import { activeAiFilterState, aiFiltersState, isArxAiFilteringModalMinimizedState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import styled from '@emotion/styled';
+import { IconAlertCircle, IconLoader } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
 import axios from 'axios';
-import { useEffect } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useEffect, useState } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { tokenPairState } from '@/auth/states/tokenPairState';
-import { TableState, tableStateAtom } from '@/candidate-table/states/states';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-// import { useViewStates } from '@/views/hooks/internal/useViewStates';
-// import { currentViewWithFiltersState } from '@/views/states/currentViewState';
-import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+  activeAiFilterState,
+  aiFiltersState,
+  currentProjectIdState,
+  isArxAiFilteringModalMinimizedState,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import {
   buildSelectedMetadataFieldsForPersist,
   hasAiFilterContext,
 } from '@/arx-ai-filtering/utils/resumeMetadata';
-import { IconLoader2 } from 'twenty-ui/icons';
-import { useState } from 'react';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import { TableState, tableStateAtom } from '@/candidate-table/states/states';
+import { refreshTableDataTriggerState } from '@/candidate-table/states/refreshTableDataTriggerState';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
-import { refreshTableDataTriggerState } from '../../candidate-table/states/refreshTableDataTriggerState';
+// import { useViewStates } from '@/views/hooks/internal/useViewStates';
+// import { currentViewWithFiltersState } from '@/views/states/currentViewState';
+
 import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correct
 import DynamicModelCreator from './DynamicModelCreator';
 
@@ -29,7 +35,7 @@ const StyledFormElement = styled.form<{ isMinimized?: boolean }>`
   flex-grow: 1;
   flex-direction: ${({ isMinimized }) => isMinimized ? 'row' : 'column'};
   overflow-y: ${({ isMinimized }) => isMinimized ? 'hidden' : 'auto'};
-  scroll-behavior: smooth;  
+  scroll-behavior: smooth;
   position: relative;
   left: -80px;
   align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
@@ -44,7 +50,7 @@ const ErrorContainer = styled.div`
 `;
 
 const StyledAllContainer = styled.div<{ isMinimized?: boolean }>`
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
   left: -200px;
@@ -62,7 +68,7 @@ const StyledQuestionsContainer = styled.ol`
   flex-direction: column;
   flex-grow: 1;
   padding: 0;
-  font-family: ${({ theme }) => theme.font.family};
+  font-family: ${themeCssVariables.font.family};
   margin: 0px;
   list-style-type: none;
   overflow-y: scroll;
@@ -116,48 +122,48 @@ const ProgressContainer = styled.div`
   position: sticky;
   top: 0;
   z-index: 10;
-  background: ${({ theme }) => theme.background.primary};
+  background: ${themeCssVariables.background.primary};
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border: 1px solid ${themeCssVariables.border.color.medium};
 `;
 
 const ProgressBar = styled.div<{ progress: number }>`
   width: 100%;
   height: 8px;
-  background: ${({ theme }) => theme.border.color.medium};
+  background: ${themeCssVariables.border.color.medium};
   border-radius: 4px;
   overflow: hidden;
   margin: 0.5rem 0;
-  
+
   &::after {
     content: '';
     display: block;
     width: ${({ progress }) => progress}%;
     height: 100%;
-    background: ${({ theme }) => theme.color.blue60};
+    background: ${themeCssVariables.color.blue};
     transition: width 0.3s ease;
   }
 `;
 
 const ProgressText = styled.div`
   font-size: 0.875rem;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   margin-bottom: 0.25rem;
 `;
 
 const ProgressDetails = styled.div`
   font-size: 0.75rem;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
   justify-content: space-between;
   align-items: center;
 `;
 
-export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({ 
-  closeModal, 
-  objectNameSingular, 
+export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({
+  closeModal,
+  objectNameSingular,
   objectRecordId,
   otherFieldKeys,
   isLoadingFields,
@@ -169,10 +175,10 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   reconnect: propReconnect,
   onRefresh
 }) => {
-  const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeAiFilterState);
-  const [enrichments, setEnrichments] = useRecoilState(aiFiltersState);
-  const [isMinimized, setIsMinimized] = useRecoilState(isArxAiFilteringModalMinimizedState);
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const [activeEnrichment, setActiveEnrichment] = useAtomState(activeAiFilterState);
+  const [enrichments, setEnrichments] = useAtomState(aiFiltersState);
+  const [isMinimized, setIsMinimized] = useAtomState(isArxAiFilteringModalMinimizedState);
+  const [tokenPair] = useAtomState(tokenPairState);
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -185,10 +191,14 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     current_enrichment?: number;
     total_enrichments?: number;
   } | null>(null);
-  const { enqueueSnackBar } = useSnackBar();
-  const setRefreshTableDataTrigger = useSetRecoilState(refreshTableDataTriggerState);
-  const jobId = useRecoilValue(currentJobIdState);
-  const tableState = useRecoilValue<TableState>(tableStateAtom);
+  const {
+    enqueueInfoSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+  } = useSnackBar();
+  const setRefreshTableDataTrigger = useSetAtomState(refreshTableDataTriggerState);
+  const projectId = useAtomStateValue(currentProjectIdState);
+  const tableState = useAtomStateValue<TableState>(tableStateAtom);
   // Use SSE data from props (passed from modal level)
   const enrichmentProgress = propAiFilteringProgress ?? propEnrichmentProgress;
   const isConnected = propIsConnected || false;
@@ -209,8 +219,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
   // Get selected or all record IDs from table state
   const getSelectedOrAllRecordIds = () => {
-    return tableState?.selectedRowIds?.length > 0 
-      ? tableState.selectedRowIds 
+    return tableState?.selectedRowIds?.length > 0
+      ? tableState.selectedRowIds
       : tableState?.rawData?.map(row => row.id) || [];
   };
 
@@ -225,12 +235,12 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     if (enrichmentProgress) {
       console.log('ArxEnrichRightSideContainer received enrichment progress:', enrichmentProgress);
       setEnrichmentProgressState(enrichmentProgress);
-      
+
       // Show progress in snackbar for important steps
       if (enrichmentProgress.step === 'started') {
-        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Info });
+        enqueueInfoSnackBar({ message: enrichmentProgress.message });
       } else if (enrichmentProgress.step === 'completed') {
-        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Success });
+        enqueueSuccessSnackBar({ message: enrichmentProgress.message });
         // Clear progress state after completion and close modal
         setTimeout(() => {
           setEnrichmentProgressState(null);
@@ -239,12 +249,19 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
           onRefresh?.();
         }, 3000);
       } else if (enrichmentProgress.step === 'error') {
-        enqueueSnackBar(enrichmentProgress.message, { variant: SnackBarVariant.Error });
+        enqueueErrorSnackBar({ message: enrichmentProgress.message });
         setEnrichmentProgressState(null);
         // Don't close modal on error - let user see the error and retry
       }
     }
-  }, [enrichmentProgress, enqueueSnackBar, closeModal]);
+  }, [
+    enrichmentProgress,
+    enqueueInfoSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    closeModal,
+    onRefresh,
+  ]);
 
   // Debug SSE connection status
   useEffect(() => {
@@ -262,25 +279,6 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     // The useEnrichmentProgress hook should automatically establish connection
   }, []);
 
-  const currentViewId = location.href.split("view=")[1];
-  // const {
-  //   canPersistViewSelector,
-  //   isViewBarExpandedState,
-  //   availableFilterDefinitionsState,
-  //   availableSortDefinitionsState,
-  // } = useViewStates(currentViewId);
-
-  
-  // const availableSortDefinitions = useRecoilValue(
-  //   availableSortDefinitionsState,
-  // );
-  
-  // const availableFilterDefinitions = useRecoilValue(
-  //   availableFilterDefinitionsState,
-  // );
-
-  // const currentViewWithCombinedFiltersAndSorts = useRecoilValue(currentViewWithFiltersState);
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
@@ -289,40 +287,45 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
     // Validate current enrichment
     const currentEnrichment = enrichments[activeEnrichment || 0];
-    
+
     if (!currentEnrichment.modelName?.trim()) {
       setError('Model name is required');
+      setIsLoading(false);
       return;
     }
-  
+
     if (!currentEnrichment.prompt?.trim()) {
       setError('Prompt is required');
+      setIsLoading(false);
       return;
     }
-  
+
     if (!currentEnrichment.selectedModel || currentEnrichment.selectedModel=="") {
       console.log("currentEnrichment.selectedModel::",currentEnrichment.selectedModel)
       setError('Please select a model');
+      setIsLoading(false);
       return;
     }
-  
+
     if (!hasAiFilterContext(currentEnrichment)) {
       setError('Please select at least one column header or include resume');
+      setIsLoading(false);
       return;
     }
-  
+
     if (!currentEnrichment.fields?.length) {
       setError('Please create at least one field');
       setFieldErrors(['At least one field is required']);
       const formElement = document.getElementById('NewArxEnrichForm');
       formElement?.scrollTo({ top: 0, behavior: 'smooth' });
+      setIsLoading(false);
       return;
     }
 
     console.log("All Enrichmetns", enrichments)
 
     const selectedRecordIds = getSelectedOrAllRecordIds();
-    
+
     console.log("Selected Record Ids::selectedRecordIds", selectedRecordIds);
     console.log("Selected Record Ids from table state:", tableState?.selectedRowIds);
     console.log("All rows from table state:", tableState?.rawData);
@@ -333,20 +336,22 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         selectedMetadataFields: buildSelectedMetadataFieldsForPersist(enrichment),
       }));
 
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-ai-filters', {
+      const response = await axios.post(REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-ai-filters', {
         aiFilters: aiFiltersForRequest,
         objectNameSingular,
-        jobId,
+        projectId,
         objectRecordId,
         selectedRecordIds
       }, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` }
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+        }
       });
-  
+
       if (response.status === 200 || response.status === 201) {
-        enqueueSnackBar('AI filter processing started', {
-          variant: SnackBarVariant.Info,
-          duration: 3000,
+        enqueueInfoSnackBar({
+          message: 'AI filter processing started',
+          options: { duration: 3000 },
         });
         // Don't close the modal immediately - let it stay open to show progress
         // The modal will be closed when enrichment is completed (handled in progress handler)
@@ -355,15 +360,15 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     } catch (error) {
       console.error('Error creating enrichments:', error);
       setError('Failed to run AI filters');
-      enqueueSnackBar('Failed to create enrichment', {
-        variant: SnackBarVariant.Error,
-        duration: 5000,
+      enqueueErrorSnackBar({
+        message: 'Failed to create enrichment',
+        options: { duration: 5000 },
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
+
 
   return (
 
@@ -371,11 +376,11 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm" isMinimized={isMinimized}>
     {isLoading && (
         <LoadingOverlay>
-          <IconLoader2 size={32} className="animate-spin" />
+          <IconLoader size={32} className="animate-spin" />
         </LoadingOverlay>
       )}
 
-      <ArxEnrichName 
+      <ArxEnrichName
         closeModal={closeModal}
         onSubmit={handleSubmit}
         index={activeEnrichment || 0}
@@ -414,21 +419,21 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
           {/* SSE Connection Status Debug */}
           {/* {process.env.NODE_ENV === 'development' && (
-            <div style={{ 
-              padding: '8px', 
-              margin: '8px 0', 
-              backgroundColor: isConnected ? '#d4edda' : '#f8d7da', 
+            <div style={{
+              padding: '8px',
+              margin: '8px 0',
+              backgroundColor: isConnected ? '#d4edda' : '#f8d7da',
               border: `1px solid ${isConnected ? '#c3e6cb' : '#f5c6cb'}`,
               borderRadius: '4px',
               fontSize: '12px'
             }}>
               SSE Status: {isConnected ? '✅ Connected' : '❌ Disconnected'}
               {sseError && <div>Error: {sseError}</div>}
-              <button 
-                onClick={reconnect} 
-                style={{ 
-                  marginLeft: '8px', 
-                  padding: '2px 6px', 
+              <button
+                onClick={reconnect}
+                style={{
+                  marginLeft: '8px',
+                  padding: '2px 6px',
                   fontSize: '10px',
                   backgroundColor: '#007bff',
                   color: 'white',
@@ -444,8 +449,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
            */}
           <StyledQuestionsContainer type="1">
             { activeEnrichment !== null && activeEnrichment < enrichments?.length && (
-              <DynamicModelCreator 
-                objectNameSingular={objectNameSingular} 
+              <DynamicModelCreator
+                objectNameSingular={objectNameSingular}
                 index={activeEnrichment}
                 onError={handleError}
                 otherFieldKeys={otherFieldKeys}

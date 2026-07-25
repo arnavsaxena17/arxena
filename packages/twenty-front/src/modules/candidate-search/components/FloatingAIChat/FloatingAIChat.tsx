@@ -1,10 +1,11 @@
-import { IconMinus, IconX } from 'twenty-ui/icons';
+import { IconMinus, IconX } from 'twenty-ui/icon';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AIChatAssistant } from '@/candidate-search/components/ai-chat-assistant/AIChatAssistant';
 import { fetchedCandidatesCountSelector } from '@/candidate-search/states/searchResultsState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledFloatingChat = styled.div<{ isExpanded: boolean }>`
   position: fixed;
@@ -13,13 +14,13 @@ const StyledFloatingChat = styled.div<{ isExpanded: boolean }>`
   width: ${({ isExpanded }) => isExpanded ? '400px' : '60px'};
   height: ${({ isExpanded }) => isExpanded ? '900px' : '60px'};
   max-height: ${({ isExpanded }) => isExpanded ? 'calc(100vh - 40px)' : '60px'};
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.xl};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.xl};
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   z-index: 1000;
   transition: all 200ms ease;
-  border-radius: ${({ theme }) => theme.border.radius.xl};
+  border-radius: ${themeCssVariables.border.radius.xl};
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -29,50 +30,50 @@ const StyledChatHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   min-height: 50px;
 `;
 
 const StyledChatTitle = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledAvatar = styled.div`
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.color.gray80};
+  background: ${themeCssVariables.color.gray8};
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledChatControls = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledControlButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  padding: ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
@@ -86,17 +87,17 @@ const StyledChatContent = styled.div`
 `;
 
 const StyledContextBar = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledMinimizedButton = styled.button`
   width: 100%;
   height: 100%;
-  background: ${({ theme }) => theme.color.gray80};
+  background: ${themeCssVariables.color.gray8};
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -104,8 +105,8 @@ const StyledMinimizedButton = styled.button`
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.lg};
   transition: transform 200ms ease;
   
   &:hover {
@@ -123,14 +124,14 @@ const StyledUnreadBadge = styled.div`
   right: -5px;
   width: 20px;
   height: 20px;
-  background-color: ${({ theme }) => theme.color.red};
+  background-color: ${themeCssVariables.color.red};
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 type FloatingAIChatProps = {
@@ -163,8 +164,8 @@ export const FloatingAIChat = ({
     [isControlled, onExpandedChange],
   );
 
-  const parsedJD = useRecoilValue(parsedJDSelector);
-  const fetchedCount = useRecoilValue(fetchedCandidatesCountSelector);
+  const parsedJD = useAtomStateValue(parsedJDSelector);
+  const fetchedCount = useAtomStateValue(fetchedCandidatesCountSelector);
 
   const toggleExpanded = useCallback(() => {
     const next = !isExpanded;

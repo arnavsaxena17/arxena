@@ -10,7 +10,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
-  Job
+  Project
 } from 'twenty-shared';
 
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
@@ -37,7 +37,7 @@ export class OpenAIArxMultiStepClient {
 
   async createCompletion(
     mostRecentMessageArr: ChatHistoryItem[],
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
     isChatEnabled = true,
@@ -159,7 +159,7 @@ export class OpenAIArxMultiStepClient {
 
       console.log('mostRecentMessageArr:::', mostRecentMessageArr);
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        // @ts-ignore
+        // @ts-expect-error
         const response = await openAIclient.chat.completions.create({
           model: modelName,
           messages: this.buildChatCompletionMessages(mostRecentMessageArr),
@@ -207,7 +207,7 @@ export class OpenAIArxMultiStepClient {
 
   async addResponseAndToolCallsToMessageHistory(
     responseMessage: ChatCompletionMessage,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -228,7 +228,7 @@ export class OpenAIArxMultiStepClient {
 
       if (toolCalls) {
         for (const toolCall of toolCalls) {
-          // @ts-ignore
+          // @ts-expect-error
           const functionName = toolCall.function.name;
 
           console.log('Function name is:', functionName);
@@ -238,7 +238,7 @@ export class OpenAIArxMultiStepClient {
             this.workspaceMemberProfileUnipileService,
           ).getAvailableFunctions(candidateJob, apiToken);
           const functionToCall = availableFunctions[functionName];
-          // @ts-ignore
+          // @ts-expect-error
           const functionArgs = JSON.parse(toolCall.function.arguments);
           const responseFromFunction = await functionToCall(
             functionArgs,

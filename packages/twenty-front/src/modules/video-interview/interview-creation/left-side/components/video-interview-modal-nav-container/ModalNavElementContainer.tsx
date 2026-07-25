@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
 
 import { useAddRemoveVideoInterviewQuestion } from '@/video-interview/interview-creation/hooks/useAddRemoveVideoInterviewQuestionHook';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IntroductionNavElement } from '@/video-interview/interview-creation/left-side/components/video-interview-modal-nav-container/introduction/IntroductionNavElement';
 import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal } from 'react';
 
@@ -16,9 +17,9 @@ const StyledModalNavElementContainer = styled.nav`
 const StyledButton = styled.div`
   border: none;
   font-family: inherit;
-  color: ${({ theme }) => theme.font.color.light};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  color: ${themeCssVariables.font.color.light};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   cursor: pointer;
   background-color: none;
   margin-top: 16px;
@@ -40,9 +41,9 @@ const StyledListItem = styled.li`
   &::marker {
     display: none;
     font-family: inherit;
-    color: ${({ theme }) => theme.font.color.light};
-    font-size: ${({ theme }) => theme.font.size.md};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
+    color: ${themeCssVariables.font.color.light};
+    font-size: ${themeCssVariables.font.size.md};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 `;
 

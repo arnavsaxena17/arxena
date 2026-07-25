@@ -6,7 +6,7 @@ export const CREATE_ONE_VIDEO_INTERVIEW_TEMPLATE = gql`
       instructions
       name
       id
-      jobId
+      projectId
       introduction
       videoInterviewModelId
     }

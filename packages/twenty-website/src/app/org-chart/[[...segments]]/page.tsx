@@ -3,17 +3,17 @@ import { headers } from 'next/headers';
 import { permanentRedirect } from 'next/navigation';
 
 import {
-    buildCanonicalOrgChartPath,
-    extractOrgData,
-    fromSlug,
-    getProxiedImageUrl,
-    OrgChartNodeData,
-    processOrgChartToNodeData,
-    resolveOrgChartCanonicalCompanyId,
-    shouldRedirectOrgChartCompanySlug,
-    toSlug,
-    toTitleCase,
-} from 'twenty-shared';
+  buildCanonicalOrgChartPath,
+  extractOrgData,
+  fromSlug,
+  getProxiedImageUrl,
+  OrgChartNodeData,
+  processOrgChartToNodeData,
+  resolveOrgChartCanonicalCompanyId,
+  shouldRedirectOrgChartCompanySlug,
+  toSlug,
+  toTitleCase,
+} from 'twenty-shared/utils';
 
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl, getInternalAppUrl } from '@/lib/base-url';

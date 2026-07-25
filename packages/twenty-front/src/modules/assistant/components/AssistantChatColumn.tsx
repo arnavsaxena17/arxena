@@ -1,4 +1,4 @@
-import { IconDotsVertical, IconFile, IconX } from 'twenty-ui/icons';
+import { IconDotsVertical, IconFile, IconX } from 'twenty-ui/icon';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import type {
@@ -11,18 +11,23 @@ import type {
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { TextInput } from '@/ui/input/components/TextInput';
-import styled from '@emotion/styled';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
+import { useModal } from '@/ui/layout/modal/hooks/useModal';
 
 import { parseServerSentEvent } from '../utils/serverSentEvents';
 import { AssistantJDSection } from './AssistantJDSection';
 import { displayThreadName } from './AssistantThreadUtils';
 import { McpClientChat } from './McpClientChat';
 
-const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
+const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
+const DELETE_THREAD_MODAL_ID = 'assistant-delete-thread-modal';
 
 const StyledChatPanel = styled.div<{ isMobile: boolean }>`
   display: flex;
@@ -32,57 +37,57 @@ const StyledChatPanel = styled.div<{ isMobile: boolean }>`
     isMobile
       ? 'min-height: 40%; max-height: 60%; min-width: 0;'
       : 'flex: 0 0 420px; min-width: 420px; max-width: 480px; flex-shrink: 0;'}
-  border-right: ${({ isMobile, theme }) =>
-    isMobile ? 'none' : `1px solid ${theme.border.color.medium}`};
-  border-bottom: ${({ isMobile, theme }) =>
-    isMobile ? `1px solid ${theme.border.color.medium}` : 'none'};
+  border-right: ${({ isMobile }) =>
+    isMobile ? 'none' : `1px solid ${themeCssVariables.border.color.medium}`};
+  border-bottom: ${({ isMobile }) =>
+    isMobile ? `1px solid ${themeCssVariables.border.color.medium}` : 'none'};
 `;
 
 const StyledThreadSelector = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3, 4)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   flex-shrink: 0;
-  background: ${({ theme }) => theme.background.primary};
+  background: ${themeCssVariables.background.primary};
 `;
 
 const StyledThreadSelectRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledThreadSelect = styled.select`
   flex: 1;
   min-width: 0;
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
   transition: border-color 0.2s ease-in-out;
 
   &:hover {
-    border-color: ${({ theme }) => theme.border.color.strong};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 const StyledThreadNameInput = styled(TextInput)`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledThreadHeaderRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledThreadMenuContainer = styled.div`
@@ -94,73 +99,73 @@ const StyledThreadMenuButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(0.75)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing['1']};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.15s ease-in-out;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledThreadMenuDropdown = styled.div`
   position: absolute;
-  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  top: calc(100% + ${themeCssVariables.spacing[1]});
   right: 0;
   min-width: 220px;
-  background-color: ${({ theme }) => theme.background.primary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 1000;
 `;
 
 const StyledThreadMenuAction = styled.button`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   border: none;
   background: transparent;
   text-align: left;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
 `;
 
 const StyledThreadMenuDangerAction = styled(StyledThreadMenuAction)`
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    color: ${({ theme }) => theme.font.color.secondary};
+    background-color: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 `;
 
 const StyledThreadMenuSectionTitle = styled.div`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
 const StyledThreadMenuActionActive = styled(StyledThreadMenuAction)<{ active?: boolean }>`
-  background-color: ${({ theme, active }) =>
-    active ? theme.background.transparent.light : 'transparent'};
+  background-color: ${({ active }) =>
+    active ? themeCssVariables.background.transparent.light : 'transparent'};
 `;
 
 const SEARCH_TYPE_OPTIONS: { value: LinkedInSearchType; label: string }[] = [
@@ -179,15 +184,15 @@ const StyledJDHeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledJDSummary = styled.div`
   flex: 1;
   min-width: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -202,25 +207,25 @@ const StyledJDMenuButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(0.5, 1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.15s ease-in-out;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledJobAttachedRow = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  margin-top: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -229,7 +234,7 @@ const StyledJobAttachedRow = styled.div`
 const StyledJobAttachedRowContent = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
 `;
 
@@ -246,12 +251,12 @@ const StyledJDAttachedIndicator = styled.button`
   justify-content: center;
   border: none;
   background: transparent;
-  padding: ${({ theme }) => theme.spacing(0.25)};
+  padding: ${themeCssVariables.spacing['1']};
   cursor: pointer;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 
   &:hover {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
   }
 `;
 
@@ -261,14 +266,14 @@ const StyledJDRemoveButton = styled.button`
   justify-content: center;
   border: none;
   background: transparent;
-  padding: ${({ theme }) => theme.spacing(0.25)};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing['1']};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.background.tertiary};
-    color: ${({ theme }) => theme.font.color.secondary};
+    background: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 
   &:disabled {
@@ -546,7 +551,7 @@ type AssistantChatColumnProps = {
     threadId: string,
     patch: {
       assistantMode?: 'fully_autonomous' | 'permissioned';
-      jobId?: string | null;
+      projectId?: string | null;
       name?: string;
       searchType?: LinkedInSearchType;
       statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
@@ -557,7 +562,7 @@ type AssistantChatColumnProps = {
     assistantMode: 'fully_autonomous' | 'permissioned',
   ) => void;
   selectedCandidateIds?: string[];
-  onJobAttached?: (jobId: string) => void;
+  onJobAttached?: (projectId: string) => void;
 };
 
 export const AssistantChatColumn = ({
@@ -584,18 +589,18 @@ export const AssistantChatColumn = ({
   onJobAttached,
 }: AssistantChatColumnProps) => {
   const { objectMetadataItems } = useObjectMetadataItems();
-  const parsedJD = useRecoilValue(parsedJDSelector);
+  const parsedJD = useAtomStateValue(parsedJDSelector);
   const hasJobObjectMetadata = objectMetadataItems.some(
-    (item) => item.nameSingular === 'job',
+    (item) => item.nameSingular === 'project',
   );
 
-  const tokenPair = useRecoilValue(tokenPairState);
-  const token = tokenPair?.accessToken?.token;
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [isHeartbeatSending, setIsHeartbeatSending] = useState(false);
+  const { openModal } = useModal();
   const [isThreadMenuOpen, setIsThreadMenuOpen] = useState(false);
-  const [isDeleteThreadModalOpen, setIsDeleteThreadModalOpen] = useState(false);
   const [isDeleteThreadLoading, setIsDeleteThreadLoading] = useState(false);
   const [threadIdToDelete, setThreadIdToDelete] = useState<string | null>(null);
   const [jdActions, setJdActions] = useState<{
@@ -898,7 +903,7 @@ export const AssistantChatColumn = ({
 
                         setIsThreadMenuOpen(false);
                         setThreadIdToDelete(currentThreadId);
-                        setIsDeleteThreadModalOpen(true);
+                        openModal(DELETE_THREAD_MODAL_ID);
                       }}
                     >
                       <span>Delete thread</span>
@@ -908,7 +913,7 @@ export const AssistantChatColumn = ({
                 )}
               </StyledThreadMenuContainer>
             </StyledThreadHeaderRow>
-            <StyledJobAttachedRow title={currentThread.jobId ?? undefined}>
+            <StyledJobAttachedRow title={currentThread.projectId ?? undefined}>
               <StyledJobAttachedRowContent>
                 <StyledJobAttachedText>
                   {(() => {
@@ -916,21 +921,21 @@ export const AssistantChatColumn = ({
                     // thread's job when ids match — otherwise a job page visit leaks into /assistant.
                     const showParsedJDForThread = Boolean(
                       (parsedJD?.name || parsedJD?.jobCode) &&
-                      currentThread.jobId &&
-                      parsedJD?.id === currentThread.jobId,
+                      currentThread.projectId &&
+                      parsedJD?.id === currentThread.projectId,
                     );
                     const hasThreadJobDetails = Boolean(
-                      currentThread.jobId && (currentThread.job?.name || currentThread.job?.id),
+                      currentThread.projectId && (currentThread.job?.name || currentThread.job?.id),
                     );
-                    const hasThreadJobIdOnly = Boolean(currentThread.jobId && !currentThread.job);
+                    const hasThreadProjectIdOnly = Boolean(currentThread.projectId && !currentThread.job);
 
                     if (showParsedJDForThread) {
                       return (
                         <>
-                          Job{' '}
+                          Project{' '}
                           {parsedJD?.jobCode && parsedJD?.name
                             ? `${parsedJD.jobCode} - ${parsedJD.name}`
-                            : parsedJD?.name ?? 'Job Description'}
+                            : parsedJD?.name ?? 'Project Description'}
                         </>
                       );
                     }
@@ -938,7 +943,7 @@ export const AssistantChatColumn = ({
                     if (hasThreadJobDetails) {
                       return (
                         <>
-                          Job: {currentThread.job?.name ?? currentThread.job?.id}
+                          Project: {currentThread.job?.name ?? currentThread.job?.id}
                           {currentThread.job?.company?.name
                             ? ` at ${currentThread.job.company.name}`
                             : ''}
@@ -946,14 +951,14 @@ export const AssistantChatColumn = ({
                       );
                     }
 
-                    if (hasThreadJobIdOnly) {
-                      return <>Job attached</>;
+                    if (hasThreadProjectIdOnly) {
+                      return <>Project attached</>;
                     }
 
                     return <>No job attached</>;
                   })()}
                 </StyledJobAttachedText>
-                {Boolean(currentThread.jobId && jdActions?.hasJDFile) && (
+                {Boolean(currentThread.projectId && jdActions?.hasJDFile) && (
                   <>
                     <StyledJDAttachedIndicator
                       type="button"
@@ -981,10 +986,10 @@ export const AssistantChatColumn = ({
             {hasJobObjectMetadata && (
               <AssistantJDSection
                 threadId={currentThreadId}
-                jobId={currentThread.jobId}
+                projectId={currentThread.projectId}
                 threadJobName={currentThread.job?.name ?? null}
-                onAttachJobToThread={async (jobId) => {
-                  await onPatchThread(currentThreadId, { jobId });
+                onAttachJobToThread={async (projectId) => {
+                  await onPatchThread(currentThreadId, { projectId });
                 }}
                 hideMenu
                 exposeActions={setJdActions}
@@ -1041,31 +1046,26 @@ export const AssistantChatColumn = ({
         />
       )}
 
-      {isDeleteThreadModalOpen && (
-        <ConfirmationModal
-          isOpen={isDeleteThreadModalOpen}
-          setIsOpen={(val) => {
-            setIsDeleteThreadModalOpen(val);
-            if (!val) setThreadIdToDelete(null);
-          }}
-          title="Delete thread"
-          subtitle="This action cannot be undone."
-          onConfirmClick={() => {
-            if (!threadIdToDelete) return;
+      <ConfirmationModal
+        modalInstanceId={DELETE_THREAD_MODAL_ID}
+        title="Delete thread"
+        subtitle="This action cannot be undone."
+        onClose={() => setThreadIdToDelete(null)}
+        onConfirmClick={() => {
+          if (!threadIdToDelete) return;
 
-            setIsDeleteThreadLoading(true);
-            void Promise.resolve(onDeleteThread(threadIdToDelete))
-              .catch(() => {
-                // best-effort; parent is responsible for state updates
-              })
-              .finally(() => {
-                setIsDeleteThreadLoading(false);
-              });
-          }}
-          deleteButtonText="Delete thread"
-          loading={isDeleteThreadLoading}
-        />
-      )}
+          setIsDeleteThreadLoading(true);
+          void Promise.resolve(onDeleteThread(threadIdToDelete))
+            .catch(() => {
+              // best-effort; parent is responsible for state updates
+            })
+            .finally(() => {
+              setIsDeleteThreadLoading(false);
+            });
+        }}
+        confirmButtonText="Delete thread"
+        loading={isDeleteThreadLoading}
+      />
     </StyledChatPanel>
   );
 };

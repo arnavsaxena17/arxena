@@ -122,29 +122,21 @@ export class ApolloIoRestService {
   }
 
   private getApiKey(): string | null {
-    const key = this.environmentService.get('APOLLO_API_KEY' as never) as
-      | string
-      | undefined;
+    const key = this.environmentService.get('APOLLO_API_KEY');
 
     return key?.trim() ? key.trim() : null;
   }
 
   private getRapidApiKey(): string | null {
     const key = this.environmentService.get(
-      'RAPIDAPI_APOLLO_ORG_SEARCH_KEY' as never,
-    ) as string | undefined;
+      'RAPIDAPI_APOLLO_ORG_SEARCH_KEY',
+    );
 
     return key?.trim() ? key.trim() : null;
   }
 
   private getRapidApiHost(): string {
-    const host = this.environmentService.get(
-      'RAPIDAPI_APOLLO_ORG_SEARCH_HOST' as never,
-    ) as string | undefined;
-
-    return host?.trim()
-      ? host.trim()
-      : 'apollo-io-no-cookies-required.p.rapidapi.com';
+    return this.environmentService.get('RAPIDAPI_APOLLO_ORG_SEARCH_HOST');
   }
 
   isConfigured(): boolean {
@@ -191,31 +183,23 @@ export class ApolloIoRestService {
   }
 
   private getOrgSearchCacheTtlMs(): number {
-    const raw = this.environmentService.get(
-      'APOLLO_ORG_SEARCH_CACHE_TTL_SEC' as never,
-    ) as number | undefined;
-    const sec =
-      typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 86400;
+    const sec = this.environmentService.get('APOLLO_ORG_SEARCH_CACHE_TTL_SEC');
 
     return Math.max(60, sec) * 1000;
   }
 
   private getOrgResolutionCacheTtlMs(): number {
-    const raw = this.environmentService.get(
-      'APOLLO_ORG_RESOLUTION_CACHE_TTL_SEC' as never,
-    ) as number | undefined;
-    const sec =
-      typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 86400;
+    const sec = this.environmentService.get(
+      'APOLLO_ORG_RESOLUTION_CACHE_TTL_SEC',
+    );
 
     return Math.max(60, sec) * 1000;
   }
 
   private getOrgResolutionNegativeCacheTtlMs(): number {
-    const raw = this.environmentService.get(
-      'APOLLO_ORG_RESOLUTION_NEGATIVE_CACHE_TTL_SEC' as never,
-    ) as number | undefined;
-    const sec =
-      typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : 3600;
+    const sec = this.environmentService.get(
+      'APOLLO_ORG_RESOLUTION_NEGATIVE_CACHE_TTL_SEC',
+    );
 
     return Math.max(60, sec) * 1000;
   }
@@ -823,7 +807,7 @@ export class ApolloIoRestService {
   }
 
   /**
-   * Job postings GET /organizations/{organization_id}/job_postings (consumes credits)
+   * Project postings GET /organizations/{organization_id}/job_postings (consumes credits)
    * @see https://docs.apollo.io/reference/organization-jobs-postings.md
    */
   async organizationJobPostings(

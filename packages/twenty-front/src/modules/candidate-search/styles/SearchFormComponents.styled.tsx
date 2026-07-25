@@ -1,12 +1,13 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const StyledForm = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
   height: 100%;
   overflow-y: auto;
-  padding-right: ${({ theme }) => theme.spacing(1)};
+  padding-right: ${themeCssVariables.spacing[1]};
   
   /* Custom scrollbar styling */
   &::-webkit-scrollbar {
@@ -14,25 +15,25 @@ export const StyledForm = styled.div`
   }
   
   &::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.background.secondary};
+    background: ${themeCssVariables.background.secondary};
     border-radius: 3px;
   }
   
   &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.border.color.medium};
+    background: ${themeCssVariables.border.color.medium};
     border-radius: 3px;
   }
   
   &::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.border.color.strong};
+    background: ${themeCssVariables.border.color.strong};
   }
 `;
 
 export const StyledSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   
   &:last-child {
     margin-bottom: 0;
@@ -40,74 +41,74 @@ export const StyledSection = styled.div`
 `;
 
 export const StyledLabel = styled.label`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 export const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
   appearance: none;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: right ${({ theme }) => theme.spacing(2)} center;
+  background-position: right ${themeCssVariables.spacing[2]} center;
   background-size: 16px;
-  padding-right: ${({ theme }) => theme.spacing(5)};
+  padding-right: ${themeCssVariables.spacing[5]};
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 export const StyledInput = styled.input`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 export const StyledTextArea = styled.textarea`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
   min-height: 80px;
   resize: vertical;
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 export const StyledButtonContainer = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: flex-end;
 `;
 
 export const StyledGeneratedParams = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   line-height: 1.5;
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -117,60 +118,60 @@ export const StyledGeneratedParams = styled.div`
 `;
 
 export const StyledButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.blue};
+  color: ${themeCssVariables.font.color.inverted};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.blue50};
+    background-color: ${themeCssVariables.color.blue5};
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.color.gray20};
+    background-color: ${themeCssVariables.color.gray2};
     cursor: not-allowed;
   }
 `;
 
 export const StyledAdvancedSection = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
 `;
 
 export const StyledResolutionStatus = styled.div<{ isResolving: boolean; isResolved: boolean }>`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ isResolving, isResolved, theme }) => 
-    isResolving ? theme.color.yellow10 : 
-    isResolved ? theme.color.green10 : 
-    theme.color.gray10};
-  border: 1px solid ${({ isResolving, isResolved, theme }) => 
-    isResolving ? theme.color.yellow20 : 
-    isResolved ? theme.color.green20 : 
-    theme.color.gray20};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ isResolving, isResolved, theme }) => 
-    isResolving ? theme.color.yellow60 : 
-    isResolved ? theme.color.green60 : 
-    theme.color.gray60};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${({ isResolving, isResolved }) => 
+    isResolving ? themeCssVariables.color.yellow10 : 
+    isResolved ? themeCssVariables.color.green10 : 
+    themeCssVariables.color.gray10};
+  border: 1px solid ${({ isResolving, isResolved }) => 
+    isResolving ? themeCssVariables.color.yellow2 : 
+    isResolved ? themeCssVariables.color.green2 : 
+    themeCssVariables.color.gray2};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${({ isResolving, isResolved }) => 
+    isResolving ? themeCssVariables.color.yellow6 : 
+    isResolved ? themeCssVariables.color.green6 : 
+    themeCssVariables.color.gray6};
 `;
 
 export const StyledResolutionLabel = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 export const StyledGeneratingSection = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.yellow10};
-  border: 1px solid ${({ theme }) => theme.color.yellow20};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.color.yellow60};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.yellow10};
+  border: 1px solid ${themeCssVariables.color.yellow2};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.color.yellow6};
 `;

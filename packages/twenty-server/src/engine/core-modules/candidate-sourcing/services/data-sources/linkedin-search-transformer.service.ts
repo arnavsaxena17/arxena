@@ -44,7 +44,7 @@ export type TransformedCandidateForTable = Omit<
   emailMessages: { edges: any[] };
   otherFields?: Record<string, unknown>;
   candidateReminders: { edges: any[] };
-  jobs: { id: string; name: string };
+  projects: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
@@ -176,7 +176,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
 
     // Add job process event
-    this.addJobProcessEvent(userProfile, 'linkedin_profile_processed', {
+    this.addProjectProcessEvent(userProfile, 'linkedin_profile_processed', {
       profileUrl: candidateData.profile_url,
       publicProfileUrl: candidateData.public_profile_url,
       memberUrn: candidateData.member_urn,
@@ -215,7 +215,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       };
 
       // Add job process event
-      this.addJobProcessEvent(userProfile, 'current_position_processed', {
+      this.addProjectProcessEvent(userProfile, 'current_position_processed', {
         company: currentPosition.company,
         role: currentPosition.role,
         tenure: currentPosition.tenure_at_company?.years,
@@ -316,7 +316,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // LinkedIn search results typically don't include detailed education
     // This would be enriched through profile scraping or other means
     // For now, we'll add a placeholder
-    this.addJobProcessEvent(userProfile, 'education_data_placeholder', {
+    this.addProjectProcessEvent(userProfile, 'education_data_placeholder', {
       note: 'Education data not available in LinkedIn search results - requires profile enrichment',
     });
   }
@@ -325,7 +325,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // LinkedIn search results typically don't include detailed skills
     // This would be enriched through profile scraping or other means
     // For now, we'll add a placeholder
-    this.addJobProcessEvent(userProfile, 'skills_data_placeholder', {
+    this.addProjectProcessEvent(userProfile, 'skills_data_placeholder', {
       note: 'Skills data not available in LinkedIn search results - requires profile enrichment',
     });
   }
@@ -356,7 +356,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
    */
   transformSearchResultsToTableFormat(
     searchResults: LinkedInSearchResult[],
-    jobId: string,
+    projectId: string,
     jobName: string = 'LinkedIn Search Results'
   ): TransformedCandidateForTable[] {
     return searchResults.map((result, index) => {
@@ -370,7 +370,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       
       // Create base UserProfile using the standard transformation
       const context: TransformationContext = {
-        jobId,
+        projectId,
         jobName,
         userId: 'linkedin_search_user',
         dataSource: 'linkedin_search',
@@ -440,7 +440,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         candidateReminders: { edges: [] },
         attachments: { edges: [] },
         videoInterview: { edges: [] },
-        jobs: { id: jobId, name: jobName },
+        projects: { id: projectId, name: jobName },
         people: { id: peopleId },
         whatsappProvider: 'application03',
         input: '',

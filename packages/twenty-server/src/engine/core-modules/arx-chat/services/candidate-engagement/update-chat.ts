@@ -15,7 +15,7 @@ import {
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
   graphqlToUpdateOneClientInterview,
-  Job,
+  Project,
   mergeOtherFields,
   PageInfo,
   questionTextToKey,
@@ -92,7 +92,7 @@ export class UpdateChat {
 
       const updatedCandidateProfileDataNodeObj =
         candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidate.jobs.id,
+          (edge) => edge.node.projects.id === candidate.projects.id,
         )[0]?.node;
 
       console.log(
@@ -131,11 +131,11 @@ export class UpdateChat {
     }
   }
 
-  async checkScheduledClientMeetingsCount(jobId, apiToken: string) {
+  async checkScheduledClientMeetingsCount(projectId, apiToken: string) {
     const scheduledClientMeetings = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchScheduledClientMeetings(jobId, apiToken);
+    ).fetchScheduledClientMeetings(projectId, apiToken);
     const today = new Date();
     const dayAfterTomorrow = new Date(today);
 
@@ -279,17 +279,17 @@ export class UpdateChat {
     return response.data;
   }
 
-  async createInterviewVideos(jobId: string, apiToken: string) {
+  async createInterviewVideos(projectId: string, apiToken: string) {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create-interview-videos'
         : 'http://localhost:5050/create-interview-videos';
 
     console.log('This is the url:', url);
-    console.log('going to create jobId based interview videos', jobId);
+    console.log('going to create projectId based interview videos', projectId);
     const response = await axios.post(
       url,
-      { jobId: jobId },
+      { projectId: projectId },
       {
         headers: {
           'Content-Type': 'application/json',
@@ -355,17 +355,17 @@ export class UpdateChat {
     //   this.workspaceQueryService,
     //   this.staticGraphQLService,
     // ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    // const candidateJob: Job = personObj?.candidates?.edges[0]?.node?.jobs as Job;
+    // const candidateJob: Project = personObj?.candidates?.edges[0]?.node?.projects as Project;
     const candidate = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getCandidateDetailsById(candidateId, apiToken);
 
-    const candidateJob: Job = candidate?.jobs as Job;
+    const candidateJob: Project = candidate?.projects as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     if (!recruiterProfile) {
       console.warn(
-        '[UpdateChat] Skipping interim chat: job has no recruiter (jobId: %s, candidateId: %s)',
+        '[UpdateChat] Skipping interim chat: job has no recruiter (projectId: %s, candidateId: %s)',
         candidateJob?.id,
         candidateId,
       );
@@ -433,7 +433,7 @@ export class UpdateChat {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getCandidateDetailsById(candidateId, apiToken);
-      const slidingWindowDelayMinutes = candidate?.jobs?.engagementProcessingDelayMinutes;
+      const slidingWindowDelayMinutes = candidate?.projects?.engagementProcessingDelayMinutes;
 
       // Queue the candidate for engagement processing with the interim chat data
       // All heavy operations including getWorkspaceIdFromToken and createChatControl will be moved to the worker
@@ -601,7 +601,7 @@ export class UpdateChat {
 
   async processCandidatesChatsGetStatuses(
     apiToken: string,
-    jobIds: string[],
+    projectIds: string[],
     candidateIds: string[] | null = null,
     updateType: string = "processCandidatesChatsGetStatuses",
   ) {
@@ -648,15 +648,15 @@ export class UpdateChat {
           'and candidate name for processing and getting udpated status::',
           candidate?.name,
         );
-        const jobId = candidateIds
-          ? jobIds[candidateIds.indexOf(candidateId)]
+        const projectId = candidateIds
+          ? projectIds[candidateIds.indexOf(candidateId)]
           : '';
 
 
-        const recruiterId = candidate?.jobs?.recruiterId;
+        const recruiterId = candidate?.projects?.recruiterId;
 
-        if (jobId == '') {
-          console.log('Job ID is not present for the candidate::', candidateId);
+        if (projectId == '') {
+          console.log('Project ID is not present for the candidate::', candidateId);
         }
         const whatsappMessages = await new FilterCandidates(
           this.workspaceQueryService,
@@ -671,7 +671,7 @@ export class UpdateChat {
             ).getChatStageFromChatHistory(
               whatsappMessages,
               candidateId,
-              jobId,
+              projectId,
               apiToken,
             ) as Promise<allStatuses>,
           ]);
@@ -688,7 +688,7 @@ export class UpdateChat {
           return {
             candidateId,
             candidateStatus,
-            googleSheetId: candidate?.jobs?.googleSheetId,
+            googleSheetId: candidate?.projects?.googleSheetId,
             whatsappMessages,
           };
         } catch (error) {
@@ -780,8 +780,8 @@ export class UpdateChat {
         whatappUpdateMessageObj?.messages[0]?.text || '',
         phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
         phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
-        jobsId: candidate?.jobs?.id,
-        recruiterId: candidate?.jobs?.recruiterId,
+        projectsId: candidate?.projects?.id,
+        recruiterId: candidate?.projects?.recruiterId,
         name: whatappUpdateMessageObj?.messageType,
         lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
         messageObj: whatappUpdateMessageObj?.messageObj,
@@ -800,13 +800,13 @@ export class UpdateChat {
         createNewWhatsappMessageUpdateVariables?.input?.message,
       );
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneNewWhatsappMessage, createNewWhatsappMessageUpdateVariables, apiToken);
-      const recruiterId = candidate?.jobs?.recruiterId;
+      const recruiterId = candidate?.projects?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
         console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
         this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
           candidateId: candidate?.id,
-          jobId: candidate?.jobs?.id,
+          projectId: candidate?.projects?.id,
           messageId: createNewWhatsappMessageUpdateVariables.input.id,
         });
         console.log('WebSocket event sent to the specific recruiter::', recruiterId);
@@ -967,7 +967,7 @@ export class UpdateChat {
 
     await this.updateCandidatesWithChatCount([candidate?.id], apiToken);
 
-    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.jobs?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
+    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.projects?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
     // console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }

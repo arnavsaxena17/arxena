@@ -7,6 +7,7 @@ import { EntityDeleteContext } from '@/object-record/record-table/contexts/Entit
 import { useSelectAllRows } from '@/object-record/record-table/hooks/internal/useSelectAllRows';
 import { useActiveRecordTableRow } from '@/object-record/record-table/hooks/useActiveRecordTableRow';
 import { useFocusedRecordTableRow } from '@/object-record/record-table/hooks/useFocusedRecordTableRow';
+import { RecordIndexTableRefreshEffect } from '@/object-record/record-table/virtualization/components/RecordIndexTableRefreshEffect';
 import { RecordTableRecordLimitReloadEffect } from '@/object-record/record-table/virtualization/components/RecordTableRecordLimitReloadEffect';
 import { PageFocusId } from '@/types/PageFocusId';
 import { useHotkeysOnFocusedElement } from '@/ui/utilities/hotkey/hooks/useHotkeysOnFocusedElement';
@@ -76,6 +77,7 @@ export const RecordTableWithWrappers = ({
               componentInstanceId={`record-table-scroll-${recordTableId}`}
             >
               <RecordTableRecordLimitReloadEffect />
+              <RecordIndexTableRefreshEffect />
               <RecordTable />
             </ScrollWrapper>
           </StyledRecordTablePrintBoundary>

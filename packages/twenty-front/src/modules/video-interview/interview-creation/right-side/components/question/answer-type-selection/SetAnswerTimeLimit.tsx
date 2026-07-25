@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
 
 import { TextInput } from '@/ui/input/components/TextInput';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { H2Title } from 'twenty-ui';
 
 const StyledContainer = styled.div`

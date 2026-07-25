@@ -1,17 +1,20 @@
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
+import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
 // import { JobService } from './services/job.service';
 import { Module } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
-import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { AppTokenEntity } from 'src/engine/core-modules/app-token/app-token.entity';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whitelist-processing';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
-import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
+import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { DeleteLegacyOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/delete-legacy-other-fields.command';
 import { MigrateOtherFieldsCommand } from 'src/engine/core-modules/candidate-sourcing/commands/migrate-other-fields.command';
@@ -38,21 +41,15 @@ import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-
 import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { EmailService } from 'src/engine/core-modules/email/email.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
-import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { User } from 'src/engine/core-modules/user/user.entity';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module';
-import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { CandidateEngagementProcessor } from '../cron-processes/services/candidate-engagement-processor.job';
 import { ResumeUploadController } from './controllers/resume-upload.controller';
@@ -81,40 +78,41 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
 
 @Module({
   imports: [
+    WorkspaceCacheStorageModule,
+    EmailModule,
+    EnvironmentModule,
+    WorkspaceDataSourceModule,
+    ApiKeyModule,
     AuthModule,
     CandidateAvatarModule,
     RedisClientModule,
     WebSocketModule,
     WorkspaceModificationsModule,
     TypeORMModule,
-    AuthModule, 
+    AuthModule,
     GraphQLExecutionModule,
-    WorkspaceModificationsModule, 
+    WorkspaceModificationsModule,
     CoreGraphQLApiModule,
-    // MulterModule.register({
-    //   dest: './uploads',
-    // }),
-    TypeOrmModule.forFeature([Workspace], 'core'),
-    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
-    TypeOrmModule.forFeature([User], 'core'),
-    TypeOrmModule.forFeature([AppToken], 'core'),
-    TypeOrmModule.forFeature([UserWorkspace], 'core'),
+    TypeOrmModule.forFeature([WorkspaceEntity]),
+    TypeOrmModule.forFeature([DataSourceEntity]),
+    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([AppTokenEntity]),
+    TypeOrmModule.forFeature([UserWorkspaceEntity]),
     DataSourceModule,
     JwtModule,
   ],
   controllers: [CandidateSourcingController, AiFilteringProgressController, FileUploadController, UploadProgressController, ResumeUploadController],
   providers: [
+    GoogleSheetsService,
     // JobService,
     ExtSockWhatsappWhitelistProcessingService,
     PersonService,
-    GoogleSheetsService,
     ExtSockWhatsappMessageProcessor,
     RedisService,
     ProcessCandidatesService,
     ProcessAiFiltersService,
     DeleteFieldValuesService,
     CandidateService,
-    ApiKeyService,
     ChatService,
     FilterDescriptionProcessorService,
     AiFilteringService,
@@ -128,18 +126,11 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     MigrateOtherFieldsCommand,
     DeleteLegacyOtherFieldsCommand,
     CandidateWorkspaceGraphQLService,
-    WorkspaceQueryService,
-    WorkspaceDataSourceService,
-    EnvironmentService,
-    WorkspaceCacheStorageService,
     CandidateQueueProcessor,
     AiFiltersQueueProcessor,
     DeleteFieldValuesQueueProcessor,
     CandidateEngagementProcessor,
     ResumeUploadQueueProcessor,
-    JwtService,
-    JwtAuthStrategy,
-    EmailService,
     // Data transformation services
     DataProcessingUtils,
     DataSourceTransformerFactoryService,

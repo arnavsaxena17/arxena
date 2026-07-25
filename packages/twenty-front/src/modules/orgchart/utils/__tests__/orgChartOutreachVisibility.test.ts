@@ -1,19 +1,6 @@
-import type { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared/utils';
 
-import {
-    isOutreachEmailContextVisible,
-    isOutreachGoogleContactContextVisible,
-    isOutreachLinkedInContextVisible,
-    isOutreachWhatsappContextVisible,
-    orgChartFirstSlotWithEmail,
-    orgChartFirstSlotWithLinkedin,
-    orgChartFirstSlotWithPhone,
-    orgChartFirstSlotWithPhoneAndEmail,
-    orgChartNodeHasGoogleContactFields,
-    orgChartNodeHasOutreachEmail,
-    orgChartNodeHasOutreachLinkedin,
-    orgChartNodeHasOutreachPhone,
-} from 'twenty-shared';
+import { isOutreachEmailContextVisible, isOutreachGoogleContactContextVisible, isOutreachLinkedInContextVisible, isOutreachWhatsappContextVisible, orgChartFirstSlotWithEmail, orgChartFirstSlotWithLinkedin, orgChartFirstSlotWithPhone, orgChartFirstSlotWithPhoneAndEmail, orgChartNodeHasGoogleContactFields, orgChartNodeHasOutreachEmail, orgChartNodeHasOutreachLinkedin, orgChartNodeHasOutreachPhone } from 'twenty-shared/utils';
 
 const activeBase = {
   key: 1,

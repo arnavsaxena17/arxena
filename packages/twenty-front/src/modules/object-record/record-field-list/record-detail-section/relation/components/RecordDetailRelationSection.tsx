@@ -24,12 +24,7 @@ import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/use
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { indexViewIdFromObjectMetadataItemFamilySelector } from '@/views/states/selectors/indexViewIdFromObjectMetadataItemFamilySelector';
 import { useLingui } from '@lingui/react/macro';
-import {
-  AppPath,
-  FieldMetadataType,
-  ViewFilterOperand,
-  type RecordGqlOperationFilter,
-} from 'twenty-shared/types';
+import { AppPath, FieldMetadataType, ViewFilterOperand, type RecordGqlOperationFilter } from 'twenty-shared/types';
 import {
   computeMorphRelationGqlFieldName,
   CustomError,

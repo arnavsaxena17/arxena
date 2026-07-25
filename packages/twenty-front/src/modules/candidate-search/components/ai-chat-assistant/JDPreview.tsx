@@ -1,53 +1,57 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledJDPreview = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(3)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[3]};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledJDTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)} 0;
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledJDDetails = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledJDDetail = styled.div`
   strong {
-    color: ${({ theme }) => theme.font.color.primary};
-    font-weight: ${({ theme }) => theme.font.weight.semiBold};
+    color: ${themeCssVariables.font.color.primary};
+    font-weight: ${themeCssVariables.font.weight.semiBold};
   }
   
   span {
-    color: ${({ theme }) => theme.font.color.secondary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 `;
 
 const StyledChip = styled.span<{ clickable?: boolean }>`
   display: inline-block;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin: ${({ theme }) => theme.spacing(1)};
-  ${({ clickable }) => clickable && 'cursor: pointer;'}
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]};
+  ${({ clickable }) => (clickable ? 'cursor: pointer;' : '')}
   
-  ${({ clickable, theme }) => clickable && `
+  ${({ clickable }) =>
+    clickable
+      ? `
     &:hover {
-      background-color: ${theme.color.blue20};
+      background-color: ${themeCssVariables.color.blue2};
     }
-  `}
+  `
+      : ''}
 `;
 
 interface ParsedJobDescription {
@@ -69,7 +73,7 @@ export const JDPreview = ({ parsedJobDescription }: JDPreviewProps) => {
   
   return (
     <StyledJDPreview>
-      <StyledJDTitle>Job Description Preview</StyledJDTitle>
+      <StyledJDTitle>Project Description Preview</StyledJDTitle>
       <StyledJDDetails>
         <StyledJDDetail>
           <strong>Title:</strong> <span>{jd.jobTitle}</span>

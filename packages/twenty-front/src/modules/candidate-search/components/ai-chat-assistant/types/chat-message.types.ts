@@ -1,5 +1,5 @@
 import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared';
+import type { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared/types';
 
 // Use the ChatMessage type from the state
   export type ChatMessage = {

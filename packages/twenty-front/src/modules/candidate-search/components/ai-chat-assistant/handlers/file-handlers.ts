@@ -1,17 +1,19 @@
+import type { SnackBarEnqueueFunctions } from '@/candidate-search/types/snackbar.types';
 import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
-import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import type { ChatMessage } from '../types/chat-message.types';
 
 type FileHandlerDeps = {
   parsedJD: ParsedJD;
   attachments: any[];
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
-  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+  snackBars: SnackBarEnqueueFunctions;
   setAttachments: (attachments: any[]) => void;
   setIsUploadingFile: (isUploading: boolean) => void;
   destroyOneRecord: (id: string) => Promise<any>;
-  uploadAttachmentFile: (file: File, options: { targetObjectNameSingular: CoreObjectNameSingular; id: string }) => Promise<{ attachmentAbsoluteURL: string }>;
+  uploadAttachmentFile: (
+    file: File,
+    options: { targetObjectNameSingular: string; id: string },
+  ) => Promise<{ attachmentAbsoluteURL: string }>;
   findManyAttachments: (options: { filter: any; orderBy: any[] }) => Promise<any[]>;
   onJDRemove?: () => Promise<void>;
   onJDReplace?: (files: File[]) => Promise<void>;
@@ -46,19 +48,17 @@ export const createJDRemoveHandler = (deps: FileHandlerDeps) => {
       
       // Refresh attachments list
       const fetchedAttachments = await deps.findManyAttachments({
-        filter: { jobId: { eq: deps.parsedJD.id } },
+        filter: { projectId: { eq: deps.parsedJD.id } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
       deps.setAttachments(fetchedAttachments);
       
       await deps.addMessage({
         type: 'assistant',
-        content: 'Job description file removed successfully. You can upload a new one using the replace button.',
+        content: 'Project description file removed successfully. You can upload a new one using the replace button.',
       });
       
-      deps.enqueueSnackBar('Job description file removed successfully', {
-        variant: SnackBarVariant.Success,
-      });
+      deps.snackBars.enqueueSuccessSnackBar({ message: 'Project description file removed successfully' });
       
       if (deps.onJDRemove) {
         await deps.onJDRemove();
@@ -69,9 +69,7 @@ export const createJDRemoveHandler = (deps: FileHandlerDeps) => {
         type: 'assistant',
         content: 'Sorry, I encountered an error while removing the job description file.',
       });
-      deps.enqueueSnackBar('Failed to remove job description file', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to remove job description file' });
     } finally {
       deps.setIsUploadingFile(false);
     }
@@ -100,25 +98,23 @@ export const createJDReplaceHandler = (deps: FileHandlerDeps) => {
       
       // Upload new attachment
       const { attachmentAbsoluteURL } = await deps.uploadAttachmentFile(file, {
-        targetObjectNameSingular: CoreObjectNameSingular.Job,
+        targetObjectNameSingular: 'project',
         id: deps.parsedJD.id,
       });
       
       // Refresh attachments list
       const fetchedAttachments = await deps.findManyAttachments({
-        filter: { jobId: { eq: deps.parsedJD.id } },
+        filter: { projectId: { eq: deps.parsedJD.id } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
       deps.setAttachments(fetchedAttachments);
       
       await deps.addMessage({
         type: 'assistant',
-        content: 'Job description file replaced successfully! I\'m analyzing the new file to update the search plan...',
+        content: 'Project description file replaced successfully! I\'m analyzing the new file to update the search plan...',
       });
       
-      deps.enqueueSnackBar('Job description file replaced successfully', {
-        variant: SnackBarVariant.Success,
-      });
+      deps.snackBars.enqueueSuccessSnackBar({ message: 'Project description file replaced successfully' });
       
       if (deps.onJDReplace) {
         await deps.onJDReplace(files);
@@ -132,9 +128,7 @@ export const createJDReplaceHandler = (deps: FileHandlerDeps) => {
         type: 'assistant',
         content: 'Sorry, I encountered an error while replacing the job description file.',
       });
-      deps.enqueueSnackBar('Failed to replace job description file', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to replace job description file' });
     } finally {
       deps.setIsUploadingFile(false);
     }

@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { createPortal } from 'react-dom';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -32,16 +33,16 @@ const StyledWrapper = styled.div`
 
 const StyledInput = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 
   &:disabled {
@@ -60,48 +61,48 @@ const StyledDropdown = styled.ul<{ $top: number; $left: number; $width: number }
   max-height: ${DROPDOWN_MAX_HEIGHT}px;
   overflow-y: auto;
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${themeCssVariables.spacing[1]};
   list-style: none;
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   z-index: 10000;
 `;
 
 const StyledDropdownItem = styled.li`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
   cursor: pointer;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
 const StyledLogo = styled.img`
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   object-fit: cover;
   flex-shrink: 0;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
 `;
 
 const StyledLogoPlaceholder = styled.div`
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   flex-shrink: 0;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledItemText = styled.div`
@@ -112,13 +113,13 @@ const StyledItemText = styled.div`
 `;
 
 const StyledItemTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledItemSubtitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -127,27 +128,27 @@ const StyledItemSubtitle = styled.div`
 const StyledSelectedRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledClearButton = styled.button`
   margin-left: auto;
   border: none;
   background: transparent;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 
   &:hover {
-    color: ${({ theme }) => theme.font.color.primary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledHint = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  padding: ${({ theme }) => theme.spacing(1.5)};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  padding: ${themeCssVariables.spacing[1.5]};
 `;
 
 export const SuperImposeLinkedInFacetAutocomplete = ({

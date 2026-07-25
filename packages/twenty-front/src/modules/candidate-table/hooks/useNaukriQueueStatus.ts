@@ -1,16 +1,24 @@
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { naukriQueueStatusState } from '@/candidate-table/states/naukriQueueStatusState';
 import {
-    getNaukriQueueStatusFromPage,
-    isTerminalNaukriQueueState,
-    NaukriQueueSnapshot,
-    stopNaukriQueueFromPage,
-    subscribeToNaukriQueueUpdates,
+  getNaukriQueueStatusFromPage,
+  isTerminalNaukriQueueState,
+  NaukriQueueSnapshot,
+  stopNaukriQueueFromPage,
+  subscribeToNaukriQueueUpdates,
 } from '@/chrome-extension/utils/naukriQueueExtensionBridge';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { SnackBarComponentInstanceContext } from '@/ui/feedback/snack-bar-manager/contexts/SnackBarComponentInstanceContext';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import {
+  snackBarInternalComponentState,
+  type SnackBarOptions,
+} from '@/ui/feedback/snack-bar-manager/states/snackBarInternalComponentState';
+import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useStore } from 'jotai';
 import { useCallback, useEffect, useRef } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
 
 const ACTIVE_SNACKBAR_DEDUPE_KEY = 'naukri-queue-active';
 const PERSISTENT_SNACKBAR_DURATION_MS = 60 * 60 * 1000;
@@ -40,19 +48,58 @@ const getProgressMessage = (snapshot: NaukriQueueSnapshot): string => {
   return `Processing ${processed}/${snapshot.totalCount}${failedSuffix}`;
 };
 
-/**
- * DataTable-scoped Naukri queue status. Subscribes to extension push updates,
- * rehydrates on mount, renders a live snackbar with a Stop control, and refreshes
- * the candidate table when the queue completes or stops.
- */
 export const useNaukriQueueStatus = () => {
-  const { enqueueSnackBar, updateSnackBarByDedupeKey, closeSnackBarByDedupeKey } =
-    useSnackBar();
-  const [queueStatus, setQueueStatus] = useRecoilState(naukriQueueStatusState);
-  const refreshDataFunction = useRecoilValue(dataTableRefreshFunctionState);
+  const {
+    enqueueInfoSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueWarningSnackBar,
+    enqueueErrorSnackBar,
+  } = useSnackBar();
+  const componentInstanceId = useAvailableComponentInstanceIdOrThrow(
+    SnackBarComponentInstanceContext,
+  );
+  const store = useStore();
+  const [queueStatus, setQueueStatus] = useAtomState(naukriQueueStatusState);
+  const refreshDataFunction = useAtomStateValue(dataTableRefreshFunctionState);
 
   const activeSnackBarShownRef = useRef(false);
   const lastTerminalQueueIdRef = useRef<string | null>(null);
+
+  const updateSnackBarByDedupeKey = useCallback(
+    (dedupeKey: string, updates: Partial<SnackBarOptions>) => {
+      store.set(
+        snackBarInternalComponentState.atomFamily({
+          instanceId: componentInstanceId,
+        }),
+        (previous) => ({
+          ...previous,
+          queue: previous.queue.map((snackBar) =>
+            snackBar.dedupeKey === dedupeKey
+              ? { ...snackBar, ...updates }
+              : snackBar,
+          ),
+        }),
+      );
+    },
+    [componentInstanceId, store],
+  );
+
+  const closeSnackBarByDedupeKey = useCallback(
+    (dedupeKey: string) => {
+      store.set(
+        snackBarInternalComponentState.atomFamily({
+          instanceId: componentInstanceId,
+        }),
+        (previous) => ({
+          ...previous,
+          queue: previous.queue.filter(
+            (snackBar) => snackBar.dedupeKey !== dedupeKey,
+          ),
+        }),
+      );
+    },
+    [componentInstanceId, store],
+  );
 
   const handleStopQueue = useCallback(
     (queueId: string) => {
@@ -63,21 +110,18 @@ export const useNaukriQueueStatus = () => {
           }
         })
         .catch((error) => {
-          enqueueSnackBar(
-            error instanceof Error
-              ? error.message
-              : 'Failed to stop Naukri queue',
-            {
-              variant: SnackBarVariant.Error,
-              duration: 4000,
-            },
-          );
+          enqueueErrorSnackBar({
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Failed to stop Naukri queue',
+            options: { duration: 4000 },
+          });
         });
     },
-    [enqueueSnackBar, setQueueStatus],
+    [enqueueErrorSnackBar, setQueueStatus],
   );
 
-  // Subscribe to extension push updates while mounted.
   useEffect(() => {
     const unsubscribe = subscribeToNaukriQueueUpdates((snapshot) => {
       setQueueStatus(snapshot);
@@ -86,7 +130,6 @@ export const useNaukriQueueStatus = () => {
     return unsubscribe;
   }, [setQueueStatus]);
 
-  // Rehydrate the latest snapshot on mount so navigation does not lose status.
   useEffect(() => {
     let cancelled = false;
 
@@ -105,7 +148,6 @@ export const useNaukriQueueStatus = () => {
     };
   }, [setQueueStatus]);
 
-  // Render snackbar updates based on the current snapshot.
   useEffect(() => {
     if (!queueStatus) {
       return;
@@ -115,7 +157,6 @@ export const useNaukriQueueStatus = () => {
 
     if (!isTerminal) {
       const snackBarOptions = {
-        variant: SnackBarVariant.Info,
         showProgressBar: true,
         progress: getProgressPercentage(queueStatus),
         progressMessage: getProgressMessage(queueStatus),
@@ -128,7 +169,10 @@ export const useNaukriQueueStatus = () => {
       };
 
       if (!activeSnackBarShownRef.current) {
-        enqueueSnackBar('Saving Naukri profiles', snackBarOptions);
+        enqueueInfoSnackBar({
+          message: 'Saving Naukri profiles',
+          options: snackBarOptions,
+        });
         activeSnackBarShownRef.current = true;
       } else {
         updateSnackBarByDedupeKey(ACTIVE_SNACKBAR_DEDUPE_KEY, {
@@ -142,7 +186,6 @@ export const useNaukriQueueStatus = () => {
       return;
     }
 
-    // Terminal state: close the live snackbar and show a final one once.
     if (activeSnackBarShownRef.current) {
       closeSnackBarByDedupeKey(ACTIVE_SNACKBAR_DEDUPE_KEY);
       activeSnackBarShownRef.current = false;
@@ -156,30 +199,25 @@ export const useNaukriQueueStatus = () => {
     const processed = queueStatus.completedCount + queueStatus.failedCount;
 
     if (queueStatus.state === 'completed') {
-      enqueueSnackBar(
+      const message =
         queueStatus.failedCount > 0
           ? `Saved ${queueStatus.completedCount}/${queueStatus.totalCount} Naukri profile(s), ${queueStatus.failedCount} failed`
-          : `Saved ${queueStatus.completedCount}/${queueStatus.totalCount} Naukri profile(s)`,
-        {
-          variant:
-            queueStatus.failedCount > 0
-              ? SnackBarVariant.Warning
-              : SnackBarVariant.Success,
-          duration: 5000,
-        },
-      );
+          : `Saved ${queueStatus.completedCount}/${queueStatus.totalCount} Naukri profile(s)`;
+
+      if (queueStatus.failedCount > 0) {
+        enqueueWarningSnackBar({ message, options: { duration: 5000 } });
+      } else {
+        enqueueSuccessSnackBar({ message, options: { duration: 5000 } });
+      }
     } else if (queueStatus.state === 'stopped') {
-      enqueueSnackBar(
-        `Stopped Naukri queue after ${processed}/${queueStatus.totalCount} profile(s)`,
-        {
-          variant: SnackBarVariant.Warning,
-          duration: 5000,
-        },
-      );
+      enqueueWarningSnackBar({
+        message: `Stopped Naukri queue after ${processed}/${queueStatus.totalCount} profile(s)`,
+        options: { duration: 5000 },
+      });
     } else if (queueStatus.state === 'failed') {
-      enqueueSnackBar(queueStatus.error ?? 'Naukri queue failed', {
-        variant: SnackBarVariant.Error,
-        duration: 6000,
+      enqueueErrorSnackBar({
+        message: queueStatus.error ?? 'Naukri queue failed',
+        options: { duration: 6000 },
       });
     }
 
@@ -193,7 +231,10 @@ export const useNaukriQueueStatus = () => {
     }
   }, [
     queueStatus,
-    enqueueSnackBar,
+    enqueueInfoSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueWarningSnackBar,
+    enqueueErrorSnackBar,
     updateSnackBarByDedupeKey,
     closeSnackBarByDedupeKey,
     refreshDataFunction,

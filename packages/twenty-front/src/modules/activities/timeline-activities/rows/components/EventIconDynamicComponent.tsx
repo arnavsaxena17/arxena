@@ -1,10 +1,7 @@
 import { type TimelineActivity } from '@/activities/timeline-activities/types/TimelineActivity';
 import { ObjectMetadataIcon } from '@/object-metadata/components/ObjectMetadataIcon';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
-import {
-  parseTimelineActivityAction,
-  type TimelineActivityAction,
-} from 'twenty-shared/timeline';
+import { parseTimelineActivityAction, type TimelineActivityAction } from 'twenty-shared/timeline';
 import {
   IconCirclePlus,
   IconEditCircle,

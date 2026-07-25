@@ -1,5 +1,6 @@
 export * from './isDefined';
 export * from './assertIsDefinedOrThrow';
+export * from './isAllowedEmailForNewWorkspaceSignup';
 export * from './isValidLocale';
 export * from './isValidTwentySubdomain';
 export * from './isSearchableFieldType';

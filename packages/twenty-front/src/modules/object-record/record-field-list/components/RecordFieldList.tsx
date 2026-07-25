@@ -24,10 +24,7 @@ import { useRecordShowContainerData } from '@/object-record/record-show/hooks/us
 import { getRecordFieldInputInstanceId } from '@/object-record/utils/getRecordFieldInputId';
 import { getObjectPermissionsFromMapByObjectMetadataId } from '@/settings/roles/role-permissions/objects-permissions/utils/getObjectPermissionsFromMapByObjectMetadataId';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
-import {
-  FieldMetadataType,
-  type CoreObjectNameSingular,
-} from 'twenty-shared/types';
+import { FieldMetadataType, type CoreObjectNameSingular } from 'twenty-shared/types';
 
 type RecordFieldListProps = {
   instanceId: string;

@@ -1,10 +1,6 @@
 import { useMutation } from '@apollo/client/react';
 
-import {
-  type MessageChannelContactAutoCreationPolicy,
-  type MessageChannelType,
-  type MessageChannelVisibility,
-} from 'twenty-shared/types';
+import type { MessageChannelContactAutoCreationPolicy, MessageChannelType, MessageChannelVisibility } from 'twenty-shared/types';
 
 import { CREATE_EMAIL_GROUP_CHANNEL } from '@/settings/accounts/graphql/mutations/createEmailGroupChannel';
 import { GET_MY_CONNECTED_ACCOUNTS } from '@/settings/accounts/graphql/queries/getMyConnectedAccounts';

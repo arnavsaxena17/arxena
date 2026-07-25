@@ -1,15 +1,19 @@
 import { Button, IconButton } from 'twenty-ui';
-import { IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
-import { IconBrandLinkedin, IconWorld } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconX } from 'twenty-ui/icon';
+import { IconBrandLinkedin, IconWorld } from 'twenty-ui/icon';
 import { useEffect, useMemo, useState } from 'react';
 
-import { TabList } from '@/ui/layout/tab/components/TabList';
-import { useTabList } from '@/ui/layout/tab/hooks/useTabList';
-import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared';
+import { TabList } from '@/ui/layout/tab-list/components/TabList';
+import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared/utils';
 
 import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledDrawerBackdrop = styled.div`
   position: fixed;
@@ -29,7 +33,7 @@ const StyledDrawer = styled.div`
   right: 0;
   bottom: 0;
   width: min(420px, 100vw);
-  background: ${({ theme }) => theme.background.primary};
+  background: ${themeCssVariables.background.primary};
   box-shadow: -4px 0 24px rgba(15, 23, 42, 0.15);
   z-index: 51;
   display: flex;
@@ -45,39 +49,39 @@ const StyledDrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   flex-shrink: 0;
 `;
 
 const StyledDrawerTitle = styled.h2`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.lg};
+  font-size: ${themeCssVariables.font.size.lg};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledDrawerBody = styled.div`
   flex: 1;
   overflow: auto;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledCompanyHeader = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCompanyLogo = styled.img`
   width: 64px;
   height: 64px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   object-fit: contain;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
   flex-shrink: 0;
 `;
 
@@ -87,9 +91,9 @@ const StyledCompanyLogoPlaceholder = styled.div`
   justify-content: center;
   width: 64px;
   height: 64px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 24px;
   font-weight: 600;
   flex-shrink: 0;
@@ -101,78 +105,78 @@ const StyledCompanyTitleBlock = styled.div`
 `;
 
 const StyledCompanyName = styled.h3`
-  margin: 0 0 ${({ theme }) => theme.spacing(0.5)};
+  margin: 0 0 ${themeCssVariables.spacing[0.5]};
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledTagline = styled.p`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   line-height: 1.4;
 `;
 
 const StyledSection = styled.section`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSectionTitle = styled.h4`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.05em;
 `;
 
 const StyledSectionContent = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
   line-height: 1.5;
 `;
 
 const StyledLinkRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledMetaGrid = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledMetaRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledMetaLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   flex-shrink: 0;
 `;
 
 const StyledMetaValue = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   text-align: right;
 `;
 
 const StyledActionsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledTabsRow = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   flex-wrap: wrap;
 `;
 
@@ -187,17 +191,17 @@ const StyledWindowButton = styled(Button)`
 const StyledProfilesList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledProfileRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
 `;
 
 const StyledProfileMain = styled.div`
@@ -205,34 +209,34 @@ const StyledProfileMain = styled.div`
 `;
 
 const StyledProfileTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledProfileRight = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   flex-shrink: 0;
 `;
 
 const StyledProfileFunction = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledFunctionGroup = styled.details`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.secondary};
 `;
 
 const StyledFunctionSummary = styled.summary`
   cursor: pointer;
   list-style: none;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   font-weight: 500;
   &::-webkit-details-marker {
     display: none;
@@ -240,45 +244,45 @@ const StyledFunctionSummary = styled.summary`
 `;
 
 const StyledFunctionGroupLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledFunctionGroupCount = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledNewsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledNewsCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(1.5)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.secondary};
+  gap: ${themeCssVariables.spacing[0.5]};
+  padding: ${themeCssVariables.spacing[1.5]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.secondary};
 `;
 
 const StyledNewsSummary = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   line-height: 1.5;
 `;
 
 const StyledNewsMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledNewsLink = styled.a`
-  color: ${({ theme }) => theme.color.blue};
+  color: ${themeCssVariables.color.blue};
   text-decoration: none;
   word-break: break-all;
 
@@ -288,8 +292,8 @@ const StyledNewsLink = styled.a`
 `;
 
 const StyledNewsNotes = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   line-height: 1.4;
 `;
 
@@ -359,7 +363,10 @@ export const OrgChartCompanyDrawer = ({
 }: OrgChartCompanyDrawerProps) => {
   const [logoError, setLogoError] = useState(false);
   const timelineTabListInstanceId = 'orgchart-company-drawer-timeline-tabs';
-  const { activeTabId } = useTabList(timelineTabListInstanceId);
+  const activeTabId = useAtomComponentStateValue(
+    activeTabIdComponentState,
+    timelineTabListInstanceId,
+  );
   const activeTab = (
     activeTabId ?? 'company'
   ) as 'company' | 'joined' | 'left' | 'current' | 'past' | 'news';
@@ -375,7 +382,7 @@ export const OrgChartCompanyDrawer = ({
 
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
-    const base = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    const base = REACT_APP_SERVER_BASE_URL ?? '';
     if (!base) return null;
     return `${base.replace(/\/$/, '')}/org-chart/company-logo?website=${encodeURIComponent(
       site,
@@ -788,9 +795,9 @@ export const OrgChartCompanyDrawer = ({
           <StyledSection>
             <StyledSectionTitle>Timeline</StyledSectionTitle>
             <StyledTimelineTabList
-              tabListInstanceId={timelineTabListInstanceId}
+              componentInstanceId={timelineTabListInstanceId}
               behaveAsLinks={false}
-              isInRightDrawer
+              isInSidePanel
               tabs={[
                 { id: 'company', title: 'Company info' },
                 { id: 'news', title: 'News' },

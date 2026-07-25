@@ -1,4 +1,6 @@
 import { type ReactNode } from 'react';
+import { IconRefresh } from 'twenty-ui/icon';
+import { IconButton } from 'twenty-ui/input';
 
 import { ObjectSortDropdownButton } from '@/object-record/object-sort-dropdown/components/ObjectSortDropdownButton';
 import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
@@ -27,6 +29,9 @@ type ViewBarProps = {
   className?: string;
   optionsDropdownButton: ReactNode;
   isReadOnly?: boolean;
+  showRefetch?: boolean;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 };
 
 export const ViewBar = ({
@@ -34,6 +39,9 @@ export const ViewBar = ({
   className,
   optionsDropdownButton,
   isReadOnly = false,
+  showRefetch = false,
+  onRefresh,
+  isRefreshing = false,
 }: ViewBarProps) => {
   const { objectNamePlural } = useRecordIndexContextOrThrow();
 
@@ -46,6 +54,18 @@ export const ViewBar = ({
       <TopBar className={className} leftComponent={<ViewPickerDropdown />} />
     );
   }
+
+  const refreshButton =
+    showRefetch === true ? (
+      <IconButton
+        Icon={IconRefresh}
+        variant="secondary"
+        size="small"
+        ariaLabel="Refresh"
+        onClick={onRefresh}
+        disabled={isRefreshing}
+      />
+    ) : null;
 
   return (
     <ObjectSortDropdownComponentInstanceContext.Provider
@@ -65,6 +85,7 @@ export const ViewBar = ({
         leftComponent={<ViewPickerDropdown />}
         rightComponent={
           <>
+            {refreshButton}
             <ObjectFilterDropdownComponentInstanceContext.Provider
               value={{ instanceId: ViewBarFilterDropdownIds.MAIN }}
             >

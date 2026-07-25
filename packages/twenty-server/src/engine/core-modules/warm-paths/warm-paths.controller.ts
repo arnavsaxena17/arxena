@@ -16,7 +16,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -51,7 +51,7 @@ export class WarmPathsController {
   async resolve(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: ResolveWarmPathsBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;

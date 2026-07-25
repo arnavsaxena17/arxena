@@ -1,54 +1,55 @@
 import { Button } from 'twenty-ui';
-import { IconRefresh, IconSettings } from 'twenty-ui/icons';
+import { IconRefresh, IconSettings } from 'twenty-ui/icon';
 import { SearchParametersResponse, SearchVariation } from '@/candidate-search/types/candidate-search.types';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useEffect, useState } from 'react';
 
 const StyledMessageContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledContent = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${themeCssVariables.spacing[3]};
   line-height: 1.6;
 `;
 
 const StyledVariationsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  gap: ${themeCssVariables.spacing[2]};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledVariationCard = styled.div<{ isSelected?: boolean }>`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme, isSelected }) => 
-    isSelected ? theme.color.blue80 : theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isSelected }) => 
-    isSelected ? theme.color.blue10 : theme.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue8 : themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue10 : themeCssVariables.background.primary};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: ${({ theme }) => theme.color.blue60};
-    background-color: ${({ theme }) => theme.color.blue10};
+    border-color: ${themeCssVariables.color.blue6};
+    background-color: ${themeCssVariables.color.blue10};
   }
 `;
 
@@ -56,336 +57,336 @@ const StyledVariationHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledVariationName = styled.h4`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledVariationType = styled.span<{ type: 'broad' | 'narrow' | 'targeted' }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ type, theme }) => {
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${({ type }) => {
     switch (type) {
-      case 'broad': return theme.color.green10;
-      case 'narrow': return theme.color.orange10;
-      case 'targeted': return theme.color.blue10;
-      default: return theme.background.secondary;
+      case 'broad': return themeCssVariables.color.green10;
+      case 'narrow': return themeCssVariables.color.orange10;
+      case 'targeted': return themeCssVariables.color.blue10;
+      default: return themeCssVariables.background.secondary;
     }
   }};
-  color: ${({ type, theme }) => {
+  color: ${({ type }) => {
     switch (type) {
-      case 'broad': return theme.color.green80;
-      case 'narrow': return theme.color.orange80;
-      case 'targeted': return theme.color.blue80;
-      default: return theme.font.color.primary;
+      case 'broad': return themeCssVariables.color.green8;
+      case 'narrow': return themeCssVariables.color.orange8;
+      case 'targeted': return themeCssVariables.color.blue8;
+      default: return themeCssVariables.font.color.primary;
     }
   }};
 `;
 
 const StyledVariationDescription = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledVariationReasoning = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   font-style: italic;
 `;
 
 const StyledActionButtons = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledComplexityBadge = styled.div<{ complexity: 'simple' | 'moderate' | 'complex' }>`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ complexity, theme }) => {
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${({ complexity }) => {
     switch (complexity) {
-      case 'simple': return theme.color.green10;
-      case 'moderate': return theme.color.orange10;
-      case 'complex': return theme.color.red10;
-      default: return theme.background.secondary;
+      case 'simple': return themeCssVariables.color.green10;
+      case 'moderate': return themeCssVariables.color.orange10;
+      case 'complex': return themeCssVariables.color.red10;
+      default: return themeCssVariables.background.secondary;
     }
   }};
-  color: ${({ complexity, theme }) => {
+  color: ${({ complexity }) => {
     switch (complexity) {
-      case 'simple': return theme.color.green80;
-      case 'moderate': return theme.color.orange80;
-      case 'complex': return theme.color.red80;
-      default: return theme.font.color.primary;
+      case 'simple': return themeCssVariables.color.green8;
+      case 'moderate': return themeCssVariables.color.orange8;
+      case 'complex': return themeCssVariables.color.red8;
+      default: return themeCssVariables.font.color.primary;
     }
   }};
 `;
 
 const StyledParametersSection = styled.div`
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledParametersTitle = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledParametersList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledParameterItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledParameterLabel = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
   min-width: 120px;
 `;
 
 const StyledParameterValue = styled.span`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledStrategiesContainer = styled.div`
-  margin: ${({ theme }) => theme.spacing(3)} 0;
+  margin: ${themeCssVariables.spacing[3]} 0;
 `;
 
 const StyledStrategySummaryList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing['1.5']};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledStrategySummaryItem = styled.div<{ isSelected?: boolean }>`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme, isSelected }) => 
-    isSelected ? theme.color.blue60 : theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isSelected }) => 
-    isSelected ? theme.color.blue10 : theme.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue6 : themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue10 : themeCssVariables.background.primary};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    border-color: ${({ theme }) => theme.color.blue60};
-    background-color: ${({ theme }) => theme.color.blue10};
+    border-color: ${themeCssVariables.color.blue6};
+    background-color: ${themeCssVariables.color.blue10};
   }
 `;
 
 const StyledStrategiesTabs = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[1]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   flex-wrap: wrap;
 `;
 
 const StyledStrategyTab = styled.button<{ isActive?: boolean }>`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme, isActive }) => 
-    isActive ? theme.color.blue60 : theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isActive }) => 
-    isActive ? theme.color.blue10 : theme.background.primary};
-  color: ${({ theme, isActive }) => 
-    isActive ? theme.color.blue80 : theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme, isActive }) => 
-    isActive ? theme.font.weight.medium : theme.font.weight.regular};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${({ isActive }) => 
+    isActive ? themeCssVariables.color.blue6 : themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${({ isActive }) => 
+    isActive ? themeCssVariables.color.blue10 : themeCssVariables.background.primary};
+  color: ${({ isActive }) => 
+    isActive ? themeCssVariables.color.blue8 : themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${({ isActive }) => 
+    isActive ? themeCssVariables.font.weight.medium : themeCssVariables.font.weight.regular};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    border-color: ${({ theme }) => theme.color.blue60};
-    background-color: ${({ theme }) => theme.color.blue10};
+    border-color: ${themeCssVariables.color.blue6};
+    background-color: ${themeCssVariables.color.blue10};
   }
 `;
 
 const StyledStrategyInfo = styled.div`
-  margin: ${({ theme }) => theme.spacing(2)} 0;
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  margin: ${themeCssVariables.spacing[2]} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
 `;
 
 const StyledStrategyInfoRow = styled.div`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledStrategyInfoLabel = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin-right: ${({ theme }) => theme.spacing(1)};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin-right: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStrategyInfoValue = styled.span`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledRationalesSection = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  padding-top: ${({ theme }) => theme.spacing(2)};
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  margin-top: ${themeCssVariables.spacing[2]};
+  padding-top: ${themeCssVariables.spacing[2]};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledRationaleItem = styled.div`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   font-style: italic;
 `;
 
 const StyledRationaleLabel = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
-  margin-right: ${({ theme }) => theme.spacing(1)};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
+  margin-right: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStrategyResults = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  margin-top: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledResultsHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledResultsCount = styled.span`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.color.blue};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.color.blue};
 `;
 
 const StyledErrorContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.red10};
-  border: 1px solid ${({ theme }) => theme.color.red30};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  margin-top: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.red10};
+  border: 1px solid ${themeCssVariables.color.red3};
+  border-radius: ${themeCssVariables.border.radius.sm};
 `;
 
 const StyledErrorHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
-  color: ${({ theme }) => theme.color.red};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  margin-bottom: ${themeCssVariables.spacing[1]};
+  color: ${themeCssVariables.color.red};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledErrorMessage = styled.div`
-  color: ${({ theme }) => theme.color.red80};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.color.red8};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
 `;
 
 const StyledErrorDetails = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  padding-top: ${({ theme }) => theme.spacing(1)};
-  border-top: 1px solid ${({ theme }) => theme.color.red30};
-  color: ${({ theme }) => theme.color.red70};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  margin-top: ${themeCssVariables.spacing[1]};
+  padding-top: ${themeCssVariables.spacing[1]};
+  border-top: 1px solid ${themeCssVariables.color.red3};
+  color: ${themeCssVariables.color.red7};
+  font-size: ${themeCssVariables.font.size.xs};
   font-style: italic;
 `;
 
 const StyledViewResultsButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.blue};
+  color: ${themeCssVariables.font.color.inverted};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
   transition: background-color 0.2s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.blue50};
+    background-color: ${themeCssVariables.color.blue5};
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.color.gray20};
+    background-color: ${themeCssVariables.color.gray2};
     cursor: not-allowed;
   }
 `;
 
 const StyledResultsMetadata = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  margin-top: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledLinkedInLink = styled.a`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue};
-  border: 1px solid ${({ theme }) => theme.color.blue30};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue};
+  border: 1px solid ${themeCssVariables.color.blue3};
+  border-radius: ${themeCssVariables.border.radius.sm};
   text-decoration: none;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   transition: all 0.2s ease;
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${themeCssVariables.spacing[2]};
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.blue20};
-    border-color: ${({ theme }) => theme.color.blue50};
-    color: ${({ theme }) => theme.color.blue80};
+    background-color: ${themeCssVariables.color.blue2};
+    border-color: ${themeCssVariables.color.blue5};
+    color: ${themeCssVariables.color.blue8};
   }
   
   &:visited {
-    color: ${({ theme }) => theme.color.blue};
+    color: ${themeCssVariables.color.blue};
   }
 `;
 
 const StyledNestedParameterContainer = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledNestedParameterTitle = styled(StyledParametersTitle)`
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  margin-bottom: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledNestedParametersList = styled(StyledParametersList)`
-  margin-left: ${({ theme }) => theme.spacing(2)};
-  border-left: 2px solid ${({ theme }) => theme.border.color.light};
-  padding-left: ${({ theme }) => theme.spacing(1.5)};
+  margin-left: ${themeCssVariables.spacing[2]};
+  border-left: 2px solid ${themeCssVariables.border.color.light};
+  padding-left: ${themeCssVariables.spacing['1.5']};
 `;
 
 // Helper function to check if an object is a nested parameter object
@@ -822,20 +823,16 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         <StyledActionButtons>
           <Button
             variant="secondary"
-            title="Apply to Search Form"  
+            title="Apply to Search Form"
             onClick={handleApplyClick}
             Icon={IconSettings}
-          >
-            Apply to Search Form
-          </Button>
+          />
           <Button
             variant="primary"
             title="Generate AI filters"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
-          >
-            Generate AI filters
-          </Button>
+          />
         </StyledActionButtons>
       </StyledMessageContainer>
     );
@@ -1097,20 +1094,16 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
         <StyledActionButtons>
           <Button
             variant="secondary"
-            title="Apply to Search Form"  
+            title="Apply to Search Form"
             onClick={handleApplyClick}
             Icon={IconSettings}
-          >
-            Apply to Search Form
-          </Button>
+          />
           <Button
             variant="primary"
             title="Generate AI filters"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
-          >
-            Generate AI filters
-          </Button>
+          />
         </StyledActionButtons>
       </StyledMessageContainer>
     );
@@ -1141,16 +1134,12 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
             variant="secondary"
             onClick={handleApplyClickSimple}
             Icon={IconSettings}
-          >
-            Apply to Search Form
-          </Button>
+           title="Apply to Search Form" />
           <Button
             variant="primary"
             onClick={onGenerateEnrichments}
             Icon={IconRefresh}
-          >
-            Generate AI filters
-          </Button>
+           title="Generate AI filters" />
         </StyledActionButtons>
       </StyledMessageContainer>
     );
@@ -1230,9 +1219,7 @@ export const SearchParametersMessage: React.FC<SearchParametersMessageProps> = (
           variant="primary"
           onClick={onGenerateEnrichments}
           Icon={IconRefresh}
-        >
-          Generate AI filters
-        </Button>
+         title="Generate AI filters" />
       </StyledActionButtons>
     </StyledMessageContainer>
   );

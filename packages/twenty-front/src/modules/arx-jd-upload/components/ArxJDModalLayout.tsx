@@ -1,5 +1,5 @@
 import { IconButton } from 'twenty-ui';
-import { IconX } from 'twenty-ui/icons';
+import { IconX } from 'twenty-ui/icon';
 import { ReactNode } from 'react';
 
 import {

@@ -1,22 +1,23 @@
-import { Button, MenuItemSelect, Radio } from 'twenty-ui';
-import { IconMinus } from 'twenty-ui/icons';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { Button, Radio } from 'twenty-ui/input';
+import { MenuItemSelect } from 'twenty-ui/navigation';
+import { IconMinus } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import React from 'react';
-import { Calendar } from 'react-date-range';
-import 'react-date-range/dist/styles.css';
-import 'react-date-range/dist/theme/default.css';
+import React, { useMemo } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 import { FormComponentProps } from '../types/FormComponentProps';
+import { ParsedJD } from '../types/ParsedJD';
 import { StyledSection, StyledSectionContent } from './ArxJDUploadModal.styled';
 
 const StyledLabel = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   text-align: center;
   width: 100%;
 `;
@@ -24,28 +25,35 @@ const StyledLabel = styled.div`
 const StyledDateSlotContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledDateSlot = styled.div`
   align-items: center;
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCalendarContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  margin: ${themeCssVariables.spacing[2]} 0;
 
-  .rdrCalendarWrapper {
-    background-color: ${({ theme }) => theme.background.primary};
-    border: 1px solid ${({ theme }) => theme.border.color.medium};
-    border-radius: ${({ theme }) => theme.border.radius.md};
+  .react-datepicker {
+    background-color: ${themeCssVariables.background.primary};
+    border: 1px solid ${themeCssVariables.border.color.medium};
+    border-radius: ${themeCssVariables.border.radius.md};
+    font-family: inherit;
+  }
+
+  .react-datepicker__day--highlighted {
+    background-color: ${themeCssVariables.color.blue};
+    border-radius: ${themeCssVariables.border.radius.sm};
+    color: ${themeCssVariables.font.color.inverted};
   }
 `;
 
@@ -58,32 +66,47 @@ const StyledFlexContainer = styled.div`
 const StyledMeetingTypeContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledRadioOption = styled.div`
   align-items: center;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
-  const theme = useTheme();
+  const selectedDates = useMemo(
+    () =>
+      parsedJD?.meetingScheduling.availableDates.map(
+        (availableDate) => new Date(availableDate.date),
+      ) ?? [],
+    [parsedJD?.meetingScheduling.availableDates],
+  );
+
+  if (!parsedJD) {
+    return null;
+  }
 
   // Prevent hotkey propagation when interacting with calendar
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    event.stopPropagation();
   };
 
-  const handleDateSelect = (date: Date) => {
+  const handleDateSelect = (date: Date | null) => {
+    if (!date) {
+      return;
+    }
+
     const dateStr = date.toISOString();
     const existingDateIndex =
       parsedJD.meetingScheduling.availableDates.findIndex(
-        (d: { date: string }) => d.date.split('T')[0] === dateStr.split('T')[0],
+        (availableDate: { date: string }) =>
+          availableDate.date.split('T')[0] === dateStr.split('T')[0],
       );
 
     if (existingDateIndex === -1) {
@@ -103,7 +126,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
             },
           ],
         },
-      });
+      } as ParsedJD);
     } else {
       setParsedJD({
         ...parsedJD,
@@ -113,7 +136,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
             (_: unknown, index: number) => index !== existingDateIndex,
           ),
         },
-      });
+      } as ParsedJD);
     }
   };
 
@@ -126,19 +149,19 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
       meetingScheduling: {
         ...parsedJD.meetingScheduling,
         availableDates: parsedJD.meetingScheduling.availableDates.map(
-          (date, index) =>
+          (availableDate, index) =>
             index === dateIndex
               ? {
-                  ...date,
+                  ...availableDate,
                   timeSlots: {
-                    ...date.timeSlots,
-                    [slot]: !date.timeSlots[slot],
+                    ...availableDate.timeSlots,
+                    [slot]: !availableDate.timeSlots[slot],
                   },
                 }
-              : date,
+              : availableDate,
         ),
       },
-    });
+    } as ParsedJD);
   };
 
   const handleMeetingTypeChange = (type: 'walkIn' | 'online' | 'inPerson') => {
@@ -148,7 +171,7 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
         ...parsedJD.meetingScheduling,
         meetingType: type,
       },
-    });
+    } as ParsedJD);
   };
 
   return (
@@ -183,42 +206,44 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
           {(parsedJD.meetingScheduling.meetingType === 'online' ||
             parsedJD.meetingScheduling.meetingType === 'inPerson') && (
             <>
-              <StyledLabel style={{ marginTop: theme.spacing(0) }}>
+              <StyledLabel style={{ marginTop: themeCssVariables.spacing[0] }}>
                 Select Available Dates & Time Slots
               </StyledLabel>
               <div
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                onClick={(event: React.MouseEvent) => event.stopPropagation()}
                 onKeyDown={handleKeyDown}
               >
                 <StyledCalendarContainer>
-                  <Calendar
-                    date={new Date()}
+                  <DatePicker
+                    inline
+                    selected={null}
                     onChange={handleDateSelect}
                     minDate={new Date()}
                     maxDate={addDays(new Date(), 90)}
-                    dateDisplayFormat="yyyy-MM-dd"
-                    color={theme.color.blue}
+                    highlightDates={selectedDates}
                     locale={enUS}
                   />
                 </StyledCalendarContainer>
 
                 <StyledDateSlotContainer>
                   {parsedJD.meetingScheduling.availableDates.map(
-                    (date, index) => (
-                      <StyledDateSlot key={date.date}>
-                        <span>{new Date(date.date).toLocaleDateString()}</span>
+                    (availableDate, index) => (
+                      <StyledDateSlot key={availableDate.date}>
+                        <span>
+                          {new Date(availableDate.date).toLocaleDateString()}
+                        </span>
                         <MenuItemSelect
-                          selected={date.timeSlots.morning}
+                          selected={availableDate.timeSlots.morning}
                           onClick={() => toggleTimeSlot(index, 'morning')}
                           text="Morning (9 AM - 12 PM)"
                         />
                         <MenuItemSelect
-                          selected={date.timeSlots.afternoon}
+                          selected={availableDate.timeSlots.afternoon}
                           onClick={() => toggleTimeSlot(index, 'afternoon')}
                           text="Afternoon (12 PM - 5 PM)"
                         />
                         <MenuItemSelect
-                          selected={date.timeSlots.evening}
+                          selected={availableDate.timeSlots.evening}
                           onClick={() => toggleTimeSlot(index, 'evening')}
                           text="Evening (5 PM - 8 PM)"
                         />
@@ -233,10 +258,10 @@ export const MeetingSchedulingSection: React.FC<FormComponentProps> = ({
                                 ...parsedJD.meetingScheduling,
                                 availableDates:
                                   parsedJD.meetingScheduling.availableDates.filter(
-                                    (_, i) => i !== index,
+                                    (_, dateIndex) => dateIndex !== index,
                                   ),
                               },
-                            })
+                            } as ParsedJD)
                           }
                         />
                       </StyledDateSlot>

@@ -20,7 +20,7 @@ export class VoiceCallController {
     @Body()
     body: {
       candidateId: string;
-      jobId: string;
+      projectId: string;
       callPurpose?: CallPurpose;
       channel?: 'twilio' | 'whatsapp';
       whatsappUserId?: string;
@@ -28,14 +28,14 @@ export class VoiceCallController {
   ) {
     const apiToken = getApiToken(request);
     if (!apiToken) return { status: 401, error: 'Unauthorized' };
-    const { candidateId, jobId, callPurpose = 'screening', channel, whatsappUserId } = body;
-    if (!candidateId || !jobId) {
-      return { status: 400, error: 'candidateId and jobId required' };
+    const { candidateId, projectId, callPurpose = 'screening', channel, whatsappUserId } = body;
+    if (!candidateId || !projectId) {
+      return { status: 400, error: 'candidateId and projectId required' };
     }
     if (channel === 'whatsapp' && whatsappUserId) {
       const result = await this.voiceCallService.initiateOutboundCallWhatsApp(
         candidateId,
-        jobId,
+        projectId,
         callPurpose,
         apiToken,
         whatsappUserId,
@@ -47,7 +47,7 @@ export class VoiceCallController {
     }
     const result = await this.voiceCallService.initiateOutboundCall(
       candidateId,
-      jobId,
+      projectId,
       callPurpose,
       apiToken,
     );

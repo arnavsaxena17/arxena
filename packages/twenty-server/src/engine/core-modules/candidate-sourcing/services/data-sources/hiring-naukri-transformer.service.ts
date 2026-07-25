@@ -547,9 +547,9 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     }
     
     // Process call tracking params for URL generation (JSON flows)
-    if (candidateData.callTrackingParams?.jobId && candidateData.applicationId) {
-      const hiringUrl = `https://hiring.naukri.com/hiring/${candidateData.callTrackingParams.jobId}/apply/${candidateData.applicationId}`;
-      const resumeDownloadUrl = `https://hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/${candidateData.applicationId}?jobId=${candidateData.callTrackingParams.jobId}`;
+    if (candidateData.callTrackingParams?.projectId && candidateData.applicationId) {
+      const hiringUrl = `https://hiring.naukri.com/hiring/${candidateData.callTrackingParams.projectId}/apply/${candidateData.applicationId}`;
+      const resumeDownloadUrl = `https://hiring.naukri.com/cloudgateway-rm/rm-document-services/v0/download/applications/${candidateData.applicationId}?projectId=${candidateData.callTrackingParams.projectId}`;
       
       userProfile.hiringNaukriUrl = { primaryLinkLabel: 'Hiring Naukri', primaryLinkUrl: hiringUrl };
       userProfile.resumeDownloadUrl = resumeDownloadUrl;

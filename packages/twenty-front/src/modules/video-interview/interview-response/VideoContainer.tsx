@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import React, { useEffect, useRef, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import Webcam from 'react-webcam';
 
 import { useStream } from '../StreamManager';
@@ -10,7 +11,7 @@ interface VideoContainerProps {
   answerTimer: number | null;
   isRecording: boolean;
   onRecordingClick: () => void;
-  webcamRef: React.RefObject<Webcam>;
+  webcamRef: React.RefObject<React.ElementRef<typeof Webcam> | null>;
 
   setIsPlaying: (isPlaying: boolean) => void;
   interviewTime: number;

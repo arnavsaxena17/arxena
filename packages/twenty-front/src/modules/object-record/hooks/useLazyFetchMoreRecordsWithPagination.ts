@@ -19,10 +19,7 @@ import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { type OnFindManyRecordsCompleted } from '@/object-record/types/OnFindManyRecordsCompleted';
 import { filterUniqueRecordEdgesByCursor } from '@/object-record/utils/filterUniqueRecordEdgesByCursor';
 import { getQueryIdentifier } from '@/object-record/utils/getQueryIdentifier';
-import {
-  type RecordGqlOperationGqlRecordFields,
-  type RecordGqlOperationVariables,
-} from 'twenty-shared/types';
+import type { RecordGqlOperationGqlRecordFields, RecordGqlOperationVariables } from 'twenty-shared/types';
 
 import { DEFAULT_SEARCH_REQUEST_LIMIT } from '@/object-record/constants/DefaultSearchRequestLimit';
 import { cursorFamilyState } from '@/object-record/states/cursorFamilyState';

@@ -14,7 +14,7 @@ export interface ProcessAiFiltersRequest {
   availableFilterDefinitions: any[];
   objectRecordId: string;
   selectedRecordIds: string[];
-  jobId: string;
+  projectId: string;
 }
 
 @Injectable()
@@ -42,7 +42,7 @@ export class ProcessAiFiltersService {
         availableFilterDefinitions: request.availableFilterDefinitions,
         objectRecordId: request.objectRecordId,
         selectedRecordIds: request.selectedRecordIds,
-        jobId: request.jobId,
+        projectId: request.projectId,
         batchName,
         timestamp,
         apiToken,
@@ -55,14 +55,14 @@ export class ProcessAiFiltersService {
         repeat: { every: 1000 },
       };
 
-      const uniqueJobId = `ai-filtering-${request.jobId}-${request.objectRecordId}`;
+      const uniqueProjectId = `ai-filtering-${request.projectId}-${request.objectRecordId}`;
 
       await this.messageQueueService.add<ProcessAiFiltersJobData>(
         AiFiltersQueueProcessor.name,
         jobData,
         {
           ...queueJobOptions,
-          id: uniqueJobId,
+          id: uniqueProjectId,
         },
       );
 

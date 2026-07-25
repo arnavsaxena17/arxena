@@ -8,7 +8,7 @@ import {
 } from './ArxJDUploadModal.styled';
 import { ChatFlowSection } from './ChatFlowSection';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
-import { JobDetailsForm } from './JobDetailsForm';
+import { ProjectDetailsForm } from './ProjectDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
 import { VideoQuestionsSection } from './VideoQuestionsSection';
 
@@ -27,8 +27,8 @@ export const ParsedJDForm: React.FC<ParsedJDFormProps> = ({
   return (
     <StyledParsedContent>
       <StyledFormGrid>
-        {/* Job Details */}
-        <JobDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} onRecruiterInfoChange={onRecruiterInfoChange} />
+        {/* Project Details */}
+        <ProjectDetailsForm parsedJD={parsedJD} setParsedJD={setParsedJD} onRecruiterInfoChange={onRecruiterInfoChange} />
 
         <StyledSectionDivider />
 

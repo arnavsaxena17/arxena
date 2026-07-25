@@ -15,7 +15,7 @@ import { type MessageQueue } from 'src/engine/core-modules/message-queue/message
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 
 type JobOperationResult = {
-  jobId: string;
+  projectId: string;
   success: boolean;
   error?: string;
 };
@@ -119,7 +119,7 @@ export class AdminPanelQueueService {
 
   async retryJobs(
     queueName: MessageQueue,
-    jobIds: string[],
+    projectIds: string[],
   ): Promise<{
     retriedCount: number;
     results: JobOperationResult[];
@@ -128,7 +128,7 @@ export class AdminPanelQueueService {
     const queue = new Queue(queueName, { connection: redis });
 
     try {
-      if (jobIds.length === 0) {
+      if (projectIds.length === 0) {
         await queue.retryJobs({ state: 'failed' });
 
         return { retriedCount: -1, results: [] };
@@ -137,12 +137,12 @@ export class AdminPanelQueueService {
       const results: JobOperationResult[] = [];
       let retriedCount = 0;
 
-      for (const jobId of jobIds) {
-        const job = await queue.getJob(jobId);
+      for (const projectId of projectIds) {
+        const job = await queue.getJob(projectId);
 
         if (!job) {
           results.push({
-            jobId,
+            projectId,
             success: false,
             error: 'Job not found',
           });
@@ -153,7 +153,7 @@ export class AdminPanelQueueService {
 
         if (state !== 'failed') {
           results.push({
-            jobId,
+            projectId,
             success: false,
             error: `Job is not in failed state (current state: ${state})`,
           });
@@ -164,12 +164,12 @@ export class AdminPanelQueueService {
           await job.retry();
           retriedCount++;
           results.push({
-            jobId,
+            projectId,
             success: true,
           });
         } catch (error) {
           results.push({
-            jobId,
+            projectId,
             success: false,
             error: error instanceof Error ? error.message : String(error),
           });
@@ -189,9 +189,9 @@ export class AdminPanelQueueService {
     }
   }
 
-  async deleteJobs(
+  async deleteProjects(
     queueName: MessageQueue,
-    jobIds: string[],
+    projectIds: string[],
   ): Promise<{
     deletedCount: number;
     results: JobOperationResult[];
@@ -203,12 +203,12 @@ export class AdminPanelQueueService {
       const results: JobOperationResult[] = [];
       let deletedCount = 0;
 
-      for (const jobId of jobIds) {
-        const job = await queue.getJob(jobId);
+      for (const projectId of projectIds) {
+        const job = await queue.getJob(projectId);
 
         if (!job) {
           results.push({
-            jobId,
+            projectId,
             success: false,
             error: 'Job not found',
           });
@@ -219,12 +219,12 @@ export class AdminPanelQueueService {
           await job.remove();
           deletedCount++;
           results.push({
-            jobId,
+            projectId,
             success: true,
           });
         } catch (error) {
           results.push({
-            jobId,
+            projectId,
             success: false,
             error: error instanceof Error ? error.message : String(error),
           });

@@ -1,36 +1,4 @@
-import {
-  type BulkRecordsAvailability,
-  type GlobalAvailability,
-  type SingleRecordAvailability,
-  type workflowAiAgentActionSchema,
-  type workflowCodeActionSchema,
-  type workflowCreateCalendarEventActionSchema,
-  type workflowCreateRecordActionSchema,
-  type workflowCronTriggerSchema,
-  type workflowDatabaseEventTriggerSchema,
-  type workflowDelayActionSchema,
-  type workflowDeleteRecordActionSchema,
-  type workflowDraftEmailActionSchema,
-  type workflowEmptyActionSchema,
-  type workflowFilterActionSchema,
-  type workflowFindRecordsActionSchema,
-  type workflowFormActionSchema,
-  type workflowHttpRequestActionSchema,
-  type workflowIfElseActionSchema,
-  type workflowIteratorActionSchema,
-  type workflowLogicFunctionActionSchema,
-  type workflowManualTriggerSchema,
-  type workflowPickRecordActionSchema,
-  type workflowRunSchema,
-  type workflowRunStateSchema,
-  type workflowRunStatusSchema,
-  type workflowRunStepStatusSchema,
-  type workflowSendEmailActionSchema,
-  type workflowTriggerSchema,
-  type workflowUpdateRecordActionSchema,
-  type workflowUpsertRecordActionSchema,
-  type workflowWebhookTriggerSchema,
-} from 'twenty-shared/workflow';
+import type { BulkRecordsAvailability, GlobalAvailability, SingleRecordAvailability, workflowAiAgentActionSchema, workflowCodeActionSchema, workflowCreateCalendarEventActionSchema, workflowCreateRecordActionSchema, workflowCronTriggerSchema, workflowDatabaseEventTriggerSchema, workflowDelayActionSchema, workflowDeleteRecordActionSchema, workflowDraftEmailActionSchema, workflowEmptyActionSchema, workflowFilterActionSchema, workflowFindRecordsActionSchema, workflowFormActionSchema, workflowHttpRequestActionSchema, workflowIfElseActionSchema, workflowIteratorActionSchema, workflowLogicFunctionActionSchema, workflowManualTriggerSchema, workflowPickRecordActionSchema, workflowRunSchema, workflowRunStateSchema, workflowRunStatusSchema, workflowRunStepStatusSchema, workflowSendEmailActionSchema, workflowTriggerSchema, workflowUpdateRecordActionSchema, workflowUpsertRecordActionSchema, workflowWebhookTriggerSchema } from 'twenty-shared/workflow';
 import { type z } from 'zod';
 
 export type WorkflowCodeAction = z.infer<typeof workflowCodeActionSchema>;

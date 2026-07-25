@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { isOrgChartM7kqCandidateSource } from '@/orgchart/utils/isOrgChartM7kqCandidateSource';
 
-import type { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared/utils';
 
 export const useOrgChartBanners = ({
   nodeDataArray,

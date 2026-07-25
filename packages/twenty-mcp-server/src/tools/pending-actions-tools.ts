@@ -1,11 +1,11 @@
 import {
-  getGraphqlToFindManyJobs,
+  getGraphqlToFindManyProjects,
   graphqlQueryToFindCvsent,
   graphqlQueryToFindScheduledClientMeetings,
   graphqlQueryToFindShortlists,
   graphqlToFetchAllCandidateData,
   resolveIsOrgChartEnabledFromWorkspace,
-} from 'twenty-shared';
+} from 'twenty-shared/graphql';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
 
@@ -31,14 +31,20 @@ async function getIsOrgChartEnabled(
   }
 }
 
-function extractJobs(data: unknown): Array<{ id: string; name?: string }> {
-  const result = data as { jobs?: { edges?: Array<{ node: { id: string; name?: string } }> } };
-  const edges = result?.jobs?.edges ?? [];
-  return edges.map((e) => e.node);
+function extractProjects(
+  data: unknown,
+): Array<{ id: string; name?: string }> {
+  const result = data as {
+    projects?: {
+      edges?: Array<{ node: { id: string; name?: string } }>;
+    };
+  };
+  const edges = result?.projects?.edges ?? [];
+  return edges.map((edge) => edge.node);
 }
 
-function extractCandidates(data: unknown): Array<{ id: string; status?: string; jobsId?: string }> {
-  const result = data as { candidates?: { edges?: Array<{ node: { id: string; status?: string; jobsId?: string } }> } };
+function extractCandidates(data: unknown): Array<{ id: string; status?: string; projectsId?: string }> {
+  const result = data as { candidates?: { edges?: Array<{ node: { id: string; status?: string; projectsId?: string } }> } };
   const edges = result?.candidates?.edges ?? [];
   return edges.map((e) => e.node);
 }
@@ -77,7 +83,7 @@ export const pendingActionsTools: McpTool[] = [
           },
           maxCandidatesPerJob: {
             type: 'number',
-            description: 'When aggregating by status per job, max candidates to fetch per job (default: 200)',
+            description: 'When aggregating by status per job, max candidates to fetch per project(default: 200)',
           },
           upcomingInterviewsLimit: {
             type: 'number',
@@ -95,7 +101,7 @@ export const pendingActionsTools: McpTool[] = [
         config.baseUrl,
         config.apiToken,
       );
-      const jobsQuery = getGraphqlToFindManyJobs(isOrgChartEnabled);
+      const jobsQuery = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
       const [jobsData, shortlistsData, cvSentsData, interviewsData] = await Promise.all([
         executeGraphQL(config.baseUrl, config.apiToken, jobsQuery, {
@@ -117,51 +123,65 @@ export const pendingActionsTools: McpTool[] = [
         }),
       ]);
 
-      const jobs = extractJobs(jobsData);
-      const shortlists = (shortlistsData as { shortlists?: { edges?: unknown[] } })?.shortlists?.edges ?? [];
-      const cvSents = (cvSentsData as { cvsent?: { edges?: unknown[] } })?.cvsent?.edges ?? [];
+      const projects = extractProjects(jobsData);
+      const shortlists =
+        (shortlistsData as { shortlists?: { edges?: unknown[] } })?.shortlists
+          ?.edges ?? [];
+      const cvSents =
+        (cvSentsData as { cvsent?: { edges?: unknown[] } })?.cvsent?.edges ??
+        [];
       const interviews = extractClientInterviews(interviewsData);
 
-      const jobIds = jobs.map((j) => j.id);
+      const projectIds = projects.map((project) => project.id);
       const candidatesByJob: Record<string, Record<string, number>> = {};
-      for (const j of jobs) {
-        candidatesByJob[j.id] = {};
+      for (const project of projects) {
+        candidatesByJob[project.id] = {};
       }
 
-      if (jobIds.length > 0) {
-        for (const jobId of jobIds) {
-          const candData = await executeGraphQL(config.baseUrl, config.apiToken, graphqlToFetchAllCandidateData, {
-            filter: { jobsId: { eq: jobId } },
-            limit: maxCandidatesPerJob,
-          });
-          const candidates = extractCandidates(candData);
-          for (const c of candidates) {
-            const status = c.status ?? 'Unknown';
-            candidatesByJob[jobId][status] = (candidatesByJob[jobId][status] ?? 0) + 1;
+      if (projectIds.length > 0) {
+        for (const projectId of projectIds) {
+          const candidateData = await executeGraphQL(
+            config.baseUrl,
+            config.apiToken,
+            graphqlToFetchAllCandidateData,
+            {
+              filter: { projectsId: { eq: projectId } },
+              limit: maxCandidatesPerJob,
+            },
+          );
+          const candidates = extractCandidates(candidateData);
+          for (const candidate of candidates) {
+            const status = candidate.status ?? 'Unknown';
+            candidatesByJob[projectId][status] =
+              (candidatesByJob[projectId][status] ?? 0) + 1;
           }
         }
       }
 
-      const upcomingInterviews = interviews.filter((i) => !i.clientInterviewCompleted);
+      const upcomingInterviews = interviews.filter(
+        (interview) => !interview.clientInterviewCompleted,
+      );
 
       return {
         summary: {
-          activeJobsCount: jobs.length,
+          activeJobsCount: projects.length,
           totalShortlists: shortlists.length,
           totalCvSents: cvSents.length,
           upcomingClientInterviewsCount: upcomingInterviews.length,
         },
-        activeJobs: jobs.map((j) => ({
-          id: j.id,
-          name: j.name,
-          candidateCountByStatus: candidatesByJob[j.id] ?? {},
+        activeJobs: projects.map((project) => ({
+          id: project.id,
+          name: project.name,
+          candidateCountByStatus: candidatesByJob[project.id] ?? {},
         })),
-        upcomingClientInterviews: upcomingInterviews.slice(0, upcomingInterviewsLimit).map((i) => ({
-          id: i.id,
-          name: i.name,
-          candidateId: i.candidateId,
-          interviewTime: i.interviewTime,
-        })),
+        upcomingClientInterviews: upcomingInterviews
+          .slice(0, upcomingInterviewsLimit)
+          .map((interview) => ({
+            id: interview.id,
+            name: interview.name,
+            candidateId: interview.candidateId,
+            interviewTime: interview.interviewTime,
+          })),
       };
     },
   },

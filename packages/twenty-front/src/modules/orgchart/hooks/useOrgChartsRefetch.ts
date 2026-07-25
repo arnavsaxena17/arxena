@@ -1,23 +1,15 @@
-import { useApolloClient } from '@apollo/client';
 import { useCallback } from 'react';
-import { useRecoilState } from 'recoil';
 
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { orgChartsRefetchTriggerState } from '@/orgchart/states/orgChartsRefetchTriggerState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 const ORG_CHARTS_FIND_MANY_QUERY_NAME = 'FindManyOrgCharts';
 
-/**
- * Hook to refresh the org charts list shown in the left navigation drawer.
- *
- * - `refetchOrgCharts` directly refetches the active `FindManyOrgCharts` GraphQL
- *   query (used by `OrgChartsNavigationDrawerItems`).
- * - `triggerOrgChartsRefetch` increments a recoil counter so callers that
- *   don't have GraphQL client context (or that want a pure state signal) can bump it
- *   and any subscriber will refetch accordingly.
- */
+// Refreshes the org charts list in the left navigation drawer
 export const useOrgChartsRefetch = () => {
-  const graphqlClient = useApolloClient();
-  const [orgChartsRefetchTrigger, setOrgChartsRefetchTrigger] = useRecoilState(
+  const graphqlClient = useApolloCoreClient();
+  const [orgChartsRefetchTrigger, setOrgChartsRefetchTrigger] = useAtomState(
     orgChartsRefetchTriggerState,
   );
 
@@ -32,7 +24,7 @@ export const useOrgChartsRefetch = () => {
   }, [graphqlClient]);
 
   const triggerOrgChartsRefetch = useCallback(() => {
-    setOrgChartsRefetchTrigger((prev) => prev + 1);
+    setOrgChartsRefetchTrigger((previous) => previous + 1);
   }, [setOrgChartsRefetchTrigger]);
 
   return {

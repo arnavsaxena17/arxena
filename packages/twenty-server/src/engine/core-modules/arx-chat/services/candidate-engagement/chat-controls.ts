@@ -2,7 +2,7 @@ import {
     CandidateNode,
     ChatControlsObjType,
     ChatRequestBody,
-    Job,
+    Project,
     SendWhatsappUtilityMessageObjectType,
     whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -21,7 +21,7 @@ export class ChatControls {
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
   ) {}
 
-  async getTools(candidateJob: Job, chatControl: ChatControlsObjType) {
+  async getTools(candidateJob: Project, chatControl: ChatControlsObjType) {
     if (chatControl.chatControlType === 'startChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
@@ -45,7 +45,7 @@ export class ChatControls {
 
   async runChatControlMessageSending(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     candidate: CandidateNode,
     apiToken: string,
@@ -136,17 +136,17 @@ export class ChatControls {
           recruiterCompanyName: recruiterProfile.companyName,
           recruiterCompanyDescription: recruiterProfile.companyDescription,
           jobPositionName:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.name,
+            whatappUpdateMessageObj?.candidateProfile?.projects?.name,
           companyName:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.company?.name,
+            whatappUpdateMessageObj?.candidateProfile?.projects?.company?.name,
           descriptionOneliner:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.companyDetails ||
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.company
+            whatappUpdateMessageObj?.candidateProfile?.projects?.companyDetails ||
+            whatappUpdateMessageObj?.candidateProfile?.projects?.company
               ?.descriptionOneliner ||
             '',
-          jobCode: whatappUpdateMessageObj?.candidateProfile?.jobs?.jobCode,
+          jobCode: whatappUpdateMessageObj?.candidateProfile?.projects?.jobCode,
           jobLocation:
-            whatappUpdateMessageObj?.candidateProfile?.jobs?.jobLocation,
+            whatappUpdateMessageObj?.candidateProfile?.projects?.jobLocation,
           videoInterviewLink: videoInterviewLink,
           candidateSource:
             whatappUpdateMessageObj?.candidateProfile?.source === ''

@@ -7,6 +7,7 @@ import { CustomException } from 'src/utils/custom-exception';
 export enum WorkspaceGraphQLSchemaExceptionCode {
   QUERY_TYPE_NOT_FOUND = 'QUERY_TYPE_NOT_FOUND',
   MUTATION_TYPE_NOT_FOUND = 'MUTATION_TYPE_NOT_FOUND',
+  SCHEMA_SDL_NOT_AVAILABLE = 'SCHEMA_SDL_NOT_AVAILABLE',
 }
 
 const getWorkspaceGraphQLSchemaExceptionUserFriendlyMessage = (
@@ -15,6 +16,7 @@ const getWorkspaceGraphQLSchemaExceptionUserFriendlyMessage = (
   switch (code) {
     case WorkspaceGraphQLSchemaExceptionCode.QUERY_TYPE_NOT_FOUND:
     case WorkspaceGraphQLSchemaExceptionCode.MUTATION_TYPE_NOT_FOUND:
+    case WorkspaceGraphQLSchemaExceptionCode.SCHEMA_SDL_NOT_AVAILABLE:
       return STANDARD_ERROR_MESSAGE;
     default:
       assertUnreachable(code);

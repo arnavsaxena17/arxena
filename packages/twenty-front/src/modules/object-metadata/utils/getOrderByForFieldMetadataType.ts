@@ -9,11 +9,7 @@ import {
   type FieldLinksValue,
   type FieldPhonesValue,
 } from '@/object-record/record-field/ui/types/FieldMetadata';
-import {
-  type FieldMetadataSettingsMapping,
-  type OrderBy,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { FieldMetadataSettingsMapping, OrderBy, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const getOrderByForFieldMetadataType = ({

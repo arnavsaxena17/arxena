@@ -1,18 +1,19 @@
 import { Checkbox, CheckboxSize, CheckboxVariant, CircularProgressBar, IconButton, MainButton, MOBILE_VIEWPORT } from 'twenty-ui';
-import { IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconX } from 'twenty-ui/icon';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     buildVisibleFunctionRoots,
     formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
-import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared';
+import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared/utils';
 
 import { useDebouncedCallback } from 'use-debounce';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
@@ -39,7 +40,7 @@ const StyledModal = styled(Modal)`
   padding: 0;
   position: relative;
   user-select: text;
-  width: min(800px, calc(100vw - ${({ theme }) => theme.spacing(8)}));
+  width: min(800px, calc(100vw - ${themeCssVariables.spacing[8]}));
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     min-height: auto;
@@ -61,144 +62,144 @@ const StyledCloseButtonContainer = styled.div`
 `;
 
 const StyledHeader = styled(Modal.Header)`
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   height: 60px;
-  padding: 0 ${({ theme }) => theme.spacing(8)} 0
-    ${({ theme }) => theme.spacing(6)};
+  padding: 0 ${themeCssVariables.spacing[8]} 0
+    ${themeCssVariables.spacing[6]};
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    padding-left: ${({ theme }) => theme.spacing(4)};
-    padding-right: ${({ theme }) => theme.spacing(4)};
+    padding-left: ${themeCssVariables.spacing[4]};
+    padding-right: ${themeCssVariables.spacing[4]};
   }
 `;
 
 const StyledHeaderTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledContent = styled(Modal.Content)`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(6)};
+  padding: ${themeCssVariables.spacing[6]};
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    padding: ${({ theme }) => theme.spacing(4)};
+    padding: ${themeCssVariables.spacing[4]};
   }
 `;
 
 const StyledBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
   width: 100%;
 `;
 
 const StyledDescription = styled.p`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
   margin: 0;
 `;
 
 const StyledField = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledFieldLabel = styled.label`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledSelect = styled.select`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
   font-family: inherit;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledAdvancedSection = styled.details`
-  background: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledAdvancedSummary = styled.summary`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   user-select: none;
 `;
 
 const StyledAdvancedBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
+  margin-top: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledInfoCard = styled.div<{ $tone: 'ok' | 'warn' | 'error' }>`
-  background: ${({ theme, $tone }) =>
+  background: ${({ $tone }) =>
     $tone === 'error'
-      ? theme.background.danger
+      ? themeCssVariables.background.danger
       : $tone === 'warn'
-        ? theme.background.secondary
-        : theme.background.transparent.blue};
+        ? themeCssVariables.background.secondary
+        : themeCssVariables.background.transparent.blue};
   border: 1px solid
-    ${({ theme, $tone }) =>
+    ${({ $tone }) =>
       $tone === 'error'
-        ? theme.border.color.danger
-        : theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+        ? themeCssVariables.border.color.danger
+        : themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledResolvedList = styled.ul`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
   margin: 0;
-  padding-left: ${({ theme }) => theme.spacing(3)};
+  padding-left: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledFooter = styled(Modal.Footer)`
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  gap: ${({ theme }) => theme.spacing(2.5)};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  gap: ${themeCssVariables.spacing[2]};
   height: auto;
   justify-content: flex-end;
   min-height: 60px;
-  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(8)};
+  padding: ${themeCssVariables.spacing[6]} ${themeCssVariables.spacing[8]};
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    padding: ${({ theme }) => theme.spacing(4)};
+    padding: ${themeCssVariables.spacing[4]};
   }
 `;
 
 const StyledCheckboxRow = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCheckboxHint = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 type SuperImposeEstimate = {
@@ -295,7 +296,7 @@ export const OrgChartSuperImposeModal = ({
   isGenerating,
 }: OrgChartSuperImposeModalProps) => {
   const { t } = useLingui();
-  const { enqueueSnackBar } = useSnackBar();
+  const { enqueueSnackBar } = useOrgChartSnackBar();
 
   const [linkedinUrlsText, setLinkedinUrlsText] = useState('');
   const [websiteUrlsText, setWebsiteUrlsText] = useState('');
@@ -697,6 +698,7 @@ export const OrgChartSuperImposeModal = ({
                 <StyledField>
                   <StyledFieldLabel>{`LinkedIn company URLs (one per line)`}</StyledFieldLabel>
                   <TextArea
+                    textAreaId="orgchart-super-impose-linkedin-urls"
                     minRows={2}
                     value={linkedinUrlsText}
                     onChange={setLinkedinUrlsText}
@@ -707,8 +709,8 @@ export const OrgChartSuperImposeModal = ({
                 <StyledField>
                   <StyledFieldLabel>{`Company websites (one per line)`}</StyledFieldLabel>
                   <TextArea
+                    textAreaId="orgchart-super-impose-website-urls"
                     minRows={2}
-                    value={websiteUrlsText}
                     onChange={setWebsiteUrlsText}
                     placeholder="example.com"
                   />
@@ -717,6 +719,7 @@ export const OrgChartSuperImposeModal = ({
                 <StyledField>
                   <StyledFieldLabel>{`Sales Navigator search URLs`}</StyledFieldLabel>
                   <TextArea
+                    textAreaId="orgchart-super-impose-sales-nav-urls"
                     minRows={2}
                     value={salesNavUrlsText}
                     onChange={setSalesNavUrlsText}

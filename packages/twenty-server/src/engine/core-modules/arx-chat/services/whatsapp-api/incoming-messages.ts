@@ -7,7 +7,7 @@ import {
   graphqlToFetchWhatsappMessageByWhatsappId,
   graphQlToFetchWhatsappMessages,
   graphqlToUpdateWhatsappMessageId,
-  Job,
+  Project,
   WhatsAppBusinessAccount
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
@@ -634,11 +634,7 @@ export class IncomingWhatsappMessages {
       recentMessageQuery,
     );
 
-    const recentMessage = await this.workspaceQueryService.executeRawQuery(
-      recentMessageQuery,
-      [],
-      workspaceId,
-    );
+    const recentMessage = await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
 
     console.log('recentMessage for LinkedIn::', recentMessage);
 
@@ -698,11 +694,7 @@ export class IncomingWhatsappMessages {
 
     console.log('Person query for LinkedIn contact::', personQuery);
 
-    const person = await this.workspaceQueryService.executeRawQuery(
-      personQuery,
-      [],
-      workspaceId,
-    );
+    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
 
     if (person.length === 0) {
       console.log(
@@ -787,49 +779,50 @@ export class IncomingWhatsappMessages {
         async (workspaceId, dataSourceSchema) => {
           console.log('Data source schema is::', dataSourceSchema);
           console.log('id:', workspaceId);
-          let rawQuery = '';
+
+          const workspaceKeys =
+            await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+          const recipientNeedle = incomingRecipientIdentifierId.toLowerCase();
+          const senderNeedle = incomingSenderIdentifierId.toLowerCase();
+
+          const matchesRecipient =
+            (incomingRecipientIdentifierId.includes('linkedin')
+              ? workspaceKeys.linkedin_url
+                  ?.toLowerCase()
+                  .includes(recipientNeedle)
+              : workspaceKeys.facebook_whatsapp_phone_number_id
+                  ?.toLowerCase()
+                  .includes(recipientNeedle)) === true;
+
+          const matchesWhatsappWebRecipient =
+            workspaceKeys.whatsapp_web_phone_number
+              ?.toLowerCase()
+              .includes(recipientNeedle) === true;
+          const matchesWhatsappWebSender =
+            workspaceKeys.whatsapp_web_phone_number
+              ?.toLowerCase()
+              .includes(senderNeedle) === true;
+
           if (
-            incomingRecipientIdentifierId.includes('linkedin')
+            !matchesRecipient &&
+            !matchesWhatsappWebRecipient &&
+            !matchesWhatsappWebSender
           ) {
-            console.log( 'This is a linkedin phone number, we will not use this phone number to send messages to setup linkedin url as recipient id for api key finding' );
-            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND linkedin_url ILIKE '%${incomingRecipientIdentifierId}%'`;
-          } else {
-            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND facebook_whatsapp_phone_number_id ILIKE '%${incomingRecipientIdentifierId}%'`;
+            console.log(
+              'Workspace length is 0 for whatsapp web phone number',
+            );
+            return null;
           }
 
-          console.log('This si rawQuery:', rawQuery);
-          const workspace = await this.workspaceQueryService.executeRawQuery(
-            rawQuery,
-            [workspaceId],
-            workspaceId,
-          );
-
-          if (workspace.length === 0) {
-            rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingRecipientIdentifierId}%'`;
-
-            const workspace = await this.workspaceQueryService.executeRawQuery(
-              rawQuery,
-              [workspaceId],
-              workspaceId,
+          if (
+            !matchesRecipient &&
+            !matchesWhatsappWebRecipient &&
+            matchesWhatsappWebSender
+          ) {
+            console.log(
+              'It is a self message, so we will use the incomingRecipientIdentifierId',
             );
-
-            if (workspace.length === 0) {
-              rawQuery = `SELECT * FROM core.workspace WHERE id = $1 AND whatsapp_web_phone_number ILIKE '%${incomingSenderIdentifierId}%'`;
-              const workspace = await this.workspaceQueryService.executeRawQuery(
-                rawQuery,
-                [workspaceId],
-                workspaceId,
-              );
-              if (workspace.length === 0) {
-                console.log("Workspace length is 0 for whatsapp web phone number");
-                return null;
-              }
-              else{
-                console.log("It is a self message, so we will use the incomingRecipientIdentifierId");
-                incomingSenderIdentifierId = incomingRecipientIdentifierId
-              }
-              console.log("Workspace found for whatsapp web phone number::", workspace);
-            }
+            incomingSenderIdentifierId = incomingRecipientIdentifierId;
           }
 
           console.log(
@@ -858,11 +851,7 @@ export class IncomingWhatsappMessages {
           console.log("Recent message query and message data::", recentMessageQuery, messageData);
 
           const recentMessage =
-            await this.workspaceQueryService.executeRawQuery(
-              recentMessageQuery,
-              [],
-              workspaceId,
-            );
+            await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
 
           console.log('recentMessage::', recentMessage);
 
@@ -908,11 +897,7 @@ export class IncomingWhatsappMessages {
             personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
           }
 
-          const person = await this.workspaceQueryService.executeRawQuery(
-            personQuery,
-            [],
-            workspaceId,
-          );
+          const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
 
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -1071,11 +1056,7 @@ export class IncomingWhatsappMessages {
       ORDER BY "updatedAt" DESC
       LIMIT 1`;
 
-    const recentMessage = await this.workspaceQueryService.executeRawQuery(
-      recentMessageQuery,
-      [],
-      workspaceId,
-    );
+    const recentMessage = await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
 
 
     if (recentMessage.length === 0) {
@@ -1119,11 +1100,7 @@ export class IncomingWhatsappMessages {
 
     const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${phoneNumberForLookup}%'`;
 
-    const person = await this.workspaceQueryService.executeRawQuery(
-      personQuery,
-      [],
-      workspaceId,
-    );
+    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
 
     if (person.length === 0) {
       console.log(
@@ -1311,11 +1288,12 @@ export class IncomingWhatsappMessages {
             WHERE "whatsappMessageId" = $1 AND "message" = $2 LIMIT 1`;
           
           try {
-            const duplicateResult = await this.workspaceQueryService.executeRawQuery(
-              duplicateCheckQuery,
-              [whatsappMessageId, messageBody],
-              workspaceId,
-            );
+            const duplicateResult =
+              await this.workspaceQueryService.executeWorkspaceRawQuery(
+                duplicateCheckQuery,
+                [whatsappMessageId, messageBody],
+                workspaceId,
+              );
             
             if (duplicateResult.length > 0) {
               console.log('Message already exists in current workspace, skipping processing. Message ID:', whatsappMessageId);
@@ -1436,7 +1414,7 @@ export class IncomingWhatsappMessages {
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Job = candidateProfileData.jobs;
+          const candidateJob: Project = candidateProfileData.projects;
 
           console.log( 'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply, );
           console.log( 'This is the candiate who has sent us candidateProfileData::', candidateProfileData, );
@@ -1507,7 +1485,7 @@ export class IncomingWhatsappMessages {
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Job = candidateProfileData.jobs;
+          const candidateJob: Project = candidateProfileData.projects;
 
           await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
@@ -1577,7 +1555,7 @@ export class IncomingWhatsappMessages {
             whatsappMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
-          const candidateJob: Job = candidateProfileData.jobs;
+          const candidateJob: Project = candidateProfileData.projects;
 
           await this.createAndUpdateIncomingCandidateChatMessage(
             replyObject,
@@ -1608,7 +1586,7 @@ export class IncomingWhatsappMessages {
       messageType?: string;
     },
     candidateProfileDataNodeObj: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
     shouldQueue: boolean = true,
   ) {

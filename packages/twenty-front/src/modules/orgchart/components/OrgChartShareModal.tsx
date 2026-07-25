@@ -1,7 +1,8 @@
-import styled from '@emotion/styled';
 import { useLingui } from '@lingui/react/macro';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useMemo, useState } from 'react';
-import { resolveBrandPublishSlug } from 'twenty-shared';
+import { resolveBrandPublishSlug } from 'twenty-shared/utils';
 import { Button, Section, SectionAlignment, SectionFontColor } from 'twenty-ui';
 
 import {
@@ -9,28 +10,28 @@ import {
     getArxenaSitePublicHost,
 } from '@/auth/utils/arxenaSiteUrl';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
 const StyledModal = styled(Modal)`
-  border-radius: ${({ theme }) => theme.spacing(1)};
+  border-radius: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledRow = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   align-items: flex-end;
   flex-wrap: wrap;
 `;
@@ -38,40 +39,40 @@ const StyledRow = styled.div`
 const StyledField = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledFieldLabel = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  line-height: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  line-height: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledExpiryControls = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   align-items: stretch;
   flex-wrap: wrap;
 `;
 
 const StyledSelect = styled.select`
-  height: ${({ theme }) => theme.spacing(5)};
+  height: ${themeCssVariables.spacing[5]};
   min-width: 160px;
-  padding: 0 ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: 0 ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledGenerateButton = styled(Button)`
-  height: ${({ theme }) => theme.spacing(5)};
+  height: ${themeCssVariables.spacing[5]};
 `;
 
 const StyledLinkRow = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   align-items: center;
 `;
 
@@ -103,10 +104,10 @@ const EXPIRY_OPTIONS: ExpiryOption[] = [
 export type OrgChartShareModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  companyId: string;
+  companyId?: string | null;
   companyName?: string;
   accessToken: string;
-  serverBaseUrl: string;
+  serverBaseUrl?: string | null;
   arxenaSiteBaseUrl?: string;
 };
 
@@ -120,7 +121,7 @@ export const OrgChartShareModal = ({
   arxenaSiteBaseUrl,
 }: OrgChartShareModalProps) => {
   const { t } = useLingui();
-  const { enqueueSnackBar } = useSnackBar();
+  const { enqueueSnackBar } = useOrgChartSnackBar();
   const [selectedExpiryId, setSelectedExpiryId] =
     useState<ExpiryOption['id']>('forever');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -133,7 +134,11 @@ export const OrgChartShareModal = ({
   );
 
   const siteBase = useMemo(
-    () => (arxenaSiteBaseUrl?.trim() || getArxenaSiteBaseUrl()).replace(/\/$/, ''),
+    () =>
+      (arxenaSiteBaseUrl?.trim() || getArxenaSiteBaseUrl() || '').replace(
+        /\/$/,
+        '',
+      ),
     [arxenaSiteBaseUrl],
   );
   const sitePublicHost = useMemo(() => {
@@ -143,19 +148,19 @@ export const OrgChartShareModal = ({
       return getArxenaSitePublicHost();
     }
   }, [siteBase]);
-  const normalizedServerBase = serverBaseUrl.replace(/\/$/, '');
+  const normalizedServerBase = (serverBaseUrl ?? '').replace(/\/$/, '');
 
   const brandPublishSlug = useMemo(
     () =>
       resolveBrandPublishSlug({
-        companyId,
+        companyId: companyId ?? '',
         companyName,
       }),
     [companyId, companyName],
   );
 
   const generateShareLinks = useCallback(async () => {
-    if (!normalizedServerBase || !accessToken) {
+    if (!normalizedServerBase || !accessToken || !companyId?.trim()) {
       enqueueSnackBar(t`Missing server configuration`, {
         variant: SnackBarVariant.Error,
         duration: 6000,

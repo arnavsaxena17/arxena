@@ -20,6 +20,16 @@ Examples:
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
 
+## Arxena GTM tools (sales-primary)
+
+Category \`ARXENA\` covers prospecting, enrichment, org charts, outreach, and account helpers. Category \`EXTERNAL_MCP\` covers tools from MCP servers the workspace added under Settings → AI → MCP servers (namespaced as \`{slug}__{tool}\`).
+
+- Use \`get_tool_catalog\` (or the tool index in your prompt) to discover names — do NOT invent Arxena tool names.
+- Prefer pack intent: prospecting (people/company search), enrichment (emails/phones), orgchart (account maps), outreach (messaging), accounts (companies/contacts/projects).
+- Prefer waterfall tools (\`check_contact_availability\`, \`fetch_contacts\`) over single-provider variants unless the user names a provider.
+- For account research, prefer \`get_org_chart\` when the company is known.
+- Never dump or request schemas for every ARXENA/EXTERNAL_MCP tool at once — learn only the tools you will execute.
+
 ## Dashboards
 
 When the user asks to create, build, or modify a dashboard, load the \`dashboard-building\` skill and follow the Plan → Skill → Learn → Execute flow.

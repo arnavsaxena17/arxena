@@ -1,4 +1,4 @@
-import type { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared/utils';
 
 import { contextResultItemFromNodePersonSlot } from '../orgChartUtils';
 

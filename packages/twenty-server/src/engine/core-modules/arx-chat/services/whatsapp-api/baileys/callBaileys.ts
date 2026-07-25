@@ -5,7 +5,7 @@ import {
     ChatControlsObjType,
     ChatHistoryItem,
     ChatRequestBody,
-    Job,
+    Project,
     whatappUpdateMessageObjType
 } from 'twenty-shared';
 
@@ -26,7 +26,7 @@ export class BaileysWhatsappAPI {
   async sendWhatsappMessageVIABaileysAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -148,14 +148,14 @@ export class BaileysWhatsappAPI {
         (sendTextMessageObj.phoneNumberTo.startsWith('+')
           ? sendTextMessageObj.phoneNumberTo.replace('+', '')
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
-      recruiterId: candidate?.jobs?.recruiterId,
+      recruiterId: candidate?.projects?.recruiterId,
     };
     console.log("data", data);
     let response;
     try {
       console.log(
         'Sending message via send API as recruiter ID is ::',
-        candidate?.jobs?.recruiterId,
+        candidate?.projects?.recruiterId,
       );
       console.log(
         'Sending message via send API as personNode is ::',
@@ -163,15 +163,15 @@ export class BaileysWhatsappAPI {
       );
       console.log(
         'Sending message via send API as personNodeCandidate is ::',
-        candidate?.jobs?.recruiterId,
+        candidate?.projects?.recruiterId,
       );
       console.log(
         'Sending message via send API as nodeCandidate is ::',
-        candidate?.jobs?.company?.name,
+        candidate?.projects?.company?.name,
       );
-      console.log("candidate?.jobs?.company?.name", candidate?.jobs?.company?.name);
+      console.log("candidate?.projects?.company?.name", candidate?.projects?.company?.name);
       if (
-        !candidate?.jobs?.company?.name
+        !candidate?.projects?.company?.name
       ) {
         console.log('THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED');
       } else {
@@ -179,7 +179,7 @@ export class BaileysWhatsappAPI {
       }
 
       if (
-        !candidate?.jobs?.recruiterId
+        !candidate?.projects?.recruiterId
       ) {
         console.log('THERE IS NO RECRUITER ID, SO IT WILL SHOW UNDEFINED');
       } else {
@@ -318,10 +318,10 @@ export class BaileysWhatsappAPI {
   async sendAttachmentMessageViaBaileys(
     sendTextMessageObj: AttachmentMessageObject,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
-    const jobProfile = candidate?.jobs;
+    const jobProfile = candidate?.projects;
 
       console.log("sendAttachmentMessageViaBaileys", sendTextMessageObj);
     const uploadFileUrl = `${baileysBaseUrl}/send-wa-message-file`;
@@ -340,7 +340,7 @@ export class BaileysWhatsappAPI {
     };
     console.log("data", data);
     const payloadToSendToWhiskeySockets = {
-      recruiterId: candidate?.jobs?.recruiterId,
+      recruiterId: candidate?.projects?.recruiterId,
       fileToSendData: data,
     };
 

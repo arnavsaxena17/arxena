@@ -1,14 +1,16 @@
-import { IconDownload } from 'twenty-ui/icons';
-import { Button, IconComponent } from 'twenty-ui';
-import { IconAlertCircle, IconHierarchy2, IconMessage } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { IconDownload } from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/input';
+import { IconComponent } from 'twenty-ui/icon';
+import { IconAlertCircle, IconHierarchy2, IconMessage } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useLingui } from '@lingui/react/macro';
-import { IconGitMerge } from 'twenty-ui/icons';
+import { IconArrowMerge } from 'twenty-ui/icon';
 import { ReactNode, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
-import { CandidateTableJobsPageMenuDropdown } from '@/candidate-table/components/CandidateTableJobsPageMenuDropdown';
+import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -34,7 +36,7 @@ const StyledCompanySearchWrapper = styled.div`
 const StyledOrgChartSearchRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledPageHeaderShell = styled.div`
@@ -70,7 +72,7 @@ export const StyledPageHeader = styled(PageHeader)`
     flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-end;
-    gap: ${({ theme }) => theme.spacing(2)};
+    gap: ${themeCssVariables.spacing[2]};
     position: relative;
   }
 
@@ -82,14 +84,14 @@ export const StyledPageHeader = styled(PageHeader)`
 const StyledCreditsAlert = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.color.red};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  margin-left: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.color.red};
+  color: ${themeCssVariables.font.color.inverted};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  margin-left: ${themeCssVariables.spacing[2]};
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 
@@ -100,7 +102,7 @@ const StyledCreditsAlert = styled.div`
   svg {
     width: 16px;
     height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
+    color: ${themeCssVariables.font.color.inverted};
   }
 `;
 
@@ -184,7 +186,7 @@ export const CandidateTablePageHeader = ({
 }: CandidateTablePageHeaderProps) => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const { t } = useLingui();
-  const orgChartLinkedinSource = useRecoilValue(
+  const orgChartLinkedinSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
 
@@ -239,7 +241,7 @@ export const CandidateTablePageHeader = ({
             <Button
               dataTestId="merge-selected"
               title={`Merge selected (${mergeSelectedCount})`}
-              Icon={IconGitMerge}
+              Icon={IconArrowMerge}
               variant="primary"
               onClick={onMergeSelected}
               disabled={mergeSelectedCount < 2}
@@ -274,7 +276,7 @@ export const CandidateTablePageHeader = ({
             Insufficient OpenAI Credits
           </StyledCreditsAlert>
         )}
-        <CandidateTableJobsPageMenuDropdown
+        <CandidateTableProjectsPageMenuDropdown
           onAddJob={onAddJob}
           onMergeJobs={onMergeJobs}
           isLinkedinConnected={isLinkedinConnected}

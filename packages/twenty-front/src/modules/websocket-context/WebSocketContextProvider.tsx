@@ -1,10 +1,12 @@
 // src/contexts/WebSocketContext.tsx
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import React, { useContext, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 import { io, Socket } from 'socket.io-client';
 import { WebSocketContext, WebSocketContextValue } from './WebSocketContext';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export const useWebSocket = () => {
   const context = useContext(WebSocketContext);
@@ -18,21 +20,21 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [recruiterId, setRecruiterId] = useState<string | undefined>(undefined);
-  const tokenPair = useRecoilValue(tokenPairState);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   console.log("currentWorkspaceMember::", currentWorkspaceMember);
   useEffect(() => {
     if (!currentWorkspaceMember?.id) {
       return;
     }
 
-    const socketURL = process.env.REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
+    const socketURL = REACT_APP_SERVER_BASE_URL || 'http://localhost:3000';
     const socketInstance = io(socketURL, {
       path: '/general-socket',
       query: {
         userId: currentWorkspaceMember?.id,
         userName: currentWorkspaceMember?.name.firstName +' '+ currentWorkspaceMember?.name.lastName,
-        token: tokenPair?.accessToken?.token,
+        token: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
         origin: window?.location?.origin,
       },
     });
@@ -47,7 +49,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setConnected(false);
     });
 
-    socketInstance.on('error', (error) => {
+    socketInstance.on('error', (error: unknown) => {
       console.error('WebSocket error:', error);
     });
 

@@ -1,32 +1,32 @@
-import styled from '@emotion/styled';
 import { Trans } from '@lingui/react/macro';
-import { useRecoilState } from 'recoil';
-
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 const StyledLabel = styled.label`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  min-width: ${({ theme }) => theme.spacing(28)};
+  gap: ${themeCssVariables.spacing[0.5]};
+  min-width: ${themeCssVariables.spacing[28]};
 `;
 
 const StyledCaption = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  background: ${themeCssVariables.background.primary};
 `;
 
 export const OrgChartQueryGeneratorControl = () => {
-  const [value, setValue] = useRecoilState(orgChartQueryGeneratorPreferenceState);
+  const [value, setValue] = useAtomState(orgChartQueryGeneratorPreferenceState);
 
   return (
     <StyledLabel>

@@ -2,8 +2,10 @@ import { activeEnrichmentState, Enrichment, enrichmentsState, sampleEnrichmentsS
 import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import axios from 'axios';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const SAMPLE_ENRICHMENTS = [
   {
@@ -48,10 +50,12 @@ const SAMPLE_ENRICHMENTS = [
 ];
 
 export const useInitializeEnrichments = () => {
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-  const [sampleEnrichments, setSampleEnrichments] = useRecoilState(sampleEnrichmentsState);
-  const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const [enrichments, setEnrichments] = useAtomState(enrichmentsState);
+  const [sampleEnrichments, setSampleEnrichments] =
+    useAtomState(sampleEnrichmentsState);
+  const [activeEnrichment, setActiveEnrichment] =
+    useAtomState(activeEnrichmentState);
+  const [tokenPair] = useAtomState(tokenPairState);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,32 +84,49 @@ export const useInitializeEnrichments = () => {
       if (sampleEnrichments.length === 0) {
         try {
           const response = await axios.post(
-            `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/find-many-ai-filters`,
+            `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/find-many-ai-filters`,
             {},
             {
-              headers: { 
-                Authorization: `Bearer ${tokenPair?.accessToken?.token}` 
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`
               }
             }
           );
-          
+
           if (response.status === 200 || response.status === 201) {
             // Combine server enrichments with local samples
-            const combinedEnrichments = [...SAMPLE_ENRICHMENTS, ...response.data.data].map(
-              (item) => normalizeEnrichmentResumeFlag(item),
-            );
+            // API may return undefined when GraphQL edges are missing
+            const serverEnrichments = Array.isArray(response.data?.data)
+              ? response.data.data
+              : [];
+            const combinedEnrichments = [
+              ...SAMPLE_ENRICHMENTS,
+              ...serverEnrichments,
+            ].map((item) => normalizeEnrichmentResumeFlag(item));
             // Sort by createdAt
-            combinedEnrichments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            combinedEnrichments.sort((first, second) => {
+              const secondTime = second.createdAt
+                ? new Date(second.createdAt).getTime()
+                : 0;
+              const firstTime = first.createdAt
+                ? new Date(first.createdAt).getTime()
+                : 0;
+              return secondTime - firstTime;
+            });
             // Deduplicate by modelName
-            const deduplicatedEnrichments = combinedEnrichments.reduce((acc, current) => {
-              const x = acc.find((item: { modelName: any; }) => item.modelName === current.modelName);
-              if (!x) {
-                return acc.concat([current]);
-              } else {
-                return acc;
-              }
-            }, []);
-            
+            const deduplicatedEnrichments = combinedEnrichments.reduce(
+              (accumulator: Enrichment[], current: Enrichment) => {
+                const existingItem = accumulator.find(
+                  (item) => item.modelName === current.modelName,
+                );
+                if (!existingItem) {
+                  return accumulator.concat([current]);
+                }
+                return accumulator;
+              },
+              [] as Enrichment[],
+            );
+
             setSampleEnrichments(deduplicatedEnrichments);
           } else {
             // Fallback to local samples if API fails
@@ -123,7 +144,7 @@ export const useInitializeEnrichments = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [enrichments.length, sampleEnrichments.length, setEnrichments, setSampleEnrichments, setActiveEnrichment, tokenPair?.accessToken?.token]);
+  }, [enrichments.length, sampleEnrichments.length, setEnrichments, setSampleEnrichments, setActiveEnrichment, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   return {
     initializeEnrichments,

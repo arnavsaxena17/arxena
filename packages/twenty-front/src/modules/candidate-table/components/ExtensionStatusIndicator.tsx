@@ -1,5 +1,6 @@
-import { IconCheck, IconLoader, IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { IconCheck, IconLoader, IconX } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
 
 import { useChromeExtensionDetection } from '../hooks/useChromeExtensionDetection';
@@ -7,20 +8,20 @@ import { useChromeExtensionDetection } from '../hooks/useChromeExtensionDetectio
 const StyledStatusIndicator = styled.div<{ isInstalled: boolean; isChecking: boolean }>`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme, isInstalled, isChecking }) => 
-    isChecking ? theme.color.blue : isInstalled ? theme.color.green : theme.color.gray};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${({ isInstalled, isChecking }) =>
+    isChecking ? themeCssVariables.color.blue : isInstalled ? themeCssVariables.color.green : themeCssVariables.color.gray};
+  color: ${themeCssVariables.font.color.inverted};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   transition: all 0.2s ease-in-out;
 
   svg {
     width: 16px;
     height: 16px;
-    color: ${({ theme }) => theme.font.color.inverted};
+    color: ${themeCssVariables.font.color.inverted};
   }
 `;
 

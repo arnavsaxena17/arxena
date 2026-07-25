@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const sharedInputStyles = `
   width: 100%;
@@ -126,7 +127,7 @@ export const AddFieldForm = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  
+
   form {
     margin: 0;
   }
@@ -146,7 +147,7 @@ export const CodeBlock = styled.div`
   width: 400px;
   margin-top: 1.5rem;
   align-self: flex-start;
-  
+
   pre {
     white-space: pre-wrap;
     overflow-x: auto;
@@ -214,7 +215,7 @@ export const SelectLabel = styled.label`
 export const ModelCodeDisplay = styled.div<{ show: boolean }>`
   margin-top: 1.5rem;
   align-self: flex-start;
-  opacity: ${props => props.show ? 1 : 0};
+  opacity: ${(props) => (props.show ? 1 : 0)};
   transition: opacity 0.3s ease-in-out;
 `;
 
@@ -259,7 +260,7 @@ export const CheckboxField = styled.div`
     background-color: #f3f4f6;
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     cursor: pointer;
   }
 
@@ -276,15 +277,15 @@ export const ProcessButton = styled.button`
 `;
 
 export const TokenUsageContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(4)};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  padding: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing['4']};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  padding: ${themeCssVariables.spacing['4']};
 `;
 
 export const TokenUsageSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${themeCssVariables.spacing['4']};
 
   &:last-child {
     margin-bottom: 0;
@@ -292,39 +293,39 @@ export const TokenUsageSection = styled.div`
 `;
 
 export const TokenUsageTitle = styled.h3`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin: 0 0 ${({ theme }) => theme.spacing(2)};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  margin: 0 0 ${themeCssVariables.spacing['2']};
 `;
 
 export const TokenUsageRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing['1']} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 export const TokenUsageLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 export const TokenUsageValue = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 export const LoadingContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing['2']};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin-top: ${themeCssVariables.spacing['3']};
 `;
 
 export const SectionGap = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(8)};
+  margin-top: ${themeCssVariables.spacing['8']};
 `;

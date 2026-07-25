@@ -112,7 +112,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     // Process profile summary
     if (candidateData.profileSummary) {
-      // this.addJobProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary);
+      // this.addProjectProcessEvent(userProfile, 'profile_summary', candidateData.profileSummary);
     }
     
     // Process any additional fields that might be in the spreadsheet
@@ -127,7 +127,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     
     spreadsheetSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addProjectProcessEvent(userProfile, field, candidateData[field]);
       }
     });
 
@@ -142,7 +142,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
       ];
       
       if (!standardFields.includes(key) && candidateData[key]) {
-        // this.addJobProcessEvent(userProfile, `custom_${key}`, candidateData[key]);
+        // this.addProjectProcessEvent(userProfile, `custom_${key}`, candidateData[key]);
       }
     });
     
@@ -159,7 +159,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   /**
    * Add event to job process - utility method for UserProfile
    */
-  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
   //   if (value !== null && value !== undefined && value !== '') {
   //     if (!userProfile.job_process_events) {
   //       userProfile.job_process_events = [];

@@ -71,7 +71,7 @@ export class AssistantController {
       headers: { authorization?: string };
       body?: {
         name?: string;
-        jobId?: string;
+        projectId?: string;
         assistantMode?: 'fully_autonomous' | 'permissioned';
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
         statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
@@ -86,14 +86,14 @@ export class AssistantController {
     }
     try {
       const name = request.body?.name ?? 'New thread';
-      const jobId = request.body?.jobId;
+      const projectId = request.body?.projectId;
       const assistantMode = request.body?.assistantMode;
       const searchType = request.body?.searchType;
       const statusMessagePolicy = request.body?.statusMessagePolicy;
       const thread = await this.assistantThreadService.createThread(
         apiToken,
         name,
-        jobId,
+        projectId,
         assistantMode,
         searchType,
       );
@@ -141,7 +141,7 @@ export class AssistantController {
         assistantParameters: thread.assistantParameters ?? null,
         assistantSearchStrategy: thread.assistantSearchStrategy ?? null,
         lastTableData,
-        jobId: thread.jobId ?? null,
+        projectId: thread.projectId ?? null,
         job: thread.job ?? null,
         agentNotes: thread.agentNotes ?? [],
         agentEvents: thread.agentEvents ?? [],
@@ -164,7 +164,7 @@ export class AssistantController {
       headers: { authorization?: string };
       body?: {
         name?: string;
-        jobId?: string | null;
+        projectId?: string | null;
         assistantMode?: 'fully_autonomous' | 'permissioned';
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
         statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
@@ -178,7 +178,7 @@ export class AssistantController {
     }
     const body = request.body ?? {};
     const name = body.name;
-    const jobId = body.jobId;
+    const projectId = body.projectId;
     const assistantMode = body.assistantMode;
     const searchType = body.searchType;
     const statusMessagePolicy = body.statusMessagePolicy;
@@ -187,11 +187,11 @@ export class AssistantController {
       if (typeof name === 'string') {
         await this.assistantThreadService.updateThreadName(apiToken, id, name);
       }
-      if (jobId !== undefined) {
-        await this.assistantThreadService.updateThreadJobId(
+      if (projectId !== undefined) {
+        await this.assistantThreadService.updateThreadProjectId(
           apiToken,
           id,
-          jobId === null || jobId === '' ? null : jobId,
+          projectId === null || projectId === '' ? null : projectId,
         );
       }
       if (
@@ -222,7 +222,7 @@ export class AssistantController {
       }
       const hasValidUpdate =
         typeof name === 'string' ||
-        jobId !== undefined ||
+        projectId !== undefined ||
         assistantMode === 'fully_autonomous' ||
         assistantMode === 'permissioned' ||
         searchType === 'classic' ||
@@ -233,7 +233,7 @@ export class AssistantController {
       if (!hasValidUpdate) {
         return {
           error:
-            'Body must include at least one of "name", "jobId", "searchType", or a valid "assistantMode"',
+            'Body must include at least one of "name", "projectId", "searchType", or a valid "assistantMode"',
         };
       }
       const thread = await this.assistantThreadService.getThread(apiToken, id);
@@ -241,7 +241,7 @@ export class AssistantController {
       return {
         id,
         name: thread?.name ?? name,
-        jobId: thread?.jobId ?? (jobId !== undefined ? jobId : undefined),
+        projectId: thread?.projectId ?? (projectId !== undefined ? projectId : undefined),
         assistantMode: thread?.assistantMode ?? assistantMode,
         searchType: thread?.searchType ?? searchType,
         assistantParameters: thread?.assistantParameters ?? null,

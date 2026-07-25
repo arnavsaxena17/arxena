@@ -1,5 +1,6 @@
 import { ArxJDStepNavigation } from '@/arx-jd-upload/components/ArxJDStepNavigation';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledActionContainer = styled.div`
   display: flex;

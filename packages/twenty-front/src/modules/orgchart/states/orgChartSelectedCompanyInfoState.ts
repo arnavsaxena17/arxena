@@ -1,4 +1,4 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 export type OrgChartSelectedCompanyInfo = {
   companyId: string;
@@ -12,8 +12,7 @@ export type OrgChartSelectedCompanyInfo = {
 };
 
 export const orgChartSelectedCompanyInfoState =
-  createState<OrgChartSelectedCompanyInfo | null>({
+  createAtomState<OrgChartSelectedCompanyInfo | null>({
     key: 'orgChartSelectedCompanyInfoState',
     defaultValue: null,
   });
-

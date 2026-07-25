@@ -1353,13 +1353,13 @@ export const linkedinSearchTools: McpTool[] = [
       inputSchema: descriptorToInputSchema(GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const { jobId } = args as { jobId: string };
+      const { projectId } = args as { projectId: string };
 
       return callRestAPIGet(
         config.baseUrl,
         config.apiToken,
         'contact-enrichment',
-        `jobs/${jobId}`,
+        `jobs/${projectId}`,
       );
     },
   },

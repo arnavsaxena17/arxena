@@ -1,4 +1,4 @@
-import { IconFilter, IconTable } from 'twenty-ui/icons';
+import { IconFilter, IconTable } from 'twenty-ui/icon';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
@@ -21,12 +21,18 @@ import {
     LinkedInSearchResult,
     LinkedInSearchType
 } from '@/candidate-search/types/candidate-search.types';
-import { jobIdAtom } from '@/candidate-table/states/states';
-import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
+import { projectIdAtom } from '@/candidate-table/states/states';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // Styled Components for Panels
 const StyledPanelContainer = styled.div`
@@ -40,9 +46,9 @@ const StyledLeftPanel = styled.div`
   flex: 0 0 300px;
   display: flex;
   flex-direction: column;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   overflow: hidden;
   min-height: 0;
 `;
@@ -51,9 +57,9 @@ const StyledCenterPanel = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   overflow: hidden;
   min-height: 0;
 `;
@@ -62,9 +68,9 @@ const StyledRightPanel = styled.div`
   flex: 0 0 350px;
   display: flex;
   flex-direction: column;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   overflow: hidden;
   min-height: 0;
 `;
@@ -72,41 +78,43 @@ const StyledRightPanel = styled.div`
 const StyledPanelHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  background-color: ${({ theme }) => theme.background.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  background-color: ${themeCssVariables.background.secondary};
 `;
 
 const StyledPanelTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const StyledPanelContent = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
 `;
+
+const CANDIDATE_SEARCH_MODAL_FOCUS_ID = 'candidate-search-modal';
 
 export const CandidateSearchModal = () => {
   const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
     useUploadProgressSseSession();
-  const [isCandidateSearchModalOpen, setIsCandidateSearchModalOpen] = useRecoilState(isCandidateSearchModalOpenState);
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const [currentWorkspaceMember] = useRecoilState(currentWorkspaceMemberState);
-  const currentJobId = useRecoilValue(jobIdAtom);
-  const activeAssistantThreadId = useRecoilValue(activeAssistantThreadIdState);
-  
+  const [isCandidateSearchModalOpen, setIsCandidateSearchModalOpen] = useAtomState(isCandidateSearchModalOpenState);
+  const [tokenPair] = useAtomState(tokenPairState);
+  const [currentWorkspaceMember] = useAtomState(currentWorkspaceMemberState);
+  const currentProjectId = useAtomStateValue(projectIdAtom);
+  const activeAssistantThreadId = useAtomStateValue(activeAssistantThreadIdState);
+
   // Use Recoil state for ParsedJD
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
-  
-  const { updateAssistantThreadRecord } = useArxJDUpload('job');
-  
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
+
+  const { updateAssistantThreadRecord } = useArxJDUpload('project');
+
   // Get strategy execution function
-  
+
   const handleAssistantThreadUpdate = useCallback(async (
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
@@ -138,13 +146,13 @@ export const CandidateSearchModal = () => {
       console.error('❌ Failed to save search parameters to backend:', error);
     }
   }, [parsedJD, updateAssistantThreadRecord, activeAssistantThreadId]);
-  
+
   // Create a unique key for this search to persist data - use job ID if available
-  const persistenceKey = useMemo(() => 
-    currentJobId ? `candidate-search-${currentJobId}` : 'candidate-search-standalone',
-    [currentJobId]
+  const persistenceKey = useMemo(() =>
+    currentProjectId ? `candidate-search-${currentProjectId}` : 'candidate-search-standalone',
+    [currentProjectId]
   );
-  
+
   const [searchState, setSearchState] = useState<CandidateSearchState>({
     isSearching: false,
     searchResults: [],
@@ -163,11 +171,11 @@ export const CandidateSearchModal = () => {
       try {
         const persistedSearchData = sessionStorage.getItem(`search-state-${persistenceKey}`);
         const persistedTableData = sessionStorage.getItem(`table-results-${persistenceKey}`);
-        
+
         if (persistedSearchData) {
           const parsedSearchData = JSON.parse(persistedSearchData);
           const isRecent = Date.now() - parsedSearchData.timestamp < 24 * 60 * 60 * 1000; // 24 hours
-          
+
           if (isRecent && parsedSearchData.searchResults && parsedSearchData.searchResults.length > 0) {
             console.log(`Loading ${parsedSearchData.searchResults.length} persisted search results`);
             setSearchState(prev => ({
@@ -180,7 +188,7 @@ export const CandidateSearchModal = () => {
         } else if (persistedTableData) {
           const parsedTableData = JSON.parse(persistedTableData);
           const isRecent = Date.now() - parsedTableData.timestamp < 24 * 60 * 60 * 1000; // 24 hours
-          
+
           if (isRecent && parsedTableData.results && parsedTableData.results.length > 0) {
             console.log(`Loading ${parsedTableData.results.length} persisted table results`);
             setSearchState(prev => ({
@@ -214,15 +222,32 @@ export const CandidateSearchModal = () => {
     }
   }, [searchState.searchResults, searchState.isSearching, persistenceKey]);
 
-  const {
-    setHotkeyScopeAndMemorizePreviousScope,
-    goBackToPreviousHotkeyScope,
-  } = usePreviousHotkeyScope();
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
 
   const closeModal = () => {
     setIsCandidateSearchModalOpen(false);
-    goBackToPreviousHotkeyScope();
+    removeFocusItemFromFocusStackById({
+      focusId: CANDIDATE_SEARCH_MODAL_FOCUS_ID,
+    });
   };
+
+  useEffect(() => {
+    if (isCandidateSearchModalOpen) {
+      pushFocusItemToFocusStack({
+        focusId: CANDIDATE_SEARCH_MODAL_FOCUS_ID,
+        component: {
+          type: FocusComponentType.MODAL,
+          instanceId: CANDIDATE_SEARCH_MODAL_FOCUS_ID,
+        },
+        globalHotkeysConfig: {
+          enableGlobalHotkeysWithModifiers: false,
+          enableGlobalHotkeysConflictingWithKeyboard: false,
+        },
+      });
+    }
+  }, [isCandidateSearchModalOpen, pushFocusItemToFocusStack]);
 
   // Clear display data when modal is closed to prevent persistence across sessions
   useEffect(() => {
@@ -230,11 +255,11 @@ export const CandidateSearchModal = () => {
       // Clear display data from parsedJD when modal is closed
       setParsedJD((prevParsedJD: ParsedJD | null) => {
         if (!prevParsedJD?.searchParameters) return prevParsedJD;
-        
+
         const updatedSearchParameters = prevParsedJD.searchParameters.map((searchParam) => {
           if (searchParam.resolvedSearchParameters) {
             const updatedResolved: Record<string, unknown> = { ...searchParam.resolvedSearchParameters };
-            
+
             // Clear display data for all parameter types to prevent persistence
             const displayKeys = ['industry_display', 'location_display', 'company_display', 'school_display'];
             displayKeys.forEach(displayKey => {
@@ -242,11 +267,11 @@ export const CandidateSearchModal = () => {
                 delete updatedResolved[displayKey];
               }
             });
-            
+
             // Also clear flat structure parameters to prevent persistence after page reload
             // This ensures that when data is fetched from backend, cleared parameters don't reappear
             const allSearchParams = [
-              'keywords', 'network_distance', 'industry', 'location', 'company', 'school', 
+              'keywords', 'network_distance', 'industry', 'location', 'company', 'school',
               'profile_language', 'past_company', 'service', 'connections_of', 'followers_of', 'open_to',
               'advanced_keywords', 'seniority', 'job_type', 'presence', 'headcount'
             ];
@@ -255,7 +280,7 @@ export const CandidateSearchModal = () => {
                 delete updatedResolved[param];
               }
             });
-            
+
             return {
               ...searchParam,
               resolvedSearchParameters: updatedResolved
@@ -263,7 +288,7 @@ export const CandidateSearchModal = () => {
           }
           return searchParam;
         });
-        
+
         return {
           ...prevParsedJD,
           searchParameters: updatedSearchParameters
@@ -290,10 +315,10 @@ export const CandidateSearchModal = () => {
   ) => {
     // Use the current parsedJD from the component state
     const currentParsedJD = parsedJD;
-    
+
     // Check if searchParameters contains resolved parameters (from stableSearchFunction)
-    const hasResolvedParamsInSearchParams = searchParameters && 
-      Object.keys(searchParameters).some(key => 
+    const hasResolvedParamsInSearchParams = searchParameters &&
+      Object.keys(searchParameters).some(key =>
         ['keywords', 'industry', 'location', 'company', 'school', 'network_distance', 'profile_language'].includes(key)
       );
 
@@ -305,8 +330,8 @@ export const CandidateSearchModal = () => {
 
     // Use resolved parameters from searchParameters if they contain actual search criteria,
     // otherwise fall back to resolved parameters from parsedJD
-    const resolvedSearchParameters = hasResolvedParamsInSearchParams 
-      ? searchParameters 
+    const resolvedSearchParameters = hasResolvedParamsInSearchParams
+      ? searchParameters
       : resolvedSearchParametersFromParsedJD;
 
     console.log('createSearchRequestBody - resolved parameters:', {
@@ -353,12 +378,12 @@ export const CandidateSearchModal = () => {
     });
 
     const url = `${getCandidateSearchFromFileUrl()}?${queryParams}`;
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+        'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
       },
       body: JSON.stringify(requestBody),
     });
@@ -382,7 +407,7 @@ export const CandidateSearchModal = () => {
 
     const { items, cursor, paging } = searchResponse.searchResults;
     const totalCount = paging?.total_count || 0;
-    
+
     return {
       searchResults: items,
       totalCount,
@@ -404,28 +429,28 @@ export const CandidateSearchModal = () => {
       searchCategory,
       searchParameters,
     });
-    
+
     if (!parsedJD) {
       console.error('No parsedJD available for search');
       return;
     }
-    
+
     setSearchState(prev => ({ ...prev, isSearching: true, error: undefined }));
 
     try {
       const requestBody = createSearchRequestBody(searchType, searchCategory, searchParameters);
       const searchResponse = await makeSearchRequest(requestBody);
-      
+
       console.log('Full search response:', searchResponse);
-      
+
       const processedData = processSearchResponse(searchResponse, searchParameters, true);
-      
+
       setSearchState(prev => {
         // If there are existing results, add new results to the top
         if (prev.searchResults && prev.searchResults.length > 0) {
           const uniqueNewResults = deduplicateResults(prev.searchResults, processedData.searchResults);
           const combinedResults = [...uniqueNewResults, ...prev.searchResults];
-          
+
           console.log('Adding new search results to top of existing results:', {
             existingResultsCount: prev.searchResults.length,
             newResultsCount: processedData.searchResults.length,
@@ -433,7 +458,7 @@ export const CandidateSearchModal = () => {
             finalResultsCount: combinedResults.length,
             duplicatesRemoved: processedData.searchResults.length - uniqueNewResults.length
           });
-          
+
           const updatedState = {
             ...prev,
             searchResults: combinedResults,
@@ -447,28 +472,28 @@ export const CandidateSearchModal = () => {
             isSearching: false,
             selectedCandidates: [], // Clear selections for new search
           };
-          
+
           return updatedState;
         } else {
           // No existing results, use new results as before
           console.log('No existing results, using new search results as initial results:', {
             newResultsCount: processedData.searchResults.length
           });
-          
+
           const newSearchState = {
             ...processedData,
             currentPage: 1,
             isSearching: false,
             selectedCandidates: [],
           };
-          
+
           return {
             ...prev,
             ...newSearchState,
           };
         }
       });
-      
+
       // Persist search state to session storage
       if (persistenceKey) {
         try {
@@ -478,7 +503,7 @@ export const CandidateSearchModal = () => {
           console.error('Failed to persist search state:', error);
         }
       }
-      
+
       setShowResults(true);
     } catch (error) {
       console.error('Search error:', error);
@@ -498,14 +523,14 @@ export const CandidateSearchModal = () => {
       searchState.searchParameters,
       cursor
     );
-    
+
     const searchResponse = await makeSearchRequest(requestBody, cursor);
     console.log('Load more response:', searchResponse);
-    
+
     if (!searchResponse.searchResults?.items) {
       return { results: [], nextCursor: undefined };
     }
-    
+
     const { items, cursor: nextCursor } = searchResponse.searchResults;
     return { results: items, nextCursor };
   }, [searchState.searchType, searchState.searchCategory, searchState.searchParameters, createSearchRequestBody, makeSearchRequest]);
@@ -525,12 +550,12 @@ export const CandidateSearchModal = () => {
       isSearching: searchState.isSearching,
       pagesToLoad,
     });
-    
+
     if (!parsedJD) {
       console.error('No parsedJD available for loading more candidates');
       return;
     }
-    
+
     if (!searchState.cursor || searchState.isSearching) return;
 
     setSearchState(prev => ({ ...prev, isSearching: true }));
@@ -543,22 +568,22 @@ export const CandidateSearchModal = () => {
       // Load multiple pages sequentially
       for (let i = 0; i < pagesToLoad && currentCursor; i++) {
         const { results, nextCursor } = await loadSinglePage(currentCursor);
-        
+
         if (results.length === 0) break;
-        
+
         allNewResults = [...allNewResults, ...results];
         currentCursor = nextCursor;
         pagesLoaded++;
-        
+
         // If no more cursor, break the loop
         if (!currentCursor) break;
       }
 
       console.log(`Loaded ${pagesLoaded} pages with ${allNewResults.length} total candidates`);
-      
+
       setSearchState(prev => {
         const uniqueNewResults = deduplicateResults(prev.searchResults, allNewResults);
-        
+
         const updatedState = {
           ...prev,
           searchResults: [...prev.searchResults, ...uniqueNewResults],
@@ -566,7 +591,7 @@ export const CandidateSearchModal = () => {
           cursor: currentCursor,
           isSearching: false,
         };
-        
+
         // Persist updated search state
         if (persistenceKey) {
           try {
@@ -579,7 +604,7 @@ export const CandidateSearchModal = () => {
             console.error('Failed to persist updated search state:', error);
           }
         }
-        
+
         return updatedState;
       });
     } catch (error) {
@@ -646,7 +671,7 @@ export const CandidateSearchModal = () => {
     beginUploadProgressSseSession();
     try {
       console.log('Uploading selected candidates:', searchState.selectedCandidates.length);
-      
+
       // Prepare the request body for upload-profiles endpoint
       const uploadRequestBody = {
         linkedin_search_results: searchState.selectedCandidates,
@@ -668,11 +693,11 @@ export const CandidateSearchModal = () => {
 
       console.log('Upload request body:', uploadRequestBody);
 
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
+      const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
         },
         body: JSON.stringify(uploadRequestBody),
       });
@@ -723,7 +748,7 @@ export const CandidateSearchModal = () => {
   return (
     <ModalContainer onBackdropClick={closeModal} onModalClick={(e) => e.stopPropagation()}>
       <ModalHeader title={parsedJD?.name} onClose={closeModal} />
-      
+
       <StyledPanelContainer>
         {/* Left Panel - Search Parameters */}
         <StyledLeftPanel>
@@ -735,8 +760,8 @@ export const CandidateSearchModal = () => {
               <SearchParametersForm
                 onSearch={handleSearch}
                 isLoading={searchState.isSearching}
-                onSearchRef={(fn: () => void) => { 
-                  searchFunctionRef.current = fn; 
+                onSearchRef={(fn: () => void) => {
+                  searchFunctionRef.current = fn;
                 }}
               onAssistantThreadUpdate={handleAssistantThreadUpdate}
               />

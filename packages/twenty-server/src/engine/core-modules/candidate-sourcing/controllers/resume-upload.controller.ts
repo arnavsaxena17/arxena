@@ -19,7 +19,7 @@ import { ProcessResumeUploadsService } from '../jobs/process-resume-uploads.serv
 import { ResumeReadParseUploadService } from '../services/resume-read-parse-upload.service';
 
 export class ResumeUploadDto {
-  jobId: string;
+  projectId: string;
   jobName: string;
 }
 
@@ -47,8 +47,8 @@ export class ResumeUploadController {
       throw new HttpException('No files uploaded', HttpStatus.BAD_REQUEST);
     }
 
-    if (!body.jobId || !body.jobName) {
-      throw new HttpException('jobId and jobName are required', HttpStatus.BAD_REQUEST);
+    if (!body.projectId || !body.jobName) {
+      throw new HttpException('projectId and jobName are required', HttpStatus.BAD_REQUEST);
     }
 
     // Validate file types
@@ -74,7 +74,7 @@ export class ResumeUploadController {
       // Save uploaded files to temporary directory
       const filePaths = await this.resumeReadParseUploadService.saveUploadedFiles(
         files,
-        body.jobId,
+        body.projectId,
       );
 
       // Extract user info from request
@@ -129,7 +129,7 @@ export class ResumeUploadController {
       // Queue the resume files for processing
       await this.processResumeUploadsService.queueResumeUpload(
         filePaths,
-        body.jobId,
+        body.projectId,
         body.jobName,
         workspaceMemberId, // Use workspace member ID for progress reporting
         origin,

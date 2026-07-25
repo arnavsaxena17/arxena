@@ -1,5 +1,6 @@
-import { Button, Loader } from 'twenty-ui';
-import { IconChevronDown, IconHierarchy2 } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui/input';
+import { Loader } from 'twenty-ui/feedback';
+import { IconChevronDown, IconHierarchy2 } from 'twenty-ui/icon';
 import {
     AssistantDetailsTable,
     AssistantTableData,
@@ -13,7 +14,8 @@ import type {
     OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, {
     useCallback,
     useEffect,
@@ -21,7 +23,7 @@ import React, {
     useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { useControlledMessages } from '@/assistant/hooks/useControlledMessages';
 import { useMcpStreamingChat } from '@/assistant/hooks/useMcpStreamingChat';
@@ -29,6 +31,8 @@ import {
     parseMessageContentWithJson,
     parseRichText,
 } from '@/assistant/utils/richText';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export type { AssistantChatMessage };
 
@@ -47,8 +51,8 @@ export type McpClientChatProps = {
   onAgentEvent?: (event: AssistantAgentEvent) => void;
   /** Candidate IDs selected in the results DataTable, sent along with each chat message */
   selectedCandidateIds?: string[];
-  /** Called when the MCP backend attaches a job to the thread (create_job, get_job_by_id, or unambiguous find_job_by_name) */
-  onJobAttached?: (jobId: string) => void;
+  /** Called when the MCP backend attaches a job to the thread (create_project, get_project_by_id, or unambiguous find_project_by_name) */
+  onJobAttached?: (projectId: string) => void;
   assistantParameters?: Record<string, unknown> & {
     iterativeQueryState?: AssistantIterativeQueryState;
     statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
@@ -62,7 +66,7 @@ const StyledContainer = styled.div`
   max-width: 720px;
   width: 90%;
   margin: 0 auto;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
   min-height: 0;
   position: relative;
 `;
@@ -82,21 +86,21 @@ const StyledMessages = styled.div`
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(3)};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
   scrollbar-width: thin;
 `;
 
 const StyledScrollToBottomButton = styled.button`
   position: absolute;
-  bottom: ${({ theme }) => theme.spacing(4)};
-  right: ${({ theme }) => theme.spacing(3)};
+  bottom: ${themeCssVariables.spacing[4]};
+  right: ${themeCssVariables.spacing[3]};
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -106,63 +110,63 @@ const StyledScrollToBottomButton = styled.button`
   transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 `;
 
 const StyledMessageLabel = styled.div<{ isUser: boolean }>`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  margin-bottom: ${themeCssVariables.spacing[1]};
   text-align: ${({ isUser }) => (isUser ? 'right' : 'left')};
 `;
 
 const StyledMessage = styled.div<{ isUser: boolean }>`
   align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
   max-width: 85%;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background-color: ${({ theme, isUser }) =>
-    isUser ? theme.background.transparent.light : theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.md};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background-color: ${({ isUser }) =>
+    isUser ? themeCssVariables.background.transparent.light : themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.md};
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
 `;
 
 const StyledToolCalls = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledOrgChartSnippetRow = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledOrgChartSnippetButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.5, 2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.secondary};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.secondary};
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 
   &:hover {
-    background: ${({ theme }) => theme.background.tertiary};
-    border-color: ${({ theme }) => theme.border.color.strong};
+    background: ${themeCssVariables.background.tertiary};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 `;
 
@@ -171,23 +175,23 @@ const StyledOrgChartSnippetLabel = styled.div`
   flex-direction: column;
   min-width: 0;
   flex: 1;
-  gap: ${({ theme }) => theme.spacing(0.25)};
+  gap: ${themeCssVariables.spacing['1']};
 `;
 
 const StyledOrgChartSnippetName = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledOrgChartSnippetHint = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledOrgChartFullPageLink = styled.a`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.color.blue};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.color.blue};
   text-decoration: none;
-  padding-left: ${({ theme }) => theme.spacing(0.25)};
+  padding-left: ${themeCssVariables.spacing['1']};
 
   &:hover {
     text-decoration: underline;
@@ -196,7 +200,7 @@ const StyledOrgChartFullPageLink = styled.a`
 
 const StyledForm = styled.form`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   flex-shrink: 0;
   width: 100%;
 `;
@@ -208,64 +212,64 @@ const StyledInputWrapper = styled.div`
 
 const StyledTextArea = styled.textarea`
   width: 100%;
-  min-height: ${({ theme }) => theme.spacing(5)};
-  max-height: ${({ theme }) => theme.spacing(20)};
+  min-height: ${themeCssVariables.spacing[5]};
+  max-height: ${themeCssVariables.spacing[20]};
   resize: none;
   box-sizing: border-box;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  padding: ${({ theme }) => theme.spacing(2)};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  padding: ${themeCssVariables.spacing[2]};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
   line-height: 1.4;
-  color: ${({ theme }) => theme.font.color.primary};
-  background-color: ${({ theme }) => theme.background.transparent.lighter};
+  color: ${themeCssVariables.font.color.primary};
+  background-color: ${themeCssVariables.background.transparent.lighter};
 
   &:disabled {
-    color: ${({ theme }) => theme.font.color.tertiary};
+    color: ${themeCssVariables.font.color.tertiary};
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.light};
+    color: ${themeCssVariables.font.color.light};
   }
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 const StyledTableSnapshot = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  background: ${({ theme }) => theme.background.primary};
+  margin-top: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  background: ${themeCssVariables.background.primary};
   cursor: pointer;
 
   &:hover {
-    border-color: ${({ theme }) => theme.border.color.medium};
-    background: ${({ theme }) => theme.background.secondary};
+    border-color: ${themeCssVariables.border.color.medium};
+    background: ${themeCssVariables.background.secondary};
   }
 `;
 
 const StyledTableSnapshotHint = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-top: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledErrorBanner = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background: ${({ theme }) => theme.background.danger};
-  color: ${({ theme }) => theme.font.color.danger};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.danger};
+  color: ${themeCssVariables.font.color.danger};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledErrorText = styled.span`
@@ -275,12 +279,12 @@ const StyledErrorText = styled.span`
 
 const StyledRetryButton = styled.button`
   flex-shrink: 0;
-  padding: ${({ theme }) => theme.spacing(1, 2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.danger};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.danger};
   background: transparent;
-  border: 1px solid ${({ theme }) => theme.border.color.danger};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.danger};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: pointer;
   &:hover {
     opacity: 0.9;
@@ -291,36 +295,36 @@ const StyledExecutionTimerBanner = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1.5, 2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledStatusLog = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledStatusLogHeader = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStatusLogList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.75)};
+  gap: ${themeCssVariables.spacing['1']};
   max-height: 140px;
   overflow-y: auto;
   white-space: pre-wrap;
@@ -329,15 +333,15 @@ const StyledStatusLogList = styled.div`
 const StyledExecutionTimerLeft = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing['1.5']};
 `;
 
 const StyledMiniButton = styled.button`
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  padding: ${({ theme }) => theme.spacing(1.5, 2.5)};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing['3']};
   cursor: pointer;
 
   &:disabled {
@@ -349,17 +353,17 @@ const StyledMiniButton = styled.button`
 const StyledComposerActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing['1.5']};
 `;
 
 const StyledComposerMeta = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(1.5)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  margin-top: ${themeCssVariables.spacing['1.5']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   white-space: pre-wrap;
 `;
 
-const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
 
 const formatIterativeAssistantMessage = (
   result: AssistantIterativeQueryResult,
@@ -398,7 +402,7 @@ export const McpClientChat = ({
   onJobAttached,
   assistantParameters,
 }: McpClientChatProps) => {
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const navigate = useNavigate();
   const [messages, setMessages] = useControlledMessages(
     controlledMessages,
@@ -433,7 +437,7 @@ export const McpClientChat = ({
     onStreamMessage,
     onAgentEvent,
     onJobAttached,
-    token: tokenPair?.accessToken?.token,
+    token: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
     baseUrl,
     selectedCandidateIds,
     statusMessagePolicy: assistantParameters?.statusMessagePolicy,
@@ -452,7 +456,7 @@ export const McpClientChat = ({
 
   const runIterativeQuery = useCallback(
     async () => {
-      if (!threadId || !tokenPair?.accessToken?.token || !baseUrl) {
+      if (!threadId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token || !baseUrl) {
         setIterativeError('Thread, token, or server base URL is missing.');
         return;
       }
@@ -480,7 +484,7 @@ export const McpClientChat = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+            Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
           body: JSON.stringify({
             rawRequirement: baseRequirement,
@@ -531,7 +535,7 @@ export const McpClientChat = ({
       messages,
       setMessages,
       threadId,
-      tokenPair?.accessToken?.token,
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token,
     ],
   );
 

@@ -1,19 +1,20 @@
 import { IconButton } from 'twenty-ui';
-import { IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { IconX } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledHeader = styled.div`
   align-items: center;
   display: flex;
   justify-content: space-between;
   padding: 2px;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   margin-left: 10px;
 `;
 

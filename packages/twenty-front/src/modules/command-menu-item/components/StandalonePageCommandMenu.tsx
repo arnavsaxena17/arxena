@@ -14,10 +14,7 @@ import { currentPageLayoutIdState } from '@/page-layout/states/currentPageLayout
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useStore } from 'jotai';
 import { useMemo } from 'react';
-import {
-  ContextStorePageType,
-  type CommandMenuContextApi,
-} from 'twenty-shared/types';
+import { ContextStorePageType, type CommandMenuContextApi } from 'twenty-shared/types';
 import { evaluateConditionalAvailabilityExpression } from 'twenty-shared/utils';
 import { useIsMobile } from 'twenty-ui/utilities';
 import { CommandMenuItemAvailabilityType } from '~/generated-metadata/graphql';

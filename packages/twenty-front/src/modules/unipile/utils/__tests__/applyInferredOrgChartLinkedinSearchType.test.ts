@@ -1,6 +1,6 @@
 import type { LinkedinUnipileOwnerProfileCache } from '@/orgchart/states/linkedinUnipileOwnerProfileCacheState';
 import { applyInferredOrgChartLinkedinSearchType } from '@/unipile/utils/applyInferredOrgChartLinkedinSearchType';
-import type { LinkedInSearchType } from 'twenty-shared';
+import type { LinkedInSearchType } from 'twenty-shared/types';
 
 describe('applyInferredOrgChartLinkedinSearchType', () => {
   it('updates search type and owner profile cache when payload is complete', () => {

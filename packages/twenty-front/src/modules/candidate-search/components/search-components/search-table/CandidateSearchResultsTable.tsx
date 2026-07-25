@@ -1,7 +1,8 @@
 import { Button } from 'twenty-ui';
-import { IconArrowUp, IconCalendar, IconChevronLeft, IconChevronRight, IconComment, IconExternalLink, IconEye, IconHeart, IconRefresh, IconSquare, IconTrash, IconUsers } from 'twenty-ui/icons';
+import { IconArrowUp, IconCalendar, IconChevronLeft, IconChevronRight, IconComment, IconExternalLink, IconEye, IconHeart, IconRefresh, IconSquare, IconTrash, IconUsers } from 'twenty-ui/icon';
 import { LinkedInSearchResult } from '@/candidate-search/types/candidate-search.types';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type CandidateSearchResultsTableProps = {
@@ -22,45 +23,45 @@ type CandidateSearchResultsTableProps = {
 };
 
 const StyledTableContainer = styled.div`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   overflow: hidden;
 `;
 
 const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledTableHeader = styled.thead`
-  background-color: ${({ theme }) => theme.background.secondary};
+  background-color: ${themeCssVariables.background.secondary};
 `;
 
 const StyledTableHeaderCell = styled.th`
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]};
   text-align: left;
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledTableBody = styled.tbody``;
 
 const StyledTableRow = styled.tr<{ isSelected: boolean }>`
-  background-color: ${({ isSelected, theme }) => 
-    isSelected ? theme.color.blue10 : theme.background.primary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  background-color: ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue10 : themeCssVariables.background.primary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   
   &:hover {
-    background-color: ${({ isSelected, theme }) => 
-      isSelected ? theme.color.blue20 : theme.background.secondary};
+    background-color: ${({ isSelected }) => 
+      isSelected ? themeCssVariables.color.blue2 : themeCssVariables.background.secondary};
   }
 `;
 
 const StyledTableCell = styled.td`
-  padding: ${({ theme }) => theme.spacing(1)};
-  color: ${({ theme }) => theme.font.color.primary};
+  padding: ${themeCssVariables.spacing[1]};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCheckbox = styled.input`
@@ -77,7 +78,7 @@ const StyledProfileImage = styled.img`
 const StyledProfileInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledProfileDetails = styled.div`
@@ -86,68 +87,68 @@ const StyledProfileDetails = styled.div`
 `;
 
 const StyledName = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledNetworkDistance = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledHeadline = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   margin-top: 2px;
 `;
 
 const StyledLocation = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledCompany = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledLoadMoreContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3)};
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledPaginationInfo = styled.div`
   text-align: center;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledButtonGroup = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: center;
   flex-wrap: wrap;
 `;
 
 const StyledPageButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
   
   &:disabled {
@@ -158,47 +159,47 @@ const StyledPageButton = styled.button`
 
 const StyledEmptyState = styled.div`
   text-align: center;
-  padding: ${({ theme }) => theme.spacing(4)};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[4]};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledLoadingState = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[2]};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledCompanyLogo = styled.img`
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   object-fit: cover;
 `;
 
 const StyledJobInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledJobTitle = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledJobCompany = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledJobMeta = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledPostContent = styled.div`
@@ -211,62 +212,62 @@ const StyledPostContent = styled.div`
 const StyledPostAuthor = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledPostStats = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledStatItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledCompanyInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledCompanyName = styled.div`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCompanyMeta = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing['0.5']};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledBadge = styled.span<{ variant: 'success' | 'warning' | 'info' | 'default' }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
   width: fit-content;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ variant, theme }) => {
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${({ variant }) => {
     switch (variant) {
-      case 'success': return theme.color.green10;
-      case 'warning': return theme.color.orange10;
-      case 'info': return theme.color.blue10;
-      default: return theme.background.secondary;
+      case 'success': return themeCssVariables.color.green10;
+      case 'warning': return themeCssVariables.color.orange10;
+      case 'info': return themeCssVariables.color.blue10;
+      default: return themeCssVariables.background.secondary;
     }
   }};
-  color: ${({ variant, theme }) => {
+  color: ${({ variant }) => {
     switch (variant) {
-      case 'success': return theme.color.green80;
-      case 'warning': return theme.color.orange80;
-      case 'info': return theme.color.blue80;
-      default: return theme.font.color.primary;
+      case 'success': return themeCssVariables.color.green8;
+      case 'warning': return themeCssVariables.color.orange8;
+      case 'info': return themeCssVariables.color.blue8;
+      default: return themeCssVariables.font.color.primary;
     }
   }};
 `;
@@ -274,13 +275,13 @@ const StyledBadge = styled.span<{ variant: 'success' | 'warning' | 'info' | 'def
 const StyledLinkButton = styled.button`
   background: none;
   border: none;
-  color: ${({ theme }) => theme.color.blue80};
+  color: ${themeCssVariables.color.blue8};
   cursor: pointer;
-  padding: ${({ theme }) => theme.spacing(0.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing['0.5']};
+  border-radius: ${themeCssVariables.border.radius.sm};
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.blue10};
+    background-color: ${themeCssVariables.color.blue10};
   }
 `;
 
@@ -288,27 +289,27 @@ const StyledTableHeaderActions = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledTableTitle = styled.h3`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledClearButton = styled(Button)`
   && {
-    background-color: ${({ theme }) => theme.color.red10};
-    color: ${({ theme }) => theme.color.red80};
-    border: 1px solid ${({ theme }) => theme.color.red20};
+    background-color: ${themeCssVariables.color.red10};
+    color: ${themeCssVariables.color.red8};
+    border: 1px solid ${themeCssVariables.color.red2};
     
     &:hover {
-      background-color: ${({ theme }) => theme.color.red20};
-      color: ${({ theme }) => theme.color.red80};
+      background-color: ${themeCssVariables.color.red2};
+      color: ${themeCssVariables.color.red8};
     }
   }
 `;
@@ -548,7 +549,7 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
       const jobColumns: ColumnConfig[] = [
         {
           key: 'job',
-          label: 'Job',
+          label: 'Project',
           width: '40%',
           render: (result) => (
             <StyledJobInfo>
@@ -632,7 +633,7 @@ const getColumnsForType = (type: 'PEOPLE' | 'COMPANY' | 'POST' | 'JOB', results:
             {result.url && (
               <StyledLinkButton
                 onClick={() => window.open(result.url, '_blank')}
-                title="View Job"
+                title="View Project"
               >
                 <IconExternalLink size={16} />
               </StyledLinkButton>
@@ -878,12 +879,11 @@ export const CandidateSearchResultsTable = ({
           </StyledTableTitle>
           <StyledClearButton
             variant="secondary"
+            title="Clear Results"
             onClick={onClear}
             Icon={IconTrash}
             disabled={isLoading}
-          >
-            Clear Results
-          </StyledClearButton>
+          />
         </StyledTableHeaderActions>
       )}
       <StyledTable>
@@ -947,9 +947,7 @@ export const CandidateSearchResultsTable = ({
                 onClick={onPreviousPage}
                 Icon={IconChevronLeft}
                 disabled={isLoading || currentPage <= 1}
-              >
-                Previous
-              </Button>
+               title="Previous" />
             )}
             
             <Button
@@ -957,9 +955,7 @@ export const CandidateSearchResultsTable = ({
               onClick={onLoadMore}
               Icon={IconRefresh}
               disabled={isLoading}
-            >
-              Load Next Page
-            </Button>
+             title="Load Next Page" />
             
             {onNextPage && (
               <Button
@@ -967,9 +963,8 @@ export const CandidateSearchResultsTable = ({
                 onClick={onNextPage}
                 Icon={IconChevronRight}
                 disabled={isLoading || currentPage >= totalPages}
-              >
-                Next
-              </Button>
+                title="Next"
+              />
             )}
             
             {onLoadMultiplePages && (

@@ -1,7 +1,9 @@
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { RecoilRoot } from 'recoil';
+import { Provider as JotaiProvider } from 'jotai';
+
+import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 
 import { AssistantThreadSidebar } from '../AssistantThreadSidebar';
 
@@ -20,7 +22,7 @@ describe('AssistantThreadSidebar', () => {
 
   it('renders threads and highlights the active one', () => {
     render(
-      <RecoilRoot>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <AssistantThreadSidebar
             isMobile={false}
@@ -35,7 +37,7 @@ describe('AssistantThreadSidebar', () => {
             threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     expect(screen.getByText('Thread A')).toBeInTheDocument();
@@ -46,7 +48,7 @@ describe('AssistantThreadSidebar', () => {
     const handleSelect = jest.fn();
 
     render(
-      <RecoilRoot>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <AssistantThreadSidebar
             isMobile={false}
@@ -61,7 +63,7 @@ describe('AssistantThreadSidebar', () => {
             threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     fireEvent.click(screen.getByText('Thread B'));
@@ -72,7 +74,7 @@ describe('AssistantThreadSidebar', () => {
     const handleNew = jest.fn();
 
     render(
-      <RecoilRoot>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <AssistantThreadSidebar
             isMobile={false}
@@ -87,7 +89,7 @@ describe('AssistantThreadSidebar', () => {
             threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     fireEvent.click(screen.getByText('New thread'));
@@ -96,7 +98,7 @@ describe('AssistantThreadSidebar', () => {
 
   it('renders same structure on mobile (visibility handled by styles)', () => {
     const { container } = render(
-      <RecoilRoot>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <AssistantThreadSidebar
             isMobile
@@ -111,7 +113,7 @@ describe('AssistantThreadSidebar', () => {
             threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     const rootElement = container.firstChild as HTMLElement | null;
@@ -120,7 +122,7 @@ describe('AssistantThreadSidebar', () => {
 
   it('disables New thread button and shows a loader when creating', () => {
     render(
-      <RecoilRoot>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <AssistantThreadSidebar
             isMobile={false}
@@ -135,7 +137,7 @@ describe('AssistantThreadSidebar', () => {
             threadPatchInFlightById={{}}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     const button = screen.getByRole('button', { name: /new thread/i });

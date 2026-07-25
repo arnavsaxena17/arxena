@@ -165,6 +165,7 @@ export class ClientConfigService {
         stripePublishableKey: this.twentyConfigService.get(
           'BILLING_STRIPE_PUBLISHABLE_KEY',
         ),
+        provider: this.twentyConfigService.get('BILLING_PROVIDER'),
         trialPeriods: [
           {
             duration: this.twentyConfigService.get(

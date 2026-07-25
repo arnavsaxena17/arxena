@@ -9,12 +9,7 @@ import {
 } from '@/object-record/record-filter/types/RecordFilter';
 import { getRecordFilterOperands } from '@/object-record/record-filter/utils/getRecordFilterOperands';
 import { COMPOSITE_FIELD_TYPE_SUB_FIELDS_NAMES } from 'twenty-shared/constants';
-import {
-  compositeTypeDefinitions,
-  FieldMetadataType,
-  ViewFilterOperand,
-  type FieldMetadataOptions,
-} from 'twenty-shared/types';
+import { compositeTypeDefinitions, FieldMetadataType, ViewFilterOperand, type FieldMetadataOptions } from 'twenty-shared/types';
 import {
   assertUnreachable,
   FILTER_OPERANDS_MAP,

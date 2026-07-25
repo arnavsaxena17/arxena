@@ -397,8 +397,8 @@ export class CandidateDataProcessorService {
         const candidateName = candidate.node.name;
         const resolvedOtherFields = getResolvedOtherFields(candidate.node);
         const chatQuestions =
-          candidate.node?.jobs?.chatQuestions ||
-          candidate.node?.jobs?.edges?.[0]?.node?.chatQuestions ||
+          candidate.node?.projects?.chatQuestions ||
+          candidate.node?.projects?.edges?.[0]?.node?.chatQuestions ||
           [];
 
         for (const [fieldKey, fieldValue] of Object.entries(resolvedOtherFields)) {
@@ -636,7 +636,7 @@ export class CandidateDataProcessorService {
         'Marital Status',
         'Inferred Salary (LPA)',
         'Years of Experience',
-        'Total Job Changes',
+        'Total Project Changes',
         'Average Tenure',
         'Total Tenure',
         'Total Experience',

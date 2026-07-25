@@ -1,6 +1,8 @@
-import { useQuery } from '@apollo/client';
-import styled from '@emotion/styled';
-import { useRecoilState, useResetRecoilState } from 'recoil';
+import { useQuery } from '@apollo/client/react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import { VideoInterviewLeftSideContainer } from '@/video-interview/interview-creation/left-side/components/VideoInterviewLeftSideContainer';
 import { VideoInterviewRightSideContainer } from '@/video-interview/interview-creation/right-side/components/VideoInterviewRightSideContainer';
@@ -31,8 +33,8 @@ const StyledAdjuster = styled.div`
 `;
 
 const StyledModal = styled.div`
-  background-color: ${({ theme }) => theme.background.tertiary};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
+  background-color: ${themeCssVariables.background.tertiary};
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
   display: flex;
   flex-direction: row;
@@ -51,15 +53,15 @@ export const InterviewCreationModal = ({
   objectNameSingular: string;
   objectRecordId: string;
 }) => {
-  const [isVideoInterviewModalOpen, setIsVideoInterviewModalOpen] = useRecoilState(
+  const [isVideoInterviewModalOpen, setIsVideoInterviewModalOpen] = useAtomState(
     isVideoInterviewModalOpenState,
   );
 
-  const resetQuestionsArr = useResetRecoilState(questionsArrState);
-  const resetQuestionToDisplay = useResetRecoilState(questionToDisplayState);
+  const setQuestionsArr = useSetAtomState(questionsArrState);
+  const setQuestionToDisplay = useSetAtomState(questionToDisplayState);
   const closeModal = () => {
-    resetQuestionsArr();
-    resetQuestionToDisplay();
+    setQuestionsArr([]);
+    setQuestionToDisplay('introduction');
     setIsVideoInterviewModalOpen(false);
   };
 

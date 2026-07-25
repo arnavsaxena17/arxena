@@ -1,10 +1,12 @@
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Provider as JotaiProvider } from 'jotai';
 import { useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { RecoilRoot, useSetRecoilState } from 'recoil';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { AssistantPage } from '../AssistantPage';
 
 const baseUrl = 'http://test-server';
@@ -15,7 +17,7 @@ jest.mock('@/ui/utilities/responsive/hooks/useIsMobile', () => ({
 
 jest.mock('@/object-metadata/hooks/useObjectMetadataItems', () => ({
   useObjectMetadataItems: () => ({
-    objectMetadataItems: [{ nameSingular: 'job' }],
+    objectMetadataItems: [{ nameSingular: 'project' }],
   }),
 }));
 
@@ -50,21 +52,21 @@ jest.mock('@/ui/layout/page/components/PageHeader', () => ({
 }));
 
 const TestTokenInitializer = ({ token }: { token: string }) => {
-  const set = useSetRecoilState(tokenPairState);
+  const set = useSetAtomState(tokenPairState);
   useEffect(() => {
     set({
-      accessToken: { token },
+      accessOrWorkspaceAgnosticToken: { token },
       refreshToken: { token: 'refresh' },
     } as any);
   }, [set, token]);
   return null;
 };
 
-describe('AssistantPage upload JD hydration', () => {
-  beforeEach(() => {
-    process.env.REACT_APP_SERVER_BASE_URL = baseUrl;
-  });
+jest.mock('~/config', () => ({
+  REACT_APP_SERVER_BASE_URL: 'http://test-server',
+}));
 
+describe('AssistantPage upload JD hydration', () => {
   afterEach(() => {
     cleanup();
   });
@@ -80,7 +82,7 @@ describe('AssistantPage upload JD hydration', () => {
           status: 200,
           json: async () => ({
             threads: [
-              { id: 't1', name: 'Thread 1', jobId: null, assistantMode: 'permissioned' },
+              { id: 't1', name: 'Thread 1', projectId: null, assistantMode: 'permissioned' },
             ],
           }),
         } as any;
@@ -93,7 +95,7 @@ describe('AssistantPage upload JD hydration', () => {
           json: async () => ({
             id: 't2',
             name: 'New thread',
-            jobId: null,
+            projectId: null,
             assistantMode: 'permissioned',
           }),
         } as any;
@@ -103,7 +105,7 @@ describe('AssistantPage upload JD hydration', () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ id: 't2', jobId: 'job-1' }),
+          json: async () => ({ id: 't2', projectId: 'job-1' }),
         } as any;
       }
 
@@ -112,7 +114,7 @@ describe('AssistantPage upload JD hydration', () => {
           ok: true,
           status: 200,
           json: async () => ({
-            jobId: 'job-1',
+            projectId: 'job-1',
             job: { id: 'job-1', name: 'Account Executive', company: { id: 'c1', name: 'Acme' } },
           }),
         } as any;
@@ -125,12 +127,12 @@ describe('AssistantPage upload JD hydration', () => {
 
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <JotaiProvider store={jotaiStore}>
           <TestTokenInitializer token="token" />
           <BaseThemeProvider>
             <AssistantPage />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 
@@ -152,9 +154,9 @@ describe('AssistantPage upload JD hydration', () => {
     const jdFile = new File(['dummy jd'], 'jd.txt', { type: 'text/plain' });
     fireEvent.change(fileInput, { target: { files: [jdFile] } });
 
-    // UI hydrates to show job name, not just "Job attached"
+    // UI hydrates to show job name, not just "Project attached"
     await waitFor(() => {
-      expect(screen.getByText(/Job: Account Executive/i)).toBeInTheDocument();
+      expect(screen.getByText(/Project: Account Executive/i)).toBeInTheDocument();
       expect(screen.getByText(/at Acme/i)).toBeInTheDocument();
     });
 
@@ -169,4 +171,3 @@ describe('AssistantPage upload JD hydration', () => {
     );
   });
 });
-

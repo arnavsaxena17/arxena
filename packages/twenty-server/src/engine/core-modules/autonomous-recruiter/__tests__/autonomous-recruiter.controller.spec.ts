@@ -43,7 +43,7 @@ describe('AutonomousRecruiterController', () => {
     lastTableData: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    jobId: 'job-1',
+    projectId: 'job-1',
     agentNotes: [],
     agentEvents: [],
   };
@@ -86,7 +86,7 @@ describe('AutonomousRecruiterController', () => {
             text:
               'I found 3 strong candidates for this requirement and prepared outreach messages for the top 2.',
             toolCalls: [
-              { name: 'filter_candidates_for_job', args: { jobId: 'job-1' } },
+              { name: 'filter_candidates_for_job', args: { projectId: 'job-1' } },
               {
                 name: 'fetch_contacts_for_candidates',
                 args: { candidateIds: ['mock-cand-1', 'mock-cand-2'] },

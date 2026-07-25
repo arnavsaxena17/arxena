@@ -17,6 +17,7 @@ import { IconHistory, IconKey, IconSettings } from 'twenty-ui/icon';
 import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
+import { MetadataStructureSection } from '~/pages/settings/MetaDataStructure';
 
 const SETTINGS_GENERAL_TABS_INSTANCE_ID = 'settings-general-tabs';
 
@@ -66,13 +67,22 @@ export const SettingsGeneral = () => {
           <NameField />
         </Section>
         {isMultiWorkspaceEnabled && (
-          <Section>
-            <H2Title
-              title={t`Workspace domain`}
-              description={t`Edit your subdomain name or set a custom domain.`}
-            />
-            <SettingsWorkspaceDomainCard />
-          </Section>
+          <>
+            <Section>
+              <H2Title
+                title={t`Workspace domain`}
+                description={t`Edit your subdomain name or set a custom domain.`}
+              />
+              <SettingsWorkspaceDomainCard />
+            </Section>
+            <Section>
+              <H2Title
+                title={t`Metadata Structure`}
+                description={t`Create and manage your workspace metadata structure`}
+              />
+              <MetadataStructureSection />
+            </Section>
+          </>
         )}
         <Section>
           <DeleteWorkspace />

@@ -1,11 +1,10 @@
-import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
 import axios from 'axios';
 import { useRef } from 'react';
-import { useRecoilValue } from 'recoil';
-import { graphQLtoCreateOneAttachmentFromFilePath } from 'twenty-shared';
+import { graphQLtoCreateOneAttachmentFromFilePath } from 'twenty-shared/graphql';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -55,14 +54,14 @@ type UploadCVProps = {
   candidateId: string;
   tokenPair: any;
   onUploadSuccess: () => void;
-  currentIndividual: any;
+  /** @deprecated Unused — createdBy comes from auth context */
+  currentIndividual?: any;
   buttonColor?: string;
 };
 
-export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndividual, buttonColor = "#4CAF50" }: UploadCVProps) => {
+export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, buttonColor = "#4CAF50" }: UploadCVProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { enqueueSnackBar } = useSnackBar();
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
 
   const handleUpload = async (file: File) => {
     if (!file) return;
@@ -78,11 +77,11 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
     try {
       // Upload file
       const uploadResponse = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+        `${REACT_APP_SERVER_BASE_URL}/graphql`,
         formData,
         {
           headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
             accept: '*/*',
           },
         },
@@ -90,32 +89,27 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
 
       const uploadedFilePath = uploadResponse.data.data.uploadFile;
 
-      // Create attachment
+      // Create attachment (createdBy is set from auth context)
       const attachmentData = {
         input: {
-          authorId: currentWorkspaceMember?.id || currentIndividual?.candidates?.edges[0]?.node?.jobs?.recruiterId || null,
           name: file.name,
           fullPath: uploadedFilePath,
-          type: 'TextDocument',
+          fileCategory: 'TEXT_DOCUMENT',
           candidateId: candidateId,
         },
       };
 
       await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+        `${REACT_APP_SERVER_BASE_URL}/graphql`,
         { query: graphQLtoCreateOneAttachmentFromFilePath, variables: attachmentData, },
-        { headers: { authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'content-type': 'application/json', }, },
+        { headers: { authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`, 'content-type': 'application/json', }, },
       );
 
-      enqueueSnackBar('CV uploaded successfully', {
-        variant: SnackBarVariant.Success,
-      });
+      enqueueSuccessSnackBar({ message: 'CV uploaded successfully' });
       onUploadSuccess();
     } catch (error) {
       console.error('Upload error:', error);
-      enqueueSnackBar('Failed to upload CV', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Failed to upload CV' });
     }
   };
 
@@ -152,4 +146,4 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, currentIndiv
       </UploadCVButton>
     </>
   );
-}; 
+};

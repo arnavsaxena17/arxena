@@ -8,11 +8,17 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { t } from '@lingui/core/macro';
 import {
   IconApps,
+  IconBrandLinkedin,
+  IconBrandWhatsapp,
+  IconCurrencyDollar,
   IconHeart,
+  IconHierarchy,
   IconKey,
   IconSettings2,
   IconSparkles,
+  IconUsers,
   IconVariable,
+  IconWorld,
 } from 'twenty-ui/icon';
 
 export const SettingsAdminContent = () => {
@@ -51,6 +57,42 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.HEALTH_STATUS,
       title: t`Health`,
       Icon: IconHeart,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.WHATSAPP_MONITORING,
+      title: t`Unipile`,
+      Icon: IconBrandWhatsapp,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.WORKSPACE_CREDITS,
+      title: t`Credits`,
+      Icon: IconCurrencyDollar,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.ORG_CHART_CLIENT_IPS,
+      title: t`Org chart IPs`,
+      Icon: IconWorld,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.PUBLISHED_ORG_CHARTS,
+      title: t`Published charts`,
+      Icon: IconHierarchy,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.LINKEDIN_PARAMETER_CACHE,
+      title: t`LI cache`,
+      Icon: IconBrandLinkedin,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.USERS,
+      title: t`Users`,
+      Icon: IconUsers,
       disabled: !canAccessFullAdminPanel,
     },
     ...(!isBillingEnabled

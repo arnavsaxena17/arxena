@@ -58,7 +58,7 @@ export class DeleteFieldValuesService {
 
         // Create unique job ID to prevent duplicate processing
         const uniqueSessionId = sessionId || v4();
-        const uniqueJobId = `delete-field-values-${workspaceId}-batch-${batchNumber}-${uniqueSessionId}`;
+        const uniqueProjectId = `delete-field-values-${workspaceId}-batch-${batchNumber}-${uniqueSessionId}`;
 
         try {
           await this.messageQueueService.add<DeleteFieldValuesJobData>(
@@ -66,11 +66,11 @@ export class DeleteFieldValuesService {
             jobData,
             {
               ...queueJobOptions,
-              id: uniqueJobId, // Add unique ID to prevent duplicates
+              id: uniqueProjectId, // Add unique ID to prevent duplicates
             },
           );
           console.log(
-            `✅ Successfully queued field values deletion batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`,
+            `✅ Successfully queued field values deletion batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`,
           );
         } catch (queueError) {
           // Check if error is due to duplicate job ID
@@ -79,13 +79,13 @@ export class DeleteFieldValuesService {
             queueError.message?.includes('duplicate')
           ) {
             console.log(
-              `Job with ID ${uniqueJobId} is already queued or running, skipping duplicate`,
+              `Project with ID ${uniqueProjectId} is already queued or running, skipping duplicate`,
             );
             // Don't throw - just skip this batch as it's already being processed
             continue;
           }
           console.error(
-            `❌ Failed to queue field values deletion batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`,
+            `❌ Failed to queue field values deletion batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`,
             queueError,
           );
           throw queueError; // Re-throw to stop processing if queueing fails

@@ -1,11 +1,11 @@
-import { useApolloClient } from '@apollo/client';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { hasMatchingConnectedLinkedinAccount } from 'twenty-shared';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { hasMatchingConnectedLinkedinAccount } from 'twenty-shared/utils';
 
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { currentWorkspaceMemberState } from '~/modules/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
@@ -18,34 +18,34 @@ import { FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE } from './WorkspaceMemberPro
 const StyledWrap = styled.div<{ isCompact: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme, isCompact }) =>
-    isCompact ? theme.spacing(2) : theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${({ isCompact }) =>
+    isCompact ? themeCssVariables.spacing[2] : themeCssVariables.spacing[3]};
 `;
 
 const StyledHint = styled.p`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   line-height: 1.5;
 `;
 
 const StyledButtonRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledButton = styled.button<{ variant: 'primary' | 'danger' }>`
-  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(3)}`};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
   border: none;
   cursor: pointer;
-  background-color: ${({ theme, variant }) =>
-    variant === 'danger' ? theme.color.red : theme.color.blue};
-  color: ${({ theme }) => theme.font.color.inverted};
+  background-color: ${({ variant }) =>
+    variant === 'danger' ? themeCssVariables.color.red : themeCssVariables.color.blue};
+  color: ${themeCssVariables.font.color.inverted};
 
   &:disabled {
     opacity: 0.5;
@@ -67,16 +67,20 @@ export const LinkedinStoredProfileUnipileActions = ({
   isCompact = false,
 }: LinkedinStoredProfileUnipileActionsProps) => {
   const { t } = useLingui();
-  const { enqueueSnackBar } = useSnackBar();
-  const client = useApolloClient();
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const {
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar,
+  } = useSnackBar();
+  const client = useApolloCoreClient();
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const workspaceMemberId = currentWorkspaceMember?.id;
-  const workspaceMemberProfileUnipileFields = useRecoilValue(
+  const workspaceMemberProfileUnipileFields = useAtomStateValue(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
+  const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
 
   const [busyConnect, setBusyConnect] = useState(false);
   const [busyDisconnect, setBusyDisconnect] = useState(false);
@@ -105,9 +109,7 @@ export const LinkedinStoredProfileUnipileActions = ({
 
   const onConnectFromStoredProfile = useCallback(async () => {
     if (!accessToken) {
-      enqueueSnackBar(t`Sign in again to connect LinkedIn.`, {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: t`Sign in again to connect LinkedIn.` });
       return;
     }
     setBusyConnect(true);
@@ -122,9 +124,7 @@ export const LinkedinStoredProfileUnipileActions = ({
         li?.status === 'pending';
 
       if (connected === true) {
-        enqueueSnackBar(t`LinkedIn connected using saved session.`, {
-          variant: SnackBarVariant.Success,
-        });
+        enqueueSuccessSnackBar({ message: t`LinkedIn connected using saved session.` });
         await refetchWorkspaceMemberProfile();
         onAfterChange?.();
         return;
@@ -136,15 +136,12 @@ export const LinkedinStoredProfileUnipileActions = ({
         typeof reconnectMsg === 'string' &&
         reconnectMsg.trim() !== ''
       ) {
-        enqueueSnackBar(reconnectMsg, {
-          variant: SnackBarVariant.Warning,
-          duration: 8000,
-        });
+        enqueueWarningSnackBar({ message: reconnectMsg, options: { duration: 8000, } });
       } else {
-        enqueueSnackBar(
-          t`Could not connect. Save LinkedIn cookies on your profile first (e.g. extension sync), then try again.`,
-          { variant: SnackBarVariant.Warning, duration: 8000 },
-        );
+        enqueueWarningSnackBar({
+          message: t`Could not connect. Save LinkedIn cookies on your profile first (e.g. extension sync), then try again.`,
+          options: { duration: 8000 },
+        });
       }
       await refetchWorkspaceMemberProfile();
       onAfterChange?.();
@@ -153,13 +150,15 @@ export const LinkedinStoredProfileUnipileActions = ({
         err instanceof Error
           ? err.message
           : t`Connect from saved profile failed.`;
-      enqueueSnackBar(message, { variant: SnackBarVariant.Error });
+      enqueueErrorSnackBar({ message: message });
     } finally {
       setBusyConnect(false);
     }
   }, [
     accessToken,
-    enqueueSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar,
     onAfterChange,
     refetchWorkspaceMemberProfile,
     t,
@@ -167,16 +166,13 @@ export const LinkedinStoredProfileUnipileActions = ({
 
   const onDisconnectProfileLinked = useCallback(async () => {
     if (!accessToken) {
-      enqueueSnackBar(t`Sign in again to disconnect LinkedIn.`, {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: t`Sign in again to disconnect LinkedIn.` });
       return;
     }
     if (!profileLinkedinUnipileId) {
-      enqueueSnackBar(
-        t`No LinkedIn Unipile account ID is stored on your workspace profile.`,
-        { variant: SnackBarVariant.Warning },
-      );
+      enqueueWarningSnackBar({
+        message: t`No LinkedIn Unipile account ID is stored on your workspace profile.`,
+      });
       return;
     }
     if (
@@ -194,26 +190,24 @@ export const LinkedinStoredProfileUnipileActions = ({
         accessToken,
       );
       if (result.success) {
-        enqueueSnackBar(t`LinkedIn disconnected.`, {
-          variant: SnackBarVariant.Success,
-        });
+        enqueueSuccessSnackBar({ message: t`LinkedIn disconnected.` });
         await refetchWorkspaceMemberProfile();
         onAfterChange?.();
       } else {
-        enqueueSnackBar(t`Failed to disconnect.`, {
-          variant: SnackBarVariant.Error,
-        });
+        enqueueErrorSnackBar({ message: t`Failed to disconnect.` });
       }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : t`Disconnect failed.`;
-      enqueueSnackBar(message, { variant: SnackBarVariant.Error });
+      enqueueErrorSnackBar({ message: message });
     } finally {
       setBusyDisconnect(false);
     }
   }, [
     accessToken,
-    enqueueSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar,
     onAfterChange,
     profileLinkedinUnipileId,
     refetchWorkspaceMemberProfile,

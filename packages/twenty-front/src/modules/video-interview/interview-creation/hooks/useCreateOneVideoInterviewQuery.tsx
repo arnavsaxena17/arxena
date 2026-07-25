@@ -1,11 +1,20 @@
-import { useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { CREATE_ONE_VIDEO_INTERVIEW_TEMPLATE } from '@/video-interview/interview-creation/queries/createOneVideonterview';
 
 export const useCreateOneVideoInterviewQuery = () => {
-  const [createOneVideoInterviewTemplate, { data, loading, error }] = useMutation(CREATE_ONE_VIDEO_INTERVIEW_TEMPLATE);
+  const apolloCoreClient = useApolloCoreClient();
+  const [createOneVideoInterviewTemplate, { data, loading, error }] =
+    useMutation(CREATE_ONE_VIDEO_INTERVIEW_TEMPLATE, {
+      client: apolloCoreClient,
+    });
 
-  const createVideoInterview = async (introduction: any, objectRecordId: string, newVideoInterviewTemplateId: string) => {
+  const createVideoInterview = async (
+    introduction: any,
+    objectRecordId: string,
+    newVideoInterviewTemplateId: string,
+  ) => {
     let instructionsAll: string | undefined = undefined;
 
     if (introduction.instructions !== undefined) {
@@ -19,7 +28,7 @@ export const useCreateOneVideoInterviewQuery = () => {
 
     const input = {
       id: newVideoInterviewTemplateId,
-      jobId: objectRecordId,
+      projectId: objectRecordId,
       name: introduction.VideoInterviewTemplateName,
       introduction: introduction.introduction,
       instructions: instructionsAll,

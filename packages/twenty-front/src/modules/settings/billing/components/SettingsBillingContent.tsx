@@ -2,6 +2,8 @@ import { useLingui } from '@lingui/react/macro';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { SettingsBillingCreditsSection } from '@/settings/billing/components/SettingsBillingCreditsSection';
+import { SettingsBillingMapsRevealsSection } from '@/settings/billing/components/SettingsBillingMapsRevealsSection';
+import { SettingsBillingRazorpayCatalog } from '@/settings/billing/components/SettingsBillingRazorpayCatalog';
 import { SettingsBillingSubscriptionInfo } from '@/settings/billing/components/SettingsBillingSubscriptionInfo';
 import { SettingsBillingTrialNoPaymentMethodBanner } from '@/settings/billing/components/SettingsBillingTrialNoPaymentMethodBanner';
 import { useBillingPortalSession } from '@/settings/billing/hooks/useBillingPortalSession';
@@ -56,6 +58,8 @@ export const SettingsBillingContent = () => {
           currentBillingSubscription={currentBillingSubscription}
         />
       )}
+      <SettingsBillingMapsRevealsSection />
+      <SettingsBillingRazorpayCatalog />
       {hasNotCanceledCurrentSubscription &&
         currentWorkspace &&
         currentBillingSubscription && (

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { OutreachChannelKey } from '@/orgchart/constants/outreachTemplates';
@@ -13,9 +11,11 @@ import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinke
 import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChartQueryGeneratorPreferenceState';
 import { isOrgChartM7kqCandidateSource } from '@/orgchart/utils/isOrgChartM7kqCandidateSource';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { tryExtensionLinkedinUnipileRecovery } from '@/unipile/utils/linkedinUnipileExtensionBridge';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { Mixpanel } from '~/mixpanel';
 
 import {
@@ -23,12 +23,7 @@ import {
     OrgChartContextAction,
     OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
-import {
-    isValidLinkedInProfileUrl,
-    NodeState,
-    OrgChartNodeData,
-    OrgchartSearchMode as OrgchartSearchModeValue,
-} from 'twenty-shared';
+import { isValidLinkedInProfileUrl, type NodeState, type OrgChartNodeData, type OrgchartSearchMode as OrgchartSearchModeValue } from 'twenty-shared/utils';
 import { ContextResultItem } from '../types';
 import type {
     SuperImposeTargetCompany,
@@ -41,6 +36,8 @@ import {
     extractCompanyDomainFromWebsite,
     normalizeCandidateItem,
 } from '../utils/orgChartUtils';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const OUTREACH_ACTION_TO_CHANNEL: Partial<
   Record<OrgChartContextAction, OutreachChannelKey>
@@ -273,7 +270,7 @@ type ContactEnrichmentFetchPayload = {
   source?: string;
   linkedinUrl?: string;
   fullName?: string;
-  jobId?: string;
+  projectId?: string;
 };
 
 const mergeM7kqEnrichmentIntoPeople = (
@@ -444,23 +441,23 @@ export const useOrgChartActions = ({
   linkedinUnipileAccountId,
   businessDivisionRawQuery: businessDivisionRawQueryFromToolbar,
 }: UseOrgChartActionsParams) => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
-  const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
-  const orgChartLinkedinCandidateSource = useRecoilValue(
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
+  const setContactsByKey = useSetAtomState(orgChartContactsByKeyState);
+  const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
-  const orgChartQueryGeneratorPreference = useRecoilValue(
+  const orgChartQueryGeneratorPreference = useAtomStateValue(
     orgChartQueryGeneratorPreferenceState,
   );
-  const orgChartLinkedInSearchType = useRecoilValue(
+  const orgChartLinkedInSearchType = useAtomStateValue(
     orgChartLinkedInSearchTypeState,
   );
   const {
     enqueueSnackBar,
     updateSnackBarByDedupeKey,
     closeSnackBarByDedupeKey,
-  } = useSnackBar();
+  } = useOrgChartSnackBar();
   const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
     'You’re out of contact credits. Add credits to continue.';
   const { triggerOrgChartsRefetch } = useOrgChartsRefetch();
@@ -530,14 +527,14 @@ export const useOrgChartActions = ({
   >(undefined);
 
   const [isAddToJobModalOpen, setIsAddToJobModalOpen] = useState(false);
-  const [addToJobNode, setAddToJobNode] = useState<OrgChartNodeData | null>(
+  const [addToProjectNode, setAddToProjectNode] = useState<OrgChartNodeData | null>(
     null,
   );
   const [addToJobQueueStartChat, setAddToJobQueueStartChat] = useState(true);
 
   const closeAddToJobModal = useCallback(() => {
     setIsAddToJobModalOpen(false);
-    setAddToJobNode(null);
+    setAddToProjectNode(null);
   }, []);
 
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
@@ -932,7 +929,7 @@ export const useOrgChartActions = ({
     m7kqDirectoryApiReady: boolean;
     pythonOrgChartAgentAvailable: boolean;
   } | null> => {
-    const serverBaseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    const serverBaseUrl = REACT_APP_SERVER_BASE_URL ?? '';
     if (!serverBaseUrl.trim() || !accessToken) {
       return null;
     }
@@ -982,7 +979,7 @@ export const useOrgChartActions = ({
       node: OrgChartNodeData,
       action: 'm7kq_fetch_complete' | 'm7kq_fetch_phone' | 'm7kq_fetch_email',
     ) => {
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '');
+      const baseUrl = REACT_APP_SERVER_BASE_URL?.replace(/\/$/, '');
       if (!baseUrl || !accessToken) {
         enqueueSnackBar('Sign in to enrich contact details.', {
           variant: SnackBarVariant.Error,
@@ -1095,7 +1092,7 @@ export const useOrgChartActions = ({
           return;
         }
         const payload = (await res.json()) as ContactEnrichmentFetchPayload;
-        if (typeof payload.jobId === 'string' && payload.jobId.trim() !== '') {
+        if (typeof payload.projectId === 'string' && payload.projectId.trim() !== '') {
           enqueueSnackBar(
             'Contact match was queued; refresh people on this position after the job completes.',
             { variant: SnackBarVariant.Info, duration: 8000 },
@@ -1274,7 +1271,7 @@ export const useOrgChartActions = ({
       params.companyIdOverride?.trim() || companyId;
     if (!effectiveCompanyId) return;
 
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
     if (!baseUrl) return;
 
     if (!accessToken) {
@@ -1707,7 +1704,6 @@ export const useOrgChartActions = ({
             : `Generating full org chart for ${resolvedCompanyName}${employeeSuffix}...`,
           {
             variant: SnackBarVariant.Info,
-            showProgressBar: true,
             dedupeKey: `orgchart-entire-company-${companyId}`,
           },
         );
@@ -1933,7 +1929,7 @@ export const useOrgChartActions = ({
     node?: OrgChartNodeData;
     selectedNodes?: OrgChartNodeData[];
   }): Promise<OrgChartLinkedInSearchEstimate | null> => {
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
     if (!baseUrl || !accessToken || !companyId) {
       return null;
     }
@@ -2031,7 +2027,7 @@ export const useOrgChartActions = ({
         duration: 5000,
       });
 
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
       if (baseUrl && accessToken) {
         const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
         fetch(`${normalizedBaseUrl}/org-chart/search/cancel`, {
@@ -2203,7 +2199,7 @@ export const useOrgChartActions = ({
       setIsNodeDetailLoading(true);
       setNodeDetailResults([]);
 
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
       if (!baseUrl || !companyId) {
         setIsNodeDetailLoading(false);
         return;
@@ -2370,7 +2366,7 @@ export const useOrgChartActions = ({
       action === 'add_to_job_and_send_invite' ||
       action === 'add_to_job_and_invite_to_job'
     ) {
-      setAddToJobNode(node);
+      setAddToProjectNode(node);
       setSelectedNodeFunction(
         (node as Record<string, unknown>).std_function as string | undefined,
       );
@@ -2451,7 +2447,7 @@ export const useOrgChartActions = ({
         });
         return;
       }
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
       if (!baseUrl.trim()) {
         enqueueSnackBar('Server URL is not configured.', {
           variant: SnackBarVariant.Error,
@@ -2487,7 +2483,6 @@ export const useOrgChartActions = ({
           {
             variant: SnackBarVariant.Info,
             dedupeKey: progressDedupeKey,
-            showProgressBar: true,
           },
         );
         const rebuilt = await rebuildCompanyOrgChartFromSavedPeopleRequest({
@@ -2539,7 +2534,7 @@ export const useOrgChartActions = ({
         });
         return;
       }
-      const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+      const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
       if (!baseUrl.trim()) {
         enqueueSnackBar('Server URL is not configured.', {
           variant: SnackBarVariant.Error,
@@ -2753,7 +2748,7 @@ export const useOrgChartActions = ({
     latestOrgChart,
 
     isAddToJobModalOpen,
-    addToJobNode,
+    addToProjectNode,
     addToJobQueueStartChat,
     closeAddToJobModal,
 

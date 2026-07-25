@@ -2,10 +2,7 @@ import { type FieldMetadataItemOption } from '@/object-metadata/types/FieldMetad
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
 import { buildValueFromFilter } from '@/object-record/record-table/utils/buildValueFromFilter';
 import { type ColorScheme } from '@/workspace-member/types/WorkspaceMember';
-import {
-  type FilterableFieldType,
-  ViewFilterOperand,
-} from 'twenty-shared/types';
+import { ViewFilterOperand, type FilterableFieldType } from 'twenty-shared/types';
 import { RelationType } from '~/generated-metadata/graphql';
 
 // TODO: fix the dates, and test the not supported types

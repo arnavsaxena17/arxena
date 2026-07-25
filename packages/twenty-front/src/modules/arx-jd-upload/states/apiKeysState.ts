@@ -1,6 +1,6 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export interface ApiKey {
+export type ApiKey = {
   openaikey?: string;
   twilio_account_sid?: string;
   twilio_auth_token?: string;
@@ -18,24 +18,24 @@ export interface ApiKey {
   is_chrome_extension_installed?: string;
   chrome_extension_id?: string;
   is_org_chart_enabled?: string;
-}
+};
 
-export const apiKeysState = atom<ApiKey>({
+export const apiKeysState = createAtomState<ApiKey>({
   key: 'apiKeysState',
-  default: {},
+  defaultValue: {},
 });
 
-export const originalApiKeysState = atom<ApiKey>({
+export const originalApiKeysState = createAtomState<ApiKey>({
   key: 'originalApiKeysState',
-  default: {},
+  defaultValue: {},
 });
 
-export const apiKeysLoadingState = atom<boolean>({
+export const apiKeysLoadingState = createAtomState<boolean>({
   key: 'apiKeysLoadingState',
-  default: false,
+  defaultValue: false,
 });
 
-export const apiKeysErrorState = atom<string | null>({
+export const apiKeysErrorState = createAtomState<string | null>({
   key: 'apiKeysErrorState',
-  default: null,
+  defaultValue: null,
 });

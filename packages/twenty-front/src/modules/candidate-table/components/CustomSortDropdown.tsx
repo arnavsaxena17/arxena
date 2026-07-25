@@ -1,11 +1,13 @@
 import { enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { customSortState } from '@/candidate-table/states/customSortState';
 import { processedDataSelector } from '@/candidate-table/states/states';
-import styled from '@emotion/styled';
-import { IconChevronDown, IconSortAscending, IconSortDescending } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconChevronDown, IconSortAscending, IconSortDescending } from 'twenty-ui/icon';
 import { useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
 import { BaseSortField, CustomSortState, SortField } from '../types/sortTypes';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledSortContainer = styled.div`
   position: relative;
@@ -15,25 +17,25 @@ const StyledSortContainer = styled.div`
 const StyledSortButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    border-color: ${({ theme }) => theme.border.color.strong};
+    background-color: ${themeCssVariables.background.tertiary};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.blue}20;
+    border-color: ${themeCssVariables.color.blue};
+    box-shadow: 0 0 0 2px ${themeCssVariables.color.blue}20;
   }
 `;
 
@@ -42,43 +44,43 @@ const StyledDropdown = styled.div<{ isOpen: boolean }>`
   top: 100%;
   left: 0;
   right: 0;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   z-index: 1000;
   display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
   min-width: 200px;
 `;
 
 const StyledDropdownItem = styled.div<{ isActive?: boolean }>`
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  background-color: ${({ isActive, theme }) => 
-    isActive ? theme.background.tertiary : 'transparent'};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  background-color: ${({ isActive }) => 
+    isActive ? themeCssVariables.background.tertiary : 'transparent'};
+  color: ${themeCssVariables.font.color.primary};
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
+    background-color: ${themeCssVariables.background.tertiary};
   }
 
   &:first-of-type {
-    border-radius: ${({ theme }) => theme.border.radius.sm} ${({ theme }) => theme.border.radius.sm} 0 0;
+    border-radius: ${themeCssVariables.border.radius.sm} ${themeCssVariables.border.radius.sm} 0 0;
   }
 
   &:last-of-type {
-    border-radius: 0 0 ${({ theme }) => theme.border.radius.sm} ${({ theme }) => theme.border.radius.sm};
+    border-radius: 0 0 ${themeCssVariables.border.radius.sm} ${themeCssVariables.border.radius.sm};
   }
 `;
 
 const StyledSortIcon = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 
@@ -91,10 +93,10 @@ const BASE_SORT_FIELDS: Array<{ field: BaseSortField; label: string }> = [
 
 export const CustomSortDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [sortState, setSortState] = useRecoilState(customSortState) as [CustomSortState, (value: CustomSortState) => void];
-  const customEnrichments = useRecoilValue(enrichmentsState);
-  const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
-  const processedData = useRecoilValue(processedDataSelector);
+  const [sortState, setSortState] = useAtomState(customSortState) as [CustomSortState, (value: CustomSortState) => void];
+  const customEnrichments = useAtomStateValue(enrichmentsState);
+  const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
+  const processedData = useAtomStateValue(processedDataSelector);
 
   // Create dynamic sort fields including enrichment fields
   const sortFields = useMemo(() => {

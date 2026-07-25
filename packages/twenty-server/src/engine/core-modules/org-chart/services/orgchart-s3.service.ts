@@ -5,7 +5,7 @@ import { Readable } from 'stream';
 import { OrgChartData } from 'twenty-shared';
 
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 
 const ORG_CHART_S3_FOLDER = 'org-charts';
 

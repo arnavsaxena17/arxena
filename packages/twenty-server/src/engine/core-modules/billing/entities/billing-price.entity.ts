@@ -41,6 +41,9 @@ export class BillingPriceEntity {
   @Column({ nullable: false, unique: true })
   stripePriceId: string;
 
+  @Column({ nullable: true, type: 'varchar' })
+  razorpayPlanId: string | null;
+
   @Column({ nullable: false })
   active: boolean;
 

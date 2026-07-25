@@ -1,5 +1,5 @@
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 import { motion } from 'framer-motion';
 
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
@@ -9,28 +9,24 @@ const StyledContainer = styled.div`
   display: flex;
   flex: 1;
   justify-content: space-between;
-  height: 40px; /* Fixed height to ensure consistency */
-  align-items: center; /* Vertically center all content */
-  min-height: 40px; /* Ensure minimum height */
-  margin: 0; /* Remove margin to fit perfectly in parent */
+  height: 40px;
+  align-items: center;
+  min-height: 40px;
+  margin: 0;
 `;
 
 const StyledStepContainer = styled.div<{ isLast: boolean }>`
   align-items: center;
   display: flex;
   flex-grow: ${({ isLast }) => (isLast ? '0' : '1')};
-  height: 100%; /* Fill the parent container height */
+  height: 100%;
 `;
 
-const StyledStepCircle = styled(motion.div)<{ isNextStep: boolean }>`
+const StyledStepCircle = styled(motion.div)`
   align-items: center;
   border-radius: 50%;
   border-style: solid;
   border-width: 1px;
-  border-color: ${({ theme, isNextStep }) =>
-    isNextStep
-      ? theme.border.color.inverted
-      : theme.border.color.medium} !important;
   display: flex;
   flex-basis: auto;
   flex-shrink: 0;
@@ -39,39 +35,53 @@ const StyledStepCircle = styled(motion.div)<{ isNextStep: boolean }>`
   overflow: hidden;
   position: relative;
   width: 20px;
+
+  &[data-next-step='true'] {
+    border-color: ${themeCssVariables.border.color.inverted} !important;
+  }
+
+  &[data-next-step='false'] {
+    border-color: ${themeCssVariables.border.color.medium} !important;
+  }
 `;
 
 const StyledStepIndex = styled.span<{ isNextStep: boolean }>`
-  color: ${({ theme, isNextStep }) =>
-    isNextStep ? theme.font.color.secondary : theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${({ isNextStep }) =>
+    isNextStep
+      ? themeCssVariables.font.color.secondary
+      : themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledStepLabel = styled.span<{ isActive: boolean; isNextStep: boolean }>`
-  color: ${({ theme, isActive, isNextStep }) =>
+  color: ${({ isActive, isNextStep }) =>
     isActive || isNextStep
-      ? theme.font.color.primary
-      : theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin-left: ${({ theme }) => theme.spacing(2)};
+      ? themeCssVariables.font.color.primary
+      : themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  margin-left: ${themeCssVariables.spacing[2]};
   white-space: nowrap;
 `;
 
 const StyledStepLine = styled(motion.div)`
   height: 2px;
-  margin-left: ${({ theme }) => theme.spacing(2)};
-  margin-right: ${({ theme }) => theme.spacing(2)};
+  margin-left: ${themeCssVariables.spacing[2]};
+  margin-right: ${themeCssVariables.spacing[2]};
   overflow: hidden;
   width: 100%;
-  align-self: center; /* Ensure vertical centering */
-  flex-shrink: 1; /* Allow line to shrink if needed */
+  align-self: center;
+  flex-shrink: 1;
+`;
+
+const StyledCheckmark = styled.span`
+  color: ${themeCssVariables.font.color.inverted};
 `;
 
 const STEP_LABELS: Record<ArxJDFormStepType, string> = {
   [ArxJDFormStepType.UploadJD]: 'Upload JD',
-  [ArxJDFormStepType.JobDetails]: 'Job Details',
+  [ArxJDFormStepType.JobDetails]: 'Project Details',
   [ArxJDFormStepType.CandidateSearch]: 'Search Candidates',
   [ArxJDFormStepType.ChatConfiguration]: 'Chat Configuration',
   [ArxJDFormStepType.VideoInterview]: 'Video Interview',
@@ -85,12 +95,16 @@ export type ArxJDStepBarProps = {
   availableSteps?: ArxJDFormStepType[];
 };
 
-export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false, availableSteps: propAvailableSteps }: ArxJDStepBarProps) => {
+export const ArxJDStepBar = ({
+  activeStep,
+  parsedJD,
+  isEditMode = false,
+  availableSteps: propAvailableSteps,
+}: ArxJDStepBarProps) => {
   const theme = useTheme();
 
-  // Use provided availableSteps or fallback to generating them (for backward compatibility)
   const availableSteps = propAvailableSteps || [];
-  
+
   const variantsCircle = {
     active: {
       backgroundColor: theme.font.color.primary,
@@ -118,7 +132,6 @@ export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false, availab
   return (
     <StyledContainer>
       {availableSteps.map((stepType, index) => {
-        // We no longer need special handling for edit mode since we're including the upload step
         const isActive = index <= activeStep;
         const isNextStep = activeStep + 1 === index;
         const isLast = index === availableSteps.length - 1;
@@ -128,10 +141,10 @@ export const ArxJDStepBar = ({ activeStep, parsedJD, isEditMode = false, availab
             <StyledStepCircle
               variants={variantsCircle}
               animate={isActive ? 'active' : 'inactive'}
-              isNextStep={isNextStep}
+              data-next-step={isNextStep ? 'true' : 'false'}
             >
               {isActive ? (
-                <span style={{ color: theme.grayScale.gray0 }}>✓</span>
+                <StyledCheckmark>✓</StyledCheckmark>
               ) : (
                 <StyledStepIndex isNextStep={isNextStep}>
                   {index + 1}

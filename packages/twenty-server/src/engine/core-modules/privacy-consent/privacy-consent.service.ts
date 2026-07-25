@@ -26,7 +26,7 @@ export class PrivacyConsentService {
   private readonly logger = new Logger(PrivacyConsentService.name);
 
   constructor(
-    @InjectRepository(PrivacyConsentEventEntity, 'core')
+    @InjectRepository(PrivacyConsentEventEntity)
     private readonly privacyConsentRepository: Repository<PrivacyConsentEventEntity>,
   ) {}
 

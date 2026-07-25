@@ -40,14 +40,14 @@ export class ExtSockWhatsappService {
       };
 
       // Create unique job ID to prevent duplicate processing
-      const uniqueJobId = `whatsapp-message-${messageData.id}-${messageData.type || 'unknown'}`;
+      const uniqueProjectId = `whatsapp-message-${messageData.id}-${messageData.type || 'unknown'}`;
       
       await this.messageQueueService.add<WhatsappMessageJobData>(
         WhatsappMessageProcessor.name,
         jobData,
         {
           ...queueJobOptions,
-          id: uniqueJobId, // Add unique ID to prevent duplicates
+          id: uniqueProjectId, // Add unique ID to prevent duplicates
         },
       );
 

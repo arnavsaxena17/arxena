@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledModalContainer = styled.div`
   background-color: solid;
@@ -36,8 +37,8 @@ const StyledAdjuster = styled.div`
 `;
 
 const StyledModal = styled.div`
-  background-color: ${({ theme }) => theme.background.tertiary};
-  box-shadow: ${({ theme }) => theme.boxShadow.superHeavy};
+  background-color: ${themeCssVariables.background.tertiary};
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -60,21 +61,21 @@ const StyledModal = styled.div`
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    background: ${themeCssVariables.background.quaternary || '#888'};
     border-radius: 4px;
     
     &:hover {
-      background: ${({ theme }) => theme.background.noisy || '#666'};
+      background: ${themeCssVariables.background.noisy || '#666'};
     }
   }
 
   scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+  scrollbar-color: ${`${themeCssVariables.background.quaternary || '#888'} ${themeCssVariables.background.tertiary}`};
 `;
 
 const StyledContent = styled.div`

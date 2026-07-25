@@ -1,7 +1,4 @@
-import {
-  type InputSchemaPropertyType,
-  type BaseOutputSchemaV2,
-} from 'twenty-shared/workflow';
+import type { InputSchemaPropertyType, BaseOutputSchemaV2 } from 'twenty-shared/workflow';
 
 const getValueType = (value: unknown): InputSchemaPropertyType => {
   if (value === null || value === undefined) {

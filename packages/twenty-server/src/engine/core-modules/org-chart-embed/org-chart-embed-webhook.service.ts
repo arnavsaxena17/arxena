@@ -1,18 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ArrayContains } from 'typeorm';
+import { isDefined } from 'twenty-shared/utils';
 
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
-import {
-  CallWebhookJob,
-  CallWebhookJobData,
-} from 'src/modules/webhook/jobs/call-webhook.job';
-import { WebhookWorkspaceEntity } from 'src/modules/webhook/standard-objects/webhook.workspace-entity';
+import { CallWebhookJob } from 'src/engine/metadata-modules/webhook/jobs/call-webhook.job';
+import { type CallWebhookJobData } from 'src/engine/metadata-modules/webhook/types/webhook-job-data.type';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
-export type OrgChartEmbedWebhookEventName = 'embed.viewed' | 'embed.node_clicked';
+export type OrgChartEmbedWebhookEventName =
+  | 'embed.viewed'
+  | 'embed.node_clicked';
 
 @Injectable()
 export class OrgChartEmbedWebhookService {
@@ -21,7 +20,7 @@ export class OrgChartEmbedWebhookService {
   constructor(
     @InjectMessageQueue(MessageQueue.webhookQueue)
     private readonly messageQueueService: MessageQueueService,
-    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly workspaceCacheService: WorkspaceCacheService,
   ) {}
 
   async emitEmbedEvent(input: {
@@ -30,41 +29,48 @@ export class OrgChartEmbedWebhookService {
     record: Record<string, unknown>;
   }): Promise<void> {
     try {
-      const webhookRepository =
-        await this.twentyORMGlobalManager.getRepositoryForWorkspace<WebhookWorkspaceEntity>(
-          input.workspaceId,
-          'webhook',
-        );
+      const operationsToMatch = [
+        input.eventName,
+        'embed.*',
+        '*.*',
+      ];
 
-      const webhooks = await webhookRepository.find({
-        where: [
-          { operations: ArrayContains([input.eventName]) },
-          { operations: ArrayContains(['embed.*']) },
-          { operations: ArrayContains(['*.*']) },
-        ],
-      });
+      const { flatWebhookMaps } =
+        await this.workspaceCacheService.getOrRecompute(input.workspaceId, [
+          'flatWebhookMaps',
+        ]);
+
+      const webhooks = Object.values(flatWebhookMaps.byUniversalIdentifier)
+        .filter(isDefined)
+        .filter((webhook) =>
+          operationsToMatch.some((operationToMatch) =>
+            webhook.operations.includes(operationToMatch),
+          ),
+        );
 
       if (webhooks.length === 0) {
         return;
       }
 
-      for (const webhook of webhooks) {
-        const jobData: CallWebhookJobData = {
-          targetUrl: webhook.targetUrl,
-          eventName: input.eventName,
-          objectMetadata: {
-            id: webhook.id,
-            nameSingular: 'embed',
-          },
-          workspaceId: input.workspaceId,
-          webhookId: webhook.id,
-          eventDate: new Date(),
-          record: input.record,
-          secret: webhook.secret,
-        };
+      const webhookEvents: CallWebhookJobData[] = webhooks.map((webhook) => ({
+        targetUrl: webhook.targetUrl,
+        eventName: input.eventName,
+        objectMetadata: {
+          id: webhook.id,
+          nameSingular: 'embed',
+        },
+        workspaceId: input.workspaceId,
+        webhookId: webhook.id,
+        eventDate: new Date(),
+        record: input.record,
+        secret: webhook.secret ?? undefined,
+      }));
 
-        await this.messageQueueService.add(CallWebhookJob.name, jobData);
-      }
+      await this.messageQueueService.add<CallWebhookJobData[]>(
+        CallWebhookJob.name,
+        webhookEvents,
+        { retryLimit: 3 },
+      );
     } catch (error) {
       this.logger.warn(
         `Failed to emit embed webhook event ${input.eventName}`,

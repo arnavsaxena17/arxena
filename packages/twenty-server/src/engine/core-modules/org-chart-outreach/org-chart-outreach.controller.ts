@@ -22,7 +22,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -48,7 +48,7 @@ class OrgChartOutreachBodyDto {
 
   @IsOptional()
   @IsString()
-  jobId?: string;
+  projectId?: string;
 
   @IsString()
   message: string;
@@ -527,7 +527,7 @@ export class OrgChartOutreachController {
   async extractIcp(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: ExtractIcpBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -570,7 +570,7 @@ export class OrgChartOutreachController {
   async extractIcpFromResume(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: ExtractIcpFromResumeBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -651,7 +651,7 @@ export class OrgChartOutreachController {
   async fetchIcpCandidates(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: FetchIcpCandidatesBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -688,7 +688,7 @@ export class OrgChartOutreachController {
   async generateMessage(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: GenerateOutreachMessageBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -728,7 +728,7 @@ export class OrgChartOutreachController {
   async generateIcpMessage(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: GenerateIcpMessageBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -760,7 +760,7 @@ export class OrgChartOutreachController {
   async generateIcpEmail(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: GenerateIcpEmailBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -792,7 +792,7 @@ export class OrgChartOutreachController {
   async generateIcpWhatsapp(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: GenerateIcpWhatsappBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -824,7 +824,7 @@ export class OrgChartOutreachController {
   async generateIcpComment(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: GenerateIcpCommentBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -856,7 +856,7 @@ export class OrgChartOutreachController {
   async sendPostComment(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     body: SendPostCommentBodyDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req()
     request: {
       workspaceMemberId?: string;
@@ -892,7 +892,7 @@ export class OrgChartOutreachController {
     }
     return this.orgChartOutreachService.run({
       channel: body.channel,
-      jobId: body.jobId,
+      projectId: body.projectId,
       message: body.message,
       templateId: body.templateId,
       linkedinUrl: body.linkedinUrl,

@@ -5,7 +5,7 @@ import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 /** Thread context from assistantThread used where searchFilter was previously used. */
 export type AssistantThreadContext = {
   id: string;
-  jobId?: string;
+  projectId?: string;
   messages: Array<{ role: string; content: string; toolCalls?: unknown }>;
   assistantParameters?: {
     generatedSearchParameters?: Record<string, unknown>;
@@ -60,7 +60,7 @@ export class AssistantThreadService {
 
     return {
       id: node.id,
-      jobId: node.jobId ?? undefined,
+      projectId: node.projectId ?? undefined,
       messages,
       assistantParameters:
         node.assistantParameters && typeof node.assistantParameters === 'object'

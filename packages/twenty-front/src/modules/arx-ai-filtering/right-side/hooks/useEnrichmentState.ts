@@ -1,17 +1,20 @@
-import { enrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+  enrichmentsState,
+  type Enrichment,
+  type EnrichmentField,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
 import { DEFAULT_ENRICHMENT, DEFAULT_FIELD } from '../constants';
 import { NewField } from '../types';
 
 export const useEnrichmentState = (index: number) => {
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
+  const [enrichments, setEnrichments] = useAtomState(enrichmentsState);
   const [showAddField, setShowAddField] = useState(false);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
   const [newField, setNewField] = useState<NewField>(DEFAULT_FIELD);
   const [error, setError] = useState<string>('');
 
-  // Initialize local state with deep copy of current enrichment
   const currentEnrichment = useMemo(() => {
     if (!enrichments[index]) {
       return DEFAULT_ENRICHMENT;
@@ -20,52 +23,55 @@ export const useEnrichmentState = (index: number) => {
     return {
       ...DEFAULT_ENRICHMENT,
       ...enrichments[index],
-      fields: enrichments[index].fields.map(field => ({
+      fields: enrichments[index].fields.map((field: EnrichmentField) => ({
         ...field,
-        enumValues: field.enumValues || []
+        enumValues: field.enumValues || [],
       })),
-      selectedMetadataFields: [...(enrichments[index].selectedMetadataFields || [])]
+      selectedMetadataFields: [
+        ...(enrichments[index].selectedMetadataFields || []),
+      ],
     };
   }, [enrichments, index]);
 
-  // Reset local state when switching enrichments
   useEffect(() => {
-    const currentEnrichment = enrichments[index];
-    if (currentEnrichment) {
-      // Reset form state
+    const currentEnrichmentItem = enrichments[index];
+    if (currentEnrichmentItem) {
       setNewField(DEFAULT_FIELD);
-      
-      if (typeof currentEnrichment?.bestOf === 'undefined') {
-        setEnrichments(prev => {
-          const newEnrichments = [...prev];
+
+      if (typeof currentEnrichmentItem?.bestOf === 'undefined') {
+        setEnrichments((previousEnrichments) => {
+          const newEnrichments = [...previousEnrichments];
           if (newEnrichments[index]) {
             newEnrichments[index] = {
               ...newEnrichments[index],
-              bestOf: 1
+              bestOf: 1,
             };
           }
           return newEnrichments;
         });
       }
-      
+
       setShowAddField(false);
       setEditingFieldId(null);
       setError('');
     }
   }, [index, enrichments, setEnrichments]);
 
-  const updateEnrichment = useCallback((updates: Partial<typeof currentEnrichment>) => {
-    setEnrichments(prev => {
-      const newEnrichments = [...prev];
-      if (newEnrichments[index]) {
-        newEnrichments[index] = {
-          ...newEnrichments[index],
-          ...updates
-        };
-      }
-      return newEnrichments;
-    });
-  }, [index, setEnrichments]);
+  const updateEnrichment = useCallback(
+    (updates: Partial<Enrichment>) => {
+      setEnrichments((previousEnrichments) => {
+        const newEnrichments = [...previousEnrichments];
+        if (newEnrichments[index]) {
+          newEnrichments[index] = {
+            ...newEnrichments[index],
+            ...updates,
+          };
+        }
+        return newEnrichments;
+      });
+    },
+    [index, setEnrichments],
+  );
 
   const resetForm = useCallback(() => {
     setNewField(DEFAULT_FIELD);
@@ -85,6 +91,6 @@ export const useEnrichmentState = (index: number) => {
     error,
     setError,
     updateEnrichment,
-    resetForm
+    resetForm,
   };
 };

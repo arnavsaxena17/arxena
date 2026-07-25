@@ -1,4 +1,4 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 
@@ -11,7 +11,7 @@ export type OrgChartLinkedinCandidateSource =
   | typeof ORG_CHART_CANDIDATE_SOURCE_M7KQ;
 
 export const orgChartLinkedinCandidateSourceState =
-  createState<OrgChartLinkedinCandidateSource>({
+  createAtomState<OrgChartLinkedinCandidateSource>({
     key: 'orgChartLinkedinCandidateSourceState',
     defaultValue: 'unipile',
   });

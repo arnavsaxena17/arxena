@@ -43,7 +43,7 @@ export class AssistantThreadService {
     {
       id: string;
       name: string;
-      jobId?: string;
+      projectId?: string;
       job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
       assistantMode?: 'fully_autonomous' | 'permissioned';
     }[]
@@ -70,14 +70,14 @@ export class AssistantThreadService {
         node: {
           id: string;
           name: string;
-          jobId?: string;
+          projectId?: string;
           job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
           assistantMode?: 'fully_autonomous' | 'permissioned';
         };
       }) => ({
         id: e.node.id,
         name: e.node.name,
-        jobId: e.node.jobId ?? undefined,
+        projectId: e.node.projectId ?? undefined,
         job: e.node.job ?? undefined,
         assistantMode: e.node.assistantMode ?? 'permissioned',
       }),
@@ -87,13 +87,13 @@ export class AssistantThreadService {
   async createThread(
     apiToken: string,
     name = 'New thread',
-    jobId?: string,
+    projectId?: string,
     assistantMode?: 'fully_autonomous' | 'permissioned',
     searchType?: 'classic' | 'sales_navigator' | 'recruiter',
   ): Promise<{
     id: string;
     name: string;
-    jobId?: string;
+    projectId?: string;
     assistantMode?: 'fully_autonomous' | 'permissioned';
     searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   }> {
@@ -107,16 +107,16 @@ export class AssistantThreadService {
     }
     const input: {
       name: string;
-      jobId?: string;
+      projectId?: string;
       recruiterId: string;
       assistantMode?: 'fully_autonomous' | 'permissioned';
       assistantParameters?: Record<string, unknown>;
     } = {
       name,
-      jobId: jobId ?? undefined,
+      projectId: projectId ?? undefined,
       recruiterId: workspaceMemberId,
     };
-    if (jobId) input.jobId = jobId;
+    if (projectId) input.projectId = projectId;
     if (assistantMode) input.assistantMode = assistantMode;
     if (
       searchType === 'classic' ||
@@ -137,7 +137,7 @@ export class AssistantThreadService {
     return {
       id: created.id,
       name: created.name ?? name,
-      jobId: created.jobId ?? jobId,
+      projectId: created.projectId ?? projectId,
       assistantMode: created.assistantMode ?? assistantMode ?? 'permissioned',
       searchType,
     };
@@ -224,7 +224,7 @@ export class AssistantThreadService {
           : null,
       createdAt: node.createdAt ? new Date(node.createdAt) : new Date(),
       updatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
-      jobId: node.jobId ?? undefined,
+      projectId: node.projectId ?? undefined,
       job: node.job ?? undefined,
       agentNotes: agentNotes?.length ? agentNotes : undefined,
       agentEvents,
@@ -291,14 +291,14 @@ export class AssistantThreadService {
     );
   }
 
-  async updateThreadJobId(
+  async updateThreadProjectId(
     apiToken: string,
     threadId: string,
-    jobId: string | null,
+    projectId: string | null,
   ): Promise<void> {
     await this.staticGraphQLService.executeGraphQL(
       updateOneAssistantThread,
-      { id: threadId, input: { jobId: jobId ?? undefined } },
+      { id: threadId, input: { projectId: projectId ?? undefined } },
       apiToken,
     );
   }

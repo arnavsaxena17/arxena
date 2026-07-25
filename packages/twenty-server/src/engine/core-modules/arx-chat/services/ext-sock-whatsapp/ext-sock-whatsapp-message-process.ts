@@ -6,7 +6,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
-  Job,
+  Project,
   WhatsappMessageData,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -185,7 +185,7 @@ export class ExtSockWhatsappMessageProcessor {
     }
     // try{
     //   const recruiterProfile = await getRecruiterProfileByRecruiterId (
-    //     candidateNode?.jobs?.recruiterId,
+    //     candidateNode?.projects?.recruiterId,
     //     apiToken,
     //   );
     //   console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)
@@ -254,7 +254,7 @@ export class ExtSockWhatsappMessageProcessor {
   async sendWhatsappMessageVIAExtSockWhatsappAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,

@@ -1,12 +1,12 @@
 import { useOpenCreateActivityDrawer } from '@/activities/hooks/useOpenCreateActivityDrawer';
-import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
-// import { PageAddButton } from 'twenty-ui';
-import { PageAddButton } from '@/ui/layout/page/components/PageAddButton';
+import { IconButton } from 'twenty-ui/input';
+import { IconPlus } from 'twenty-ui/icon';
+import { CoreObjectNameSingular } from 'twenty-shared/types';
 
 export const PageAddChatButton = () => {
-  const openCreateActivity = useOpenCreateActivityDrawer({activityObjectNameSingular: CoreObjectNameSingular.Task});
-
-  // TODO: fetch workspace member from filter here
+  const openCreateActivity = useOpenCreateActivityDrawer({
+    activityObjectNameSingular: CoreObjectNameSingular.Task,
+  });
 
   const handleClick = () => {
     openCreateActivity({
@@ -14,5 +14,5 @@ export const PageAddChatButton = () => {
     });
   };
 
-  return <PageAddButton onClick={handleClick} />;
+  return <IconButton Icon={IconPlus} onClick={handleClick} />;
 };

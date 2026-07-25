@@ -1,13 +1,15 @@
 import axios from 'axios';
 import { ParsedJD } from '../types/ParsedJD';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 export const syncChatQuestionsToDatabase = async ({
   parsedJD,
-  jobId,
+  projectId,
   apiToken,
 }: {
   parsedJD: ParsedJD;
-  jobId: string;
+  projectId: string;
   apiToken?: string;
 }): Promise<void> => {
   const currentQuestions = (parsedJD.chatFlow?.questions ?? [])
@@ -19,9 +21,9 @@ export const syncChatQuestionsToDatabase = async ({
   }
 
   await axios.post(
-    `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-chat-questions`,
+    `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-chat-questions`,
     {
-      jobId,
+      projectId,
       chatQuestions: currentQuestions,
       previousQuestions: parsedJD.existingChatQuestions ?? [],
     },

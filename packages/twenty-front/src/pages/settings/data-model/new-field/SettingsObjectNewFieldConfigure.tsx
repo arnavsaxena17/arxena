@@ -16,11 +16,7 @@ import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useParams, useSearchParams } from 'react-router-dom';
-import {
-  AppPath,
-  type RelationCreationPayload,
-  SettingsPath,
-} from 'twenty-shared/types';
+import { AppPath, SettingsPath, type RelationCreationPayload } from 'twenty-shared/types';
 import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import { H2Title } from 'twenty-ui/typography';
 import { Button } from 'twenty-ui/input';

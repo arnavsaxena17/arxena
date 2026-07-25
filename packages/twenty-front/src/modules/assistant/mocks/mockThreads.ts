@@ -28,7 +28,7 @@ const MOCK_CANDIDATES_TABLE: AssistantTableData = {
       experience: '6 years',
       status: 'SCREENING',
       engagementStatus: 'NOT_CONTACTED',
-      jobsId: 'mock-job-1',
+      projectsId: 'mock-job-1',
       relevanceScore: 0.92,
       relevanceLabel: 'highly_relevant',
       matchReasons: [
@@ -45,7 +45,7 @@ const MOCK_CANDIDATES_TABLE: AssistantTableData = {
       experience: '8 years',
       status: 'INTERESTED',
       engagementStatus: 'CONTACTED',
-      jobsId: 'mock-job-1',
+      projectsId: 'mock-job-1',
       relevanceScore: 0.78,
       relevanceLabel: 'somewhat_relevant',
       matchReasons: ['Team lead experience', 'Strong SaaS product exposure'],
@@ -59,7 +59,7 @@ const MOCK_CANDIDATES_TABLE: AssistantTableData = {
       experience: '5 years',
       status: 'CV_SENT',
       engagementStatus: 'CLIENT_REVIEW',
-      jobsId: 'mock-job-1',
+      projectsId: 'mock-job-1',
       relevanceScore: 0.64,
       relevanceLabel: 'somewhat_relevant',
       matchReasons: ['Solid React IC experience'],
@@ -127,7 +127,7 @@ export const MOCK_THREADS: AssistantThread[] = [
       },
     ],
     lastTableData: MOCK_CANDIDATES_TABLE,
-    jobId: 'mock-job-1',
+    projectId: 'mock-job-1',
     agentNotes: [
       {
         summary:
@@ -201,7 +201,7 @@ export const MOCK_THREADS: AssistantThread[] = [
       },
     ],
     lastTableData: MOCK_CLIENT_SHORTLIST_TABLE,
-    jobId: 'mock-job-1',
+    projectId: 'mock-job-1',
     agentNotes: [
       {
         summary:
@@ -248,7 +248,7 @@ export const MOCK_THREADS: AssistantThread[] = [
       },
     ],
     lastTableData: null,
-    jobId: null,
+    projectId: null,
     agentNotes: [],
     agentEvents: [
       {
@@ -322,7 +322,7 @@ export const MOCK_THREADS: AssistantThread[] = [
       },
     ],
     lastTableData: MOCK_CANDIDATES_TABLE,
-    jobId: 'mock-job-1',
+    projectId: 'mock-job-1',
     agentNotes: [
       {
         summary:
@@ -361,7 +361,7 @@ export const MOCK_THREADS: AssistantThread[] = [
     name: 'New thread',
     messages: [],
     lastTableData: null,
-    jobId: null,
+    projectId: null,
     agentEvents: [],
   },
   {
@@ -418,7 +418,7 @@ export const MOCK_THREADS: AssistantThread[] = [
               'currentCompany',
               'experience',
               'status',
-              'jobsId',
+              'projectsId',
             ],
             rows: [
               {
@@ -428,7 +428,7 @@ export const MOCK_THREADS: AssistantThread[] = [
                 currentCompany: 'Mock Product Co',
                 experience: '7 years',
                 status: 'SCREENING',
-                jobsId: 'mock-job-jd-upload',
+                projectsId: 'mock-job-jd-upload',
               },
               {
                 id: 'mock-jd-cand-2',
@@ -437,7 +437,7 @@ export const MOCK_THREADS: AssistantThread[] = [
                 currentCompany: 'SaaS Labs',
                 experience: '6 years',
                 status: 'CV_SENT',
-                jobsId: 'mock-job-jd-upload',
+                projectsId: 'mock-job-jd-upload',
               },
             ],
           },
@@ -450,7 +450,7 @@ export const MOCK_THREADS: AssistantThread[] = [
       },
     ],
     lastTableData: null,
-    jobId: 'mock-job-jd-upload',
+    projectId: 'mock-job-jd-upload',
     agentNotes: [
       {
         summary:

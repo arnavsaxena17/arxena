@@ -1,9 +1,6 @@
 import { isDefined } from 'twenty-shared/utils';
 import { HTTPMethod } from 'twenty-shared/types';
-import {
-  type DatabaseEventTriggerSettings,
-  type HttpRouteTriggerSettings,
-} from 'twenty-shared/application';
+import type { DatabaseEventTriggerSettings, HttpRouteTriggerSettings } from 'twenty-shared/application';
 
 export type TriggerKind = 'http' | 'cron' | 'databaseEvent' | 'tool';
 

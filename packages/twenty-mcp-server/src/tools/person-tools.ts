@@ -1,12 +1,13 @@
+import type { People, PersonNode } from 'twenty-shared/arx';
 import {
-  getResolvedOtherFields,
   graphqlQueryToFindManyPeople,
   graphqlToFetchAllCandidateDataWithFieldValues,
   mutationToUpdateOnePerson,
+} from 'twenty-shared/graphql';
+import {
+  getResolvedOtherFields,
   otherFieldsToFlatRow,
-  People,
-  PersonNode,
-} from 'twenty-shared';
+} from 'twenty-shared/utils';
 import {
   ENRICH_CONTACT_FROM_DATA_INPUT_DESCRIPTOR,
   EnrichContactFromDataInput,
@@ -76,7 +77,7 @@ export const personTools: McpTool[] = [
 
       const result =  {
         count: people.length,
-        people: people ?? [] as PersonNode[],   
+        people: people ?? [] as PersonNode[],
       };
       return result;
     },
@@ -149,20 +150,20 @@ export const personTools: McpTool[] = [
 
   {
     definition: {
-      name: 'get_candidate_fields_for_job',
+      name: 'get_candidate_fields_for_project',
       description:
         'Get the list of custom otherFields keys configured for candidates in a specific job. Use this to see what fields are available before calling update_candidate_salary.',
       inputSchema: descriptorToInputSchema(GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const { jobId } = args as GetCandidateFieldsForJobInput;
+      const { projectId } = args as GetCandidateFieldsForJobInput;
 
       const result = await callRestAPI(
         config.baseUrl,
         config.apiToken,
         'candidate-sourcing',
-        'get-candidate-fields-by-job',
-        { jobId },
+        'get-candidate-fields-by-project',
+        { projectId },
       );
 
       return result;

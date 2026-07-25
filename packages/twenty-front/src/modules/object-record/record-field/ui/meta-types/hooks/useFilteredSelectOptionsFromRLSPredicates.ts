@@ -3,10 +3,7 @@
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useObjectPermissionsForObject } from '@/object-record/hooks/useObjectPermissionsForObject';
 import { useMemo } from 'react';
-import {
-  type RowLevelPermissionPredicate,
-  RowLevelPermissionPredicateOperand,
-} from 'twenty-shared/types';
+import { RowLevelPermissionPredicateOperand, type RowLevelPermissionPredicate } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type SelectOption } from 'twenty-ui/input';
 

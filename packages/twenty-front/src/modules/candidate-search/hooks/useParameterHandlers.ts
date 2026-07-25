@@ -1,8 +1,8 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { cleanSearchParameters, updateSearchParameterEntry } from '@/arx-jd-upload/utils/searchParametersUtils';
 import { DefaultParameters } from '@/candidate-search/types/candidate-search.types';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useCallback } from 'react';
-import { useRecoilState } from 'recoil';
 
 export const useParameterHandlers = (
   parameters: DefaultParameters,
@@ -10,7 +10,7 @@ export const useParameterHandlers = (
   searchType: string = 'classic',
   searchCategory: string = 'people'
 ) => {
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
   const handleKeywordsChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateParameters({ keywords: e.target.value });
   }, [updateParameters]);

@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 // import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
 
 
-import { StartInterviewPageProps } from 'twenty-shared';
+import type { StartInterviewPageProps } from 'twenty-shared/arx';
 import { useStream } from '../StreamManager';
 import {
   AccessMessage,
@@ -52,7 +54,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     // Preload the introduction video when component mounts
     useEffect(() => {
       if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        // const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        // const videoUrl = `${REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         const videoUrl = `${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         // Create a new video element for preloading
         const preloadVideo = document.createElement('video');
@@ -96,7 +98,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     }
   };
 
-  // const recruiterProfile = InterviewData?.candidate?.jobs?
+  // const recruiterProfile = InterviewData?.candidate?.projects?
 
   console.log("This is the intorduction interview data::", introductionVideoData)
   // console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
@@ -105,7 +107,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
   return (
     <StyledContainer>
     <StartInterviewStyledLeftPanel>
-      <h2>{InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
+      <h2>{InterviewData?.candidate?.projects?.name} at {InterviewData?.candidate?.projects?.companyName}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer 
@@ -125,7 +127,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     </StartInterviewStyledLeftPanel>
     <StartInterviewStyledRightPanel>
       <InstructionSection>
-        <h2>Hi, {InterviewData?.candidate?.name} - Applicant for {InterviewData?.candidate?.jobs?.name} at {InterviewData?.candidate?.jobs?.companyName}</h2>
+        <h2>Hi, {InterviewData?.candidate?.name} - Applicant for {InterviewData?.candidate?.projects?.name} at {InterviewData?.candidate?.projects?.companyName}</h2>
         <br></br>
         <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>

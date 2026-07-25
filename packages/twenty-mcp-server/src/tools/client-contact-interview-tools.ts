@@ -5,21 +5,21 @@ import {
   graphqlQueryToFindManyClientContacts,
   graphqlQueryToFindManyInterviewSchedules,
   graphqlQueryToFindScheduledClientMeetings,
-} from 'twenty-shared';
+} from 'twenty-shared/graphql';
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
-function extractClientContacts(data: unknown): Array<{ id: string; name?: string; jobsId?: string; peopleId?: string; createdAt?: string }> {
+function extractClientContacts(data: unknown): Array<{ id: string; name?: string; projectsId?: string; peopleId?: string; createdAt?: string }> {
   const result = data as { clientContacts?: { edges?: Array<{ node: unknown }> } };
   const edges = result?.clientContacts?.edges ?? [];
-  return edges.map((e) => e.node as { id: string; name?: string; jobsId?: string; peopleId?: string; createdAt?: string });
+  return edges.map((e) => e.node as { id: string; name?: string; projectsId?: string; peopleId?: string; createdAt?: string });
 }
 
 function extractInterviewSchedules(data: unknown): Array<{
   id: string;
   name?: string;
-  jobsId?: string;
+  projectsId?: string;
   meetingType?: string;
   position?: string;
   slotsAvailable?: string;
@@ -27,7 +27,7 @@ function extractInterviewSchedules(data: unknown): Array<{
 }> {
   const result = data as { interviewSchedules?: { edges?: Array<{ node: unknown }> } };
   const edges = result?.interviewSchedules?.edges ?? [];
-  return edges.map((e) => e.node as { id: string; name?: string; jobsId?: string; meetingType?: string; position?: string; slotsAvailable?: string; createdAt?: string });
+  return edges.map((e) => e.node as { id: string; name?: string; projectsId?: string; meetingType?: string; position?: string; slotsAvailable?: string; createdAt?: string });
 }
 
 function extractClientInterviews(data: unknown): Array<{
@@ -60,20 +60,20 @@ export const clientContactInterviewTools: McpTool[] = [
   {
     definition: {
       name: 'list_client_contacts',
-      description: 'List client contacts for the workspace. Optionally filter by jobId to get contacts for a specific job.',
+      description: 'List client contacts for the workspace. Optionally filter by projectId to get contacts for a specific job.',
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Optional job ID to filter client contacts by job' },
+          projectId: { type: 'string', description: 'Optional job ID to filter client contacts by job' },
           limit: { type: 'number', description: 'Max records to return (default: 50)' },
         },
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string | undefined;
+      const projectId = args.projectId as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
       const filter: Record<string, unknown> = {};
-      if (jobId) filter.jobsId = { eq: jobId };
+      if (projectId) filter.projectsId = { eq: projectId };
 
       const data = await executeGraphQL(
         config.baseUrl,
@@ -90,23 +90,23 @@ export const clientContactInterviewTools: McpTool[] = [
   {
     definition: {
       name: 'create_client_contact',
-      description: 'Create a client contact. Link to a job (jobsId) and optionally to a person (peopleId).',
+      description: 'Create a client contact. Link to a project(projectsId) and optionally to a person (peopleId).',
       inputSchema: {
         type: 'object',
         properties: {
           name: { type: 'string', description: 'Display name for the client contact' },
-          jobId: { type: 'string', description: 'Job ID this contact is associated with' },
+          projectId: { type: 'string', description: 'Project ID this contact is associated with' },
           peopleId: { type: 'string', description: 'Optional person ID (e.g. for email/phone)' },
         },
-        required: ['name', 'jobId'],
+        required: ['name', 'projectId'],
       },
     },
     handler: async (args, config) => {
       const name = args.name as string;
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const peopleId = args.peopleId as string | undefined;
 
-      const input: Record<string, unknown> = { name, jobsId: jobId };
+      const input: Record<string, unknown> = { name, projectsId: projectId };
       if (peopleId) input.peopleId = peopleId;
 
       const result = await executeGraphQL<{ createClientContact?: { id: string } }>(
@@ -118,27 +118,27 @@ export const clientContactInterviewTools: McpTool[] = [
 
       const id = result?.createClientContact?.id;
       if (!id) throw new Error('Failed to create client contact');
-      return { success: true, clientContactId: id, jobId, message: `Client contact "${name}" created (id: ${id})` };
+      return { success: true, clientContactId: id, projectId, message: `Client contact "${name}" created (id: ${id})` };
     },
   },
 
   {
     definition: {
       name: 'list_interview_schedules',
-      description: 'List interview schedules (e.g. client interview slots) for a job. Optionally filter by jobId.',
+      description: 'List interview schedules (e.g. client interview slots) for a job. Optionally filter by projectId.',
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Optional job ID to filter by' },
+          projectId: { type: 'string', description: 'Optional job ID to filter by' },
           limit: { type: 'number', description: 'Max records to return (default: 50)' },
         },
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string | undefined;
+      const projectId = args.projectId as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
       const filter: Record<string, unknown> = {};
-      if (jobId) filter.jobsId = { eq: jobId };
+      if (projectId) filter.projectsId = { eq: projectId };
 
       const data = await executeGraphQL(
         config.baseUrl,
@@ -159,21 +159,21 @@ export const clientContactInterviewTools: McpTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Job ID' },
+          projectId: { type: 'string', description: 'Project ID' },
           name: { type: 'string', description: 'Name for the schedule (e.g. "Client Round 1")' },
           meetingType: { type: 'string', description: 'Optional meeting type (e.g. "Video", "In-person")' },
           position: { type: 'number', description: 'Optional position/order' },
         },
-        required: ['jobId', 'name'],
+        required: ['projectId', 'name'],
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const name = args.name as string;
       const meetingType = args.meetingType as string | undefined;
       const position = args.position as number | undefined;
 
-      const input: Record<string, unknown> = { name, jobsId: jobId };
+      const input: Record<string, unknown> = { name, projectsId: projectId };
       if (meetingType !== undefined) input.meetingType = meetingType;
       if (typeof position === 'number') input.position = position;
 
@@ -186,18 +186,18 @@ export const clientContactInterviewTools: McpTool[] = [
 
       const id = result?.createInterviewSchedule?.id;
       if (!id) throw new Error('Failed to create interview schedule');
-      return { success: true, interviewScheduleId: id, jobId, message: `Interview schedule "${name}" created (id: ${id})` };
+      return { success: true, interviewScheduleId: id, projectId, message: `Interview schedule "${name}" created (id: ${id})` };
     },
   },
 
   {
     definition: {
       name: 'list_client_interviews',
-      description: 'List client interviews (scheduled or completed). Filter by jobId, candidateId, or clientContactId.',
+      description: 'List client interviews (scheduled or completed). Filter by projectId, candidateId, or clientContactId.',
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Optional: filter by job (via interview schedule)' },
+          projectId: { type: 'string', description: 'Optional: filter by project(via interview schedule)' },
           candidateId: { type: 'string', description: 'Optional: filter by candidate' },
           clientContactId: { type: 'string', description: 'Optional: filter by client contact' },
           limit: { type: 'number', description: 'Max records (default: 50)' },

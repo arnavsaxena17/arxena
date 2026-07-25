@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useMemo, useState } from 'react';
 
 type ClientMessage = {
@@ -13,39 +14,39 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   box-sizing: border-box;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHeader = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledSubtitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledTranscript = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background-color: ${({ theme }) => theme.background.secondary};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background-color: ${themeCssVariables.background.secondary};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledMessageRow = styled.div<{ from: ClientMessage['from'] }>`
@@ -55,51 +56,51 @@ const StyledMessageRow = styled.div<{ from: ClientMessage['from'] }>`
 
 const StyledMessageBubble = styled.div<{ from: ClientMessage['from']; role: ClientMessage['role'] }>`
   max-width: 80%;
-  padding: ${({ theme }) => theme.spacing(1.5, 2)};
-  border-radius: ${({ theme }) => theme.border.radius.lg};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.lg};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 
-  ${({ theme, from }) =>
+  ${({ from }) =>
     from === 'recruiter'
       ? `
-    background-color: ${theme.color.blue80};
+    background-color: ${themeCssVariables.color.blue8};
     color: white;
-    border-bottom-right-radius: ${theme.border.radius.sm};
+    border-bottom-right-radius: ${themeCssVariables.border.radius.sm};
   `
       : `
-    background-color: ${theme.background.primary};
-    color: ${theme.font.color.primary};
-    border-bottom-left-radius: ${theme.border.radius.sm};
+    background-color: ${themeCssVariables.background.primary};
+    color: ${themeCssVariables.font.color.primary};
+    border-bottom-left-radius: ${themeCssVariables.border.radius.sm};
   `}
 
-  ${({ theme, role }) =>
+  ${({ role }) =>
     role === 'fee'
-      ? `box-shadow: 0 0 0 1px ${theme.color.orange}`
+      ? `box-shadow: 0 0 0 1px ${themeCssVariables.color.orange}`
       : role === 'offer'
-        ? `box-shadow: 0 0 0 1px ${theme.color.green}`
+        ? `box-shadow: 0 0 0 1px ${themeCssVariables.color.green}`
         : ''}
 `;
 
 const StyledTimestamp = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  margin-top: ${themeCssVariables.spacing[0.5]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   text-align: right;
 `;
 
 const StyledHint = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledFooter = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
-  padding-top: ${({ theme }) => theme.spacing(1.5)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  padding-top: ${themeCssVariables.spacing[1.5]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const MOCK_CLIENT_MESSAGES: ClientMessage[] = [

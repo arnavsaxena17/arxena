@@ -6,7 +6,9 @@ import {
   isLinkedinProfileUrl,
 } from '@/candidate-table/utils/getCandidateProfileUrl';
 import { useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export type UseWarmPathResolveResult = {
   data: WarmPathResolveResponse | null;
@@ -20,7 +22,7 @@ export type UseWarmPathResolveResult = {
 export const useWarmPathResolve = (
   candidateData: unknown,
 ): UseWarmPathResolveResult => {
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [data, setData] = useState<WarmPathResolveResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +37,8 @@ export const useWarmPathResolve = (
   }, [linkedinUrl]);
 
   const resolve = useCallback(async () => {
-    const accessToken = tokenPair?.accessToken?.token;
-    const baseUrl = process.env.REACT_APP_SERVER_BASE_URL;
+    const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+    const baseUrl = REACT_APP_SERVER_BASE_URL;
 
     if (!hasLinkedinUrl) {
       setError('Add a LinkedIn profile URL to find warm paths.');
@@ -69,7 +71,7 @@ export const useWarmPathResolve = (
     } finally {
       setIsLoading(false);
     }
-  }, [hasLinkedinUrl, linkedinUrl, tokenPair?.accessToken?.token]);
+  }, [hasLinkedinUrl, linkedinUrl, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   return {
     data,

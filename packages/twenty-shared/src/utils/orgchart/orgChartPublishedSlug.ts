@@ -43,10 +43,12 @@ const isValidPublishSlug = (slug: string): boolean =>
  * Strips UI suffixes like "— Org chart" and falls back to company id when name slugs are invalid.
  */
 export const resolveBrandPublishSlug = (input: {
-  companyId: string;
+  companyId?: string | null;
   companyName?: string;
 }): string => {
-  const idSlug = sanitizePublishSlug(input.companyId.replace(/_/g, '-'));
+  const idSlug = sanitizePublishSlug(
+    (input.companyId ?? '').replace(/_/g, '-'),
+  );
   const trimmedName = input.companyName
     ?.trim()
     .replace(ORG_CHART_TITLE_SUFFIX, '')
@@ -75,7 +77,7 @@ export const resolveBrandPublishSlug = (input: {
 
 export const buildDefaultPublishSlug = (input: {
   companyName?: string;
-  companyId: string;
+  companyId?: string | null;
 }): string => resolveBrandPublishSlug(input);
 
 export const normalizePublishSlug = (raw: string): string =>

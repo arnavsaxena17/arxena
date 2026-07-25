@@ -75,7 +75,7 @@ export class UnipileWebhookService {
       UNIPILE_WEBHOOK_PROCESSOR_NAME,
       jobData,
       {
-        id: this.buildWebhookJobId(kind, payload, receivedAt),
+        id: this.buildWebhookProjectId(kind, payload, receivedAt),
         retryLimit: 3,
       },
     );
@@ -100,7 +100,7 @@ export class UnipileWebhookService {
     return kind;
   }
 
-  private buildWebhookJobId(
+  private buildWebhookProjectId(
     kind: UnipileWebhookJobKind,
     payload: UnipileWebhookPayload | UnipileNewRelationWebhook,
     receivedAt: string,

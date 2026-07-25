@@ -2,8 +2,8 @@ import { CreateOneVideoInterviewTemplate } from 'twenty-shared';
 import { generateVideoInterviewTemplateData } from '../data/videoInterviewTemplateData';
 import { executeGraphQLQuery } from '../utils/graphqlClient';
 
-export async function createVideoInterviewTemplates(videoInterviewModelIds: string[], jobIds: string[], apiToken:string): Promise<void> {
-    const videoInterviewTemplates = generateVideoInterviewTemplateData(videoInterviewModelIds, jobIds);
+export async function createVideoInterviewTemplates(videoInterviewModelIds: string[], projectIds: string[], apiToken:string): Promise<void> {
+    const videoInterviewTemplates = generateVideoInterviewTemplateData(videoInterviewModelIds, projectIds);
 
     for (const interview of videoInterviewTemplates) {
         try {
@@ -18,10 +18,10 @@ export async function createVideoInterviewTemplates(videoInterviewModelIds: stri
     }
 }
 
-export async function getJobIds(apiToken: string): Promise<string[]> {
+export async function getProjectIds(apiToken: string): Promise<string[]> {
     const response = await executeGraphQLQuery(`
-        query Jobs {
-            jobs {
+        query Projects {
+            projects {
                 edges {
                     node {
                         id
@@ -30,7 +30,7 @@ export async function getJobIds(apiToken: string): Promise<string[]> {
                 }
             }
         }
-    `, {}, apiToken) as { data: { jobs: { edges: { node: { id: string } }[] } } };
+    `, {}, apiToken) as { data: { projects: { edges: { node: { id: string } }[] } } };
 
-    return response.data.jobs.edges.map((edge: any) => edge.node.id);
+    return response.data.projects.edges.map((edge: any) => edge.node.id);
 }

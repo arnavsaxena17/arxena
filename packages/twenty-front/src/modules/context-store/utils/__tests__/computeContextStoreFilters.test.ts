@@ -1,10 +1,7 @@
 import { type ContextStoreTargetedRecordsRule } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { computeContextStoreFilters } from '@/context-store/utils/computeContextStoreFilters';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
-import {
-  type RecordFilterValueDependencies,
-  ViewFilterOperand,
-} from 'twenty-shared/types';
+import { ViewFilterOperand, type RecordFilterValueDependencies } from 'twenty-shared/types';
 import { getTestEnrichedObjectMetadataItemsMock } from '~/testing/utils/getTestEnrichedObjectMetadataItemsMock';
 
 describe('computeContextStoreFilters', () => {

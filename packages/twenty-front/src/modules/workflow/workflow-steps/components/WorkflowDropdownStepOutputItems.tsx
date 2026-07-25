@@ -25,10 +25,7 @@ import { searchVariableThroughOutputSchemaV2 } from '@/workflow/workflow-variabl
 import { useLingui } from '@lingui/react/macro';
 import { useStore } from 'jotai';
 import { useCallback } from 'react';
-import {
-  type FilterableAndTSVectorFieldType,
-  type StepFilter,
-} from 'twenty-shared/types';
+import type { FilterableAndTSVectorFieldType, StepFilter } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { extractRawVariableNamePart } from 'twenty-shared/workflow';
 import { IconChevronLeft, useIcons } from 'twenty-ui/icon';

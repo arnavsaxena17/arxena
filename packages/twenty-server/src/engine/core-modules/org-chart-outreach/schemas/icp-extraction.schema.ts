@@ -12,7 +12,7 @@ export const icpProfileSchema = z.object({
     .describe('Technologies a good target company would be running'),
   buyer_titles: z
     .array(z.string())
-    .describe('Job titles of the buyer / economic buyer at a target company'),
+    .describe('Project titles of the buyer / economic buyer at a target company'),
   pain_signals: z
     .array(z.string())
     .describe('Observable signals that a target company has the pain this lead\'s product solves'),

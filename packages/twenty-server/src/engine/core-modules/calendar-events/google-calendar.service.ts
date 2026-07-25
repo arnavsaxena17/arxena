@@ -93,7 +93,7 @@ export class GoogleCalendarService {
     if (client) {
       return client;
     }
-    // @ts-ignore
+    // @ts-expect-error
     client = await authenticate({
       scopes: SCOPES,
       keyfilePath: CREDENTIALS_PATH,
@@ -147,7 +147,7 @@ export class GoogleCalendarService {
       const event = await calendar.events.insert({
         auth: auth,
         calendarId: "primary",
-        //@ts-ignore
+        //@ts-expect-error
         resource: calendarEventDataObj,
         conferenceDataVersion: 1,
         sendUpdates: "all",

@@ -1,9 +1,6 @@
 import { BODY_TYPES } from '@/workflow/workflow-steps/workflow-actions/http-request-action/constants/HttpRequest';
 import { isDefined } from 'twenty-shared/utils';
-import {
-  type BodyType,
-  CONTENT_TYPE_VALUES_HTTP_REQUEST,
-} from 'twenty-shared/workflow';
+import { CONTENT_TYPE_VALUES_HTTP_REQUEST, type BodyType } from 'twenty-shared/workflow';
 
 export const getBodyTypeFromHeaders = (
   headers?: Record<string, string>,

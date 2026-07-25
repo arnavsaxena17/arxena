@@ -113,7 +113,7 @@ export type AssistantThread = {
     statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
   };
   assistantSearchStrategy?: Record<string, unknown>;
-  jobId?: string | null;
+  projectId?: string | null;
   job?: AssistantThreadJob | null;
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEvent[];

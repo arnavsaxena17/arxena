@@ -46,7 +46,7 @@ import {
   toSlug,
   type OrgChartGradeTier,
   type OrgChartGradeVisibility,
-} from 'twenty-shared';
+} from 'twenty-shared/utils';
 
 const OrgChartDiagram = dynamic(() => loadOrgChartDiagramComponent(), {
   ssr: false,

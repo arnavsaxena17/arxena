@@ -1,4 +1,5 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { CircularProgressBar } from 'twenty-ui';
 
 const StyledContainer = styled.div`
@@ -6,7 +7,7 @@ const StyledContainer = styled.div`
 `;
 
 const StyledText = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(4)};
+  margin-top: ${themeCssVariables.spacing[4]};
 `;
 
 export const ArxJDUploadingState = () => {

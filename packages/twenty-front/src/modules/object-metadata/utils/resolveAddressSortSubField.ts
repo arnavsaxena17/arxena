@@ -1,10 +1,5 @@
 import { getEnabledAddressSubFields } from '@/object-metadata/utils/getEnabledAddressSubFields';
-import {
-  ALLOWED_ADDRESS_SUBFIELDS,
-  type AllowedAddressSubField,
-  type FieldMetadataSettingsMapping,
-  type FieldMetadataType,
-} from 'twenty-shared/types';
+import { ALLOWED_ADDRESS_SUBFIELDS, type AllowedAddressSubField, type FieldMetadataSettingsMapping, type FieldMetadataType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 const DEFAULT_SUB_FIELD: AllowedAddressSubField = 'addressCity';

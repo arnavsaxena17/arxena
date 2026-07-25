@@ -22,6 +22,7 @@ import { AutonomousRecruiterModule } from 'src/engine/core-modules/autonomous-re
 import { BillingWebhookModule } from 'src/engine/core-modules/billing-webhook/billing-webhook.module';
 import { AppBillingModule } from 'src/engine/core-modules/billing/app-billing/app-billing.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { McpFederationModule } from 'src/engine/core-modules/mcp-federation/mcp-federation.module';
 import { BillingGraphqlApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-graphql-api-exception.filter';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
@@ -206,6 +207,7 @@ import { FileModule } from './file/file.module';
     ContactEnrichmentModule,
     CandidateAvatarModule,
     AssistantModule,
+    McpFederationModule,
     AutonomousRecruiterModule,
     ExtensionBridgeModule,
     SearchModelsModule,

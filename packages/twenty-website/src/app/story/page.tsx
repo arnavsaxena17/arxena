@@ -1,0 +1,30 @@
+import { getSignInUrl, getSignUpUrl } from '@/lib/auth-urls';
+import { BRAND, STORY_PAGE } from '@/lib/brand-content';
+
+import { StoryContent } from '@/app/_components/story/StoryContent';
+import { ContentContainer } from '@/app/_components/ui/layout/ContentContainer';
+import { Header } from '@/app/_components/ui/layout/header';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata = {
+  title: `Story | ${BRAND.name}`,
+  description: `${STORY_PAGE.headline}. ${BRAND.vision}`,
+  alternates: {
+    canonical: '/story',
+  },
+};
+
+export default function StoryPage() {
+  const signInUrl = getSignInUrl();
+  const signUpUrl = getSignUpUrl();
+
+  return (
+    <>
+      <Header showSearch={false} signInUrl={signInUrl} signUpUrl={signUpUrl} />
+      <ContentContainer>
+        <StoryContent signInUrl={signInUrl} signUpUrl={signUpUrl} />
+      </ContentContainer>
+    </>
+  );
+}

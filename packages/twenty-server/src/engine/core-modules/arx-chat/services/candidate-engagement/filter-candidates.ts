@@ -8,14 +8,14 @@ import {
     ClientInterviewNode,
     ClientMeetingEdge,
     emptyCandidateProfileObj,
-    FindOneJob,
+    FindOneProject,
     graphqlQueryToFindManyPeople,
     graphqlQueryToFindScheduledClientMeetings,
-    graphqlQueryToFindVideoInterviewTemplatesByJobId,
+    graphqlQueryToFindVideoInterviewTemplatesByProjectId,
     graphqlToFetchAllCandidateData,
     graphQlToFetchWhatsappMessages,
-    graphqlToFindManyJobs,
-    Job,
+    graphqlToFindManyProjects,
+    Project,
     MessageNode,
     PageInfo,
     PersonEdge,
@@ -51,7 +51,7 @@ export class FilterCandidates {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
-    const candidateJob: Job = candidate?.jobs as Job;
+    const candidateJob: Project = candidate?.projects as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -61,7 +61,7 @@ export class FilterCandidates {
     }
 
     let phoneNumberTo: string = '';
-    
+
     if (candidate?.messagingChannel == 'linkedin') {
       phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
@@ -79,7 +79,7 @@ export class FilterCandidates {
     else{
       phoneNumberFrom = recruiterProfile.phoneNumber
     }
-  
+
 
     console.log("This is the candiadte node messaging Channel:", candidate?.messagingChannel)
     console.log("This is the candiadte node whatsapp provider:", candidate?.whatsappProvider)
@@ -112,15 +112,15 @@ export class FilterCandidates {
       mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
       return mostRecentMessageArr;
     }
-    
+
     // Otherwise, replace the first message with the system prompt
     mostRecentMessageArr[0] = { role: 'system', content: newSystemPrompt };
     return mostRecentMessageArr;
   }
 
-  async fetchJobById(jobId: string, apiToken: string): Promise<Job | null> { 
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { id: { eq: jobId } } }, apiToken);
-    return response?.data?.data?.jobs as Job | null;
+  async fetchJobById(projectId: string, apiToken: string): Promise<Project | null> {
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyProjects, { filter: { id: { eq: projectId } } }, apiToken);
+    return response?.data?.data?.projects as Project | null;
   }
 
   getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
@@ -137,7 +137,7 @@ export class FilterCandidates {
     return mostRecentMessageArr?.filter((message) => 'content' in message) || [];
   }
 
-  async getJobIdsFromCandidateIds(
+  async getProjectIdsFromCandidateIds(
     candidateIds: string[],
     apiToken: string,
   ): Promise<string[]> {
@@ -146,14 +146,14 @@ export class FilterCandidates {
     return Promise.all(
       candidateIds.map((candidateId) =>
         this.fetchCandidateByCandidateId(candidateId, apiToken).then(
-          (candidate) => candidate?.jobs?.id,
+          (candidate) => candidate?.projects?.id,
         ),
       ),
     );
   }
 
   async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindScheduledClientMeetings, { filter: { jobId: { in: [job_id] } } }, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindScheduledClientMeetings, { filter: { projectId: { in: [job_id] } } }, apiToken);
 
     console.log( 'This is the response from fetchScheduledClientMeetings:', response.data.data, );
     return response?.data?.data?.clientMeetings as {
@@ -168,7 +168,7 @@ export class FilterCandidates {
   ): Promise<CandidateNode> {
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
-      const candidates = response?.data?.data?.candidates as { 
+      const candidates = response?.data?.data?.candidates as {
         edges: CandidatesEdge[];
         pageInfo: PageInfo;
       } | undefined;
@@ -196,7 +196,7 @@ export class FilterCandidates {
       let hasNextPage = true;
       while (hasNextPage) {
         const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, { filter: { id: { in: peopleIds } }, limit: 400, lastCursor }, apiToken);
-        const people = response?.data?.data?.people as { 
+        const people = response?.data?.data?.people as {
           edges: PersonEdge[];
           pageInfo: PageInfo;
         } | undefined;
@@ -225,7 +225,7 @@ export class FilterCandidates {
     candidateId: string,
     apiToken: string,
   ): Promise<MessageNode[]> {
-    
+
     let allWhatsappMessages: MessageNode[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
@@ -251,8 +251,8 @@ export class FilterCandidates {
           filter: { candidateId: { in: [candidateId] } },
           orderBy: [{ position: 'DescNullsFirst' }],
         }, apiToken);
-        
-        const whatsappMessages = response?.data?.data?.whatsappMessages as { 
+
+        const whatsappMessages = response?.data?.data?.whatsappMessages as {
           edges: WhatsAppMessagesEdge[];
           pageInfo: PageInfo;
         } | undefined;
@@ -267,7 +267,7 @@ export class FilterCandidates {
         );
 
         allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
-        
+
         // Validate pageInfo before using it
         if (!whatsappMessages.pageInfo) {
           console.warn('No pageInfo in response, breaking pagination');
@@ -286,7 +286,7 @@ export class FilterCandidates {
         lastCursor = newCursor;
         hasNextPage = newHasNextPage;
         pageCount++;
-        
+
       } catch (error) {
         hasNextPage = false;
         console.error('Error fetching whatsappmessages:', error);
@@ -302,11 +302,11 @@ export class FilterCandidates {
   }
 
 
-  async getInterviewByJobId(jobId: string, apiToken: string) {
+  async getInterviewByProjectId(projectId: string, apiToken: string) {
     try {
-      console.log('jobId::', jobId);
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindVideoInterviewTemplatesByJobId, {
-        filter: { jobId: { in: [jobId] } },
+      console.log('projectId::', projectId);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindVideoInterviewTemplatesByProjectId, {
+        filter: { projectId: { in: [projectId] } },
         orderBy: [{ position: 'AscNullsFirst' }],
       }, apiToken);
 
@@ -314,12 +314,12 @@ export class FilterCandidates {
       console.log('This is the responsedata.data:', response.data.data);
       console.log(
         'This is the videoInterviewTemplates:',
-        response?.data?.data?.videoInterviewTemplates as { 
+        response?.data?.data?.videoInterviewTemplates as {
           edges: ClientInterviewEdge[];
           pageInfo: PageInfo;
         } | undefined,
       );
-      const videoInterviewTemplates = response?.data?.data?.videoInterviewTemplates as { 
+      const videoInterviewTemplates = response?.data?.data?.videoInterviewTemplates as {
         edges: ClientInterviewEdge[];
         pageInfo: PageInfo;
       } | undefined;
@@ -369,7 +369,7 @@ export class FilterCandidates {
       console.log('Going to get person details by phone number');
 
       const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
-      const people = response?.data?.data?.people as { 
+      const people = response?.data?.data?.people as {
         edges: PersonEdge[];
         pageInfo: PageInfo;
       } | undefined;
@@ -546,7 +546,7 @@ export class FilterCandidates {
   ): CandidatesEdge | undefined {
     return candidateEdges
       .filter((edge: CandidatesEdge) => {
-        const isActive = edge?.node?.jobs?.isActive;
+        const isActive = edge?.node?.projects?.isActive;
         const hasStartChat = edge?.node?.startChat;
         const isStopped = edge?.node?.stopChat;
 
@@ -574,7 +574,7 @@ export class FilterCandidates {
     userMessage: chatMessageType,
   ): CandidateNode {
     const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
-    const activeJob: Job = activeJobCandidate?.jobs as Job;
+    const activeJob: Project = activeJobCandidate?.projects as Project;
     const activeCompany = activeJob?.company;
     const candidatePhone =
       activeJobCandidate?.phoneNumber?.primaryPhoneNumber || '';
@@ -590,7 +590,7 @@ export class FilterCandidates {
       id: activeJobCandidate?.id,
       attachments: activeJobCandidate?.attachments,
       whatsappProvider: activeJobCandidate?.whatsappProvider,
-      jobs: {
+      projects: {
         name: activeJob?.name || '',
         id: activeJob?.id,
         recruiterId: activeJob?.recruiterId,
@@ -768,23 +768,25 @@ export class FilterCandidates {
     }
   }
 
-  async fetchQuestionsByJobId(
-    jobId: string,
+  async fetchQuestionsByProjectId(
+    projectId: string,
     apiToken: string,
   ): Promise<{
     questionIdArray: { questionId: string; question: string; questionKey: string }[] | undefined;
     questionArray: string[];
   }> {
-    console.log('Going to fetch questions for job id:', jobId);
+    console.log('Going to fetch questions for job id:', projectId);
 
     const jobResponse = await this.staticGraphQLService.executeGraphQL(
-      FindOneJob,
-      { objectRecordId: jobId },
+      FindOneProject,
+      { objectRecordId: projectId },
       apiToken,
     );
 
-    const chatQuestions = Array.isArray(jobResponse?.data?.data?.job?.chatQuestions)
-      ? jobResponse.data.data.job.chatQuestions.filter((question: string) => question?.trim())
+    const projectNode =
+      jobResponse?.data?.data?.project ?? jobResponse?.data?.data?.job;
+    const chatQuestions = Array.isArray(projectNode?.chatQuestions)
+      ? projectNode.chatQuestions.filter((question: string) => question?.trim())
       : [];
 
     if (chatQuestions.length > 0) {

@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
 
-import {
-    getProxiedImageUrl,
-    type OrgChartNodeData,
-    processOrgChartToNodeData,
-} from 'twenty-shared';
+import { getProxiedImageUrl, processOrgChartToNodeData, type OrgChartData, type OrgChartNodeData } from 'twenty-shared/utils';
 
 const readImageFromRawCandidate = (
   raw?: Record<string, unknown>,
@@ -101,7 +97,9 @@ export const useOrgChartNodeDataArray = ({
 }): OrgChartNodeData[] => {
   return useMemo(() => {
     if (!orgData) return [];
-    const base = sanitizeTreeNodeDataArray(processOrgChartToNodeData(orgData));
+    const base = sanitizeTreeNodeDataArray(
+      processOrgChartToNodeData(orgData as OrgChartData),
+    );
     const apiBase = baseUrl.replace(/\/$/, '');
     const rewriteImage = (url: string) => getProxiedImageUrl(url, apiBase);
 

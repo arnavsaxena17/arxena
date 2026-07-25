@@ -4,7 +4,7 @@ import {
   type CalendarChannelVisibility,
 } from '~/generated/graphql';
 import { useCallback } from 'react';
-import { type AppPath, ConnectedAccountProvider } from 'twenty-shared/types';
+import { ConnectedAccountProvider, type AppPath } from 'twenty-shared/types';
 
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { CustomError } from 'twenty-shared/utils';

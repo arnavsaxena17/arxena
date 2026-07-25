@@ -1,37 +1,35 @@
-import { MenuItem } from 'twenty-ui';
-import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icons';
+import { MenuItem } from 'twenty-ui/navigation';
+import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icon';
 import { Trans } from '@lingui/react/macro';
 import { useId } from 'react';
 
 import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
-import { DROPDOWN_OFFSET_Y } from '@/dropdown/constants/DropdownOffsetY';
-import { DROPDOWN_WIDTH } from '@/dropdown/constants/DropdownWidth';
+import { DROPDOWN_OFFSET_Y } from '@/ui/layout/dropdown/constants/DropdownOffsetY';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { StyledHeaderDropdownButton } from '@/ui/layout/dropdown/components/StyledHeaderDropdownButton';
-import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
-import {
-    IconFileDescription,
-} from 'twenty-ui/icons';
+import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
+import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 
-// Define your specific actions here
 const handleCreateEnrichments = () => {
   console.log('Action: Create Enrichments');
-  // TODO: Implement action
 };
 
 const handleUploadCV = () => {
   console.log('Action: Upload CV');
-  // TODO: Implement action
 };
 
 const handleCreateVideoInterview = () => {
   console.log('Action: Create Video Interview');
-  // TODO: Implement action
 };
 
 export const ChatOptionsDropdownButton = () => {
-  const dropdownId = useId(); // Generate a unique ID
-  const { isDropdownOpen } = useDropdown(dropdownId);
+  const dropdownId = useId();
+  const isDropdownOpen = useAtomComponentStateValue(
+    isDropdownOpenComponentState,
+    dropdownId,
+  );
   const { openUploadJDModal } = useArxUploadJDModal();
 
   const handleUploadJD = () => {
@@ -41,8 +39,7 @@ export const ChatOptionsDropdownButton = () => {
   return (
     <Dropdown
       dropdownId={dropdownId}
-      dropdownHotkeyScope={{ scope: 'ChatOptionsDropdown' }} // Placeholder scope
-      dropdownMenuWidth={DROPDOWN_WIDTH}
+      dropdownStrategy="fixed"
       dropdownOffset={{ y: DROPDOWN_OFFSET_Y }}
       clickableComponent={
         <StyledHeaderDropdownButton isUnfolded={isDropdownOpen}>
@@ -50,7 +47,7 @@ export const ChatOptionsDropdownButton = () => {
         </StyledHeaderDropdownButton>
       }
       dropdownComponents={
-        <>
+        <DropdownContent widthInPixels={GenericDropdownContentWidth.Medium}>
           <MenuItem
             onClick={handleCreateEnrichments}
             text={<Trans>Create Enrichments</Trans>}
@@ -59,7 +56,7 @@ export const ChatOptionsDropdownButton = () => {
           <MenuItem
             onClick={handleUploadJD}
             text={<Trans>Upload JD</Trans>}
-            LeftIcon={IconFileDescription}
+            LeftIcon={IconFileText}
           />
           <MenuItem
             onClick={handleUploadCV}
@@ -71,8 +68,8 @@ export const ChatOptionsDropdownButton = () => {
             text={<Trans>Create Video Interview</Trans>}
             LeftIcon={IconVideo}
           />
-        </>
+        </DropdownContent>
       }
     />
   );
-}; 
+};

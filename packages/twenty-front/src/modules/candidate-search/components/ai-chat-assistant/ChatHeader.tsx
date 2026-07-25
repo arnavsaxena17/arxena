@@ -1,42 +1,45 @@
 import { Toggle } from 'twenty-ui';
-import { IconAlertCircle, IconDotsVertical, IconFile, IconTrash, IconUpload, IconX } from 'twenty-ui/icons';
+import { IconAlertCircle, IconDotsVertical, IconFile, IconTrash, IconUpload, IconX } from 'twenty-ui/icon';
 import type { AssistantThreadSummary } from '@/arx-jd-upload/types/ParsedJD';
 import { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { LinkedInSearchType } from 'twenty-shared';
+import { LinkedInSearchType } from '@/candidate-search/types/candidate-search.types';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledPanelHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.primary};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.primary};
 `;
 
 const StyledHeaderContent = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledPanelTitle = styled.h3`
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const StyledCurrentFilterBadge = styled.div`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.transparent.light};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.transparent.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -46,27 +49,27 @@ const StyledCurrentFilterBadge = styled.div`
 const StyledClearButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledHeaderActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledDropdownContainer = styled.div`
@@ -76,39 +79,39 @@ const StyledDropdownContainer = styled.div`
 const StyledMenuButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledStopButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.color.red};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.color.red};
-  color: ${({ theme }) => theme.font.color.inverted};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.color.red};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.color.red};
+  color: ${themeCssVariables.font.color.inverted};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.red50};
-    border-color: ${({ theme }) => theme.color.red50};
+    background-color: ${themeCssVariables.color.red5};
+    border-color: ${themeCssVariables.color.red5};
   }
   
   &:disabled {
@@ -119,11 +122,11 @@ const StyledStopButton = styled.button`
 
 const StyledMenuDropdown = styled.div`
   position: absolute;
-  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  top: calc(100% + ${themeCssVariables.spacing[1]});
   right: 0;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 220px;
   max-height: 400px;
@@ -132,8 +135,8 @@ const StyledMenuDropdown = styled.div`
 `;
 
 const StyledMenuSection = styled.div`
-  padding: ${({ theme }) => theme.spacing(1)} 0;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing[1]} 0;
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   
   &:last-child {
     border-bottom: none;
@@ -141,30 +144,30 @@ const StyledMenuSection = styled.div`
 `;
 
 const StyledMenuSectionTitle = styled.div`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
 
 const StyledMenuAction = styled.button<{ danger?: boolean; active?: boolean }>`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
   border: none;
-  background-color: ${({ theme, active }) => active ? theme.background.transparent.light : 'transparent'};
+  background-color: ${({ active }) => active ? themeCssVariables.background.transparent.light : 'transparent'};
   text-align: left;
-  color: ${({ theme, danger }) => danger ? theme.color.red : theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${({ danger }) => danger ? themeCssVariables.color.red : themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing['1.5']};
   transition: background-color 0.15s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
   
   &:disabled {
@@ -174,28 +177,28 @@ const StyledMenuAction = styled.button<{ danger?: boolean; active?: boolean }>`
 `;
 
 const StyledStatusItem = styled.div<{ warning?: boolean; maxed?: boolean }>`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme, warning, maxed }) => {
-    if (maxed) return theme.color.red;
-    if (warning) return theme.color.orange;
-    return theme.font.color.secondary;
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${({ warning, maxed }) => {
+    if (maxed) return themeCssVariables.color.red;
+    if (warning) return themeCssVariables.color.orange;
+    return themeCssVariables.font.color.secondary;
   }};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledJDBadge = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.transparent.light};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing['1.5']};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.transparent.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: default;
 `;
 
@@ -209,11 +212,11 @@ const StyledJDName = styled.span`
 const StyledJDToggleSection = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding-left: ${({ theme }) => theme.spacing(1.5)};
-  border-left: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding-left: ${themeCssVariables.spacing['1.5']};
+  border-left: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 type ChatHeaderProps = {
@@ -264,16 +267,16 @@ export const ChatHeader = ({
   } | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const menuDropdownRef = useRef<HTMLDivElement>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
 
   // Fetch LinkedIn request status
   useEffect(() => {
     const fetchStatus = async () => {
       try {
         setIsLoadingStatus(true);
-        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
+        const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
           headers: { 
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`, 
             'Content-Type': 'application/json',
           },
         });
@@ -365,7 +368,7 @@ export const ChatHeader = ({
         : parsedJD.name;
       return displayName.length > 25 ? `${displayName.substring(0, 22)}...` : displayName;
     }
-    return 'Job Description';
+    return 'Project Description';
   };
 
   return (
@@ -373,7 +376,7 @@ export const ChatHeader = ({
       <StyledHeaderContent>
         {/* <StyledPanelTitle>{title}</StyledPanelTitle> */}
         {parsedJD && (
-          <StyledJDBadge title={jdFileName || parsedJD.name || 'Job Description'}>
+          <StyledJDBadge title={jdFileName || parsedJD.name || 'Project Description'}>
             <IconFile size={14} />
             <StyledJDName>{getJDDisplayName()}</StyledJDName>
             {onIncludeJDChange && (
@@ -469,7 +472,7 @@ export const ChatHeader = ({
               )}
               {hasJD && (
                 <StyledMenuSection>
-                  <StyledMenuSectionTitle>Job Description</StyledMenuSectionTitle>
+                  <StyledMenuSectionTitle>Project Description</StyledMenuSectionTitle>
                   <StyledMenuAction onClick={handleJDReplaceClick} disabled={isUploading}>
                     <IconUpload size={16} />
                     Replace JD

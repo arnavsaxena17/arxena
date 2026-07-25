@@ -1,5 +1,5 @@
-import { Loader } from 'twenty-ui';
-import { IconPlus, IconX } from 'twenty-ui/icons';
+import { Loader } from 'twenty-ui/feedback';
+import { IconPlus, IconX } from 'twenty-ui/icon';
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
@@ -18,25 +18,36 @@ import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-sto
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-import { useSetRecoilComponentStateV2 } from '@/ui/utilities/state/component-state/hooks/useSetRecoilComponentStateV2';
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { HotTable } from '@handsontable/react-wrapper';
 import axios from 'axios';
 import Handsontable from 'handsontable';
-import { CellChange, ChangeSource } from 'handsontable/common';
+import { type CellChange, type ChangeSource } from 'handsontable';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledTableWrapper = styled.div`
   position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-height: 0;
 `;
 
 const StyledTableContainer = styled.div`
   width: 100%;
+  flex: 1;
   height: 100%;
+  min-height: 0;
   overflow: auto;
   position: relative;
   .handsontable {
@@ -71,12 +82,12 @@ const StyledTableContainer = styled.div`
 
   /* Style for selected rows */
   .handsontable tr.selected-row td {
-    background-color: ${({ theme }) => theme.background.tertiary} !important;
+    background-color: ${themeCssVariables.background.tertiary} !important;
   }
 
   /* Ensure selected row style persists on hover */
   .handsontable tr.selected-row:hover td {
-    background-color: ${({ theme }) => theme.background.tertiary} !important;
+    background-color: ${themeCssVariables.background.tertiary} !important;
   }
 `;
 
@@ -85,9 +96,9 @@ const StyledLoadingContainer = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: ${({ theme }) => theme.spacing(4)};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  padding: ${themeCssVariables.spacing[4]};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledErrorContainer = styled.div`
@@ -95,9 +106,9 @@ const StyledErrorContainer = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: ${({ theme }) => theme.spacing(4)};
-  color: ${({ theme }) => theme.color.red};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  padding: ${themeCssVariables.spacing[4]};
+  color: ${themeCssVariables.color.red};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledEmptyContainer = styled.div`
@@ -106,9 +117,9 @@ const StyledEmptyContainer = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: ${({ theme }) => theme.spacing(4)};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  padding: ${themeCssVariables.spacing[4]};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledEmptyIcon = styled.div`
@@ -117,10 +128,10 @@ const StyledEmptyIcon = styled.div`
   justify-content: center;
   width: 48px;
   height: 48px;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  background-color: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledEmptyIconButton = styled.button`
@@ -129,57 +140,57 @@ const StyledEmptyIconButton = styled.button`
   justify-content: center;
   width: 48px;
   height: 48px;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   border: none;
   padding: 0;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  background-color: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
 
   &:hover {
-    color: ${({ theme }) => theme.font.color.secondary};
-    background-color: ${({ theme }) => theme.background.secondary};
+    color: ${themeCssVariables.font.color.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.blue};
+    outline: 2px solid ${themeCssVariables.color.blue};
     outline-offset: 2px;
   }
 `;
 
 const StyledEmptyTitle = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-bottom: ${themeCssVariables.spacing[1]};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledEmptyDescription = styled.div`
-  font-size: ${({ theme }) => theme.font.size.md};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
+  color: ${themeCssVariables.font.color.tertiary};
   text-align: center;
   max-width: 300px;
 `;
 
 const StyledFilterBadge = styled.div`
   position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
-  left: ${({ theme }) => theme.spacing(2)};
+  top: ${themeCssVariables.spacing[2]};
+  left: ${themeCssVariables.spacing[2]};
   display: flex;
   align-items: center;
-  background-color: ${({ theme }) => theme.background.secondary};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background-color: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
   z-index: 102;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledControlsContainer = styled.div`
   position: absolute;
-  top: ${({ theme }) => theme.spacing(2)};
-  right: ${({ theme }) => theme.spacing(2)};
+  top: ${themeCssVariables.spacing[2]};
+  right: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   z-index: 102;
   max-width: 400px;
 `;
@@ -192,14 +203,14 @@ const StyledClearButton = styled.button`
   border: none;
   cursor: pointer;
   padding: 0;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   &:hover {
-    color: ${({ theme }) => theme.font.color.secondary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 `;
 
 interface DataTableProps {
-    jobId: string;
+    projectId: string;
     onImportCandidatesClick?: () => void;
 }
 
@@ -213,52 +224,52 @@ type ColumnRenderer = (
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ jobId, onImportCandidatesClick }, ref) => {
+export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ projectId, onImportCandidatesClick }, ref) => {
     const tableRef = useRef<any>(null);
-    const tableState = useRecoilValue(tableStateAtom);
-    const setTableState = useSetRecoilState(tableStateAtom);
-    const setFilteredCount = useSetRecoilState(filteredCandidatesCountState);
-    const [tokenPair] = useRecoilState(tokenPairState);
+    const tableState = useAtomStateValue(tableStateAtom);
+    const setTableState = useSetAtomState(tableStateAtom);
+    const setFilteredCount = useSetAtomState(filteredCandidatesCountState);
+    const [tokenPair] = useAtomState(tokenPairState);
     const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
-    const processedData = useRecoilValue(processedDataSelector);
-    const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
-    const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
-    const getCandidateState = useRecoilValue(candidateStateSelector);
-    const customEnrichments = useRecoilValue(enrichmentsState);
-    const sampleEnrichments = useRecoilValue(sampleEnrichmentsState);
-    const selectedStatus = useRecoilValue(selectedConversationStatusState);
-    const setSelectedStatus = useSetRecoilState(selectedConversationStatusState);
-    const setDataTableRefreshFunction = useSetRecoilState(dataTableRefreshFunctionState);
-    const setDataTableApplySortsFunction = useSetRecoilState(dataTableApplySortsFunctionState);
+    const processedData = useAtomStateValue(processedDataSelector);
+    const [searchResults, setSearchResults] = useAtomState(searchResultsState);
+    const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
+    const getCandidateState = useAtomStateValue(candidateStateSelector);
+    const customEnrichments = useAtomStateValue(enrichmentsState);
+    const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
+    const selectedStatus = useAtomStateValue(selectedConversationStatusState);
+    const setSelectedStatus = useSetAtomState(selectedConversationStatusState);
+    const setDataTableRefreshFunction = useSetAtomState(dataTableRefreshFunctionState);
+    const setDataTableApplySortsFunction = useSetAtomState(dataTableApplySortsFunctionState);
     const { showNotification } = useNotification();
-    
+
     // Pagination state
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    
+
     // Helper function for consistent deduplication of search results
     const deduplicateSearchResults = useCallback((results: any[]): any[] => {
       const seen = new Map<string, any>();
       const deduplicated: any[] = [];
-      
+
       for (const result of results) {
         // Use consistent ID: tempId || id (same as addSearchResults)
         const resultId = result.tempId || result.id;
         if (!resultId) continue;
-        
+
         if (!seen.has(resultId)) {
           seen.set(resultId, result);
           deduplicated.push(result);
         }
       }
-      
+
       return deduplicated;
     }, []);
-    
+
     // Merge database candidates with search results
     // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
     const mergedData = useMemo(() => {
       // In contexts like Assistant, processedData can be empty even though
-      // rawData (from get-candidates-by-job-id) has candidates. In that case,
+      // rawData (from get-candidates-by-project-id) has candidates. In that case,
       // fall back to using rawData as the base dataset.
       const baseProcessedData =
         processedData.length > 0 ? processedData : (tableState.rawData ?? []);
@@ -274,7 +285,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         firstSearchResult: searchResults[0],
         firstProcessedData: processedData[0]
       });
-      
+
       // Deduplicate when merging: baseProcessedData (saved/raw candidates) takes priority
       // Create a set of all unique identifiers from baseProcessedData
       const processedDataIds = new Set<string>();
@@ -284,23 +295,23 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           processedDataIds.add(candidateId);
         }
       });
-      
+
       // Filter searchResults to exclude any that are already in processedData
       const uniqueSearchResults = searchResults.filter((candidate: any) => {
         const candidateId = candidate.tempId || candidate.id;
         return !candidateId || !processedDataIds.has(candidateId);
       });
-      
+
       // Merge with processedData first (saved candidates), then unique searchResults
       const mergedData = [...baseProcessedData, ...uniqueSearchResults];
-      
+
       // Also deduplicate within each array to be safe
       const deduplicatedMergedData = deduplicateSearchResults(mergedData);
-      
+
       if (deduplicatedMergedData.length !== mergedData.length) {
         console.log(`Deduplicated mergedData: ${mergedData.length} -> ${deduplicatedMergedData.length} (removed ${mergedData.length - deduplicatedMergedData.length} duplicates)`);
       }
-      
+
       console.log("mergedData total count:", deduplicatedMergedData.length);
       console.log("mergedData sample (first 2):", deduplicatedMergedData.slice(0, 2));
       return deduplicatedMergedData;
@@ -319,26 +330,26 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }, []);
     }, [customEnrichments, sampleEnrichments]);
 
-    const columns = useRecoilValue(columnsSelector);
-    const searchQuery = useRecoilValue(chatSearchQueryState);
-    const setSearchQuery = useSetRecoilState(chatSearchQueryState);
+    const columns = useAtomStateValue(columnsSelector);
+    const searchQuery = useAtomStateValue(chatSearchQueryState);
+    const setSearchQuery = useSetAtomState(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
-    const setContextStoreTargetedRecordsRule = useSetRecoilComponentStateV2(
+    const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
       contextStoreTargetedRecordsRuleComponentState,
-      jobId
+      projectId
     );
-    const setContextStoreNumberOfSelectedRecords = useSetRecoilComponentStateV2(
+    const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
       contextStoreNumberOfSelectedRecordsComponentState,
-      jobId
+      projectId
     );
-    const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
-    const setUnreadMessagesCounts = useSetRecoilState(unreadMessagesCountsState);
+    const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
+    const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
 
     // Guard to prevent sort/apply loops
     const isApplyingSortRef = useRef(false);
     // Store sortConfig in ref to avoid recreating refreshData callback
     const sortConfigRef = useRef<SortConfig[]>(tableState.sortConfig);
-    
+
     // Sync ref with state on mount and when state changes externally
     useEffect(() => {
       sortConfigRef.current = tableState.sortConfig;
@@ -374,7 +385,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             console.log('Skip sort: already applied');
             return;
           }
-          
+
           // Register custom sorting functions for enum columns
           const columns = hot.getSettings().columns;
           sortConfig.forEach(sortItem => {
@@ -388,11 +399,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               }
             }
           });
-          
+
           console.log("Multi-column sorting plugin found, applying sort");
           isApplyingSortRef.current = true;
           multiColumnSortingPlugin.sort(sortConfig);
-          
+
           // Verify the sort was applied
           setTimeout(() => {
             const currentSortConfig = multiColumnSortingPlugin.getSortConfig();
@@ -430,17 +441,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }));
     }, [setTableState]);
     // const searchPlanFilters = useSearchPlanFilters();
-    
+
     const filteredData = useMemo(() => {
       let filtered = mergedData;
-      
+
       // Apply status filter if selected
       if (selectedStatus) {
-        filtered = filtered.filter((candidate: any) => 
+        filtered = filtered.filter((candidate: any) =>
           candidate.candConversationStatus === selectedStatus
         );
       }
-      
+
       // Apply search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -470,7 +481,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Check if this candidate is selected
         // Note: selectedRowIds now contains permanent IDs when available
         const isSelected = candidateId ? tableState.selectedRowIds.includes(candidateId) : false;
-        
+
         return {
           ...candidate,
           isEditable: true,
@@ -478,18 +489,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         };
       });
     }, [filteredData, tableState.selectedRowIds]);
-  
+
     // const keyDownHandler = (event: KeyboardEvent) => {
     //   handleKeyDown(event, tableRef, tableState, setTableState);
     // };
 
     // Create a function to get the latest token
     const getLatestToken = useCallback(() => {
-      return tokenPair?.accessToken?.token;
+      return tokenPair?.accessOrWorkspaceAgnosticToken?.token;
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, jobId, getLatestToken, setTableState, setSelectedCandidateId, refreshData, tableState.rawData);
+      afterChange( tableRef, changes, source, projectId, getLatestToken, setTableState, setSelectedCandidateId, refreshData, tableState.rawData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
@@ -498,17 +509,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // }
 
     const refreshData = useCallback(async (specificIds?: string[]) => {
-      if (!jobId || jobId === "job-id" || jobId === '__search__') return;
+      if (!projectId || projectId === 'project-id' || projectId === '__search__') return;
       try {
-        const requestBody = specificIds?.length 
-          ? { jobId, candidateIds: specificIds }
-          : { jobId };
+        const requestBody = specificIds?.length
+          ? { projectId, candidateIds: specificIds }
+          : { projectId };
 
         console.log("This is the request body in refreshData::::", requestBody);
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-job-id`,
+          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-project-id`,
           requestBody,
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+          { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
         );
         const rawData = response.data;
         const unreadMessagesCounts: Record<string, number> = {};
@@ -519,7 +530,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             ?.length || 0;
           unreadMessagesCounts[candidate.id] = unreadCount;
         });
-        
+
         if (specificIds?.length) {
           setTableState(prev => {
             console.log("Partial refresh in refreshData", rawData);
@@ -533,8 +544,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 updatedRawData.push(newData);
               }
             }
-            return { 
-              ...prev, 
+            return {
+              ...prev,
               rawData: updatedRawData,
             };
           });
@@ -548,7 +559,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }));
           setUnreadMessagesCounts(unreadMessagesCounts);
           setSelectedCandidateId(null);
-          
+          setFilteredCount(Array.isArray(rawData) ? rawData.length : 0);
+
           // Clear context store states when clearing selected rows
           setContextStoreNumberOfSelectedRecords(0);
           setContextStoreTargetedRecordsRule({
@@ -579,7 +591,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                     }
                   }
                 });
-                
+
                 isApplyingSortRef.current = true;
                 multiColumnSortingPlugin.sort(currentSortConfig);
                 setTimeout(() => { isApplyingSortRef.current = false; }, 50);
@@ -591,7 +603,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Show notification using the new system
         // await showNotification({
         //   title: 'Data Refreshed',
-        //   body: specificIds?.length 
+        //   body: specificIds?.length
         //     ? `Successfully refreshed data for ${specificIds.length} candidates`
         //     : 'Successfully refreshed all candidate data',
         //   icon: '/favicon.ico'
@@ -605,25 +617,26 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         });
         setUnreadMessagesCounts({});
         setSelectedCandidateId(null);
+        throw error;
       }
-    }, [jobId, setTableState, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId]);
-    
+    }, [projectId, setTableState, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCount]);
+
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
-      
+
       console.log('Removing filter for column:', columnIndex);
-      
+
       // Get the filters plugin
       const filtersPlugin = hot.getPlugin('filters');
-      
+
       // Remove conditions for the specific column
       filtersPlugin.removeConditions(columnIndex);
-      
+
       // Reapply filters to update the table display
       filtersPlugin.filter();
-      
+
       console.log('Filter removal completed');
     }, []);
 
@@ -631,14 +644,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const clearAllFilters = useCallback(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
-      
+
       console.log('Clearing all filters');
-      
+
       const filtersPlugin = hot.getPlugin('filters');
       filtersPlugin.clearConditions();
       filtersPlugin.filter();
       setSearchQuery('');
-      
+
       console.log('All filters cleared');
     }, [setSearchQuery]);
 
@@ -646,37 +659,37 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const clearAllSorts = useCallback(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
-      
+
       console.log('Clearing all sorts');
-      
+
       const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
       if (multiColumnSortingPlugin) {
         multiColumnSortingPlugin.clearSort();
       }
-      
+
       // Clear sort config from state
       sortConfigRef.current = [];
       setTableState(prev => ({
         ...prev,
         sortConfig: []
       }));
-      
+
       console.log('All sorts cleared');
     }, [setTableState]);
 
     // Method to clear all filters and sorts
     const clearAllFiltersAndSorts = useCallback(() => {
       console.log('Clearing all filters and sorts');
-      
+
       // Clear filters
       clearAllFilters();
-      
+
       // Clear sorts
       clearAllSorts();
-      
+
       // Clear selected conversation status
       setSelectedStatus(null);
-      
+
       console.log('All filters, sorts, and search cleared');
     }, [clearAllFilters, clearAllSorts, setSelectedStatus]);
 
@@ -688,19 +701,19 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         console.warn('Cannot apply sorts: Hot instance not available or invalid sorts data');
         return;
       }
-      
+
       console.log('Applying generated sorts:', sorts);
-      
+
       // Convert column names to column indices
       const sortConfig: SortConfig[] = [];
       const columns = hot.getSettings().columns;
-      
+
       sorts.sortStrategy.sortColumns.forEach((sortColumn: any) => {
         // Find the column index by matching the column name
-        const columnIndex = columns?.findIndex((col: any) => 
+        const columnIndex = columns?.findIndex((col: any) =>
           col.data === sortColumn.column || col.title === sortColumn.column
         );
-        
+
         if (columnIndex !== undefined && columnIndex >= 0) {
           sortConfig.push({
             column: columnIndex,
@@ -708,16 +721,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           });
           console.log(`Mapped column "${sortColumn.column}" to index ${columnIndex} with order ${sortColumn.sortOrder}`);
         } else {
-          console.warn(`Column "${sortColumn.column}" not found in table columns. Available columns:`, 
+          console.warn(`Column "${sortColumn.column}" not found in table columns. Available columns:`,
             columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
         }
       });
-      
+
       if (sortConfig.length > 0) {
         console.log('Converted sort config:', sortConfig);
         handleSortChange(sortConfig);
       } else {
-        console.warn('No valid sort columns found. Available columns:', 
+        console.warn('No valid sort columns found. Available columns:',
           columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
       }
     }, [handleSortChange]);
@@ -729,14 +742,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         isLoadingMore,
         pagesToLoad,
       });
-      
+
       if (!searchMetadata.cursor || isLoadingMore) return;
 
       setIsLoadingMore(true);
 
       try {
         console.log(`Loading ${pagesToLoad} more pages of candidates...`);
-        
+
         // Create proper request body with the original search parameters
         const requestBody = {
           filePath: 'standalone_search', // Default file path for pagination
@@ -754,14 +767,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         console.log('Load more request body:', requestBody);
         console.log('Current cursor being sent:', searchMetadata.cursor);
         console.log('Current search results count:', searchResults.length);
-        
+
         // Make API call to load more search results
         const response = await axios.post(
           getCandidateSearchFromFileUrl(),
           requestBody,
-          { 
-            headers: { 
-              'Authorization': `Bearer ${tokenPair?.accessToken?.token}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
               'Content-Type': 'application/json'
             },
             params: {
@@ -791,14 +804,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           console.error('No search results or transformed candidates returned from API:', response.data);
           throw new Error('No search results returned');
         }
-        
+
         console.log('API response details:', {
           newResultsCount: newResults.length,
           nextCursor: nextCursor,
           paging: paging,
           newResults: newResults.slice(0, 3) // Log first 3 results for debugging
         });
-        
+
         // Check if LinkedIn API returned empty results
         if (newResults.length === 0) {
           console.warn('LinkedIn API returned 0 results. This could mean:');
@@ -807,7 +820,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           console.warn('3. LinkedIn API is having issues');
           console.warn('Current cursor:', searchMetadata.cursor);
           console.warn('Next cursor:', nextCursor);
-          
+
           // If no results and no next cursor, we've reached the end
           if (!nextCursor) {
             console.log('No next cursor available - reached end of results');
@@ -819,7 +832,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             return;
           }
         }
-        
+
         // Deduplicate new results against existing ones
         // Use consistent ID field: tempId || id (same as addSearchResults)
         const existingIds = new Set(searchResults.map((r: any) => r.tempId || r.id));
@@ -827,19 +840,19 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           const resultId = result.tempId || result.id;
           return resultId && !existingIds.has(resultId);
         });
-        
+
         console.log('Deduplication details:', {
           existingIdsCount: existingIds.size,
           uniqueNewResultsCount: uniqueNewResults.length,
           duplicateCount: newResults.length - uniqueNewResults.length
         });
-        
+
         // Check if all new results are duplicates
         if (newResults.length > 0 && uniqueNewResults.length === 0) {
           console.warn('All new results are duplicates! This suggests the LinkedIn API is returning the same results.');
           console.log('First few new result IDs:', newResults.slice(0, 3).map((r: any) => r.id));
           console.log('First few existing result IDs:', Array.from(existingIds).slice(0, 3));
-          
+
           // LinkedIn API cursor issue - it's returning the same results
           // Clear the cursor to prevent further attempts
           const updatedMetadata = {
@@ -848,10 +861,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             cursor: undefined, // Clear cursor since it's not working
             totalCount: paging?.total_count || searchMetadata.totalCount,
           };
-          
+
           setSearchMetadata(updatedMetadata);
-          persistSearchMetadataToStorage(updatedMetadata, jobId, {
-            accessToken: tokenPair?.accessToken?.token,
+          persistSearchMetadataToStorage(updatedMetadata, projectId, {
+            accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
             results: searchResults,
           });
 
@@ -862,7 +875,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           });
           return;
         }
-        
+
         // Update search results state with concatenated data
         console.log('Before updating searchResults:', {
           prevCount: searchResults.length,
@@ -883,7 +896,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           });
           return deduplicated;
         });
-        
+
         // Update metadata
         const updatedMetadata = {
           ...searchMetadata,
@@ -891,7 +904,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           cursor: nextCursor, // This will be null if we've reached the end
           totalCount: paging?.total_count || searchMetadata.totalCount,
         };
-        
+
         console.log('Updating metadata:', {
           oldCursor: searchMetadata.cursor,
           newCursor: nextCursor,
@@ -899,15 +912,15 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           newPage: updatedMetadata.currentPage,
           totalCount: updatedMetadata.totalCount
         });
-        
+
         setSearchMetadata(updatedMetadata);
-        persistSearchMetadataToStorage(updatedMetadata, jobId, {
-          accessToken: tokenPair?.accessToken?.token,
+        persistSearchMetadataToStorage(updatedMetadata, projectId, {
+          accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
           results: searchResults,
         });
 
         console.log(`Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`);
-        
+
         await showNotification({
           title: 'Load More Success',
           body: `Successfully loaded ${uniqueNewResults.length} more candidates`,
@@ -950,13 +963,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Use refs to store the latest functions to avoid recreating this effect
     const refreshDataRef = useRef(refreshData);
     const applyGeneratedSortsRef = useRef(applyGeneratedSorts);
-    
+
     // Update refs when functions change
     useEffect(() => {
       refreshDataRef.current = refreshData;
       applyGeneratedSortsRef.current = applyGeneratedSorts;
     }, [refreshData, applyGeneratedSorts]);
-    
+
     // Register functions only once on mount/unmount
     useEffect(() => {
       console.log('DataTable: Registering functions in global state');
@@ -989,23 +1002,23 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }
 
     const loadData = useCallback(async () => {
-      if (!jobId || jobId === "job-id" || jobId === '__search__') {
+      if (!projectId || projectId === 'project-id' || projectId === '__search__') {
         // For virtual job IDs (assistant search), ensure we're not stuck in a
         // loading state left over from a previous real-job DataTable render.
         setTableState(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
         return;
       }
-      
+
       try {
         setTableState(prev => ({ ...prev, isLoading: true }));
-        const requestBody = { jobId };
+        const requestBody = { projectId };
         console.log("This is the request body in loadData::::", requestBody);
         const response = await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-job-id`,
+          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-project-id`,
           requestBody,
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+          { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
         );
-        
+
         // Verify the response is valid
         const rawData = Array.isArray(response.data) ? response.data : [];
         console.log("This is raw data::", rawData);
@@ -1014,22 +1027,24 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         const unreadMessagesCounts: Record<string, number> = {};
         rawData.forEach(candidate => {
           if (!candidate || typeof candidate !== 'object') return;
-          
+
           const unreadCount = candidate?.whatsappMessages?.edges
             ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
             ?.length || 0;
-          
+
           if (candidate.id) {
             unreadMessagesCounts[candidate.id] = unreadCount;
           }
         });
-        
+
         setTableState(prev => ({
           ...prev,
           rawData,
           isLoading: false
         }));
         setUnreadMessagesCounts(unreadMessagesCounts);
+        // afterFilter only fires on Handsontable filter changes; sync count on load
+        setFilteredCount(rawData.length);
 
         // Reapply multi-column sorting after initial data load
         setTimeout(() => {
@@ -1053,7 +1068,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                     }
                   }
                 });
-                
+
                 isApplyingSortRef.current = true;
                 multiColumnSortingPlugin.sort(currentSortConfig);
                 setTimeout(() => { isApplyingSortRef.current = false; }, 50);
@@ -1063,34 +1078,35 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }, 100);
       } catch (error) {
         console.error('Failed to load candidate data:', error);
-        setTableState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
+        setTableState(prev => ({
+          ...prev,
+          isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
           rawData: [],
         }));
         setUnreadMessagesCounts({});
         setSelectedCandidateId(null);
+        setFilteredCount(0);
       }
-    }, [jobId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId]);
-  
+    }, [projectId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCount]);
 
-    // Load persisted search results and metadata from backend cache on mount or when jobId changes
+
+    // Load persisted search results and metadata from backend cache on mount or when projectId changes
     useEffect(() => {
-      // '__search__' is a virtual jobId used by the assistant for LinkedIn candidates;
+      // '__search__' is a virtual projectId used by the assistant for LinkedIn candidates;
       // searchResultsState is populated externally (by AssistantResultsPanel), so skip here.
-      if (jobId === '__search__') return;
-      if (!jobId || jobId === 'job-id') {
+      if (projectId === '__search__') return;
+      if (!projectId || projectId === 'project-id') {
         setSearchResults([]);
         setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
         return;
       }
       setSearchResults([]);
       setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
-      const accessToken = tokenPair?.accessToken?.token;
+      const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
       let cancelled = false;
-      fetchSearchResultsCache(jobId, accessToken).then((cached) => {
-        if (cancelled || !jobId || jobId === 'job-id') return;
+      fetchSearchResultsCache(projectId, accessToken).then((cached) => {
+        if (cancelled || !projectId || projectId === 'project-id') return;
         if (!cached) {
           return;
         }
@@ -1099,7 +1115,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         setSearchMetadata(cached.metadata);
       });
       return () => { cancelled = true; };
-    }, [jobId, setSearchResults, setSearchMetadata, deduplicateSearchResults, tokenPair?.accessToken?.token]);
+    }, [projectId, setSearchResults, setSearchMetadata, deduplicateSearchResults, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
     useEffect(() => {
       loadData();
@@ -1107,25 +1123,25 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Persist search results and metadata to backend cache whenever they change
     useEffect(() => {
-      if (!jobId || jobId === 'job-id' || jobId === '__search__') return;
-      const accessToken = tokenPair?.accessToken?.token;
+      if (!projectId || projectId === 'project-id' || projectId === '__search__') return;
+      const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
       if (!accessToken) return;
       if (searchResults.length > 0) {
         const deduplicatedResults = deduplicateSearchResults(searchResults);
         if (deduplicatedResults.length !== searchResults.length) {
           setSearchResults(deduplicatedResults);
-          persistSearchResultsToStorage(deduplicatedResults, jobId, {
+          persistSearchResultsToStorage(deduplicatedResults, projectId, {
             accessToken,
             metadata: searchMetadata,
           });
         } else {
-          persistSearchResultsToStorage(searchResults, jobId, {
+          persistSearchResultsToStorage(searchResults, projectId, {
             accessToken,
             metadata: searchMetadata,
           });
         }
       }
-    }, [searchResults, searchMetadata, jobId, deduplicateSearchResults, setSearchResults, tokenPair?.accessToken?.token]);
+    }, [searchResults, searchMetadata, projectId, deduplicateSearchResults, setSearchResults, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
     // Reapply sorting when filtered data changes (due to search/status filters)
     useEffect(() => {
@@ -1184,7 +1200,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const allVisibleIds = useMemo(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return [];
-      
+
       return filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
@@ -1219,7 +1235,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         mode: 'selection',
         selectedRecordIds: checked ? visibleIds : [],
       });
-      
+
       // Note: Checkbox values will be automatically synced via mutatableData
       // which recalculates when selectedRowIds changes in state
     };
@@ -1259,13 +1275,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Add WebSocket event listener for WhatsApp message updates
     useWebSocketEvent<{
       candidateId: string;
-      jobId: string;
+      projectId: string;
       messageId: string;
     }>('whatsapp_message_updated', async (data) => {
       // Only refresh if the message is for the current job
-      if (data.jobId === jobId) {
+      if (data.projectId === projectId) {
         await refreshData();
-        
+
         // If chat drawer is open for this candidate, refresh messages
         const hot = tableRef.current?.hotInstance;
         if (hot) {
@@ -1281,12 +1297,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 console.log(`Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found (permanentId: ${permanentId})`);
                 return;
               }
-              
+
               try {
                 const response = await axios.post(
-                  `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
+                  `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
                   { candidateId: permanentId },
-                  { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } }
+                  { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
                 );
                 const unreadMessageIds = response.data
                   ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
@@ -1305,7 +1321,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }
         }
       }
-    }, [jobId, tokenPair, setUnreadMessagesCounts]);
+    }, [projectId, tokenPair, setUnreadMessagesCounts]);
 
     // Add WebSocket event handler for refresh_table_data
     useWebSocketEvent<{
@@ -1335,7 +1351,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         if (column === 0 && mergedData[row]) {
           const candidate = mergedData[row];
           const borderColor = getRowBorderColor(candidate, getCandidateState);
-          
+
           // Add left border to indicate persistence state
           Object.assign(renderedTd.style, {
             borderLeft: `4px solid ${borderColor}`,
@@ -1406,7 +1422,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         </StyledEmptyContainer>
       );
     }
-    
+
     return (
       <StyledTableWrapper>
         <NaukriQueueStatusEffect />
@@ -1418,7 +1434,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             </StyledClearButton>
           </StyledFilterBadge>
         )}
-        
+
         <StyledControlsContainer>
           {isSortingControlsVisible && (
             <SortingControls
@@ -1429,7 +1445,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             />
           )}
         </StyledControlsContainer>
-        
+
         <StyledTableContainer>
           <HotTable
             ref={tableRef}
@@ -1474,7 +1490,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               const hot = tableRef.current?.hotInstance;
               if (!hot) return;
               console.log("These are conditionsStack::", conditionsStack);
-              
+
               // Update active filters in state
               const activeFilters: FilterCondition[] = (conditionsStack || []).map((condition: any) => ({
                 column: condition.column,
@@ -1488,7 +1504,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 ...prev,
                 activeFilters
               }));
-              
+
               // If there are no conditions, show total count
               if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
                 setFilteredCount(hot.countRows());
@@ -1519,7 +1535,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                           }
                         }
                       });
-                      
+
                       isApplyingSortRef.current = true;
                       multiColumnSortingPlugin.sort(currentSortConfig);
                       setTimeout(() => { isApplyingSortRef.current = false; }, 50);
@@ -1545,7 +1561,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               console.log("afterColumnSort triggered:");
               console.log("currentSortConfig:", currentSortConfig);
               console.log("destinationSortConfigs:", destinationSortConfigs);
-              
+
               // Sync the sorting state when columns are sorted via header clicks
               if (isApplyingSortRef.current) {
                 // Ignore programmatic sorts
@@ -1563,8 +1579,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             }}
           />
         </StyledTableContainer>
-        
+
       </StyledTableWrapper>
-      
+
     );
   });

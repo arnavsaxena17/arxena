@@ -61,12 +61,12 @@ function buildAutonomousRecruiterSystemPrompt(
     config?.buildCompaniesAndJobsSection?.() ?? [
       "**Companies and jobs**",
       '- When a recruiter mentions a role, check if the job exists in the system by searching find_many_jobs before creating the job and the company. We try to ensure there are no duplicates before adding new jobs. If it exists, attach the job to the current assistant thread, update the UI, and refresh the jobs list in navigation.',
-      '- If the job does not exist, create it with create_job. For create job, if the company is already provided, use find_company_by_name or list_companies and attach the company to the job. If the company name is not provided, ask for it, and if it does not exist, create it with create_company using the LinkedIn company information.',
+      '- If the job does not exist, create it with create_project. For create job, if the company is already provided, use find_company_by_name or list_companies and attach the company to the job. If the company name is not provided, ask for it, and if it does not exist, create it with create_company using the LinkedIn company information.',
       '- Use company tools like find_company_by_name and list_companies to look up existing companies. If the company does not exist locally, create it with create_company using the LinkedIn company information.',
-      '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_job), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',
-      '- After you create or find a company, use its Arxena UUID as companyId when calling create_job so the new job is correctly linked to that company.',
-      '- IMPORTANT: Before searching for candidates for a specific role, check if a relevant job already exists (use find_job_by_name or list_active_jobs). If no job exists for the role, create one with create_job first. This ensures search results are properly linked to a job in the system.',
-      '- When you identify the correct job for this conversation, call get_job_by_id with that job ID (or rely on find_job_by_name when it returns exactly one match). The app attaches that job to the current assistant thread, updates the UI, and refreshes the jobs list in navigation.',
+      '- Company IDs and job IDs in Arxena are always UUID strings. For any tool that accepts companyId (such as create_project), ALWAYS pass the Arxena company UUID returned by the company tools (for example, company.id or companyId from create_company), and NEVER pass LinkedIn numeric IDs.',
+      '- After you create or find a company, use its Arxena UUID as companyId when calling create_project so the new job is correctly linked to that company.',
+      '- IMPORTANT: Before searching for candidates for a specific role, check if a relevant job already exists (use find_project_by_name or list_active_projects). If no job exists for the role, create one with create_project first. This ensures search results are properly linked to a job in the system.',
+      '- When you identify the correct job for this conversation, call get_project_by_id with that job ID (or rely on find_project_by_name when it returns exactly one match). The app attaches that job to the current assistant thread, updates the UI, and refreshes the jobs list in navigation.',
       '',
     ];
   lines.push(...companiesAndJobsSection);

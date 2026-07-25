@@ -1,7 +1,7 @@
+import type { SnackBarEnqueueFunctions } from '@/candidate-search/types/snackbar.types';
 import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import type { AiFiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import type { FiltersResponse, SortsResponse } from 'twenty-shared';
+import type { FiltersResponse, SortsResponse } from 'twenty-shared/types';
 import type { ChatMessage } from '../types/chat-message.types';
 import { saveToLocalStorage } from '../utils/storage-helpers';
 
@@ -17,7 +17,7 @@ type SearchPlanHandlerDeps = {
   parsedJD: ParsedJD;
   searchPlanGeneration: SearchPlanGenerationService;
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
-  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+  snackBars: SnackBarEnqueueFunctions;
   setCurrentSearchParameters: (params: SearchParametersResponse | null) => void;
   setCurrentAiFilters: (aiFilters: AiFiltersResponse | null) => void;
   setCurrentFilters: (filters: FiltersResponse | null) => void;
@@ -38,9 +38,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
     searchCategory: 'people' | 'companies' | 'jobs'
   ) => {
     if (!deps.currentAssistantThreadId) {
-      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No assistant thread found. Please create a thread first.' });
       return;
     }
 
@@ -168,9 +166,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
       }
     } catch (error) {
       console.error('Error generating search parameters in search plan handler:',  error);
-      deps.enqueueSnackBar('Failed to generate search parameters', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to generate search parameters' });
     }
   };
 };
@@ -178,9 +174,7 @@ export const createSearchParametersHandler = (deps: SearchPlanHandlerDeps) => {
 export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
     if (!deps.currentAssistantThreadId) {
-      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No assistant thread found. Please create a thread first.' });
       return;
     }
 
@@ -245,9 +239,7 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
       }
     } catch (error) {
       console.error('Error generating AI filters:', error);
-      deps.enqueueSnackBar('Failed to generate AI filters', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to generate AI filters' });
     }
   };
 };
@@ -255,9 +247,7 @@ export const createAiFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
     if (!deps.currentAssistantThreadId || !deps.currentAiFilters) {
-      deps.enqueueSnackBar('No search filter or AI filters found. Please generate AI filters first.', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No search filter or AI filters found. Please generate AI filters first.' });
       return;
     }
 
@@ -317,9 +307,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
       }
     } catch (error) {
       console.error('Error generating filters:', error);
-      deps.enqueueSnackBar('Failed to generate filters', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to generate filters' });
     }
   };
 };
@@ -327,9 +315,7 @@ export const createFiltersHandler = (deps: SearchPlanHandlerDeps) => {
 export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
   return async () => {
     if (!deps.currentAssistantThreadId) {
-      deps.enqueueSnackBar('No assistant thread found. Please create a thread first.', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No assistant thread found. Please create a thread first.' });
       return;
     }
 
@@ -338,9 +324,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
     const hasAiFilters = deps.currentAiFilters || deps.hasExistingEnrichments();
     
     if (!hasSearchParams || !hasAiFilters) {
-      deps.enqueueSnackBar('No search parameters or AI filters found. Please generate search parameters and AI filters first.', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'No search parameters or AI filters found. Please generate search parameters and AI filters first.' });
       return;
     }
 
@@ -375,9 +359,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       }
       
       if (!searchParametersToUse || !aiFiltersToUse) {
-        deps.enqueueSnackBar('Unable to retrieve search parameters or AI filters. Please regenerate them.', {
-          variant: SnackBarVariant.Error,
-        });
+        deps.snackBars.enqueueErrorSnackBar({ message: 'Unable to retrieve search parameters or AI filters. Please regenerate them.' });
         return;
       }
 
@@ -446,9 +428,7 @@ export const createSortsHandler = (deps: SearchPlanHandlerDeps) => {
       }
     } catch (error) {
       console.error('Error generating sorts:', error);
-      deps.enqueueSnackBar('Failed to generate sorts', {
-        variant: SnackBarVariant.Error,
-      });
+      deps.snackBars.enqueueErrorSnackBar({ message: 'Failed to generate sorts' });
     }
   };
 };

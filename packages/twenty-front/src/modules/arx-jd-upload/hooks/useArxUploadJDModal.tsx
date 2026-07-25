@@ -1,8 +1,9 @@
 import { isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
-import { useRecoilState } from 'recoil';
+
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 export const useArxUploadJDModal = () => {
-  const [isArxUploadJDModalOpen, setIsArxUploadJDModalOpen] = useRecoilState(
+  const [isArxUploadJDModalOpen, setIsArxUploadJDModalOpen] = useAtomState(
     isArxUploadJDModalOpenState,
   );
 

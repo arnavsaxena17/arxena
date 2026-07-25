@@ -1,9 +1,8 @@
-import { useTheme } from '@emotion/react';
 import { CircularProgressBar } from 'twenty-ui';
 
 import { ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer, type ArxJDStepperContainerProps } from './ArxJDStepperContainer';
-import { RecruiterDetails } from './JobDetailsForm';
+import { RecruiterDetails } from './ProjectDetailsForm';
 import { UploadForm } from './UploadForm';
 
 type GetRootProps = NonNullable<ArxJDStepperContainerProps['getRootProps']>;
@@ -44,8 +43,6 @@ export const ArxJDModalContent = ({
   isEditMode = false,
   onAssistantThreadUpdate,
 }: ArxJDModalContentProps) => {
-  const theme = useTheme();
-
   console.log('ArxJDModalContent rendering with:', {
     parsedJDExists: parsedJD !== null,
     isUploading,
@@ -73,7 +70,6 @@ export const ArxJDModalContent = ({
         isDragActive={isDragActive}
         isUploading={false}
         error={error}
-        theme={theme}
         uploadButtonLabel={isEditMode ? "Replace File" : "Upload File"}
         onCreateJobFromName={onCreateJobFromName}
       />
@@ -97,7 +93,7 @@ export const ArxJDModalContent = ({
       handleFileRemoval={handleFileRemoval}
       isOpen={true}
       onClose={onCancel}
-      title="Add a New Job Description"
+      title="Add a New Project Description"
       onRecruiterInfoChange={onRecruiterInfoChange}
       isEditMode={isEditMode}
       onCreateJobFromName={onCreateJobFromName}

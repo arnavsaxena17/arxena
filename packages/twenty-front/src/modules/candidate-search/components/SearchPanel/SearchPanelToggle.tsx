@@ -1,7 +1,8 @@
-import { IconSearch } from 'twenty-ui/icons';
+import { IconSearch } from 'twenty-ui/icon';
 import { isSearchPanelOpenState } from '@/candidate-search/states/searchPanelState';
-import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 const StyledToggleButton = styled.button<{ isOpen: boolean }>`
   position: fixed;
@@ -10,21 +11,21 @@ const StyledToggleButton = styled.button<{ isOpen: boolean }>`
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
-  background-color: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
   border-left: none;
-  border-radius: 0 ${({ theme }) => theme.border.radius.md} ${({ theme }) => theme.border.radius.md} 0;
+  border-radius: 0 ${themeCssVariables.border.radius.md} ${themeCssVariables.border.radius.md} 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1001;
   transition: left 300ms ease;
-  box-shadow: ${({ theme }) => theme.boxShadow.light};
+  box-shadow: ${themeCssVariables.boxShadow.light};
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.medium};
   }
   
   &:active {
@@ -42,7 +43,7 @@ type SearchPanelToggleProps = {
 };
 
 export const SearchPanelToggle = ({ className }: SearchPanelToggleProps) => {
-  const [isOpen, setIsOpen] = useRecoilState(isSearchPanelOpenState);
+  const [isOpen, setIsOpen] = useAtomState(isSearchPanelOpenState);
 
   const togglePanel = () => {
     setIsOpen(!isOpen);

@@ -1,9 +1,9 @@
-import { IconAlertCircle, IconPlus } from 'twenty-ui/icons';
+import { IconAlertCircle, IconPlus } from 'twenty-ui/icon';
 import { candidateDataState, processedDataSelector } from '@/candidate-table/states/states';
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
-import { Button } from 'twenty-ui';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { Button } from 'twenty-ui/input';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 // Local imports
 import { AVAILABLE_MODELS, DEFAULT_FIELD } from './constants';
@@ -14,6 +14,7 @@ import { DynamicModelCreatorProps } from './types';
 import { generateModelCode } from './utils/modelCode';
 import { validateFieldName, validateModelName } from './utils/validation';
 import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
+import { EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 
 // Components
 import { FieldCardComponent } from './components/FieldCard';
@@ -41,8 +42,8 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
   isLoadingFields,
   apiError
 }) => {
-    const processedData = useRecoilValue(processedDataSelector);
-  const candidateData = useRecoilValue(candidateDataState);
+  const processedData = useAtomStateValue(processedDataSelector);
+  const candidateData = useAtomStateValue(candidateDataState);
   const { objectMetadataItem } = useObjectMetadataItem({
     objectNameSingular: objectNameSingular,
   });
@@ -114,12 +115,20 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       enumValues: newField.type === 'enum' ? (newField.enumValues || []) : []
     };
 
-    const updatedFields = editingFieldId 
-      ? currentEnrichment.fields.map(field => 
-          field.id === editingFieldId ? { ...fieldToAdd, id: editingFieldId } : field)
+    const updatedFields = editingFieldId
+      ? currentEnrichment.fields.map((field: EnrichmentField) =>
+          field.id === editingFieldId
+            ? { ...fieldToAdd, id: editingFieldId }
+            : field,
+        )
       : [...currentEnrichment.fields, { ...fieldToAdd, id: Date.now() }];
 
-    updateEnrichment({ fields: updatedFields });
+    updateEnrichment({
+      fields: updatedFields.map((field) => ({
+        ...field,
+        enumValues: field.enumValues || [],
+      })),
+    });
 
     if (!editingFieldId) {
       setNewField(DEFAULT_FIELD);
@@ -138,12 +147,19 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
       return;
     }
 
-    const updatedFields = currentEnrichment.fields.filter(field => field.id !== fieldId);
-    updateEnrichment({ fields: updatedFields });
+    const updatedFields = currentEnrichment.fields.filter(
+      (field: EnrichmentField) => field.id !== fieldId,
+    );
+    updateEnrichment({
+      fields: updatedFields.map((field) => ({
+        ...field,
+        enumValues: field.enumValues || [],
+      })),
+    });
     setError('');
   }, [currentEnrichment.fields, setError, updateEnrichment]);
 
-  const handleEditField = useCallback((field: any) => {
+  const handleEditField = useCallback((field: EnrichmentField) => {
     setEditingFieldId(field.id);
     setNewField(field);
   }, [setEditingFieldId, setNewField]);
@@ -152,14 +168,14 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
     const currentSelected = currentEnrichment.selectedMetadataFields || [];
     const updatedSelected = isChecked
       ? [...new Set([...currentSelected, fieldName])]
-      : currentSelected.filter(name => name !== fieldName);
+      : currentSelected.filter((name: string) => name !== fieldName);
     
     updateEnrichment({ selectedMetadataFields: updatedSelected });
   }, [currentEnrichment.selectedMetadataFields, updateEnrichment]);
 
   const handleFieldRemove = useCallback((fieldName: string) => {
     const updatedSelected = currentEnrichment.selectedMetadataFields.filter(
-      name => name !== fieldName
+      (name: string) => name !== fieldName,
     );
     updateEnrichment({ selectedMetadataFields: updatedSelected });
   }, [currentEnrichment.selectedMetadataFields, updateEnrichment]);
@@ -221,13 +237,12 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           {/* Process AI Filter Button */}
           <Button
             variant="primary"
-            title="Process AI Filter"
+            title={isProcessing ? 'Processing...' : 'Process AI Filter'}
             onClick={handleProcessAIFilter}
             disabled={isProcessing}
+            isLoading={isProcessing}
             type="button"
-          >
-            {isProcessing ? 'Processing...' : 'Process AI Filter'}
-          </Button>
+          />
         </>
       ) : null}
 
@@ -297,7 +312,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
         <>
           <SelectLabel>Create New Columns</SelectLabel>
           <FieldsList>
-            {currentEnrichment.fields.map((field) => (
+            {currentEnrichment.fields.map((field: EnrichmentField) => (
               <FieldCardComponent
                 key={field.id}
                 field={field}
@@ -319,9 +334,9 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           {!showAddField && (
             <Button
               Icon={IconPlus}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                e.stopPropagation();
+              onClick={(event: React.MouseEvent) => {
+                event.preventDefault();
+                event.stopPropagation();
                 setShowAddField(true);
                 setEditingFieldId(null);
                 setNewField(DEFAULT_FIELD);
@@ -330,9 +345,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
               variant="secondary"
               title="Add New Field"
               type="button"
-            >
-              Add New Field
-            </Button>
+            />
           )}
           
           {/* New Field Form */}

@@ -8,15 +8,14 @@ import { useSearchPlanGeneration } from '@/candidate-search/hooks/useSearchPlanG
 import { activeAssistantThreadIdState, searchConfigState } from '@/candidate-search/states/searchConfigState';
 import { searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
-import { chatMessagesSelector, filtersSelector, jobIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
+import { chatMessagesSelector, filtersSelector, projectIdAtom, resolvedParametersSelector, sortsSelector } from '@/candidate-table/states/states';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
-import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
+import { useFindManyAttachments } from '@/candidate-search/hooks/useFindManyAttachments';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import type { AiFilterConfig } from 'twenty-shared';
-import { AiFiltersResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared';
+import type { AiFilterConfig } from 'twenty-shared/types';
+import type { AiFiltersResponse, FiltersResponse, LinkedInSearchType, SortsResponse } from 'twenty-shared/types';
 import { Loader } from 'twenty-ui';
 import { ChatHeader } from './ChatHeader';
 import { ChatInput } from './ChatInput';
@@ -49,6 +48,10 @@ import {
 } from './styled/StyledComponents';
 import type { ChatMessage } from './types/chat-message.types';
 import { loadFromLocalStorage, saveToLocalStorage } from './utils/storage-helpers';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // Type definitions below
 
@@ -70,25 +73,45 @@ export const AIChatAssistant = ({
   onParsedJDUpdate,
 }: AIChatAssistantProps) => {
   type BackendChatMessage = { role: 'user' | 'assistant'; content: string; timestamp?: string; id?: string };
-  const [enrichments] = useRecoilState(enrichmentsState);
-  const { enqueueSnackBar } = useSnackBar();
+  const [enrichments] = useAtomState(enrichmentsState);
+  const {
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueInfoSnackBar,
+    enqueueWarningSnackBar,
+  } = useSnackBar();
+
+  const snackBars = useMemo(
+    () => ({
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
+      enqueueInfoSnackBar,
+      enqueueWarningSnackBar,
+    }),
+    [
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
+      enqueueInfoSnackBar,
+      enqueueWarningSnackBar,
+    ],
+  );
   const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
   const { findManyAttachments } = useFindManyAttachments();
   const { uploadAttachmentFile } = useUploadAttachmentFile();
   const { createOneRecord: createOneAssistantThreadRecord } = useCreateOneRecord({
     objectNameSingular: 'assistantThread',
   });
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
 
-  const [chatMessages, setChatMessages] = useRecoilState(chatMessagesSelector);
-  const [resolvedParameters, setResolvedParameters] = useRecoilState(resolvedParametersSelector);
-  const [searchConfig, setSearchConfig] = useRecoilState(searchConfigState);
-  const [, setParsedJD] = useRecoilState(parsedJDSelector);
-  const [searchResults, setSearchResults] = useRecoilState(searchResultsState);
-  const [searchMetadata, setSearchMetadata] = useRecoilState(searchMetadataState);
-  const jobId = useRecoilValue(jobIdAtom);
+  const [chatMessages, setChatMessages] = useAtomState(chatMessagesSelector);
+  const [resolvedParameters, setResolvedParameters] = useAtomState(resolvedParametersSelector);
+  const [searchConfig, setSearchConfig] = useAtomState(searchConfigState);
+  const [, setParsedJD] = useAtomState(parsedJDSelector);
+  const [searchResults, setSearchResults] = useAtomState(searchResultsState);
+  const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
+  const projectId = useAtomStateValue(projectIdAtom);
   
-  const [activeAssistantThreadId, setActiveAssistantThreadId] = useRecoilState(activeAssistantThreadIdState);
+  const [activeAssistantThreadId, setActiveAssistantThreadId] = useAtomState(activeAssistantThreadIdState);
 
   const allAssistantThreads = parsedJD?.assistantThreads || [];
 
@@ -112,7 +135,7 @@ export const AIChatAssistant = ({
         const displayName = `Search - ${searchConfig.searchType}_${searchConfig.searchCategory} - ${timestamp}`;
         const newThread = await createOneAssistantThreadRecord({
           name: displayName,
-          jobId: parsedJD.id,
+          projectId: parsedJD.id,
           recruiterId: currentWorkspaceMember.id,
           assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
           messages: [],
@@ -186,20 +209,20 @@ export const AIChatAssistant = ({
   const [currentFilters, setCurrentFilters] = useState<FiltersResponse | null>(null);
   const [currentSorts, setCurrentSorts] = useState<SortsResponse | null>(null);
   const searchPlanGeneration = useSearchPlanGeneration();
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
 
   const fetchChatHistoryFromBackend = useCallback(async (assistantThreadId: string) => {
-    if (!assistantThreadId || !tokenPair?.accessToken?.token) {
+    if (!assistantThreadId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return null;
     }
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/${assistantThreadId}/history`,
+        `${REACT_APP_SERVER_BASE_URL}/candidate-search/${assistantThreadId}/history`,
         {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+            Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
         }
       );
@@ -226,12 +249,12 @@ export const AIChatAssistant = ({
       console.error('Error fetching chat history from backend:', error);
       return null;
     }
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   // Load chat history from backend when component mounts or thread changes
   useEffect(() => {
     const loadChatHistory = async () => {
-      if (!currentAssistantThreadId || !tokenPair?.accessToken?.token) {
+      if (!currentAssistantThreadId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
         return;
       }
 
@@ -280,7 +303,7 @@ export const AIChatAssistant = ({
     };
 
     loadChatHistory();
-  }, [currentAssistantThreadId, tokenPair?.accessToken?.token, fetchChatHistoryFromBackend, setChatMessages]);
+  }, [currentAssistantThreadId, tokenPair?.accessOrWorkspaceAgnosticToken?.token, fetchChatHistoryFromBackend, setChatMessages]);
 
   // Auto-save chatMessages to localStorage whenever they change
   useEffect(() => {
@@ -293,7 +316,7 @@ export const AIChatAssistant = ({
       return () => clearTimeout(timeoutId);
     }
   }, [chatMessages, currentAssistantThreadId]);
-  const applyGeneratedSorts = useRecoilValue(dataTableApplySortsFunctionState);
+  const applyGeneratedSorts = useAtomStateValue(dataTableApplySortsFunctionState);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isCreatingAssistantThreadRef = useRef(false);
   
@@ -309,8 +332,8 @@ export const AIChatAssistant = ({
     const thread = parsedJD?.assistantThreads?.find(t => t.id === currentAssistantThreadId);
     return (thread?.enrichmentConfigs as AiFilterConfig[] | undefined) ?? [];
   }, [parsedJD?.assistantThreads, currentAssistantThreadId]);
-  const existingFilters = useRecoilValue(filtersSelector);
-  const existingSorts = useRecoilValue(sortsSelector);
+  const existingFilters = useAtomStateValue(filtersSelector);
+  const existingSorts = useAtomStateValue(sortsSelector);
   // Debug logging moved to useEffect to prevent repeated logging
 
   // Helper functions to check for existing data in the currently selected search filter
@@ -376,7 +399,7 @@ export const AIChatAssistant = ({
 
       try {
         const fetchedAttachments = await findManyAttachments({
-          filter: { jobId: { eq: parsedJD.id } },
+          filter: { projectId: { eq: parsedJD.id } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
         });
         setAttachments(fetchedAttachments);
@@ -411,7 +434,7 @@ export const AIChatAssistant = ({
       return updated;
     });
     
-    if (parsedJD?.assistantThreads?.[0]?.id && tokenPair?.accessToken?.token) {
+    if (parsedJD?.assistantThreads?.[0]?.id && tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       try {
         console.log ("addMessage - Saving chat message to backend::");
       } catch (error) {
@@ -541,7 +564,7 @@ export const AIChatAssistant = ({
     parsedJD,
     attachments,
     addMessage,
-    enqueueSnackBar,
+    snackBars,
     setAttachments,
     setIsUploadingFile,
     destroyOneRecord,
@@ -550,13 +573,13 @@ export const AIChatAssistant = ({
     onJDRemove,
     onJDReplace,
     onJDUpload,
-  }), [parsedJD, attachments, addMessage, enqueueSnackBar, destroyOneRecord, uploadAttachmentFile, findManyAttachments, onJDRemove, onJDReplace, onJDUpload]);
+  }), [parsedJD, attachments, addMessage, snackBars, destroyOneRecord, uploadAttachmentFile, findManyAttachments, onJDRemove, onJDReplace, onJDUpload]);
 
   const searchPlanHandlerDeps = useMemo(() => ({
     parsedJD,
     searchPlanGeneration,
     addMessage,
-    enqueueSnackBar,
+    snackBars,
     setCurrentSearchParameters,
     setCurrentAiFilters,
     setCurrentFilters,
@@ -570,10 +593,10 @@ export const AIChatAssistant = ({
     hasExistingSearchParameters,
     hasExistingAiFilters,
     hasExistingEnrichments,
-  }), [parsedJD, searchPlanGeneration, addMessage, enqueueSnackBar, currentAssistantThreadId, currentSearchParameters, currentAiFilters, searchConfig, hasExistingSearchParameters, hasExistingAiFilters, hasExistingEnrichments]);
+  }), [parsedJD, searchPlanGeneration, addMessage, snackBars, currentAssistantThreadId, currentSearchParameters, currentAiFilters, searchConfig, hasExistingSearchParameters, hasExistingAiFilters, hasExistingEnrichments]);
 
   const actionHandlerDeps = useMemo(() => ({
-    enqueueSnackBar,
+    snackBars,
     currentSearchParameters,
     currentSorts,
     applyGeneratedSorts,
@@ -582,15 +605,15 @@ export const AIChatAssistant = ({
     setSearchConfig,
     setParsedJD,
     currentAssistantThreadId,
-    jobId,
-  }), [enqueueSnackBar, currentSearchParameters, currentSorts, applyGeneratedSorts, currentAssistantThreadId, jobId]);
+    projectId,
+  }), [snackBars, currentSearchParameters, currentSorts, applyGeneratedSorts, currentAssistantThreadId, projectId]);
 
   const chatHandlerDeps = useMemo(() => ({
     parsedJD,
     tokenPair,
     searchConfig,
     addMessage,
-    enqueueSnackBar,
+    snackBars,
     setChatMessages,
     setCurrentSearchParameters,
     setCurrentAiFilters,
@@ -611,9 +634,9 @@ export const AIChatAssistant = ({
     currentWorkspaceMember,
     setSearchResults,
     setSearchMetadata,
-    jobId,
+    projectId,
     includeJD,
-  }), [parsedJD, tokenPair, searchConfig, addMessage, enqueueSnackBar, currentAssistantThreadId, setActiveAssistantThreadId, createOneAssistantThreadRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, jobId, includeJD, setIsTerminated]);
+  }), [parsedJD, tokenPair, searchConfig, addMessage, snackBars, currentAssistantThreadId, setActiveAssistantThreadId, createOneAssistantThreadRecord, currentWorkspaceMember, setSearchResults, setSearchMetadata, projectId, includeJD, setIsTerminated]);
 
   // Create handler instances using grouped dependencies
   const handleJDRemove = useMemo(() => createJDRemoveHandler(fileHandlerDeps), [fileHandlerDeps]);
@@ -633,10 +656,11 @@ export const AIChatAssistant = ({
     createViewStrategyResultsHandler({
       setSearchResults,
       setSearchMetadata,
-      jobId,
-      enqueueSnackBar,
-    }), 
-    [setSearchResults, setSearchMetadata, jobId, enqueueSnackBar]
+      projectId,
+      snackBars,
+      tokenPair,
+    }),
+    [setSearchResults, setSearchMetadata, projectId, snackBars, tokenPair]
   )
 
   const handleClearChat = useMemo(() => createClearChatHandler(chatHandlerDeps), [chatHandlerDeps]);

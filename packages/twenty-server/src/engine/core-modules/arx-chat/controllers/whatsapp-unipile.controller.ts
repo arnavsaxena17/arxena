@@ -12,7 +12,7 @@ import {
     Res,
     UseGuards,
 } from '@nestjs/common';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
@@ -57,7 +57,7 @@ export class WhatsappUnipileController {
   @Post('accounts/update-member')
   async updateMemberWhatsappAccount(
     @Body() body: { accountId: string },
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId;
@@ -119,7 +119,7 @@ export class WhatsappUnipileController {
    */
   @Post('qr-code')
   async requestQrCode(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -196,7 +196,7 @@ export class WhatsappUnipileController {
   @Get('accounts/:accountId/status')
   async checkAccountStatus(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
    try {
@@ -275,14 +275,14 @@ export class WhatsappUnipileController {
    * Get all WhatsApp accounts
    */
   @Post('accounts')
-  async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
+  async getAllAccounts(@AuthWorkspace() workspace : WorkspaceEntity) {
     return this.unipileRequestService.getAllAccounts(workspace);
   }
 
   @Post('accounts/:accountId')
   async getAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       this.logger.log(`Getting WhatsApp account ${accountId}`);
@@ -364,7 +364,7 @@ export class WhatsappUnipileController {
   @Post('accounts/:accountId/resync')
   async resyncAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const response = (await this.unipileRequestService.makeUnipileRequest(
@@ -384,7 +384,7 @@ export class WhatsappUnipileController {
   @Delete('accounts/:accountId')
   async disconnectAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       await this.unipileRequestService.makeUnipileRequest(

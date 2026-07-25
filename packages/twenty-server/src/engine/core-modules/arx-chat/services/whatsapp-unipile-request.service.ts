@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import {
   fetchUnipileAccountsListWithCache,
@@ -222,7 +222,7 @@ export class WhatsappUnipileRequestService {
   /**
    * Full WhatsApp account list from Unipile. Fetches all accounts and filters by type.
    */
-  async getAllAccounts(workspace: Workspace): Promise<{
+  async getAllAccounts(workspace : WorkspaceEntity): Promise<{
     success: boolean;
     accounts: UnipileAccountItem[];
     message?: string;

@@ -3,7 +3,7 @@ import { UserProfile } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 
 export interface TransformationContext {
-  jobId: string;
+  projectId: string;
   jobName: string;
   userId: string;
   dataSource: string;
@@ -94,7 +94,7 @@ export abstract class BaseDataSourceTransformerService {
       queryId: [],
       uploadCount: 0,
       uploadId: '',
-      tables: [context.jobId],
+      tables: [context.projectId],
       stdFunction: null,
       stdGrade: null,
       stdFunctionRoot: null,
@@ -357,7 +357,7 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Add event to job process - utility method to reduce code duplication
    */
-  protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
     if (value !== null && value !== undefined && value !== '') {
       // Note: UserProfile job_process doesn't have events array, so we'll store in a custom field
       if (!userProfile.jobProcessEvents) {

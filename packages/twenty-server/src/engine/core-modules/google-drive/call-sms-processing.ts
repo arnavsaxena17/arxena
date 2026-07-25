@@ -26,12 +26,12 @@ export class CallAndSMSProcessingService {
     const thirtyMinutesAgo = currentTime - (30 * 60 * 1000);
 
     // Filter calls and SMS from last 30 minutes
-    const recentCalls = callsData.calls.call.filter(call => 
+    const recentCalls = callsData.calls.call.filter(call =>
       parseInt(call.$.date) >= thirtyMinutesAgo
     );
     console.log("Recent calls numbers are:", recentCalls.length)
 
-    const recentSMS = smsData.smses.sms.filter(sms => 
+    const recentSMS = smsData.smses.sms.filter(sms =>
       parseInt(sms.$.date) >= thirtyMinutesAgo
     );
 
@@ -45,10 +45,10 @@ export class CallAndSMSProcessingService {
 
     for (const phoneNumber of phoneNumbers) {
       await this.processPersonCommunications(
-        phoneNumber, 
+        phoneNumber,
         { calls: { call: recentCalls } }, // Pass only recent calls
         { smses: { sms: recentSMS } },    // Pass only recent SMS
-        recordingsPath, 
+        recordingsPath,
         apiToken
       );
     }
@@ -59,8 +59,8 @@ export class CallAndSMSProcessingService {
   }
 
   async processPersonCommunications(
-    phoneNumber: string, 
-    callsData: any, 
+    phoneNumber: string,
+    callsData: any,
     smsData: any,
     recordingsFolder: string,
     apiToken: string
@@ -73,9 +73,9 @@ export class CallAndSMSProcessingService {
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(cleanedPhoneNumber, apiToken);
-  
+
     if (!person) return;
-  
+
     const personCalls = callsData.calls.call.filter(call => call.$.number === phoneNumber);
     for (const call of personCalls) {
       const callData = call.$;
@@ -83,30 +83,29 @@ export class CallAndSMSProcessingService {
         // Find recording file by matching phone number in recordings folder
         const recordings = await fs.promises.readdir(recordingsFolder);
         const recordingFile = recordings.find(file => file.startsWith(phoneNumber));
-        
+
         let attachmentId;
         if (recordingFile) {
           const recordingPath = `${recordingsFolder}/${recordingFile}`;
           console.log(`Uploading recording file: ${recordingPath}`);
           const uploadResponse = await this.attachmentService.uploadAttachmentToTwenty(recordingPath, apiToken);
-          
+
           const dataToUploadInAttachmentTable = {
         input: {
-          authorId: "SYSTEM",
           name: recordingFile,
           fullPath: uploadResponse.data.uploadFile,
-          type: "CALL_RECORDING", 
+          fileCategory: 'AUDIO',
           personId: person.id
         }
           };
-         
+
           const attachment = await this.attachmentService.createOneAttachmentFromFilePath(
         dataToUploadInAttachmentTable,
         apiToken
           );
           attachmentId = attachment.id;
         }
-        
+
         await this.createOrUpdatePhoneCall({
           personId: person.id,
           phoneNumber,
@@ -160,15 +159,15 @@ export class CallAndSMSProcessingService {
     const query = JSON.stringify({
       query: findManyPhoneCalls,
       variables: {
-        filter: { 
+        filter: {
           personId: { eq: personId },
           timestamp: { eq: timestamp }
         }
       }
     });
-  
+
     const existingCalls = await this.staticGraphQLService.executeGraphQL(findManyPhoneCalls, { filter: { personId: { eq: personId }, timestamp: { eq: timestamp } } }, apiToken);
-    
+
     if (existingCalls?.data?.data?.phoneCalls?.edges?.length) {
       const call = existingCalls.data.data.phoneCalls.edges[0].node;
       const updateQuery = JSON.stringify({
@@ -182,7 +181,7 @@ export class CallAndSMSProcessingService {
       console.log("Response from update phone call:", response)
       return response;
     }
-  
+
     const createQuery = JSON.stringify({
       query: graphqlMutationToCreatePhoneCall,
       variables: {
@@ -200,8 +199,8 @@ export class CallAndSMSProcessingService {
     console.log("Response from create or update phone call:", response)
     return response;
   }
-  
-  
+
+
 
   async createOrUpdateSMS({personId, phoneNumber, messageType, message, timestamp, apiToken}) {
     const query = JSON.stringify({
@@ -213,9 +212,9 @@ export class CallAndSMSProcessingService {
         }
       }
     });
-  
+
     const existingSMS = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindSMS, { filter: { personId: { eq: personId }, timestamp: { eq: timestamp } } }, apiToken);
-  
+
     if (existingSMS?.data?.data?.smsMessages?.edges?.length) {
       const sms = existingSMS.data.data.smsMessages.edges[0].node;
       const updateQuery = JSON.stringify({
@@ -229,7 +228,7 @@ export class CallAndSMSProcessingService {
       console.log("Response from update SMS:", response)
       return response;
     }
-  
+
     const createQuery = JSON.stringify({
       query: graphqlMutationToCreateSMS,
       variables: {

@@ -1,7 +1,8 @@
-import type { SetterOrUpdater } from 'recoil';
-import type { LinkedInSearchType } from 'twenty-shared';
+import type { LinkedInSearchType } from 'twenty-shared/types';
 
 import type { LinkedinUnipileOwnerProfileCache } from '@/orgchart/states/linkedinUnipileOwnerProfileCacheState';
+
+type AtomStateSetter<T> = (value: T | ((previous: T) => T)) => void;
 
 export type LinkedinUnipileInferredSearchTypePayload = {
   accountId?: string | null;
@@ -14,8 +15,8 @@ export type LinkedinUnipileInferredSearchTypePayload = {
 
 export const applyInferredOrgChartLinkedinSearchType = (options: {
   payload: LinkedinUnipileInferredSearchTypePayload;
-  setOrgChartLinkedInSearchType: SetterOrUpdater<LinkedInSearchType>;
-  setOwnerProfileCache: SetterOrUpdater<LinkedinUnipileOwnerProfileCache | null>;
+  setOrgChartLinkedInSearchType: AtomStateSetter<LinkedInSearchType>;
+  setOwnerProfileCache: AtomStateSetter<LinkedinUnipileOwnerProfileCache | null>;
 }): boolean => {
   const { payload, setOrgChartLinkedInSearchType, setOwnerProfileCache } =
     options;

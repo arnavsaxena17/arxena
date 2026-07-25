@@ -140,7 +140,7 @@ export type AssistantThreadRecord = {
   lastTableData: AssistantThreadTableData | null;
   createdAt: Date;
   updatedAt: Date;
-  jobId?: string;
+  projectId?: string;
   job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
   agentNotes?: AgentNote[];
   agentEvents?: AssistantAgentEventRecord[];

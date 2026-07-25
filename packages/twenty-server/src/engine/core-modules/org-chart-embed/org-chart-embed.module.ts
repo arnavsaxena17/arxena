@@ -5,8 +5,8 @@ import { MessageQueueModule } from 'src/engine/core-modules/message-queue/messag
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
-import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 
 import { OrgChartEmbedController } from './org-chart-embed.controller';
 import { OrgChartEmbedService } from './org-chart-embed.service';
@@ -18,8 +18,8 @@ import { OrgChartEmbedWebhookService } from './org-chart-embed-webhook.service';
     AuthModule,
     WorkspaceModificationsModule,
     WorkspaceCacheStorageModule,
+    WorkspaceCacheModule,
     MessageQueueModule,
-    TwentyORMModule,
   ],
   controllers: [OrgChartEmbedController],
   providers: [OrgChartEmbedService, OrgChartEmbedWebhookService, JwtAuthGuard],

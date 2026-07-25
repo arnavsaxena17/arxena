@@ -9,7 +9,7 @@ import {
 } from 'twenty-shared';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import { UnipileLinkedinAccountUnusableError } from '../errors/unipile-linkedin-account-unusable.error';
 import type {
@@ -1194,7 +1194,7 @@ export class LinkedinUnipileRequestService {
     }
   }
 
-  async getAllAccounts(workspace: Workspace): Promise<{
+  async getAllAccounts(workspace : WorkspaceEntity): Promise<{
     success: boolean;
     accounts: LinkedinUnipileAccountItem[];
     message?: string;

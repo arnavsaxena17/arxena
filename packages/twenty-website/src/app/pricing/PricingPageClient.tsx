@@ -4,10 +4,8 @@ import {
   SUPPORTED_PRICING_CURRENCIES,
   SupportedPricingCurrency,
 } from '@/lib/pricing-currency-helpers';
-import {
-  resolvePricingCurrencyFromCountryCode,
-  getOrFetchClientGeoSession,
-} from 'twenty-shared';
+import { getOrFetchClientGeoSession } from '@/lib/client-geo/clientGeoSessionCache';
+import { resolvePricingCurrencyFromCountryCode } from 'twenty-shared/constants';
 import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 

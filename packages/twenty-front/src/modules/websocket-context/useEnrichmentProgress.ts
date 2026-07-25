@@ -1,6 +1,8 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export interface EnrichmentProgressData {
   step: string;
@@ -18,10 +20,10 @@ export const useEnrichmentProgress = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
 
   useEffect(() => {
-    if (!tokenPair?.accessToken?.token) {
+    if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       console.warn('No access token available for enrichment progress streaming');
       return;
     }
@@ -33,11 +35,11 @@ export const useEnrichmentProgress = () => {
       eventSourceRef.current = null;
     }
     // Note: EventSource doesn't support custom headers, so we pass token as query parameter
-    const url = new URL(`${process.env.REACT_APP_SERVER_BASE_URL}/enrichment-progress/stream`);
-    url.searchParams.set('token', tokenPair.accessToken.token);
+    const url = new URL(`${REACT_APP_SERVER_BASE_URL}/enrichment-progress/stream`);
+    url.searchParams.set('token', tokenPair.accessOrWorkspaceAgnosticToken.token);
     url.searchParams.set('origin', window.location.origin);
     console.log('🔗 Connecting to SSE endpoint:', url.toString());
-    console.log('🔗 Token available:', !!tokenPair.accessToken.token);
+    console.log('🔗 Token available:', !!tokenPair.accessOrWorkspaceAgnosticToken.token);
     console.log('🔗 Origin:', window.location.origin);
     const eventSource = new EventSource(url.toString());
     eventSourceRef.current = eventSource;
@@ -101,7 +103,7 @@ export const useEnrichmentProgress = () => {
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessToken?.token]); // Removed connectionAttempts from dependencies
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]); // Removed connectionAttempts from dependencies
 
   // Cleanup on unmount
   useEffect(() => {

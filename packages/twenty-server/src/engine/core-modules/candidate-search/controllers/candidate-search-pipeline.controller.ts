@@ -222,7 +222,7 @@ export class CandidateSearchPipelineController {
           apiToken,
           body.prompt,
           body.parsedJobDescription as ParsedJobDescription,
-          undefined, // jobId
+          undefined, // projectId
           undefined, // sendEvent
           false, // includeJd
           undefined, // onTokenUsage
@@ -306,7 +306,7 @@ export class CandidateSearchPipelineController {
           apiToken,
           body.prompt,
           body.parsedJobDescription,
-          undefined, // jobId
+          undefined, // projectId
           undefined, // sendEvent
           false, // includeJd
           undefined, // onTokenUsage
@@ -1048,7 +1048,7 @@ Generate answers to the clarification questions above.`;
       `
 
       const userPrompt = `Please understand the job brief and generate a detailed job brief understanding.
-      Job Brief: ${body.jobBrief}`;
+      Project Brief: ${body.jobBrief}`;
 
       const parsed = await this.mcpAssistantService.callJsonWithTools(
         apiToken,
@@ -1066,13 +1066,13 @@ Generate answers to the clarification questions above.`;
       );
 
       this.logger.log(
-        `Job brief understanding completed. Parsed response: ${JSON.stringify(parsed, null, 2)}`,
+        `Project brief understanding completed. Parsed response: ${JSON.stringify(parsed, null, 2)}`,
       );
       return parsed;
     } catch (error) {
-      this.logger.error('Job brief understanding failed', error);
+      this.logger.error('Project brief understanding failed', error);
       throw new HttpException(
-        error.message || 'Job brief understanding failed',
+        error.message || 'Project brief understanding failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

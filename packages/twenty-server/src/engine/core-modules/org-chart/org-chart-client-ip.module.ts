@@ -5,9 +5,7 @@ import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/or
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([OrgChartClientIpRuleEntity], 'core'),
-  ],
+  imports: [TypeOrmModule.forFeature([OrgChartClientIpRuleEntity])],
   providers: [OrgChartClientIpService],
   exports: [OrgChartClientIpService],
 })

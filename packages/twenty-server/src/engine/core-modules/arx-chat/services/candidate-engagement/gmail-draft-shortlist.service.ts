@@ -149,7 +149,7 @@ export class GmailDraftShortlistService {
 
       // Get job from first candidate (assuming all candidates belong to same job)
       const firstCandidate = candidates[0].node;
-      return firstCandidate.jobs;
+      return firstCandidate.projects;
     } catch (error) {
       console.error('Error fetching job from candidate IDs:', error);
       return null;
@@ -165,7 +165,7 @@ export class GmailDraftShortlistService {
       // For now, we'll always create a new one as the original code does
       const cvSentData = {
         input: {
-          jobId: job.id,
+          projectId: job.id,
           name: `CV Sent - ${job.name}`,
           position: "first",
         },

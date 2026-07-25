@@ -1,0 +1,72 @@
+---
+description: >-
+  When porting workflows → port/arxena-modules (or upstream/core), sweep for the
+  same pattern in other files, then catalog in port-front-migration-track.md and
+  port-workflows-inventory.md
+alwaysApply: true
+---
+
+# Port catalog: workflows → `port/arxena-modules`
+
+Whenever you port, adapt, or wire Arxena code from `workflows` onto
+`port/arxena-modules` / `upstream/core`:
+
+1. **Sweep for siblings** — before finishing, check whether the same kind of
+   change is still needed elsewhere for a complete migration.
+2. **Catalog** — update the living docs in the **same turn** as the code change.
+
+Do not leave sibling fixes or catalog updates for “later”.
+
+## Sibling / pattern sweep (required on every requested change)
+
+When fixing or adapting one file, treat it as a **pattern**, not a one-off.
+
+1. Identify the pattern (e.g. `useMutation` without `useApolloCoreClient`,
+   `enqueueSnackBar`, `from 'recoil'`, `Job*` → `Project*`, flat
+   `from 'twenty-shared'`, `@emotion/styled`, upstream router/providers wiring).
+2. Search ARX + touched upstream areas for remaining instances. Prefer greps in
+   [`docs/port-front-migration-track.md`](../../docs/port-front-migration-track.md)
+   (§1 Apollo, §2 remaps, §3 Job→Project, §6 leftovers, §9.5).
+3. Fix all clear matches in scope, **or** list remaining hits in the migration
+   track §6 leftovers (path + pattern) if intentionally deferred.
+4. If the pattern is new, add a §2/§3 remap row and a reusable grep.
+
+Example scopes when one call site breaks:
+
+| You fixed… | Also check… |
+| --- | --- |
+| Apollo wrong client on one query | Other `twenty-shared/graphql` / `useQuery`/`useMutation`/`useApolloClient` in ARX modules |
+| One Job→Project rename | `AppPath.Jobs`, `useJob*`, `MergeJobs*`, MCP/server `job-*` CRM names |
+| One snackbar/API remap | Same old API under `orgchart`, `arx-jd-upload`, `candidate-table`, … |
+| One upstream wire (`SettingsRoutes`, nav, `core-engine.module`) | Matching inventory wave + other registration points |
+
+## Docs to update
+
+| Doc | Update when |
+| --- | --- |
+| [`docs/port-workflows-inventory.md`](../../docs/port-workflows-inventory.md) | Module/package port status, Nest wiring waves, build gates, skip/defer lists |
+| [`docs/port-front-migration-track.md`](../../docs/port-front-migration-track.md) | Import remaps, Apollo fixes, Job→Project leftovers, **§9 upstream core touches**, §6 deferred siblings, module checklist |
+
+Also follow [`.cursor/skills/recoil-to-jotai-migration/SKILL.md`](../skills/recoil-to-jotai-migration/SKILL.md) for Recoil/UI remaps; new remaps go in the migration track (§2) and optionally the skill.
+
+## Triggers (any of these → sweep + catalog)
+
+- Porting or adapting ARX front/server modules from workflows
+- Editing an **upstream/core** file for the port (router, providers, settings nav, Nest `core-engine.module`, billing, admin-panel, `AppPath` / `SettingsPath`, …)
+- Fixing migration breakages (Apollo `/metadata` vs `/graphql`, Recoil→Jotai, Linaria, snackbars, Job→Project)
+- Adding/removing packages or Nest module registration for Arxena
+
+## Required checklist before finishing the turn
+
+1. **Sibling sweep** — grepped for the same pattern; fixed or logged in §6.
+2. **Inventory** — tick or add the package/module row; note skip/defer if deferred.
+3. **Migration track** — append §0 work log and/or §5/§6 rows; tick §7 columns.
+4. **§9 core catalog** — if you modified a file that exists on `upstream/core`, add/update that row (`committed` / `working`, `intent` / `format`).
+5. **New remaps** — add §2/§3 rows for any new broken→correct import or rename pattern.
+
+## Do not
+
+- Fix only the reported file when the same anti-pattern exists elsewhere in the port
+- Port code without touching these docs when the change is port-related
+- Bury upstream core edits only in ARX module notes (always §9)
+- Duplicate huge file lists — keep rows concise; use refresh greps in §9.5 when regenerating

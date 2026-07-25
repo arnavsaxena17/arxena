@@ -5,11 +5,7 @@ import { type Task } from '@/activities/types/Task';
 import { type TaskTarget } from '@/activities/types/TaskTarget';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
-import {
-  CoreObjectNameSingular,
-  FieldMetadataType,
-  type Nullable,
-} from 'twenty-shared/types';
+import { CoreObjectNameSingular, FieldMetadataType, type Nullable } from 'twenty-shared/types';
 import {
   computeMorphRelationGqlFieldName,
   isDefined,

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { JsonMessageViewer } from '@/utils/JsonMessageViewer';
+import { JsonMessageViewer } from '~/utils/JsonMessageViewer';
 
 type TextSegment = {
   type: 'text' | 'bold' | 'markdownLink' | 'url' | 'phone' | 'id';

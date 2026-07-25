@@ -1,9 +1,6 @@
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 
-import {
-  type OrderBy,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { OrderBy, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 import { mapArrayToObject } from '~/utils/array/mapArrayToObject';
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
 

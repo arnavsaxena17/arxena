@@ -1,5 +1,5 @@
-import { IconLoader2 } from 'twenty-ui/icons';
-import { Button } from 'twenty-ui';
+import { IconLoader } from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/input';
 import React from 'react';
 import { TokenAnalysis as TokenAnalysisType } from '../types';
 import {
@@ -43,17 +43,18 @@ export const TokenAnalysisComponent: React.FC<TokenAnalysisProps> = ({
        */}
       <Button
         variant="primary"
-        title="Compute Token Usage"
+        title={
+          isComputingTokens ? 'Computing...' : 'Compute Token Usage'
+        }
         onClick={onComputeTokens}
         disabled={isComputingTokens}
+        isLoading={isComputingTokens}
         type="button"
-      >
-        {isComputingTokens ? 'Computing...' : 'Compute Token Usage'}
-      </Button>
-      
+      />
+
       {isComputingTokens ? (
         <LoadingContainer>
-          <IconLoader2 style={{ animation: 'spin 1s linear infinite' }} />
+          <IconLoader style={{ animation: 'spin 1s linear infinite' }} />
           Computing token usage...
         </LoadingContainer>
       ) : tokenAnalysis && (

@@ -86,7 +86,7 @@ Consider:
 ## Critical Principles
 
 1. **Default to Keywords Primary**: Unless you have strong reason to believe the title is standardized
-2. **Job titles are organizational labels**: They reflect company structure, not work content
+2. **Project titles are organizational labels**: They reflect company structure, not work content
 3. **Keywords are self-descriptive**: They reflect what people DO and want to be found for
 4. **Companies filter industry**: When industry matters, company list is more reliable than industry keywords
 5. **Always plan for 2-4 queries**: One search rarely captures all profile construction patterns

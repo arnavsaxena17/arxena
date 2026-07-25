@@ -1,12 +1,14 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import axios from 'axios';
 import { useEffect } from 'react';
-import { useRecoilState } from 'recoil';
 import { templatesState } from '../states/templatesState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export const TemplatesProvider = ({ children }: { children: React.ReactNode }) => {
-  const [templates, setTemplates] = useRecoilState(templatesState);
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const [templates, setTemplates] = useAtomState(templatesState);
+  const [tokenPair] = useAtomState(tokenPairState);
 
   useEffect(() => {
     const fetchAllTemplates = async () => {
@@ -15,8 +17,8 @@ export const TemplatesProvider = ({ children }: { children: React.ReactNode }) =
       try {
         setTemplates(prev => ({ ...prev, isLoading: true }));
         const response = await axios.get(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/get-templates`,
-          { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+          `${REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/get-templates`,
+          { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } },
         );
 
         const templateNames = response.data.templates
@@ -51,10 +53,10 @@ export const TemplatesProvider = ({ children }: { children: React.ReactNode }) =
       }
     };
 
-    if (tokenPair?.accessToken?.token) {
+    if (tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       fetchAllTemplates();
     }
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   return <>{children}</>;
 }; 

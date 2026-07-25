@@ -5,7 +5,7 @@ import {
     otherFieldsToFlatRow,
 } from 'twenty-shared';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { streamToBuffer } from 'src/utils/stream-to-buffer';
@@ -16,6 +16,8 @@ export type CandidateAttachmentMeta = {
   id?: string;
   name?: string;
   fullPath?: string;
+  fileCategory?: string;
+  /** @deprecated Prefer fileCategory */
   type?: string;
 };
 
@@ -46,17 +48,17 @@ export class CandidateDataService {
   ) {}
 
   async fetchCandidatesForJob(
-    jobId: string,
+    projectId: string,
     selectedRecordIds: string[] = [],
     apiToken: string,
     options?: { includeResumeText?: boolean },
   ): Promise<CandidateData[]> {
-    console.log('Fetching candidates for job:', jobId);
-    console.log('Selected record IDs for fetching candidates for job for enrichment:', jobId, selectedRecordIds);
+    console.log('Fetching candidates for job:', projectId);
+    console.log('Selected record IDs for fetching candidates for job for enrichment:', projectId, selectedRecordIds);
     try {
-      const filterParams = selectedRecordIds.length > 0 
+      const filterParams = selectedRecordIds.length > 0
         ? { id: { in: selectedRecordIds } }
-        : { jobsId: { eq: jobId } };
+        : { projectsId: { eq: projectId } };
 
       const variables = {
         filter: filterParams,
@@ -92,7 +94,7 @@ export class CandidateDataService {
 
         allCandidates.push(...edges.map((edge: any) => edge.node || {}));
         hasMoreResults = edges.length === 60;
-        
+
         if (edges.length && hasMoreResults) {
           lastCursor = edges[edges.length - 1].cursor;
         } else {
@@ -101,7 +103,7 @@ export class CandidateDataService {
       }
 
       console.log(`Fetched ${allCandidates.length} candidates`);
-      
+
       const processedCandidates = this.processCandidateData(allCandidates);
 
       if (options?.includeResumeText) {
@@ -126,7 +128,7 @@ export class CandidateDataService {
           delete candidate._attachments;
         }
       }
-      
+
       return processedCandidates;
     } catch (error) {
       console.error('Error fetching candidate data:', error);
@@ -241,17 +243,18 @@ export class CandidateDataService {
       return byExtension;
     }
 
-    const byType = withPath.find((att) => {
-      const type = (att.type || '').toLowerCase();
+    const byCategory = withPath.find((att) => {
+      const category = (att.fileCategory || att.type || '').toLowerCase();
       return (
-        type.includes('pdf') ||
-        type.includes('doc') ||
-        type.includes('resume') ||
-        type.includes('cv')
+        category.includes('text') ||
+        category.includes('pdf') ||
+        category.includes('doc') ||
+        category.includes('resume') ||
+        category.includes('cv')
       );
     });
 
-    return byType || withPath[0];
+    return byCategory || withPath[0];
   }
 
   private normalizeAttachmentPath(fullPath: string): string {
@@ -289,7 +292,8 @@ export class CandidateDataService {
           id: node.id,
           name: node.name,
           fullPath: node.fullPath,
-          type: node.type,
+          fileCategory: node.fileCategory,
+          type: node.fileCategory,
         }));
 
       const baseData: CandidateData = {

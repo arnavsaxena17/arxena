@@ -7,10 +7,11 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { UnipileLinkedinAccount, UnipileWhatsappAccount } from 'twenty-shared';
+import type { UnipileLinkedinAccount, UnipileWhatsappAccount } from 'twenty-shared/arx';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import {
     isLinkedinUnipileConnectedSelector,
     linkedinUnipileAccountsState,
@@ -107,29 +108,29 @@ const areConnectionStatusesEqual = (
 export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
-  const workspaceMemberProfileUnipileFields = useRecoilValue(
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+  const workspaceMemberProfileUnipileFields = useAtomStateValue(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const setLinkedinAccountsState = useSetRecoilState(
+  const setLinkedinAccountsState = useSetAtomState(
     linkedinUnipileAccountsState,
   );
-  const setWhatsappAccountsState = useSetRecoilState(
+  const setWhatsappAccountsState = useSetAtomState(
     whatsappUnipileAccountsState,
   );
-  const setOrgChartLinkedInSearchType = useSetRecoilState(
+  const setOrgChartLinkedInSearchType = useSetAtomState(
     orgChartLinkedInSearchTypeState,
   );
-  const setOwnerProfileCache = useSetRecoilState(
+  const setOwnerProfileCache = useSetAtomState(
     linkedinUnipileOwnerProfileCacheState,
   );
-  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
-  const whatsappUnipileAccounts = useRecoilValue(whatsappUnipileAccountsState);
-  const isLinkedinUnipileConnected = useRecoilValue(
+  const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
+  const whatsappUnipileAccounts = useAtomStateValue(whatsappUnipileAccountsState);
+  const isLinkedinUnipileConnected = useAtomStateValue(
     isLinkedinUnipileConnectedSelector,
   );
-  const isWhatsappUnipileConnected = useRecoilValue(
+  const isWhatsappUnipileConnected = useAtomStateValue(
     isWhatsappUnipileConnectedSelector,
   );
   const linkedinAccountsRef = useRef<UnipileLinkedinAccount[]>(

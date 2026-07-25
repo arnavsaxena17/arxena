@@ -6,11 +6,7 @@ import { getSettingsDataModelFieldOnClickActionDescription } from '@/settings/da
 import { type SettingsDataModelFieldOnClickActionFormValues } from '@/settings/data-model/fields/forms/utils/settingsDataModelFieldOnClickActionSchema';
 import { Select } from '@/ui/input/components/Select';
 import { useLingui } from '@lingui/react/macro';
-import {
-  type FieldMetadataMultiItemSettings,
-  FieldMetadataSettingsOnClickAction,
-  FieldMetadataType,
-} from 'twenty-shared/types';
+import { FieldMetadataSettingsOnClickAction, FieldMetadataType, type FieldMetadataMultiItemSettings } from 'twenty-shared/types';
 import { IconClick } from 'twenty-ui/icon';
 
 type SettingsDataModelFieldOnClickActionFormProps = {

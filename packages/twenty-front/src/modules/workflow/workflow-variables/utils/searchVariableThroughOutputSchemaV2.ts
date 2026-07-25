@@ -3,10 +3,7 @@ import {
   type WorkflowTriggerType,
 } from '@/workflow/types/Workflow';
 import { type StepOutputSchemaV2 } from '@/workflow/workflow-variables/types/StepOutputSchemaV2';
-import {
-  searchVariableInOutputSchema,
-  type VariableSearchResult,
-} from 'twenty-shared/workflow';
+import { searchVariableInOutputSchema, type VariableSearchResult } from 'twenty-shared/workflow';
 
 export const searchVariableThroughOutputSchemaV2 = ({
   stepOutputSchema,

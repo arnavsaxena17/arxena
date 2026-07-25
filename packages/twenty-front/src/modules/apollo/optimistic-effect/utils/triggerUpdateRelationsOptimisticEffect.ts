@@ -2,12 +2,7 @@ import { triggerAttachRelationOptimisticEffect } from '@/apollo/optimistic-effec
 import { triggerDestroyRecordsOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerDestroyRecordsOptimisticEffect';
 import { triggerDetachRelationOptimisticEffect } from '@/apollo/optimistic-effect/utils/triggerDetachRelationOptimisticEffect';
 import { CORE_OBJECT_NAMES_TO_DELETE_ON_TRIGGER_RELATION_DETACH } from '@/apollo/types/coreObjectNamesToDeleteOnRelationDetach';
-import {
-  type CoreObjectNameSingular,
-  FieldMetadataType,
-  RelationType,
-  type ObjectPermissions,
-} from 'twenty-shared/types';
+import { FieldMetadataType, RelationType, type CoreObjectNameSingular, type ObjectPermissions } from 'twenty-shared/types';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { type FieldMetadataItemRelation } from '@/object-metadata/types/FieldMetadataItemRelation';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';

@@ -1,9 +1,12 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 import { useEffect } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { findWorkspaceMemberProfiles } from 'twenty-shared';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { findWorkspaceMemberProfiles } from 'twenty-shared/graphql';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 
@@ -15,16 +18,19 @@ export const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
 `;
 
 export const WorkspaceMemberProfileUnipileSyncEffect = () => {
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
-  const setProfileFields = useSetRecoilState(
+  const apolloCoreClient = useApolloCoreClient();
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
+  const setProfileFields = useSetAtomState(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const setOrgChartLinkedinCandidateSource = useSetRecoilState(
+  const setOrgChartLinkedinCandidateSource = useSetAtomState(
     orgChartLinkedinCandidateSourceState,
   );
   const workspaceMemberId = currentWorkspaceMember?.id;
 
+  // Workspace object records are on /graphql, not the default /metadata client
   const { data, refetch } = useQuery(FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE, {
+    client: apolloCoreClient,
     variables: {
       filter: workspaceMemberId
         ? { workspaceMemberId: { eq: workspaceMemberId } }

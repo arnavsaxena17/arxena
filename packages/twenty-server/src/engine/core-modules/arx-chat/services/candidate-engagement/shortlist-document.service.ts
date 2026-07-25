@@ -7,7 +7,7 @@ import {
   graphqlQueryToFindCvsent,
   graphqlQueryToFindShortlists,
   graphqlToFetchAllCandidateData,
-  graphqlToFindManyJobs,
+  graphqlToFindManyProjects,
 } from 'twenty-shared';
 import * as XLSX from 'xlsx';
 
@@ -136,7 +136,7 @@ export class ShortlistDocumentService {
       // First, check if CV sent record already exists for this job
       const existingCvSentResponse = await this.staticGraphQLService.executeGraphQL(
         graphqlQueryToFindCvsent,
-        { filter: { jobId: { eq: job.id } } },
+        { filter: { projectId: { eq: job.id } } },
         apiToken,
       );
 
@@ -150,7 +150,7 @@ export class ShortlistDocumentService {
       // Create new CV sent record if none exists
       const cvSentData = {
         input: {
-          jobId: job.id,
+          projectId: job.id,
           name: `CV Sent - ${job.name}`,
           position: "first",
         },
@@ -188,13 +188,13 @@ export class ShortlistDocumentService {
   }
 
   private async fetchShortlistData(
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<any[]> {
     try {
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlQueryToFindShortlists,
-        { filter: { jobId: { eq: jobId } } },
+        { filter: { projectId: { eq: projectId } } },
         apiToken,
       );
 
@@ -207,7 +207,7 @@ export class ShortlistDocumentService {
 
   private async fetchShortlistDataByCandidateIds(
     candidateIds: string[],
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<any[]> {
     try {
@@ -216,7 +216,7 @@ export class ShortlistDocumentService {
         { 
           filter: { 
             candidateId: { in: candidateIds },
-            jobId: { eq: jobId }
+            projectId: { eq: projectId }
           } 
         },
         apiToken,
@@ -234,7 +234,7 @@ export class ShortlistDocumentService {
     processedCandidates: ProcessedCandidate[],
     originalCandidates: any[],
     apiToken: string,
-    jobId: string,
+    projectId: string,
   ): Promise<void> {
     try {
       const candidateDetails: Record<string, any> = {};
@@ -252,7 +252,7 @@ export class ShortlistDocumentService {
             { 
               filter: { 
                 candidateId: { eq: processedCandidate.candidate_id },
-                jobId: { eq: jobId }
+                projectId: { eq: projectId }
               } 
             },
             apiToken,
@@ -273,7 +273,7 @@ export class ShortlistDocumentService {
           const shortlistData = {
             input: {
               candidateId: processedCandidate.candidate_id,
-              jobId: jobId,
+              projectId: projectId,
               cvSentsId: cvSentId,
               name: candidateObj.name || 'Unknown Candidate',
               age: candidateObj.age || 0,
@@ -365,34 +365,34 @@ export class ShortlistDocumentService {
 
   async createWordDocumentFromExistingShortlist(
     candidateIds: string[],
-    jobId: string,
+    projectId: string,
     apiToken: string,
     origin: string,
   ): Promise<ShortlistDocumentResult> {
     try {
-      console.log('Creating shortlist document from existing data for job:', jobId);
+      console.log('Creating shortlist document from existing data for job:', projectId);
       console.log('Candidate IDs:', candidateIds);
 
       // Step 1: Get job data
       const jobResponse = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFindManyJobs,
-        { filter: { id: { eq: jobId } } },
+        graphqlToFindManyProjects,
+        { filter: { id: { eq: projectId } } },
         apiToken,
       );
 
-      const job = jobResponse?.data?.data?.jobs?.edges?.[0]?.node;
+      const job = jobResponse?.data?.data?.projects?.edges?.[0]?.node;
       if (!job) {
         return {
           shortlist_path: '',
           success: false,
-          error: 'Job not found',
+          error: 'Project not found',
         };
       }
 
       // Step 2: Fetch existing shortlist data for these candidates
       const shortlistData = await this.fetchShortlistDataByCandidateIds(
         candidateIds,
-        jobId,
+        projectId,
         apiToken,
       );
 
@@ -499,7 +499,7 @@ export class ShortlistDocumentService {
     job: any,
   ): string {
     let content = `Executive Shortlist\n`;
-    content += `Job: ${job.name}\n`;
+    content += `Project: ${job.name}\n`;
     content += `Company: ${job.company?.name || 'N/A'}\n`;
     content += `Location: ${job.jobLocation || 'N/A'}\n`;
     content += `Generated on: ${new Date().toISOString()}\n\n`;
@@ -507,7 +507,7 @@ export class ShortlistDocumentService {
     shortlistData.forEach((shortlist, index) => {
       content += `Candidate ${index + 1}: ${shortlist.name}\n`;
       content += `Age: ${shortlist.age || 'N/A'}\n`;
-      content += `Current Job: ${shortlist.currentJobTitle || 'N/A'} at ${shortlist.currentCompany || 'N/A'}\n`;
+      content += `Current Project: ${shortlist.currentJobTitle || 'N/A'} at ${shortlist.currentCompany || 'N/A'}\n`;
       content += `Experience: ${shortlist.yearsOfExperience || 0} years\n`;
       content += `Education: ${shortlist.educationalQualifications || 'N/A'}\n`;
       content += `University: ${shortlist.universityCollege || 'N/A'}\n`;

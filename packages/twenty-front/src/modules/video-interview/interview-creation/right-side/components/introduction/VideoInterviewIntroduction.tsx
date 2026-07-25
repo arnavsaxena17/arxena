@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
 
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { AdditionalInformation } from '@/video-interview/interview-creation/right-side/components/introduction/additional-information/AdditionalInformation';
 import { EthnicityAndModelSelectionContainer } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/EthnicityAndModelSelectionContainer';
 import { Instructions } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/Instructions';

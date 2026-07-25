@@ -1,10 +1,5 @@
 // Re-export shared types
-import {
-  AiFiltersResponse,
-  LinkedInSearchCategory,
-  LinkedInSearchType,
-  SearchAiFilterField
-} from 'twenty-shared';
+import type { AiFiltersResponse, LinkedInSearchCategory, LinkedInSearchType, SearchAiFilterField } from 'twenty-shared/types';
 
 export type { AiFiltersResponse, LinkedInSearchCategory, LinkedInSearchType };
 // Re-export with alias for backward compatibility

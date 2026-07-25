@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@apollo/client/react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { type AiSdkPackage, isDataResidency } from 'twenty-shared/ai';
+import { isDataResidency, type AiSdkPackage } from 'twenty-shared/ai';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
 import { Info } from 'twenty-ui/feedback';

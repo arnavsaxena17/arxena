@@ -1,5 +1,5 @@
 import { Button, MenuItem } from 'twenty-ui';
-import { IconChevronDown } from 'twenty-ui/icons';
+import { IconChevronDown } from 'twenty-ui/icon';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -8,9 +8,9 @@ import {
     OrgChartDiagramProps,
     OrgChartSearchControls,
 } from 'twenty-orgchart';
-import { OrgChartNodeData } from 'twenty-shared';
+import type { OrgChartNodeData } from 'twenty-shared/utils';
 
-import { OrgChartAddToJobModal } from '../components/OrgChartAddToJobModal';
+import { OrgChartAddToProjectModal } from '../components/OrgChartAddToProjectModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
     OrgChartHeader,
@@ -23,13 +23,18 @@ import { ArxOrgChartTimelineSlider } from './ArxOrgChartTimelineSlider';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
-import { useDropdown } from '@/ui/layout/dropdown/hooks/useDropdown';
+import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import {
     ConfirmationModal,
     StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
+import { useModal } from '@/ui/layout/modal/hooks/useModal';
 
 import type { OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
+
+const APOLLO_FALLBACK_MODAL_ID = 'orgchart-apollo-fallback-notice';
+const SEARCH_CONFIRM_MODAL_ID = 'orgchart-search-confirm';
+const PREVIEW_NODE_MODAL_ID = 'orgchart-preview-node-choice';
 
 import {
     StyledAsOfMonthPicker,
@@ -222,10 +227,33 @@ export const ArxOrgChartView = ({
 }: ArxOrgChartViewProps) => {
   const diagramNodeDataArray = displayedNodeDataArray ?? nodeDataArray;
   const multiSourceDropdownId = 'orgchart-multisource-dropdown';
-  const { closeDropdown: closeMultiSourceDropdown } = useDropdown(
-    multiSourceDropdownId,
-  );
+  const { closeDropdown } = useCloseDropdown();
+  const { openModal, closeModal } = useModal();
   const [isCompanyDrawerOpen, setIsCompanyDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (apolloFallbackNotice?.isModalOpen === true) {
+      openModal(APOLLO_FALLBACK_MODAL_ID);
+      return;
+    }
+    closeModal(APOLLO_FALLBACK_MODAL_ID);
+  }, [apolloFallbackNotice?.isModalOpen, closeModal, openModal]);
+
+  useEffect(() => {
+    if (pendingSearchConfirm !== null) {
+      openModal(SEARCH_CONFIRM_MODAL_ID);
+      return;
+    }
+    closeModal(SEARCH_CONFIRM_MODAL_ID);
+  }, [closeModal, openModal, pendingSearchConfirm]);
+
+  useEffect(() => {
+    if (pendingPreviewNodePeopleChoice !== null) {
+      openModal(PREVIEW_NODE_MODAL_ID);
+      return;
+    }
+    closeModal(PREVIEW_NODE_MODAL_ID);
+  }, [closeModal, openModal, pendingPreviewNodePeopleChoice]);
 
   const selectedMultiSources: string[] = Array.isArray(
     searchControlsProps?.multiSourceSelectedSources,
@@ -595,13 +623,12 @@ export const ArxOrgChartView = ({
                         justify="center"
                       />
                     }
-                    dropdownMenuWidth={280}
                     dropdownComponents={
                       <DropdownMenuItemsContainer>
                         <MenuItem
                           text="Generate multi-source full org chart"
                           onClick={() => {
-                            closeMultiSourceDropdown();
+                            closeDropdown(multiSourceDropdownId);
                             searchControlsProps.onGetAllMultiSource?.();
                           }}
                         />
@@ -667,7 +694,6 @@ export const ArxOrgChartView = ({
                         />
                       </DropdownMenuItemsContainer>
                     }
-                    dropdownHotkeyScope={{ scope: multiSourceDropdownId }}
                   />
                   {searchControlsProps?.onSuperImpose ? (
                     <StyledTopRightActionButton
@@ -751,7 +777,7 @@ export const ArxOrgChartView = ({
             />
           ) : null}
 
-          <OrgChartAddToJobModal
+          <OrgChartAddToProjectModal
             isOpen={addToJobModalProps.isOpen}
             onClose={addToJobModalProps.onClose}
             node={addToJobModalProps.node}
@@ -778,58 +804,53 @@ export const ArxOrgChartView = ({
       />
 
       <ConfirmationModal
-        isOpen={apolloFallbackNotice?.isModalOpen === true}
-        setIsOpen={(open) => {
-          if (!open) {
-            apolloFallbackNotice?.onCloseModal();
-          }
-        }}
+        modalInstanceId={APOLLO_FALLBACK_MODAL_ID}
         title="Loaded sampled org chart"
         subtitle={`Apollo returned ${
           typeof apolloFallbackNotice?.apolloTotalCount === 'number'
             ? apolloFallbackNotice.apolloTotalCount.toLocaleString()
             : 'more than 2,000'
         } employees for this query. We loaded a sampled chart from Elasticsearch for speed. Refine country/function filters or use Leadership Org Chart for a smaller scope.`}
+        onClose={() => {
+          apolloFallbackNotice?.onCloseModal();
+        }}
         onConfirmClick={() => {
           apolloFallbackNotice?.onCloseModal();
         }}
-        deleteButtonText="Got it"
+        confirmButtonText="Got it"
         confirmButtonAccent="blue"
       />
 
       <ConfirmationModal
-        isOpen={pendingSearchConfirm !== null}
-        setIsOpen={(open) => {
-          if (!open) {
-            setPendingSearchConfirm(null);
-          }
-        }}
+        modalInstanceId={SEARCH_CONFIRM_MODAL_ID}
         title={pendingSearchConfirm?.title ?? ''}
         subtitle={candidateSearchConfirmSubtitle}
         loading={pendingSearchConfirm?.estimateLoading === true}
+        onClose={() => {
+          setPendingSearchConfirm(null);
+        }}
         onConfirmClick={() => {
           if (pendingSearchConfirm?.scopeRequired) {
+            setPendingSearchConfirm(null);
             return;
           }
           pendingSearchConfirm?.run();
         }}
-        deleteButtonText={
+        confirmButtonText={
           pendingSearchConfirm?.scopeRequired ? 'Close' : 'Confirm'
         }
         confirmButtonAccent="blue"
       />
 
       <ConfirmationModal
-        isOpen={pendingPreviewNodePeopleChoice !== null}
-        setIsOpen={(open) => {
-          if (!open) {
-            setPendingPreviewNodePeopleChoice(null);
-          }
-        }}
+        modalInstanceId={PREVIEW_NODE_MODAL_ID}
         title="Preview org chart"
         subtitle={previewNodeChoiceSubtitle}
+        onClose={() => {
+          setPendingPreviewNodePeopleChoice(null);
+        }}
         onConfirmClick={onConfirmPreviewNodeFullOrgChart}
-        deleteButtonText="View full org chart"
+        confirmButtonText="View full org chart"
         confirmButtonAccent="blue"
         AdditionalButtons={
           <>

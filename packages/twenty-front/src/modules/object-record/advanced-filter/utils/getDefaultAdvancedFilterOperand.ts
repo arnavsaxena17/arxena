@@ -1,8 +1,5 @@
 import { getRecordFilterOperands } from '@/object-record/record-filter/utils/getRecordFilterOperands';
-import {
-  type FilterableAndTSVectorFieldType,
-  ViewFilterOperand as RecordFilterOperand,
-} from 'twenty-shared/types';
+import { ViewFilterOperand as RecordFilterOperand, type FilterableAndTSVectorFieldType } from 'twenty-shared/types';
 
 export const getDefaultAdvancedFilterOperand = ({
   filterType,

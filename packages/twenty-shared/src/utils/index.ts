@@ -448,6 +448,10 @@ export { uuidToBase36 } from './uuidToBase36';
 export { assertIsDefinedOrThrow } from './validation/assertIsDefinedOrThrow';
 export { emailSchema } from './validation/emailSchema';
 export { escapeForIlike } from './validation/escapeForIlike';
+export {
+  WORK_EMAIL_REQUIRED_MESSAGE,
+  isAllowedEmailForNewWorkspaceSignup,
+} from './validation/isAllowedEmailForNewWorkspaceSignup';
 export { isDefined } from './validation/isDefined';
 export { isEmptyObject } from './validation/isEmptyObject';
 export { isImageIdentifierFieldMetadataType } from './validation/isImageIdentifierFieldMetadataType';

@@ -4,12 +4,7 @@ import { currentStepFilterGroupsComponentState } from '@/workflow/workflow-steps
 import { currentStepFiltersComponentState } from '@/workflow/workflow-steps/filters/states/currentStepFiltersComponentState';
 import { useStore } from 'jotai';
 import { useCallback, useContext } from 'react';
-import {
-  type StepFilter,
-  type StepFilterGroup,
-  StepLogicalOperator,
-  ViewFilterOperand,
-} from 'twenty-shared/types';
+import { StepLogicalOperator, ViewFilterOperand, type StepFilter, type StepFilterGroup } from 'twenty-shared/types';
 import { v4 } from 'uuid';
 
 export const useAddRootStepFilter = () => {

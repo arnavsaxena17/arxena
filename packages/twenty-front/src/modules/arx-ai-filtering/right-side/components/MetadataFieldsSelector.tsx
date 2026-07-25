@@ -1,4 +1,4 @@
-import { IconX } from 'twenty-ui/icons';
+import { IconX } from 'twenty-ui/icon';
 import React from 'react';
 
 import { OtherFieldKey } from '../types';

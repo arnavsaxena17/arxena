@@ -1,9 +1,6 @@
 import { type CompositeFieldSubFieldName } from '@/settings/data-model/types/CompositeFieldSubFieldName';
-import {
-  type FilterableAndTSVectorFieldType,
-  type ViewFilterOperand,
-} from 'twenty-shared/types';
-import { type FILTER_OPERANDS_MAP } from 'twenty-shared/utils';
+import type { FilterableAndTSVectorFieldType, ViewFilterOperand } from 'twenty-shared/types';
+import type { FILTER_OPERANDS_MAP } from 'twenty-shared/utils';
 
 // RLS-specific: references a workspace member field for dynamic "Me" comparisons
 export type RLSDynamicValue = {

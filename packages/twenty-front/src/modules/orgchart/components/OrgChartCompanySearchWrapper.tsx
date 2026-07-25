@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { Mixpanel } from '~/mixpanel';
 
 import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
 import { CompanySearchAutocomplete } from '~/lib/company-search';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 type OrgChartCompanySearchWrapperProps = {
   onCompanySelect: (company: {
@@ -29,10 +31,10 @@ export const OrgChartCompanySearchWrapper = ({
   disabled = false,
   startIcon,
 }: OrgChartCompanySearchWrapperProps) => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
-  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
-  const setSelectedCompanyInfo = useSetRecoilState(
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
+  const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
+  const setSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
   const autocompletePath = '/org-chart/companies/autocomplete';

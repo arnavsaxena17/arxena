@@ -1,12 +1,10 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
 import { AssistantThread } from '@/assistant/types/assistant.types';
-import {
-  LinkedInSearchCategory,
-  LinkedInSearchType
-} from 'twenty-shared';
+import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { FormComponentProps } from '../types/FormComponentProps';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
@@ -14,7 +12,7 @@ import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDStepBar } from './ArxJDStepBar';
 import { ArxJDStepNavigation } from './ArxJDStepNavigation';
-import { RecruiterDetails } from './JobDetailsForm';
+import { RecruiterDetails } from './ProjectDetailsForm';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -26,14 +24,14 @@ const StyledContainer = styled.div`
 
 const StyledHeader = styled.div`
   align-items: center;
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   display: flex;
   height: 60px;
   min-height: 60px;
   padding: 0px;
-  padding-left: ${({ theme }) => theme.spacing(6)};
-  padding-right: ${({ theme }) => theme.spacing(6)};
+  padding-left: ${themeCssVariables.spacing[6]};
+  padding-right: ${themeCssVariables.spacing[6]};
 `;
 
 const StyledContent = styled.div`
@@ -50,13 +48,13 @@ const StyledLoadingContainer = styled.div`
   justify-content: center;
   height: 100%;
   width: 100%;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledLoadingMessage = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 export type ArxJDStepperContainerProps = FormComponentProps & {

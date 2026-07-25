@@ -269,7 +269,7 @@ export const prompts = [
 
 
             SHARED_JD_HAS_NOT_RESPONDED
-            When: JD (Job Description) has been shared
+            When: JD (Project Description) has been shared
             When: No response after JD shared
 
 

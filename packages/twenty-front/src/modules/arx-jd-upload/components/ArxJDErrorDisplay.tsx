@@ -1,9 +1,9 @@
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledErrorContainer = styled.div`
-  color: ${({ theme }) => theme.color.red};
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  color: ${themeCssVariables.color.red};
+  margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
 type ArxJDErrorDisplayProps = {
@@ -11,7 +11,5 @@ type ArxJDErrorDisplayProps = {
 };
 
 export const ArxJDErrorDisplay = ({ error }: ArxJDErrorDisplayProps) => {
-  const theme = useTheme();
-
   return <StyledErrorContainer>Error: {error}</StyledErrorContainer>;
 };

@@ -11,6 +11,7 @@ import {
   IconChartBar,
   IconCpu,
   IconLayoutDashboard,
+  IconPlug,
   IconPlus,
   IconSparkles,
   IconTool,
@@ -20,6 +21,7 @@ import { Section } from 'twenty-ui/layout';
 import { UndecoratedLink } from 'twenty-ui/navigation';
 import { SettingsAgentSkillsTab } from '~/pages/settings/ai/components/SettingsAgentSkillsTab';
 import { SettingsAgentToolsTab } from '~/pages/settings/ai/components/SettingsAgentToolsTab';
+import { SettingsAiMcpServersTab } from '~/pages/settings/ai/components/SettingsAiMcpServersTab';
 import { SettingsAiModelsTab } from '~/pages/settings/ai/components/SettingsAiModelsTab';
 import { SettingsAiOverviewTab } from '~/pages/settings/ai/components/SettingsAiOverviewTab';
 import { SettingsAiUsageTab } from '~/pages/settings/ai/components/SettingsAiUsageTab';
@@ -56,6 +58,11 @@ export const SettingsAI = () => {
       Icon: IconTool,
     },
     {
+      id: SETTINGS_AI_TABS.TABS_IDS.MCP_SERVERS,
+      title: t`MCP servers`,
+      Icon: IconPlug,
+    },
+    {
       id: SETTINGS_AI_TABS.TABS_IDS.USAGE,
       title: t`Usage`,
       Icon: IconChartBar,
@@ -71,6 +78,8 @@ export const SettingsAI = () => {
   const isModelsTab = resolvedTabId === SETTINGS_AI_TABS.TABS_IDS.MODELS;
   const isSkillsTab = resolvedTabId === SETTINGS_AI_TABS.TABS_IDS.SKILLS;
   const isToolsTab = resolvedTabId === SETTINGS_AI_TABS.TABS_IDS.TOOLS;
+  const isMcpServersTab =
+    resolvedTabId === SETTINGS_AI_TABS.TABS_IDS.MCP_SERVERS;
   const isUsageTab = resolvedTabId === SETTINGS_AI_TABS.TABS_IDS.USAGE;
 
   return (
@@ -144,6 +153,7 @@ export const SettingsAI = () => {
         {isModelsTab && <SettingsAiModelsTab />}
         {isSkillsTab && <SettingsAgentSkillsTab />}
         {isToolsTab && <SettingsAgentToolsTab />}
+        {isMcpServersTab && <SettingsAiMcpServersTab />}
         {isUsageTab && <SettingsAiUsageTab />}
       </SettingsPageContainer>
     </SettingsPageLayout>

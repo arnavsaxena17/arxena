@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { questionOrAnswerOptions } from '@/video-interview/interview-creation/right-side/components/question/questionOrAnswerOptions';
-import { Select, SelectOption } from '@/ui/input/components/Select';
+import { Select } from '@/ui/input/components/Select';
+import { type SelectOption } from 'twenty-ui/input';
 
 const StyledContainer = styled.div`
   display: flex;

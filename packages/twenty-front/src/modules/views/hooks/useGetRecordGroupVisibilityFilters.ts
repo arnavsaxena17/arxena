@@ -5,11 +5,7 @@ import { computeRecordGroupOptionsFilter } from '@/object-record/record-group/ut
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useGetCurrentViewOnly } from '@/views/hooks/useGetCurrentViewOnly';
 import { isNonEmptyArray, isNonEmptyString } from '@sniptt/guards';
-import {
-  FieldMetadataType,
-  ViewFilterOperand,
-  type RecordGqlOperationFilter,
-} from 'twenty-shared/types';
+import { FieldMetadataType, ViewFilterOperand, type RecordGqlOperationFilter } from 'twenty-shared/types';
 import { getFilterTypeFromFieldType, isDefined } from 'twenty-shared/utils';
 
 type RecordGroupVisibilityFilters = {

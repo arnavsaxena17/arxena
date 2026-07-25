@@ -1,12 +1,14 @@
-import { Button } from 'twenty-ui';
-import { IconMinus, IconPlus } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui/input';
+import { IconMinus, IconPlus } from 'twenty-ui/icon';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import styled from '@emotion/styled';
-import { IconInfoCircle } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconInfoCircle } from 'twenty-ui/icon';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { FindOneJob } from 'twenty-shared';
+import { FindOneProject } from 'twenty-shared/graphql';
+
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { FormComponentProps } from '../types/FormComponentProps';
 import {
@@ -16,10 +18,12 @@ import {
   StyledSectionHeader,
 } from './ArxJDUploadModal.styled';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 const StyledHeaderContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledIconContainer = styled.div`
@@ -35,15 +39,15 @@ const StyledIconContainer = styled.div`
     top: -10px;
     left: 24px;
     transform: translateY(-100%);
-    background-color: ${({ theme }) => theme.background.primary};
-    color: ${({ theme }) => theme.font.color.primary};
-    padding: ${({ theme }) => theme.spacing(2)};
-    border-radius: ${({ theme }) => theme.border.radius.sm};
-    box-shadow: ${({ theme }) => theme.boxShadow.light};
+    background-color: ${themeCssVariables.background.primary};
+    color: ${themeCssVariables.font.color.primary};
+    padding: ${themeCssVariables.spacing[2]};
+    border-radius: ${themeCssVariables.border.radius.sm};
+    box-shadow: ${themeCssVariables.boxShadow.light};
     width: max-content;
     max-width: 250px;
     z-index: 1000;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 
@@ -70,24 +74,24 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [isLoading, setIsLoading] = useState(true);
   const parsedJDRef = useRef(parsedJD);
-  const fetchedJobIdRef = useRef<string | null>(null);
+  const fetchedProjectIdRef = useRef<string | null>(null);
 
   parsedJDRef.current = parsedJD;
 
   useEffect(() => {
     const fetchExistingQuestions = async () => {
-      const jobId = parsedJDRef.current?.id;
+      const projectId = parsedJDRef.current?.id;
 
-      if (!jobId) {
-        fetchedJobIdRef.current = null;
+      if (!projectId) {
+        fetchedProjectIdRef.current = null;
         setIsLoading(false);
         return;
       }
 
-      if (fetchedJobIdRef.current === jobId) {
+      if (fetchedProjectIdRef.current === projectId) {
         setIsLoading(false);
         return;
       }
@@ -95,22 +99,22 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
       try {
         const response = await axios({
           method: 'post',
-          url: `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+          url: `${REACT_APP_SERVER_BASE_URL}/graphql`,
           data: {
-            operationName: 'FindOneJob',
+            operationName: 'FindOneProject',
             variables: {
-              objectRecordId: jobId,
+              objectRecordId: projectId,
             },
-            query: FindOneJob,
+            query: FindOneProject,
           },
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+          headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         });
 
         const questions = Array.isArray(response.data?.data?.job?.chatQuestions)
           ? response.data.data.job.chatQuestions
           : [];
 
-        fetchedJobIdRef.current = jobId;
+        fetchedProjectIdRef.current = projectId;
 
         const currentParsedJD = parsedJDRef.current;
         if (!currentParsedJD) {
@@ -145,7 +149,7 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
 
     setIsLoading(true);
     fetchExistingQuestions();
-  }, [parsedJD?.id, tokenPair?.accessToken?.token, setParsedJD]);
+  }, [parsedJD?.id, tokenPair?.accessOrWorkspaceAgnosticToken?.token, setParsedJD]);
 
   if (parsedJD === null) {
     return null;
@@ -255,9 +259,7 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
           title="Add Question"
           Icon={IconPlus}
           onClick={handleChatQuestionAdd}
-        >
-          Add Question
-        </Button>
+        />
       </StyledSectionContent>
     </StyledSection>
   );

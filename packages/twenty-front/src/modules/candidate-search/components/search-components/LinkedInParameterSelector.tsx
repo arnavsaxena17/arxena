@@ -1,9 +1,13 @@
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { resolvedParametersSelector } from '@/candidate-table/states/states';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 type LinkedInParameter = {
   object: 'LinkedinSearchParameter';
@@ -30,26 +34,26 @@ const getInstanceId = () => ++instanceCounter;
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledLabel = styled.label`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledInput = styled.input`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  background-color: ${({ theme }) => theme.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  background-color: ${themeCssVariables.background.primary};
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue20};
+    border-color: ${themeCssVariables.color.blue2};
   }
 `;
 
@@ -57,71 +61,71 @@ const StyledDropdown = styled.div`
   position: relative;
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
   z-index: 10;
 `;
 
 const StyledDropdownItem = styled.div<{ isSelected: boolean }>`
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  background-color: ${({ isSelected, theme }) => 
-    isSelected ? theme.color.blue10 : 'transparent'};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  background-color: ${({ isSelected }) => 
+    isSelected ? themeCssVariables.color.blue10 : 'transparent'};
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.gray10};
+    background-color: ${themeCssVariables.color.gray10};
   }
 `;
 
 const StyledSelectedContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin-top: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSelectedItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.blue10};
-  border: 1px solid ${({ theme }) => theme.color.blue20};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.color.blue60};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.blue10};
+  border: 1px solid ${themeCssVariables.color.blue2};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.color.blue6};
 `;
 
 const StyledRemoveButton = styled.button`
   background: none;
   border: none;
-  color: ${({ theme }) => theme.color.blue60};
+  color: ${themeCssVariables.color.blue6};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   padding: 0;
   
   &:hover {
-    color: ${({ theme }) => theme.color.red60};
+    color: ${themeCssVariables.color.red6};
   }
 `;
 
 const StyledLoadingContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]};
   text-align: center;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledErrorContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.red10};
-  border: 1px solid ${({ theme }) => theme.color.red20};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.color.red60};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.red10};
+  border: 1px solid ${themeCssVariables.color.red2};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.color.red6};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 export const LinkedInParameterSelector = ({
@@ -134,9 +138,9 @@ export const LinkedInParameterSelector = ({
   keywords,
   limit = 50,
 }: LinkedInParameterSelectorProps) => {
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
-  const resolvedParameters = useRecoilValue(resolvedParametersSelector);
+  const [tokenPair] = useAtomState(tokenPairState);
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
+  const resolvedParameters = useAtomStateValue(resolvedParametersSelector);
   const [searchTerm, setSearchTerm] = useState('');
   const [parameters, setParameters] = useState<LinkedInParameter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,10 +174,14 @@ export const LinkedInParameterSelector = ({
       
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
-          if (searchParam.resolvedSearchParameters[displayKey]) {
-            return searchParam.resolvedSearchParameters[displayKey];
+          const resolvedSearchParameters = searchParam.resolvedSearchParameters as Record<
+            string,
+            unknown
+          >;
+          if (resolvedSearchParameters[displayKey]) {
+            return resolvedSearchParameters[displayKey];
           }
-          for (const [key, value] of Object.entries(searchParam.resolvedSearchParameters)) {
+          for (const [key, value] of Object.entries(resolvedSearchParameters)) {
             if (typeof value === 'object' && value !== null && (value as any)[displayKey]) {
               return (value as any)[displayKey];
             }
@@ -203,8 +211,8 @@ export const LinkedInParameterSelector = ({
       });
 
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/parameters/${parameterType}?${queryParams}`,
-        { method: 'GET', headers: { 'Authorization': `Bearer ${tokenPair?.accessToken?.token}` } }
+        `${REACT_APP_SERVER_BASE_URL}/candidate-search/parameters/${parameterType}?${queryParams}`,
+        { method: 'GET', headers: { 'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
       );
 
       if (!response.ok) {
@@ -242,7 +250,7 @@ export const LinkedInParameterSelector = ({
     } finally {
       setIsLoading(false);
     }
-  }, [parameterType, limit, tokenPair?.accessToken?.token]);
+  }, [parameterType, limit, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -352,7 +360,8 @@ export const LinkedInParameterSelector = ({
           const displayKey = `${paramKey}_display`;
           
           // Find the appropriate nested structure (e.g., classicPeopleSearch)
-          const resolvedParams = updatedSearchParameters[searchParamIndex].resolvedSearchParameters;
+          const resolvedParams = (updatedSearchParameters[searchParamIndex]
+            .resolvedSearchParameters ?? {}) as Record<string, any>;
           let targetNestedKey = null;
           
           // Look for existing nested structures
@@ -441,7 +450,8 @@ export const LinkedInParameterSelector = ({
         if (searchParamIndex !== -1) {
           const paramKey = parameterType.toLowerCase();
           const displayKey = `${paramKey}_display`;
-          const resolvedParams = updatedSearchParameters[searchParamIndex].resolvedSearchParameters;
+          const resolvedParams = (updatedSearchParameters[searchParamIndex]
+            .resolvedSearchParameters ?? {}) as Record<string, any>;
           
           // Find the appropriate nested structure (e.g., classicPeopleSearch)
           let targetNestedKey = null;
@@ -540,9 +550,13 @@ export const LinkedInParameterSelector = ({
       
       for (const searchParam of parsedJD.searchParameters) {
         if (searchParam.resolvedSearchParameters) {
+          const resolvedSearchParameters = searchParam.resolvedSearchParameters as Record<
+            string,
+            { id: string; title: string }[]
+          >;
           // Check flat structure first
-          if (searchParam.resolvedSearchParameters[displayKey]) {
-            const displayArray = searchParam.resolvedSearchParameters[displayKey];
+          if (resolvedSearchParameters[displayKey]) {
+            const displayArray = resolvedSearchParameters[displayKey];
             const displayItem = displayArray.find((item: { id: string; title: string }) => item.id === id);
             if (displayItem?.title) {
               return displayItem.title;

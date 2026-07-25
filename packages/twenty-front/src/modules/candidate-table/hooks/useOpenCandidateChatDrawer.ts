@@ -2,10 +2,10 @@ import { searchResultsState } from '@/candidate-search/states/searchResultsState
 import { selectedCandidateIdState } from '@/candidate-table/states/states';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
-import { IconMessages } from 'twenty-ui';
+import { IconMessage } from 'twenty-ui/icon';
 import { useCallback } from 'react';
-import { useSetRecoilState } from 'recoil';
-import { TransformedCandidateForTable } from 'twenty-shared';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import type { TransformedCandidateForTable } from 'twenty-shared/arx';
 
 export type OpenCandidateChatDrawerParams = {
   candidateId: string;
@@ -16,8 +16,8 @@ export type OpenCandidateChatDrawerParams = {
 
 export const useOpenCandidateChatDrawer = () => {
   const { openRightDrawer } = useRightDrawer();
-  const setSelectedCandidateId = useSetRecoilState(selectedCandidateIdState);
-  const setSearchResults = useSetRecoilState(searchResultsState);
+  const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
+  const setSearchResults = useSetAtomState(searchResultsState);
 
   return useCallback(
     ({ candidateId, displayName, seedRow }: OpenCandidateChatDrawerParams) => {
@@ -39,7 +39,11 @@ export const useOpenCandidateChatDrawer = () => {
       setSelectedCandidateId(candidateId);
       openRightDrawer(RightDrawerPages.CandidateChat, {
         title: `Chat with ${displayName?.trim() || 'Candidate'}`,
-        Icon: IconMessages,
+        Icon: IconMessage,
+        meta: {
+          candidateId,
+          unreadMessageIds: [],
+        },
       });
     },
     [openRightDrawer, setSearchResults, setSelectedCandidateId],

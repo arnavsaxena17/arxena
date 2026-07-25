@@ -10,7 +10,7 @@ import {
   type SystemModelMessage,
   type ToolSet,
 } from 'ai';
-import { type ExtendedUIMessage } from 'twenty-shared/ai';
+import { type ExtendedUIMessage, ToolCategory } from 'twenty-shared/ai';
 import { type APP_LOCALES } from 'twenty-shared/translations';
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
@@ -165,6 +165,17 @@ export class ChatExecutionService {
 
     this.logger.log(
       `Built tool catalog with ${toolCatalog.length} tools, ${skillCatalog.length} skills available`,
+    );
+
+    const arxenaCount = toolCatalog.filter(
+      (entry) => entry.category === ToolCategory.ARXENA,
+    ).length;
+    const externalMcpCount = toolCatalog.filter(
+      (entry) => entry.category === ToolCategory.EXTERNAL_MCP,
+    ).length;
+
+    this.logger.log(
+      `tools_in_context catalog_size=${toolCatalog.length} schemas_preloaded=${AI_CHAT_TOOL_NAMES_TO_PRELOAD.length} arxena=${arxenaCount} external_mcp=${externalMcpCount}`,
     );
 
     const preloadedTools = await this.toolRegistry.getToolsByName(

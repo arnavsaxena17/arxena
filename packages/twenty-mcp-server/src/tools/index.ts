@@ -7,7 +7,7 @@ import { clientContactInterviewTools } from './client-contact-interview-tools';
 import { companyTools } from './company-tools';
 import { esIndexSearchTools } from './es-index-search-tools';
 import { internalTools } from './internal-tools';
-import { jobTools } from './job-tools';
+import { projectTools } from './project-tools';
 import { linkedinSearchTools } from './linkedin-search-tools';
 import { orgChartTools } from './org-chart-tools';
 import { peopleApiTools } from './people-api-tools';
@@ -20,7 +20,7 @@ import { unipileControllersTools } from './unipile-controllers-tools';
 
 export const publicTools: McpTool[] = [
   ...searchFetchTools,
-  ...jobTools,
+  ...projectTools,
   ...candidateTools,
   ...personTools,
   ...companyTools,

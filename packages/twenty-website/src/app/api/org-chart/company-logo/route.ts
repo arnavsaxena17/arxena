@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { isLikelyBrowserLogoRequest } from 'twenty-shared';
+import { isLikelyBrowserLogoRequest } from 'twenty-shared/utils';
 
 import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 

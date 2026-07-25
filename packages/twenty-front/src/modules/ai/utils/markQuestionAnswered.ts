@@ -1,10 +1,5 @@
 import { isToolUIPart } from 'ai';
-import {
-  type AskQuestionAnswer,
-  type AskQuestionsToolResult,
-  type ExtendedUIMessage,
-  type ExtendedUIMessagePart,
-} from 'twenty-shared/ai';
+import type { AskQuestionAnswer, AskQuestionsToolResult, ExtendedUIMessage, ExtendedUIMessagePart } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
 export const markQuestionAnswered = (

@@ -1,4 +1,4 @@
-import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
@@ -6,16 +6,21 @@ import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from 
 import { useStartChats } from '@/object-record/hooks/useStartChats';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import styled from '@emotion/styled';
-import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconMessageX, IconPhone, IconUserCircle } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconPhone, IconUserCircle, IconX } from 'twenty-ui/icon';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { getCandidateCustomField, graphQltoUpdateOneCandidate } from 'twenty-shared';
-import { Status } from 'twenty-ui';
+import { graphQltoUpdateOneCandidate } from 'twenty-shared/graphql';
+import { getCandidateCustomField } from 'twenty-shared/utils';
+import { Status } from 'twenty-ui/data-display';
 import { getCandidateProfileUrl } from './utils/getCandidateProfileUrl';
 import { STATUS_LABELS } from './TableColumns';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // Status colors mapping
 const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow"> = {
@@ -84,70 +89,70 @@ const CHAT_LABELS: Record<string, string> = {
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  background-color: ${({ theme }) => theme.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  background-color: ${themeCssVariables.background.primary};
 `;
 
 const StyledTopRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledName = styled.h2`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledInfoRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledInfoItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[1]};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
+    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
 const StyledActionsRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledActionButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(1)}`};
+  gap: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   white-space: nowrap;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.quaternary};
+    background-color: ${themeCssVariables.background.quaternary};
   }
 `;
 
@@ -159,17 +164,17 @@ const StyledDropdownContainer = styled.div`
 `;
 
 const StyledSelect = styled.select`
-  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(1)}`};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
+  background-color: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.border.color.strong};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 `;
 
@@ -184,11 +189,11 @@ const StyledIconWrapper = styled.div`
 `;
 
 const StyledLinkIcon = styled(IconExternalLink)`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   width: 16px;
   height: 16px;
   &:hover {
-    color: ${({ theme }) => theme.font.color.primary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
@@ -218,30 +223,24 @@ const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: Candidate
 };
 
 export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateData }: CandidateInfoHeaderProps) => {
-  const candidateId = useRecoilValue(selectedCandidateIdState);
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const processedData = useRecoilValue(processedDataSelector);
-  const searchResults = useRecoilValue(searchResultsState);
-  const tableState = useRecoilValue(tableStateAtom);
-  const jobId = useRecoilValue(currentJobIdState);
+  const candidateId = useAtomStateValue(selectedCandidateIdState);
+  const [tokenPair] = useAtomState(tokenPairState);
+  const processedData = useAtomStateValue(processedDataSelector);
+  const searchResults = useAtomStateValue(searchResultsState);
+  const tableState = useAtomStateValue(tableStateAtom);
+  const projectId = useAtomStateValue(currentProjectIdState);
   const navigate = useNavigate();
 
   const [selectedInterimChat, setSelectedInterimChat] = useState('');
-  const { enqueueSnackBar } = useSnackBar();
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const { sendStartChatRequest } = useStartChats({
     onSuccess: () => {
-      enqueueSnackBar('Chat started successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
+      enqueueSuccessSnackBar({ message: 'Chat started successfully', options: { duration: 3000, } });
       setSelectedInterimChat('');
     },
     onError: (error: Error) => {
       console.error('Error starting chat:', error);
-      enqueueSnackBar('Error starting chat', {
-        variant: SnackBarVariant.Error,
-        duration: 3000,
-      });
+      enqueueErrorSnackBar({ message: 'Error starting chat', options: { duration: 3000, } });
     },
   });
 
@@ -316,10 +315,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    enqueueSnackBar(`${label} copied to clipboard`, {
-      variant: SnackBarVariant.Success,
-      duration: 3000,
-    });
+    enqueueSuccessSnackBar({ message: `${label} copied to clipboard`, options: { duration: 3000, } });
   };
 
   const handleStatusUpdate = async (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -327,7 +323,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
     
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/graphql`,
+        `${REACT_APP_SERVER_BASE_URL}/graphql`,
         {
           query: graphQltoUpdateOneCandidate,
           variables: {
@@ -337,86 +333,65 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
         },
         {
           headers: {
-            authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
             'content-type': 'application/json',
             'x-schema-version': '66',
           },
         }
       );
       
-      enqueueSnackBar('Status updated successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
+      enqueueSuccessSnackBar({ message: 'Status updated successfully', options: { duration: 3000, } });
     } catch (error) {
       console.error('Error updating status:', error);
-      enqueueSnackBar('Error updating status', {
-        variant: SnackBarVariant.Error,
-        duration: 3000,
-      });
+      enqueueErrorSnackBar({ message: 'Error updating status', options: { duration: 3000, } });
     }
   };
 
   const handleChatStart = async () => {
     if (!selectedInterimChat) {
-      enqueueSnackBar('Please select a chat type', {
-        variant: SnackBarVariant.Error,
-        duration: 3000,
-      });
+      enqueueErrorSnackBar({ message: 'Please select a chat type', options: { duration: 3000, } });
       return;
     }
 
     try {
       if (selectedInterimChat === 'startChat') {
-        await sendStartChatRequest([activeCandidateId], 'candidate', jobId ? [jobId] : undefined);
+        await sendStartChatRequest([activeCandidateId], 'candidate', projectId ? [projectId] : undefined);
       } else {
         await axios.post(
-          `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
+          `${REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,
           {
             interimChat: selectedInterimChat,
             candidateId: activeCandidateId,
           },
           {
-            headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+            headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
           }
         );
         
-        enqueueSnackBar('Interim chat started successfully', {
-          variant: SnackBarVariant.Success,
-          duration: 3000,
-        });
+        enqueueSuccessSnackBar({ message: 'Interim chat started successfully', options: { duration: 3000, } });
         
         setSelectedInterimChat('');
       }
     } catch (error) {
       console.error('Error starting chat:', error);
-      enqueueSnackBar('Error starting chat', {
-        variant: SnackBarVariant.Error,
-        duration: 3000,
-      });
+      enqueueErrorSnackBar({ message: 'Error starting chat', options: { duration: 3000, } });
     }
   };
 
   const handleStopChat = async () => {
     try {
       await axios.post(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/stop-chat`,
+        `${REACT_APP_SERVER_BASE_URL}/arx-chat/stop-chat`,
         { candidateId: activeCandidateId },
         {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+          headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         }
       );
       
-      enqueueSnackBar('Chat stopped successfully', {
-        variant: SnackBarVariant.Success,
-        duration: 3000,
-      });
+      enqueueSuccessSnackBar({ message: 'Chat stopped successfully', options: { duration: 3000, } });
     } catch (error) {
       console.error('Error stopping chat:', error);
-      enqueueSnackBar('Error stopping chat', {
-        variant: SnackBarVariant.Error,
-        duration: 3000,
-      });
+      enqueueErrorSnackBar({ message: 'Error stopping chat', options: { duration: 3000, } });
     }
   };
 
@@ -609,7 +584,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
         </StyledActionButton>
 
         <StyledActionButton onClick={handleStopChat}>
-          <IconMessageX size={16} />
+          <IconX size={16} />
           <span>Stop Chat</span>
         </StyledActionButton>
       </StyledActionsRow>

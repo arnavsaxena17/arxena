@@ -3,11 +3,12 @@ import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { RecoilRoot } from 'recoil';
+import { Provider as JotaiProvider } from 'jotai';
 import { TextEncoder } from 'util';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import type { AuthTokenPair } from '~/generated/graphql';
+import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
+import type { AuthTokenPair } from '~/generated-metadata/graphql';
 import { cookieStorage } from '~/utils/cookie-storage';
 import { AssistantChatColumn } from '../AssistantChatColumn';
 
@@ -58,7 +59,7 @@ describe('AssistantChatColumn', () => {
 
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <JotaiProvider store={jotaiStore}>
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile
@@ -81,7 +82,7 @@ describe('AssistantChatColumn', () => {
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 
@@ -93,7 +94,7 @@ describe('AssistantChatColumn', () => {
   it('does not render thread select on desktop', () => {
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <JotaiProvider store={jotaiStore}>
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile={false}
@@ -116,7 +117,7 @@ describe('AssistantChatColumn', () => {
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 
@@ -130,7 +131,7 @@ describe('AssistantChatColumn', () => {
 
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <JotaiProvider store={jotaiStore}>
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile
@@ -153,7 +154,7 @@ describe('AssistantChatColumn', () => {
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 
@@ -169,7 +170,7 @@ describe('AssistantChatColumn', () => {
 
     render(
       <MemoryRouter>
-        <RecoilRoot>
+        <JotaiProvider store={jotaiStore}>
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile={false}
@@ -192,7 +193,7 @@ describe('AssistantChatColumn', () => {
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 
@@ -216,7 +217,7 @@ describe('AssistantChatColumn', () => {
     const handleMessagesChange = jest.fn();
     const nowIso = new Date().toISOString();
     const dummyTokenPair: AuthTokenPair = {
-      accessToken: {
+      accessOrWorkspaceAgnosticToken: {
         token: 'mock-access-token',
         expiresAt: nowIso,
       },
@@ -266,14 +267,11 @@ describe('AssistantChatColumn', () => {
     globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
     cookieStorage.clear();
+    jotaiStore.set(tokenPairState.atom, dummyTokenPair);
 
     render(
       <MemoryRouter>
-        <RecoilRoot
-          initializeState={({ set }) => {
-            set(tokenPairState, dummyTokenPair);
-          }}
-        >
+        <JotaiProvider store={jotaiStore}>
           <BaseThemeProvider>
             <AssistantChatColumn
               isMobile={false}
@@ -296,7 +294,7 @@ describe('AssistantChatColumn', () => {
               onUpdateThreadMode={jest.fn()}
             />
           </BaseThemeProvider>
-        </RecoilRoot>
+        </JotaiProvider>
       </MemoryRouter>,
     );
 

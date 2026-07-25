@@ -26,7 +26,7 @@ const createService = () =>
   new CandidateSearchHandlerService(
     {
       getAssistantThreadContext: jest.fn().mockResolvedValue({
-        jobId: 'job-1',
+        projectId: 'job-1',
         assistantParameters: {},
         messages: [],
       }),

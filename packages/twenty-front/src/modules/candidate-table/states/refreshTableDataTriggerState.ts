@@ -1,6 +1,6 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const refreshTableDataTriggerState = atom<boolean>({
+export const refreshTableDataTriggerState = createAtomState<boolean>({
   key: 'refreshTableDataTriggerState',
-  default: false,
-}); 
+  defaultValue: false,
+});

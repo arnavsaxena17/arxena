@@ -17,8 +17,8 @@ export class McpAssistantToolExecutorService {
   ) {}
 
   /**
-   * Notify the assistant UI to link the current thread to a job (SSE → patch + refetch).
-   * create_job, get_job_by_id (success), and an unambiguous find_job_by_name (single row).
+   * Notify the assistant UI to link the current thread to a project(SSE → patch + refetch).
+   * create_project, get_project_by_id (success), and an unambiguous find_project_by_name (single row).
    */
   private tryEmitJobAttachedFromToolResult(
     toolName: string,
@@ -26,41 +26,41 @@ export class McpAssistantToolExecutorService {
     sendEvent: StreamEventSender,
   ): void {
     try {
-      if (toolName === 'create_job') {
+      if (toolName === 'create_project') {
         const parsed = JSON.parse(textContent) as Record<string, unknown>;
-        const jobId =
+        const projectId =
           (parsed.id as string | undefined) ??
-          (parsed.jobId as string | undefined) ??
+          (parsed.projectId as string | undefined) ??
           ((parsed.job as Record<string, unknown> | undefined)?.id as
             | string
             | undefined);
-        if (typeof jobId === 'string' && jobId) {
-          sendEvent('job_attached', { jobId });
+        if (typeof projectId === 'string' && projectId) {
+          sendEvent('job_attached', { projectId });
         }
         return;
       }
-      if (toolName === 'get_job_by_id') {
+      if (toolName === 'get_project_by_id') {
         const parsed = JSON.parse(textContent) as {
           status?: string;
           job?: { id?: string };
         };
         if (parsed.status === 'Success' && typeof parsed.job?.id === 'string') {
-          sendEvent('job_attached', { jobId: parsed.job.id });
+          sendEvent('job_attached', { projectId: parsed.job.id });
         }
         return;
       }
-      if (toolName === 'find_job_by_name') {
+      if (toolName === 'find_project_by_name') {
         const parsed = JSON.parse(textContent) as {
           count?: unknown;
           jobs?: Array<{ id?: string }>;
         };
         if (
           parsed.count === 1 &&
-          Array.isArray(parsed.jobs) &&
-          parsed.jobs.length === 1 &&
-          typeof parsed.jobs[0]?.id === 'string'
+          Array.isArray(parsed.projects) &&
+          parsed.projects.length === 1 &&
+          typeof parsed.projects[0]?.id === 'string'
         ) {
-          sendEvent('job_attached', { jobId: parsed.jobs[0].id });
+          sendEvent('job_attached', { projectId: parsed.projects[0].id });
         }
       }
     } catch {

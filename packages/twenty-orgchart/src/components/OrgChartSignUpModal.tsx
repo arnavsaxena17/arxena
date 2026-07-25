@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
 import { IconX } from '@tabler/icons-react';
 
 import { type OrgChartNodeData } from 'twenty-shared/utils';

@@ -79,7 +79,11 @@ export default defineConfig(({ mode }) => {
       }),
       createWywProfilingPlugin(
         wyw({
-          include: [path.resolve(__dirname, 'src') + '/**/*.{ts,tsx}'],
+          include: [
+            path.resolve(__dirname, 'src') + '/**/*.{ts,tsx}',
+            path.resolve(__dirname, '../twenty-orgchart/src') +
+              '/**/*.{ts,tsx}',
+          ],
           exclude: [
             '**/generated-metadata/**',
             '**/generated-admin/**',
@@ -256,6 +260,9 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       tsconfigPaths: true,
+      // twenty-orgchart (gojs-react) must share the app's React 19; a nested
+      // React 18 copy causes "React Element from an older version of React".
+      dedupe: ['react', 'react-dom'],
       alias: [
         // wyw-in-js 1.x resolves modules in its CSS evaluator via vite's
         // resolve.alias (not resolve.tsconfigPaths), so the `@/` and `~/`
@@ -263,6 +270,14 @@ export default defineConfig(({ mode }) => {
         { find: /^@\//, replacement: path.resolve(__dirname, 'src/modules') + '/' },
         { find: /^~\//, replacement: path.resolve(__dirname, 'src') + '/' },
         { find: 'path', replacement: 'rollup-plugin-node-polyfills/polyfills/path' },
+        {
+          find: /^react$/,
+          replacement: path.resolve(__dirname, '../../node_modules/react'),
+        },
+        {
+          find: /^react-dom$/,
+          replacement: path.resolve(__dirname, '../../node_modules/react-dom'),
+        },
       ],
     },
   };

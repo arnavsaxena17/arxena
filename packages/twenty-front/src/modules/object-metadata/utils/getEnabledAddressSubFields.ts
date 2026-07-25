@@ -1,9 +1,5 @@
 import { DEFAULT_VISIBLE_ADDRESS_SUBFIELDS } from 'twenty-shared/constants';
-import {
-  type AllowedAddressSubField,
-  type FieldMetadataSettingsMapping,
-  type FieldMetadataType,
-} from 'twenty-shared/types';
+import type { AllowedAddressSubField, FieldMetadataSettingsMapping, FieldMetadataType } from 'twenty-shared/types';
 import { isNonEmptyArray } from 'twenty-shared/utils';
 
 export const getEnabledAddressSubFields = (

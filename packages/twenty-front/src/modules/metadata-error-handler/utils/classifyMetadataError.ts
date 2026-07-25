@@ -1,9 +1,5 @@
 import { type CombinedGraphQLErrors } from '@apollo/client/errors';
-import {
-  type AllMetadataName,
-  type MetadataValidationErrorResponse,
-  WorkspaceMigrationV2ExceptionCode,
-} from 'twenty-shared/metadata';
+import { WorkspaceMigrationV2ExceptionCode, type AllMetadataName, type MetadataValidationErrorResponse } from 'twenty-shared/metadata';
 import { isDefined } from 'twenty-shared/utils';
 
 export type MetadataErrorClassification =

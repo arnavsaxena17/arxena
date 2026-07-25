@@ -1,4 +1,4 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 export type Template = {
   name: string;
@@ -16,12 +16,12 @@ export type TemplatesState = {
   error: string | null;
 };
 
-export const templatesState = atom<TemplatesState>({
+export const templatesState = createAtomState<TemplatesState>({
   key: 'templatesState',
-  default: {
+  defaultValue: {
     templates: [],
     templatePreviews: {},
     isLoading: false,
     error: null,
   },
-}); 
+});

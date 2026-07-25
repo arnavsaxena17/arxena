@@ -1,7 +1,4 @@
-import {
-  type InputSchema,
-  type InputSchemaProperty,
-} from 'twenty-shared/workflow';
+import type { InputSchema, InputSchemaProperty } from 'twenty-shared/workflow';
 import { isDefined } from 'twenty-shared/utils';
 
 export const getInputSchemaPropertyAtPath = (

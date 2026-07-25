@@ -1,9 +1,6 @@
 /* @license Enterprise */
 
-import {
-  RecordFilterGroupLogicalOperator,
-  type ViewFilterOperand,
-} from 'twenty-shared/types';
+import { RecordFilterGroupLogicalOperator, type ViewFilterOperand } from 'twenty-shared/types';
 import { getFilterTypeFromFieldType, isDefined } from 'twenty-shared/utils';
 
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';

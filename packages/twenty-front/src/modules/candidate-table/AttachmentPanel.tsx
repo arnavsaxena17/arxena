@@ -1,14 +1,16 @@
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useFindManyAttachments } from '@/object-record/hooks/useFindManyAttachments';
-import styled from '@emotion/styled';
+import { useFindManyAttachments } from '@/candidate-search/hooks/useFindManyAttachments';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import mammoth from 'mammoth';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 // import { extractRawText } from 'docx2html';
 import { TextDecoder } from 'util';
 import { UploadCV } from './UploadCV';
@@ -129,11 +131,11 @@ const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
 
 const Header = styled.div`
   padding: 12px 16px;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: ${({ theme }) => theme.background.primary};
+  background: ${themeCssVariables.background.primary};
 `;
 
 const CandidateInfo = styled.div`
@@ -145,14 +147,14 @@ const CandidateInfo = styled.div`
 const CandidateName = styled.h2`
   font-size: 14px;
   font-weight: 500;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const FileName = styled.h3`
   font-size: 13px;
   font-weight: 400;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   margin: 0;
 `;
 
@@ -165,7 +167,7 @@ const NavigationContainer = styled.div`
 const NavButton = styled.button`
   background: transparent;
   border: none;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -174,28 +176,28 @@ const NavButton = styled.button`
   border-radius: 4px;
   
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
   }
 
   &:disabled {
-    color: ${({ theme }) => theme.font.color.light};
+    color: ${themeCssVariables.font.color.light};
     cursor: not-allowed;
   }
 `;
 
 const AttachmentCounter = styled.span`
   font-size: 13px;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   margin: 0 8px;
   min-width: 60px;
   text-align: center;
 `;
 
 const DownloadButton = styled.button`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
   font-size: 13px;
   margin-left: 12px;
@@ -206,7 +208,7 @@ const DownloadButton = styled.button`
   font-weight: 500;
 
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
   }
 
   &:disabled {
@@ -313,14 +315,14 @@ const UploadContainer = styled.div`
 
 const UploadMessage = styled.p`
   margin-bottom: 16px;
-  color: ${props => props.theme.font.color.secondary};
+  color: ${props => themeCssVariables.font.color.secondary};
 `;
 
 const RetryButton = styled.button`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
   font-size: 13px;
   padding: 8px 16px;
@@ -331,7 +333,7 @@ const RetryButton = styled.button`
   font-weight: 500;
 
   &:hover {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
   }
 `;
 
@@ -369,8 +371,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   const [fileContent, setFileContent] = useState<string | ArrayBuffer | null>(
     null,
   );
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const [tokenPair] = useAtomState(tokenPairState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const { findManyAttachments } = useFindManyAttachments();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -478,7 +480,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
         setDownloadUrl(null);
 
         const response = await axios.get(`${attachment.fullPath}`, {
-          headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+          headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
           responseType: 'arraybuffer',
         });
 
@@ -653,7 +655,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     
     try {
       const response = await axios.get(currentAttachment.fullPath, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` },
+        headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         responseType: 'blob'
       });
       

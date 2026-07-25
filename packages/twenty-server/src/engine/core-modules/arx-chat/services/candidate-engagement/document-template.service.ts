@@ -321,7 +321,7 @@ export class DocumentTemplateService {
 
     const details = [
       { label: "Search Name", value: searchName },
-      { label: "Job Location", value: positionInfo.jobLocation },
+      { label: "Project Location", value: positionInfo.jobLocation },
       { label: "Company Name", value: positionInfo.company_name }
     ];
 
@@ -486,7 +486,7 @@ export class DocumentTemplateService {
         ["Years of Experience", candidate.yearsOfExperience?.toString() || ""],
         ["Educational Qualifications", candidate.educationalQualifications || ""],
         ["University/College", candidate.universityCollege || ""],
-        ["Current Job", `${candidate.currentJobTitle || ""} at ${candidate.currentCompany || ""}`],
+        ["Current Project", `${candidate.currentJobTitle || ""} at ${candidate.currentCompany || ""}`],
         ["Current Role", candidate.currentRoleDescription || ""],
         ["Reporting To", candidate.reportsTo || ""],
         ["Functions Reporting", candidate.functionsReportingTo || ""],
@@ -500,8 +500,8 @@ export class DocumentTemplateService {
         if (field === "Current Role") {
           return value && typeof value === 'string' && value.trim().length > 0;
         }
-        // For "Current Job", filter out if it's just " at " (both fields empty)
-        if (field === "Current Job") {
+        // For "Current Project", filter out if it's just " at " (both fields empty)
+        if (field === "Current Project") {
           return value && typeof value === 'string' && value.trim() !== "at" && value.trim().length > 0;
         }
         // For other fields, filter out empty values and "0"

@@ -1,56 +1,60 @@
-import styled from '@emotion/styled';
 import {
     IconHierarchy2,
     IconInfoCircle,
     IconShare,
     IconWorld,
-} from 'twenty-ui/icons';
+} from 'twenty-ui/icon';
 import { useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { toTitleCase } from 'twenty-shared';
+import { toTitleCase } from 'twenty-shared/utils';
 
 import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[0.5]};
   min-width: 0;
 `;
 
-const StyledCompanyInfoClickable = styled.button`
+// Div (not button): header embeds nested links/buttons for LinkedIn, info, share
+const StyledCompanyInfoClickable = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[0.5]};
   min-width: 0;
   text-align: left;
   border: none;
   background: transparent;
   cursor: pointer;
   padding: 0;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   transition: background 0.15s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
 const StyledCompanyTitleRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing[1.5]};
   min-width: 0;
 `;
 
 const StyledCompanyLogo = styled.img`
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  border-radius: ${themeCssVariables.border.radius.md};
   object-fit: contain;
-  background: ${({ theme }) => theme.background.tertiary};
+  background: ${themeCssVariables.background.tertiary};
   flex-shrink: 0;
 `;
 
@@ -60,9 +64,9 @@ const StyledCompanyLogoPlaceholder = styled.div`
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.tertiary};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
@@ -72,7 +76,7 @@ const StyledCompanyTitle = styled.h2`
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -80,8 +84,8 @@ const StyledCompanyTitle = styled.h2`
 
 const StyledTagline = styled.p`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -90,8 +94,8 @@ const StyledTagline = styled.p`
 
 const StyledCompanyMetaRow = styled.div`
   min-width: 0;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledCompanyMetaLine = styled.span`
@@ -109,14 +113,14 @@ const StyledLinkIcon = styled.a`
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  color: ${themeCssVariables.font.color.primary};
+  background: ${themeCssVariables.background.primary};
   cursor: pointer;
   text-decoration: none;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
@@ -127,31 +131,31 @@ const StyledInfoButton = styled.button`
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  color: ${themeCssVariables.font.color.primary};
+  background: ${themeCssVariables.background.primary};
   cursor: pointer;
   padding: 0;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
 const StyledLinkedinLink = styled.a`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[0.5]};
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
   border-radius: 999px;
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.xs};
   text-decoration: none;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
@@ -205,7 +209,7 @@ export const OrgChartCompanyInfo = ({
 
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
-    const base = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+    const base = REACT_APP_SERVER_BASE_URL ?? '';
     if (!base) return null;
     return `${base.replace(/\/$/, '')}/org-chart/company-logo?website=${encodeURIComponent(
       site,
@@ -364,8 +368,15 @@ export const OrgChartCompanyInfo = ({
   if (onViewDetails) {
     return (
       <StyledCompanyInfoClickable
-        type="button"
+        role="button"
+        tabIndex={0}
         onClick={onViewDetails}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onViewDetails();
+          }
+        }}
         aria-label="View company details"
       >
         {content}

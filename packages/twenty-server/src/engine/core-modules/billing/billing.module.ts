@@ -19,6 +19,8 @@ import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/bil
 import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/billing-product.entity';
 import { BillingSubscriptionItemEntity } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { CreditTransaction } from 'src/engine/core-modules/billing/entities/credit-transaction.entity';
+import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingRestApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-api-exception.filter';
 import { BillingWorkspaceMemberListener } from 'src/engine/core-modules/billing/listeners/billing-workspace-member.listener';
 import { BillingCreditRolloverService } from 'src/engine/core-modules/billing/services/billing-credit-rollover.service';
@@ -36,9 +38,17 @@ import { BillingUsageCapService } from 'src/engine/core-modules/billing/services
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { BillingStripeCatalogService } from 'src/engine/core-modules/billing/services/billing-stripe-catalog.service';
+import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { ResourceCreditService } from 'src/engine/core-modules/billing/services/resource-credit.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { WorkspaceCurrentBillingSubscriptionCacheService } from 'src/engine/core-modules/billing/services/workspace-current-billing-subscription-cache.service';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
+import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
+import { PricingCurrencyService } from 'src/engine/core-modules/billing/services/pricing-currency.service';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
+import { GeoModule } from 'src/engine/core-modules/geo/geo.module';
+import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
 import { EnterpriseModule } from 'src/engine/core-modules/enterprise/enterprise.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
@@ -57,6 +67,10 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     CoreEntityCacheModule,
     FeatureFlagModule,
     StripeModule,
+    RazorpayModule,
+    EnvironmentModule,
+    GeoModule,
+    EmailModule,
     MessageQueueModule,
     PermissionsModule,
     WorkspaceCacheModule,
@@ -69,6 +83,8 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
       BillingPriceEntity,
       BillingMeterEntity,
       BillingEntitlementEntity,
+      WorkspaceCredits,
+      CreditTransaction,
       WorkspaceEntity,
       UserWorkspaceEntity,
       FeatureFlagEntity,
@@ -102,6 +118,10 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     BillingCreditService,
     ResourceCreditService,
     BillingGaugeService,
+    WorkspaceCreditsService,
+    CreditTransactionService,
+    InvoiceRequestService,
+    PricingCurrencyService,
     WorkspaceCurrentBillingSubscriptionCacheService,
     provideWorkspaceScopedRepository(BillingEntitlementEntity),
     provideWorkspaceScopedRepository(BillingCustomerEntity),
@@ -120,6 +140,10 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     BillingCreditRolloverService,
     BillingCreditService,
     ResourceCreditService,
+    WorkspaceCreditsService,
+    CreditTransactionService,
+    InvoiceRequestService,
+    PricingCurrencyService,
   ],
 })
 export class BillingModule {}

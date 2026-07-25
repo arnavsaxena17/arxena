@@ -1,22 +1,23 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import { linkedinUnipileAccountsState } from '@/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartContactsByKeyState } from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
-import { AppPath } from '@/types/AppPath';
+import { AppPath } from 'twenty-shared/types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import {
     OrgChartDiagramHandle,
     normalizeCompanyIdForUrl,
@@ -24,13 +25,13 @@ import {
     useOrgChartData,
     useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, OrgChartNodeData, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared';
+import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartNodeData, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared/utils';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
-import { useJobOrgChartData } from '../hooks/useJobOrgChartData';
+import { useProjectOrgChartData } from '../hooks/useProjectOrgChartData';
 import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
 import { extractCompanyDomainFromWebsite, extractOrgChartSavedCompanyMetadata, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
@@ -47,6 +48,8 @@ import { useOrgChartBanners } from './hooks/useOrgChartBanners';
 import { useOrgChartNodeDataArray } from './hooks/useOrgChartNodeDataArray';
 import { hydrateContactsByKeyFromOrgData } from './utils/contactCacheHydration';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 export type ArxOrgChartContainerProps = {
   companyId: string;
   companyName?: string;
@@ -57,7 +60,7 @@ export type ArxOrgChartContainerProps = {
   linkedinUrl?: string;
   companyDomain?: string;
   onBack?: () => void;
-  jobId?: string;
+  projectId?: string;
 };
 
 const ORG_CHART_AGENT_UNAVAILABLE_SNACKBAR =
@@ -118,7 +121,7 @@ export const ArxOrgChartContainer = ({
   linkedinUrl,
   companyDomain,
   onBack,
-  jobId,
+  projectId,
 }: ArxOrgChartContainerProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -179,35 +182,35 @@ export const ArxOrgChartContainer = ({
   const skipNextRefetchRef = useRef(false);
   const prevCompanyIdForFiltersRef = useRef<string | null>(null);
 
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? undefined;
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
 
-  const orgChartLinkedinCandidateSource = useRecoilValue(
+  const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
-  const orgChartLinkedInSearchType = useRecoilValue(
+  const orgChartLinkedInSearchType = useAtomStateValue(
     orgChartLinkedInSearchTypeState,
   );
 
-  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
   const showNodeCapabilitiesHoverHint =
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
 
   const { isLinkedinConnected } = useUnipile();
-  const workspaceMemberProfileUnipileFields = useRecoilValue(
+  const workspaceMemberProfileUnipileFields = useAtomStateValue(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
-  const setSelectedCompanyInfo = useSetRecoilState(
+  const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
+  const setSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
-  const setContactsByKey = useSetRecoilState(orgChartContactsByKeyState);
-  const setOrgChartLinkedinCandidateSource = useSetRecoilState(
+  const setContactsByKey = useSetAtomState(orgChartContactsByKeyState);
+  const setOrgChartLinkedinCandidateSource = useSetAtomState(
     orgChartLinkedinCandidateSourceState,
   );
 
-  const { refetchJobs } = useJobRefetch();
-  const { enqueueSnackBar } = useSnackBar();
+  const { refetchJobs } = useProjectRefetch();
+  const { enqueueSnackBar } = useOrgChartSnackBar();
 
   const toggleMultiSource = useCallback((source: string) => {
     const slug = normalizeMultiSourceSlug(source);
@@ -371,8 +374,8 @@ export const ArxOrgChartContainer = ({
 
   const { applyOrgChartOverride } = actions;
 
-  const jobOrgChartHook = useJobOrgChartData(
-    { jobId, jobName: companyName ?? effectiveCompanyName },
+  const jobOrgChartHook = useProjectOrgChartData(
+    { projectId, jobName: companyName ?? effectiveCompanyName },
     { baseUrl, accessToken },
   );
 
@@ -393,7 +396,7 @@ export const ArxOrgChartContainer = ({
     { baseUrl, accessToken },
   );
 
-  const isJobMode = !!jobId;
+  const isJobMode = !!projectId;
 
   const data = (
     isJobMode ? jobOrgChartHook.data : classicOrgChartHook.data
@@ -1905,7 +1908,7 @@ export const ArxOrgChartContainer = ({
         addToJobModalProps={{
           isOpen: actions.isAddToJobModalOpen,
           onClose: actions.closeAddToJobModal,
-          node: actions.addToJobNode,
+          node: actions.addToProjectNode,
           companyName: effectiveCompanyName ?? undefined,
           queueStartChatAfter: actions.addToJobQueueStartChat,
           onSuccess: actions.closeAddToJobModal,

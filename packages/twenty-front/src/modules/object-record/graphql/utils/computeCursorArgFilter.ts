@@ -1,7 +1,4 @@
-import {
-  type RecordGqlOperationFilter,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { RecordGqlOperationFilter, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 import { isPlainObject } from 'twenty-shared/utils';
 
 import { isOrderByDirection } from '@/object-record/graphql/utils/isOrderByDirection';

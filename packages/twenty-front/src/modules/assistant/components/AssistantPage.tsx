@@ -1,5 +1,5 @@
-import { Button } from 'twenty-ui';
-import { IconMessage, IconPlus } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui/input';
+import { IconMessage, IconPlus } from 'twenty-ui/icon';
 import { AssistantChatColumn } from '@/assistant/components/AssistantChatColumn';
 import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
 import { AssistantResultsPanel } from '@/assistant/components/AssistantResultsPanel';
@@ -13,15 +13,18 @@ import type {
   OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
+import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
-import styled from '@emotion/styled';
-import { Loader } from 'twenty-ui';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Loader } from 'twenty-ui/feedback';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // ── localStorage persistence helpers ────────────────────────────────────────
 // Only lightweight refs (no rows/columns) are stored locally.
@@ -136,7 +139,7 @@ const StyledPageHeader = styled(PageHeader)`
   overflow: visible;
   position: relative;
   z-index: 10;
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
 
   & > div {
     display: flex;
@@ -157,7 +160,7 @@ const StyledPageHeader = styled(PageHeader)`
     flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-end;
-    gap: ${({ theme }) => theme.spacing(2)};
+    gap: ${themeCssVariables.spacing[2]};
     position: relative;
   }
 
@@ -174,14 +177,14 @@ const StyledSmallInlineLoader = styled.div`
 `;
 
 const useMockAssistant = (): boolean =>
-  USE_MOCK_ASSISTANT || !(process.env.REACT_APP_SERVER_BASE_URL ?? '');
+  USE_MOCK_ASSISTANT || !(REACT_APP_SERVER_BASE_URL ?? '');
 
 export const AssistantPage = () => {
-  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
   const isMobile = useIsMobile();
-  const tokenPair = useRecoilValue(tokenPairState);
-  const token = tokenPair?.accessToken?.token;
-  const { triggerJobsRefetch } = useJobRefetch();
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+  const { triggerJobsRefetch } = useProjectRefetch();
   const useMock = useMockAssistant();
   const [agentEvents, setAgentEvents] = useState<AssistantAgentEvent[]>([]);
   const [threads, setThreads] = useState<AssistantThread[]>(() =>
@@ -251,7 +254,7 @@ export const AssistantPage = () => {
           threads?: Array<{
             id: string;
             name: string;
-            jobId?: string | null;
+            projectId?: string | null;
             job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
             assistantMode?: 'fully_autonomous' | 'permissioned';
           }>;
@@ -277,7 +280,7 @@ export const AssistantPage = () => {
               messages: [],
               lastTableData: null,
               resultsPanelOrgChart: null,
-              jobId: t.jobId ?? null,
+              projectId: t.projectId ?? null,
               job: t.job ?? null,
               assistantMode: t.assistantMode ?? 'permissioned',
               searchType: (t as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'classic',
@@ -326,7 +329,7 @@ export const AssistantPage = () => {
                   messages: mockThread.messages,
                   lastTableData: mockThread.lastTableData ?? null,
                   agentNotes: mockThread.agentNotes,
-                  jobId: mockThread.jobId ?? t.jobId,
+                  projectId: mockThread.projectId ?? t.projectId,
                 }
               : t,
           ),
@@ -362,7 +365,7 @@ export const AssistantPage = () => {
           lastTableData?: AssistantTableData;
           assistantParameters?: Record<string, unknown> | null;
           assistantSearchStrategy?: Record<string, unknown> | null;
-          jobId?: string | null;
+          projectId?: string | null;
           job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
           agentNotes?: Array<{ summary: string; createdAt?: string; id?: string }>;
           agentEvents?: AssistantAgentEvent[];
@@ -469,7 +472,7 @@ export const AssistantPage = () => {
                 assistantParameters: data.assistantParameters ?? t.assistantParameters,
                 assistantSearchStrategy:
                   data.assistantSearchStrategy ?? t.assistantSearchStrategy,
-                jobId: data.jobId !== undefined ? data.jobId : t.jobId,
+                projectId: data.projectId !== undefined ? data.projectId : t.projectId,
                 job: data.job !== undefined ? data.job : t.job,
                 agentNotes: data.agentNotes ?? t.agentNotes,
                 agentEvents: data.agentEvents ?? t.agentEvents,
@@ -629,7 +632,7 @@ export const AssistantPage = () => {
               const created = (await res.json()) as {
                 id?: string;
                 name?: string;
-                jobId?: string | null;
+                projectId?: string | null;
                 assistantMode?: 'fully_autonomous' | 'permissioned';
               };
               const threadId = created.id;
@@ -640,7 +643,7 @@ export const AssistantPage = () => {
                   messages: [],
                   lastTableData: null,
                   resultsPanelOrgChart: null,
-                  jobId: created.jobId ?? null,
+                  projectId: created.projectId ?? null,
                   assistantMode: created.assistantMode ?? 'permissioned',
                   searchType: (created as { searchType?: 'classic' | 'sales_navigator' | 'recruiter' }).searchType ?? 'recruiter',
                 };
@@ -714,7 +717,7 @@ export const AssistantPage = () => {
           threads?: Array<{
             id: string;
             name: string;
-            jobId?: string | null;
+            projectId?: string | null;
             job?: {
               id: string;
               name?: string;
@@ -744,7 +747,7 @@ export const AssistantPage = () => {
           messages: [],
           lastTableData: null,
           resultsPanelOrgChart: null,
-          jobId: t.jobId ?? null,
+          projectId: t.projectId ?? null,
           job: t.job ?? null,
           assistantMode: t.assistantMode ?? 'permissioned',
         }));
@@ -767,7 +770,7 @@ export const AssistantPage = () => {
       threadId: string,
       patch: {
         assistantMode?: 'fully_autonomous' | 'permissioned';
-        jobId?: string | null;
+        projectId?: string | null;
         name?: string;
         searchType?: 'classic' | 'sales_navigator' | 'recruiter';
         statusMessagePolicy?: Partial<AssistantStatusMessagePolicy>;
@@ -780,8 +783,8 @@ export const AssistantPage = () => {
             ? {
                 ...t,
                 ...(patch.assistantMode ? { assistantMode: patch.assistantMode } : {}),
-                ...(patch.jobId !== undefined
-                  ? { jobId: patch.jobId, job: patch.jobId ? t.job : null }
+                ...(patch.projectId !== undefined
+                  ? { projectId: patch.projectId, job: patch.projectId ? t.job : null }
                   : {}),
                 ...(typeof patch.name === 'string' ? { name: patch.name } : {}),
                 ...(patch.searchType ? { searchType: patch.searchType } : {}),
@@ -814,7 +817,7 @@ export const AssistantPage = () => {
           });
           if (!res.ok) return;
         const data = (await res.json()) as {
-          jobId?: string | null;
+          projectId?: string | null;
           job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } } | null;
           assistantMode?: 'fully_autonomous' | 'permissioned';
           name?: string;
@@ -830,7 +833,7 @@ export const AssistantPage = () => {
               ? {
                   ...t,
                   ...(typeof data.name === 'string' ? { name: data.name } : {}),
-                  ...(data.jobId !== undefined ? { jobId: data.jobId } : {}),
+                  ...(data.projectId !== undefined ? { projectId: data.projectId } : {}),
                   ...(data.job !== undefined ? { job: data.job } : {}),
                   ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
                   ...(data.searchType ? { searchType: data.searchType } : {}),
@@ -863,7 +866,7 @@ export const AssistantPage = () => {
         const data = (await res.json()) as {
           id?: string;
           name?: string;
-          jobId?: string | null;
+          projectId?: string | null;
           assistantMode?: 'fully_autonomous' | 'permissioned';
           searchType?: 'classic' | 'sales_navigator' | 'recruiter';
           assistantParameters?: Record<string, unknown> | null;
@@ -878,7 +881,7 @@ export const AssistantPage = () => {
               ? {
                   ...t,
                   ...(typeof data.name === 'string' ? { name: data.name } : {}),
-                  ...(data.jobId !== undefined ? { jobId: data.jobId, job: null } : {}),
+                  ...(data.projectId !== undefined ? { projectId: data.projectId, job: null } : {}),
                   ...(data.assistantMode ? { assistantMode: data.assistantMode } : {}),
                   ...(data.searchType ? { searchType: data.searchType } : {}),
                   ...(data.assistantParameters !== undefined
@@ -892,7 +895,7 @@ export const AssistantPage = () => {
           ),
         );
 
-        if ('jobId' in patch) {
+        if ('projectId' in patch) {
           await refetchThread();
         }
       } catch {
@@ -904,14 +907,14 @@ export const AssistantPage = () => {
     [baseUrl, token, threadsLoadedFromBackend],
   );
 
-  // Called when the MCP assistant resolves a job (create_job, get_job_by_id, or a
-  // single-result find_job_by_name) and emits job_attached SSE. Updates local thread
+  // Called when the MCP assistant resolves a project(create_project, get_project_by_id, or a
+  // single-result find_project_by_name) and emits job_attached SSE. Updates local thread
   // state, PATCHes the backend, refetches full thread (job summary), and refreshes
   // the jobs list for the left navigation drawer.
   const handleJobAttached = useCallback(
-    (jobId: string) => {
+    (projectId: string) => {
       if (!currentThreadId) return;
-      patchThread(currentThreadId, { jobId });
+      patchThread(currentThreadId, { projectId });
       triggerJobsRefetch();
     },
     [currentThreadId, patchThread, triggerJobsRefetch],
@@ -1033,6 +1036,19 @@ export const AssistantPage = () => {
           ) : null}
         </div>
       </StyledPageHeader>
+      <div
+        role="status"
+        style={{
+          background: 'var(--bg-tertiary, #f5f5f5)',
+          borderBottom: '1px solid var(--border-color, #e0e0e0)',
+          fontSize: 13,
+          padding: '8px 16px',
+        }}
+      >
+        This Assistant page is deprecated. Prefer Ask AI in the side panel for
+        CRM + Arxena GTM tools and workspace MCP servers (Settings → AI → MCP
+        servers).
+      </div>
       <StyledPageBody>
         <StyledSplitLayout isMobile={isMobile}>
           <AssistantThreadSidebar
@@ -1077,7 +1093,7 @@ export const AssistantPage = () => {
             maxTableHeight={600}
             threadId={showSync ? currentThreadId ?? undefined : undefined}
             onSync={showSync ? handleSyncTable : undefined}
-            jobIdFromThread={currentThread?.jobId ?? null}
+            projectIdFromThread={currentThread?.projectId ?? null}
             onSelectionChange={setSelectedCandidateIds}
             orgChart={currentThread?.resultsPanelOrgChart ?? null}
             onDismissOrgChart={handleDismissResultsOrgChart}

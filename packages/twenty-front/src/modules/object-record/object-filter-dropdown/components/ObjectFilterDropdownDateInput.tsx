@@ -12,12 +12,8 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { UserContext } from '@/users/contexts/UserContext';
 import { stringifyRelativeDateFilter } from '@/views/view-filter-value/utils/stringifyRelativeDateFilter';
 import { useContext } from 'react';
-import { type FirstDayOfTheWeek, ViewFilterOperand } from 'twenty-shared/types';
-import {
-  isDefined,
-  type RelativeDateFilter,
-  resolveDateFilter,
-} from 'twenty-shared/utils';
+import { ViewFilterOperand, type FirstDayOfTheWeek } from 'twenty-shared/types';
+import { isDefined, resolveDateFilter, type RelativeDateFilter } from 'twenty-shared/utils';
 import { dateLocaleState } from '~/localization/states/dateLocaleState';
 import { formatDateString } from '~/utils/string/formatDateString';
 

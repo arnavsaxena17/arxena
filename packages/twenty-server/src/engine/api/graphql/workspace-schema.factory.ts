@@ -9,6 +9,10 @@ import { ScalarsExplorerService } from 'src/engine/api/graphql/services/scalars-
 import { WorkspaceGraphqlSchemaSDLService } from 'src/engine/api/graphql/workspace-graphql-schema-sdl/workspace-graphql-schema-sdl.service';
 import { workspaceResolverBuilderMethodNames } from 'src/engine/api/graphql/workspace-resolver-builder/factories/factories';
 import { WorkspaceResolverFactory } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver.factory';
+import {
+  WorkspaceGraphQLSchemaException,
+  WorkspaceGraphQLSchemaExceptionCode,
+} from 'src/engine/api/graphql/workspace-schema-builder/exceptions/workspace-graphql-schema.exception';
 import { FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object-metadata/utils/build-object-id-by-name-maps.util';
 
@@ -31,7 +35,10 @@ export class WorkspaceSchemaFactory {
       );
 
     if (!isDefined(schemaSDLResult)) {
-      return new GraphQLSchema({});
+      throw new WorkspaceGraphQLSchemaException(
+        `GraphQL schema SDL unavailable for workspace ${workspace.id} (missing databaseSchema)`,
+        WorkspaceGraphQLSchemaExceptionCode.SCHEMA_SDL_NOT_AVAILABLE,
+      );
     }
 
     const {

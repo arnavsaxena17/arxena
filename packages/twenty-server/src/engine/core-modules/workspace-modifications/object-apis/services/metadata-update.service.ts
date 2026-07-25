@@ -52,9 +52,9 @@ export type MetadataUpdateResult = {
 export class MetadataUpdateService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    @InjectRepository(ObjectMetadataEntity, 'metadata')
+    @InjectRepository(ObjectMetadataEntity)
     private readonly objectMetadataRepository: Repository<ObjectMetadataEntity>,
-    @InjectRepository(FieldMetadataEntity, 'metadata')
+    @InjectRepository(FieldMetadataEntity)
     private readonly fieldMetadataRepository: Repository<FieldMetadataEntity>,
   ) {}
 

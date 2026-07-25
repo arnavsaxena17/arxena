@@ -12,11 +12,7 @@ import { UserContext } from '@/users/contexts/UserContext';
 import { stringifyRelativeDateFilter } from '@/views/view-filter-value/utils/stringifyRelativeDateFilter';
 import { useContext } from 'react';
 import { ViewFilterOperand, type FirstDayOfTheWeek } from 'twenty-shared/types';
-import {
-  isDefined,
-  resolveDateTimeFilter,
-  type RelativeDateFilter,
-} from 'twenty-shared/utils';
+import { isDefined, resolveDateTimeFilter, type RelativeDateFilter } from 'twenty-shared/utils';
 
 import { useUserTimezone } from '@/ui/input/components/internal/date/hooks/useUserTimezone';
 import { isNonEmptyString } from '@sniptt/guards';

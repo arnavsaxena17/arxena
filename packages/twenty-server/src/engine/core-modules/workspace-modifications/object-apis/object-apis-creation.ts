@@ -77,7 +77,7 @@ export class CreateMetaDataStructure {
       console.error('No userId provided to emitProgress');
       return;
     }
-    
+
     try {
       console.log('Calling webSocketService.sendToUser with:', {userId, event: 'metadata-structure-progress', data: {step, message}});
       this.webSocketService.sendToUser(userId, 'metadata-structure-progress', {
@@ -382,10 +382,12 @@ export class CreateMetaDataStructure {
 
   async createDatabaseIndices(apiToken: string) {
     try {
+      // Provisioning-only DDL: runs during metadata structure setup, not request handlers.
+      // Uses executeWorkspaceRawQuery (GlobalWorkspaceDataSource + shouldBypassPermissionChecks).
       console.log('Creating database indices...');
       const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-      
+
       console.log('Creating indices for schema:', dataSourceSchema);
 
       // Helper function to check if table exists
@@ -403,8 +405,8 @@ export class CreateMetaDataStructure {
         {
           name: 'idx_whatsapp_message_comprehensive',
           table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "jobsId", "position", "phoneTo", "phoneFrom" )`,
-          requiredColumns: ['candidateId', 'updatedAt', 'createdAt', 'id', 'message', 'whatsappDeliveryStatus', 'name', 'recruiterId', 'jobsId', 'position', 'phoneTo', 'phoneFrom']
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "projectsId", "position", "phoneTo", "phoneFrom" )`,
+          requiredColumns: ['candidateId', 'updatedAt', 'createdAt', 'id', 'message', 'whatsappDeliveryStatus', 'name', 'recruiterId', 'projectsId', 'position', 'phoneTo', 'phoneFrom']
         },
         {
           name: 'idx_whatsapp_message_delivery_status',
@@ -419,10 +421,10 @@ export class CreateMetaDataStructure {
           requiredColumns: ['recruiterId']
         },
         {
-          name: 'idx_whatsapp_message_job',
+          name: 'idx_whatsapp_message_project',
           table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_job ON "${dataSourceSchema}"."_whatsappMessage" ("jobsId")`,
-          requiredColumns: ['jobsId']
+          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_project ON "${dataSourceSchema}"."_whatsappMessage" ("projectsId")`,
+          requiredColumns: ['projectsId']
         },
         {
           name: 'idx_whatsapp_message_created_at',
@@ -433,8 +435,8 @@ export class CreateMetaDataStructure {
         {
           name: 'idx_candidate_comprehensive',
           table: '_candidate',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_comprehensive ON "${dataSourceSchema}"."_candidate" ( "jobsId", "updatedAt" DESC, "engagementStatus", "candConversationStatus", "stopChat", "startChat", "startVideoInterviewChatCompleted", "status", "source", "campaign", "id" ) WHERE "deletedAt" IS NULL`,
-          requiredColumns: ['jobsId', 'updatedAt', 'engagementStatus', 'candConversationStatus', 'stopChat', 'startChat', 'startVideoInterviewChatCompleted', 'status', 'source', 'campaign', 'id', 'deletedAt']
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_comprehensive ON "${dataSourceSchema}"."_candidate" ( "projectsId", "updatedAt" DESC, "engagementStatus", "candConversationStatus", "stopChat", "startChat", "startVideoInterviewChatCompleted", "status", "source", "campaign", "id" ) WHERE "deletedAt" IS NULL`,
+          requiredColumns: ['projectsId', 'updatedAt', 'engagementStatus', 'candConversationStatus', 'stopChat', 'startChat', 'startVideoInterviewChatCompleted', 'status', 'source', 'campaign', 'id', 'deletedAt']
         },
         {
           name: 'idx_candidate_deleted_at',
@@ -463,8 +465,8 @@ export class CreateMetaDataStructure {
         {
           name: 'idx_candidate_field_comprehensive',
           table: '_candidateField',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "jobsId", "position", "id", "name" )`,
-          requiredColumns: ['jobsId', 'position', 'id', 'name']
+          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "projectsId", "position", "id", "name" )`,
+          requiredColumns: ['projectsId', 'position', 'id', 'name']
         },
         {
           name: 'idx_candidate_field_id',
@@ -491,9 +493,9 @@ export class CreateMetaDataStructure {
           requiredColumns: ['authorId']
         },
         {
-          name: 'idx_jobs_active',
-          table: '_job',
-          query: `CREATE INDEX IF NOT EXISTS idx_jobs_active ON "${dataSourceSchema}"."_job" ("isActive") WHERE "isActive" = true`,
+          name: 'idx_projects_active',
+          table: '_project',
+          query: `CREATE INDEX IF NOT EXISTS idx_projects_active ON "${dataSourceSchema}"."_project" ("isActive") WHERE "isActive" = true`,
           requiredColumns: ['isActive']
         }
       ];
@@ -521,7 +523,7 @@ export class CreateMetaDataStructure {
             continue;
           }
 
-          await this.workspaceQueryService.executeRawQuery(indexDef.query, [], workspaceId);
+          await this.workspaceQueryService.executeWorkspaceRawQuery(indexDef.query, [], workspaceId);
         } catch (error) {
           console.error('Error creating index:', indexDef.query, error);
         }
@@ -550,7 +552,7 @@ export class CreateMetaDataStructure {
       console.log('firstName', firstName);
       const lastName = currentUser?.lastName;
       console.log('lastName', lastName);
-      
+
       if (!userId) {
         console.error('Failed to get user ID from workspace');
         return;
@@ -625,7 +627,7 @@ export class CreateMetaDataStructure {
         try {
           await this.createDatabaseIndices(apiToken);
           console.log('Database indices created successfully');
-          
+
           // Send websocket notification after indices are created
           this.emitProgress(userId, 'indices-created', 'Database indices created successfully');
         } catch (error) {
@@ -646,7 +648,7 @@ export class CreateMetaDataStructure {
           );
           console.log('Video Interview Models created successfully');
           console.log('Video Interviews created successfully');
-          
+
           // Send websocket notification after video interview templates are created
           this.emitProgress(userId, 'video-interviews-created', 'Video interview models and templates created successfully');
         } catch (error) {
@@ -686,7 +688,7 @@ export class CreateMetaDataStructure {
 
           console.log('API key created successfully:', apiKey);
           await this.addAPIKeys(apiToken);
-          
+
           // Send websocket notification after API keys are added
           this.emitProgress(userId, 'api-keys-added', 'API keys and prompts configured successfully');
         } catch (error) {
@@ -700,10 +702,10 @@ export class CreateMetaDataStructure {
       if (shoudUpdateCandidateViewField) {
         try {
           await this.updateCandidateViewField(apiToken, origin);
-          
+
           // Send websocket notification after candidate view field is updated
           this.emitProgress(userId, 'candidate-view-updated', 'Candidate view field updated successfully');
-          
+
           // Send completion event to trigger page reload
           this.emitProgress(userId, 'metadata-structure-complete', 'Metadata structure creation completed successfully');
           console.log('Sending completion email to user');

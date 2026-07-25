@@ -1,11 +1,7 @@
 import { buildDateFilterForDayGranularity } from '@/page-layout/widgets/graph/utils/buildDateFilterForDayGranularity';
 import { buildFiltersFromDateRange } from '@/page-layout/widgets/graph/utils/buildFiltersFromDateRange';
 import { type Temporal } from 'temporal-polyfill';
-import {
-  type FirstDayOfTheWeek,
-  ObjectRecordGroupByDateGranularity,
-  type ViewFilterOperand,
-} from 'twenty-shared/types';
+import { ObjectRecordGroupByDateGranularity, type FirstDayOfTheWeek, type ViewFilterOperand } from 'twenty-shared/types';
 import { getNextPeriodStart, getPeriodStart } from 'twenty-shared/utils';
 import { type FieldMetadataType } from '~/generated-metadata/graphql';
 

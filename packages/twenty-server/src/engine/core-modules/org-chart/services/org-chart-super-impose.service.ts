@@ -699,7 +699,7 @@ export class OrgChartSuperImposeService {
             item,
             'linkedin_sales_navigator',
             {
-              jobId: 'super_impose',
+              projectId: 'super_impose',
               jobName: input.companyName,
               userId: 'super_impose',
               timestamp: new Date().toISOString(),

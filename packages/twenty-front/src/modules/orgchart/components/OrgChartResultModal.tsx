@@ -1,25 +1,23 @@
 import { Button, Card, IconButton, Loader } from 'twenty-ui';
-import { IconBrandLinkedin, IconChevronLeft, IconMail, IconPhone, IconX } from 'twenty-ui/icons';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
+import { IconBrandLinkedin, IconChevronLeft, IconMail, IconPhone, IconX } from 'twenty-ui/icon';
 import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useOpenCandidateChatDrawer } from '@/candidate-table/hooks/useOpenCandidateChatDrawer';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import {
   ConfirmationModal,
   StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
+import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { Modal } from '@/ui/layout/modal/components/Modal';
-import {
-  getProxiedImageUrl,
-  isValidLinkedInProfileUrl,
-  toTitleCase,
-} from 'twenty-shared';
+import { getProxiedImageUrl, isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared/utils';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 import { orgChartContactsByKeyState } from '../states/orgChartContactsByKeyState';
 
@@ -34,18 +32,22 @@ import {
   OrgChartModalTightHeader,
 } from './OrgChartModalTightContent';
 import { OrgChartOutreachModal } from './OrgChartOutreachModal';
-import { OrgChartResultsAddToJobPanel } from './OrgChartResultsAddToJobPanel';
+import { OrgChartResultsAddToProjectPanel } from './OrgChartResultsAddToProjectPanel';
 import { OrgChartWarmPathSummary } from './OrgChartWarmPathSummary';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
+
+const FETCH_CONTACTS_PROMPT_MODAL_ID = 'orgchart-fetch-contacts-prompt';
 
 const INSUFFICIENT_CONTACT_CREDITS_SNACKBAR =
   'You’re out of contact credits. Add credits to continue.';
 
 const StyledOrgChartResultModal = styled(Modal)`
   max-height: 90dvh;
-  width: min(720px, 100vw - ${({ theme }) => theme.spacing(8)});
+  width: min(720px, 100vw - ${themeCssVariables.spacing[8]});
 `;
 
 const StyledHeaderContainer = styled.div`
@@ -56,23 +58,23 @@ const StyledHeaderContainer = styled.div`
 `;
 
 const StyledTitle = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledAddToJobHeaderRow = styled.div`
   align-items: center;
   display: flex;
   flex: 1;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
 `;
 
 const StyledModalBodyScroll = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   max-height: min(560px, calc(90dvh - 200px));
   overflow-y: auto;
   width: 100%;
@@ -81,19 +83,19 @@ const StyledModalBodyScroll = styled.div`
 const StyledProfileList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const StyledProfileCard = styled(Card)`
   align-items: flex-start;
-  background-color: ${({ theme }) => theme.background.primary};
+  background-color: ${themeCssVariables.background.primary};
   box-sizing: border-box;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
   flex-direction: row;
-  gap: ${({ theme }) => theme.spacing(3)};
-  padding: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[3]};
   width: 100%;
 `;
 
@@ -103,47 +105,47 @@ const StyledProfileClickable = styled.div<{ $clickable?: boolean }>`
   display: flex;
   flex: 1;
   flex-direction: row;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
   min-width: 0;
   width: 100%;
 `;
 
 const StyledBooleanCard = styled(Card)`
-  background-color: ${({ theme }) => theme.background.secondary};
+  background-color: ${themeCssVariables.background.secondary};
   box-sizing: border-box;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[1.5]};
+  padding: ${themeCssVariables.spacing[3]};
   width: 100%;
 `;
 
 const StyledBooleanLabel = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.02em;
   text-transform: uppercase;
 `;
 
 const StyledBooleanValue = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
   word-break: break-word;
 `;
 
 const StyledOrgChartModalFooter = styled(Modal.Footer)`
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   height: auto;
   justify-content: flex-end;
   min-height: 60px;
 `;
 
 const StyledAvatarWrapper = styled.div<{ $size: number }>`
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 50%;
   flex-shrink: 0;
   height: ${({ $size }) => $size}px;
@@ -162,7 +164,7 @@ const StyledProfileTextColumn = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
 `;
 
@@ -170,15 +172,15 @@ const StyledProfileNameRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
 `;
 
 const StyledProfileName = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  line-height: ${themeCssVariables.text.lineHeight.md};
 
   ${StyledProfileClickable}:hover & {
     text-decoration: underline;
@@ -188,67 +190,69 @@ const StyledProfileName = styled.div`
 // Forward reference used by StyledProfileClickable hover — defined above after Card styles.
 
 const StyledOrgChartTenureDot = styled.span<{ $variant: 'current' | 'past' }>`
-  color: ${({ theme, $variant }) =>
-    $variant === 'current' ? theme.color.green : theme.font.color.light};
+  color: ${({ $variant }) =>
+    $variant === 'current'
+      ? themeCssVariables.color.green
+      : themeCssVariables.font.color.light};
   flex-shrink: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
   line-height: 1;
 `;
 
 const StyledProfileSubline = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
 `;
 
 const StyledProfileMeta = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
 `;
 
 const StyledNetworkDistance = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledBadgeRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledProfileBadge = styled.span`
-  background: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  padding: ${({ theme }) => theme.spacing(0.5)}
-    ${({ theme }) => theme.spacing(1)};
+  background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: ${themeCssVariables.spacing[0.5]}
+    ${themeCssVariables.spacing[1]};
 `;
 
 const StyledProfileActions = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledProfileExternalLink = styled.a`
   align-items: center;
-  color: ${({ theme }) => theme.color.blue};
+  color: ${themeCssVariables.color.blue};
   display: inline-flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  gap: ${({ theme }) => theme.spacing(1)};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
   text-decoration: none;
 
   &:hover {
-    color: ${({ theme }) => theme.color.blue80};
+    color: ${themeCssVariables.color.blue8};
     text-decoration: underline;
   }
 `;
@@ -257,17 +261,17 @@ const StyledContactButton = styled.button`
   align-items: center;
   background: none;
   border: none;
-  color: ${({ theme }) => theme.color.blue};
+  color: ${themeCssVariables.color.blue};
   cursor: pointer;
   display: inline-flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(0.5)} 0;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[0.5]} 0;
   text-align: left;
 
   &:hover {
-    color: ${({ theme }) => theme.color.blue80};
+    color: ${themeCssVariables.color.blue8};
     text-decoration: underline;
   }
 
@@ -282,43 +286,43 @@ const StyledLoadingMessage = styled.div`
   align-items: flex-start;
   justify-content: center;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   min-height: 120px;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledLoadingRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStopRow = styled.div`
   display: flex;
   align-items: center;
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledLoadingDetails = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledErrorMessage = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.color.red};
+  color: ${themeCssVariables.color.red};
   display: flex;
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   justify-content: center;
   min-height: 120px;
 `;
 
 const StyledEmptyState = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  line-height: ${({ theme }) => theme.text.lineHeight.md};
-  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(2)};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.md};
+  padding: ${themeCssVariables.spacing[6]} ${themeCssVariables.spacing[2]};
   text-align: center;
   width: 100%;
 `;
@@ -439,7 +443,7 @@ const ResultItem = ({
   const { t } = useLingui();
   const theme = useTheme();
   const iconSm = theme.icon.size.sm;
-  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
   const rawAvatarUrl = getAvatarUrl(item) ?? DEFAULT_AVATAR;
   const avatarUrl = getProxiedImageUrl(rawAvatarUrl, baseUrl) || rawAvatarUrl;
   const displayHeadline = item.headline
@@ -677,11 +681,11 @@ const useClickedContactLinkImage = (
   companyWebsite?: string,
   companyId?: string,
 ) => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const { enqueueSnackBar } = useSnackBar();
-  const baseUrl = process.env.REACT_APP_SERVER_BASE_URL ?? '';
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const { enqueueSnackBar } = useOrgChartSnackBar();
+  const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
 
-  const [orgChartContactsByKey, setOrgChartContactsByKey] = useRecoilState(
+  const [orgChartContactsByKey, setOrgChartContactsByKey] = useAtomState(
     orgChartContactsByKeyState,
   );
 
@@ -696,9 +700,9 @@ const useClickedContactLinkImage = (
   ): Promise<{
     saved: boolean;
     candidateIds?: string[];
-    jobIds?: string[];
+    projectIds?: string[];
   } | null> => {
-    if (!baseUrl || !item.linkedinUrl || !tokenPair?.accessToken?.token) {
+    if (!baseUrl || !item.linkedinUrl || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return null;
     }
 
@@ -711,7 +715,7 @@ const useClickedContactLinkImage = (
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
         },
         credentials: 'include',
       });
@@ -724,7 +728,7 @@ const useClickedContactLinkImage = (
         status: string;
         results?: Record<
           string,
-          { saved: boolean; candidateIds?: string[]; jobIds?: string[] }
+          { saved: boolean; candidateIds?: string[]; projectIds?: string[] }
         >;
       };
 
@@ -738,7 +742,7 @@ const useClickedContactLinkImage = (
     item: ContextResultItem,
     opts: { wantEmail: boolean; wantPhone: boolean },
   ): Promise<ContactInfo | null> => {
-    if (!baseUrl || !tokenPair?.accessToken?.token) {
+    if (!baseUrl || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return null;
     }
     const domain = extractCompanyDomainFromWebsite(companyWebsite);
@@ -766,7 +770,7 @@ const useClickedContactLinkImage = (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
         },
         body: JSON.stringify(body),
       });
@@ -813,7 +817,7 @@ const useClickedContactLinkImage = (
             linkedinUrl?: string;
             fullName?: string;
           }
-        | { jobId: string; status: string; total: number }
+        | { projectId: string; status: string; total: number }
         | { results: Record<string, { emails?: string[]; phones?: string[] }> };
 
       let emails: string[] | undefined;
@@ -880,7 +884,7 @@ const useClickedContactLinkImage = (
     item: ContextResultItem;
     info: ContactInfo;
   }) => {
-    if (!companyId || !baseUrl || !tokenPair?.accessToken?.token) {
+    if (!companyId || !baseUrl || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return;
     }
     const domain = extractCompanyDomainFromWebsite(companyWebsite);
@@ -908,7 +912,7 @@ const useClickedContactLinkImage = (
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
         },
         body: JSON.stringify(payload),
         credentials: 'include',
@@ -946,7 +950,7 @@ const useClickedContactLinkImage = (
       let savedStatus: {
         saved: boolean;
         candidateIds?: string[];
-        jobIds?: string[];
+        projectIds?: string[];
       } | null = null;
 
       if (item.linkedinUrl && !options?.skipSavedCheck) {
@@ -996,7 +1000,7 @@ const useClickedContactLinkImage = (
         void persistToOrgChart({ item, info: merged });
         if (
           item.linkedinUrl &&
-          tokenPair?.accessToken?.token &&
+          tokenPair?.accessOrWorkspaceAgnosticToken?.token &&
           savedStatus?.saved
         ) {
           const emails =
@@ -1016,13 +1020,13 @@ const useClickedContactLinkImage = (
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${tokenPair.accessToken.token}`,
+                    Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
                   },
                   body: JSON.stringify({
                     linkedinUrl: item.linkedinUrl,
                     emails,
                     phones,
-                    jobId: savedStatus.jobIds?.[0],
+                    projectId: savedStatus.projectIds?.[0],
                     candidateId: savedStatus.candidateIds?.[0],
                   }),
                   credentials: 'include',
@@ -1132,10 +1136,19 @@ export const OrgChartResultModal = ({
     item: ContextResultItem;
     opts: { wantEmail: boolean; wantPhone: boolean };
   } | null>(null);
+  const { openModal, closeModal } = useModal();
   const [outreachItem, setOutreachItem] = useState<ContextResultItem | null>(
     null,
   );
   const openCandidateChatDrawer = useOpenCandidateChatDrawer();
+
+  useEffect(() => {
+    if (fetchContactsPrompt !== null) {
+      openModal(FETCH_CONTACTS_PROMPT_MODAL_ID);
+      return;
+    }
+    closeModal(FETCH_CONTACTS_PROMPT_MODAL_ID);
+  }, [closeModal, fetchContactsPrompt, openModal]);
 
   const handleOpenProfile = (item: ContextResultItem) => {
     const cacheKey = getContactCacheKey(item, companyWebsite);
@@ -1275,7 +1288,7 @@ export const OrgChartResultModal = ({
       <OrgChartModalTightContent>
         {isAddToJobView && canInlineAddToJob && addToJobInlineContext ? (
           <OnboardingIntentModalLayout>
-            <OrgChartResultsAddToJobPanel
+            <OrgChartResultsAddToProjectPanel
               results={panelResults}
               companyName={addToJobInlineContext.companyName}
               contextModalMode={addToJobInlineContext.contextModalMode}
@@ -1432,16 +1445,14 @@ export const OrgChartResultModal = ({
         </StyledOrgChartModalFooter>
       )}
       <ConfirmationModal
-        isOpen={fetchContactsPrompt !== null}
-        setIsOpen={(open) => {
-          if (!open) {
-            setFetchContactsPrompt(null);
-          }
-        }}
+        modalInstanceId={FETCH_CONTACTS_PROMPT_MODAL_ID}
         title={t`Add to job first?`}
         subtitle={t`This person is not on a job yet. Add them to a job before fetching contacts, or fetch and save contacts to the org chart without adding to a job.`}
-        deleteButtonText={t`Add to job then fetch`}
+        confirmButtonText={t`Add to job then fetch`}
         confirmButtonAccent="blue"
+        onClose={() => {
+          setFetchContactsPrompt(null);
+        }}
         onConfirmClick={() => {
           if (!fetchContactsPrompt || !canInlineAddToJob) {
             setFetchContactsPrompt(null);

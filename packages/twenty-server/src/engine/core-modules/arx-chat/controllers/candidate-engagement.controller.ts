@@ -8,7 +8,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -25,7 +25,7 @@ export class CandidateEngagementController {
 
   @Get('unipile-connection-status')
   async getUnipileConnectionStatus(
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() req: Request & { workspaceMemberId?: string },
   ): Promise<{
     linkedinConnected: boolean;

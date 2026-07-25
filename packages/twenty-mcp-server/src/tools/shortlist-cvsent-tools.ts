@@ -1,18 +1,18 @@
 import {
-    createCvsentMutation,
-    createManyShortlistsMutation,
-    createShortlistMutation,
-    graphQltoUpdateOneCandidate,
-    graphqlQueryToFindCvsent,
-    graphqlQueryToFindShortlists,
-} from 'twenty-shared';
+  createCvsentMutation,
+  createManyShortlistsMutation,
+  createShortlistMutation,
+  graphQltoUpdateOneCandidate,
+  graphqlQueryToFindCvsent,
+  graphqlQueryToFindShortlists,
+} from 'twenty-shared/graphql';
 import { executeGraphQL } from '../api/graphql-client';
 import { McpTool } from '../types/tool-types';
 
 type ShortlistNode = {
   id: string;
   candidateId?: string;
-  jobId?: string;
+  projectId?: string;
   cvSentsId?: string;
   name?: string;
   currentJobTitle?: string;
@@ -27,10 +27,10 @@ function extractShortlists(data: unknown): ShortlistNode[] {
   return edges.map((e) => e.node);
 }
 
-function extractCvSents(data: unknown): Array<{ id: string; name?: string; position?: string; jobId?: string; createdAt?: string }> {
+function extractCvSents(data: unknown): Array<{ id: string; name?: string; position?: string; projectId?: string; createdAt?: string }> {
   const result = data as { cvsent?: { edges?: Array<{ node: unknown }> } };
   const edges = result?.cvsent?.edges ?? [];
-  return edges.map((e) => e.node as { id: string; name?: string; position?: string; jobId?: string; createdAt?: string });
+  return edges.map((e) => e.node as { id: string; name?: string; position?: string; projectId?: string; createdAt?: string });
 }
 
 export const shortlistCvsentTools: McpTool[] = [
@@ -38,11 +38,11 @@ export const shortlistCvsentTools: McpTool[] = [
     definition: {
       name: 'list_shortlists',
       description:
-        'List shortlists for the workspace. Optionally filter by jobId to get shortlists for a specific job. Returns shortlist id, candidateId, jobId, name, and profile fields.',
+        'List shortlists for the workspace. Optionally filter by projectId to get shortlists for a specific job. Returns shortlist id, candidateId, projectId, name, and profile fields.',
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: {
+          projectId: {
             type: 'string',
             description: 'Optional job ID to filter shortlists by job',
           },
@@ -54,10 +54,10 @@ export const shortlistCvsentTools: McpTool[] = [
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string | undefined;
+      const projectId = args.projectId as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
       const filter: Record<string, unknown> = {};
-      if (jobId) filter.jobId = { eq: jobId };
+      if (projectId) filter.projectId = { eq: projectId };
 
       const data = await executeGraphQL(
         config.baseUrl,
@@ -72,7 +72,7 @@ export const shortlistCvsentTools: McpTool[] = [
         shortlists: shortlists.map((s) => ({
           id: s.id,
           candidateId: s.candidateId,
-          jobId: s.jobId,
+          projectId: s.projectId,
           cvSentsId: s.cvSentsId,
           name: s.name,
           currentJobTitle: s.currentJobTitle,
@@ -92,19 +92,19 @@ export const shortlistCvsentTools: McpTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Job ID' },
+          projectId: { type: 'string', description: 'Project ID' },
           candidateId: { type: 'string', description: 'Candidate ID to add to the shortlist' },
           name: { type: 'string', description: 'Optional display name for the shortlist entry' },
         },
-        required: ['jobId', 'candidateId'],
+        required: ['projectId', 'candidateId'],
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const candidateId = args.candidateId as string;
       const name = args.name as string | undefined;
 
-      const input: Record<string, unknown> = { jobId, candidateId };
+      const input: Record<string, unknown> = { projectId, candidateId };
       if (name) input.name = name;
 
       const data = await executeGraphQL<{ createShortlist?: { id: string } }>(
@@ -118,7 +118,7 @@ export const shortlistCvsentTools: McpTool[] = [
       if (!id) {
         throw new Error('Failed to create shortlist: no id returned');
       }
-      return { success: true, shortlistId: id, jobId, candidateId, message: `Added candidate to shortlist (id: ${id})` };
+      return { success: true, shortlistId: id, projectId, candidateId, message: `Added candidate to shortlist (id: ${id})` };
     },
   },
 
@@ -130,24 +130,24 @@ export const shortlistCvsentTools: McpTool[] = [
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Job ID' },
+          projectId: { type: 'string', description: 'Project ID' },
           candidateIds: {
             type: 'array',
             items: { type: 'string' },
             description: 'Array of candidate IDs to add to the shortlist',
           },
         },
-        required: ['jobId', 'candidateIds'],
+        required: ['projectId', 'candidateIds'],
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const candidateIds = args.candidateIds as string[];
       if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
         throw new Error('candidateIds must be a non-empty array');
       }
 
-      const data = candidateIds.map((candidateId) => ({ jobId, candidateId }));
+      const data = candidateIds.map((candidateId) => ({ projectId, candidateId }));
       const result = await executeGraphQL<{ createShortlists?: Array<{ id: string }> }>(
         config.baseUrl,
         config.apiToken,
@@ -158,7 +158,7 @@ export const shortlistCvsentTools: McpTool[] = [
       const created = result?.createShortlists ?? [];
       return {
         success: true,
-        jobId,
+        projectId,
         added: created.length,
         shortlistIds: created.map((c) => c.id),
         message: `Added ${created.length} candidate(s) to shortlist for job`,
@@ -170,20 +170,20 @@ export const shortlistCvsentTools: McpTool[] = [
     definition: {
       name: 'list_cv_sents',
       description:
-        'List CV Sent records (candidates sent to client for a job). Optionally filter by jobId.',
+        'List CV Sent records (candidates sent to client for a job). Optionally filter by projectId.',
       inputSchema: {
         type: 'object',
         properties: {
-          jobId: { type: 'string', description: 'Optional job ID to filter by' },
+          projectId: { type: 'string', description: 'Optional job ID to filter by' },
           limit: { type: 'number', description: 'Max records to return (default: 50)' },
         },
       },
     },
     handler: async (args, config) => {
-      const jobId = args.jobId as string | undefined;
+      const projectId = args.projectId as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
       const filter: Record<string, unknown> = {};
-      if (jobId) filter.jobId = { eq: jobId };
+      if (projectId) filter.projectId = { eq: projectId };
 
       const result = await executeGraphQL(
         config.baseUrl,
@@ -206,23 +206,23 @@ export const shortlistCvsentTools: McpTool[] = [
         type: 'object',
         properties: {
           candidateId: { type: 'string', description: 'Candidate ID' },
-          jobId: { type: 'string', description: 'Job ID' },
+          projectId: { type: 'string', description: 'Project ID' },
           name: { type: 'string', description: 'Optional label for the CV Sent record (e.g. candidate name)' },
           updateCandidateStatus: {
             type: 'boolean',
             description: 'If true, set candidate status to CV Sent (default: true)',
           },
         },
-        required: ['candidateId', 'jobId'],
+        required: ['candidateId', 'projectId'],
       },
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
-      const jobId = args.jobId as string;
+      const projectId = args.projectId as string;
       const name = (args.name as string) ?? 'CV Sent';
       const updateCandidateStatus = args.updateCandidateStatus !== false;
 
-      const cvSentInput: Record<string, unknown> = { candidateId, jobId, name };
+      const cvSentInput: Record<string, unknown> = { candidateId, projectId, name };
       const cvSentResult = await executeGraphQL<{ createCvSent?: { id: string } }>(
         config.baseUrl,
         config.apiToken,
@@ -252,7 +252,7 @@ export const shortlistCvsentTools: McpTool[] = [
         success: true,
         cvSentId,
         candidateId,
-        jobId,
+        projectId,
         message: `Moved candidate to CV Sent (id: ${cvSentId})${updateCandidateStatus ? ' and updated candidate status' : ''}.`,
       };
     },

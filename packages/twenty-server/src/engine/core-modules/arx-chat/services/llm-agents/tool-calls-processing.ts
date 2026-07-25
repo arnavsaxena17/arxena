@@ -8,7 +8,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import {
     CandidateNode,
     ChatControlsObjType,
-    Job,
+    Project,
     whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,7 +20,7 @@ export class ToolCallsProcessing {
   ) {}
   async shareJDtoCandidate(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -39,20 +39,20 @@ export class ToolCallsProcessing {
       'This is the candidateID for which we are trying to send the JD:',
       candidateId,
     );
-    const jobId = candidateJob?.id;
+    const projectId = candidateJob?.id;
 
     console.log(
-      'This is the jobId for which we are trying to send the JD:',
-      jobId,
+      'This is the projectId for which we are trying to send the JD:',
+      projectId,
     );
 
     const jobAttachments =
-      (await new AttachmentProcessingService(this.staticGraphQLService).fetchAllAttachmentsByJobId(
-        jobId,
+      (await new AttachmentProcessingService(this.staticGraphQLService).fetchAllAttachmentsByProjectId(
+        projectId,
         apiToken,
       )) ?? [];
 
-    // console.log('Job Attachments:', jobAttachments);
+    // console.log('Project Attachments:', jobAttachments);
     if (!jobAttachments) {
       console.log('No attachments found for this job');
     }
@@ -82,7 +82,7 @@ export class ToolCallsProcessing {
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateJob: Job = candidate?.jobs;
+    const candidateJob: Project = candidate?.projects;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     if (!recruiterProfile) {
       throw new Error('Recruiter profile not found for job');
@@ -144,7 +144,7 @@ export class ToolCallsProcessing {
 
   async scheduleCandidateInterview(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     status: string,
     apiToken: string,
   ) {
@@ -221,7 +221,7 @@ export class ToolCallsProcessing {
   async updateAnswerInDatabase(
     candidate: CandidateNode,
     AnswerMessageObj: any,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     console.log('Updating the candidate answer in database');

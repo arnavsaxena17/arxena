@@ -1,15 +1,18 @@
-import { atom, selector } from 'recoil';
-import { UnipileWhatsappAccount } from 'twenty-shared';
+import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomSelector';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import type { UnipileWhatsappAccount } from 'twenty-shared/arx';
 
 import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import { hasMatchingConnectedWhatsappAccount } from '@/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 
-export const whatsappUnipileAccountsState = atom<UnipileWhatsappAccount[]>({
+export const whatsappUnipileAccountsState = createAtomState<
+  UnipileWhatsappAccount[]
+>({
   key: 'whatsappUnipileAccountsState',
-  default: [],
+  defaultValue: [],
 });
 
-export const isWhatsappUnipileLoggedInSelector = selector<boolean>({
+export const isWhatsappUnipileLoggedInSelector = createAtomSelector<boolean>({
   key: 'isWhatsappUnipileLoggedInSelector',
   get: ({ get }) => {
     const accounts = get(whatsappUnipileAccountsState);
@@ -18,7 +21,7 @@ export const isWhatsappUnipileLoggedInSelector = selector<boolean>({
 });
 
 /** True when a connected WhatsApp Unipile account matches workspace member profile phone (or stored whatsappUnipileAccountId). */
-export const isWhatsappUnipileConnectedSelector = selector<boolean>({
+export const isWhatsappUnipileConnectedSelector = createAtomSelector<boolean>({
   key: 'isWhatsappUnipileConnectedSelector',
   get: ({ get }) =>
     hasMatchingConnectedWhatsappAccount(

@@ -1,5 +1,8 @@
-import type { Job, Jobs } from 'twenty-shared';
-import { graphqlToFindManyCompanies, graphqlToFindManyJobs } from 'twenty-shared';
+import type { Project, Projects } from 'twenty-shared/arx';
+import {
+  graphqlToFindManyCompanies,
+  graphqlToFindManyProjects,
+} from 'twenty-shared/graphql';
 
 import { executeGraphQL } from '../api/graphql-client';
 import { fetchOrgChart } from '../api/org-chart-api';
@@ -7,7 +10,7 @@ import { callRestAPI } from '../api/rest-client';
 import { ArxenaConfig } from '../config';
 import { McpTool } from '../types/tool-types';
 import { candidateTools } from './candidate-tools';
-import { jobTools } from './job-tools';
+import { projectTools } from './project-tools';
 
 type SearchResult = {
   id: string;
@@ -33,9 +36,9 @@ const slugify = (value: string): string =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-const extractJobs = (data: unknown): Job[] => {
-  const result = data as { jobs: Jobs };
-  return result?.jobs?.edges?.map((edge) => edge.node) ?? [];
+const extractProjects = (data: unknown): Project[] => {
+  const result = data as { projects: Projects };
+  return result?.projects?.edges?.map((edge) => edge.node) ?? [];
 };
 
 const extractCompanies = (
@@ -79,10 +82,10 @@ const searchWorkspace = async (
     });
   }
 
-  const jobsData = await executeGraphQL(
+  const projectsData = await executeGraphQL(
     config.baseUrl,
     config.apiToken,
-    graphqlToFindManyJobs,
+    graphqlToFindManyProjects,
     {
       filter: { isActive: { eq: true } },
       limit: 30,
@@ -90,11 +93,11 @@ const searchWorkspace = async (
     },
   );
 
-  for (const job of extractJobs(jobsData)) {
-    if (job.name.toLowerCase().includes(normalizedQuery)) {
+  for (const project of extractProjects(projectsData)) {
+    if (project.name.toLowerCase().includes(normalizedQuery)) {
       results.push({
-        id: `job:${job.id}`,
-        title: `Job: ${job.name}`,
+        id: `project:${project.id}`,
+        title: `Project: ${project.name}`,
         url: '',
       });
     }
@@ -172,24 +175,24 @@ const fetchDocument = async (
     };
   }
 
-  if (type === 'job') {
-    const getJobTool = jobTools.find(
-      (tool) => tool.definition.name === 'get_job_by_id',
+  if (type === 'project') {
+    const getProjectTool = projectTools.find(
+      (tool) => tool.definition.name === 'get_project_by_id',
     );
-    if (!getJobTool) {
-      throw new Error('get_job_by_id tool is unavailable');
+    if (!getProjectTool) {
+      throw new Error('get_project_by_id tool is unavailable');
     }
 
-    const jobResult = await getJobTool.handler({ jobId: resourceId }, config);
-    const jobName =
-      (jobResult as { job?: { name?: string } })?.job?.name ?? resourceId;
+    const projectResult = await getProjectTool.handler({ projectId: resourceId }, config);
+    const projectName =
+      (projectResult as { project?: { name?: string } })?.project?.name ?? resourceId;
 
     return {
       id,
-      title: `Job: ${jobName}`,
-      text: JSON.stringify(jobResult, null, 2),
+      title: `Project: ${projectName}`,
+      text: JSON.stringify(projectResult, null, 2),
       url: '',
-      metadata: { type: 'job' },
+      metadata: { type: 'project' },
     };
   }
 
@@ -257,7 +260,7 @@ export const searchFetchTools: McpTool[] = [
       name: 'fetch',
       title: 'Fetch document',
       description:
-        'Fetch a full document by id returned from search (orgchart:{id}, job:{id}, candidate:{id}).',
+        'Fetch a full document by id returned from search (orgchart:{id}, project:{id}, candidate:{id}).',
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',

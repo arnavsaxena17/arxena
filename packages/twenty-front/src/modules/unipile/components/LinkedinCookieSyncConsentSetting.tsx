@@ -1,8 +1,8 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
 
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 
 import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
@@ -14,28 +14,28 @@ import {
 } from '../utils/linkedinUnipileExtensionBridge';
 
 const StyledRow = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.border.color.light};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(3)} 0;
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[3]} 0;
 `;
 
 const StyledLabel = styled.label`
   display: flex;
   align-items: flex-start;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledHint = styled.p`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   line-height: 1.5;
   margin: 0;
-  padding-left: ${({ theme }) => theme.spacing(6)};
+  padding-left: ${themeCssVariables.spacing[6]};
 `;
 
 /**
@@ -50,7 +50,11 @@ export const LinkedinCookieSyncConsentSetting = ({
   onLinkedinStoredProfileAction,
 }: LinkedinCookieSyncConsentSettingProps) => {
   const { t } = useLingui();
-  const { enqueueSnackBar } = useSnackBar();
+  const {
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar,
+  } = useSnackBar();
   const [allowed, setAllowed] = useState(true);
   const [extensionReachable, setExtensionReachable] = useState<boolean | null>(
     null,
@@ -79,10 +83,10 @@ export const LinkedinCookieSyncConsentSetting = ({
   const onChange = useCallback(
     async (next: boolean) => {
       if (!extensionReachable) {
-        enqueueSnackBar(
-          t`Install the Arx extension and refresh this page to change this setting.`,
-          { variant: SnackBarVariant.Warning, duration: 6000 },
-        );
+        enqueueWarningSnackBar({
+          message: t`Install the Arx extension and refresh this page to change this setting.`,
+          options: { duration: 6000 },
+        });
         return;
       }
       setBusy(true);
@@ -90,15 +94,17 @@ export const LinkedinCookieSyncConsentSetting = ({
       setBusy(false);
       if (result.ok) {
         setAllowed(next);
-        enqueueSnackBar(t`Saved.`, { variant: SnackBarVariant.Success });
+        enqueueSuccessSnackBar({ message: t`Saved.` });
       } else {
-        enqueueSnackBar(
-          result.error ?? t`Could not update extension settings.`,
-          { variant: SnackBarVariant.Error },
-        );
+        enqueueErrorSnackBar({
+          message:
+            result.error ?? t`Could not update extension settings.`,
+        });
       }
     },
-    [enqueueSnackBar, extensionReachable, t],
+    [enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar, extensionReachable, t],
   );
 
   if (extensionReachable === false) {

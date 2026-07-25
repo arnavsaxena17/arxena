@@ -67,11 +67,14 @@ export class BillingSubscriptionEntity extends WorkspaceRelatedEntity {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @Column({ nullable: false })
-  stripeCustomerId: string;
+  @Column({ nullable: true, type: 'varchar' })
+  stripeCustomerId: string | null;
 
-  @Column({ unique: true, nullable: false })
-  stripeSubscriptionId: string;
+  @Column({ unique: true, nullable: true, type: 'varchar' })
+  stripeSubscriptionId: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  razorpaySubscriptionId: string | null;
 
   @Field(() => SubscriptionStatus)
   @Column({

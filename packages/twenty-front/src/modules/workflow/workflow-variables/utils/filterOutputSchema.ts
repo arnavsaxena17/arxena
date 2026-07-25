@@ -1,8 +1,4 @@
-import {
-  type InputSchemaPropertyType,
-  type BaseOutputSchemaV2,
-  type Node,
-} from 'twenty-shared/workflow';
+import type { InputSchemaPropertyType, BaseOutputSchemaV2, Node } from 'twenty-shared/workflow';
 import {
   type FieldOutputSchemaV2,
   type RecordOutputSchemaV2,

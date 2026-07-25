@@ -854,7 +854,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconToggleLeft',
@@ -865,7 +865,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconMapPin',
@@ -876,7 +876,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconTable',
@@ -887,7 +887,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconBarcode',
@@ -898,7 +898,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconSearch',
@@ -909,7 +909,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconUserCircle',
@@ -920,7 +920,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconUsers',
@@ -931,7 +931,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconClock',
@@ -942,7 +942,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconCurrencyDollar',
@@ -953,7 +953,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconBuilding',
@@ -964,7 +964,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconUserSearch',
@@ -975,7 +975,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconList',
@@ -986,7 +986,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconFileDescription',
@@ -997,7 +997,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         icon: 'IconRoute',
@@ -1255,7 +1255,7 @@ export function getFieldsData(
     },
 
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
         label: 'chatFlowOrder',
@@ -1265,7 +1265,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: 'Ordered chat questions asked during initial candidate engagement',
         label: 'Chat questions',
@@ -1275,7 +1275,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: 'Delay in minutes after last message before processing engagement from the queue. Default 2.',
         label: 'Engagement processing delay (minutes)',
@@ -1286,7 +1286,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description:
           'When batching “start chat”, ideal minutes per message for spreading sends (window = n × this, capped below). Default 1.',
@@ -1298,7 +1298,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description:
           'Max minutes from first to last start-chat when batching (e.g. 120 caps large batches).',
@@ -1310,7 +1310,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description:
           'Max outbound WhatsApp messages per minute per connected Unipile account for this job. Falls back to WHATSAPP_OUTBOUND_MESSAGES_PER_MINUTE env (default 5).',
@@ -1480,10 +1480,10 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: '',
-        label: 'Arxena Job Id',
+        label: 'Arxena Project Id',
         name: 'arxenaSiteId',
         objectMetadataId: objectsNameIdMap.job,
         type: 'TEXT',
@@ -2032,7 +2032,7 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'job',
+      objectName: 'project',
       field: {
         description: 'Link for Candidate Tracker Google Sheet',
         label: 'Google Sheet Url',
@@ -2524,7 +2524,7 @@ export function getFieldsData(
     // {
     //   field: {
     //     description: '',
-    //     label: 'Job',
+    //     label: 'Project',
     //     name: 'job',
     //     objectMetadataId: objectsNameIdMap.assistantThreadCandidate,
     //     type: 'LINKS',

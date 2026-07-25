@@ -50,11 +50,7 @@ export class OrgChartEsService {
 
   constructor(private readonly environmentService: EnvironmentService) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
-    const index =
-      (this.environmentService.get('ORGCHARTS_ES_INDEX') as string | undefined) ??
-      'org-charts-all';
-
-    this.orgChartsIndex = index;
+    this.orgChartsIndex = this.environmentService.get('ORGCHARTS_ES_INDEX');
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
       this.client = new Client({
@@ -235,8 +231,7 @@ export class OrgChartEsService {
     }
 
     const companiesIndex =
-      (this.environmentService.get('COMPANIES_ES_INDEX') as string | undefined) ??
-      'companies_index_text';
+      this.environmentService.get('COMPANIES_ES_INDEX');
 
     try {
       const searchResponse = await this.client.search<{
@@ -312,7 +307,7 @@ export class OrgChartEsService {
     'us-navy',
     'united-states-air-force',
     'united-states-marine-corps'
-  
+
   ]);
 
   /**
@@ -1358,8 +1353,7 @@ export class OrgChartEsService {
     }
 
     const companiesIndex =
-      (this.environmentService.get('COMPANIES_ES_INDEX') as string | undefined) ??
-      'companies_index_text';
+      this.environmentService.get('COMPANIES_ES_INDEX');
 
     try {
       const searchResponse = await this.client.search<{

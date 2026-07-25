@@ -32,7 +32,7 @@ export type FindPersonCandidateSummary = {
   candidateId: string;
   candidateName?: string;
   status?: string;
-  jobId?: string;
+  projectId?: string;
   jobName?: string;
 };
 
@@ -97,13 +97,13 @@ export type UpdateContactInfoResult = {
   message: string;
 };
 
-/** Descriptor for get_candidate_fields_for_job tool input. */
+/** Descriptor for get_candidate_fields_for_project tool input. */
 export const GET_CANDIDATE_FIELDS_FOR_JOB_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'The job ID to get candidate fields for', required: true },
+  { key: 'projectId', type: 'string', description: 'The job ID to get candidate fields for', required: true },
 ] as const;
 
 export type GetCandidateFieldsForJobInput = {
-  jobId: string;
+  projectId: string;
 };
 
 /** Descriptor for get_candidate_field_values tool input. */
@@ -143,8 +143,8 @@ export type EnrichContactFromDataInput = {
 
 /** Descriptor for upload_profiles tool input. */
 export const UPLOAD_PROFILES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'Job ID to attach candidates to', required: true },
-  { key: 'jobName', type: 'string', description: 'Job name', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID to attach candidates to', required: true },
+  { key: 'jobName', type: 'string', description: 'Project name', required: true },
   { key: 'data_source', type: 'string', description: 'Source e.g. profile_data_naukri, linkedin_search, linkedin_premium', required: false },
   { key: 'candidates', type: 'object', description: 'Array of candidate profile objects', required: false },
   { key: 'recruiterId', type: 'string', description: 'Recruiter workspace member ID', required: false },
@@ -153,8 +153,8 @@ export const UPLOAD_PROFILES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[
 
 /** Descriptor for post_candidates tool input. */
 export const POST_CANDIDATES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'job_id', type: 'string', description: 'Job ID', required: true },
-  { key: 'job_name', type: 'string', description: 'Job name', required: true },
+  { key: 'job_id', type: 'string', description: 'Project ID', required: true },
+  { key: 'job_name', type: 'string', description: 'Project name', required: true },
   { key: 'data', type: 'object', description: 'Array of candidate profile objects (UserProfile shape)', required: true },
   { key: 'data_source', type: 'string', description: 'Source identifier', required: false },
   { key: 'recruiterId', type: 'string', description: 'Recruiter workspace member ID', required: false },
@@ -169,7 +169,7 @@ export const PROCESS_FILTER_DESCRIPTION_INPUT_DESCRIPTOR: readonly McpInputField
 
 /** Descriptor for process_ai_filters tool input. */
 export const PROCESS_AI_FILTERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'Job ID', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID', required: true },
   { key: 'aiFilters', type: 'object', description: 'Array of AI filter configs', required: false },
   { key: 'enrichments', type: 'object', description: 'Alternative to aiFilters', required: false },
   { key: 'selectedRecordIds', type: 'object', description: 'Candidate/record IDs to apply filters to', required: false },
@@ -199,7 +199,7 @@ export const SEND_CHAT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
 /** Descriptor for share_jd_to_candidate tool input. */
 export const SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'candidateId', type: 'string', description: 'Candidate ID', required: true },
-  { key: 'jobId', type: 'string', description: 'Job ID', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID', required: true },
   { key: 'jdContent', type: 'string', description: 'JD text or reference', required: false },
 ] as const;
 
@@ -212,14 +212,14 @@ export const GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR: readonly McpInpu
 
 /** Descriptor for upload_jd tool input. */
 export const UPLOAD_JD_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'Job ID', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID', required: true },
   { key: 'filePath', type: 'string', description: 'Path or reference to JD file', required: false },
   { key: 'content', type: 'string', description: 'Optional raw JD content', required: false },
 ] as const;
 
-/** Descriptor for get_candidates_by_job_id tool input. */
+/** Descriptor for get_candidates_by_project_id tool input. */
 export const GET_CANDIDATES_BY_JOB_ID_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'Job ID', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID', required: true },
 ] as const;
 
 /** Descriptor for send_bulk_chats_by_candidate_ids tool input. */
@@ -253,7 +253,7 @@ export const GENERATE_SEARCH_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
 
 
 export const JOB_BRIEF_UNDERSTANDING_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobBrief', type: 'string', description: 'Job brief to understand from the user', required: true },
+  { key: 'jobBrief', type: 'string', description: 'Project brief to understand from the user', required: true },
   ...ASSISTANT_THREAD_ID_OPTIONAL_DESCRIPTOR,
 ] as const;
 
@@ -290,7 +290,7 @@ export const SEARCH_ORG_CHARTS_BY_FUNCTION_INPUT_DESCRIPTOR: readonly McpInputFi
 export const SEARCH_PEOPLE_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'query', type: 'string', description: 'Free-text search across name, title, company, function, and country', required: false },
   { key: 'personName', type: 'string', description: 'Person name filter', required: false },
-  { key: 'jobTitle', type: 'string', description: 'Job title filter', required: false },
+  { key: 'jobTitle', type: 'string', description: 'Project title filter', required: false },
   { key: 'companyId', type: 'string', description: 'Company slug/id filter (e.g. google)', required: false },
   { key: 'companyName', type: 'string', description: 'Company name filter', required: false },
   { key: 'website', type: 'string', description: 'Company website filter', required: false },
@@ -332,7 +332,7 @@ export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
   { key: 'dataSource', type: 'string', description: 'Data source alias: index (default), apollo, pdl, contactout, harvest', required: false },
   { key: 'query', type: 'string', description: 'Free-text search', required: false },
   { key: 'personName', type: 'string', description: 'Person name filter', required: false },
-  { key: 'jobTitle', type: 'string', description: 'Job title filter', required: false },
+  { key: 'jobTitle', type: 'string', description: 'Project title filter', required: false },
   { key: 'companyId', type: 'string', description: 'Company slug/id filter', required: false },
   { key: 'companyName', type: 'string', description: 'Company name filter', required: false },
   { key: 'website', type: 'string', description: 'Company website filter', required: false },
@@ -596,7 +596,7 @@ export const FETCH_CONTACTS_FROM_APOLLO_INPUT_DESCRIPTOR: readonly McpInputField
 
 /** Descriptor for get_contact_enrichment_job tool input. */
 export const GET_CONTACT_ENRICHMENT_JOB_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'Job ID returned from bulk enrichment operations', required: true },
+  { key: 'projectId', type: 'string', description: 'Project ID returned from bulk enrichment operations', required: true },
 ] as const;
 
 // ==================== Extension Bridge Tools ====================
@@ -811,9 +811,9 @@ export const WHATSAPP_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR: readonly M
 
 // ==================== Candidate Tools ====================
 
-/** Descriptor for list_candidates_for_job tool input. */
+/** Descriptor for list_candidates_for_project tool input. */
 export const LIST_CANDIDATES_FOR_JOB_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'The job ID to list candidates for', required: true },
+  { key: 'projectId', type: 'string', description: 'The job ID to list candidates for', required: true },
   { key: 'status', type: 'string', description: 'Optional status filter (e.g. SCREENING, INTERESTED, NOT_INTERESTED, NOT_FIT, CV_SENT, CV_RECEIVED, RECRUITER_INTERVIEW, CLIENT_INTERVIEW, NEGOTIATION)', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of candidates to return (default: 50)', required: false },
 ] as const;
@@ -833,7 +833,7 @@ export const GET_CANDIDATE_DETAILS_INPUT_DESCRIPTOR: readonly McpInputFieldDescr
 
 /** Descriptor for create_candidate tool input. */
 export const CREATE_CANDIDATE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'jobId', type: 'string', description: 'The job ID to link this candidate to', required: true },
+  { key: 'projectId', type: 'string', description: 'The job ID to link this candidate to', required: true },
   { key: 'name', type: 'string', description: 'Full name of the candidate (e.g. "John Smith")', required: true },
   { key: 'phoneNumber', type: 'string', description: 'Phone number with country code (e.g. "+919876543210")', required: false },
   { key: 'email', type: 'string', description: 'Email address', required: false },

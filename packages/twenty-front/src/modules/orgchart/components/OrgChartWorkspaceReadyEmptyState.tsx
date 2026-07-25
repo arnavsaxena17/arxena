@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
-import { IconHierarchy2 } from 'twenty-ui/icons';
+import { IconHierarchy2 } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui';
 
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
@@ -15,14 +16,14 @@ const StyledEmptyStateOrgChartSearch = styled.div`
 const StyledEmptyStateOrgChartSearchRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledEmptyStateOrgChartCreditsBadge = styled.span`
 margin-top:100px;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.tertiary};
   white-space: nowrap;
 `;
 
@@ -33,8 +34,8 @@ const StyledOrgChartEmptyStateWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: ${({ theme }) => theme.spacing(8)};
-  gap: ${({ theme }) => theme.spacing(6)};
+  padding-top: ${themeCssVariables.spacing[8]};
+  gap: ${themeCssVariables.spacing[6]};
   text-align: center;
 `;
 

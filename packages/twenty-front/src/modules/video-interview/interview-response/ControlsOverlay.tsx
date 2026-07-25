@@ -1,5 +1,6 @@
 import React from 'react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledControlsOverlay = styled.div`
   position: absolute;

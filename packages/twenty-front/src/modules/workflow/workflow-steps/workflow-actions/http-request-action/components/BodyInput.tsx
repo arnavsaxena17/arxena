@@ -17,10 +17,7 @@ import { styled } from '@linaria/react';
 import { isString } from '@sniptt/guards';
 import { useState } from 'react';
 import { isDefined, parseJson } from 'twenty-shared/utils';
-import {
-  CONTENT_TYPE_VALUES_HTTP_REQUEST,
-  type BodyType,
-} from 'twenty-shared/workflow';
+import { CONTENT_TYPE_VALUES_HTTP_REQUEST, type BodyType } from 'twenty-shared/workflow';
 import { IconFileText, IconKey } from 'twenty-ui/icon';
 import { type JsonValue } from 'type-fest';
 import { KeyValuePairInput } from './KeyValuePairInput';

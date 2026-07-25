@@ -220,20 +220,20 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     const modifiedDate = candidateData.modified_date;
 
     if (appliedOnDate) {
-      // this.addJobProcessEvent(userProfile, 'job_application_date', appliedOnDate);
+      // this.addProjectProcessEvent(userProfile, 'job_application_date', appliedOnDate);
     }
 
     if (activeDate) {
-      // this.addJobProcessEvent(userProfile, 'rms_active_date', activeDate);
+      // this.addProjectProcessEvent(userProfile, 'rms_active_date', activeDate);
     }
 
     if (modifiedDate) {
-      // this.addJobProcessEvent(userProfile, 'rms_modified_date', modifiedDate);
+      // this.addProjectProcessEvent(userProfile, 'rms_modified_date', modifiedDate);
     }
 
     // Process social profiles
     if (candidateData.profile_url) {
-      // this.addJobProcessEvent(userProfile, 'rms_profile_url', candidateData.profile_url);
+      // this.addProjectProcessEvent(userProfile, 'rms_profile_url', candidateData.profile_url);
     }
 
     // Process additional RMS specific fields
@@ -245,7 +245,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
 
     rmsSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addProjectProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }
@@ -253,7 +253,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
   /**
    * Add event to job process - utility method for UserProfile
    */
-  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
   //   if (value !== null && value !== undefined && value !== '') {
   //     if (!userProfile.job_process_events) {
   //       userProfile.job_process_events = [];

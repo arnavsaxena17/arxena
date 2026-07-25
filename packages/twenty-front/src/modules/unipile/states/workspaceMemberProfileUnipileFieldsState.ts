@@ -1,10 +1,10 @@
-import { createState } from 'twenty-ui';
-import type { WorkspaceMemberProfileUnipileFields } from 'twenty-shared';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import type { WorkspaceMemberProfileUnipileFields } from 'twenty-shared/utils';
 
 export type { WorkspaceMemberProfileUnipileFields };
 
 export const workspaceMemberProfileUnipileFieldsState =
-  createState<WorkspaceMemberProfileUnipileFields | null>({
+  createAtomState<WorkspaceMemberProfileUnipileFields | null>({
     key: 'workspaceMemberProfileUnipileFieldsState',
     defaultValue: null,
   });

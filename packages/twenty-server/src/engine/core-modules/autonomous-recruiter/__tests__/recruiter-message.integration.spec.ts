@@ -6,7 +6,7 @@ import type {
 } from 'src/engine/core-modules/assistant/assistant.types';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { JobContextService } from '../job-context.service';
+import { ProjectContextService } from '../project-context.service';
 import { RecruiterMessageService } from '../recruiter-message.service';
 
 describe('RecruiterMessageService (integration-style, mocked LLM + GraphQL)', () => {
@@ -45,7 +45,7 @@ describe('RecruiterMessageService (integration-style, mocked LLM + GraphQL)', ()
     lastTableData: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    jobId: 'job-1',
+    projectId: 'job-1',
     agentNotes: [
       {
         summary:
@@ -59,7 +59,7 @@ describe('RecruiterMessageService (integration-style, mocked LLM + GraphQL)', ()
     const moduleRef = await Test.createTestingModule({
       providers: [
         RecruiterMessageService,
-        JobContextService,
+        ProjectContextService,
         {
           provide: StaticGraphQLService,
           useValue: {

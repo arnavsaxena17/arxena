@@ -2,35 +2,37 @@ import axios from 'axios';
 import Fuse from 'fuse.js';
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilState, useRecoilValue } from 'recoil';
 
 import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useJobRefetch } from '@/candidate-table/hooks/useJobRefetch';
-import { CoreObjectNameSingular } from '@/object-metadata/types/CoreObjectNameSingular';
+import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useDestroyOneRecord } from '@/object-record/hooks/useDestroyOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { ObjectRecord } from '@/object-record/types/ObjectRecord';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { gql, useMutation } from '@apollo/client';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { gql } from '@apollo/client';
+import { useMutation } from '@apollo/client/react';
 
-import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { useParsedJDState } from '@/arx-jd-upload/hooks/useParsedJDState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
-import {
-    companyInfoType, graphQLToUpdateOneWorkspaceMemberProfile, isDefined, LinkedInSearchCategory,
-    LinkedInSearchType
-} from 'twenty-shared';
-import { RecruiterDetails } from '../components/JobDetailsForm';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
+import type { companyInfoType } from 'twenty-shared/arx';
+import { graphQLToUpdateOneWorkspaceMemberProfile } from 'twenty-shared/graphql';
+import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
+import { RecruiterDetails } from '../components/ProjectDetailsForm';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { createDefaultParsedJD } from '../utils/createDefaultParsedJD';
 import { syncChatQuestionsToDatabase } from '../utils/syncChatQuestions';
-import { useApiKeysRecoil } from './useApiKeysRecoil';
-import { useJobDescriptionParser } from './useJobDescriptionParser';
+import { useApiKeysState } from './useApiKeysState';
+import { useProjectDescriptionParser } from './useProjectDescriptionParser';
 import { useSearchParameters } from './useSearchParameters';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 /** Compare domains ignoring trailing slashes, protocol, and leading www. */
 const normalizeWebsiteUrlForMatch = (raw: string): string => {
@@ -65,21 +67,21 @@ const omitEmptyStringCompanyId = <T extends Record<string, unknown>>(payload: T)
 
 export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' | 'edit') => {
   const navigate = useNavigate();
-  const [tokenPair] = useRecoilState(tokenPairState);
-  const { keys: apiKeys, updateSpecificApiKey } = useApiKeysRecoil();
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const { keys: apiKeys, updateSpecificApiKey } = useApiKeysState();
+  const [parsedJD, setParsedJD] = useParsedJDState();
   const [isUploading, setIsUploading] = useState(false);
   const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
-  const currentWorkspaceMember = useRecoilValue(currentWorkspaceMemberState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
 
-  const { enqueueSnackBar } = useSnackBar();
-  const { triggerJobsRefetch } = useJobRefetch();
-  const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } = useJobDescriptionParser();
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
+  const { triggerJobsRefetch } = useProjectRefetch();
+  const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } = useProjectDescriptionParser();
   const { generateResolvedSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
-  const { updateOneRecord } = useUpdateOneRecord({ objectNameSingular });
+  const { updateOneRecord } = useUpdateOneRecord();
   const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
   const { records: companies = [] } = useFindManyRecords({
@@ -88,28 +90,25 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const { records: attachments = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
     filter: parsedJD?.id && modalMode === 'edit' ? {
-      jobId: { eq: parsedJD.id }
+      projectId: { eq: parsedJD.id }
     } : undefined,
     skip: !parsedJD?.id || modalMode === 'create',
   });
-  const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({ 
-    objectNameSingular: 'company' 
+  const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({
+    objectNameSingular: 'company'
   });
-  const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord({ 
-    objectNameSingular: 'company' 
-  });
+  const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord();
 
 
   const { createOneRecord: createOneAssistantThreadRecord } = useCreateOneRecord({
     objectNameSingular: 'assistantThread',
   });
-  const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord({
-    objectNameSingular: 'assistantThread',
-  });
+  const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord();
 
+  const apolloCoreClient = useApolloCoreClient();
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToUpdateOneWorkspaceMemberProfile}
-  `);
+  `, { client: apolloCoreClient });
 
   // Function to update company record with companyDetails as descriptionOneliner
   const updateCompanyWithDetails = useCallback(async (companyId: string, companyDetails: string) => {
@@ -118,31 +117,30 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     }
     try {
       await updateOneCompanyRecord({
+        objectNameSingular: 'company',
         idToUpdate: companyId,
         updateOneRecordInput: {
           descriptionOneliner: companyDetails,
         },
       });
-      enqueueSnackBar('Company details updated successfully', {
-        variant: SnackBarVariant.Success,
-      });
+      enqueueSuccessSnackBar({ message: 'Company details updated successfully' });
     } catch (error) {
       console.error('Error updating company details:', error);
-      enqueueSnackBar(`Failed to update company details: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        variant: SnackBarVariant.Error,
+      enqueueErrorSnackBar({
+        message: `Failed to update company details: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
-  }, [updateOneCompanyRecord, enqueueSnackBar]);
+  }, [updateOneCompanyRecord, enqueueSuccessSnackBar, enqueueErrorSnackBar]);
 
-  // Handler to update recruiter details from JobDetailsForm
+  // Handler to update recruiter details from ProjectDetailsForm
   const updateRecruiterDetails = useCallback((details: RecruiterDetails) => {
     // Only update the state if something actually changed
-    const hasChanged = !recruiterDetails || 
+    const hasChanged = !recruiterDetails ||
       JSON.stringify(recruiterDetails.missingRecruiterInfo) !== JSON.stringify(details.missingRecruiterInfo) ||
       recruiterDetails.recruiterProfileId !== details.recruiterProfileId ||
       recruiterDetails.showRecruiterFields !== details.showRecruiterFields ||
       recruiterDetails.workspaceMemberId !== details.workspaceMemberId;
-      
+
     if (hasChanged) {
       storeRecruiterDetails(details);
     }
@@ -156,14 +154,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     try {
       // Get workspaceMemberId from the recruiterDetails
       const workspaceMemberId = recruiterDetails.workspaceMemberId;
-      
+
       if (!workspaceMemberId) {
-        enqueueSnackBar('Unable to update recruiter profile: No recruiter ID found', {
-          variant: SnackBarVariant.Error,
-        });
+        enqueueErrorSnackBar({ message: 'Unable to update recruiter profile: No recruiter ID found' });
         return false;
       }
-      
+
       const updateWorkspaceMemberProfileInput = {
         ...(recruiterDetails.missingRecruiterInfo.name && { name: recruiterDetails.missingRecruiterInfo.name }),
         ...(recruiterDetails.missingRecruiterInfo.phoneNumber && { phoneNumber: recruiterDetails.missingRecruiterInfo.phoneNumber }),
@@ -171,7 +167,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         ...(recruiterDetails.missingRecruiterInfo.jobTitle && { jobTitle: recruiterDetails.missingRecruiterInfo.jobTitle }),
         workspaceMemberId,
       };
-      
+
       // Update the workspace member profile
       await updateWorkspaceMemberProfile({
         variables: {
@@ -191,30 +187,32 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           );
 
           if (success) {
-            enqueueSnackBar('WhatsApp phone number updated successfully', {
-              variant: SnackBarVariant.Success,
+            enqueueSuccessSnackBar({
+              message: 'WhatsApp phone number updated successfully',
             });
           }
         } catch (error) {
           console.error('Error updating WhatsApp phone number:', error);
-          enqueueSnackBar('Failed to update WhatsApp phone number', {
-            variant: SnackBarVariant.Error,
-          });
+          enqueueErrorSnackBar({ message: 'Failed to update WhatsApp phone number' });
         }
       }
 
-      enqueueSnackBar('Recruiter profile updated successfully', {
-        variant: SnackBarVariant.Success,
-      });
-      
+      enqueueSuccessSnackBar({ message: 'Recruiter profile updated successfully' });
+
       return true;
     } catch (error) {
-      enqueueSnackBar(`Failed to update recruiter profile: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        variant: SnackBarVariant.Error,
+      enqueueErrorSnackBar({
+        message: `Failed to update recruiter profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       return false;
     }
-  }, [recruiterDetails, enqueueSnackBar, updateWorkspaceMemberProfile, updateSpecificApiKey]);
+  }, [
+    recruiterDetails,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    updateWorkspaceMemberProfile,
+    updateSpecificApiKey,
+  ]);
 
   const findBestCompanyMatch = useCallback(
     (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
@@ -251,8 +249,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             name: domainMatch?.name,
             companyId: domainMatch?.id,
             descriptionOneliner: domainMatch?.descriptionOneliner || '',
-            id: domainMatch?.id,
-            domainName: { primaryLinkUrl: domainMatch?.domainName?.primaryLinkUrl }
           };
         }
       }
@@ -270,8 +266,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           name: matchedCompany.name,
           companyId: matchedCompany.id,
           descriptionOneliner: matchedCompany.descriptionOneliner || '',
-          id: matchedCompany.id,
-          domainName: { primaryLinkUrl: matchedCompany.domainName.primaryLinkUrl }
         };
       }
       return null;
@@ -280,11 +274,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   );
 
   // Function to remove existing attachments for a job
-  const removeExistingAttachments = useCallback(async (jobId: string) => {
+  const removeExistingAttachments = useCallback(async (projectId: string) => {
     try {
       // Use the existing attachments data
-      const existingAttachments = attachments.filter(attachment => 
-        attachment.jobId === jobId
+      const existingAttachments = attachments.filter(attachment =>
+        attachment.projectId === projectId
       );
 
       // Delete all existing attachments
@@ -301,27 +295,29 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   // Function to handle file removal in edit mode
   const handleFileRemoval = useCallback(async () => {
     if (!parsedJD?.id) return;
-    
+
     try {
       await removeExistingAttachments(parsedJD.id);
-      
+
       // Clear the parsedJD fields but preserve the ID and essential properties
       const blankJD = {
         ...parsedJD,
         // Preserve ID and all chat flow configurations, videoInterview, and meetingScheduling settings
       };
       setParsedJD(blankJD);
-      
-      enqueueSnackBar('Job description file removed successfully', {
-        variant: SnackBarVariant.Success,
-      });
+
+      enqueueSuccessSnackBar({ message: 'Project description file removed successfully' });
     } catch (error) {
       console.error('Error removing file:', error);
-      enqueueSnackBar('Failed to remove file', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Failed to remove file' });
     }
-  }, [parsedJD, removeExistingAttachments, setParsedJD, enqueueSnackBar]);
+  }, [
+    parsedJD,
+    removeExistingAttachments,
+    setParsedJD,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+  ]);
 
   const handleFileUpload = useCallback(
     async (acceptedFiles: File[]): Promise<string | void> => {
@@ -332,17 +328,17 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       setError(null);
       setIsUploading(true);
       const file = acceptedFiles[0];
-      let createdJobId: string | null = null;
+      let createdProjectId: string | null = null;
 
       try {
         // If we're in edit mode and have a parsedJD, remove existing attachments first, then upload new one
-        if (objectNameSingular === 'job' && parsedJD?.id) {
+        if (objectNameSingular === 'project' && parsedJD?.id) {
           // Remove existing attachments
           await removeExistingAttachments(parsedJD.id);
 
           // Upload new attachment and update only the filePath in parsedJD
           const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
-            targetObjectNameSingular: CoreObjectNameSingular.Job,
+            targetObjectNameSingular: 'project',
             id: parsedJD.id,
           });
 
@@ -355,11 +351,11 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             };
           });
 
-          enqueueSnackBar('Job description file updated successfully', {
-            variant: SnackBarVariant.Success,
+          enqueueSuccessSnackBar({
+            message: 'Project description file updated successfully',
           });
 
-          createdJobId = parsedJD.id;
+          createdProjectId = parsedJD.id;
           return parsedJD.id;
         }
 
@@ -373,35 +369,35 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           isActive: true,
           recruiterId: recruiterDetails?.workspaceMemberId  || currentWorkspaceMember?.id
         });
-        createdJobId = createdJob.id;
+        createdProjectId = createdJob.id;
 
         const { attachmentAbsoluteURL } = await uploadAttachmentFile(file, {
-          targetObjectNameSingular: CoreObjectNameSingular.Job,
+          targetObjectNameSingular: 'project',
           id: createdJob.id,
         });
 
 
         const uploadJDResponse = await axios({
           method: 'post',
-          url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-jd`,
+          url: `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-jd`,
           data: {
-            jobId: createdJob.id,
+            projectId: createdJob.id,
             attachmentUrl: attachmentAbsoluteURL,
           },
           headers: {
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
           },
         });
 
         if (uploadJDResponse.data.success === true) {
           const data = uploadJDResponse.data.data;
-          
+
           let matchedCompany = null;
           let companyId = '';
-          
+
           if (data?.companyName) {
             matchedCompany = findBestCompanyMatch(data.companyName, data.companyWebsiteUrl);
-            
+
             if (!matchedCompany && data.companyName.trim() !== '') {
               try {
                 const newCompany = await createOneCompanyRecord({
@@ -409,31 +405,27 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
                   ...(data?.companyDetails ? { descriptionOneliner: data?.companyDetails } : {}),
                   ...(data?.companyWebsiteUrl ? { domainName: { primaryLinkUrl: data?.companyWebsiteUrl } } : {}),
                 });
-                
+
                 if (newCompany && newCompany.id) {
                   companyId = newCompany.id;
-                  enqueueSnackBar('Created new company record', {
-                    variant: SnackBarVariant.Success,
-                  });
+                  enqueueSuccessSnackBar({ message: 'Created new company record' });
                 }
               } catch (companyCreateError) {
                 console.error("Couldn't create new company", companyCreateError);
-                enqueueSnackBar(`Failed to create new company: ${companyCreateError instanceof Error ? companyCreateError.message : 'Unknown error'}`, {
-                  variant: SnackBarVariant.Error,
+                enqueueErrorSnackBar({
+                  message: `Failed to create new company: ${companyCreateError instanceof Error ? companyCreateError.message : 'Unknown error'}`,
                 });
                 const existingAfterDuplicate = findBestCompanyMatch(
                   data.companyName,
                   data.companyWebsiteUrl,
                 );
-                if (existingAfterDuplicate?.id) {
-                  companyId = existingAfterDuplicate.id;
-                  enqueueSnackBar('Linked job to existing company', {
-                    variant: SnackBarVariant.Success,
-                  });
+                if (existingAfterDuplicate?.companyId) {
+                  companyId = existingAfterDuplicate.companyId;
+                  enqueueSuccessSnackBar({ message: 'Linked job to existing company' });
                 }
               }
-            } else if (matchedCompany && matchedCompany.id) {
-              companyId = matchedCompany.id;
+            } else if (matchedCompany && matchedCompany.companyId) {
+              companyId = matchedCompany.companyId;
             }
           }
 
@@ -500,6 +492,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           };
 
           await updateOneRecord({
+            objectNameSingular,
             idToUpdate: createdJob.id,
             updateOneRecordInput: updateOneRecordInput,
           });
@@ -508,12 +501,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
           const createPromptsResponse = await axios({
             method: 'post',
-            url: `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/create-prompts`,
+            url: `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/create-prompts`,
             data: {
-              jobId: createdJob.id,
+              projectId: createdJob.id,
             },
             headers: {
-              Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
             },
           });
 
@@ -535,15 +528,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
         // Even if later JD processing fails, return the created job id so that
         // the assistant thread can still attach to a valid job.
-        if (createdJobId) {
-          return createdJobId;
+        if (createdProjectId) {
+          return createdProjectId;
         }
       } finally {
         setIsUploading(false);
       }
     },
     [
-      tokenPair?.accessToken?.token,
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token,
       createOneRecord,
       updateOneRecord,
       uploadAttachmentFile,
@@ -551,7 +544,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       createOneCompanyRecord,
       setParsedJD,
       objectNameSingular,
-      enqueueSnackBar,
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
       updateCompanyWithDetails,
       parsedJD,
       generateResolvedSearchParameters,
@@ -570,16 +564,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
     // Validate mandatory job fields first
     if (!parsedJD.name?.trim()) {
-      enqueueSnackBar('Job Title is required', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Job Title is required' });
       return false;
     }
 
     if (!parsedJD.description?.trim()) {
-      enqueueSnackBar('Short One Line Pitch is required', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Short One Line Pitch is required' });
       return false;
     }
 
@@ -593,7 +583,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         }
       }
       let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
-      
+
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
         const {
@@ -616,22 +606,24 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         // If we have a company name, try to match it and update the companyId
         if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
           const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
-          if (matchedCompany !== null && typeof matchedCompany.id === 'string' && matchedCompany.id !== '') {
+          if (matchedCompany !== null && typeof matchedCompany.companyId === 'string' && matchedCompany.companyId !== '') {
             createdJob = await updateOneRecord({
+              objectNameSingular,
               idToUpdate: parsedJD.id,
               updateOneRecordInput: {
                 ...jobPayloadBase,
-                companyId: matchedCompany.id,
+                companyId: matchedCompany.companyId,
               },
             });
-            
+
             // Update company details if available
             if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
-              await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
+              await updateCompanyWithDetails(matchedCompany.companyId, parsedJD.companyDetails);
             }
           } else {
             // No company match found, just update the job without companyId
             createdJob = await updateOneRecord({
+              objectNameSingular,
               idToUpdate: parsedJD.id,
               updateOneRecordInput: jobPayloadBase,
             });
@@ -639,6 +631,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         } else {
           // No company name, just update the job
           createdJob = await updateOneRecord({
+            objectNameSingular,
             idToUpdate: parsedJD.id,
             updateOneRecordInput: jobPayloadBase,
           });
@@ -652,8 +645,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
           if (
             matchedCompany !== null &&
-            typeof matchedCompany.id === 'string' &&
-            matchedCompany.id !== '' 
+            typeof matchedCompany.companyId === 'string' &&
+            matchedCompany.companyId !== ''
           ) {
             const {
               companyName,
@@ -674,12 +667,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             createdJob = await createOneRecord({
               ...jobPayloadBase,
               isActive: true,
-              companyId: matchedCompany.id,
+              companyId: matchedCompany.companyId,
             });
-            
+
             // Update company details if available
             if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
-              await updateCompanyWithDetails(matchedCompany.id, parsedJD.companyDetails);
+              await updateCompanyWithDetails(matchedCompany.companyId, parsedJD.companyDetails);
             }
           } else {
             // No company match found, create job without companyId
@@ -732,15 +725,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
       // Send job to Arxena after creation
       // if (
-      //   objectNameSingular === 'job' &&
+      //   objectNameSingular === 'project' &&
       //   isDefined(parsedJD?.name) &&
       //   isDefined(parsedJD?.id)
       // ) {
       //   try {
-      //     await sendJobToArxena(
+      //     await sendProjectToArxena(
       //       parsedJD.name,
       //       parsedJD.id,
-      //       tokenPair?.accessToken?.token || '',
+      //       tokenPair?.accessOrWorkspaceAgnosticToken?.token || '',
       //       (errorMessage) => setError(errorMessage),
       //     );
       //   } catch (error) {
@@ -750,24 +743,24 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
       // After successful job creation (not update), navigate to job details
       if (isDefined(createdJob?.id) && !parsedJD.id) {
-        // Trigger global job refetch to update Jobs component
+        // Trigger global job refetch to update Projects component
         triggerJobsRefetch();
-        
+
         // Use setTimeout to ensure the modal is closed before navigation
         setTimeout(() => {
-          console.log('Navigating to job/{id}');
-          navigate(`/job/${createdJob.id}`);
+          console.log('Navigating to project/{id}');
+          navigate(`/project/${createdJob.id}`);
         }, 100);
       }
 
-      const jobIdForChatQuestions = parsedJD.id ?? createdJob?.id;
+      const projectIdForChatQuestions = parsedJD.id ?? createdJob?.id;
 
-      if (jobIdForChatQuestions && parsedJD.chatFlow?.questions?.length) {
+      if (projectIdForChatQuestions && parsedJD.chatFlow?.questions?.length) {
         try {
           await syncChatQuestionsToDatabase({
             parsedJD,
-            jobId: jobIdForChatQuestions,
-            apiToken: tokenPair?.accessToken?.token,
+            projectId: projectIdForChatQuestions,
+            apiToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
           });
         } catch (error) {
           console.error('Error syncing chat questions:', error);
@@ -781,14 +774,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     }
   }, [
     parsedJD,
-    enqueueSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
     recruiterDetails,
     updateRecruiterProfile,
     findBestCompanyMatch,
     createOneRecord,
     updateOneRecord,
     triggerJobsRefetch,
-    tokenPair?.accessToken?.token,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
   ]);
 
   // Reset all upload-related state
@@ -829,16 +823,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
     if (assistantThreads.length === 0) {
       if (!parsedJD?.id || !currentWorkspaceMember?.id) {
-        enqueueSnackBar('Cannot create assistant thread - no job or recruiter', {
-          variant: SnackBarVariant.Error,
-        });
+        enqueueErrorSnackBar({ message: 'Cannot create assistant thread - no job or recruiter' });
         return;
       }
       try {
         const displayName = `Search - ${searchType}_${searchCategory} - ${new Date().toISOString().slice(0, 10)}`;
         const newThread = await createOneAssistantThreadRecord({
           name: displayName,
-          jobId: parsedJD.id,
+          projectId: parsedJD.id,
           recruiterId: currentWorkspaceMember.id,
           assistantParameters,
           messages: [],
@@ -865,23 +857,20 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         }
       } catch (createError) {
         console.error('Failed to create assistant thread:', createError);
-        enqueueSnackBar(`Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}`, {
-          variant: SnackBarVariant.Error,
-        });
+        enqueueErrorSnackBar({ message: `Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}` });
       }
       return;
     }
 
     const assistantThreadId = assistantThread?.id ?? assistantThreads[0]?.id;
     if (!assistantThreadId) {
-      enqueueSnackBar('Cannot update assistant thread - missing thread id', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Cannot update assistant thread - missing thread id' });
       return;
     }
     const displayName = `${searchType}_${searchCategory}`;
     try {
       await updateOneAssistantThreadRecord({
+        objectNameSingular: 'assistantThread',
         idToUpdate: assistantThreadId,
         updateOneRecordInput: {
           name: displayName,
@@ -890,18 +879,21 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       });
     } catch (error) {
       console.error('Failed to update assistant thread:', error);
-      enqueueSnackBar(`Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: `Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
-  }, [createOneAssistantThreadRecord, updateOneAssistantThreadRecord, enqueueSnackBar, parsedJD?.id, currentWorkspaceMember?.id, setParsedJD]);
+  }, [
+    createOneAssistantThreadRecord,
+    updateOneAssistantThreadRecord,
+    enqueueErrorSnackBar,
+    parsedJD?.id,
+    currentWorkspaceMember?.id,
+    setParsedJD,
+  ]);
 
   // Function to create a job from just the name
   const handleCreateJobFromName = useCallback(async (jobName: string) => {
     if (!jobName || !jobName.trim()) {
-      enqueueSnackBar('Job name is required', {
-        variant: SnackBarVariant.Error,
-      });
+      enqueueErrorSnackBar({ message: 'Project name is required' });
       return;
     }
 
@@ -929,19 +921,17 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       // Trigger job refetch
       triggerJobsRefetch();
 
-      enqueueSnackBar('Job created successfully', {
-        variant: SnackBarVariant.Success,
-      });
+      enqueueSuccessSnackBar({ message: 'Project created successfully' });
 
-      // Navigate to the job page and close modal
+      // Navigate to the project page and close modal
       setTimeout(() => {
-        navigate(`/job/${createdJob.id}`);
+        navigate(`/project/${createdJob.id}`);
       }, 100);
     } catch (error: any) {
       console.error('Error creating job from name:', error);
       setError(error?.message || 'Failed to create job');
-      enqueueSnackBar(`Failed to create job: ${error?.message || 'Unknown error'}`, {
-        variant: SnackBarVariant.Error,
+      enqueueErrorSnackBar({
+        message: `Failed to create job: ${error?.message || 'Unknown error'}`,
       });
     } finally {
       setIsUploading(false);
@@ -952,7 +942,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     recruiterDetails?.workspaceMemberId,
     triggerJobsRefetch,
     navigate,
-    enqueueSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
   ]);
 
   return {

@@ -2,14 +2,14 @@ import { Test } from '@nestjs/testing';
 import { AssistantThreadService } from 'src/engine/core-modules/assistant/assistant-thread.service';
 import type { AssistantThreadMessage, AssistantThreadRecord } from 'src/engine/core-modules/assistant/assistant.types';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { JobContextService, type RecruiterJobContext } from '../job-context.service';
+import { ProjectContextService, type RecruiterProjectContext } from '../project-context.service';
 import { RecruiterMessageService } from '../recruiter-message.service';
 
 describe('RecruiterMessageService', () => {
   let service: RecruiterMessageService;
   let workspaceQueryService: jest.Mocked<WorkspaceQueryService>;
   let assistantThreadService: jest.Mocked<AssistantThreadService>;
-  let jobContextService: jest.Mocked<JobContextService>;
+  let jobContextService: jest.Mocked<ProjectContextService>;
 
   const apiToken = 'test-token';
   const threadId = 'thread-1';
@@ -25,7 +25,7 @@ describe('RecruiterMessageService', () => {
     lastTableData: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    jobId: 'job-1',
+    projectId: 'job-1',
     agentNotes: [
       {
         summary: 'Client prefers hands-on React leads from product companies.',
@@ -36,8 +36,8 @@ describe('RecruiterMessageService', () => {
     ...overrides,
   });
 
-  const baseJobContext: RecruiterJobContext = {
-    jobId: 'job-1',
+  const baseJobContext: RecruiterProjectContext = {
+    projectId: 'job-1',
     jobTitle: 'Senior React Developer',
     companyName: 'Mock Product Co',
     jobLocation: 'Bangalore',
@@ -63,9 +63,9 @@ describe('RecruiterMessageService', () => {
           },
         },
         {
-          provide: JobContextService,
+          provide: ProjectContextService,
           useValue: {
-            fetchJobContext: jest.fn(),
+            fetchProjectContext: jest.fn(),
           },
         },
       ],
@@ -78,13 +78,13 @@ describe('RecruiterMessageService', () => {
     assistantThreadService = moduleRef.get(
       AssistantThreadService,
     ) as jest.Mocked<AssistantThreadService>;
-    jobContextService = moduleRef.get(JobContextService) as jest.Mocked<JobContextService>;
+    jobContextService = moduleRef.get(ProjectContextService) as jest.Mocked<ProjectContextService>;
   });
 
   it('appends a recruiter instruction with job context to the thread', async () => {
     const thread = buildThread();
     assistantThreadService.getThread.mockResolvedValue(thread);
-    jobContextService.fetchJobContext.mockResolvedValue(baseJobContext);
+    jobContextService.fetchProjectContext.mockResolvedValue(baseJobContext);
     const result = await service.generateRecruiterMessageWithToken(
       apiToken,
       threadId,
@@ -105,9 +105,9 @@ describe('RecruiterMessageService', () => {
   });
 
   it('works when no job context is available', async () => {
-    const thread = buildThread({ jobId: undefined });
+    const thread = buildThread({ projectId: undefined });
     assistantThreadService.getThread.mockResolvedValue(thread);
-    jobContextService.fetchJobContext.mockResolvedValue(null);
+    jobContextService.fetchProjectContext.mockResolvedValue(null);
     const result = await service.generateRecruiterMessageWithToken(
       apiToken,
       threadId,

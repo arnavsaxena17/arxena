@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import {
     IconAdjustmentsHorizontal,
     IconChevronDown,
@@ -23,6 +24,9 @@ import {
     formatOrgChartFunctionRootOptionLabel,
 } from '../utils/orgChartFunctionRootOptions';
 import { OrgChartDiagramHandle } from './OrgChartDiagram.types';
+
+const COMPACT_TRIGGER_PADDING = `calc(${themeCssVariables.spacing['1']} + ${themeCssVariables.spacing['0.5']} / 2) ${themeCssVariables.spacing['2']}`;
+const SHEET_OPTION_PADDING = `calc(${themeCssVariables.spacing['1']} + ${themeCssVariables.spacing['0.5']} / 2) ${themeCssVariables.spacing['2']}`;
 
 const formatFilterOptionLabel = (
   key: string,
@@ -48,7 +52,7 @@ const StyledFiltersContainer = styled.div<{ $omitMarginLeft?: boolean }>`
   align-items: flex-end;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing['2']};
   max-width: 100%;
 `;
 
@@ -57,7 +61,7 @@ const StyledDesktopFilters = styled.div`
   align-items: flex-end;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing['2']};
 
   @container orgchart-header (max-width: 720px) {
     display: none;
@@ -78,27 +82,26 @@ const StyledCompactTrigger = styled.button`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${themeCssVariables.spacing['1.5']};
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.25)}
-    ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-family: ${({ theme }) => theme.font.family};
+  padding: ${COMPACT_TRIGGER_PADDING};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-family: ${themeCssVariables.font.family};
   cursor: pointer;
   text-align: left;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
 const StyledCompactTriggerLeft = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.25)};
+  gap: calc(${themeCssVariables.spacing['0.5']} / 2);
   min-width: 0;
   flex: 1;
 `;
@@ -106,26 +109,26 @@ const StyledCompactTriggerLeft = styled.div`
 const StyledCompactTriggerTitleRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  gap: ${themeCssVariables.spacing['1']};
+  font-size: ${themeCssVariables.font.size.xs};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
 `;
 
 const StyledCompactTriggerSummary = styled.span`
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
 const StyledCompactTriggerMeta = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,26 +151,26 @@ const StyledSheetPanel = styled.div<{ $open: boolean }>`
   z-index: 201;
   max-height: min(78vh, 560px);
   flex-direction: column;
-  border-top-left-radius: ${({ theme }) => theme.border.radius.md};
-  border-top-right-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
+  border-top-left-radius: ${themeCssVariables.border.radius.md};
+  border-top-right-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.primary};
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
-  font-family: ${({ theme }) => theme.font.family};
+  font-family: ${themeCssVariables.font.family};
 `;
 
 const StyledSheetHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(2)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
+  padding: ${themeCssVariables.spacing['2']} ${themeCssVariables.spacing['2']};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   flex-shrink: 0;
 `;
 
 const StyledSheetTitle = styled.span`
-  font-size: ${({ theme }) => theme.font.size.md};
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledIconButton = styled.button`
@@ -177,13 +180,13 @@ const StyledIconButton = styled.button`
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   background: transparent;
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
@@ -191,16 +194,16 @@ const StyledSheetBody = styled.div`
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: ${({ theme }) => theme.spacing(1)} 0
-    ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing['1']} 0
+    ${themeCssVariables.spacing['3']};
 `;
 
 const StyledSheetSectionLabel = styled.div`
-  padding: ${({ theme }) => theme.spacing(1.5)}
-    ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(0.5)};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  padding: ${themeCssVariables.spacing['1.5']}
+    ${themeCssVariables.spacing['2']} ${themeCssVariables.spacing['0.5']};
+  font-size: ${themeCssVariables.font.size.xs};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
 `;
@@ -209,23 +212,20 @@ const StyledSheetOption = styled.button<{ $active?: boolean }>`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing['2']};
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.25)}
-    ${({ theme }) => theme.spacing(2)};
-  border: none;
-  border-left: 3px solid
-    ${({ theme, $active }) => ($active ? theme.color.blue : 'transparent')};
-  background: ${({ theme, $active }) =>
-    $active ? theme.background.transparent.light : 'transparent'};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${SHEET_OPTION_PADDING};
+    ${({ $active }) => ($active ? themeCssVariables.color.blue : 'transparent')};
+  background: ${({ $active }) =>
+    $active ? themeCssVariables.background.transparent.light : 'transparent'};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   text-align: left;
   cursor: pointer;
-  font-family: ${({ theme }) => theme.font.family};
+  font-family: ${themeCssVariables.font.family};
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
@@ -236,46 +236,46 @@ const StyledSheetOptionMain = styled.span`
 
 const StyledSheetOptionMeta = styled.span`
   flex-shrink: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   white-space: nowrap;
 `;
 
 const StyledFilterGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
   min-width: 0;
 `;
 
 const StyledFilterLabel = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
   font-weight: 600;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
 `;
 
 const StyledSelect = styled.select`
   min-width: 120px;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-family: ${({ theme }) => theme.font.family};
+  padding: ${themeCssVariables.spacing['1']} ${themeCssVariables.spacing['2']};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-family: ${themeCssVariables.font.family};
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
 const StyledSearchContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing['1']};
   flex-wrap: nowrap;
   justify-content: flex-end;
   max-width: 100%;
@@ -293,41 +293,43 @@ const StyledSearchInputWrapper = styled.div`
 const StyledSearchInput = styled.input`
   width: 100%;
   min-width: 0;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  padding-left: ${({ theme }) => theme.spacing(4)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-family: ${({ theme }) => theme.font.family};
+  padding: ${themeCssVariables.spacing['1']} ${themeCssVariables.spacing['2']};
+  padding-left: ${themeCssVariables.spacing['4']};
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-family: ${themeCssVariables.font.family};
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 `;
 
-const StyledSearchIcon = styled(IconSearch)`
+// Do not use styled(Icon*) — Linaria resolves the icon package from
+// twenty-orgchart/node_modules, which is empty under Yarn hoisting.
+const StyledSearchIconWrap = styled.span`
   position: absolute;
-  left: ${({ theme }) => theme.spacing(0)};
-  width: 16px;
-  height: 16px;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  left: ${themeCssVariables.spacing['0']};
+  display: inline-flex;
+  color: ${themeCssVariables.font.color.tertiary};
+  pointer-events: none;
 `;
 
 const StyledSearchButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)}
-    ${({ theme }) => theme.spacing(1.5)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  padding: ${themeCssVariables.spacing['1']}
+    ${themeCssVariables.spacing['1.5']};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.xs};
   cursor: pointer;
 
   &:hover:enabled {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 
   &:disabled {
@@ -337,8 +339,8 @@ const StyledSearchButton = styled.button`
 `;
 
 const StyledSearchMeta = styled.span`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   min-width: 72px;
   text-align: right;
   white-space: nowrap;
@@ -347,7 +349,7 @@ const StyledSearchMeta = styled.span`
 const StyledSearchNavGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
   white-space: nowrap;
   justify-content: flex-start;
 `;
@@ -355,8 +357,8 @@ const StyledSearchNavGroup = styled.div`
 const StyledSearchViewActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  margin-left: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing['0.5']};
+  margin-left: ${themeCssVariables.spacing['2']};
   white-space: nowrap;
 
   @media (max-width: 720px) {
@@ -371,34 +373,34 @@ const StyledGradeFilterWrap = styled.div`
 const StyledGradeFilterTrigger = styled(StyledSearchButton)`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing['0.5']};
 `;
 
 const StyledGradeFilterMenu = styled.div`
   position: absolute;
-  top: calc(100% + ${({ theme }) => theme.spacing(0.5)});
+  top: calc(100% + ${themeCssVariables.spacing['0.5']});
   right: 0;
   z-index: 40;
   min-width: 200px;
-  padding: ${({ theme }) => theme.spacing(1)} 0;
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
+  padding: ${themeCssVariables.spacing['1']} 0;
+  border-radius: ${themeCssVariables.border.radius.md};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 `;
 
 const StyledGradeFilterOption = styled.label`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(1)}
-    ${({ theme }) => theme.spacing(1.5)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  gap: ${themeCssVariables.spacing['1.5']};
+  padding: ${themeCssVariables.spacing['1']}
+    ${themeCssVariables.spacing['1.5']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 
   input {
@@ -840,7 +842,9 @@ export const OrgChartSearchControls = ({
   return (
     <StyledSearchContainer>
       <StyledSearchInputWrapper>
-        <StyledSearchIcon />
+        <StyledSearchIconWrap>
+          <IconSearch size={16} />
+        </StyledSearchIconWrap>
         <StyledSearchInput
           ref={searchInputRef}
           placeholder="Search org chart"

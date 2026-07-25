@@ -4,40 +4,112 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { isOrgChartEnabledEnv } from 'twenty-shared';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  In,
+  type ObjectLiteral,
+  Repository,
+} from 'typeorm';
 
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
-import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
-// import { EnvironmentService } from 'src/engine/integrations/environment/environment.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
-// import { TokenService } from 'src/engine/core-modules/auth/services/token.service';
+import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
-// import { WorkspaceQueryService } from '../workspace-query.service';
-import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
 import { EmailService } from 'src/engine/core-modules/email/email.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
+import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
 export type UnipileAccountMappingType = 'LINKEDIN' | 'WHATSAPP';
 
+export type WorkspaceIntegrationKeys = {
+  openaikey?: string;
+  twilio_account_sid?: string;
+  twilio_auth_token?: string;
+  linkedin_url?: string;
+  whatsapp_key?: string;
+  linkedin_unipile_account_id?: string;
+  whatsapp_unipile_account_id?: string;
+  linkedin_profile_id?: string;
+  anthropic_key?: string;
+  facebook_whatsapp_api_token?: string;
+  facebook_whatsapp_phone_number_id?: string;
+  whatsapp_web_phone_number?: string;
+  facebook_whatsapp_app_id?: string;
+  facebook_whatsapp_asset_id?: string;
+  is_chrome_extension_installed?: string;
+  chrome_extension_id?: string;
+  is_org_chart_enabled?: string;
+};
+
+const WORKSPACE_KEY_PROPERTY_BY_NAME: Record<
+  string,
+  keyof WorkspaceEntity
+> = {
+  openaikey: 'openaikey',
+  twilio_account_sid: 'twilioAccountSid',
+  twilioAccountSid: 'twilioAccountSid',
+  twilio_auth_token: 'twilioAuthToken',
+  twilioAuthToken: 'twilioAuthToken',
+  linkedin_url: 'linkedinUrl',
+  linkedinUrl: 'linkedinUrl',
+  whatsapp_key: 'whatsappKey',
+  whatsappKey: 'whatsappKey',
+  linkedin_unipile_account_id: 'linkedinUnipileAccountId',
+  linkedinUnipileAccountId: 'linkedinUnipileAccountId',
+  whatsapp_unipile_account_id: 'whatsappUnipileAccountId',
+  whatsappUnipileAccountId: 'whatsappUnipileAccountId',
+  linkedin_profile_id: 'linkedinProfileId',
+  linkedinProfileId: 'linkedinProfileId',
+  anthropic_key: 'anthropicKey',
+  anthropicKey: 'anthropicKey',
+  facebook_whatsapp_api_token: 'facebookWhatsappApiToken',
+  facebookWhatsappApiToken: 'facebookWhatsappApiToken',
+  facebook_whatsapp_phone_number_id: 'facebookWhatsappPhoneNumberId',
+  facebookWhatsappPhoneNumberId: 'facebookWhatsappPhoneNumberId',
+  whatsapp_web_phone_number: 'whatsappWebPhoneNumber',
+  whatsappWebPhoneNumber: 'whatsappWebPhoneNumber',
+  facebook_whatsapp_app_id: 'facebookWhatsappAppId',
+  facebookWhatsappAppId: 'facebookWhatsappAppId',
+  facebook_whatsapp_asset_id: 'facebookWhatsappAssetId',
+  facebookWhatsappAssetId: 'facebookWhatsappAssetId',
+  is_chrome_extension_installed: 'isChromeExtensionInstalled',
+  isChromeExtensionInstalled: 'isChromeExtensionInstalled',
+  chrome_extension_id: 'chromeExtensionId',
+  chromeExtensionId: 'chromeExtensionId',
+  is_org_chart_enabled: 'isOrgChartEnabled',
+  isOrgChartEnabled: 'isOrgChartEnabled',
+};
+
 @Injectable()
 export class WorkspaceQueryService {
   constructor(
-    @InjectRepository(Workspace, 'core')
-    private readonly workspaceRepository: Repository<Workspace>,
-    @InjectRepository(DataSourceEntity, 'metadata')
+    @InjectRepository(WorkspaceEntity)
+    private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    @InjectRepository(UserWorkspaceEntity)
+    private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    @InjectRepository(DataSourceEntity)
     public readonly dataSourceRepository: Repository<DataSourceEntity>,
-    @InjectDataSource('metadata')
+    @InjectDataSource()
     private readonly metadataDataSource: DataSource,
     public readonly apiKeyService: ApiKeyService,
     public readonly accessTokenService: AccessTokenService,
     public readonly workspaceDataSourceService: WorkspaceDataSourceService,
-    public readonly webSocketService: WebSocketService,    
+    public readonly webSocketService: WebSocketService,
     public readonly emailService: EmailService,
     private readonly environmentService: EnvironmentService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly twentyORMGlobalManager: TwentyORMGlobalManager,
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
 
 
@@ -77,23 +149,17 @@ export class WorkspaceQueryService {
       return null;
     }
     try {
-      const schema = this.getDataSourceSchema(workspaceId);
-      const profileTable =
-        await this.resolveWorkspaceMemberProfileTableName(schema);
+      const profileRepository =
+        await this.getObjectRepository<{ id: string; workspaceMemberId: string }>(
+          workspaceId,
+          'workspaceMemberProfile',
+        );
+      const profile = await profileRepository.findOne({
+        where: { workspaceMemberId },
+        select: { id: true },
+      });
 
-      if (!profileTable) {
-        return null;
-      }
-
-      const rows = await this.workspaceDataSourceService.executeRawQuery(
-        `SELECT "id" FROM "${schema}"."${profileTable}" WHERE "workspaceMemberId" = $1 LIMIT 1`,
-        [workspaceMemberId],
-        workspaceId,
-      );
-
-      const id = rows?.[0]?.id;
-
-      return typeof id === 'string' ? id : null;
+      return profile?.id ?? null;
     } catch (error) {
       console.error(
         'getWorkspaceMemberProfileIdForMember: query failed',
@@ -153,7 +219,45 @@ export class WorkspaceQueryService {
   }
 
   getDataSourceSchema(workspaceId: string) {
-    return this.workspaceDataSourceService.getSchemaName(workspaceId);
+    return getWorkspaceSchemaName(workspaceId);
+  }
+
+  async getObjectRepository<T extends ObjectLiteral>(
+    workspaceId: string,
+    objectNameSingular: string,
+  ): Promise<WorkspaceRepository<T>> {
+    return this.twentyORMGlobalManager.getRepositoryForWorkspace<T>(
+      workspaceId,
+      objectNameSingular,
+      { shouldBypassPermissionChecks: true },
+    );
+  }
+
+  // Workspace-schema SQL for system/jobs when repository APIs are awkward (joins, DDL, bulk).
+  async executeWorkspaceRawQuery<T = unknown>(
+    query: string,
+    parameters: unknown[] = [],
+    workspaceId?: string,
+  ): Promise<T> {
+    if (!query || !workspaceId) {
+      throw new Error(
+        `Invalid parameters: query=${query}, workspaceId=${workspaceId}`,
+      );
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const dataSource =
+          await this.globalWorkspaceOrmManager.getGlobalWorkspaceDataSource();
+
+        return dataSource.query(query, parameters, undefined, {
+          shouldBypassPermissionChecks: true,
+        }) as Promise<T>;
+      },
+      authContext,
+    );
   }
 
   /**
@@ -248,7 +352,9 @@ export class WorkspaceQueryService {
       }
 
       try {
-        const rows = await this.workspaceDataSourceService.executeRawQuery(
+        const rows = await this.executeWorkspaceRawQuery<
+          Array<Record<string, unknown>>
+        >(
           `SELECT 1 FROM ${schema}."${profileTable}" WHERE "${columnName}" = $1 LIMIT 1`,
           [accountId],
           workspaceId,
@@ -382,7 +488,6 @@ export class WorkspaceQueryService {
     const queryRunner = this.metadataDataSource.createQueryRunner();
     await queryRunner.connect();
     const results: T[] = [];
-    const connectedWorkspaces = new Set<string>();
     const stopOnFirstResult = options.stopOnFirstResult ?? true;
 
     try {
@@ -398,8 +503,7 @@ export class WorkspaceQueryService {
         dataSources.map((dataSource) => dataSource.workspaceId),
       );
       for (const workspaceId of workspaceIdsWithDataSources) {
-        const dataSourceSchema =
-          this.workspaceDataSourceService.getSchemaName(workspaceId);
+        const dataSourceSchema = this.getDataSourceSchema(workspaceId);
         const tableExists = await this.checkIfTableExists(
           dataSourceSchema,
           '_videoInterview',
@@ -411,11 +515,6 @@ export class WorkspaceQueryService {
           continue;
         }
         try {
-          await this.workspaceDataSourceService.connectToWorkspaceDataSource(
-            workspaceId,
-          );
-          connectedWorkspaces.add(workspaceId);
-
           const result = await queryCallback(
             workspaceId,
             dataSourceSchema,
@@ -449,18 +548,6 @@ export class WorkspaceQueryService {
       } catch (releaseError) {
         console.error('Error releasing query runner:', releaseError);
       }
-      await Promise.all(
-        Array.from(connectedWorkspaces).map((workspaceId) =>
-          this.workspaceDataSourceService.releaseWorkspaceDataSource(
-            workspaceId,
-          ).catch((error) =>
-            console.error(
-              `Error releasing workspace data source for workspace ${workspaceId}:`,
-              error,
-            ),
-          ),
-        ),
-      );
     }
 
     return [];
@@ -472,15 +559,15 @@ export class WorkspaceQueryService {
     tableName: string,
   ): Promise<boolean> {
     try {
-      
+
       if (!schema || !tableName) {
         console.error('checkIfTableExists: Invalid parameters:', { schema, tableName });
         return false;
       }
-      
+
       const query = `
         SELECT EXISTS (
-          SELECT FROM information_schema.tables 
+          SELECT FROM information_schema.tables
           WHERE table_schema = $1
           AND table_name = $2
         );
@@ -526,7 +613,7 @@ export class WorkspaceQueryService {
 
       const query = `
         SELECT EXISTS (
-          SELECT FROM information_schema.columns 
+          SELECT FROM information_schema.columns
           WHERE table_schema = $1
           AND table_name = $2
           AND column_name = $3
@@ -558,27 +645,20 @@ export class WorkspaceQueryService {
 
   async executeRawQuery(
     query: string,
-    params: any[],
+    params: unknown[] = [],
     workspaceId: string,
-    transactionManager?: EntityManager,
+    _transactionManager?: EntityManager,
   ) {
     try {
-      
-      if (!query || !workspaceId) {
-        throw new Error(`Invalid parameters: query=${query}, workspaceId=${workspaceId}`);
-      }
-
-      const result = await this.workspaceDataSourceService.executeRawQuery(
-        query,
-        params,
-        workspaceId,
-        transactionManager,
-      );
-
-      return result;
+      return await this.executeWorkspaceRawQuery(query, params, workspaceId);
     } catch (error) {
-      console.error(`executeRawQuery: Error executing query for workspace ${workspaceId}:`, error);
-      throw new Error(`Failed to execute raw query for workspace ${workspaceId}: ${error.message}`);
+      console.error(
+        `executeRawQuery: Error executing query for workspace ${workspaceId}:`,
+        error,
+      );
+      throw new Error(
+        `Failed to execute raw query for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -595,173 +675,89 @@ export class WorkspaceQueryService {
     return this.workspaceRepository.findOne({ where: { id: workspaceId } });
   }
 
-  // Add this method to the service
-  async getApiKeys(
-    workspaceId: string,
-    dataSourceSchema: string,
-    transactionManager?: EntityManager,
-  ) {
+  async getApiKeys(workspaceId: string, _dataSourceSchema?: string) {
     try {
-      // Check if the apiKey table exists
-      const tableExists = await this.checkIfTableExists(dataSourceSchema, 'apiKey');
-      if (!tableExists) {
-        console.log(`getApiKeys: apiKey table does not exist in schema ${dataSourceSchema} for workspace ${workspaceId}`);
-        return [];
-      }
-      
-      const apiKeys = await this.workspaceDataSourceService.executeRawQuery(
-        `SELECT * FROM ${dataSourceSchema}."apiKey" where "apiKey"."revokedAt" IS NULL ORDER BY "apiKey"."createdAt" ASC`,
-        [],
-        workspaceId,
-        transactionManager,
-      );
-
-      if (!apiKeys || !Array.isArray(apiKeys)) {
-        console.log(
-          `getApiKeys: Invalid result for workspace ${workspaceId}, schema ${dataSourceSchema}. Result:`,
-          apiKeys,
-        );
-        return [];
-      }
-
-      return apiKeys;
-    } catch (e) {
+      return await this.apiKeyService.findActiveByWorkspaceId(workspaceId);
+    } catch (error) {
       console.log(
         'Error in getApiKeys for workspace ID',
         workspaceId,
-        'for dataSourceSchema',
-        dataSourceSchema,
         'Error:',
-        e,
+        error,
       );
 
       return [];
     }
   }
 
-  async getWorkspaceKeys(workspaceId: string): Promise<{
-    openaikey?: string;
-    twilio_account_sid?: string;
-    twilio_auth_token?: string;
-    linkedin_url?: string;
-    whatsapp_key?: string;
-    linkedin_unipile_account_id?: string;
-    whatsapp_unipile_account_id?: string;
-    linkedin_profile_id?: string;
-    anthropic_key?: string;
-    facebook_whatsapp_api_token?: string;
-    facebook_whatsapp_phone_number_id?: string;
-    whatsapp_web_phone_number?: string;
-    facebook_whatsapp_app_id?: string;
-    facebook_whatsapp_asset_id?: string;
-    is_chrome_extension_installed?: string;
-    chrome_extension_id?: string;
-    is_org_chart_enabled?: string;
-  }> {
+  async getWorkspaceKeys(
+    workspaceId: string,
+  ): Promise<WorkspaceIntegrationKeys> {
     try {
-      const workspaceDataSourceReady =
-        await this.workspaceDataSourceService.checkSchemaExists(workspaceId);
+      const workspace = await this.workspaceRepository.findOne({
+        where: { id: workspaceId },
+        select: {
+          id: true,
+          openaikey: true,
+          twilioAccountSid: true,
+          twilioAuthToken: true,
+          linkedinUrl: true,
+          whatsappKey: true,
+          linkedinUnipileAccountId: true,
+          whatsappUnipileAccountId: true,
+          linkedinProfileId: true,
+          anthropicKey: true,
+          facebookWhatsappApiToken: true,
+          facebookWhatsappPhoneNumberId: true,
+          whatsappWebPhoneNumber: true,
+          facebookWhatsappAppId: true,
+          facebookWhatsappAssetId: true,
+          isChromeExtensionInstalled: true,
+          chromeExtensionId: true,
+          isOrgChartEnabled: true,
+        },
+      });
 
-      if (!workspaceDataSourceReady) {
+      if (!workspace) {
         return {};
       }
 
-      // First, ensure all necessary columns exist
-      const alterTableQuery = `
-      ALTER TABLE core.workspace
-      ADD COLUMN IF NOT EXISTS openaikey varchar(255),
-      ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
-      ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_unipile_account_id varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_profile_id varchar(255),
-      ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
-      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
-      ADD COLUMN IF NOT EXISTS chrome_extension_id varchar(255),
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255)
-    `;
+      const rawIsOrgChartEnabled = workspace.isOrgChartEnabled;
+      const isOrgChartEnabledNormalized =
+        rawIsOrgChartEnabled != null &&
+        String(rawIsOrgChartEnabled).trim() !== ''
+          ? String(rawIsOrgChartEnabled).trim()
+          : isOrgChartEnabledEnv
+            ? 'true'
+            : 'false';
 
-      await this.executeRawQuery(alterTableQuery, [], workspaceId);
-      // Then proceed with the select query
-      const selectQuery = `
-      SELECT 
-        openaikey,
-        twilio_account_sid,
-        twilio_auth_token,
-        linkedin_url,
-        whatsapp_key,
-        linkedin_unipile_account_id,
-        whatsapp_unipile_account_id,
-        linkedin_profile_id,
-        anthropic_key,
-        facebook_whatsapp_api_token,
-        facebook_whatsapp_phone_number_id,
-        whatsapp_web_phone_number,
-        facebook_whatsapp_app_id,
-        facebook_whatsapp_asset_id,
-        is_chrome_extension_installed,
-        chrome_extension_id,
-        is_org_chart_enabled
-      FROM core.workspace 
-      WHERE id = $1
-    `;
-
-      const result = await this.executeRawQuery(
-        selectQuery,
-        [workspaceId],
-        workspaceId,
-      );
-
-      if (result && result[0]) {
-        const row = result[0];
-        const rawIsOrgChartEnabled = row.is_org_chart_enabled;
-        const isOrgChartEnabledNormalized =
-          rawIsOrgChartEnabled != null &&
-          String(rawIsOrgChartEnabled).trim() !== ''
-            ? String(rawIsOrgChartEnabled).trim()
-            : isOrgChartEnabledEnv
-              ? 'true'
-              : 'false';
-
-        return {
-          openaikey: row.openaikey,
-          twilio_account_sid: row.twilio_account_sid,
-          twilio_auth_token: row.twilio_auth_token,
-          linkedin_url: row.linkedin_url,
-          whatsapp_key: row.whatsapp_key,
-          linkedin_unipile_account_id: row.linkedin_unipile_account_id,
-          whatsapp_unipile_account_id: row.whatsapp_unipile_account_id,
-          linkedin_profile_id: row.linkedin_profile_id,
-          anthropic_key: row.anthropic_key,
-          facebook_whatsapp_api_token: row.facebook_whatsapp_api_token,
-          facebook_whatsapp_phone_number_id: row.facebook_whatsapp_phone_number_id,
-          whatsapp_web_phone_number: row.whatsapp_web_phone_number,
-          facebook_whatsapp_app_id: row.facebook_whatsapp_app_id,
-          facebook_whatsapp_asset_id: row.facebook_whatsapp_asset_id,
-          is_chrome_extension_installed: row.is_chrome_extension_installed,
-          chrome_extension_id: row.chrome_extension_id,
-          is_org_chart_enabled: isOrgChartEnabledNormalized,
-        };
-      }
-
-      return {};
+      return {
+        openaikey: workspace.openaikey ?? undefined,
+        twilio_account_sid: workspace.twilioAccountSid ?? undefined,
+        twilio_auth_token: workspace.twilioAuthToken ?? undefined,
+        linkedin_url: workspace.linkedinUrl ?? undefined,
+        whatsapp_key: workspace.whatsappKey ?? undefined,
+        linkedin_unipile_account_id:
+          workspace.linkedinUnipileAccountId ?? undefined,
+        whatsapp_unipile_account_id:
+          workspace.whatsappUnipileAccountId ?? undefined,
+        linkedin_profile_id: workspace.linkedinProfileId ?? undefined,
+        anthropic_key: workspace.anthropicKey ?? undefined,
+        facebook_whatsapp_api_token:
+          workspace.facebookWhatsappApiToken ?? undefined,
+        facebook_whatsapp_phone_number_id:
+          workspace.facebookWhatsappPhoneNumberId ?? undefined,
+        whatsapp_web_phone_number:
+          workspace.whatsappWebPhoneNumber ?? undefined,
+        facebook_whatsapp_app_id: workspace.facebookWhatsappAppId ?? undefined,
+        facebook_whatsapp_asset_id:
+          workspace.facebookWhatsappAssetId ?? undefined,
+        is_chrome_extension_installed:
+          workspace.isChromeExtensionInstalled ?? undefined,
+        chrome_extension_id: workspace.chromeExtensionId ?? undefined,
+        is_org_chart_enabled: isOrgChartEnabledNormalized,
+      };
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : String(error ?? '');
-      const isNoDataSource =
-        message.includes('DataSourceEntity') ||
-        message.includes('Could not find any entity');
-
-      if (isNoDataSource) {
-        return {};
-      }
       console.error(
         `Error fetching API keys for workspace ${workspaceId}:`,
         error,
@@ -775,36 +771,24 @@ export class WorkspaceQueryService {
     keyName: string,
   ): Promise<string | null> {
     try {
-      const workspaceDataSourceReady =
-        await this.workspaceDataSourceService.checkSchemaExists(workspaceId);
+      const propertyName = WORKSPACE_KEY_PROPERTY_BY_NAME[keyName];
 
-      if (!workspaceDataSourceReady) {
+      if (!propertyName) {
         return null;
       }
 
-      // Convert camelCase to snake_case for database column names
-      const columnName = keyName.replace(
-        /[A-Z]/g,
-        (letter) => `_${letter.toLowerCase()}`,
-      );
+      const workspace = await this.workspaceRepository.findOne({
+        where: { id: workspaceId },
+        select: { id: true, [propertyName]: true },
+      });
 
-      const query = `
-        SELECT ${columnName}
-        FROM core.workspace 
-        WHERE id = $1
-      `;
-
-      const result = await this.executeRawQuery(
-        query,
-        [workspaceId],
-        workspaceId,
-      );
-
-      if (result && result[0]) {
-        return result[0][columnName] || null;
+      if (!workspace) {
+        return null;
       }
 
-      return null;
+      const value = workspace[propertyName];
+
+      return typeof value === 'string' ? value : value == null ? null : String(value);
     } catch (error) {
       console.error(
         `Error fetching ${keyName} for workspace ${workspaceId}:`,
@@ -825,81 +809,37 @@ export class WorkspaceQueryService {
 
   async updateWorkspaceKeys(
     workspaceId: string,
-    keys: {
-      openaikey?: string;
-      twilio_account_sid?: string;
-      twilio_auth_token?: string;
-      linkedin_url?: string;
-      whatsapp_key?: string;
-      linkedin_unipile_account_id?: string;
-      whatsapp_unipile_account_id?: string;
-      linkedin_profile_id?: string;
-      anthropic_key?: string;
-      facebook_whatsapp_api_token?: string;
-      facebook_whatsapp_phone_number_id?: string;
-      whatsapp_web_phone_number?: string;
-      facebook_whatsapp_app_id?: string;
-      facebook_whatsapp_asset_id?: string;
-      is_chrome_extension_installed?: string;
-      chrome_extension_id?: string;
-      is_org_chart_enabled?: string;
-    },
+    keys: WorkspaceIntegrationKeys,
   ): Promise<boolean> {
     try {
       console.log('Going to try and update workspace api keys::', keys);
-      const updates: string[] = [];
-      const params: any[] = [];
-      let paramCounter = 1;
-
-      const alterTableQuery = `
-      ALTER TABLE core.workspace
-      ADD COLUMN IF NOT EXISTS openaikey varchar(255),
-      ADD COLUMN IF NOT EXISTS twilio_account_sid varchar(255),
-      ADD COLUMN IF NOT EXISTS twilio_auth_token varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_url varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_key varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_unipile_account_id varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_unipile_account_id varchar(255),
-      ADD COLUMN IF NOT EXISTS linkedin_profile_id varchar(255),
-      ADD COLUMN IF NOT EXISTS anthropic_key varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_api_token varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_phone_number_id varchar(255),
-      ADD COLUMN IF NOT EXISTS whatsapp_web_phone_number varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_app_id varchar(255),
-      ADD COLUMN IF NOT EXISTS facebook_whatsapp_asset_id varchar(255),
-      ADD COLUMN IF NOT EXISTS is_chrome_extension_installed varchar(255) DEFAULT 'false',
-      ADD COLUMN IF NOT EXISTS is_org_chart_enabled varchar(255) DEFAULT 'false'
-    `;
-    
-    await this.executeRawQuery(alterTableQuery, [], workspaceId);
 
       const sanitizedKeys = Object.fromEntries(
         Object.entries(keys).filter(([key]) => key !== 'linkedin_cookie_auth'),
       );
 
-      Object.entries(sanitizedKeys).forEach(([key, value]) => {
-        if (value !== undefined) {
-          const columnName = key.replace(
-            /[A-Z]/g,
-            (letter) => `_${letter.toLowerCase()}`,
-          );
+      const updatePayload: Partial<WorkspaceEntity> = {};
 
-          updates.push(`${columnName} = $${paramCounter}`);
-          params.push(value);
-          paramCounter++;
+      for (const [key, value] of Object.entries(sanitizedKeys)) {
+        if (value === undefined) {
+          continue;
         }
-      });
-      if (updates.length === 0) {
+
+        const propertyName = WORKSPACE_KEY_PROPERTY_BY_NAME[key];
+
+        if (!propertyName) {
+          continue;
+        }
+
+        (updatePayload as Record<string, string | null>)[propertyName] = value;
+      }
+
+      if (Object.keys(updatePayload).length === 0) {
         return true;
       }
 
-      params.push(workspaceId);
-      const query = `UPDATE core.workspace
-        SET ${updates.join(', ')}
-        WHERE id = $${paramCounter}
-      `;
-      await this.executeRawQuery(query, params, workspaceId);
-      
+      await this.workspaceRepository.update(workspaceId, updatePayload);
+
       return true;
     } catch (error) {
       console.error(
@@ -912,21 +852,17 @@ export class WorkspaceQueryService {
 
   async getUserIdFromWorkspaceId(workspaceId: string): Promise<string | null> {
     try {
-      const query = `
-        SELECT "userId"
-        FROM core."userWorkspace"
-        WHERE "workspaceId" = $1
-        LIMIT 1
-      `;
+      const userWorkspace = await this.userWorkspaceRepository.findOne({
+        where: { workspaceId },
+        select: { userId: true },
+      });
 
-      const result = await this.executeRawQuery(query, [workspaceId], workspaceId);
-      
-      if (result && result[0]) {
-        return result[0].userId;
-      }
-      return null;
+      return userWorkspace?.userId ?? null;
     } catch (error) {
-      console.error(`Error fetching userId for workspace ${workspaceId}:`, error);
+      console.error(
+        `Error fetching userId for workspace ${workspaceId}:`,
+        error,
+      );
       return null;
     }
   }

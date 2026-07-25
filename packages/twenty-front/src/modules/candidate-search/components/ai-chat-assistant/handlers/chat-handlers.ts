@@ -1,17 +1,19 @@
+import type { SnackBarEnqueueFunctions } from '@/candidate-search/types/snackbar.types';
 import type { ParsedJD } from '@/arx-jd-upload/types/ParsedJD';
 import { addSearchResults, persistSearchMetadataToStorage } from '@/candidate-search/states/searchResultsState';
 import type { AiFiltersResponse, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
-import type { FiltersResponse, SortsResponse } from 'twenty-shared';
+import type { FiltersResponse, SortsResponse } from 'twenty-shared/types';
 import type { ChatMessage } from '../types/chat-message.types';
 import { clearLocalStorage } from '../utils/storage-helpers';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 type ChatHandlerDeps = {
   parsedJD: ParsedJD;
-  tokenPair: { accessToken: { token: string } } | null;
+  tokenPair: { accessOrWorkspaceAgnosticToken: { token: string } } | null;
   searchConfig: { searchType: string; searchCategory: string };
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
-  enqueueSnackBar: (message: string, options: { variant: SnackBarVariant }) => void;
+  snackBars: SnackBarEnqueueFunctions;
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   setCurrentSearchParameters: (params: SearchParametersResponse | null) => void;
   setCurrentAiFilters: (aiFilters: AiFiltersResponse | null) => void;
@@ -32,7 +34,7 @@ type ChatHandlerDeps = {
   currentWorkspaceMember?: { id: string } | null;
   setSearchResults?: React.Dispatch<React.SetStateAction<any[]>>;
   setSearchMetadata?: React.Dispatch<React.SetStateAction<any>>;
-  jobId?: string;
+  projectId?: string;
   includeJD?: boolean;
 };
 
@@ -75,7 +77,7 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
         const displayName = `Search - ${deps.searchConfig.searchType}_${deps.searchConfig.searchCategory} - ${timestamp}`;
         const newThread = await deps.createOneAssistantThreadRecord({
           name: displayName,
-          jobId: deps.parsedJD.id,
+          projectId: deps.parsedJD.id,
           recruiterId: deps.currentWorkspaceMember.id,
           assistantParameters: { generatedSearchParameters: {}, resolvedSearchParameters: {} },
           messages: [],
@@ -95,18 +97,16 @@ export const createClearChatHandler = (deps: ChatHandlerDeps) => {
           deps.setParsedJD(prev =>
             prev ? { ...prev, assistantThreads: [summary, ...(prev.assistantThreads || [])] } : null,
           );
-          deps.enqueueSnackBar('Chat cleared. New assistant thread created.', { variant: SnackBarVariant.Success });
+          deps.snackBars.enqueueSuccessSnackBar({ message: 'Chat cleared. New assistant thread created.' });
         } else {
-          deps.enqueueSnackBar('Chat cleared but failed to create new thread.', { variant: SnackBarVariant.Warning });
+          deps.snackBars.enqueueWarningSnackBar({ message: 'Chat cleared but failed to create new thread.' });
         }
       } else {
-        deps.enqueueSnackBar('Chat and all generated data cleared. You can start a new search now.', {
-          variant: SnackBarVariant.Success,
-        });
+        deps.snackBars.enqueueSuccessSnackBar({ message: 'Chat and all generated data cleared. You can start a new search now.' });
       }
     } catch (error) {
       console.error('Error creating new assistant thread:', error);
-      deps.enqueueSnackBar('Chat cleared but failed to create new thread.', { variant: SnackBarVariant.Warning });
+      deps.snackBars.enqueueWarningSnackBar({ message: 'Chat cleared but failed to create new thread.' });
     }
   };
 };
@@ -122,7 +122,7 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
         return;
       }
 
-      if (!deps.tokenPair?.accessToken?.token) {
+      if (!deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
         await deps.addMessage({
           type: 'assistant',
           content: 'Authentication token not found. Please refresh the page and try again.',
@@ -164,9 +164,9 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
       // Try streaming first, fallback to regular if not supported
       try {
         const response = await handleStreamingResponse(
-          process.env.REACT_APP_SERVER_BASE_URL + '/candidate-search-chat/message/stream',
+          REACT_APP_SERVER_BASE_URL + '/candidate-search-chat/message/stream',
           body,
-          deps.tokenPair.accessToken.token,
+          deps.tokenPair.accessOrWorkspaceAgnosticToken.token,
           deps,
           abortController
         );
@@ -183,11 +183,11 @@ export const createChatSubmitHandler = (deps: ChatHandlerDeps) => {
       }
 
       // Call the regular message endpoint as fallback
-      const response = await fetch(process.env.REACT_APP_SERVER_BASE_URL+'/candidate-search/message', {
+      const response = await fetch(REACT_APP_SERVER_BASE_URL+'/candidate-search/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${deps.tokenPair.accessToken.token}`,
+          'Authorization': `Bearer ${deps.tokenPair.accessOrWorkspaceAgnosticToken.token}`,
         },
         body: JSON.stringify(body),
         signal: abortController?.signal,
@@ -779,7 +779,7 @@ async function handleStreamingResponse(
                     hasSearchResultsPreview: !!data.data?.searchResultsPreview,
                     hasSetSearchResults: typeof deps.setSearchResults === 'function',
                     hasSetSearchMetadata: typeof deps.setSearchMetadata === 'function',
-                    jobId: deps.jobId,
+                    projectId: deps.projectId,
                     fullData: data.data
                   });
                   
@@ -839,7 +839,7 @@ async function handleStreamingResponse(
                     hasGeneratedParams: !!data.data?.generatedParams,
                     hasSetSearchResults: typeof deps.setSearchResults === 'function',
                     hasSetSearchMetadata: typeof deps.setSearchMetadata === 'function',
-                    jobId: deps.jobId,
+                    projectId: deps.projectId,
                     dataKeys: data.data ? Object.keys(data.data) : []
                   });
                   
@@ -891,7 +891,7 @@ async function handleStreamingResponse(
                         });
                         try {
                           console.log('=== Calling addSearchResults for primary results ===');
-                          addSearchResults(deps.setSearchResults, deps.jobId)(searchResultsPreview.transformedCandidates, (result) => {
+                          addSearchResults(deps.setSearchResults, deps.projectId)(searchResultsPreview.transformedCandidates, (result) => {
                             // Update metadata for primary search
                             if (deps.setSearchMetadata) {
                               deps.setSearchMetadata((prevMetadata: any) => {
@@ -905,8 +905,8 @@ async function handleStreamingResponse(
                                   searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                                   searchParameters: prevMetadata?.searchParameters,
                                 };
-                                persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+                                  accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
                                 });
                                 return newMetadata;
                               });
@@ -914,18 +914,12 @@ async function handleStreamingResponse(
                             
                             // Show success message with added count
                             if (result.added > 0) {
-                              deps.enqueueSnackBar(
-                                `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results`,
-                                { variant: SnackBarVariant.Success }
-                              );
+                              deps.snackBars.enqueueSuccessSnackBar({ message: `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results` });
                             }
                             
                             // Show duplicate message if there are duplicates
                             if (result.duplicates > 0) {
-                              deps.enqueueSnackBar(
-                                `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search`,
-                                { variant: SnackBarVariant.Info }
-                              );
+                              deps.snackBars.enqueueInfoSnackBar({ message: `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search` });
                             }
                           });
                           console.log('=== addSearchResults called for primary results ===');
@@ -964,10 +958,7 @@ async function handleStreamingResponse(
                             // Optionally show error notification for failed strategies
                             if (strategyResults.filter((s: any) => s.preview?.error).length === 1) {
                               // Only show if this is the only failed strategy to avoid spam
-                              deps.enqueueSnackBar(
-                                `Search failed for "${sr.strategy?.label || sr.strategy?.name || 'strategy'}": ${sr.preview.error.details || sr.preview.error.message}`,
-                                { variant: SnackBarVariant.Error }
-                              );
+                              deps.snackBars.enqueueErrorSnackBar({ message: `Search failed for "${sr.strategy?.label || sr.strategy?.name || 'strategy'}": ${sr.preview.error.details || sr.preview.error.message}` });
                             }
                           } else if (sr.preview?.transformedCandidates && Array.isArray(sr.preview.transformedCandidates)) {
                             allStrategyCandidates.push(...sr.preview.transformedCandidates);
@@ -993,7 +984,7 @@ async function handleStreamingResponse(
                           
                           try {
                             console.log('=== Calling addSearchResults for strategy results ===');
-                            addSearchResults(deps.setSearchResults, deps.jobId)(allStrategyCandidates, (result) => {
+                            addSearchResults(deps.setSearchResults, deps.projectId)(allStrategyCandidates, (result) => {
                               // Update metadata for strategy results
                               if (deps.setSearchMetadata) {
                                 deps.setSearchMetadata((prevMetadata: any) => {
@@ -1007,8 +998,8 @@ async function handleStreamingResponse(
                                     searchCategory: prevMetadata?.searchCategory,
                                     searchParameters: prevMetadata?.searchParameters,
                                   };
-                                  persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-                                  accessToken: deps.tokenPair?.accessToken?.token,
+                                  persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+                                  accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
                                 });
                                   return newMetadata;
                                 });
@@ -1016,18 +1007,12 @@ async function handleStreamingResponse(
                               
                               // Show success message with added count
                               if (result.added > 0) {
-                                deps.enqueueSnackBar(
-                                  `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results`,
-                                  { variant: SnackBarVariant.Success }
-                                );
+                                deps.snackBars.enqueueSuccessSnackBar({ message: `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results` });
                               }
                               
                               // Show duplicate message if there are duplicates
                               if (result.duplicates > 0) {
-                                deps.enqueueSnackBar(
-                                  `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}`,
-                                  { variant: SnackBarVariant.Info }
-                                );
+                                deps.snackBars.enqueueInfoSnackBar({ message: `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}` });
                               }
                             });
                             console.log('=== addSearchResults called for strategy results ===');
@@ -1458,7 +1443,7 @@ async function handleStreamingResponse(
                     
                     try {
                       // Add candidates with sorting enabled
-                      addSearchResults(deps.setSearchResults, deps.jobId)(batchCandidates, (result) => {
+                      addSearchResults(deps.setSearchResults, deps.projectId)(batchCandidates, (result) => {
                         // Update metadata
                         if (deps.setSearchMetadata) {
                           deps.setSearchMetadata((prevMetadata: any) => {
@@ -1472,8 +1457,8 @@ async function handleStreamingResponse(
                               searchCategory: prevMetadata?.searchCategory,
                               searchParameters: prevMetadata?.searchParameters,
                             };
-                            persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-                                  accessToken: deps.tokenPair?.accessToken?.token,
+                            persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+                                  accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
                                 });
                             return newMetadata;
                           });
@@ -1594,7 +1579,7 @@ async function handleStreamingResponse(
                       count: searchResultsPreview.transformedCandidates.length
                     });
                     try {
-                      addSearchResults(deps.setSearchResults, deps.jobId)(searchResultsPreview.transformedCandidates, (result) => {
+                      addSearchResults(deps.setSearchResults, deps.projectId)(searchResultsPreview.transformedCandidates, (result) => {
                         if (deps.setSearchMetadata) {
                           deps.setSearchMetadata((prevMetadata: any) => {
                             const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
@@ -1607,8 +1592,8 @@ async function handleStreamingResponse(
                               searchCategory: searchResultsPreview.searchMetadata?.searchCategory || prevMetadata?.searchCategory,
                               searchParameters: prevMetadata?.searchParameters,
                             };
-                            persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-                                  accessToken: deps.tokenPair?.accessToken?.token,
+                            persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+                                  accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
                                 });
                             return newMetadata;
                           });
@@ -1616,18 +1601,12 @@ async function handleStreamingResponse(
                         
                         // Show success message with added count
                         if (result.added > 0) {
-                          deps.enqueueSnackBar(
-                            `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results`,
-                            { variant: SnackBarVariant.Success }
-                          );
+                          deps.snackBars.enqueueSuccessSnackBar({ message: `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from primary search to results` });
                         }
                         
                         // Show duplicate message if there are duplicates
                         if (result.duplicates > 0) {
-                          deps.enqueueSnackBar(
-                            `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search`,
-                            { variant: SnackBarVariant.Info }
-                          );
+                          deps.snackBars.enqueueInfoSnackBar({ message: `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from primary search` });
                         }
                       });
                     } catch (error) {
@@ -1651,7 +1630,7 @@ async function handleStreamingResponse(
                       });
                       
                       try {
-                        addSearchResults(deps.setSearchResults, deps.jobId)(allStrategyCandidates, (result) => {
+                        addSearchResults(deps.setSearchResults, deps.projectId)(allStrategyCandidates, (result) => {
                           if (deps.setSearchMetadata) {
                             deps.setSearchMetadata((prevMetadata: any) => {
                               const newTotalCount = (prevMetadata?.totalCount || 0) + result.added;
@@ -1664,8 +1643,8 @@ async function handleStreamingResponse(
                                 searchCategory: prevMetadata?.searchCategory,
                                 searchParameters: prevMetadata?.searchParameters,
                               };
-                              persistSearchMetadataToStorage(newMetadata, deps.jobId, {
-                                  accessToken: deps.tokenPair?.accessToken?.token,
+                              persistSearchMetadataToStorage(newMetadata, deps.projectId, {
+                                  accessToken: deps.tokenPair?.accessOrWorkspaceAgnosticToken?.token,
                                 });
                               return newMetadata;
                             });
@@ -1673,18 +1652,12 @@ async function handleStreamingResponse(
                           
                           // Show success message with added count
                           if (result.added > 0) {
-                            deps.enqueueSnackBar(
-                              `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results`,
-                              { variant: SnackBarVariant.Success }
-                            );
+                            deps.snackBars.enqueueSuccessSnackBar({ message: `Added ${result.added} candidate${result.added !== 1 ? 's' : ''} from ${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length} strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'} to results` });
                           }
                           
                           // Show duplicate message if there are duplicates
                           if (result.duplicates > 0) {
-                            deps.enqueueSnackBar(
-                              `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}`,
-                              { variant: SnackBarVariant.Info }
-                            );
+                            deps.snackBars.enqueueInfoSnackBar({ message: `${result.duplicates} duplicate candidate${result.duplicates !== 1 ? 's' : ''} skipped from strateg${strategyResults.filter((sr: any) => sr.preview?.transformedCandidates?.length > 0).length !== 1 ? 'ies' : 'y'}` });
                           }
                         });
                       } catch (error) {

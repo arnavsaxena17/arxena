@@ -1,20 +1,13 @@
-/**
- * Utility functions for handling job ID validation and extraction
- */
-
-export interface JobIdValidationResult {
+export type JobIdValidationResult = {
   isValid: boolean;
   jobId?: string;
   error?: string;
-}
+};
 
-/**
- * Validates and extracts job ID from various input formats
- * @param input - The input that should contain a job ID (string, object, etc.)
- * @returns JobIdValidationResult with validation status and extracted job ID
- */
-export function validateAndExtractJobId(input: any): JobIdValidationResult {
-  
+// Validates and extracts job ID from string or object payloads
+export const validateAndExtractJobId = (
+  input: unknown,
+): JobIdValidationResult => {
   if (!input) {
     return {
       isValid: false,
@@ -23,43 +16,51 @@ export function validateAndExtractJobId(input: any): JobIdValidationResult {
   }
 
   let actualJobId: string;
+  let resolvedInput = input;
 
   // Handle URL-encoded strings that might be [object%20Object]
-  if (typeof input === 'string' && input.includes('%20')) {
-    const decoded = decodeURIComponent(input);
+  if (typeof resolvedInput === 'string' && resolvedInput.includes('%20')) {
+    const decoded = decodeURIComponent(resolvedInput);
     if (decoded === '[object Object]') {
-      console.error('Received URL-encoded [object Object] for jobId:', input);
+      console.error(
+        'Received URL-encoded [object Object] for jobId:',
+        resolvedInput,
+      );
       return {
         isValid: false,
-        error: 'Invalid jobId format - received URL-encoded object instead of UUID',
+        error:
+          'Invalid jobId format - received URL-encoded object instead of UUID',
       };
     }
-    input = decoded;
+    resolvedInput = decoded;
   }
 
-  // Handle case where jobId might be an object instead of string
-  if (typeof input === 'object' && input !== null) {
-    // If it's an object, try to extract the id property
-    actualJobId = input.id || input.jobId || input.job_id;
-    if (!actualJobId) {
-      console.error('Invalid jobId object structure:', input);
+  if (typeof resolvedInput === 'object' && resolvedInput !== null) {
+    const jobIdObject = resolvedInput as Record<string, unknown>;
+    const extractedJobId =
+      jobIdObject.id || jobIdObject.jobId || jobIdObject.job_id;
+
+    if (typeof extractedJobId !== 'string' || !extractedJobId) {
+      console.error('Invalid jobId object structure:', resolvedInput);
       return {
         isValid: false,
-        error: 'Invalid jobId format - expected string or object with id property',
+        error:
+          'Invalid jobId format - expected string or object with id property',
       };
     }
-  } else if (typeof input === 'string') {
-    actualJobId = input;
+    actualJobId = extractedJobId;
+  } else if (typeof resolvedInput === 'string') {
+    actualJobId = resolvedInput;
   } else {
-    console.error('Invalid jobId type:', typeof input, input);
+    console.error('Invalid jobId type:', typeof resolvedInput, resolvedInput);
     return {
       isValid: false,
       error: 'Invalid jobId type - expected string or object',
     };
   }
 
-  // Validate UUID format
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(actualJobId)) {
     console.error('Invalid UUID format for jobId:', actualJobId);
     return {
@@ -72,16 +73,11 @@ export function validateAndExtractJobId(input: any): JobIdValidationResult {
     isValid: true,
     jobId: actualJobId,
   };
-}
+};
 
-/**
- * Creates a standardized error response for invalid job ID
- * @param error - The error message
- * @returns Standardized error response object
- */
-export function createJobIdErrorResponse(error: string) {
+export const createJobIdErrorResponse = (error: string) => {
   return {
     status: 'Failed',
     message: error,
   };
-}
+};

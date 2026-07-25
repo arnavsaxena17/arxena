@@ -3,10 +3,7 @@ import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/Enriche
 import { type RecordFilterGroup } from '@/object-record/record-filter-group/types/RecordFilterGroup';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
 import { makeAndFilterVariables } from '@/object-record/utils/makeAndFilterVariables';
-import {
-  type RecordFilterValueDependencies,
-  type RecordGqlOperationFilter,
-} from 'twenty-shared/types';
+import type { RecordFilterValueDependencies, RecordGqlOperationFilter } from 'twenty-shared/types';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import {
   computeRecordGqlOperationFilter,

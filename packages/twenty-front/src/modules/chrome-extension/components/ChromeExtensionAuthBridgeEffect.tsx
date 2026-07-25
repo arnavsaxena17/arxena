@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
 
 import {
     ARX_CONTENT_SCRIPT_READY,
@@ -14,13 +14,13 @@ import {
  * the access token or window origin changes (login, refresh, workspace switch).
  */
 export const ChromeExtensionAuthBridgeEffect = () => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessOrWorkspaceAgnosticToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
   useEffect(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    if (accessToken) {
-      pushChromeExtensionAuthToContentScript(accessToken, origin);
+    if (accessOrWorkspaceAgnosticToken) {
+      pushChromeExtensionAuthToContentScript(accessOrWorkspaceAgnosticToken, origin);
     } else if (typeof window !== 'undefined') {
       window.postMessage({ type: 'logout' }, window.location.origin);
     }
@@ -30,13 +30,13 @@ export const ChromeExtensionAuthBridgeEffect = () => {
         return;
       }
       if (event.data?.type === ARX_CONTENT_SCRIPT_READY) {
-        pushChromeExtensionAuthToContentScript(accessToken, origin);
+        pushChromeExtensionAuthToContentScript(accessOrWorkspaceAgnosticToken, origin);
         return;
       }
       if (event.data?.type !== ARX_EXTENSION_REQUEST_AUTH) {
         return;
       }
-      pushChromeExtensionAuthToContentScript(accessToken, origin);
+      pushChromeExtensionAuthToContentScript(accessOrWorkspaceAgnosticToken, origin);
       const requestId = event.data?.requestId;
       window.postMessage(
         {
@@ -49,7 +49,7 @@ export const ChromeExtensionAuthBridgeEffect = () => {
 
     window.addEventListener('message', onWindowMessage);
     return () => window.removeEventListener('message', onWindowMessage);
-  }, [accessToken]);
+  }, [accessOrWorkspaceAgnosticToken]);
 
   return null;
 };

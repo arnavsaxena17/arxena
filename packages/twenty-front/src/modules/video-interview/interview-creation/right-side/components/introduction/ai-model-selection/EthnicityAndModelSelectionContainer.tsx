@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
 import { Country } from '@/ui/input/components/internal/types/Country';
@@ -8,7 +9,7 @@ import { EthnicityLanguageSelect } from '@/video-interview/interview-creation/ri
 import { EthnicityModelSelect } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-model-selection/EthnicityModelSelect';
 import { H2Title } from 'twenty-ui';
 
-import { isDefined } from 'twenty-shared';
+import { isDefined } from 'twenty-shared/utils';
 
 const StyledEthnicitySelectionContainer = styled.div`
   display: flex;
@@ -23,11 +24,11 @@ const StyledDropdownsContianer = styled.div`
 `;
 
 const StyledLabel = styled.span`
-  color: ${({ theme }) => theme.font.color.light};
+  color: ${themeCssVariables.font.color.light};
   display: block;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledEthnicityContainer = styled.div`

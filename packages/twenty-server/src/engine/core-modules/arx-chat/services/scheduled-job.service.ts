@@ -20,7 +20,7 @@ export class ScheduledJobService {
   }
 
   scheduleJobForSpecificTime(data: any, scheduledTime: Date): string {
-    const jobId = uuidv4();
+    const projectId = uuidv4();
     const now = new Date();
     const timeUntilExecution = scheduledTime.getTime() - now.getTime();
 
@@ -32,7 +32,7 @@ export class ScheduledJobService {
     }
 
     console.log(
-      `Scheduling job ${jobId} to run at ${scheduledTime.toISOString()}`,
+      `Scheduling job ${projectId} to run at ${scheduledTime.toISOString()}`,
     );
     console.log(`Time until execution: ${timeUntilExecution}ms`);
 
@@ -40,23 +40,23 @@ export class ScheduledJobService {
       try {
         await this.executeScheduledJob(data);
         console.log(
-          `Job ${jobId} completed successfully at ${new Date().toISOString()}`,
+          `Project ${projectId} completed successfully at ${new Date().toISOString()}`,
         );
       } catch (error) {
-        console.error(`Error in job ${jobId}:`, error);
+        console.error(`Error in job ${projectId}:`, error);
       } finally {
         // Clean up the job from the registry
         try {
-          this.schedulerRegistry.deleteTimeout(jobId);
+          this.schedulerRegistry.deleteTimeout(projectId);
         } catch (e) {
-          // Job may already be removed
+          // Project may already be removed
         }
       }
     }, timeUntilExecution);
 
-    this.schedulerRegistry.addTimeout(jobId, timeout);
+    this.schedulerRegistry.addTimeout(projectId, timeout);
 
-    return jobId;
+    return projectId;
   }
 
   async executeScheduledJob(data: any): Promise<void> {
@@ -118,18 +118,18 @@ export class ScheduledJobService {
           console.warn(`Unknown action type: ${action}`);
       }
     } catch (error) {
-      console.error(`Error executing scheduled job (${action}):`, error);
+      console.error(`Error executing scheduled project(${action}):`, error);
     }
   }
 
-  cancelScheduledJob(jobId: string): boolean {
+  cancelScheduledJob(projectId: string): boolean {
     try {
-      this.schedulerRegistry.deleteTimeout(jobId);
-      console.log(`Successfully canceled job ${jobId}`);
+      this.schedulerRegistry.deleteTimeout(projectId);
+      console.log(`Successfully canceled job ${projectId}`);
 
       return true;
     } catch (error) {
-      console.error(`Failed to cancel job ${jobId}:`, error);
+      console.error(`Failed to cancel job ${projectId}:`, error);
 
       return false;
     }

@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
 import { useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { v4 as uid } from 'uuid';
 
 import { InstructionsTextArea } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/InstructionsTextArea';
@@ -10,9 +11,9 @@ const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
   font-family: inherit;
-  color: ${({ theme }) => theme.font.color.light};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  color: ${themeCssVariables.font.color.light};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   height: min-content;
 `;
 
@@ -28,18 +29,18 @@ const StyledInstructionsContainer = styled.ol`
 const StyledListItem = styled.li`
   &::marker {
     font-family: inherit;
-    color: ${({ theme }) => theme.font.color.light};
-    font-size: ${({ theme }) => theme.font.size.md};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
+    color: ${themeCssVariables.font.color.light};
+    font-size: ${themeCssVariables.font.size.md};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 `;
 
 const StyledButton = styled.div`
   border: none;
   font-family: inherit;
-  color: ${({ theme }) => theme.font.color.light};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  color: ${themeCssVariables.font.color.light};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   cursor: pointer;
   background-color: none;
   margin-top: 16px;

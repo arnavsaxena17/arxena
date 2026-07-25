@@ -16,8 +16,11 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { t } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import {
+  IconAddressBook,
   IconApps,
   IconAt,
+  IconBrandLinkedin,
+  IconBrandWhatsapp,
   IconCalendarEvent,
   IconColorSwatch,
   type IconComponent,
@@ -107,6 +110,41 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`Calendars`,
               path: SettingsPath.AccountsCalendars,
               Icon: IconCalendarEvent,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`Google Contacts`,
+              path: SettingsPath.AccountsContacts,
+              Icon: IconAddressBook,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`WhatsApp Unipile`,
+              path: SettingsPath.WhatsappUnipile,
+              Icon: IconBrandWhatsapp,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`WhatsApp Business`,
+              path: SettingsPath.FacebookSignUp,
+              Icon: IconBrandWhatsapp,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`Baileys`,
+              path: SettingsPath.Baileys,
+              Icon: IconMessageCircle,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`LinkedIn Business`,
+              path: SettingsPath.LinkedinSignUp,
+              Icon: IconBrandLinkedin,
               isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
               indentationLevel: 2,
             },

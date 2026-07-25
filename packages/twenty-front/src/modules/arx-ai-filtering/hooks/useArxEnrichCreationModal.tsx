@@ -1,9 +1,8 @@
-import { useRecoilState } from 'recoil';
-
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 export const useArxEnrichCreationModal = () => {
-  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useRecoilState(
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(
     isArxEnrichModalOpenState,
   );
 

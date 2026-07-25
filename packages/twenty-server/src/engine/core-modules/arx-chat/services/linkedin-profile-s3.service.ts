@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { Readable } from 'stream';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 
 const LINKEDIN_PROFILES_S3_FOLDER = 'linkedin-profiles';
 

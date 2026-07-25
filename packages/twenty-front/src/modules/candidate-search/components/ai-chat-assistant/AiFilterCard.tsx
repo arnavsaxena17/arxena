@@ -1,79 +1,80 @@
 import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import styled from '@emotion/styled';
-import { IconEdit } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconEdit } from 'twenty-ui/icon';
 
 const StyledAiFilterCard = styled.div`
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  padding: ${({ theme }) => theme.spacing(3)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[3]};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledAiFilterHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledAiFilterTitle = styled.h4`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const StyledEditButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
+    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
 const StyledAiFilterDetail = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  margin-bottom: ${themeCssVariables.spacing[2]};
   
   strong {
-    color: ${({ theme }) => theme.font.color.primary};
-    font-weight: ${({ theme }) => theme.font.weight.semiBold};
+    color: ${themeCssVariables.font.color.primary};
+    font-weight: ${themeCssVariables.font.weight.semiBold};
   }
 `;
 
 const StyledFieldList = styled.ul`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  padding-left: ${({ theme }) => theme.spacing(3)};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  padding-left: ${themeCssVariables.spacing[3]};
   
   li {
-    margin-bottom: ${({ theme }) => theme.spacing(1)};
-    color: ${({ theme }) => theme.font.color.secondary};
+    margin-bottom: ${themeCssVariables.spacing[1]};
+    color: ${themeCssVariables.font.color.secondary};
   }
 `;
 
 const StyledTokenButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.color.blue};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.color.blue};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   
   &:hover {
-    background-color: ${({ theme }) => theme.color.blue20};
+    background-color: ${themeCssVariables.color.blue2};
   }
 `;
 

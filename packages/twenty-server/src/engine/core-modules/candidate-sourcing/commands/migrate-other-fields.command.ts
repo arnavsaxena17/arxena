@@ -101,7 +101,7 @@ export class MigrateOtherFieldsCommand extends CommandRunner {
       totalFieldsDeleted += result.legacyFieldsDeleted;
 
       this.logger.log(
-        `Workspace ${result.workspaceId} (${result.schema}): jobs=${result.jobsUpdated}, candidates=${result.candidatesUpdated}, deletedFieldValues=${result.legacyFieldValuesDeleted}, deletedFields=${result.legacyFieldsDeleted}`,
+        `Workspace ${result.workspaceId} (${result.schema}): projects =${result.jobsUpdated}, candidates=${result.candidatesUpdated}, deletedFieldValues=${result.legacyFieldValuesDeleted}, deletedFields=${result.legacyFieldsDeleted}`,
       );
     }
 

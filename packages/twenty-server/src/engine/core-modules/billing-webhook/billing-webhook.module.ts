@@ -19,6 +19,8 @@ import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/b
 import { BillingSubscriptionItemEntity } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { StripeModule } from 'src/engine/core-modules/billing/stripe/stripe.module';
+import { RazorpayModule } from 'src/engine/core-modules/billing/razorpay/razorpay.module';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
@@ -26,7 +28,6 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
-import { RowLevelPermissionModule } from 'src/engine/metadata-modules/row-level-permission-predicate/row-level-permission.module';
 import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/provide-workspace-scoped-repository';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 
@@ -35,6 +36,8 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     EventLogEmitterModule,
     FeatureFlagModule,
     StripeModule,
+    RazorpayModule,
+    EnvironmentModule,
     MessageQueueModule,
     PermissionsModule,
     WorkspaceModule,
@@ -52,7 +55,6 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
       UserWorkspaceEntity,
       FeatureFlagEntity,
     ]),
-    RowLevelPermissionModule,
   ],
   controllers: [BillingWebhookController],
   providers: [

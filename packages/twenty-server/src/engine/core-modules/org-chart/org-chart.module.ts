@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
+import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
@@ -62,6 +63,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     CandidateAvatarModule,
     OrgChartClientIpModule,
     ApifyModule,
+    ApiKeyModule,
     AuthModule,
     BillingModule,
     BrightDataModule,

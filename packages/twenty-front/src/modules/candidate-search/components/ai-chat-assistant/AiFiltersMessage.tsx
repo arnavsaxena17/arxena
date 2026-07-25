@@ -1,140 +1,141 @@
 import { Button } from 'twenty-ui';
-import { IconCheck, IconRefresh } from 'twenty-ui/icons';
-import type { AiFiltersResponse } from 'twenty-shared';
-import styled from '@emotion/styled';
-import { IconBrain } from 'twenty-ui/icons';
+import { IconCheck, IconRefresh } from 'twenty-ui/icon';
+import type { AiFiltersResponse } from '@/candidate-search/types/candidate-search.types';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconBrain } from 'twenty-ui/icon';
 import React from 'react';
 
 const StyledMessageContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledContent = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${themeCssVariables.spacing[3]};
   line-height: 1.6;
 `;
 
 const StyledAiFiltersList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  gap: ${themeCssVariables.spacing[2]};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledAiFilterCard = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
 `;
 
 const StyledAiFilterHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledAiFilterName = styled.h4`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledAiFilterCategory = styled.span<{ category: string }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue80};
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue8};
 `;
 
 const StyledAiFilterDescription = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledFieldsList = styled.div`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
+  margin: ${themeCssVariables.spacing[1]} 0;
 `;
 
 const StyledFieldItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(0.5)} 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing['0.5']} 0;
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledFieldName = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledFieldType = styled.span`
   padding: 2px 6px;
   border-radius: 4px;
-  background-color: ${({ theme }) => theme.background.secondary};
+  background-color: ${themeCssVariables.background.secondary};
   font-size: 10px;
 `;
 
 const StyledAiFilterReasoning = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   font-style: italic;
 `;
 
 const StyledActionButtons = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledMetadataInfo = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledMetadataTitle = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledMetadataFields = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledMetadataField = styled.span`
   padding: 2px 6px;
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue80};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue8};
   border-radius: 4px;
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 type AiFiltersMessageProps = {
@@ -215,16 +216,12 @@ export const AiFiltersMessage: React.FC<AiFiltersMessageProps> = ({
           variant="primary"
           onClick={onExecuteAiFilters}
           Icon={IconCheck}
-        >
-          Execute AI filters
-        </Button>
+         title="Execute AI filters" />
         <Button
           variant="secondary"
           onClick={onGenerateFilters}
           Icon={IconRefresh}
-        >
-          Generate Filters
-        </Button>
+         title="Generate Filters" />
       </StyledActionButtons>
     </StyledMessageContainer>
   );

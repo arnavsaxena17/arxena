@@ -172,7 +172,7 @@ export class MigrateOtherFieldsService {
         const hasChatQuestionsColumn =
           await this.workspaceQueryService.checkIfColumnExists(
             schema,
-            '_job',
+            '_project',
             'chatQuestions',
             { silent: true },
           );
@@ -246,7 +246,7 @@ export class MigrateOtherFieldsService {
     );
     const hasChatQuestionsColumn = await this.workspaceQueryService.checkIfColumnExists(
       schema,
-      '_job',
+      '_project',
       'chatQuestions',
       { silent: true },
     );
@@ -306,15 +306,15 @@ export class MigrateOtherFieldsService {
     workspaceId: string,
     dryRun: boolean,
   ): Promise<number> {
-    const legacyRows = (await this.workspaceQueryService.executeRawQuery(
+    const legacyRows = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
-        SELECT cf."jobsId" as "jobId", cf.name, cf.position
+        SELECT cf."projectsId" as "jobId", cf.name, cf.position
         FROM ${schema}."_candidateField" cf
         WHERE cf."deletedAt" IS NULL
-          AND cf."jobsId" IS NOT NULL
+          AND cf."projectsId" IS NOT NULL
           AND cf.name IS NOT NULL
           AND btrim(cf.name::text) <> ''
-        ORDER BY cf."jobsId", cf.position ASC NULLS LAST, cf."createdAt" ASC
+        ORDER BY cf."projectsId", cf.position ASC NULLS LAST, cf."createdAt" ASC
       `,
       [],
       workspaceId,
@@ -338,10 +338,10 @@ export class MigrateOtherFieldsService {
       return 0;
     }
 
-    const jobsNeedingMigration = (await this.workspaceQueryService.executeRawQuery(
+    const jobsNeedingMigration = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
         SELECT j.id, j."chatQuestions"
-        FROM ${schema}."_job" j
+        FROM ${schema}."_project" j
         WHERE j."deletedAt" IS NULL
           AND j.id = ANY($1::uuid[])
       `,
@@ -366,8 +366,8 @@ export class MigrateOtherFieldsService {
         continue;
       }
 
-      await this.workspaceQueryService.executeRawQuery(
-        `UPDATE ${schema}."_job" SET "chatQuestions" = $2::jsonb WHERE id = $1`,
+      await this.workspaceQueryService.executeWorkspaceRawQuery(
+        `UPDATE ${schema}."_project" SET "chatQuestions" = $2::jsonb WHERE id = $1`,
         [job.id, JSON.stringify(legacyQuestions)],
         workspaceId,
       );
@@ -383,7 +383,7 @@ export class MigrateOtherFieldsService {
     batchSize: number,
     dryRun: boolean,
   ): Promise<number> {
-    const legacyRows = (await this.workspaceQueryService.executeRawQuery(
+    const legacyRows = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
         SELECT
           cfv."candidateId" as "candidateId",
@@ -423,7 +423,7 @@ export class MigrateOtherFieldsService {
 
     for (let index = 0; index < candidateIds.length; index += batchSize) {
       const batchIds = candidateIds.slice(index, index + batchSize);
-      const candidates = (await this.workspaceQueryService.executeRawQuery(
+      const candidates = (await this.workspaceQueryService.executeWorkspaceRawQuery(
         `
           SELECT c.id, c."otherFields"
           FROM ${schema}."_candidate" c
@@ -473,7 +473,7 @@ export class MigrateOtherFieldsService {
           continue;
         }
 
-        await this.workspaceQueryService.executeRawQuery(
+        await this.workspaceQueryService.executeWorkspaceRawQuery(
           `UPDATE ${schema}."_candidate" SET "otherFields" = $2::jsonb WHERE id = $1`,
           [candidate.id, JSON.stringify(mergedOtherFields)],
           workspaceId,
@@ -491,7 +491,7 @@ export class MigrateOtherFieldsService {
     dryRun: boolean,
     batchSize = 2000,
   ): Promise<{ fieldValuesDeleted: number; fieldsDeleted: number }> {
-    const fieldValueCount = (await this.workspaceQueryService.executeRawQuery(
+    const fieldValueCount = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
         SELECT COUNT(*)::text as count
         FROM ${schema}."_candidateFieldValue"
@@ -501,7 +501,7 @@ export class MigrateOtherFieldsService {
       workspaceId,
     )) as { count: string }[];
 
-    const fieldCount = (await this.workspaceQueryService.executeRawQuery(
+    const fieldCount = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
         SELECT COUNT(*)::text as count
         FROM ${schema}."_candidateField"
@@ -553,7 +553,7 @@ export class MigrateOtherFieldsService {
     const candidateBatchSize = 25;
 
     while (true) {
-      const candidateRows = (await this.workspaceQueryService.executeRawQuery(
+      const candidateRows = (await this.workspaceQueryService.executeWorkspaceRawQuery(
         `
           SELECT DISTINCT "candidateId" as "candidateId"
           FROM ${schema}."_candidateFieldValue"
@@ -577,7 +577,7 @@ export class MigrateOtherFieldsService {
           workspaceId,
           `${schema}."_candidateFieldValue" candidateId=${row.candidateId}`,
           () =>
-            this.workspaceQueryService.executeRawQuery(
+            this.workspaceQueryService.executeWorkspaceRawQuery(
               `
                 DELETE FROM ${schema}."_candidateFieldValue"
                 WHERE "deletedAt" IS NULL AND "candidateId" = $1
@@ -655,7 +655,7 @@ export class MigrateOtherFieldsService {
           workspaceId,
           `${schema}."${tableName}" batch=${effectiveBatchSize}`,
           () =>
-            this.workspaceQueryService.executeRawQuery(
+            this.workspaceQueryService.executeWorkspaceRawQuery(
               `
                 WITH batch AS (
                   SELECT id

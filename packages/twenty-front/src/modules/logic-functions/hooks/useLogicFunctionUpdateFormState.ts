@@ -1,13 +1,7 @@
 import { useGetOneLogicFunction } from '@/logic-functions/hooks/useGetOneLogicFunction';
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import {
-  type CronTriggerSettings,
-  type DatabaseEventTriggerSettings,
-  type HttpRouteTriggerSettings,
-  type ToolTriggerSettings,
-  type WorkflowActionTriggerSettings,
-} from 'twenty-shared/application';
+import type { CronTriggerSettings, DatabaseEventTriggerSettings, HttpRouteTriggerSettings, ToolTriggerSettings, WorkflowActionTriggerSettings } from 'twenty-shared/application';
 import { type LogicFunction } from '~/generated-metadata/graphql';
 import { useGetLogicFunctionSourceCode } from '@/logic-functions/hooks/useGetLogicFunctionSourceCode';
 

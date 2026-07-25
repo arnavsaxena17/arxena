@@ -1,3 +1,5 @@
+import { CandidateChatDrawer } from '@/candidate-table/CandidateChatDrawer';
+import { WhatsappTemplatesProvider } from '@/candidate-table/components/WhatsappTemplatesProvider';
 import { SidePanelCommandMenuItemDisplayPage } from '@/command-menu-item/display/components/SidePanelCommandMenuItemDisplayPage';
 import { SidePanelCommandMenuItemEditPage } from '@/command-menu-item/edit/components/SidePanelCommandMenuItemEditPage';
 import { SidePanelNavigationMenuItemEditPage } from '@/navigation-menu-item/edit/side-panel/components/SidePanelNavigationMenuItemEditPage';
@@ -88,5 +90,11 @@ export const SIDE_PANEL_PAGES_CONFIG = new Map<SidePanelPages, React.ReactNode>(
     [SidePanelPages.CommandMenuEdit, <SidePanelCommandMenuItemEditPage />],
     [SidePanelPages.ComposeEmail, <SidePanelComposeEmailPage />],
     [SidePanelPages.ComposeCampaign, <SidePanelCampaignComposerPage />],
+    [
+      SidePanelPages.CandidateChat,
+      <WhatsappTemplatesProvider>
+        <CandidateChatDrawer />
+      </WhatsappTemplatesProvider>,
+    ],
   ],
 );

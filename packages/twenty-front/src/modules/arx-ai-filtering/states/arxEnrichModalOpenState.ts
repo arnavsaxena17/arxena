@@ -1,44 +1,46 @@
-import { atom } from 'recoil';
-import { createState } from 'twenty-ui';
-import type { AiFilter, AiFilterField } from 'twenty-shared';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import type { AiFilter, AiFilterField } from 'twenty-shared/arx';
 
 export type { AiFilter, AiFilterField };
 
-export type AiFilterWithDescription = AiFilter & { filterDescription?: string };
+export type AiFilterWithDescription = AiFilter & {
+  filterDescription?: string;
+  createdAt?: string;
+};
 
-export const isArxAiFilteringModalOpenState = atom<boolean>({
+export const isArxAiFilteringModalOpenState = createAtomState<boolean>({
   key: 'isArxAiFilteringModalOpenState',
-  default: false,
+  defaultValue: false,
 });
 
-export const isArxAiFilteringModalMinimizedState = atom<boolean>({
+export const isArxAiFilteringModalMinimizedState = createAtomState<boolean>({
   key: 'isArxAiFilteringModalMinimizedState',
-  default: false,
+  defaultValue: false,
 });
 
-export const aiFiltersState = atom<AiFilterWithDescription[]>({
+export const aiFiltersState = createAtomState<AiFilterWithDescription[]>({
   key: 'aiFiltersState',
-  default: [],
+  defaultValue: [],
 });
 
-export const sampleAiFiltersState = atom<AiFilterWithDescription[]>({
+export const sampleAiFiltersState = createAtomState<AiFilterWithDescription[]>({
   key: 'sampleAiFiltersState',
-  default: []
+  defaultValue: [],
 });
 
-export const activeAiFilterState = atom<number | null>({
+export const activeAiFilterState = createAtomState<number | null>({
   key: 'activeAiFilterState',
-  default: null,
+  defaultValue: null,
 });
 
-export const recordsToAiFilterState = createState<any[]>({
+export const recordsToAiFilterState = createAtomState<any[]>({
   key: 'recordsToAiFilterState',
   defaultValue: [],
 });
 
-export const currentJobIdState = atom<string>({
-  key: 'currentJobIdState',
-  default: '',
+export const currentProjectIdState = createAtomState<string>({
+  key: 'currentProjectIdState',
+  defaultValue: '',
 });
 
 export const isArxEnrichModalOpenState = isArxAiFilteringModalOpenState;

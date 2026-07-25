@@ -5,10 +5,7 @@ import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMeta
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions';
 import { generateFindManyRecordsQuery } from '@/object-record/utils/generateFindManyRecordsQuery';
-import {
-  type QueryCursorDirection,
-  type RecordGqlOperationGqlRecordFields,
-} from 'twenty-shared/types';
+import type { QueryCursorDirection, RecordGqlOperationGqlRecordFields } from 'twenty-shared/types';
 
 export const useFindManyRecordsQuery = ({
   objectNameSingular,

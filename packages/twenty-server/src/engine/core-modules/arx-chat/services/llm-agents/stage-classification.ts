@@ -42,17 +42,17 @@ export class StageWiseClassification {
   async getChatStageFromChatHistory(
     messages: any,
     candidateId: string,
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ) {
     // const stagePrompt = await new PromptingAgents(this.workspaceQueryService).getStagePrompt();
-    console.log('Getting stage from jobIdy:::', jobId);
+    console.log('Getting stage from projectIdy:::', projectId);
     console.log('Getting stage from candidateId:::', candidateId);
     const localStagePrompt = await new PromptingAgents(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).getPromptByJobIdAndName(
-      jobId,
+    ).getPromptByProjectIdAndName(
+      projectId,
       'PROMPT_FOR_CHAT_CLASSIFICATION',
       apiToken,
     );

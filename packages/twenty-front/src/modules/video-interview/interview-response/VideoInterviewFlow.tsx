@@ -1,13 +1,16 @@
-import styled from '@emotion/styled';
 import axios from 'axios';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useEffect, useState } from 'react';
 import { EndInterviewPage } from './EndInterviewPage';
 import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary component
 import { StartInterviewPage } from './StartInterviewPage';
 import { InterviewPage } from './components/InterviewPage';
 
-import { GetInterviewDetailsResponse, InterviewData, VideoInterviewAttachment, emptyInterviewData } from 'twenty-shared';
+import { emptyInterviewData, type GetInterviewDetailsResponse, type InterviewData, type VideoInterviewAttachment } from 'twenty-shared/arx';
 import { StreamProvider, useStream } from '../StreamManager';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const LoaderOverlay = styled.div`
   position: fixed;
@@ -102,7 +105,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   useEffect(() => {
     fetchInterviewData();
   }, [interviewId]);
-  console.log("To do the interview vidoes the process.env.REACT_APP_SERVER_BASE_URL is ", process.env.REACT_APP_SERVER_BASE_URL);
+  console.log("To do the interview vidoes the REACT_APP_SERVER_BASE_URL is ", REACT_APP_SERVER_BASE_URL);
 
 
   // Function to preload a video
@@ -140,7 +143,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   useEffect(() => {
     const preloadAllVideos = async () => {
       if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        const introUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+        const introUrl = `${REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
         preloadVideo(introUrl);
       }
 
@@ -148,7 +151,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       if (questionsVideoData?.length > 0) {
         questionsVideoData.forEach(attachment => {
           if (attachment?.fullPath) {
-            const videoUrl = `${process.env.REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
+            const videoUrl = `${REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
             preloadVideo(videoUrl);
           }
         });
@@ -167,7 +170,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     setLoading(true);
     console.log("Going to fetch interview id:", interviewId);
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
+      const response = await axios.post(`${REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
       console.log('This is the response to fetch interview data:', response);
       const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
@@ -182,11 +185,11 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
             id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
-            jobs: {
-              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.id || '',
-              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.name || '',
-              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId || '',
-              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.company?.name || '',
+            projects: {
+              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.id || '',
+              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.name || '',
+              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.recruiterId || '',
+              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.company?.name || '',
             },
             peopleId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.peopleId || '',
             name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name || '',
@@ -227,7 +230,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         }
         return nextIndex;
       });
-      console.log('This is process.env.REACT_APP_SERVER_BASE_URL:', process.env.REACT_APP_SERVER_BASE_URL);
+      console.log('This is REACT_APP_SERVER_BASE_URL:', REACT_APP_SERVER_BASE_URL);
       const isLastQuestion = currentQuestionIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1;
 
       responseData.append('responseData', JSON.stringify({
@@ -243,7 +246,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         console.log('key for response data:', key, '::', value);
       });
       // console.log("Final resposne data being setnt:", responseData)
-      const response = await axios.post(process.env.REACT_APP_SERVER_BASE_URL + '/video-interview-controller/submit-response', responseData, {
+      const response = await axios.post(REACT_APP_SERVER_BASE_URL + '/video-interview-controller/submit-response', responseData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       console.log('This isreht ersponse:', response);
@@ -257,7 +260,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
 
   const handleSubmitFeedback = async (feedback: string) => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_SERVER_BASE_URL}/video-interview-controller/update-feedback`, { interviewId, feedback });
+      const response = await axios.post(`${REACT_APP_SERVER_BASE_URL}/video-interview-controller/update-feedback`, { interviewId, feedback });
       console.log('Interview completed, feedback submitted:', response.status);
     } catch (error) {
       console.error('Error submitting feedback:', error);

@@ -1,8 +1,9 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 type DataTableRefreshFunction = () => Promise<void>;
 
-export const dataTableRefreshFunctionState = atom<DataTableRefreshFunction | null>({
-  key: 'dataTableRefreshFunctionState',
-  default: null,
-});
+export const dataTableRefreshFunctionState =
+  createAtomState<DataTableRefreshFunction | null>({
+    key: 'dataTableRefreshFunctionState',
+    defaultValue: null,
+  });

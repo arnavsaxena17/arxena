@@ -36,8 +36,15 @@ export class BillingCustomerEntity extends WorkspaceRelatedEntity {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @Column({ nullable: false, unique: true })
-  stripeCustomerId: string;
+  @Column({ type: 'varchar', default: 'stripe' })
+  paymentProvider: 'stripe' | 'razorpay';
+
+  // Nullable so Razorpay-only customers can exist (UNIQUE allows multiple NULLs).
+  @Column({ nullable: true, unique: true, type: 'varchar' })
+  stripeCustomerId: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  razorpayCustomerId: string | null;
 
   // Null means unknown (customer created before the flag existed and not synced yet).
   @Field(() => Boolean, { nullable: true })

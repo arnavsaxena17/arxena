@@ -7,10 +7,7 @@ import { type Note } from '@/activities/types/Note';
 import { type NoteTarget } from '@/activities/types/NoteTarget';
 import { type Task } from '@/activities/types/Task';
 import { type TaskTarget } from '@/activities/types/TaskTarget';
-import {
-  type CoreObjectNameSingular,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { CoreObjectNameSingular, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 import { getRecordsFromRecordConnection } from '@/object-record/cache/utils/getRecordsFromRecordConnection';
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { isDefined } from 'twenty-shared/utils';

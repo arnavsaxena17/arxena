@@ -2,10 +2,7 @@ import { type ContextStoreTargetedRecordsRule } from '@/context-store/states/con
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { type WorkflowTrigger } from '@/workflow/types/Workflow';
-import {
-  type Nullable,
-  type RecordGqlOperationFilter,
-} from 'twenty-shared/types';
+import type { Nullable, RecordGqlOperationFilter } from 'twenty-shared/types';
 import {
   type CommandMenuItemAvailabilityType,
   type EngineComponentKey,

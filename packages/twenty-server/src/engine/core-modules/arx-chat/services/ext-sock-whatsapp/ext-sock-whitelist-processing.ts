@@ -2,7 +2,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 // eslint-disable-next-line prettier/prettier
-import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyJobs, isDefined } from 'twenty-shared';
+import { FindManyWorkspaceMembers, WhatsappMessageData, graphqlToFetchAllCandidateData, graphqlToFindManyProjects, isDefined } from 'twenty-shared';
 import { In } from 'typeorm';
 
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
@@ -161,10 +161,10 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
       if (!apiToken) return [];
 
       // Fetch all jobs
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyJobs, { filter: { isActive: { eq: true } } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyProjects, { filter: { isActive: { eq: true } } }, apiToken);
 
       const activeJobs =
-        response?.data?.data?.jobs?.edges?.map(
+        response?.data?.data?.projects?.edges?.map(
           (edge: { node: any }) => edge.node,
         ) || [];
 
@@ -174,9 +174,9 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
         return [];
       }
 
-      const jobIds = activeJobs.map((job) => job.id);
+      const projectIds = activeJobs.map((job) => job.id);
 
-      const identifiers = await this.fetchIdentifiers(userId, apiToken, jobIds);
+      const identifiers = await this.fetchIdentifiers(userId, apiToken, projectIds);
 
       console.log(
         `Found ${identifiers.length} unique identifiers for user ${userId}`,
@@ -197,7 +197,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
   async fetchIdentifiers(
     userId: string,
     apiToken: string,
-    jobIds: string[],
+    projectIds: string[],
   ): Promise<string[]> {
 
     // New pagination logic
@@ -206,7 +206,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     let cursor: string | null = null;
 
     while (hasNextPage) {
-      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { jobsId: { in: jobIds } }, limit: 400, lastCursor: cursor }, apiToken);
+      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { projectsId: { in: projectIds } }, limit: 400, lastCursor: cursor }, apiToken);
 
       const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
       const edges = candidatesResponse?.data?.data?.candidates?.edges || [];

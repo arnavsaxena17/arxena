@@ -41,7 +41,7 @@ export class MailerService {
       scope:SCOPES,
       token_type: "Bearer",
 
-      //@ts-ignore
+      //@ts-expect-error
       expiry_date: moment().add(1, "hour").unix(),
     });
   }
@@ -107,12 +107,12 @@ export class MailerService {
       return client;
     }
 
-    // @ts-ignore
+    // @ts-expect-error
     client = await authenticate({
       scopes: SCOPES,
       keyfilePath: CREDENTIALS_PATH,
     });
-    // @ts-ignore
+    // @ts-expect-error
     if (client.credentials) {
       await this.saveCredentials(client);
     }

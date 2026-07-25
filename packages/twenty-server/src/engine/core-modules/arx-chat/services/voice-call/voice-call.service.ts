@@ -7,7 +7,7 @@ import {
   findManyPhoneCalls,
   graphqlMutationToCreatePhoneCall,
   graphqlToFetchAllCandidateData,
-  Job,
+  Project,
   mutationToUpdateOnePhoneCall,
 } from 'twenty-shared';
 import { CandidateEngagementArx } from '../candidate-engagement/candidate-engagement';
@@ -66,7 +66,7 @@ export class VoiceCallService {
 
   async initiateOutboundCall(
     candidateId: string,
-    jobId: string,
+    projectId: string,
     callPurpose: CallPurpose,
     apiToken: string,
   ): Promise<{ phoneCallId: string; status: string; error?: string }> {
@@ -77,15 +77,15 @@ export class VoiceCallService {
       apiToken,
     );
     const edges = res?.data?.data?.candidates?.edges;
-    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Job }) | undefined;
+    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Project }) | undefined;
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }
-    const job = candidateNode.jobs ?? (Array.isArray((candidateNode as any).jobs) ? (candidateNode as any).jobs[0] : undefined);
-    if (!job && jobId) {
-      return { phoneCallId: '', status: 'error', error: 'Job not found for candidate' };
+    const job = candidateNode.projects ?? (Array.isArray((candidateNode as any).projects) ? (candidateNode as any).projects[0] : undefined);
+    if (!job && projectId) {
+      return { phoneCallId: '', status: 'error', error: 'Project not found for candidate' };
     }
-    const candidateJob = (job || { id: jobId, name: '', jobLocation: '' }) as Job;
+    const candidateJob = (job || { id: projectId, name: '', jobLocation: '' }) as Project;
     const personId = candidateNode.peopleId ?? (candidateNode as any).people?.id;
     const rawPhone = candidateNode.phoneNumber?.primaryPhoneNumber ?? (candidateNode as any).people?.phones?.primaryPhoneNumber ?? '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
@@ -153,7 +153,7 @@ export class VoiceCallService {
 
   async initiateOutboundCallWhatsApp(
     candidateId: string,
-    jobId: string,
+    projectId: string,
     callPurpose: CallPurpose,
     apiToken: string,
     whatsappUserId: string,
@@ -165,12 +165,12 @@ export class VoiceCallService {
       apiToken,
     );
     const edges = res?.data?.data?.candidates?.edges;
-    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Job }) | undefined;
+    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Project }) | undefined;
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }
-    const job = candidateNode.jobs ?? (Array.isArray((candidateNode as any).jobs) ? (candidateNode as any).jobs[0] : undefined);
-    const candidateJob = (job || { id: jobId, name: '', jobLocation: '' }) as Job;
+    const job = candidateNode.projects ?? (Array.isArray((candidateNode as any).projects) ? (candidateNode as any).projects[0] : undefined);
+    const candidateJob = (job || { id: projectId, name: '', jobLocation: '' }) as Project;
     const personId = candidateNode.peopleId ?? (candidateNode as any).people?.id;
     const rawPhone = candidateNode.phoneNumber?.primaryPhoneNumber ?? (candidateNode as any).people?.phones?.primaryPhoneNumber ?? '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
@@ -277,7 +277,7 @@ export class VoiceCallService {
       );
       const edges = res?.data?.data?.candidates?.edges;
       const candidateNode = edges?.[0]?.node as CandidateNode | undefined;
-      const job = candidateNode?.jobs as Job | undefined;
+      const job = candidateNode?.projects as Project | undefined;
       if (candidateNode && job) {
         const chatControlType = 'startChat';
         const prompt = await candidateEngagement.getSystemPrompt(

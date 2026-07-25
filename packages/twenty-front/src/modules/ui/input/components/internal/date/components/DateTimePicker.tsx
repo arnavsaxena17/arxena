@@ -1,10 +1,5 @@
 import { SKELETON_LOADER_HEIGHT_SIZES } from '@/activities/components/SkeletonLoader';
-import {
-  convertFirstDayOfTheWeekToCalendarStartDayNumber,
-  isDefined,
-  isSubDayRelativeDateFilterUnit,
-  type RelativeDateFilter,
-} from 'twenty-shared/utils';
+import { convertFirstDayOfTheWeekToCalendarStartDayNumber, isDefined, isSubDayRelativeDateFilterUnit, type RelativeDateFilter } from 'twenty-shared/utils';
 
 import {
   DATE_TIME_PICKER_MONTH_YEAR_PANEL_DROPDOWN_ID,

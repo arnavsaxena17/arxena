@@ -57,7 +57,7 @@ export class SortsPrompts {
   ): string {
     let prompt = `Analyze the following job description, search parameters, AI filters, and filters to create an intelligent multi-column sorting strategy for candidate prioritization.
 
-    Job Description:
+    Project Description:
     - Job Title: ${parsedJD.jobTitle}
     - Company: ${parsedJD.company}
     - Location: ${parsedJD.location}

@@ -3,7 +3,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { lookupCountryByIp } from 'twenty-shared';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import {
   normalizeLinkedinConnectionCountry,
@@ -34,7 +34,7 @@ export type ValidateStoredLinkedinCookiesResult = {
 export type ValidateStoredLinkedinCookiesAudience = 'admin' | 'extension';
 
 export type ValidateStoredLinkedinCookiesParams = {
-  workspace: Workspace;
+  workspace: WorkspaceEntity;
   workspaceMemberId: string;
   authToken: string;
   userAgent?: string;

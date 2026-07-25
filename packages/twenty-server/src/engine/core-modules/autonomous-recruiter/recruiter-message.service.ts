@@ -9,7 +9,7 @@ import {
 } from '../assistant/assistant.types';
 import { StreamProcessingService } from '../candidate-search/services/stream-processing.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
-import { JobContextService } from './job-context.service';
+import { ProjectContextService } from './project-context.service';
 import { buildRecruiterMessagePrompt } from './prompts/recruiter-message-prompt.template';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class RecruiterMessageService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly assistantThreadService: AssistantThreadService,
-    private readonly jobContextService: JobContextService,
+    private readonly jobContextService: ProjectContextService,
     private readonly streamProcessingService: StreamProcessingService,
   ) {}
 
@@ -49,9 +49,9 @@ export class RecruiterMessageService {
 
     console.log("generateRecruiterMessageWithToken called: thread::", JSON.stringify(thread, null, 2));
     const jobContext =
-      options?.includeJobContext === false || !thread.jobId
+      options?.includeJobContext === false || !thread.projectId
         ? null
-        : await this.jobContextService.fetchJobContext(apiToken, thread.jobId);
+        : await this.jobContextService.fetchProjectContext(apiToken, thread.projectId);
 
     const recruiterInstruction = buildRecruiterMessagePrompt({
       userMessage,
@@ -145,15 +145,15 @@ export class RecruiterMessageService {
     return { ...recruiterMessageResponse, text: generatedUserMessage };
   }
 
-  private async fetchJobContextForThread(
+  private async fetchProjectContextForThread(
     apiToken: string,
-    thread: { jobId?: string | null },
+    thread: { projectId?: string | null },
     options?: RecruiterMessageOptions,
   ) {
-    if (options?.includeJobContext === false || !thread.jobId) {
+    if (options?.includeJobContext === false || !thread.projectId) {
       return null;
     }
-    return this.jobContextService.fetchJobContext(apiToken, thread.jobId);
+    return this.jobContextService.fetchProjectContext(apiToken, thread.projectId);
   }
 
   private getLastAssistantMessageContent(messages: Array<{ role: string; content: string }>): string {
@@ -181,13 +181,13 @@ export class RecruiterMessageService {
     const jobResponsibilities = `Salesforce Developer is a software engineer who is responsible for developing and maintaining Salesforce applications.`;
     const lines: string[] = [
       'You are a senior recruiter required to deliver a candidate shortlist to the client for a job they have mandated you.',
-      `Job Description: ${jobDescription}`,
-      `Job Location: ${jobLocation}`,
-      `Job Salary: ${jobSalary}`,
-      `Job Experience: ${jobExperience}`,
-      `Job Skills: ${jobSkills}`,
-      `Job Requirements: ${jobRequirements}`,
-      `Job Responsibilities: ${jobResponsibilities}`,
+      `Project Description: ${jobDescription}`,
+      `Project Location: ${jobLocation}`,
+      `Project Salary: ${jobSalary}`,
+      `Project Experience: ${jobExperience}`,
+      `Project Skills: ${jobSkills}`,
+      `Project Requirements: ${jobRequirements}`,
+      `Project Responsibilities: ${jobResponsibilities}`,
       'Your job is to tell the assistant your requirements. You have to tell the recruiter the details of the job in terms of client details, salaries, location, years of experience, etc.',
        'You will tell the details of the ideal cancdidate that you are looking for. ',
        'When you receive a list of candidates you will work with the agent to shortlist the agent\'s shortlist and reach out to the candidates to get their CVs and other details. ',

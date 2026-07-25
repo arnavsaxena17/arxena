@@ -800,7 +800,7 @@ export class WhatsappTemplateMessages {
   //   return `Dear ${data.candidateFirstName},\n\n` +
   //     `My name is ${data.recruiterName}, ${data.recruiterJobTitle} at ${data.recruiterCompanyName}, ${data.recruiterCompanyDescription}. ` +
   //     `I am reaching out to you regarding the ${data.jobPositionName} position for ${data.jobLocation}. ` +
-  //     `Job Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
+  //     `Project Code: ${data.jobCode}\n${data.descriptionOneliner}\n`;
   // }
 
   // generateApplicationMessage(data: SendWhatsappUtilityMessageObjectType): string {

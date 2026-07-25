@@ -724,7 +724,7 @@ export class ParameterSanitizer {
   }
 
   /**
-   * Sanitize LinkedIn Classic Jobs Search request to remove parameters that require numeric IDs
+   * Sanitize LinkedIn Classic Projects Search request to remove parameters that require numeric IDs
    */
   sanitizeClassicJobsSearchRequest(
     request: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>
@@ -827,7 +827,7 @@ export class ParameterSanitizer {
       sanitized.minimum_salary = request.minimum_salary;
     }
     
-    this.logger.log(`Sanitized LinkedIn Classic Jobs Search request: ${JSON.stringify(sanitized, null, 2)}`);
+    this.logger.log(`Sanitized LinkedIn Classic Projects Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }
 

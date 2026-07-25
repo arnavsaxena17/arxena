@@ -15,11 +15,7 @@ import { useObjectPermissionsForObject } from '@/object-record/hooks/useObjectPe
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { type OnFindManyRecordsCompleted } from '@/object-record/types/OnFindManyRecordsCompleted';
 import { getQueryIdentifier } from '@/object-record/utils/getQueryIdentifier';
-import {
-  type RecordGqlOperationFilter,
-  type RecordGqlOperationGqlRecordFields,
-  type RecordGqlOperationVariables,
-} from 'twenty-shared/types';
+import type { RecordGqlOperationFilter, RecordGqlOperationGqlRecordFields, RecordGqlOperationVariables } from 'twenty-shared/types';
 
 import { QUERY_DEFAULT_LIMIT_RECORDS } from 'twenty-shared/constants';
 

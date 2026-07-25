@@ -1,7 +1,7 @@
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
   findWorkspaceMemberProfiles,
-  Job,
+  Project,
   RecruiterProfileType
 } from 'twenty-shared';
 
@@ -11,13 +11,13 @@ export class RecruiterProfileService {
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
 
   async getRecruiterProfileByJob(
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<RecruiterProfileType | null> {
     const recruiterId = candidateJob?.recruiterId;
     if (!recruiterId) {
       console.warn(
-        '[RecruiterProfileService] Job has no recruiterId, cannot resolve recruiter profile',
+        '[RecruiterProfileService] Project has no recruiterId, cannot resolve recruiter profile',
         candidateJob?.id,
       );
       return null;

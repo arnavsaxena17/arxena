@@ -6,6 +6,7 @@ export enum SettingsPath {
   NewAccount = 'accounts/new',
   AccountsConfiguration = 'accounts/configuration/:connectedAccountId',
   AccountsCalendars = 'accounts/calendars',
+  AccountsContacts = 'accounts/contacts',
   AccountsEmails = 'accounts/emails',
   NewImapSmtpCaldavConnection = 'accounts/new-imap-smtp-caldav-connection',
   EditImapSmtpCaldavConnection = 'accounts/edit-imap-smtp-caldav-connection/:connectedAccountId',
@@ -100,6 +101,8 @@ export enum SettingsPath {
   // Arxena settings (ported from workflows)
   LinkedinSignUp = 'linkedin-signup',
   WhatsappUnipile = 'whatsapp-unipile',
+  FacebookSignUp = 'facebook-signup',
+  Baileys = 'baileys',
   SearchPlans = 'search-plans',
   DevelopersOrgChartEmbedNew = 'developers/org-chart-embed/new',
   DevelopersOrgChartEmbedDetail = 'developers/org-chart-embed/:embedKeyId',

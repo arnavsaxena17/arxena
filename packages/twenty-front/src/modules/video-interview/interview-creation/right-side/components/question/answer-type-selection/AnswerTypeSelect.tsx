@@ -1,7 +1,9 @@
-import styled from '@emotion/styled';
 import { useMemo, useState } from 'react';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { Select, SelectOption } from '@/ui/input/components/Select';
+import { Select } from '@/ui/input/components/Select';
+import { type SelectOption } from 'twenty-ui/input';
 import { AllowedRetakes } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/AllowedRetakes';
 import { SetAnswerTimeLimit } from '@/video-interview/interview-creation/right-side/components/question/answer-type-selection/SetAnswerTimeLimit';
 import { questionOrAnswerOptions } from '@/video-interview/interview-creation/right-side/components/question/questionOrAnswerOptions';

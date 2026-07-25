@@ -112,7 +112,7 @@ describe('OrgChartOutreachService', () => {
     await expect(
       service.run({
         channel: 'linkedin_invite',
-        jobId: 'job-1',
+        projectId: 'job-1',
         message: 'Hello',
         linkedinUrl: 'https://www.linkedin.com/in/someone',
         apiToken: 'tok',
@@ -124,7 +124,7 @@ describe('OrgChartOutreachService', () => {
     console.log('linkedin_invite test: calling run');
     const result = await service.run({
       channel: 'linkedin_invite',
-      jobId: 'job-1',
+      projectId: 'job-1',
       message: 'Hello there',
       linkedinUrl: 'https://www.linkedin.com/in/someone',
       apiToken: 'tok',
@@ -138,7 +138,7 @@ describe('OrgChartOutreachService', () => {
     console.log('whatsapp test: calling run');
     const result = await service.run({
       channel: 'whatsapp',
-      jobId: 'job-1',
+      projectId: 'job-1',
       message: 'Hi',
       phone: '+15551234567',
       apiToken: 'tok',
@@ -153,7 +153,7 @@ describe('OrgChartOutreachService', () => {
     getExistingPhoneNumbers.mockResolvedValueOnce(new Set(['+100']));
     const result = await service.run({
       channel: 'google_contact',
-      jobId: 'job-1',
+      projectId: 'job-1',
       message: 'note',
       phone: '+100',
       email: 'a@b.co',
@@ -169,7 +169,7 @@ describe('OrgChartOutreachService', () => {
     console.log('google_contact create');
     const result = await service.run({
       channel: 'google_contact',
-      jobId: 'job-1',
+      projectId: 'job-1',
       message: '',
       phone: '+1999',
       email: 'new@b.co',
@@ -188,7 +188,7 @@ describe('OrgChartOutreachService', () => {
     await expect(
       service.run({
         channel: 'google_contact',
-        jobId: 'job-1',
+        projectId: 'job-1',
         message: 'x',
         phone: '+1',
         email: 'e@e.e',
@@ -201,7 +201,7 @@ describe('OrgChartOutreachService', () => {
     console.log('email channel test');
     const result = await service.run({
       channel: 'email',
-      jobId: 'job-1',
+      projectId: 'job-1',
       message: 'Hello',
       email: 'cand@example.com',
       subject: 'Hi there',
@@ -215,7 +215,7 @@ describe('OrgChartOutreachService', () => {
     await expect(
       service.run({
         channel: 'linkedin_invite',
-        jobId: 'job-1',
+        projectId: 'job-1',
         message: 'm',
         apiToken: 'tok',
       }),

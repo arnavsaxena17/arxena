@@ -4,10 +4,7 @@ import {
   type FieldRelationMetadataSettings,
 } from '@/object-record/record-field/ui/types/FieldMetadata';
 
-import {
-  type FieldMetadataMultiItemSettings,
-  type PartialFieldMetadataItemOption,
-} from 'twenty-shared/types';
+import type { FieldMetadataMultiItemSettings, PartialFieldMetadataItemOption } from 'twenty-shared/types';
 import { type ThemeColor } from 'twenty-ui/theme';
 import { type Field } from '~/generated-metadata/graphql';
 

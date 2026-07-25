@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   CandidateWithCustomFields,
-  FindOneJob,
+  FindOneProject,
   getResolvedOtherFields,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQltoUpdateOneCandidate,
@@ -10,7 +10,7 @@ import {
   OtherFieldsRecord,
   questionsRequireAnswerRemap,
   remapOtherFieldsForQuestionChanges,
-  UpdateOneJob
+  UpdateOneProject
 } from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -134,26 +134,27 @@ export class OtherFieldsService {
   }
 
   async fetchJobChatQuestions(
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<string[]> {
     const response = await this.staticGraphQLService.executeGraphQL(
-      FindOneJob,
-      { objectRecordId: jobId },
+      FindOneProject,
+      { objectRecordId: projectId },
       apiToken,
     );
 
-    const job = response?.data?.data?.job as
+    const project = (response?.data?.data?.project ??
+      response?.data?.data?.job) as
       | { chatQuestions?: string[] | null }
       | undefined;
 
-    return Array.isArray(job?.chatQuestions)
-      ? job.chatQuestions.filter((question) => question?.trim())
+    return Array.isArray(project?.chatQuestions)
+      ? project.chatQuestions.filter((question) => question?.trim())
       : [];
   }
 
-  async updateJobChatQuestions(
-    jobId: string,
+  async updateProjectChatQuestions(
+    projectId: string,
     chatQuestions: string[],
     apiToken: string,
     previousQuestions: string[] = [],
@@ -163,9 +164,9 @@ export class OtherFieldsService {
       .filter(Boolean);
 
     await this.staticGraphQLService.executeGraphQL(
-      UpdateOneJob,
+      UpdateOneProject,
       {
-        idToUpdate: jobId,
+        idToUpdate: projectId,
         input: { chatQuestions: normalizedQuestions },
       },
       apiToken,
@@ -176,7 +177,7 @@ export class OtherFieldsService {
       questionsRequireAnswerRemap(previousQuestions, normalizedQuestions)
     ) {
       await this.remapCandidateAnswersForQuestionChanges(
-        jobId,
+        projectId,
         previousQuestions,
         normalizedQuestions,
         apiToken,
@@ -296,7 +297,7 @@ export class OtherFieldsService {
   }
 
   private async remapCandidateAnswersForQuestionChanges(
-    jobId: string,
+    projectId: string,
     oldQuestions: string[],
     newQuestions: string[],
     apiToken: string,
@@ -310,7 +311,7 @@ export class OtherFieldsService {
         {
           lastCursor,
           limit: 100,
-          filter: { jobsId: { eq: jobId } },
+          filter: { projectsId: { eq: projectId } },
         },
         apiToken,
       );

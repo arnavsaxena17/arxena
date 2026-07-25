@@ -1,10 +1,10 @@
 import { VideoInterviewTemplate } from "twenty-shared";
 
-export function generateVideoInterviewTemplateData(videoInterviewModelIds: string[], jobIds: string[]): VideoInterviewTemplate[] {
+export function generateVideoInterviewTemplateData(videoInterviewModelIds: string[], projectIds: string[]): VideoInterviewTemplate[] {
     return Array.from({ length: 1 }, (_, i) => ({
         name: `Sample Interview ${i + 1}`,
         videoInterviewModelId: getRandomId(videoInterviewModelIds),
-        jobId: getRandomId(jobIds)
+        projectId: getRandomId(projectIds)
     }));
 }
 

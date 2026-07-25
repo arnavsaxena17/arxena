@@ -140,4 +140,11 @@ export const CONFIG_VARIABLES_GROUP_METADATA: Record<
     isHiddenOnLoad: true,
     isHiddenInAdminPanel: true,
   },
+  [ConfigVariablesGroup.ARXENA]: {
+    position: 2200,
+    description:
+      'Arxena product integrations: Elasticsearch, enrichment providers, LinkedIn/Unipile, org chart, and related services.',
+    isHiddenOnLoad: true,
+    isHiddenInAdminPanel: false,
+  },
 };

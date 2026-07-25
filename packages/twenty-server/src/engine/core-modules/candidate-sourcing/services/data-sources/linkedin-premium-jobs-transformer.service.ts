@@ -19,7 +19,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
   ): UserProfile {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
-    // Process name - LinkedIn Premium Jobs uses 'name_person' field
+    // Process name - LinkedIn Premium Projects uses 'name_person' field
     this.processLinkedInPremiumJobsNameData(candidateData, userProfile);
     
     // Process profile information
@@ -40,7 +40,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     // Process location
     this.processLinkedInPremiumJobsLocationData(candidateData, userProfile);
     
-    // Process LinkedIn Premium Jobs specific data
+    // Process LinkedIn Premium Projects specific data
     this.processLinkedInPremiumJobsSpecificData(candidateData, userProfile);
     
     return userProfile;
@@ -109,7 +109,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
       userProfile.profileTitle = profileTitle;
       
       if (jobsProfileUrlLocation) {
-        // this.addJobProcessEvent(userProfile, 'jobs_profile_url', jobsProfileUrlLocation);
+        // this.addProjectProcessEvent(userProfile, 'jobs_profile_url', jobsProfileUrlLocation);
       }
     }
 
@@ -180,8 +180,8 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
         });
         
         // Set PG specific fields
-        // this.addJobProcessEvent(userProfile, 'education_institute_pg', pgEducation.institute || '');
-        // this.addJobProcessEvent(userProfile, 'pg_degree', pgEducation.degree || '');
+        // this.addProjectProcessEvent(userProfile, 'education_institute_pg', pgEducation.institute || '');
+        // this.addProjectProcessEvent(userProfile, 'pg_degree', pgEducation.degree || '');
       }
       
       // UG Education (second item)
@@ -205,9 +205,9 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
         });
         
         // Set UG specific fields
-        // this.addJobProcessEvent(userProfile, 'education_institute_ug', ugEducation.institute || '');
+        // this.addProjectProcessEvent(userProfile, 'education_institute_ug', ugEducation.institute || '');
         
-        // this.addJobProcessEvent(userProfile, 'ug_degree', ugEducation.degree || '');
+        // this.addProjectProcessEvent(userProfile, 'ug_degree', ugEducation.degree || '');
       }
       
       userProfile.education = educationArray;
@@ -280,29 +280,29 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
 
     // Process notice period
     if (candidateData.noticePeriod) {
-      // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
+      // this.addProjectProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod);
     }
 
     // Process social profiles
     if (candidateData.recruiter_profile_url) {
-      // this.addJobProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
+      // this.addProjectProcessEvent(userProfile, 'linkedin_recruiter_profile', candidateData.recruiter_profile_url);
     }
 
     if (candidateData.public_linkedin_url) {
-      // this.addJobProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
+      // this.addProjectProcessEvent(userProfile, 'linkedin_public_profile', candidateData.public_linkedin_url);
     }
 
     // Process standardization data
     const jobTitle = userProfile.jobTitle;
     if (jobTitle) {
-      // this.addJobProcessEvent(userProfile, 'job_title_standardization', {
+      // this.addProjectProcessEvent(userProfile, 'job_title_standardization', {
         // std_function: '', // Will be filled by standardization service
         // std_grade: '', // Will be filled by standardization service
         // std_function_root: '', // Will be filled by standardization service
       // });
     }
 
-    // Process additional LinkedIn Premium Jobs specific fields
+    // Process additional LinkedIn Premium Projects specific fields
     const premiumJobsSpecificFields = [
       'candidate_id',
       'search_id',
@@ -316,7 +316,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
 
     premiumJobsSpecificFields.forEach(field => {
       if (candidateData[field]) {
-        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addProjectProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }

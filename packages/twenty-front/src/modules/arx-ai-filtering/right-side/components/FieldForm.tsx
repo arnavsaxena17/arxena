@@ -1,5 +1,5 @@
-import { IconPlus, IconX } from 'twenty-ui/icons';
-import { Button } from 'twenty-ui';
+import { IconPlus, IconX } from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/input';
 import React from 'react';
 
 import { FIELD_TYPES } from '../constants';
@@ -52,7 +52,9 @@ export const FieldForm: React.FC<FieldFormProps> = ({
   };
 
   const removeEnumValue = (idx: number) => {
-    const newEnumValues = (newField.enumValues || []).filter((_, i) => i !== idx);
+    const newEnumValues = (newField.enumValues || []).filter(
+      (_value: string, index: number) => index !== idx,
+    );
     setNewField({ ...newField, enumValues: newEnumValues });
   };
 
@@ -86,7 +88,7 @@ export const FieldForm: React.FC<FieldFormProps> = ({
       {newField.type === 'enum' && (
         <EnumValuesInput>
           <SelectLabel>Enum Values</SelectLabel>
-          {(newField.enumValues || []).map((value, idx) => (
+          {(newField.enumValues || []).map((value: string, idx: number) => (
             <EnumValueRow key={idx}>
               <StyledInput
                 type="text"

@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import sharp from 'sharp';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import {
     FileStorageException,
     FileStorageExceptionCode,

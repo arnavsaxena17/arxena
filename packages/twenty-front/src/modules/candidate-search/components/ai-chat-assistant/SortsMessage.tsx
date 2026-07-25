@@ -1,142 +1,143 @@
-import { SortsResponse } from '@/candidate-search/types/candidate-search.types';
-import styled from '@emotion/styled';
-import { IconCheck, IconSortAscending } from 'twenty-ui/icons';
+import type { SortsResponse } from 'twenty-shared/types';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconCheck, IconSortAscending } from 'twenty-ui/icon';
 import React from 'react';
 import { Button } from 'twenty-ui';
 
 const StyledMessageContainer = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.lg};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.lg};
 `;
 
 const StyledContent = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
+  margin-bottom: ${themeCssVariables.spacing[3]};
   line-height: 1.6;
 `;
 
 const StyledStrategyCard = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  background-color: ${({ theme }) => theme.background.primary};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background-color: ${themeCssVariables.background.primary};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledStrategyName = styled.h4`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledStrategyDescription = styled.p`
-  margin: ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledSortColumnsSection = styled.div`
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledSortColumnsHeader = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.md};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledSortColumnsList = styled.ol`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   margin: 0;
-  padding-left: ${({ theme }) => theme.spacing(3)};
+  padding-left: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledSortColumnItem = styled.li`
-  padding: ${({ theme }) => theme.spacing(1.5)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing['1.5']};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledSortColumnName = styled.span`
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledSortOrder = styled.span<{ sortOrder: 'asc' | 'desc' }>`
-  margin-left: ${({ theme }) => theme.spacing(1)};
+  margin-left: ${themeCssVariables.spacing[1]};
   padding: 2px 6px;
   border-radius: 4px;
-  background-color: ${({ sortOrder, theme }) => 
-    sortOrder === 'asc' ? theme.color.green10 : theme.color.blue10};
-  color: ${({ sortOrder, theme }) => 
-    sortOrder === 'asc' ? theme.color.green80 : theme.color.blue80};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  background-color: ${({ sortOrder }) => 
+    sortOrder === 'asc' ? themeCssVariables.color.green10 : themeCssVariables.color.blue10};
+  color: ${({ sortOrder }) => 
+    sortOrder === 'asc' ? themeCssVariables.color.green8 : themeCssVariables.color.blue8};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledSortReasoning = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(0.5)};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  margin-top: ${themeCssVariables.spacing['0.5']};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   font-style: italic;
 `;
 
 const StyledReasoning = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.tertiary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledReasoningTitle = styled.h5`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  margin: 0 0 ${themeCssVariables.spacing[1]} 0;
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledReasoningText = styled.p`
   margin: 0;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
 `;
 
 const StyledMetadataInfo = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
-  margin: ${({ theme }) => theme.spacing(2)} 0;
+  gap: ${themeCssVariables.spacing[1]};
+  margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
 const StyledMetadataBadge = styled.span`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  background-color: ${({ theme }) => theme.color.blue10};
-  color: ${({ theme }) => theme.color.blue80};
+  padding: ${themeCssVariables.spacing['0.5']} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  background-color: ${themeCssVariables.color.blue10};
+  color: ${themeCssVariables.color.blue8};
 `;
 
 const StyledActionButtons = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[3]};
 `;
 
 type SortsMessageProps = {
@@ -191,9 +192,9 @@ export const SortsMessage: React.FC<SortsMessageProps> = ({
         </StyledReasoning>
 
         <StyledMetadataInfo>
-          {(sorts.metadata.hasAiFilters ?? sorts.metadata.hasEnrichments) && (
+          {(sorts.metadata.hasAiFilters) && (
             <StyledMetadataBadge>
-              {sorts.metadata.aiFiltersCount ?? sorts.metadata.enrichmentsCount} AI filters considered
+              {sorts.metadata.aiFiltersCount} AI filters considered
             </StyledMetadataBadge>
           )}
           {sorts.metadata.hasFilters && (
@@ -214,9 +215,7 @@ export const SortsMessage: React.FC<SortsMessageProps> = ({
           variant="primary"
           onClick={onApplySorts}
           Icon={IconCheck}
-        >
-          Apply Sorting
-        </Button>
+         title="Apply Sorting" />
       </StyledActionButtons>
     </StyledMessageContainer>
   );

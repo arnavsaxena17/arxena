@@ -3,7 +3,7 @@ import { StyledLoadingMessage, StyledVideo, StyledVideoPane } from './StyledComp
 
 interface VideoPlayerProps {
   src: string;
-  videoRef: RefObject<HTMLVideoElement>;
+  videoRef: RefObject<HTMLVideoElement | null>;
   isPlaying: boolean;
   isMuted: boolean;
   setIsPlaying: (isPlaying: boolean) => void;
@@ -154,7 +154,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setDownloadProgress(total ? (loaded / total) * 100 : 0);
         }
 
-        const blob = new Blob(chunks, { type: 'video/mp4' });
+        const blob = new Blob(chunks as BlobPart[], { type: 'video/mp4' });
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
         setIsLoading(false);

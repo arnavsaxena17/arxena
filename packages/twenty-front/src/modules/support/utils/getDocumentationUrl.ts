@@ -1,10 +1,4 @@
-import {
-  DOCUMENTATION_BASE_URL,
-  DOCUMENTATION_DEFAULT_LANGUAGE,
-  DOCUMENTATION_DEFAULT_PATH,
-  DOCUMENTATION_SUPPORTED_LANGUAGES,
-  type DocumentationPath,
-} from 'twenty-shared/constants';
+import { DOCUMENTATION_BASE_URL, DOCUMENTATION_DEFAULT_LANGUAGE, DOCUMENTATION_DEFAULT_PATH, DOCUMENTATION_SUPPORTED_LANGUAGES, type DocumentationPath } from 'twenty-shared/constants';
 
 export const getDocumentationUrl = ({
   locale,

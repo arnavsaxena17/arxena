@@ -8,15 +8,8 @@ import { RELATIVE_DATE_UNITS } from '@/ui/input/components/internal/date/constan
 import { plural, t } from '@lingui/core/macro';
 import { styled } from '@linaria/react';
 import { useState } from 'react';
-import { type Nullable } from 'twenty-shared/types';
-import {
-  assertUnreachable,
-  isDefined,
-  relativeDateFilterSchema,
-  type RelativeDateFilter,
-  type RelativeDateFilterDirection,
-  type RelativeDateFilterUnit,
-} from 'twenty-shared/utils';
+import type { Nullable } from 'twenty-shared/types';
+import { assertUnreachable, isDefined, relativeDateFilterSchema, type RelativeDateFilter, type RelativeDateFilterDirection, type RelativeDateFilterUnit } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div<{ noPadding: boolean }>`

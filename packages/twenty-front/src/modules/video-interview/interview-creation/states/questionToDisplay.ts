@@ -1,6 +1,6 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const questionToDisplayState = createState<string>({
+export const questionToDisplayState = createAtomState<string>({
   key: 'questionToDisplay',
   defaultValue: 'introduction',
 });

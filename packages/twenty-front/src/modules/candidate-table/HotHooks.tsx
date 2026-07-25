@@ -1,8 +1,11 @@
 import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
-import { IconMessages } from "twenty-ui/icons";
+import { IconMessage } from "twenty-ui/icon";
 import axios from 'axios';
-import { SetterOrUpdater } from 'recoil';
-import { CandidateNode, mergeOtherFields, toSnakeCaseKey } from 'twenty-shared';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
+export type SetAtomState<T> = (update: T | ((previous: T) => T)) => void;
+import type { CandidateNode } from 'twenty-shared/arx';
+import { mergeOtherFields, toSnakeCaseKey } from 'twenty-shared/utils';
 // import { Change } from './states/tableStateAtom';
 
 export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
@@ -10,9 +13,9 @@ export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tok
 
   try {
     await axios.post(
-      `${process.env.REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
+      `${REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
       { listOfMessagesIds: unreadMessageIds },
-      { headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}` } },
+      { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } },
     );
     console.log('Successfully marked messages as read');
   } catch (error) {
@@ -218,8 +221,8 @@ export const afterSelectionEnd = (
   row2: number,
   column2: number,
   setTableState: any,
-  setSelectedCandidateId: SetterOrUpdater<string | null>,
-  setUnreadMessagesCounts: SetterOrUpdater<Record<string, number>>,
+  setSelectedCandidateId: SetAtomState<string | null>,
+  setUnreadMessagesCounts: SetAtomState<Record<string, number>>,
   setContextStoreNumberOfSelectedRecords: any,
   setContextStoreTargetedRecordsRule: any,
   openRightDrawer: any,
@@ -249,7 +252,7 @@ export const afterSelectionEnd = (
         // Open the drawer - CandidateChatDrawer will handle fetching messages
           openRightDrawer(RightDrawerPages.CandidateChat, {
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
-            Icon: IconMessages,
+            Icon: IconMessage,
             meta: {
               candidateId: candidateId,
               unreadMessageIds: []
@@ -380,7 +383,7 @@ const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => 
   }
 };
 
-const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, setSelectedCandidateId: SetterOrUpdater<string | null>, rawData?: any[]) => {
+const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, setSelectedCandidateId: SetAtomState<string | null>, rawData?: any[]) => {
   console.log("prop is checkbox and hence setting table states");
   let nextSelectedIds: string[] = [];
   setTableState((prev: any) => {
@@ -628,10 +631,10 @@ export const afterChange = async (
   tableRef: React.RefObject<any>,
   changes: any,
   source: any,
-  jobId: string,
+  projectId: string,
   getLatestToken: () => string | undefined,
   setTableState: any,
-  setSelectedCandidateId: SetterOrUpdater<string | null>,
+  setSelectedCandidateId: SetAtomState<string | null>,
   refreshData: any,
   rawData?: any[]
 ) => {
@@ -717,8 +720,8 @@ export const afterChange = async (
     // Only queue backend updates for saved candidates
     if (isSavedCandidate) {
       const endpoint = isDirectField 
-        ? `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
-        : `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
+        ? `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
+        : `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
 
       // Queue for background processing
       pendingUpdates.push({

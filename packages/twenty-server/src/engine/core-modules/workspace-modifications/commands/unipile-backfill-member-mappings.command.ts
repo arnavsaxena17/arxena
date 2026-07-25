@@ -94,7 +94,7 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
       let rows: ProfileRow[];
 
       try {
-        rows = await this.workspaceQueryService.executeRawQuery(
+        rows = await this.workspaceQueryService.executeWorkspaceRawQuery(
           query,
           [],
           workspaceId,

@@ -14,6 +14,7 @@ import { EntitySchemaFactory } from 'src/engine/twenty-orm/factories/entity-sche
 import { GlobalWorkspaceDataSourceService } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { WorkspaceORMEntityMetadatasCacheService } from 'src/engine/twenty-orm/global-workspace-datasource/workspace-orm-entity-metadatas-cache.service';
+import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { TwentyORMModule } from 'src/engine/twenty-orm/twenty-orm.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
@@ -39,11 +40,16 @@ import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/
   providers: [
     GlobalWorkspaceDataSourceService,
     GlobalWorkspaceOrmManager,
+    TwentyORMGlobalManager,
     EntitySchemaFactory,
     EntitySchemaColumnFactory,
     EntitySchemaRelationFactory,
     WorkspaceORMEntityMetadatasCacheService,
   ],
-  exports: [GlobalWorkspaceDataSourceService, GlobalWorkspaceOrmManager],
+  exports: [
+    GlobalWorkspaceDataSourceService,
+    GlobalWorkspaceOrmManager,
+    TwentyORMGlobalManager,
+  ],
 })
 export class GlobalWorkspaceDataSourceModule {}

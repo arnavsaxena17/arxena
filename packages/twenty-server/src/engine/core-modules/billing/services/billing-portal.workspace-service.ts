@@ -28,10 +28,13 @@ import { StripeCustomerService } from 'src/engine/core-modules/billing/stripe/se
 import { type BillingGetPricesPerPlanResult } from 'src/engine/core-modules/billing/types/billing-get-prices-per-plan-result.type';
 import { type BillingPortalCheckoutSessionParameters } from 'src/engine/core-modules/billing/types/billing-portal-checkout-session-parameters.type';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { RazorpayCheckoutService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-checkout.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+import { assert } from 'src/utils/assert';
 @Injectable()
 export class BillingPortalWorkspaceService {
   protected readonly logger = new Logger(BillingPortalWorkspaceService.name);
@@ -41,6 +44,8 @@ export class BillingPortalWorkspaceService {
     private readonly stripeBillingPortalService: StripeBillingPortalService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
     private readonly billingSubscriptionService: BillingSubscriptionService,
+    private readonly environmentService: EnvironmentService,
+    private readonly razorpayCheckoutService: RazorpayCheckoutService,
     @InjectWorkspaceScopedRepository(BillingSubscriptionEntity)
     private readonly billingSubscriptionRepository: WorkspaceScopedRepository<BillingSubscriptionEntity>,
     @InjectWorkspaceScopedRepository(BillingCustomerEntity)
@@ -48,6 +53,52 @@ export class BillingPortalWorkspaceService {
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
   ) {}
+
+  async computeRazorpayCheckoutSession(params: {
+    workspace: WorkspaceEntity;
+    successUrlPath: string;
+    successReturnUrl?: string;
+    razorpayPlanId?: string;
+    quantity?: number;
+  }): Promise<{
+    subscriptionId: string;
+    keyId: string;
+    callbackUrl: string;
+  }> {
+    const planId =
+      params.razorpayPlanId ??
+      this.environmentService.get('BILLING_RAZORPAY_BASE_PLAN_ID');
+
+    assert(planId, 'razorpayPlanId or BILLING_RAZORPAY_BASE_PLAN_ID is required');
+
+    const keyId = this.environmentService.get('BILLING_RAZORPAY_KEY_ID');
+
+    assert(keyId, 'BILLING_RAZORPAY_KEY_ID is required');
+
+    const serverUrl = this.environmentService.get('SERVER_URL');
+
+    assert(serverUrl, 'SERVER_URL is required');
+
+    const quantity = Math.max(1, params.quantity ?? 1);
+    const { subscriptionId } =
+      await this.razorpayCheckoutService.createSubscription({
+        planId,
+        workspaceId: params.workspace.id,
+        quantity,
+      });
+    const base = `${serverUrl.replace(/\/$/, '')}/billing/razorpay-subscription-callback`;
+    const search = new URLSearchParams();
+
+    if (params.successReturnUrl) {
+      search.set('return_url', params.successReturnUrl);
+    } else {
+      search.set('return_path', params.successUrlPath);
+    }
+
+    const callbackUrl = `${base}?${search.toString()}`;
+
+    return { subscriptionId, keyId, callbackUrl };
+  }
 
   async computeCheckoutSessionURL({
     user,

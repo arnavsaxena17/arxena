@@ -1,6 +1,5 @@
-import { createState } from 'twenty-ui';
-
-import { LinkedInSearchType } from 'twenty-shared';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
+import type { LinkedInSearchType } from 'twenty-shared/types';
 
 export type LinkedinUnipileOwnerProfileCache = {
   accountId: string;
@@ -12,7 +11,7 @@ export type LinkedinUnipileOwnerProfileCache = {
 
 /** Session cache for Unipile `users/me` — cleared on full page reload. */
 export const linkedinUnipileOwnerProfileCacheState =
-  createState<LinkedinUnipileOwnerProfileCache | null>({
+  createAtomState<LinkedinUnipileOwnerProfileCache | null>({
     key: 'linkedinUnipileOwnerProfileCacheState',
     defaultValue: null,
   });

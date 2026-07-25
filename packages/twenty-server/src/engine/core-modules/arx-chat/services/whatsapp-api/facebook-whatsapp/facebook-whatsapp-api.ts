@@ -11,7 +11,7 @@ import {
     ChatHistoryItem,
     ChatRequestBody,
     FacebookWhatsappAttachmentChatRequestBody,
-    Job,
+    Project,
     sendWhatsappTemplateMessageObjectType,
     SendWhatsappUtilityMessageObjectType,
     whatappUpdateMessageObjType,
@@ -64,7 +64,7 @@ export class FacebookWhatsappChatApi {
   }
 
 
-  
+
   async getGraphApiConfig(apiToken: string, filePath: string) {
     console.log('getGraphApiConfig for meta graph facebook api for v18.0 official');
     const workspaceId =
@@ -101,7 +101,7 @@ export class FacebookWhatsappChatApi {
   async uploadAndSendFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -177,7 +177,7 @@ export class FacebookWhatsappChatApi {
   async uploadFileToWhatsApp(
     attachmentMessage: AttachmentMessageObject,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -247,7 +247,7 @@ export class FacebookWhatsappChatApi {
             mostRecentMessageArr.push({
               role: 'user',
               content: 'Failed to send JD to the candidate.',
-            }); 
+            });
 
 
             const whatappUpdateMessageObj: whatappUpdateMessageObjType =
@@ -343,7 +343,7 @@ export class FacebookWhatsappChatApi {
   async sendWhatsappAttachmentMessage(
     sendWhatsappAttachmentTextMessageObj: FacebookWhatsappAttachmentChatRequestBody,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     filePath: string,
@@ -397,7 +397,7 @@ export class FacebookWhatsappChatApi {
 
       if (whatappUpdateMessageObj) {
         await new UpdateChat(
-          this.workspaceQueryService, 
+          this.workspaceQueryService,
           this.staticGraphQLService,
         ).updateCandidateEngagementDataInTable(
           candidate,
@@ -576,10 +576,9 @@ export class FacebookWhatsappChatApi {
           await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(
             {
               input: {
-                authorId: candidateProfileData.jobs.recruiterId,
                 name: filePath.replace(`${process.cwd()}/`, ''),
                 fullPath: attachmentObj?.data?.uploadFile,
-                type: 'TextDocument',
+                fileCategory: 'TEXT_DOCUMENT',
                 candidateId: candidateProfileData.id,
               },
             },
@@ -656,7 +655,7 @@ export class FacebookWhatsappChatApi {
   async sendWhatsappMessageVIAFacebookAPI(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -674,7 +673,7 @@ export class FacebookWhatsappChatApi {
         );
         const response: any = await new ChatControls(
           this.workspaceQueryService,
-          this.staticGraphQLService, 
+          this.staticGraphQLService,
         ).runChatControlMessageSending(
           whatappUpdateMessageObj,
           candidateJob,

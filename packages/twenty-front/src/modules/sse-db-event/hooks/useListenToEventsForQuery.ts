@@ -1,9 +1,6 @@
 import { useChangeQueryListenState } from '@/sse-db-event/hooks/useChangeQueryListenState';
 import { useEffect } from 'react';
-import {
-  type MetadataGqlOperationSignature,
-  type RecordGqlOperationSignature,
-} from 'twenty-shared/types';
+import type { MetadataGqlOperationSignature, RecordGqlOperationSignature } from 'twenty-shared/types';
 
 export const useListenToEventsForQuery = ({
   queryId,

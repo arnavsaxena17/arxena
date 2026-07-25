@@ -1,11 +1,13 @@
-import { ParsedJobDescription } from '@/arx-jd-upload/hooks/useJobDescriptionParser';
+import { ParsedJobDescription } from '@/arx-jd-upload/hooks/useProjectDescriptionParser';
 import { useSearchParameters } from '@/arx-jd-upload/hooks/useSearchParameters';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { AiFiltersResponse, LinkedInSearchResult, SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { FiltersResponse, SortsResponse } from 'twenty-shared';
+import type { FiltersResponse, SortsResponse } from 'twenty-shared/types';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export interface UseSearchPlanGenerationReturn {
   generateSearchParameters: (
@@ -54,8 +56,8 @@ export interface UseSearchPlanGenerationReturn {
 export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
-  const parsedJD = useRecoilValue(parsedJDSelector);
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const parsedJD = useAtomStateValue(parsedJDSelector);
   const { generateSearchParameters: generateSearchParams } = useSearchParameters();
 
   // Helper function to create ParsedJobDescription from parsedJD
@@ -83,7 +85,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     endpoint: string,
     body: any
   ): Promise<T | null> => {
-    if (!tokenPair?.accessToken?.token) {
+    if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       setError('No authentication token available');
       return null;
     }
@@ -97,11 +99,11 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     setError(null);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/${endpoint}`, {
+      const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/candidate-search/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair.accessToken.token}`,
+          Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
         },
         body: JSON.stringify(body),
       });
@@ -125,7 +127,7 @@ export const useSearchPlanGeneration = (): UseSearchPlanGenerationReturn => {
     } finally {
       setIsGenerating(false);
     }
-  }, [tokenPair?.accessToken?.token, parsedJD]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token, parsedJD]);
 
   const generateSearchParameters = useCallback(async (
     assistantThreadId: string,

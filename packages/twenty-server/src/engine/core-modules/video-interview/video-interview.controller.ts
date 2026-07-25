@@ -14,7 +14,7 @@ import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 
-interface GetInterviewDetailsResponse { 
+interface GetInterviewDetailsResponse {
   recruiterProfile:any;
   responseFromInterviewRequests: any;
   videoInterviewAttachmentResponse: any;
@@ -33,7 +33,7 @@ export class VideoInterviewController {
     console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
 
   }
-  
+
   @Post('submit-response')
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -98,7 +98,7 @@ export class VideoInterviewController {
         throw new UnauthorizedException('Could not find valid workspace token');
       }
       const apiToken = workspaceToken;
-  
+
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
       console.log("REceived interviewData:", interviewData)
       console.log("REceived currentQuestionIndex:", currentQuestionIndex)
@@ -109,7 +109,7 @@ export class VideoInterviewController {
 
       const videoFile = files.video[0];
       console.log("Video file received:", videoFile);
-  
+
       let audioFile;
       let audioFilePath;
         if (files.audio && files.audio.length > 0) {
@@ -119,17 +119,17 @@ export class VideoInterviewController {
         console.log("Audio file received:", audioFile);
       } else {
         console.log("No audio file received, will extract from video");
-        
+
         // Ensure uploads directory exists
         if (!fs.existsSync('./uploads')) {
           fs.mkdirSync('./uploads', { recursive: true });
         }
-        
+
         // Extract audio from video using ffmpeg
         const videoFilePath = `uploads/${videoFile.originalname}`;
         const extractedAudioFilename = `${path.parse(videoFile.originalname).name}_extracted_audio.wav`;
         audioFilePath = `uploads/${extractedAudioFilename}`;
-        
+
         try {
           // Execute ffmpeg command to extract audio
           await new Promise((resolve, reject) => {
@@ -141,7 +141,7 @@ export class VideoInterviewController {
               '-ac', '1',           // Set to mono
               audioFilePath
             ]);
-            
+
             ffmpeg.on('close', (code) => {
               if (code === 0) {
                 console.log(`Successfully extracted audio to ${audioFilePath}`);
@@ -151,14 +151,14 @@ export class VideoInterviewController {
                 reject(new Error(`ffmpeg process exited with code ${code}`));
               }
             });
-            
+
             ffmpeg.stderr.on('data', (data) => {
               console.log(`ffmpeg stderr: ${data}`);
             });
           });
 
-          
-          
+
+
           // Create a synthetic file object for the extracted audio
           audioFile = {
             fieldname: 'audio',
@@ -170,13 +170,13 @@ export class VideoInterviewController {
             path: audioFilePath,
             size: fs.statSync(audioFilePath).size
           };
-          
+
         } catch (error) {
           console.error("Error extracting audio from video:", error);
           // Continue without audio if extraction fails
         }
       }
-  
+
 
 
 
@@ -200,10 +200,9 @@ export class VideoInterviewController {
       // Prepare data for attachment table
       const videoDataToUploadInAttachmentTable = {
         input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
           name: videoFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: videoAttachmentObj?.data?.uploadFile,
-          type: 'Video',
+          fileCategory: 'VIDEO',
           candidateId: interviewData.candidate.id,
         },
       };
@@ -213,10 +212,9 @@ export class VideoInterviewController {
 
       const audioDataToUploadInAttachmentTable = {
         input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
           name: audioFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: audioAttachmentObj?.data?.uploadFile,
-          type: 'Audio',
+          fileCategory: 'AUDIO',
           candidateId: interviewData.candidate.id,
         },
       };
@@ -263,10 +261,9 @@ export class VideoInterviewController {
       const responseId = graphqlQueryObjForCreationOfResponse.data.createVideoInterviewResponse.id;
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
           name: videoFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: videoAttachmentObj?.data?.uploadFile,
-          type: 'Video',
+          fileCategory: 'VIDEO',
           videoInterviewResponseId: responseId,
         },
       };
@@ -275,10 +272,9 @@ export class VideoInterviewController {
       console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
       const audioDataToUploadInAttachmentResponseTable = {
         input: {
-          authorId: interviewData.candidate.jobs.recruiterId,
           name: audioFilePath.replace(`${process.cwd()}/`, ''),
           fullPath: audioAttachmentObj?.data?.uploadFile,
-          type: 'Audio',
+          fileCategory: 'AUDIO',
           videoInterviewResponseId: responseId,
         },
       };
@@ -360,33 +356,32 @@ export class VideoInterviewController {
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, dataSourceSchema, transactionManager) => {
         // Query to find the interview status
-        const videoInterview = await this.workspaceQueryService.executeRawQuery(
-          `SELECT * FROM ${dataSourceSchema}."_videoInterview" 
+        const videoInterview =
+          await this.workspaceQueryService.executeWorkspaceRawQuery(
+            `SELECT * FROM ${dataSourceSchema}."_videoInterview"
            WHERE "_videoInterview"."id"::text ILIKE $1`,
-          [`%${interviewId.replace("/video-interview/","")}%`],
-          workspaceId,
-          transactionManager
-        );
-        
+            [`%${interviewId.replace("/video-interview/","")}%`],
+            workspaceId,
+          );
+
         console.log("Workspace token for video interview:", videoInterview)
         if (videoInterview.length > 0) {
           console.log("Workspace token for video interview where videointerview length is more than 0:", videoInterview)
           // Get API keys for the workspace
           console.log("workspaceId::", workspaceId)
           const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId, 
-            dataSourceSchema, 
-            transactionManager
+            workspaceId,
+            dataSourceSchema,
           );
           console.log("API Keys foud::", apiKeys)
-  
+
           if (apiKeys && apiKeys.length > 0) {
             const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
               workspaceId,
               apiKeys[0].id,
             );
-  
-            console.log("API Key Token::", apiKeyToken)   
+
+            console.log("API Key Token::", apiKeyToken)
             if (apiKeyToken) {
               return apiKeyToken.token;
             }
@@ -446,7 +441,7 @@ export class VideoInterviewController {
   async updateFeedback(@Req() req, @Body() feedbackData) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
-  
+
     console.log('This is the feedback obj', feedbackData);
     const updateStatusVariables = {
       idToUpdate: feedbackData.interviewId.replace("/video-interview/", ""),
@@ -454,12 +449,12 @@ export class VideoInterviewController {
         feedback: feedbackData.feedback,
       },
     };
-    
+
     const graphqlQueryObjForUpdationForStatus = JSON.stringify({
       query: updateOneVideoInterviewMutation,
       variables: updateStatusVariables,
     });
-  
+
     try {
       const response = await this.staticGraphQLService.executeGraphQL(updateOneVideoInterviewMutation, updateStatusVariables, apiToken);
       console.log('Feedback updated successfully:', response.data);
@@ -468,7 +463,7 @@ export class VideoInterviewController {
         statusCode: 200,
         message: 'Feedback updated successfully'
       };
-      
+
     } catch (error) {
       // Handle the error without trying to serialize the full error object
       throw new HttpException({
@@ -477,14 +472,14 @@ export class VideoInterviewController {
       }, 500);
     }
   }
-  
+
 
 // leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-interview-details')
   async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
     console.log("Got a request in get interview details")
 
-    
+
     console.log("This is the request body in get interview details:", req?.body)
     // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const { interviewId } = req.body;
@@ -609,7 +604,7 @@ export class VideoInterviewController {
         responseFromInterviewRequests: null,
         videoInterviewAttachmentResponse: null,
         questionsAttachments: []
-      };    
+      };
     }
   }
 }

@@ -21,13 +21,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { Temporal } from 'temporal-polyfill';
-import { type Nullable } from 'twenty-shared/types';
-import {
-  isDefined,
-  turnJSDateToPlainDate,
-  turnPlainDateToShiftedDateInSystemTimeZone,
-  type RelativeDateFilter,
-} from 'twenty-shared/utils';
+import type { Nullable } from 'twenty-shared/types';
+import { isDefined, turnJSDateToPlainDate, turnPlainDateToShiftedDateInSystemTimeZone, type RelativeDateFilter } from 'twenty-shared/utils';
 import { IconCalendarX } from 'twenty-ui/icon';
 import { MenuItemLeftContent } from 'twenty-ui/navigation';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';

@@ -1,3 +1,8 @@
+import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { EmailModule } from 'src/engine/core-modules/email/email.module';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
+import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -12,13 +17,11 @@ import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
-import { AppToken } from 'src/engine/core-modules/app-token/app-token.entity';
+import { AppTokenEntity } from 'src/engine/core-modules/app-token/app-token.entity';
 // import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/ext-sock-whatsapp.controller';
-import { JwtService } from '@nestjs/jwt/dist/jwt.service';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { WorkspaceResolverBuilderModule } from 'src/engine/api/graphql/workspace-resolver-builder/workspace-resolver-builder.module';
 import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-schema-builder/workspace-schema-builder.module';
-import { WorkspaceSchemaFactory } from 'src/engine/api/graphql/workspace-schema.factory';
 import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
 import { CandidateEngagementController } from 'src/engine/core-modules/arx-chat/controllers/candidate-engagement.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
@@ -38,9 +41,7 @@ import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
-import { ApiKeyService } from 'src/engine/core-modules/auth/services/api-key.service';
-import { JwtAuthStrategy } from 'src/engine/core-modules/auth/strategies/jwt.auth.strategy';
-import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
@@ -65,15 +66,9 @@ import { PersonService } from 'src/engine/core-modules/candidate-sourcing/servic
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
-import { EmailService } from 'src/engine/core-modules/email/email.service';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { FeatureFlag } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
+import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
-import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
-import { GraphQLExecutionService } from 'src/engine/core-modules/graphql/graphql-execution.service';
-import { SchemaCacheService } from 'src/engine/core-modules/graphql/services/schema-cache.service';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
-import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
@@ -84,25 +79,19 @@ import { OrgChartOutreachController } from 'src/engine/core-modules/org-chart-ou
 import { OrgChartOutreachService } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.service';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
-import { UserWorkspace } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { User } from 'src/engine/core-modules/user/user.entity';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
 import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-source.module'; // Add this import
-import { WorkspaceMetadataCacheModule } from 'src/engine/metadata-modules/workspace-metadata-cache/workspace-metadata-cache.module';
-import { WorkspaceCacheStorageService } from 'src/engine/workspace-cache-storage/workspace-cache-storage.service';
-import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/workspace-datasource.service';
 import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { LinkedinSalesNavigatorTransformerService } from '../candidate-sourcing/services/data-sources/linkedin-sales-navigator-transformer.service';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
-import { WhatsAppMonitoringResolver } from '../whiskeysocket-baileys/whatsapp-monitoring.resolver';
-import { LinkedInUnipileMonitoringResolver } from './linkedin-unipile-monitoring.resolver';
 import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
 import { CandidateEngagementArx } from './services/candidate-engagement/candidate-engagement';
 import { EngagedCandidateProcessor } from './services/candidate-engagement/engaged-candidate-processor.job';
@@ -130,21 +119,25 @@ const conditionalImports = isWorker
 
 @Module({
   imports: [
+    WorkspaceCacheStorageModule,
+    EmailModule,
+    EnvironmentModule,
+    WorkspaceDataSourceModule,
+    ApiKeyModule,
     GoogleCalendarModule,
     GoogleContactsModule,
     CoreGraphQLApiModule,
     WebSocketModule,
-    DataSourceModule, 
+    DataSourceModule,
     LinkedInSearchModule,
     WarmPathsModule,
     LLMChatModelModule,
     WorkspaceSchemaBuilderModule,
     FeatureFlagModule,
     WorkspaceResolverBuilderModule,
-    WorkspaceMetadataCacheModule,
-    AuthModule, 
+    AuthModule,
     GraphQLExecutionModule,
-    WorkspaceModificationsModule, 
+    WorkspaceModificationsModule,
     CandidateAvatarModule,
     WhatsappMediaModule,
     UnipileAttachmentModule,
@@ -155,17 +148,17 @@ const conditionalImports = isWorker
     UnipilePoolModule,
     forwardRef(() => OrgChartModule),
     TypeORMModule,
-    TypeOrmModule.forFeature([Workspace], 'core'),
-    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
-    TypeOrmModule.forFeature([User], 'core'),
-    TypeOrmModule.forFeature([AppToken], 'core'),
-    TypeOrmModule.forFeature([UserWorkspace], 'core'),
-    TypeOrmModule.forFeature([Workspace, FeatureFlag], 'core'),
-    TypeOrmModule.forFeature([DataSourceEntity], 'metadata'),
+    TypeOrmModule.forFeature([WorkspaceEntity]),
+    TypeOrmModule.forFeature([DataSourceEntity]),
+    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([AppTokenEntity]),
+    TypeOrmModule.forFeature([UserWorkspaceEntity]),
+    TypeOrmModule.forFeature([WorkspaceEntity, FeatureFlagEntity]),
+    TypeOrmModule.forFeature([DataSourceEntity]),
   ],
   controllers: [
     ArxChatEndpoint,
-    ArxDeliveryEndpoint,  
+    ArxDeliveryEndpoint,
     WhatsappWebhook,
     MetaWhatsappController,
     TwilioControllers,
@@ -180,8 +173,8 @@ const conditionalImports = isWorker
     OrgChartOutreachController,
   ],
   providers: [
+    GoogleSheetsService,
     PersonService,
-    GraphQLExecutionService,
     CandidateService,
     RedisService,
     ResumeReadParseUploadService,
@@ -189,25 +182,12 @@ const conditionalImports = isWorker
     ExtSockWhatsappMessageProcessor,
     ...conditionalImports,
     ExtSockWhatsappService,
-    WorkspaceDataSourceService,
-    WorkspaceCacheStorageService,
     ParsedCVTransformerService,
-    ApiKeyService,
-    WorkspaceSchemaFactory,
-    JwtWrapperService,
-    SchemaCacheService,
     LinkedInSearchTransformerService,
-    LinkedInSessionTrackerService,  
-    JwtService,
-    GoogleSheetsService,
+    LinkedInSessionTrackerService,
     WebSocketGateway,
     ProcessCandidatesService,
-    WorkspaceQueryService,
-    EnvironmentService,
-    JwtAuthStrategy,
-    EmailService,
     WebSocketService,
-    AccessTokenService,
     CandidateEngagementArx,
     VoiceCallService,
     CandidateDataProcessorService,
@@ -241,9 +221,7 @@ const conditionalImports = isWorker
     LinkedinUnipileRequestService,
     UnipileCompanyService,
     WhatsAppMonitoringUnifiedService,
-    WhatsAppMonitoringResolver,
     LinkedInUnipileMonitoringService,
-    LinkedInUnipileMonitoringResolver,
     UnipileAccountPoolService,
     LinkedinParameterResolver,
     OrgChartOutreachService,
@@ -251,6 +229,11 @@ const conditionalImports = isWorker
     IcpExtractionService,
     IcpOutreachMessageService,
   ],
-  exports: [ExtSockWhatsappService, CandidateEngagementArx],
+  exports: [
+    ExtSockWhatsappService,
+    CandidateEngagementArx,
+    WhatsAppMonitoringUnifiedService,
+    LinkedInUnipileMonitoringService,
+  ],
 })
 export class ArxChatAgentModule {}

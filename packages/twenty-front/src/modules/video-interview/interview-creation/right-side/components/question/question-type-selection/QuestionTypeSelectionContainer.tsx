@@ -1,6 +1,7 @@
-import styled from '@emotion/styled';
 
 import { QuestionTextArea } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTextArea';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { QuestionTypeSelect } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/QuestionTypeSelect';
 import { H2Title } from 'twenty-ui';
 

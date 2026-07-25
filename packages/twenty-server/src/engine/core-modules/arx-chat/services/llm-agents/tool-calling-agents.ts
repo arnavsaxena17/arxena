@@ -8,7 +8,7 @@ import {
     ChatControlsObjType,
     graphqlQueryToCreateOneClientInterview,
     graphqlQueryToCreateOneReminder,
-    Job,
+    Project,
     questionTextToKey,
 } from 'twenty-shared';
 import { z } from 'zod';
@@ -44,12 +44,12 @@ export class ToolCallingAgents {
     stageOfTheConversation: z.enum(allStatusesArray),
   });
 
-  getAvailableFunctions(candidateJob: Job, apiToken: string) {
+  getAvailableFunctions(candidateJob: Project, apiToken: string) {
     return {
       share_jd: (
         inputs: any,
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) =>
@@ -58,7 +58,7 @@ export class ToolCallingAgents {
       update_candidate_profile: (
         inputs: any,
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) =>
@@ -67,7 +67,7 @@ export class ToolCallingAgents {
       update_answer: (
         inputs: { question: string; answer: string },
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) => this.updateAnswer(inputs, candidate, candidateJob, apiToken),
@@ -75,7 +75,7 @@ export class ToolCallingAgents {
       schedule_meeting: (
         inputs: any,
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) => this.scheduleMeeting(inputs, candidate, candidateJob, apiToken),
@@ -83,7 +83,7 @@ export class ToolCallingAgents {
       send_email: (
         inputs: any,
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) => this.sendEmail(inputs, candidate, candidateJob, apiToken),
@@ -91,7 +91,7 @@ export class ToolCallingAgents {
       create_reminder: (
         inputs: { reminderDuration: string },
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) => this.createReminder(inputs, candidate, candidateJob, apiToken),
@@ -99,7 +99,7 @@ export class ToolCallingAgents {
       share_interview_link: (
         inputs: any,
         candidate: CandidateNode,
-        candidateJob: Job,
+        candidateJob: Project,
         chatControl: ChatControlsObjType,
         apiToken: string,
       ) => this.shareInterviewLink(inputs, candidate, candidateJob, apiToken),
@@ -109,16 +109,16 @@ export class ToolCallingAgents {
   async shareInterviewLink(
     inputs: any,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     twenty_token: string,
   ) {
-    // const jobProfile = personNode?.candidates?.edges[0]?.node?.jobs;
+    // const jobProfile = personNode?.candidates?.edges[0]?.node?.projects;
 
     const videoInterviewUrl =
       candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
     // console.log("job Profile:", jobProfile);
 
-    const companyName = candidate?.jobs?.company?.name;
+    const companyName = candidate?.projects?.company?.name;
 
     if (!videoInterviewUrl) {
       throw new Error('Video interview URL is undefined');
@@ -166,7 +166,7 @@ export class ToolCallingAgents {
   async createReminder(
     inputs: { reminderDuration: string },
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     console.log(
@@ -207,7 +207,7 @@ export class ToolCallingAgents {
   async sendEmail(
     inputs: any,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
@@ -232,7 +232,7 @@ export class ToolCallingAgents {
   async shareJD(
     inputs: any,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -261,7 +261,7 @@ export class ToolCallingAgents {
   async updateCandidateProfile(
     inputs: any,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     try {
@@ -286,17 +286,17 @@ export class ToolCallingAgents {
   async updateAnswer(
     inputs: { question: string; answer: string },
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     // const newQuestionArray = this.questionArray
-    const jobId =
-      candidate?.jobs?.id;
+    const projectId =
+      candidate?.projects?.id;
 
     const { questionIdArray, questionArray } = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchQuestionsByJobId(jobId, apiToken);
+    ).fetchQuestionsByProjectId(projectId, apiToken);
     const results = fuzzy.filter(inputs.question, questionArray);
     const matches = results.map(function (el) {
       return el.string;
@@ -340,7 +340,7 @@ export class ToolCallingAgents {
   async scheduleMeeting(
     inputs: any,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     console.log(
@@ -354,7 +354,7 @@ export class ToolCallingAgents {
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
       summary:
-        `${candidate?.name} & ${candidate?.jobs?.company?.name}` ||
+        `${candidate?.name} & ${candidate?.projects?.company?.name}` ||
         gptInputs?.summary ||
         'Meeting with the candidate',
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
@@ -409,11 +409,11 @@ export class ToolCallingAgents {
         candidateId:
           candidate?.id,
         interviewScheduleId:
-          candidate?.jobs
+          candidate?.projects
             ?.interviewSchedule?.edges[0]?.node?.id,
         name: `Interview with ${candidate?.name} scheduled on ${new Date(gptInputs?.startDateTime).toISOString().split('T')[0]}`,
-        jobId:
-          candidate?.jobs?.id,
+        projectId:
+          candidate?.projects?.id,
       },
     };
     const graphqlQueryObj = JSON.stringify({
@@ -436,7 +436,7 @@ export class ToolCallingAgents {
 
   private async scheduleReminderNotifications(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     meetingStartDateTime: string,
     meetingEndDateTime: string,
     apiToken: string,
@@ -547,7 +547,7 @@ export class ToolCallingAgents {
 
   async setupSecondReminderForMeeting(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     const candidateId =
@@ -562,7 +562,7 @@ export class ToolCallingAgents {
 
   async setupFirstReminderForMeeting(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ) {
     const candidateId =
@@ -579,7 +579,7 @@ export class ToolCallingAgents {
   }
 
   async getVideoInterviewTools(
-    candidateJob: Job,
+    candidateJob: Project,
   ): Promise<ChatCompletionTool[]> {
     return [
       {
@@ -592,7 +592,7 @@ export class ToolCallingAgents {
     ];
   }
 
-  async getStartChatTools(candidateJob: Job): Promise<ChatCompletionTool[]> {
+  async getStartChatTools(candidateJob: Project): Promise<ChatCompletionTool[]> {
     const tools = [
       {
         type: 'function' as const,
@@ -646,7 +646,7 @@ export class ToolCallingAgents {
   }
 
   async getStartMeetingSchedulingTools(
-    candidateJob: Job,
+    candidateJob: Project,
   ): Promise<ChatCompletionTool[]> {
     const tools = [
       {

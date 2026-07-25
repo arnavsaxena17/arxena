@@ -21,6 +21,17 @@ alwaysApply: true
 - Do not use em dashes in AWS resource names or descriptions. Use
   hyphens instead.
 
+## EC2 SSH access
+
+- When SSH to an EC2 instance fails (timeout, connection refused, or
+  auth after network block), first run `~/set_ip_access.sh` (or
+  `./set_ip_access.sh` from `~`) to allow the current public IP on the
+  relevant security groups for both `arxanalytics` and `arxmukti`.
+- Then retry SSH. Do not keep retrying SSH alone when the failure looks
+  like a security-group / IP allowlist issue.
+- Optional: `~/set_ip_access.sh arxmukti` or
+  `~/set_ip_access.sh arxanalytics` to update only one profile.
+
 ## Secret Safety
 
 - MUST load the `aws-secrets-manager` skill first for any secret,

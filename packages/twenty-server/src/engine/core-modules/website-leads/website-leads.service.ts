@@ -40,7 +40,13 @@ export class WebsiteLeadsService {
   }
 
   async sendFreeTrialLeadNotification(lead: FreeTrialLeadDto): Promise<void> {
-    const to = DEFAULT_FREE_TRIAL_LEAD_RECIPIENT;
+    const configuredRecipient = this.environmentService
+      .get('FREE_TRIAL_LEAD_NOTIFICATION_EMAIL')
+      ?.trim();
+    const to =
+      configuredRecipient && configuredRecipient.length > 0
+        ? configuredRecipient
+        : DEFAULT_FREE_TRIAL_LEAD_RECIPIENT;
 
     const fromName = this.environmentService.get('EMAIL_FROM_NAME');
     const fromAddress = this.environmentService.get('EMAIL_FROM_ADDRESS');
@@ -78,7 +84,7 @@ export class WebsiteLeadsService {
     }
 
     this.logger.log(
-      `Queued free trial lead notification for ${lead.email.trim()} (source=${lead.source})`,
+      `Queued free trial lead notification for ${lead.email.trim()} (source=${lead.source}) to ${to}`,
     );
   }
 }

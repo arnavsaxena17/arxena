@@ -40,17 +40,17 @@ export class JDParserService {
    * Process JD from attachment URL (download, parse, return job data for API)
    */
   async processJDFromAttachmentUrl(
-    jobId: string,
+    projectId: string,
     attachmentUrl: string,
     authToken: string,
   ): Promise<{ success: boolean; data: any }> {
     try {
-      this.logger.log(`Processing JD for job ${jobId} from URL: ${attachmentUrl}`);
+      this.logger.log(`Processing JD for job ${projectId} from URL: ${attachmentUrl}`);
 
       const tempFilePath = await this.downloadAttachmentFile(
         attachmentUrl,
         authToken,
-        jobId,
+        projectId,
       );
 
       try {
@@ -88,7 +88,7 @@ export class JDParserService {
         }
       }
     } catch (error) {
-      this.logger.error(`Error processing JD for job ${jobId}:`, error);
+      this.logger.error(`Error processing JD for job ${projectId}:`, error);
       return {
         success: false,
         data: { error: error.message },
@@ -99,7 +99,7 @@ export class JDParserService {
   private async downloadAttachmentFile(
     attachmentUrl: string,
     authToken: string,
-    jobId: string,
+    projectId: string,
   ): Promise<string> {
     try {
       const response = await axios.get(attachmentUrl, {
@@ -123,7 +123,7 @@ export class JDParserService {
       }
       let originalFilename = this.extractFilenameFromResponse({ headers: headersRecord }, attachmentUrl);
       if (!originalFilename || !originalFilename.includes('.')) {
-        originalFilename = `temp_jd_${jobId}.pdf`;
+        originalFilename = `temp_jd_${projectId}.pdf`;
       }
       originalFilename = this.sanitizeFilename(originalFilename);
 
@@ -225,8 +225,8 @@ export class JDParserService {
   private async extractJobDetails(jdText: string, fileName?: string): Promise<JobDetails> {
     const systemPrompt = `
         Extract the following details from the job description:
-        - Job Name/Title
-        - Job Code (if present)
+        - Project Name/Title
+        - Project Code (if present)
         - Location
         - Salary information (if present)
         - Company Name

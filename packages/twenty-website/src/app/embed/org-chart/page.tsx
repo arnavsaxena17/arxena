@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 
-import { toTitleCase } from 'twenty-shared';
+import { toTitleCase } from 'twenty-shared/utils';
 
 import { OrgChartDiagramLoader } from '@/app/org-chart/[[...segments]]/OrgChartDiagramLoader';
 import { OrgChartPageClient } from '@/app/org-chart/[[...segments]]/OrgChartPageClient';

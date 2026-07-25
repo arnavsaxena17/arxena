@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { toSlug } from 'twenty-shared';
+import { toSlug } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
 

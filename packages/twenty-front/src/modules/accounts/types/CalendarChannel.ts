@@ -1,8 +1,4 @@
-import {
-  type CalendarChannelContactAutoCreationPolicy,
-  type CalendarChannelSyncStage,
-  type CalendarChannelSyncStatus,
-} from 'twenty-shared/types';
+import type { CalendarChannelContactAutoCreationPolicy, CalendarChannelSyncStage, CalendarChannelSyncStatus } from 'twenty-shared/types';
 import { type CalendarChannelVisibility } from '~/generated/graphql';
 
 export type CalendarChannel = {

@@ -1298,7 +1298,7 @@ export class OrgChartSearchService {
         {
           people: peopleWithAvatars,
           jobName,
-          jobId: normalizedCompanyId || undefined,
+          projectId: normalizedCompanyId || undefined,
           functionRoot: fn,
           industry: options.industry,
           industryCategory: options.industryCategory,

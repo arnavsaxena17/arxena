@@ -1,7 +1,4 @@
-import {
-  type FilterableAndTSVectorFieldType,
-  type ViewFilterOperand as RecordFilterOperand,
-} from 'twenty-shared/types';
+import type { FilterableAndTSVectorFieldType, ViewFilterOperand as RecordFilterOperand } from 'twenty-shared/types';
 import { getFilterOperandsForFilterableFieldType } from 'twenty-shared/utils';
 
 export const getRecordFilterOperands = ({

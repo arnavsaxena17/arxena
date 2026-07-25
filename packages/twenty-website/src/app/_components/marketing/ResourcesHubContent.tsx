@@ -1,0 +1,109 @@
+'use client';
+
+import styled from '@emotion/styled';
+import Link from 'next/link';
+
+import { RESOURCES_INDEX } from '@/lib/brand-content';
+
+const StyledSection = styled.section`
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+`;
+
+const StyledHeadline = styled.h1`
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 16px 0;
+  color: #141414;
+  text-align: center;
+`;
+
+const StyledSub = styled.p`
+  font-size: 18px;
+  line-height: 1.6;
+  color: #818181;
+  margin: 0 auto 48px;
+  max-width: 640px;
+  text-align: center;
+`;
+
+const StyledGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+`;
+
+const StyledCard = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  background: #fafafa;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: rgba(20, 20, 20, 0.2);
+    background: #fff;
+  }
+`;
+
+const StyledCardTitle = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: #141414;
+  margin-bottom: 8px;
+`;
+
+const StyledCardDesc = styled.div`
+  font-size: 15px;
+  line-height: 1.5;
+  color: #818181;
+`;
+
+type HubCard = {
+  href: string;
+  title: string;
+  description: string;
+};
+
+const CARDS: HubCard[] = [
+  {
+    href: '/resources/blog',
+    title: 'Blog',
+    description: RESOURCES_INDEX.cards.blog,
+  },
+  {
+    href: '/resources/org-intelligence-reports',
+    title: 'Org intelligence reports',
+    description: RESOURCES_INDEX.cards.reports,
+  },
+  {
+    href: '/resources/calculators',
+    title: 'Calculators',
+    description: RESOURCES_INDEX.cards.calculators,
+  },
+];
+
+export const ResourcesHubContent = () => {
+  return (
+    <StyledSection>
+      <StyledHeadline>{RESOURCES_INDEX.headline}</StyledHeadline>
+      <StyledSub>{RESOURCES_INDEX.sub}</StyledSub>
+      <StyledGrid>
+        {CARDS.map((card) => (
+          <StyledCard key={card.href} href={card.href}>
+            <StyledCardTitle>{card.title}</StyledCardTitle>
+            <StyledCardDesc>{card.description}</StyledCardDesc>
+          </StyledCard>
+        ))}
+      </StyledGrid>
+    </StyledSection>
+  );
+};

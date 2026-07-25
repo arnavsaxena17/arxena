@@ -1,11 +1,12 @@
-import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui/icons';
+import { IconDotsVertical, IconTrash, IconUpload } from 'twenty-ui/icon';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { createDefaultParsedJD } from '@/arx-jd-upload/utils/createDefaultParsedJD';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
-import { useRecoilState } from 'recoil';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 const DocumentViewer = lazy(() =>
   import('@/activities/files/components/DocumentViewer').then((module) => ({
@@ -17,24 +18,28 @@ const StyledJDHeaderRow = styled.div<{ $isCompact?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  margin-top: ${({ theme, $isCompact }) =>
-    $isCompact ? theme.spacing(0.5) : theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[2]};
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledJDSummary = styled.div`
   flex: 1;
   min-width: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const StyledJDViewerToggleSummary = styled(StyledJDSummary.withComponent('button'))<{
-  $isClickable: boolean;
-}>`
+const StyledJDViewerToggleSummary = styled.button<{ $isClickable: boolean }>`
+  flex: 1;
+  min-width: 0;
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 0;
   border: none;
   background: transparent;
@@ -48,31 +53,31 @@ const StyledJDViewerToggleSummary = styled(StyledJDSummary.withComponent('button
 `;
 
 const StyledJDViewerContainer = styled.div`
-  margin-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledJDViewerHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  margin-bottom: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledJDViewerCloseButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(0.5, 1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
@@ -85,49 +90,49 @@ const StyledJDMenuButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(0.5, 1)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.15s ease-in-out;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    border-color: ${({ theme }) => theme.border.color.strong};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.strong};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledJDMenuDropdown = styled.div`
   position: absolute;
-  top: calc(100% + ${({ theme }) => theme.spacing(1)});
+  top: calc(100% + ${themeCssVariables.spacing[1]});
   right: 0;
   min-width: 200px;
-  background-color: ${({ theme }) => theme.background.primary};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  background-color: ${themeCssVariables.background.primary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 1000;
 `;
 
 const StyledJDMenuAction = styled.button<{ danger?: boolean }>`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   border: none;
   background: transparent;
   text-align: left;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme, danger }) =>
-    danger ? theme.color.red : theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${({ danger }) =>
+    danger ? themeCssVariables.color.red : themeCssVariables.font.color.primary};
   cursor: pointer;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
+    background-color: ${themeCssVariables.background.secondary};
   }
 
   &:disabled {
@@ -138,9 +143,9 @@ const StyledJDMenuAction = styled.button<{ danger?: boolean }>`
 
 type AssistantJDSectionProps = {
   threadId: string;
-  jobId: string | null | undefined;
+  projectId: string | null | undefined;
   threadJobName?: string | null;
-  onAttachJobToThread: (jobId: string) => Promise<void> | void;
+  onAttachJobToThread: (projectId: string) => Promise<void> | void;
   hideMenu?: boolean;
   exposeActions?: (actions: {
     openFilePicker: () => void;
@@ -154,7 +159,7 @@ type AssistantJDSectionProps = {
 
 export const AssistantJDSection = ({
   threadId,
-  jobId,
+  projectId,
   threadJobName,
   onAttachJobToThread,
   hideMenu = false,
@@ -164,34 +169,34 @@ export const AssistantJDSection = ({
   const [isJDViewerOpen, setIsJDViewerOpen] = useState(false);
   const jdMenuRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingAttachJobIdRef = useRef<string | null>(null);
+  const pendingAttachProjectIdRef = useRef<string | null>(null);
 
-  const [parsedJD, setParsedJD] = useRecoilState(parsedJDSelector);
+  const [parsedJD, setParsedJD] = useAtomState(parsedJDSelector);
 
   useEffect(() => {
     // If the user switches conversations, we must not keep "pending attach"
     // from the previous thread. Otherwise the previous thread's parsedJD
-    // can remain visible even when the new thread has no `jobId`.
-    pendingAttachJobIdRef.current = null;
+    // can remain visible even when the new thread has no `projectId`.
+    pendingAttachProjectIdRef.current = null;
     // Also close the viewer when switching context.
     setIsJDViewerOpen(false);
-  }, [threadId, jobId]);
+  }, [threadId, projectId]);
 
   const { handleFileUpload, handleFileRemoval, isUploading } =
-    useArxJDUpload('job', 'edit');
+    useArxJDUpload('project', 'edit');
 
   const handleFileRemovalRef = useRef(handleFileRemoval);
   useEffect(() => {
     handleFileRemovalRef.current = handleFileRemoval;
   }, [handleFileRemoval]);
 
-  const hasJobAttached = Boolean(jobId);
-  const isAttachingJob = Boolean(pendingAttachJobIdRef.current && !jobId);
+  const hasJobAttached = Boolean(projectId);
+  const isAttachingJob = Boolean(pendingAttachProjectIdRef.current && !projectId);
 
   const { records: attachmentRecords = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
-    filter: jobId ? { jobId: { eq: jobId } } : undefined,
-    skip: !jobId,
+    filter: projectId ? { projectId: { eq: projectId } } : undefined,
+    skip: !projectId,
   });
 
   const hasJDFile = attachmentRecords.length > 0;
@@ -201,7 +206,7 @@ export const AssistantJDSection = ({
     const base =
       parsedJD.jobCode && parsedJD.name
         ? `${parsedJD.jobCode} - ${parsedJD.name}`
-        : parsedJD.name || 'Job Description';
+        : parsedJD.name || 'Project Description';
     return base.length > 40 ? `${base.slice(0, 37)}...` : base;
   }, [parsedJD]);
 
@@ -235,33 +240,33 @@ export const AssistantJDSection = ({
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
-    const createdOrUpdatedJobId = await handleFileUpload(files);
+    const createdOrUpdatedProjectId = await handleFileUpload(files);
 
     // Prefer the explicit return value from handleFileUpload, but fall back to
     // the current parsedJD.id when available. This makes sure that even if the
     // upload flow succeeds but does not return an id, we still attach the job
     // that was just created/updated to the assistant thread.
-    const jobIdToAttach =
-      typeof createdOrUpdatedJobId === 'string'
-        ? createdOrUpdatedJobId
+    const projectIdToAttach =
+      typeof createdOrUpdatedProjectId === 'string'
+        ? createdOrUpdatedProjectId
         : parsedJD?.id ?? null;
 
-    if (!hasJobAttached && typeof jobIdToAttach === 'string') {
-      pendingAttachJobIdRef.current = jobIdToAttach;
-      await onAttachJobToThread(jobIdToAttach);
+    if (!hasJobAttached && typeof projectIdToAttach === 'string') {
+      pendingAttachProjectIdRef.current = projectIdToAttach;
+      await onAttachJobToThread(projectIdToAttach);
     }
     setIsJDMenuOpen(false);
   };
 
   useEffect(() => {
-    if (jobId) {
-      if (pendingAttachJobIdRef.current === jobId) {
-        pendingAttachJobIdRef.current = null;
+    if (projectId) {
+      if (pendingAttachProjectIdRef.current === projectId) {
+        pendingAttachProjectIdRef.current = null;
       }
-      if (parsedJD?.id !== jobId) {
+      if (parsedJD?.id !== projectId) {
         setParsedJD(
           createDefaultParsedJD({
-            id: jobId,
+            id: projectId,
             name: threadJobName ?? '',
           }),
         );
@@ -270,14 +275,14 @@ export const AssistantJDSection = ({
     }
 
     if (
-      pendingAttachJobIdRef.current &&
-      parsedJD?.id === pendingAttachJobIdRef.current
+      pendingAttachProjectIdRef.current &&
+      parsedJD?.id === pendingAttachProjectIdRef.current
     ) {
       return;
     }
 
     if (parsedJD) setParsedJD(null);
-  }, [threadId, jobId, threadJobName, parsedJD, setParsedJD]);
+  }, [threadId, projectId, threadJobName, parsedJD, setParsedJD]);
 
   const canViewJD = Boolean(hasJobAttached && hasJDFile && parsedJD?.filePath);
 
@@ -325,7 +330,7 @@ export const AssistantJDSection = ({
       ? 'Attaching job...'
       : hasJobAttached
         ? hasJDFile
-          ? `JD attached: ${getJDDisplayName() ?? 'Job Description'}`
+          ? `JD attached: ${getJDDisplayName() ?? 'Project Description'}`
           : hideMenu
             ? 'Upload JD'
             : 'No JD attached'
@@ -340,7 +345,7 @@ export const AssistantJDSection = ({
     <>
       <StyledJDHeaderRow $isCompact={hideMenu}>
         <StyledJDViewerToggleSummary
-          type={canViewJD ? 'button' : 'button'}
+          type="button"
           $isClickable={canOpenSummary}
           onClick={() => {
             if (canViewJD) {
@@ -367,7 +372,7 @@ export const AssistantJDSection = ({
             <StyledJDMenuButton
               type="button"
               onClick={() => setIsJDMenuOpen((open) => !open)}
-              title="Job description actions"
+              title="Project description actions"
             >
               <IconDotsVertical size={14} />
             </StyledJDMenuButton>
@@ -413,7 +418,7 @@ export const AssistantJDSection = ({
           <StyledJDViewerHeader>
             <span>
               Viewing JD:{' '}
-              {getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
+              {getJDDisplayName() ?? parsedJD.name ?? 'Project Description'}
             </span>
             <StyledJDViewerCloseButton
               type="button"
@@ -424,7 +429,7 @@ export const AssistantJDSection = ({
           </StyledJDViewerHeader>
           <Suspense fallback={null}>
             <DocumentViewer
-              documentName={getJDDisplayName() ?? parsedJD.name ?? 'Job Description'}
+              documentName={getJDDisplayName() ?? parsedJD.name ?? 'Project Description'}
               documentUrl={parsedJD.filePath}
             />
           </Suspense>

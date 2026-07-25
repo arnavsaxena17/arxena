@@ -304,7 +304,7 @@ export class LinkedInSearchController {
         { cursor, limit }
       );
 
-      this.logger.log(`Jobs search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(`Projects search completed successfully. Found ${result.items.length} results.`);
       return result;
     } catch (error) {
       this.logger.error('LinkedIn jobs search failed', error);

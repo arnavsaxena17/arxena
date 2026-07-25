@@ -32,7 +32,7 @@ export class SearchParametersPrompts {
       Your task is to parse job descriptions and extract structured information that can be used for candidate search.
 
         You must analyze the job description and extract the following information:
-        - Job title and variations
+        - Project title and variations
         - Company information
         - Location and remote work preferences
         - Industry and sector
@@ -49,7 +49,7 @@ export class SearchParametersPrompts {
 
     const userPromptTemplate = `Please parse the following job description and extract all relevant information for candidate search:
 
-        Job Description:
+        Project Description:
         {{jobDescription}}
 
         Additional Context:
@@ -75,7 +75,7 @@ export class SearchParametersPrompts {
     };
   }
     /**
-     * Get the prompt for generating LinkedIn Classic Jobs Search parameters
+     * Get the prompt for generating LinkedIn Classic Projects Search parameters
      */
     getJobsSearchPrompt(
       parsedJobDescription?: ParsedJobDescription | string,
@@ -93,8 +93,8 @@ export class SearchParametersPrompts {
           - Benefits and other filters
           For parameters that require LinkedIn IDs (industry, location, company), provide the human-readable names/titles that will be used to fetch the corresponding LinkedIn parameter IDs.`;
 
-      const userPromptTemplate = `Based on the following parsed job description, generate LinkedIn Classic Jobs Search parameters:
-          Parsed Job Description:
+      const userPromptTemplate = `Based on the following parsed job description, generate LinkedIn Classic Projects Search parameters:
+          Parsed Project Description:
           {{parsedJobDescription}}
           Please generate comprehensive search parameters that would help find similar job postings. Include industry, location, and company parameters as strings that will be resolved to LinkedIn IDs.`;
 
@@ -150,7 +150,7 @@ export class SearchParametersPrompts {
         - Network distance preferences (1, 2, or 3)
         For parameters that require LinkedIn IDs (industry, location), provide the human-readable names/titles that will be used to fetch the corresponding LinkedIn parameter IDs.`;
           userPromptTemplate = `Based on the following parsed job description, generate LinkedIn Classic Companies Search parameters:
-        Parsed Job Description:
+        Parsed Project Description:
         {{parsedJobDescription}}
         Please generate comprehensive search parameters that would help find relevant companies for this position. Include industry and location parameters as strings that will be resolved to LinkedIn IDs.`;
           break;
@@ -174,7 +174,7 @@ export class SearchParametersPrompts {
         - Annual Revenue: Revenue ranges in various currencies (USD, EUR, GBP, etc.)
         - Followers Count: LinkedIn company page followers (1-50, 51-100, 101-1000, 1001-5000, 5001+)
         - Fortune Rankings: Fortune 500, 1000, etc. rankings
-        - Job Opportunities: Companies actively hiring on LinkedIn
+        - Project Opportunities: Companies actively hiring on LinkedIn
   
         TECHNOLOGY & ACTIVITY FILTERS:
         - Technologies Used: Specific technologies, software, platforms
@@ -193,7 +193,7 @@ export class SearchParametersPrompts {
         8. Consider recent activities to find companies in growth phases`;
           userPromptTemplate = `Based on the following parsed job description, generate comprehensive LinkedIn Sales Navigator Companies Search parameters:
   
-        Parsed Job Description:
+        Parsed Project Description:
         {{parsedJobDescription}}
   
         Please generate sophisticated search parameters that leverage Sales Navigator's advanced company filtering capabilities to find the best target companies for this position.
@@ -360,7 +360,7 @@ export class SearchParametersPrompts {
       let criteriaList = '';
       // not being used for people, only from companies and jobs
       if (searchType === 'people') {
-        criteriaList = `- Job titles/roles from the user's request
+        criteriaList = `- Project titles/roles from the user's request
                         - Locations mentioned by the user
                         - Industries or company types specified by the user
                         - Seniority levels indicated
@@ -371,7 +371,7 @@ export class SearchParametersPrompts {
                             - Company sizes or characteristics specified
                             - Any other search criteria indicated in the user's message`;
       } else if (searchType === 'jobs') {
-        criteriaList = `- Job titles/roles from the user's request
+        criteriaList = `- Project titles/roles from the user's request
                         - Locations mentioned by the user
                         - Industries or company types specified
                         - Any other search criteria indicated in the user's message`;
@@ -405,7 +405,7 @@ export class SearchParametersPrompts {
       return `PRIORITY USER REQUEST:
       The user has explicitly requested: "${userMessage}"
 
-      Raw Job Description Text (for reference only):
+      Raw Project Description Text (for reference only):
       ${rawJDText || 'No job description text available.'}`;
     }
 

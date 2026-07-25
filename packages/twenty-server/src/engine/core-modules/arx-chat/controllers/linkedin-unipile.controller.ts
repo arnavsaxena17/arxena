@@ -16,7 +16,7 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
@@ -466,7 +466,7 @@ export class LinkedinUnipileController {
   }
 
   private async persistLinkedinCookiesForMember(
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
     workspaceMemberId: string,
     authToken: string,
     params: {
@@ -736,7 +736,7 @@ export class LinkedinUnipileController {
   @Post('connect/credentials')
   async connectWithCredentials(
     @Body() credentials: LinkedinCredentialsDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     try {
@@ -826,7 +826,7 @@ export class LinkedinUnipileController {
   @Post('connect/cookie')
   async connectWithCookie(
     @Body() cookieAuth: LinkedinCookieAuthDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: Request & {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -1008,7 +1008,7 @@ export class LinkedinUnipileController {
    * When `persistRequestCookieTokens` is false, request `li_at` / `li_a` are ignored (server-side reconnect from DB only).
    */
   private async linkedinUnipileMemberSyncCore(
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
     workspaceMemberId: string,
     authToken: string,
     request: Request & { workspaceMemberId?: string },
@@ -1259,7 +1259,7 @@ export class LinkedinUnipileController {
   @Post('extension/sync-cookies')
   async syncExtensionCookies(
     @Body() body: LinkedinExtensionCookieSyncDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: Request & {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -1322,7 +1322,7 @@ export class LinkedinUnipileController {
   @Post('extension/persist-cookies')
   async persistExtensionCookies(
     @Body() body: LinkedinExtensionCookieSyncDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: Request & {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -1397,7 +1397,7 @@ export class LinkedinUnipileController {
   @Post('reconnect-from-stored-profile')
   async reconnectLinkedinFromStoredProfile(
     @Body() body: LinkedinReconnectFromStoredProfileDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: Request & {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -1449,7 +1449,7 @@ export class LinkedinUnipileController {
   @Post('extension/validate-session')
   async validateLinkedinSession(
     @Body() body: LinkedinReconnectFromStoredProfileDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: Request & {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
@@ -1529,7 +1529,7 @@ export class LinkedinUnipileController {
   @Post('accounts/update-member')
   async updateMemberLinkedinAccount(
     @Body() body: { accountId: string },
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId;
@@ -1599,7 +1599,7 @@ export class LinkedinUnipileController {
   @Post('org-chart/ensure-account')
   async ensureAccountForOrgChart(
     @Body() body: { success_redirect_url?: string; failure_redirect_url?: string },
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId;
@@ -1661,7 +1661,7 @@ export class LinkedinUnipileController {
   @Post('hosted-auth')
   async createHostedAuthLink(
     @Body() config: HostedAuthDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       // Generate notify_url for webhook callbacks
@@ -1703,7 +1703,7 @@ export class LinkedinUnipileController {
   @Post('checkpoint')
   async solveCheckpoint(
     @Body() checkpointData: LinkedinCheckpointDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     try {
@@ -1757,14 +1757,14 @@ export class LinkedinUnipileController {
   }
 
   @Post('accounts')
-  async getAllAccounts(@AuthWorkspace() workspace: Workspace) {
+  async getAllAccounts(@AuthWorkspace() workspace : WorkspaceEntity) {
     return this.linkedinUnipileRequestService.getAllAccounts(workspace);
   }
 
   @Post('accounts/:accountId')
   async getAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
@@ -1781,7 +1781,7 @@ export class LinkedinUnipileController {
   @Post('accounts/:accountId/resync')
   async resyncAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
@@ -1801,7 +1801,7 @@ export class LinkedinUnipileController {
   @Delete('accounts/:accountId')
   async disconnectAccount(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     try {
@@ -1836,7 +1836,7 @@ export class LinkedinUnipileController {
   @Post('profile/me/:accountId')
   async getOwnProfile(
     @Param('accountId') accountId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
     @Req() request: { workspaceMemberId?: string; headers?: { authorization?: string } },
   ) {
     const workspaceMemberId = request.workspaceMemberId?.trim() ?? '';
@@ -1870,7 +1870,7 @@ export class LinkedinUnipileController {
   @Post('profile')
   async getProfile(
     @Body() profileRequest: LinkedinProfileDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const queryParams = new URLSearchParams({
@@ -1899,7 +1899,7 @@ export class LinkedinUnipileController {
   @Post('profile/posts')
   async getUserPosts(
     @Body() postsRequest: LinkedinUserPostsDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const queryParams = new URLSearchParams({
@@ -1935,7 +1935,7 @@ export class LinkedinUnipileController {
   @Post('profile/comments')
   async getUserComments(
     @Body() commentsRequest: LinkedinUserCommentsDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const comments =
@@ -1971,7 +1971,7 @@ export class LinkedinUnipileController {
   @Post('profile/overview')
   async getProfileOverview(
     @Body() req: LinkedinProfileOverviewDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     // --- Build profile query params ---
     const profileSections = [...(req.linkedin_sections ?? [])];
@@ -2062,7 +2062,7 @@ export class LinkedinUnipileController {
   @Post('message/send')
   async sendMessage(
     @Body() messageData: LinkedinMessageDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const messagingService = new LinkedinUnipileMessagingService(
@@ -2095,7 +2095,7 @@ export class LinkedinUnipileController {
   @Post('message/invite')
   async sendInvitation(
     @Body() invitationData: LinkedinInvitationDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       const messagingService = new LinkedinUnipileMessagingService(
@@ -2138,7 +2138,7 @@ export class LinkedinUnipileController {
   @Post('webhook/create')
   async createWebhook(
     @Body() config: CreateWebhookDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       // Use the webhook service to generate the configuration
@@ -2176,7 +2176,7 @@ export class LinkedinUnipileController {
    * List all configured webhooks
    */
   @Post('webhooks')
-  async getWebhooks(@AuthWorkspace() workspace: Workspace) {
+  async getWebhooks(@AuthWorkspace() workspace : WorkspaceEntity) {
     try {
       const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
         '/api/v1/webhooks',
@@ -2198,7 +2198,7 @@ export class LinkedinUnipileController {
   @Delete('webhook/:webhookId')
   async deleteWebhook(
     @Param('webhookId') webhookId: string,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/webhooks/${webhookId}`, 'DELETE');
@@ -2259,7 +2259,7 @@ export class LinkedinUnipileController {
   async createReconnectionLink(
     @Param('accountId') accountId: string,
     @Body() config: HostedAuthDto,
-    @AuthWorkspace() workspace: Workspace,
+    @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
       // Create a reconnection link for an existing account

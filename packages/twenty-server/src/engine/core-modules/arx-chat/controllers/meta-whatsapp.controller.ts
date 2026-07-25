@@ -5,7 +5,7 @@ import {
     ChatControlsObjType,
     ChatHistoryItem,
     ChatRequestBody,
-    Job,
+    Project,
     PersonNode,
     sendWhatsappTemplateMessageObjectType,
     SendWhatsappUtilityMessageObjectType
@@ -48,9 +48,9 @@ export class MetaWhatsappController {
       const candidateNode: CandidateNode | undefined =
         personObj?.candidates?.edges[0]?.node;
 
-      const candidateJob: Job | undefined = candidateNode?.jobs;
+      const candidateJob: Project | undefined = candidateNode?.projects;
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
-        candidateJob as Job,
+        candidateJob as Project,
         apiToken,
       );
       if (!recruiterProfile) {
@@ -69,20 +69,20 @@ export class MetaWhatsappController {
         recruiterJobTitle: recruiterProfile.jobTitle || '',
         recruiterCompanyName: recruiterProfile.companyName,
         recruiterCompanyDescription: recruiterProfile.companyDescription,
-        jobPositionName: personObj?.candidates?.edges[0]?.node?.jobs?.name,
+        jobPositionName: personObj?.candidates?.edges[0]?.node?.projects?.name,
         companyName: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob?.id,
-        )[0]?.node?.jobs?.company?.name,
+          (edge) => edge.node.projects.id === candidateJob?.id,
+        )[0]?.node?.projects?.company?.name,
         descriptionOneliner:
           personObj?.candidates?.edges.filter(
-            (edge) => edge.node.jobs.id === candidateJob?.id,
-          )[0]?.node?.jobs?.companyDetails || '',
+            (edge) => edge.node.projects.id === candidateJob?.id,
+          )[0]?.node?.projects?.companyDetails || '',
         jobCode: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob?.id,
-        )[0]?.node?.jobs?.jobCode,
+          (edge) => edge.node.projects.id === candidateJob?.id,
+        )[0]?.node?.projects?.jobCode,
         jobLocation: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.jobs.id === candidateJob?.id,
-        )[0]?.node?.jobs?.jobLocation,
+          (edge) => edge.node.projects.id === candidateJob?.id,
+        )[0]?.node?.projects?.jobLocation,
         videoInterviewLink:
           (process.env.SERVER_BASE_URL || '') +
             personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]

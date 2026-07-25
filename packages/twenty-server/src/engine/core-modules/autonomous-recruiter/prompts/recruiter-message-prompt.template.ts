@@ -1,9 +1,9 @@
 import type { AgentNote } from 'src/engine/core-modules/assistant/assistant.types';
-import type { RecruiterJobContext } from '../job-context.service';
+import type { RecruiterProjectContext } from '../project-context.service';
 
 type BuildRecruiterMessagePromptArgs = {
   userMessage: string;
-  jobContext?: RecruiterJobContext | null;
+  jobContext?: RecruiterProjectContext | null;
   agentNotes?: AgentNote[] | null;
 };
 
@@ -50,7 +50,7 @@ export const buildRecruiterMessagePrompt = ({
   );
   lines.push('');
 
-  lines.push('**Job context**');
+  lines.push('**Project context**');
   if (jobContext) {
     const { jobTitle, companyName, jobLocation, searchName } = jobContext;
     lines.push(

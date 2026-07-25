@@ -1,37 +1,40 @@
-import { IconAlertCircle } from 'twenty-ui/icons';
+import { IconAlertCircle } from 'twenty-ui/icon';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledRequestStatus = styled.div<{ warning?: boolean; maxed?: boolean }>`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   
-  ${({ warning, maxed, theme }) => {
+  ${({ warning, maxed }) => {
     if (maxed) {
       return `
-        background-color: ${theme.color.red10};
-        color: ${theme.color.red};
-        border: 1px solid ${theme.color.red20};
+        background-color: ${themeCssVariables.color.red10};
+        color: ${themeCssVariables.color.red};
+        border: 1px solid ${themeCssVariables.color.red2};
       `;
     }
     if (warning) {
       return `
-        background-color: ${theme.color.orange10};
-        color: ${theme.color.orange};
-        border: 1px solid ${theme.color.orange20};
+        background-color: ${themeCssVariables.color.orange10};
+        color: ${themeCssVariables.color.orange};
+        border: 1px solid ${themeCssVariables.color.orange2};
       `;
     }
     return `
-      background-color: ${theme.background.secondary};
-      color: ${theme.font.color.secondary};
-      border: 1px solid ${theme.border.color.light};
+      background-color: ${themeCssVariables.background.secondary};
+      color: ${themeCssVariables.font.color.secondary};
+      border: 1px solid ${themeCssVariables.border.color.light};
     `;
   }}
 `;
@@ -47,7 +50,7 @@ export const LinkedInRequestStatus = () => {
   const [status, setStatus] = useState<RequestStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
 
   useEffect(() => {
     fetchStatus();
@@ -58,8 +61,8 @@ export const LinkedInRequestStatus = () => {
       setIsLoading(true);
       setError(null);
       
-      const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessToken?.token}`, 'Content-Type': 'application/json', },
+      const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/candidate-search/linkedin-request-status`, {
+        headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`, 'Content-Type': 'application/json', },
       });
       
       if (!response.ok) {

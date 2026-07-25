@@ -3,10 +3,7 @@ import { mapObjectMetadataToGraphQLQuery } from '@/object-metadata/utils/mapObje
 import { generateDepthRecordGqlFieldsFromObject } from '@/object-record/graphql/record-gql-fields/utils/generateDepthRecordGqlFieldsFromObject';
 import { getUpdateOneRecordMutationResponseField } from '@/object-record/utils/getUpdateOneRecordMutationResponseField';
 import { gql } from '@apollo/client';
-import {
-  type ObjectPermissions,
-  type RecordGqlOperationGqlRecordFields,
-} from 'twenty-shared/types';
+import type { ObjectPermissions, RecordGqlOperationGqlRecordFields } from 'twenty-shared/types';
 import { capitalize } from 'twenty-shared/utils';
 
 export const generateUpdateOneRecordMutation = ({

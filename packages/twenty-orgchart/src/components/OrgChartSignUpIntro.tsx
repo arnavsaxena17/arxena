@@ -1,5 +1,6 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
 import { IconSitemap } from '@tabler/icons-react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { formatOrgChartSliceLabel, type OrgChartNodeData } from 'twenty-shared/utils';
 
@@ -13,15 +14,10 @@ const StyledIconWrap = styled.div`
   justify-content: center;
   width: 48px;
   height: 48px;
-  margin: 0 auto ${({ theme }) => theme.spacing(2)};
+  margin: 0 auto ${themeCssVariables.spacing['2']};
   border-radius: 8px;
   background: #fafafa;
   color: #141414;
-`;
-
-const StyledSitemapIcon = styled(IconSitemap)`
-  width: 26px;
-  height: 26px;
 `;
 
 const StyledTitle = styled.h2`
@@ -196,7 +192,7 @@ export const OrgChartSignUpIntro = ({
   return (
     <StyledFormBody>
       <StyledIconWrap aria-hidden>
-        <StyledSitemapIcon stroke={1.5} />
+        <IconSitemap size={26} stroke={1.5} />
       </StyledIconWrap>
       <StyledTitle id={titleId}>
         Setup a free trial!

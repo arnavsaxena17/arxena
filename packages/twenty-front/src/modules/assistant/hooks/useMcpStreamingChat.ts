@@ -22,7 +22,7 @@ type UseMcpStreamingChatParams = {
   onMessageComplete?: () => void;
   onStreamMessage?: (type: string, data: unknown) => void;
   onAgentEvent?: (event: AssistantAgentEvent) => void;
-  onJobAttached?: (jobId: string) => void;
+  onJobAttached?: (projectId: string) => void;
   token?: string;
   baseUrl: string;
   /** Candidate IDs selected in the results DataTable; forwarded to the backend on each request */
@@ -562,10 +562,10 @@ export const useMcpStreamingChat = ({
 
       if (
         eventType === 'job_attached' &&
-        typeof (data as { jobId?: unknown }).jobId === 'string'
+        typeof (data as { projectId?: unknown }).projectId === 'string'
       ) {
-        const jobId = (data as { jobId: string }).jobId;
-        onJobAttached?.(jobId);
+        const projectId = (data as { projectId: string }).projectId;
+        onJobAttached?.(projectId);
       }
     },
     [

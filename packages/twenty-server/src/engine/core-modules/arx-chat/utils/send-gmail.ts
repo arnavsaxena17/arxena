@@ -1,4 +1,4 @@
-import { CandidateNode, Job } from 'twenty-shared';
+import { CandidateNode, Project } from 'twenty-shared';
 
 import { GmailSender } from 'src/engine/core-modules/gmail-sender/gmail-sender';
 import { MailerService } from 'src/engine/core-modules/gmail-sender/gmail-sender.service';
@@ -51,12 +51,12 @@ export class SendEmailFunctionality {
 export class EmailTemplates {
   async getInterviewInvitationTemplate(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     interviewLink: string,
   ) {
     console.log('Goign to try and create template');
-    const jobName = candidate?.jobs?.name;
-    const companyName = candidate?.jobs?.company?.name;
+    const jobName = candidate?.projects?.name;
+    const companyName = candidate?.projects?.company?.name;
 
     const template = `
       <div>

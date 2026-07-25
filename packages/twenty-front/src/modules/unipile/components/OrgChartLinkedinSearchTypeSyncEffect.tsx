@@ -5,12 +5,9 @@ import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChart
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
 import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import { useEffect, useRef } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import {
-    inferLinkedInSearchTypeFromUnipileOwnerProfile,
-    resolveLinkedinUnipileAccountIdForWorkspaceMember,
-    type UnipileAccountOwnerProfile,
-} from 'twenty-shared';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { inferLinkedInSearchTypeFromUnipileOwnerProfile, resolveLinkedinUnipileAccountIdForWorkspaceMember, type UnipileAccountOwnerProfile } from 'twenty-shared/utils';
 
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
@@ -22,20 +19,20 @@ import { applyInferredOrgChartLinkedinSearchType } from '../utils/applyInferredO
  * from connection-status (no extra users/me).
  */
 export const OrgChartLinkedinSearchTypeSyncEffect = () => {
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? '';
-  const orgChartLinkedinCandidateSource = useRecoilValue(
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+  const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
-  const workspaceMemberProfileUnipileFields = useRecoilValue(
+  const workspaceMemberProfileUnipileFields = useAtomStateValue(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const linkedinUnipileAccounts = useRecoilValue(linkedinUnipileAccountsState);
-  const ownerProfileCache = useRecoilValue(linkedinUnipileOwnerProfileCacheState);
-  const setOrgChartLinkedInSearchType = useSetRecoilState(
+  const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
+  const ownerProfileCache = useAtomStateValue(linkedinUnipileOwnerProfileCacheState);
+  const setOrgChartLinkedInSearchType = useSetAtomState(
     orgChartLinkedInSearchTypeState,
   );
-  const setOwnerProfileCache = useSetRecoilState(
+  const setOwnerProfileCache = useSetAtomState(
     linkedinUnipileOwnerProfileCacheState,
   );
   const inFlightAccountIdRef = useRef<string | null>(null);

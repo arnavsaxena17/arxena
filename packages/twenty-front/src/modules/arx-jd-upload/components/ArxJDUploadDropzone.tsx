@@ -1,10 +1,10 @@
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ReactNode } from 'react';
 import Dropzone, {
-    DropzoneRootProps,
-    FileRejection,
-    useDropzone,
+  DropzoneRootProps,
+  DropzoneState,
+  FileRejection,
+  useDropzone,
 } from 'react-dropzone';
 
 export type DropzoneRenderProps = {
@@ -32,7 +32,7 @@ export const ArxJDUploadDropzone = ({
   onDrop,
   children,
 }: ArxJDUploadDropzoneProps) => {
-  const { enqueueSnackBar } = useSnackBar();
+  const { enqueueErrorSnackBar } = useSnackBar();
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -66,12 +66,10 @@ export const ArxJDUploadDropzone = ({
 
       const dotCount = fileName.split('.').length - 1;
       if (dotCount > 1) {
-        enqueueSnackBar(
-          `Multiple dots (.) in your file name. Remove . from file name and try again.`,
-          {
-            variant: SnackBarVariant.Error,
-          },
-        );
+        enqueueErrorSnackBar({
+          message:
+            'Multiple dots (.) in your file name. Remove . from file name and try again.',
+        });
         return {
           code: 'multiple-dots',
           message:
@@ -118,7 +116,7 @@ export const ArxJDUploadDropzone = ({
           return null;
         }}
       >
-        {(props: DropzoneRenderProps) => {
+        {(props: DropzoneState) => {
           const { getRootProps, isDragActive } = props;
 
           // Add handlers for all mouse events to prevent propagation
@@ -146,29 +144,25 @@ export const ArxJDUploadDropzone = ({
           return (
             <div
               role="presentation"
-              onKeyDown={(e) => {
-                modalProps.onKeyDown && modalProps.onKeyDown(e);
-                e.stopPropagation();
+              onKeyDown={(event) => {
+                event.stopPropagation();
               }}
-              onFocus={modalProps.onFocus}
-              onBlur={modalProps.onBlur}
-              onDragEnter={(e) => {
-                modalProps.onDragEnter && modalProps.onDragEnter(e);
-                e.stopPropagation();
+              onDragEnter={(event) => {
+                modalProps.onDragEnter(event);
+                event.stopPropagation();
               }}
-              onDragOver={(e) => {
-                modalProps.onDragOver && modalProps.onDragOver(e);
-                e.stopPropagation();
+              onDragOver={(event) => {
+                modalProps.onDragOver(event);
+                event.stopPropagation();
               }}
-              onDragLeave={(e) => {
-                modalProps.onDragLeave && modalProps.onDragLeave(e);
-                e.stopPropagation();
+              onDragLeave={(event) => {
+                modalProps.onDragLeave(event);
+                event.stopPropagation();
               }}
-              onDrop={(e) => {
-                modalProps.onDrop && modalProps.onDrop(e);
-                e.stopPropagation();
+              onDrop={(event) => {
+                modalProps.onDrop(event);
+                event.stopPropagation();
               }}
-              tabIndex={modalProps.tabIndex}
               style={modalStyle}
             />
           );

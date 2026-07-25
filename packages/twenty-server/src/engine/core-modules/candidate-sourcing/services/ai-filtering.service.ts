@@ -20,7 +20,7 @@ export interface ProcessAiFiltersRequest {
   availableFilterDefinitions: any[];
   objectRecordId: string;
   selectedRecordIds: string[];
-  jobId: string;
+  projectId: string;
 }
 
 export interface ProcessAiFiltersResponse {
@@ -60,7 +60,7 @@ export class AiFilteringService {
 
       const {
         aiFilters,
-        jobId,
+        projectId,
         selectedRecordIds,
       } = request;
 
@@ -68,8 +68,8 @@ export class AiFilteringService {
         throw new Error('AI filters array is required');
       }
 
-      if (!jobId || jobId.trim().length === 0) {
-        throw new Error('Job ID is required');
+      if (!projectId || projectId.trim().length === 0) {
+        throw new Error('Project ID is required');
       }
 
       console.log('aiFilters:', aiFilters?.length);
@@ -99,7 +99,7 @@ export class AiFilteringService {
 
       for (const aiFilter of validAiFilters) {
         try {
-          await this.createOneAiFilter(aiFilter, request.jobId, apiToken);
+          await this.createOneAiFilter(aiFilter, request.projectId, apiToken);
         } catch (createError) {
           console.error('Error creating AI filter:', createError.message);
         }
@@ -112,7 +112,7 @@ export class AiFilteringService {
           (filter.selectedMetadataFields || []).includes('resume'),
       );
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
-        jobId,
+        projectId,
         selectedRecordIds,
         apiToken,
         { includeResumeText: needsResumeText },
@@ -154,7 +154,7 @@ export class AiFilteringService {
           modelName: e.modelName,
           prompt: e.prompt,
           selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
-          fields: e.fields || [],
+          fields: e.fields || e.filterFields || [],
           selectedMetadataFields: selectedMetadataFields.filter(
             (field) => field !== 'resume',
           ),
@@ -252,7 +252,7 @@ export class AiFilteringService {
 
   async createOneAiFilter(
     aiFilter: AiFilter,
-    jobId: string,
+    projectId: string,
     apiToken: string,
   ): Promise<any> {
     const selectedMetadataFields = [...(aiFilter.selectedMetadataFields || [])];
@@ -269,9 +269,9 @@ export class AiFilteringService {
         modelName: aiFilter.modelName,
         prompt: aiFilter.prompt,
         selectedModel: aiFilter.selectedModel,
-        fields: aiFilter.fields,
+        filterFields: aiFilter.fields,
         selectedMetadataFields,
-        jobId: jobId,
+        projectId: projectId,
       },
     };
 
@@ -294,7 +294,7 @@ export class AiFilteringService {
     totalCandidates: number;
   }> {
     try {
-      const { aiFilters, jobId, selectedRecordIds } = request;
+      const { aiFilters, projectId, selectedRecordIds } = request;
 
       const validAiFilters = aiFilters.filter(e => e.modelName && e.modelName.trim() !== '');
 
@@ -314,7 +314,7 @@ export class AiFilteringService {
       );
 
       const candidates = await this.candidateDataService.fetchCandidatesForJob(
-        jobId,
+        projectId,
         selectedRecordIds,
         apiToken,
         { includeResumeText: needsResumeText },
@@ -338,7 +338,7 @@ export class AiFilteringService {
           modelName: e.modelName,
           prompt: e.prompt,
           selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
-          fields: e.fields || [],
+          fields: e.fields || e.filterFields || [],
           selectedMetadataFields: selectedMetadataFields.filter(
             (field) => field !== 'resume',
           ),

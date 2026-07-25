@@ -1,7 +1,4 @@
-import {
-  FieldMetadataType,
-  type RecordGqlOperationFilter,
-} from 'twenty-shared/types';
+import { FieldMetadataType, type RecordGqlOperationFilter } from 'twenty-shared/types';
 
 type CalendarDateField = {
   name: string;

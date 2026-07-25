@@ -1,6 +1,8 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useCallback, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 export type LinkedInSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 export type LinkedInSearchCategory = 'people' | 'companies' | 'posts' | 'jobs';
 
@@ -29,7 +31,7 @@ export interface ParsedJobDescription {
 }
 
 export const useSearchParameters = () => {
-  const [tokenPair] = useRecoilState(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
@@ -42,19 +44,19 @@ export const useSearchParameters = () => {
     searchCategory: LinkedInSearchCategory,
     assistantThreadId: string,
   ): Promise<any> => {
-    if (!tokenPair?.accessToken?.token) {
+    if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       throw new Error('No authentication token available');
     }
 
     setIsGenerating(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/pipeline/generate-unresolved-search-parameters`,
+        `${REACT_APP_SERVER_BASE_URL}/candidate-search/pipeline/generate-unresolved-search-parameters`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenPair.accessToken.token}`,
+            'Authorization': `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
           body: JSON.stringify({
             parsedJobDescription,
@@ -79,7 +81,7 @@ export const useSearchParameters = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   /**
    * Resolve search parameters to LinkedIn IDs
@@ -89,19 +91,19 @@ export const useSearchParameters = () => {
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory
   ): Promise<any> => {
-    if (!tokenPair?.accessToken?.token) {
+    if (!tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       throw new Error('No authentication token available');
     }
 
     setIsResolving(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
+        `${REACT_APP_SERVER_BASE_URL}/candidate-search/resolve-parameters`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenPair.accessToken.token}`,
+            'Authorization': `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
           body: JSON.stringify({
             searchParameters,
@@ -127,7 +129,7 @@ export const useSearchParameters = () => {
     } finally {
       setIsResolving(false);
     }
-  }, [tokenPair?.accessToken?.token]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   /**
    * Generate and resolve search parameters in one operation

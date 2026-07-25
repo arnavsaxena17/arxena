@@ -91,15 +91,15 @@ export class ChatFlowConfigBuilder {
     
     // Add debug logging for candidate properties
     console.log("Candidate properties for", candidate.name, ":", {
-      jobs: candidate.jobs,
-      isActive: candidate.jobs?.isActive,
+      projects: candidate.projects,
+      isActive: candidate.projects?.isActive,
       startChat: candidate.startChat,
       startChatCompleted: candidate.startChatCompleted,
       chatCount: candidate.chatCount,
       updatedAt: candidate.updatedAt
     });
     
-    const isActive = candidate.jobs?.isActive;
+    const isActive = candidate.projects?.isActive;
     if (!isActive) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because jobs?.isActive is false");
       return false;
@@ -204,7 +204,7 @@ export class ChatFlowConfigBuilder {
       startChatCompleted: candidate.startChatCompleted,
       chatCount: candidate.chatCount,
       updatedAt: candidate.updatedAt,
-      jobs: candidate.jobs
+      projects: candidate.projects
     });
     
     if (candidate.engagementStatus === false) {

@@ -1,8 +1,5 @@
 import { getToolName, isToolUIPart } from 'ai';
-import {
-  ASK_QUESTIONS_TOOL_NAME,
-  type AskQuestionsToolResult,
-} from 'twenty-shared/ai';
+import { ASK_QUESTIONS_TOOL_NAME, type AskQuestionsToolResult } from 'twenty-shared/ai';
 
 import { AgentChatComponentInstanceContext } from '@/ai/contexts/AgentChatComponentInstanceContext';
 import { agentChatDisplayedThreadState } from '@/ai/states/agentChatDisplayedThreadState';

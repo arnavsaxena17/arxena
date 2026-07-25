@@ -1,8 +1,9 @@
-import { Button } from 'twenty-ui';
-import { IconMinus, IconPlus } from 'twenty-ui/icons';
+import { Button } from 'twenty-ui/input';
+import { IconMinus, IconPlus } from 'twenty-ui/icon';
 import React from 'react';
 
 import { FormComponentProps } from '../types/FormComponentProps';
+import { ParsedJD } from '../types/ParsedJD';
 import {
   StyledInput,
   StyledLabel,
@@ -20,10 +21,13 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
-  // Prevent hotkey propagation when typing in inputs
   const handleKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
+
+  if (!parsedJD) {
+    return null;
+  }
 
   const handleVideoQuestionAdd = () => {
     const currentQuestions = parsedJD.videoInterview?.questions?.length
@@ -36,7 +40,7 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
         ...parsedJD.videoInterview,
         questions: [...currentQuestions, ''],
       },
-    });
+    } as ParsedJD);
   };
 
   const handleVideoQuestionRemove = (index: number) => {
@@ -48,9 +52,9 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
       ...parsedJD,
       videoInterview: {
         ...parsedJD.videoInterview,
-        questions: currentQuestions.filter((_, i) => i !== index),
+        questions: currentQuestions.filter((_, questionIndex) => questionIndex !== index),
       },
-    });
+    } as ParsedJD);
   };
 
   const displayQuestions = parsedJD.videoInterview?.questions?.length
@@ -69,9 +73,9 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
           >
             <StyledInput
               value={question}
-              onChange={(e) => {
+              onChange={(event) => {
                 const questions = [...displayQuestions];
-                questions[index] = e.target.value;
+                questions[index] = event.target.value;
 
                 setParsedJD({
                   ...parsedJD,
@@ -79,7 +83,7 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
                     ...parsedJD.videoInterview,
                     questions,
                   },
-                });
+                } as ParsedJD);
               }}
               placeholder="Enter question"
               onKeyDown={handleKeyDown}
@@ -97,9 +101,7 @@ export const VideoQuestionsSection: React.FC<FormComponentProps> = ({
           title="Add Question"
           Icon={IconPlus}
           onClick={handleVideoQuestionAdd}
-        >
-          Add Question
-        </Button>
+        />
       </StyledSectionContent>
     </StyledSection>
   );

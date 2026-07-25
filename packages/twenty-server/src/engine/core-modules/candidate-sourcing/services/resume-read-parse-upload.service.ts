@@ -201,7 +201,7 @@ export class ResumeReadParseUploadService {
    */
   async processResumeFiles(
     filePaths: string[],
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     origin: string,
@@ -217,7 +217,7 @@ export class ResumeReadParseUploadService {
     let processedCount = 0;
     let errorCount = 0;
 
-    this.logger.log(`Processing ${filePaths.length} resume files for job ${jobId}`);
+    this.logger.log(`Processing ${filePaths.length} resume files for job ${projectId}`);
 
     try {
       // Step 1: Read all resume files
@@ -251,7 +251,7 @@ export class ResumeReadParseUploadService {
       // Step 3: Transform parsed CVs to UserProfile format
       const userProfiles = await this.transformParsedCVsToUserProfiles(
         parsedCVs,
-        jobId,
+        projectId,
         jobName,
         userId,
         timestamp,
@@ -263,7 +263,7 @@ export class ResumeReadParseUploadService {
       await this.processCandidatesService.queueRawDataForProcessing(
         userProfiles,
         'parsed_cv',
-        jobId,
+        projectId,
         jobName,
         userId,
         timestamp,
@@ -447,7 +447,7 @@ export class ResumeReadParseUploadService {
    */
   private async transformParsedCVsToUserProfiles(
     parsedCVs: ParsedCVData[],
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     timestamp: string,
@@ -457,7 +457,7 @@ export class ResumeReadParseUploadService {
     for (const parsedCV of parsedCVs) {
       try {
         const transformationContext = {
-          jobId,
+          projectId,
           jobName,
           userId,
           dataSource: 'parsed_cv',
@@ -493,9 +493,9 @@ export class ResumeReadParseUploadService {
    */
   async saveUploadedFiles(
     files: Express.Multer.File[],
-    jobId: string,
+    projectId: string,
   ): Promise<string[]> {
-    const uploadDir = path.join(process.cwd(), 'temp', 'resumes', jobId);
+    const uploadDir = path.join(process.cwd(), 'temp', 'resumes', projectId);
     
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {

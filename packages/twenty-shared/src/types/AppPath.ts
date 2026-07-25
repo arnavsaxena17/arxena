@@ -38,8 +38,8 @@ export enum AppPath {
 
   // Arxena product routes (ported from workflows)
   OrgChart = 'org-chart',
-  Jobs = 'jobs',
-  Job = 'job/:jobId',
+  Projects = 'projects',
+  Project = 'project/:projectId',
   Search = 'search',
   Assistant = 'assistant',
   ClientCandidateSearch = 'candidate-search',
@@ -48,7 +48,7 @@ export enum AppPath {
   Hot = 'hot',
   GoogleSheet = 'GoogleSheet',
   CustomLayoutCandidate = 'custom-layout-candidate',
-  CustomLayoutJob = 'custom-layout-job',
+  CustomLayoutProject = 'custom-layout-project',
   CustomLayoutMerged = 'custom-layout-merged',
 
   // 404 page not found

@@ -15,10 +15,7 @@ import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components
 import { useMutation } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
 import { useState } from 'react';
-import {
-  type AgentResponseSchema,
-  type ModelConfiguration,
-} from 'twenty-shared/ai';
+import type { AgentResponseSchema, ModelConfiguration } from 'twenty-shared/ai';
 import { useDebouncedCallback } from 'use-debounce';
 import {
   UpdateOneAgentDocument,

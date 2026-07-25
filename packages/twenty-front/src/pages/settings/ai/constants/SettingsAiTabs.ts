@@ -5,6 +5,7 @@ export const SETTINGS_AI_TABS = {
     MODELS: 'models',
     SKILLS: 'skills',
     TOOLS: 'tools',
+    MCP_SERVERS: 'mcp-servers',
     USAGE: 'usage',
   },
 } as const;

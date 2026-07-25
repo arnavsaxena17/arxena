@@ -1,12 +1,15 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { InterviewDataJobTemplate, queryByvideoInterview, VideoInterviewResponseViewerProps } from 'twenty-shared';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import type { InterviewDataJobTemplate, VideoInterviewResponseViewerProps } from 'twenty-shared/arx';
+import { queryByvideoInterview } from 'twenty-shared/graphql';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
-const StyledContainer = styled.div<{ theme: any }>`
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
+const StyledContainer = styled.div`
   background-color: white;
   width: 100%;
   padding: 20px;
@@ -63,8 +66,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   const [interviewData, setInterviewData] = useState<InterviewDataJobTemplate | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const theme = useTheme();
-  const [tokenPair] = useRecoilState(tokenPairState);
+    const tokenPair = useAtomStateValue(tokenPairState);
   // Clean up IDs from paths
   const cleanId = (id: string) => (id.includes('/') ? id.split('/').pop() : id);
 
@@ -72,11 +74,11 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     try {
       // Try videoInterviewStatusId first
       if (videoInterviewId) {
-        const response = await fetch(`${process.env.REACT_APP_SERVER_BASE_URL}/graphql`, {
+        const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/graphql`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenPair?.accessToken?.token}`,
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
           },
           body: JSON.stringify({
             query: queryByvideoInterview,
@@ -119,13 +121,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewTemplate.videoInterviewQuestions);
     const transformedData: InterviewDataJobTemplate =  {
       job: {
-        id: candidate?.jobs?.id,
+        id: candidate?.projects?.id,
         company: {
-          name: candidate?.jobs?.company?.name,
-          id: candidate?.jobs?.company?.id || '',
-          domainName: candidate?.jobs?.company?.domainName || '',
+          name: candidate?.projects?.company?.name,
+          id: candidate?.projects?.company?.id || '',
+          domainName: candidate?.projects?.company?.domainName || '',
         },
-        name: candidate?.jobs?.name || '',
+        name: candidate?.projects?.name || '',
         recruiterId: '',
         jobLocation: '',
         jobCode: '',
@@ -176,7 +178,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
       return;
     }
     fetchInterviewData();
-  }, [videoInterviewId, tokenPair?.accessToken?.token]);
+  }, [videoInterviewId, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -245,7 +247,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
   };
 
   return (
-    <StyledContainer theme={theme}>
+    <StyledContainer>
       <CompanyInfo>
         <h2>{interviewData.job?.company?.name}</h2>
         <h3>{interviewData.job?.name}</h3>
@@ -272,7 +274,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
                   <VideoDownloaderPlayer 
-                    // videoUrl={`${process.env.REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
+                    // videoUrl={`${REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
                     videoUrl={`${videoUrl}`} 
                   />
                   {response.transcript && (

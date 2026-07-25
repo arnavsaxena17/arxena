@@ -21,7 +21,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
-  Job,
+  Project,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
@@ -112,7 +112,7 @@ export class MessagingControls {
   async sendWhatsappMessageToCandidate(
     messageText: string,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     functionSource: string,
     chatControl: ChatControlsObjType,
@@ -146,7 +146,7 @@ export class MessagingControls {
       );
       
       // const candidateNode = personNode?.candidates?.edges?.find(
-      //   (edge) => edge.node.jobs.id == candidateJob.id,
+      //   (edge) => edge.node.projects.id == candidateJob.id,
       // )?.node;
 
       if (!candidate) {
@@ -276,7 +276,7 @@ export class MessagingControls {
   async sendWhatsappMessage(
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -498,7 +498,7 @@ export class MessagingControls {
       return { status: 'failed', message: 'Candidate not found' };
     }
 
-    const candidateJob = candidateNode?.jobs as Job;
+    const candidateJob = candidateNode?.projects as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -557,7 +557,7 @@ export class MessagingControls {
   async sendAttachmentMessageOnWhatsapp(
     attachmentMessage: AttachmentMessageObject,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -650,7 +650,7 @@ export class MessagingControls {
 
   async sendJDViaWhatsapp(
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     attachment: Attachment,
     chatControl: ChatControlsObjType,
     apiToken: string,
@@ -664,11 +664,11 @@ export class MessagingControls {
 
     const fullPath = attachment.fullPath;
     const name = attachment.name || 'attachment.pdf';
-    const jobIdForPath = attachment.jobId ?? candidateJob.id;
+    const projectIdForPath = attachment.projectId ?? candidateJob.id;
     const localFilePath = path.join(
       process.cwd(),
       '.attachments',
-      jobIdForPath,
+      projectIdForPath,
       `${candidate.id}_${name}`,
     );
 
@@ -757,7 +757,7 @@ export class MessagingControls {
   async sendAttachmentExtSockWhatsapp(
     attachmentMessage: AttachmentMessageObject,
     candidate: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
@@ -780,7 +780,7 @@ export class MessagingControls {
 
         // Add extension_id to form data - extract from apiToken or add as needed
         // formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
-        // @ts-ignore
+        // @ts-expect-error
         formData.append( 'file', new Blob([fileBuffer]), attachmentMessage.fileData.fileName, );
 
         console.log('attachmentMessage:', attachmentMessage);

@@ -19,7 +19,7 @@ export class ProcessResumeUploadsService {
    */
   async queueResumeUpload(
     filePaths: string[],
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     origin: string,
@@ -36,7 +36,7 @@ export class ProcessResumeUploadsService {
 
       const jobData: ProcessResumeUploadsJobData = {
         filePaths,
-        jobId,
+        projectId,
         jobName,
         userId,
         apiToken,
@@ -45,14 +45,14 @@ export class ProcessResumeUploadsService {
       };
 
       // Create unique job ID to prevent duplicate processing
-      const uniqueJobId = `resume-upload-${jobId}-${userId}`;
+      const uniqueProjectId = `resume-upload-${projectId}-${userId}`;
       
       await this.messageQueueService.add<ProcessResumeUploadsJobData>(
         ResumeUploadQueueProcessor.name,
         jobData,
         {
           ...queueJobOptions,
-          id: uniqueJobId, // Add unique ID to prevent duplicates
+          id: uniqueProjectId, // Add unique ID to prevent duplicates
         },
       );
 

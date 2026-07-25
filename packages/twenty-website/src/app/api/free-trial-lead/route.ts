@@ -3,7 +3,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import {
   isAllowedEmailForNewWorkspaceSignup,
   WORK_EMAIL_REQUIRED_MESSAGE,
-} from 'twenty-shared';
+} from 'twenty-shared/utils';
 
 import {
   FreeTrialLeadPayload,

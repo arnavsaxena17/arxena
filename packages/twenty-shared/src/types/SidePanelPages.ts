@@ -28,4 +28,5 @@ export enum SidePanelPages {
   PageLayoutRecordPageWidgetTypeSelect = 'page-layout-record-page-widget-type-select',
   ComposeEmail = 'compose-email',
   ComposeCampaign = 'compose-campaign',
+  CandidateChat = 'candidate-chat',
 }

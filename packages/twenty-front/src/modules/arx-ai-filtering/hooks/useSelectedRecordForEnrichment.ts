@@ -1,51 +1,45 @@
-import { currentJobIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { MAIN_CONTEXT_STORE_INSTANCE_ID } from '@/context-store/constants/MainContextStoreInstanceId';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
-import { mainContextStoreComponentInstanceIdState } from '@/context-store/states/mainContextStoreComponentInstanceId';
-import { useRecoilComponentValueV2 } from '@/ui/utilities/state/component-state/hooks/useRecoilComponentValueV2';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-
 
 export const useSelectedRecordForEnrichment = () => {
-  // Get URL params - for chat/job pages
   const { candidateId } = useParams<{ candidateId: string }>();
   const location = useLocation();
-  const isChatsPage = location.pathname.includes('/chats') || location.pathname.includes('/job/');
-  const setCurrentJobId = useSetRecoilState(currentJobIdState);
+  const isChatsPage =
+    location.pathname.includes('/chats') ||
+    location.pathname.includes('/project/');
+  const setCurrentProjectId = useSetAtomState(currentProjectIdState);
 
-  // For record index pages
-  const mainContextStoreComponentInstanceId = useRecoilValue(
-    mainContextStoreComponentInstanceIdState,
-  );
-
-  const contextStoreTargetedRecordsRule = useRecoilComponentValueV2(
+  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
-    mainContextStoreComponentInstanceId,
+    MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
 
-  // Extract job ID from URL if on job page
   useEffect(() => {
-    if (location.pathname.includes('/job/')) {
-      const pathParts = location.pathname.split('/job/');
+    if (location.pathname.includes('/project/')) {
+      const pathParts = location.pathname.split('/project/');
       if (pathParts.length > 1) {
-        const jobId = pathParts[1].split('/')[0];
-        setCurrentJobId(jobId);
+        const projectId = pathParts[1].split('/')[0];
+        setCurrentProjectId(projectId);
       }
     }
-  }, [location.pathname, setCurrentJobId]);
+  }, [location.pathname, setCurrentProjectId]);
 
-  // First try to get from URL params (for chats/job pages), then from the contextStore (for record index)
-  const selectedRecordId = isChatsPage && candidateId
-    ? candidateId
-    : (contextStoreTargetedRecordsRule.mode === 'selection' && 
-       contextStoreTargetedRecordsRule.selectedRecordIds.length > 0)
-      ? contextStoreTargetedRecordsRule.selectedRecordIds[0]
-      : '0';
+  const selectedRecordId =
+    isChatsPage && candidateId
+      ? candidateId
+      : contextStoreTargetedRecordsRule.mode === 'selection' &&
+          contextStoreTargetedRecordsRule.selectedRecordIds.length > 0
+        ? contextStoreTargetedRecordsRule.selectedRecordIds[0]
+        : '0';
 
   return {
     selectedRecordId,
     hasSelectedRecord: selectedRecordId !== '0',
     isChatsPage,
   };
-}; 
+};

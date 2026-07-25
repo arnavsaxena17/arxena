@@ -26,7 +26,7 @@ export class OrgChartClientIpService {
   } | null = null;
 
   constructor(
-    @InjectRepository(OrgChartClientIpRuleEntity, 'core')
+    @InjectRepository(OrgChartClientIpRuleEntity)
     private readonly ruleRepository: Repository<OrgChartClientIpRuleEntity>,
   ) {}
 

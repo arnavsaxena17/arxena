@@ -14,7 +14,7 @@ import {
 } from 'twenty-shared';
 
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import { LinkedinUnipileAccountCleanupContext } from '../types/linkedin-unipile-account-cleanup.types';
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
@@ -580,7 +580,7 @@ export class MemberLinkedinUnipileConnectionService {
 
   async listWhatsappAccountsForMemberStatus(
     profile: WorkspaceMemberProfileUnipileFields | null,
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
   ): Promise<UnipileWhatsappAccount[]> {
     const { accounts } =
       await this.whatsappUnipileRequestService.getAllAccounts(workspace);
@@ -608,7 +608,7 @@ export class MemberLinkedinUnipileConnectionService {
 
   async isWhatsappConnectedForProfile(
     profile: WorkspaceMemberProfileUnipileFields | null,
-    workspace: Workspace,
+    workspace : WorkspaceEntity,
   ): Promise<boolean> {
     if (!profile) {
       return false;

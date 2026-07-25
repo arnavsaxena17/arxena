@@ -5,7 +5,10 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
 const SEARCH_RESULTS_CACHE_TTL_SECONDS = 3 * 30 * 24 * 60 * 60; // 3 months
-const MAX_CANDIDATES_PER_JOB = 500;
+const MAX_CANDIDATES_PER_PROJECT = 500;
+
+const isPlaceholderProjectId = (projectId: string): boolean =>
+  projectId === 'job-id' || projectId === 'project-id';
 
 export type SearchResultsCachePayload = {
   results: any[];
@@ -18,8 +21,17 @@ export type SearchResultsCachePayload = {
     searchCategory?: string;
     searchParameters?: any;
   };
-  jobId: string;
+  projectId: string;
   cachedAt: number;
+};
+
+// Pre-rename Redis payloads stored `jobId` instead of `projectId`
+type LegacySearchResultsCachePayload = Omit<
+  SearchResultsCachePayload,
+  'projectId'
+> & {
+  projectId?: string;
+  jobId?: string;
 };
 
 @Injectable()
@@ -29,50 +41,61 @@ export class SearchResultsCacheService {
     private readonly cache: CacheStorageService,
   ) {}
 
-  cacheKey(workspaceId: string, jobId: string): string {
-    return `${workspaceId}:${jobId}`;
+  cacheKey(workspaceId: string, projectId: string): string {
+    return `${workspaceId}:${projectId}`;
   }
 
   async get(
     workspaceId: string,
-    jobId: string,
+    projectId: string,
   ): Promise<SearchResultsCachePayload | undefined> {
-    if (!workspaceId || !jobId || jobId === 'job-id') {
+    if (!workspaceId || !projectId || isPlaceholderProjectId(projectId)) {
       return undefined;
     }
-    const key = this.cacheKey(workspaceId, jobId);
-    const payload = await this.cache.get<SearchResultsCachePayload>(key);
-    if (!payload || payload.jobId !== jobId) {
+    const key = this.cacheKey(workspaceId, projectId);
+    const payload =
+      await this.cache.get<LegacySearchResultsCachePayload>(key);
+    if (!payload) {
       return undefined;
     }
-    return payload;
+    // Accept legacy `jobId` so Job→Project rename does not orphan Redis entries
+    const cachedProjectId = payload.projectId ?? payload.jobId;
+    if (cachedProjectId !== projectId) {
+      return undefined;
+    }
+    return {
+      results: payload.results,
+      metadata: payload.metadata,
+      projectId: cachedProjectId,
+      cachedAt: payload.cachedAt,
+    };
   }
 
   async set(
     workspaceId: string,
-    jobId: string,
+    projectId: string,
     results: any[],
     metadata: SearchResultsCachePayload['metadata'],
   ): Promise<void> {
-    if (!workspaceId || !jobId || jobId === 'job-id') {
+    if (!workspaceId || !projectId || isPlaceholderProjectId(projectId)) {
       return;
     }
     const limitedResults =
-      results.length > MAX_CANDIDATES_PER_JOB
-        ? results.slice(0, MAX_CANDIDATES_PER_JOB)
+      results.length > MAX_CANDIDATES_PER_PROJECT
+        ? results.slice(0, MAX_CANDIDATES_PER_PROJECT)
         : results;
     const payload: SearchResultsCachePayload = {
       results: limitedResults,
       metadata,
-      jobId,
+      projectId,
       cachedAt: Date.now(),
     };
-    const key = this.cacheKey(workspaceId, jobId);
+    const key = this.cacheKey(workspaceId, projectId);
     await this.cache.set(key, payload, SEARCH_RESULTS_CACHE_TTL_SECONDS);
   }
 
-  async delete(workspaceId: string, jobId: string): Promise<void> {
-    if (!workspaceId || !jobId) return;
-    await this.cache.del(this.cacheKey(workspaceId, jobId));
+  async delete(workspaceId: string, projectId: string): Promise<void> {
+    if (!workspaceId || !projectId) return;
+    await this.cache.del(this.cacheKey(workspaceId, projectId));
   }
 }

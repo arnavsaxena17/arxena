@@ -33,7 +33,10 @@ type LeftContainerProps = {
 
 const StyledLeftContainer = styled.div<LeftContainerProps>`
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
+  min-width: 0;
   position: relative;
   width: 100%;
 `;

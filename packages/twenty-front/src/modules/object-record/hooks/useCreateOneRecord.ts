@@ -18,10 +18,7 @@ import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions
 import { useRefetchAggregateQueries } from '@/object-record/hooks/useRefetchAggregateQueries';
 import { useUpsertRecordsInStore } from '@/object-record/record-store/hooks/useUpsertRecordsInStore';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
-import {
-  type ObjectRecord as ObjectRecordShared,
-  type RecordGqlOperationGqlRecordFields,
-} from 'twenty-shared/types';
+import type { ObjectRecord as ObjectRecordShared, RecordGqlOperationGqlRecordFields } from 'twenty-shared/types';
 
 import { type BaseObjectRecord } from '@/object-record/types/BaseObjectRecord';
 import { computeOptimisticCreateRecordBaseRecordInput } from '@/object-record/utils/computeOptimisticCreateRecordBaseRecordInput';

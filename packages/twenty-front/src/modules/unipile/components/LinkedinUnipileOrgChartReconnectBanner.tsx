@@ -1,9 +1,10 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared';
-import { Button } from 'twenty-ui';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared/constants';
+import { Button } from 'twenty-ui/input';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
@@ -16,11 +17,11 @@ import { tryExtensionLinkedinUnipileRecovery } from '../utils/linkedinUnipileExt
 const LINKEDIN_OPEN_URL = 'https://www.linkedin.com/feed/';
 
 const StyledLinkedinInlineLink = styled.a`
-  color: ${({ theme }) => theme.color.blue};
+  color: ${themeCssVariables.color.blue};
   text-decoration: underline;
 
   &:hover {
-    color: ${({ theme }) => theme.color.blue};
+    color: ${themeCssVariables.color.blue};
   }
 `;
 
@@ -29,18 +30,18 @@ const StyledBanner = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background: ${({ theme }) => theme.background.secondary};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.light};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  background: ${themeCssVariables.background.secondary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   flex-shrink: 0;
 `;
 
@@ -56,11 +57,11 @@ export const LinkedinUnipileOrgChartReconnectBanner = ({
   isExtensionInstalled,
 }: LinkedinUnipileOrgChartReconnectBannerProps) => {
   const { t } = useLingui();
-  const orgChartLinkedinSource = useRecoilValue(
+  const orgChartLinkedinSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
-  const tokenPair = useRecoilValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token ?? '';
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
   const { isLinkedinConnected, refreshAccounts } = useUnipile();
   const [isRetrying, setIsRetrying] = useState(false);
   const [linkedinSyncFailedAfterRetry, setLinkedinSyncFailedAfterRetry] =

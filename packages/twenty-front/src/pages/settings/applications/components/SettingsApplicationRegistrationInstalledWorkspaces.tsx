@@ -1,5 +1,5 @@
-import styled from '@emotion/styled';
 import { useQuery } from '@apollo/client/react';
+import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { useDebounce } from 'use-debounce';

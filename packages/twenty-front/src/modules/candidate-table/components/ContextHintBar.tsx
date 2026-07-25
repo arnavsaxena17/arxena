@@ -1,89 +1,90 @@
-import { IconDatabase, IconTrash } from 'twenty-ui/icons';
+import { IconDatabase, IconTrash } from 'twenty-ui/icon';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { fetchedCandidatesCountSelector } from '@/candidate-search/states/searchResultsState';
-import styled from '@emotion/styled';
-import { IconBulb } from 'twenty-ui/icons';
-import { useRecoilValue } from 'recoil';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconBolt } from 'twenty-ui/icon';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledContextHintBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledContextInfo = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledHintSection = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[2]};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledHintIcon = styled.div`
-  color: ${({ theme }) => theme.color.orange};
+  color: ${themeCssVariables.color.orange};
 `;
 
 const StyledActionButtons = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease;
   
-  ${({ variant, theme }) => {
+  ${({ variant }) => {
     switch (variant) {
       case 'primary':
         return `
-          background-color: ${theme.color.blue};
+          background-color: ${themeCssVariables.color.blue};
           color: white;
-          border-color: ${theme.color.blue};
+          border-color: ${themeCssVariables.color.blue};
           
           &:hover {
-            background-color: ${theme.color.blue60};
-            border-color: ${theme.color.blue60};
+            background-color: ${themeCssVariables.color.blue6};
+            border-color: ${themeCssVariables.color.blue6};
           }
         `;
       case 'danger':
         return `
-          background-color: ${theme.color.red};
+          background-color: ${themeCssVariables.color.red};
           color: white;
-          border-color: ${theme.color.red};
+          border-color: ${themeCssVariables.color.red};
           
           &:hover {
-            background-color: ${theme.color.red60};
-            border-color: ${theme.color.red60};
+            background-color: ${themeCssVariables.color.red6};
+            border-color: ${themeCssVariables.color.red6};
           }
         `;
       default:
         return `
-          background-color: ${theme.background.primary};
-          color: ${theme.font.color.primary};
+          background-color: ${themeCssVariables.background.primary};
+          color: ${themeCssVariables.font.color.primary};
           
           &:hover {
-            background-color: ${theme.background.secondary};
-            border-color: ${theme.border.color.strong};
+            background-color: ${themeCssVariables.background.secondary};
+            border-color: ${themeCssVariables.border.color.strong};
           }
         `;
     }
@@ -103,8 +104,8 @@ export const ContextHintBar = ({
   onDiscard,
   className 
 }: ContextHintBarProps) => {
-  const fetchedCount = useRecoilValue(fetchedCandidatesCountSelector);
-  const parsedJD = useRecoilValue(parsedJDSelector);
+  const fetchedCount = useAtomStateValue(fetchedCandidatesCountSelector);
+  const parsedJD = useAtomStateValue(parsedJDSelector);
 
   // Determine hint based on current state
   const getHint = () => {
@@ -116,7 +117,7 @@ export const ContextHintBar = ({
 
   const getHintIcon = () => {
     if (fetchedCount > 0) {
-      return <IconBulb size={16} />;
+      return <IconBolt size={16} />;
     }
     return <IconDatabase size={16} />;
   };
@@ -143,7 +144,7 @@ export const ContextHintBar = ({
         <StyledActionButtons>
           {onCreateEnrichment && (
             <StyledActionButton onClick={onCreateEnrichment}>
-              <IconBulb size={14} />
+              <IconBolt size={14} />
               Create Enrichment
             </StyledActionButton>
           )}

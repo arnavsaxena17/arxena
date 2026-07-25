@@ -409,7 +409,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   private processResdexSpecificData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
     // Add notice period information if available
     if (candidateData.noticePeriod || candidateData.notice_period) {
-      // this.addJobProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
+      // this.addProjectProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
     }
     
     // Add last modified date
@@ -420,12 +420,12 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
       if (formattedDate) {
         userProfile.lastUpdated = formattedDate;
       }
-      // this.addJobProcessEvent(userProfile, 'naukri_modified_date', candidateData.modifyDateLabel || candidateData.modify_date_label);
+      // this.addProjectProcessEvent(userProfile, 'naukri_modified_date', candidateData.modifyDateLabel || candidateData.modify_date_label);
     }
     
     // Add active date from Naukri
     if (candidateData.activeDateLabel || candidateData.active_date_label) {
-      // this.addJobProcessEvent(userProfile, 'naukri_active_date', candidateData.activeDateLabel || candidateData.active_date_label);
+      // this.addProjectProcessEvent(userProfile, 'naukri_active_date', candidateData.activeDateLabel || candidateData.active_date_label);
     }
     
     // Process industry information
@@ -445,18 +445,18 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     
     if (photoUrl) {
       userProfile.displayPicture = photoUrl;
-      // this.addJobProcessEvent(userProfile, 'profile_picture', photoUrl);
+      // this.addProjectProcessEvent(userProfile, 'profile_picture', photoUrl);
     }
     
     // Process dynamic encrypted unique ID for profile URL
     if (candidateData.dynamicEncryptedUniqueId) {
       const resdexProfileUrl = `https://resdex.naukri.com/v3/preview?uniqId=${candidateData.dynamicEncryptedUniqueId}`;
-      // this.addJobProcessEvent(userProfile, 'resdex_profile_url', resdexProfileUrl);
+      // this.addProjectProcessEvent(userProfile, 'resdex_profile_url', resdexProfileUrl);
     }
     
     // Process candidate profile URL if available
     if (candidateData.candidate_profile) {
-      // this.addJobProcessEvent(userProfile, 'candidate_profile_url', candidateData.candidate_profile);
+      // this.addProjectProcessEvent(userProfile, 'candidate_profile_url', candidateData.candidate_profile);
     }
     
     // Set unique ID if available
@@ -469,14 +469,14 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const previousEmployment = candidateData.employment?.previous;
     
     if (currentEmployment) {
-      // this.addJobProcessEvent(userProfile, 'current_employment', {
+      // this.addProjectProcessEvent(userProfile, 'current_employment', {
       //   organization: currentEmployment.organization,
       //   designation: currentEmployment.designation,
       // });
     }
     
     if (previousEmployment) {
-      // this.addJobProcessEvent(userProfile, 'previous_employment', {
+      // this.addProjectProcessEvent(userProfile, 'previous_employment', {
         // organization: previousEmployment.organization,
       //   designation: previousEmployment.designation,
       // });
@@ -486,7 +486,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     const education = candidateData.education;
     if (education) {
       // if (education.pg) {
-        // this.addJobProcessEvent(userProfile, 'pg_education', {
+        // this.addProjectProcessEvent(userProfile, 'pg_education', {
           // institute: education.pg.institute,
         //   course: education.pg.course,
         //   year: education.pg.year,
@@ -494,7 +494,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
       // } 
       
       // if (education.ug) {
-        // this.addJobProcessEvent(userProfile, 'ug_education', {
+        // this.addProjectProcessEvent(userProfile, 'ug_education', {
           // institute: education.ug.institute,
         //   course: education.ug.course,
         //   year: education.ug.year,
@@ -505,7 +505,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     // Process CTC information
     if (candidateData.ctcInfo) {
       const ctcInfo = candidateData.ctcInfo;
-      // this.addJobProcessEvent(userProfile, 'ctc_info', {
+      // this.addProjectProcessEvent(userProfile, 'ctc_info', {
       //   lacs: ctcInfo.lacs,
       //   thousands: ctcInfo.thousands,
       //   currency: ctcInfo.currency,
@@ -514,7 +514,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     
     // Process experience in years and months
     if (candidateData.experience) {
-      // this.addJobProcessEvent(userProfile, 'experience_breakdown', {
+      // this.addProjectProcessEvent(userProfile, 'experience_breakdown', {
       //   years: candidateData.experience.years,
       //   months: candidateData.experience.months,
       // });
@@ -529,7 +529,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     
     additionalFields.forEach(field => {
       if (candidateData[field]) {
-        // this.addJobProcessEvent(userProfile, field, candidateData[field]);
+        // this.addProjectProcessEvent(userProfile, field, candidateData[field]);
       }
     });
   }
@@ -537,7 +537,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   /**
    * Add event to job process - utility method for UserProfile
    */
-  // protected addJobProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
     // if (value !== null && value !== undefined && value !== '') {
     //   if (!userProfile.job_process_events) {
     //     userProfile.job_process_events = [];

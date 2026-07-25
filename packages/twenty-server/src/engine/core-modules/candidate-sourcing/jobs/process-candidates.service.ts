@@ -29,7 +29,7 @@ export class ProcessCandidatesService {
   async queueRawDataForProcessing(
     rawCandidatesData: any[],
     dataSource: string,
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     timestamp: string,
@@ -50,7 +50,7 @@ export class ProcessCandidatesService {
       await this.queueRawData(
         rawCandidatesData,
         dataSource,
-        jobId,
+        projectId,
         jobName,
         userId,
         timestamp,
@@ -72,7 +72,7 @@ export class ProcessCandidatesService {
   async transformAndSend(
     rawCandidatesData: any[],
     dataSource: string,
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     timestamp: string,
@@ -87,7 +87,7 @@ export class ProcessCandidatesService {
         throw new Error(`Unsupported data source: ${dataSource}`);
       }
       const transformationContext = {
-        jobId,
+        projectId,
         jobName,
         userId,
         timestamp,
@@ -101,7 +101,7 @@ export class ProcessCandidatesService {
       console.log(`Successfully transformed ${userProfiles.length} candidates from ${rawCandidatesData.length} raw records`);
       console.log("User profiles in transformAndSend:", userProfiles);
       // Send to existing processing pipeline
-      await this.send(userProfiles, jobId, jobName, timestamp, apiToken, origin, userId);
+      await this.send(userProfiles, projectId, jobName, timestamp, apiToken, origin, userId);
 
     } catch (error) {
       console.error('Error in transformAndSend:', error);
@@ -130,7 +130,7 @@ export class ProcessCandidatesService {
   private async queueRawData(
     rawCandidatesData: any[],
     dataSource: string,
-    jobId: string,
+    projectId: string,
     jobName: string,
     userId: string,
     timestamp: string,
@@ -183,7 +183,7 @@ export class ProcessCandidatesService {
           data: [], // Empty for raw data processing
           rawData: batch,
           dataSource: dataSource,
-          jobId,
+          projectId,
           jobName,
           batchName: batchName,
           timestamp,
@@ -197,7 +197,7 @@ export class ProcessCandidatesService {
         // Create unique job ID to prevent duplicate processing
         // Use uploadSessionId (UUID) to make each upload request truly unique
         // This ensures multiple upload requests for the same job don't get skipped as duplicates
-        const uniqueJobId = `${jobId}-${dataSource}-batch-${batchNumber}-${sessionId}`;
+        const uniqueProjectId = `${projectId}-${dataSource}-batch-${batchNumber}-${sessionId}`;
         
         try {
           await this.messageQueueService.add<ProcessCandidatesJobData>(
@@ -205,18 +205,18 @@ export class ProcessCandidatesService {
             jobData,
             {
               ...queueJobOptions,
-              id: uniqueJobId, // Add unique ID to prevent duplicates
+              id: uniqueProjectId, // Add unique ID to prevent duplicates
             },
           );
-          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
+          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`);
         } catch (queueError) {
           // Check if error is due to duplicate job ID
           if (queueError.message?.includes('already') || queueError.message?.includes('duplicate')) {
-            console.log(`Job with ID ${uniqueJobId} is already queued or running, skipping duplicate`);
+            console.log(`Project with ID ${uniqueProjectId} is already queued or running, skipping duplicate`);
             // Don't throw - just skip this batch as it's already being processed
             continue;
           }
-          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
+          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`, queueError);
           throw queueError; // Re-throw to stop processing if queueing fails
         }
       }
@@ -230,7 +230,7 @@ export class ProcessCandidatesService {
 
   async send(
     data: UserProfile[],
-    jobId: string,
+    projectId: string,
     jobName: string,
     timestamp: string,
     apiToken: string,
@@ -285,7 +285,7 @@ export class ProcessCandidatesService {
         );
         const jobData: ProcessCandidatesJobData = {
           data: batch,
-          jobId,
+          projectId,
           jobName,
           batchName: batchName,
           timestamp,
@@ -297,7 +297,7 @@ export class ProcessCandidatesService {
         // Create unique job ID to prevent duplicate processing
         // Include timestamp hash to make each upload session unique
         const timestampHash = Buffer.from(timestamp).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
-        const uniqueJobId = `${jobId}-batch-${batchNumber}-${timestampHash}`;
+        const uniqueProjectId = `${projectId}-batch-${batchNumber}-${timestampHash}`;
         
         try {
           await this.messageQueueService.add<ProcessCandidatesJobData>(
@@ -305,18 +305,18 @@ export class ProcessCandidatesService {
             jobData,
             {
               ...queueJobOptions,
-              id: uniqueJobId, // Add unique ID to prevent duplicates
+              id: uniqueProjectId, // Add unique ID to prevent duplicates
             },
           );
-          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`);
+          console.log(`✅ Successfully queued batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`);
         } catch (queueError) {
           // Check if error is due to duplicate job ID
           if (queueError.message?.includes('already') || queueError.message?.includes('duplicate')) {
-            console.log(`Job with ID ${uniqueJobId} is already queued or running, skipping duplicate`);
+            console.log(`Project with ID ${uniqueProjectId} is already queued or running, skipping duplicate`);
             // Don't throw - just skip this batch as it's already being processed
             continue;
           }
-          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueJobId}`, queueError);
+          console.error(`❌ Failed to queue batch ${batchNumber}/${totalBatches} with job ID: ${uniqueProjectId}`, queueError);
           throw queueError; // Re-throw to stop processing if queueing fails
         }
       }

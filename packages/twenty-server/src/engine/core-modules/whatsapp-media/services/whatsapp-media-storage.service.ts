@@ -4,7 +4,7 @@ import * as path from 'path';
 import { Injectable, Logger } from '@nestjs/common';
 import { lookup as mimeLookup } from 'mime-types';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import {
     FileStorageException,
     FileStorageExceptionCode,

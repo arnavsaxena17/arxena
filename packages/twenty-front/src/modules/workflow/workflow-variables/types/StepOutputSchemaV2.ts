@@ -7,10 +7,7 @@ import { type FindRecordsOutputSchema } from '@/workflow/workflow-variables/type
 import { type FormOutputSchema } from '@/workflow/workflow-variables/types/FormOutputSchema';
 import { type IteratorOutputSchema } from '@/workflow/workflow-variables/types/IteratorOutputSchema';
 import { type RecordOutputSchemaV2 } from '@/workflow/workflow-variables/types/RecordOutputSchemaV2';
-import {
-  type BaseOutputSchemaV2,
-  type ManualTriggerOutputSchema,
-} from 'twenty-shared/workflow';
+import type { BaseOutputSchemaV2, ManualTriggerOutputSchema } from 'twenty-shared/workflow';
 
 export type OutputSchemaV2 =
   | BaseOutputSchemaV2

@@ -1,9 +1,9 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 export type OrgChartQueryGeneratorPreference = 'python' | 'multi_agent';
 
 export const orgChartQueryGeneratorPreferenceState =
-  atom<OrgChartQueryGeneratorPreference>({
+  createAtomState<OrgChartQueryGeneratorPreference>({
     key: 'orgChartQueryGeneratorPreferenceState',
-    default: 'python',
+    defaultValue: 'python',
   });

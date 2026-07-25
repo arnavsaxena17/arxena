@@ -1,17 +1,21 @@
-import { IconTrash } from 'twenty-ui/icons';
-import { activeEnrichmentState, enrichmentsState, type Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import styled from '@emotion/styled';
-import { useRecoilState } from 'recoil';
-
+import {
+  activeEnrichmentState,
+  enrichmentsState,
+  type Enrichment,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { styled } from '@linaria/react';
+import { IconTrash } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { SampleEnrichments } from './SampleEnrichments';
 
 const StyledContainer = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-direction: column;
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   gap: 32px;
   padding: 44px 32px 44px 32px;
   width: calc(100% * (1 / 6));
@@ -28,30 +32,30 @@ const ScrollableContent = styled.div`
   gap: 32px;
   flex: 1;
   overflow-y: auto;
-  min-height: 0; // Important for flex containers
-  
-  /* Add custom scrollbar styling */
+  min-height: 0;
+
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.background.tertiary};
+    background: ${themeCssVariables.background.tertiary};
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.background.quaternary || '#888'};
+    background: ${themeCssVariables.background.quaternary};
     border-radius: 4px;
-    
+
     &:hover {
-      background: ${({ theme }) => theme.background.noisy || '#666'};
+      background: ${themeCssVariables.background.noisy};
     }
   }
 
   scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => `${theme.background.quaternary || '#888'} ${theme.background.tertiary}`};
+  scrollbar-color: ${themeCssVariables.background.quaternary}
+    ${themeCssVariables.background.tertiary};
 `;
 
 const StyledModalNavElementContainer = styled.nav`
@@ -63,19 +67,19 @@ const StyledModalNavElementContainer = styled.nav`
 `;
 
 const StyledIntroductionNavElement = styled.div`
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.medium};
   padding: 6px;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
   &.active {
-    background-color: ${({ theme }) => theme.background.transparent.light};
+    background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${({ theme }) => theme.grayScale.gray50};
+  color: ${themeCssVariables.grayScale.gray5};
   border-radius: 4px;
   width: 200px;
   cursor: pointer;
@@ -84,9 +88,9 @@ const StyledIntroductionNavElement = styled.div`
 const StyledButton = styled.div`
   border: none;
   font-family: inherit;
-  color: ${({ theme }) => theme.font.color.light};
-  font-size: ${({ theme }) => theme.font.size.md};
-  font-weight: ${({ theme }) => theme.font.weight.regular};
+  color: ${themeCssVariables.font.color.light};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.regular};
   cursor: pointer;
   background-color: none;
   margin-top: 16px;
@@ -109,17 +113,16 @@ const StyledListItem = styled.li`
   &::marker {
     display: none;
     font-family: inherit;
-    color: ${({ theme }) => theme.font.color.light};
-    font-size: ${({ theme }) => theme.font.size.md};
-    font-weight: ${({ theme }) => theme.font.weight.regular};
+    color: ${themeCssVariables.font.color.light};
+    font-size: ${themeCssVariables.font.size.md};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 `;
 
 export const ModalNavElementContainer = () => {
-  const [enrichments, setEnrichments] = useRecoilState(enrichmentsState);
-  const [activeEnrichment, setActiveEnrichment] = useRecoilState(activeEnrichmentState);
-
-  // Enrichments are now initialized in JobPage
+  const [enrichments, setEnrichments] = useAtomState(enrichmentsState);
+  const [activeEnrichment, setActiveEnrichment] =
+    useAtomState(activeEnrichmentState);
 
   const addEnrichment = () => {
     const newEnrichment: Enrichment = {
@@ -132,12 +135,17 @@ export const ModalNavElementContainer = () => {
       bestOf: 1,
       includeResume: false,
     };
-    setEnrichments(prev => [...prev, newEnrichment]);
+    setEnrichments((previousEnrichments) => [
+      ...previousEnrichments,
+      newEnrichment,
+    ]);
     setActiveEnrichment(enrichments.length);
   };
 
   const deleteEnrichment = (index: number) => {
-    setEnrichments(prev => prev.filter((_, i) => i !== index));
+    setEnrichments((previousEnrichments) =>
+      previousEnrichments.filter((_, enrichmentIndex) => enrichmentIndex !== index),
+    );
     if (activeEnrichment === index) {
       setActiveEnrichment(0);
     } else if (activeEnrichment !== null && activeEnrichment > index) {
@@ -185,4 +193,3 @@ export const ArxEnrichLeftSideContainer = () => {
     </StyledContainer>
   );
 };
-

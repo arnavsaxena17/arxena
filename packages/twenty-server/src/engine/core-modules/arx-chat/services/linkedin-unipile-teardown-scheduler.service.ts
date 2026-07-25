@@ -7,7 +7,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 
 import { LinkedinUnipileTeardownJobData } from '../types/linkedin-unipile-teardown.types';
 import {
-    getLinkedinUnipileTeardownJobId,
+    getLinkedinUnipileTeardownProjectId,
     LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME,
 } from '../utils/linkedin-unipile-teardown-job.util';
 
@@ -43,10 +43,10 @@ export class LinkedinUnipileTeardownSchedulerService {
       return;
     }
 
-    const jobId = getLinkedinUnipileTeardownJobId(trimmedMemberId);
-    await this.teardownQueue.cancelDelayed(jobId);
+    const projectId = getLinkedinUnipileTeardownProjectId(trimmedMemberId);
+    await this.teardownQueue.cancelDelayed(projectId);
     this.logger.log(
-      `Cancelled pending LinkedIn Unipile idle disconnect workspaceMemberId=${trimmedMemberId} jobId=${jobId}`,
+      `Cancelled pending LinkedIn Unipile idle disconnect workspaceMemberId=${trimmedMemberId} projectId=${projectId}`,
     );
   }
 
@@ -73,7 +73,7 @@ export class LinkedinUnipileTeardownSchedulerService {
     }
 
     const delayMs = this.getIdleTtlMs();
-    const jobId = getLinkedinUnipileTeardownJobId(workspaceMemberId);
+    const projectId = getLinkedinUnipileTeardownProjectId(workspaceMemberId);
     const jobData: LinkedinUnipileTeardownJobData = {
       workspaceMemberId,
       workspaceId,
@@ -85,11 +85,11 @@ export class LinkedinUnipileTeardownSchedulerService {
     await this.teardownQueue.scheduleOrRescheduleDelayed(
       LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME,
       jobData,
-      { id: jobId, delayMs },
+      { id: projectId, delayMs },
     );
 
     this.logger.log(
-      `Scheduled LinkedIn Unipile idle disconnect workspaceMemberId=${workspaceMemberId} accountId=${accountId} delayMs=${delayMs} jobId=${jobId}`,
+      `Scheduled LinkedIn Unipile idle disconnect workspaceMemberId=${workspaceMemberId} accountId=${accountId} delayMs=${delayMs} projectId=${projectId}`,
     );
   }
 }

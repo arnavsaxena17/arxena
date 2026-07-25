@@ -35,14 +35,14 @@ export interface CandidateEnrichments {
   edges: CandidateEnrichmentEdge[];
 }
 
-export interface Jobs {
-  edges: JobEdge[];
+export interface Projects {
+  edges: ProjectEdge[];
 }
 
-export interface JobDropdownProps {
-  jobs: Job[];
+export interface ProjectDropdownProps {
+  projects: Project[];
   selectedJob: string;
-  onJobChange: (jobId: string) => void;
+  onProjectChange: (projectId: string) => void;
 }
 export interface PageInfo {
   hasNextPage: boolean;
@@ -53,33 +53,33 @@ export interface CandidateEdge {
   node: CandidateNode;
 }
 
-export type JobProcessStage = {
+export type ProjectProcessStage = {
   id: string;
   name: string;
   order: number;
   actions?: string[];
-  JobProcessStageName?: 'APPLICATION' | 'INTERVIEW' | 'OFFER' | 'ONBOARDING';
-  JobProcessStageStatus?: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
+  ProjectProcessStageName?: 'APPLICATION' | 'INTERVIEW' | 'OFFER' | 'ONBOARDING';
+  ProjectProcessStageStatus?: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
 };
 
-export type JobProcess = {
-  jobId: string;
+export type ProjectProcess = {
+  projectId: string;
   clientId?: string;
-  stages: JobProcessStage[];
+  stages: ProjectProcessStage[];
   createdAt: Date;
   updatedAt: Date;
 };
 
-export type JobProcessModificationStage = Omit<JobProcessStage, 'id'>;
+export type ProjectProcessModificationStage = Omit<ProjectProcessStage, 'id'>;
 
-export type JobProcessModifications = {
-  JobProcessModificationType: 'ADD' | 'REMOVE' | 'UPDATE';
-  JobProcessModificationStage?: JobProcessModificationStage;
+export type ProjectProcessModifications = {
+  ProjectProcessModificationType: 'ADD' | 'REMOVE' | 'UPDATE';
+  ProjectProcessModificationStage?: ProjectProcessModificationStage;
 };
 
-export type JobProcessModificationsType = {
-  jobId: string;
-  JobProcessModifications: JobProcessModifications;
+export type ProjectProcessModificationsType = {
+  projectId: string;
+  ProjectProcessModifications: ProjectProcessModifications;
 };
 
 export interface Name {
@@ -155,7 +155,7 @@ export interface ProcessCandidatesJobData {
   data: UserProfile[];
   rawData?: any[];
   dataSource?: string;
-  jobId: string;
+  projectId: string;
   jobName: any;
   batchName?: string;
   timestamp: any;
@@ -168,7 +168,7 @@ export interface ProcessCandidatesJobData {
 
 export interface ProcessResumeUploadsJobData {
   filePaths: string[];
-  jobId: string;
+  projectId: string;
   jobName: string;
   userId: string;
   apiToken: string;
@@ -183,7 +183,7 @@ export interface ProcessAiFiltersJobData {
   availableFilterDefinitions: any[];
   objectRecordId: string;
   selectedRecordIds: string[];
-  jobId: string;
+  projectId: string;
   batchName?: string;
   timestamp: string;
   apiToken: string;
@@ -194,7 +194,7 @@ export interface GmailDraftShortlistJobData {
   candidateIds: string[];
   origin: string;
   apiToken: string;
-  jobId?: string;
+  projectId?: string;
   jobName?: string;
   batchName?: string;
   timestamp?: string;
@@ -286,7 +286,7 @@ export const columnDefinitions: ColumnDefinition[] = [
   },
   {
     key: 'totalJobChanges',
-    header: 'Total Job Changes',
+    header: 'Total Project Changes',
     type: 'number',
     format: (value: number) => (value ? value.toFixed(2) : '0'),
   },
@@ -610,7 +610,7 @@ export type TransformedCandidateForTable = Omit<
   emailMessages: { edges: any[] };
   otherFields?: OtherFieldsRecord | null;
   candidateReminders: { edges: any[] };
-  jobs: { id: string; name: string };
+  projects: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
@@ -658,7 +658,7 @@ export interface UserProfile {
   jobCompanyName: string;
   jobCompanyId: string | null;
 
-  // Job and company information
+  // Project and company information
   jobTitle: string;
   locationName: string;
   jobCompanyLinkedinUrl: string | null;
@@ -706,7 +706,7 @@ export interface UserProfile {
   maritalStatus?: string | null;
   homeTown?: string | null;
   
-  // Job application specific
+  // Project application specific
   noticePeriod: string;
   resumeHeadline?: string | null;
   preferredLocations?: string | null;
@@ -815,7 +815,7 @@ export interface ArxenaCandidateNode {
   linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   avatarUrl?: string;
-  jobsId: string;
+  projectsId: string;
   peopleId: string;
   messagingChannel: string;
   otherFields?: Record<string, unknown>;
@@ -869,7 +869,7 @@ export interface ArxenaJobCandidateNode {
   previousDesignation?: string;
   previousOrganization?: string;
   personId?: string;
-  jobId?: string;
+  projectId?: string;
   candidateId?: string;
 }
 
@@ -925,7 +925,7 @@ export interface ArxenaPersonNode {
   jsUserId?: string;
   jsResId?: string;
   personId?: string;
-  jobId?: string;
+  projectId?: string;
   candidateId?: string;
 }
 
@@ -1071,7 +1071,7 @@ export interface ClientInterviewNode {
   createdAt: string;
   updatedAt: string;
   clientInterviewCompleted: boolean;
-  jobId: boolean;
+  projectId: boolean;
   candidateId: boolean;
 }
 
@@ -1157,7 +1157,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     edges: [],
   },
   whatsappProvider: '',
-  jobs: {
+  projects: {
     name: '',
     id: '',
     isActive: false,
@@ -1178,7 +1178,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
             recruiterId: '',
             message: '',
             candidateId: '',
-            jobsId: 'string',
+            projectsId: 'string',
             position: 0,
             messageType: '',
             phoneTo: '',
@@ -1241,7 +1241,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           recruiterId: '',
           message: '',
           candidateId: '',
-          jobsId: 'string',
+          projectsId: 'string',
           position: 0,
           messageType: '',
           phoneTo: '',
@@ -1266,7 +1266,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           subject: '',
           recruiterId: '',
           candidateId: '',
-          jobsId: '',
+          projectsId: '',
           messageThreadId: '',
           receivedAt: '',
           updatedAt: '',
@@ -1308,7 +1308,7 @@ export interface Attachment {
   cvsSentId: string | null;
   updatedAt: string;
   createdAt: string;
-  jobId: string | null;
+  projectId: string | null;
   type: string;
   companyId: string | null;
   screeningId: string | null;
@@ -1324,7 +1324,7 @@ export interface Attachment {
 export interface candidateProfileType {
   first_name: any;
   id: string;
-  jobsId: string;
+  projectsId: string;
   status: string;
   job: jobProfileType;
   phoneNumber: string;
@@ -1631,7 +1631,7 @@ export interface VideoInterviewModel {
 export interface VideoInterviewTemplate {
   name: string;
   videoInterviewModelId: string;
-  jobId: string;
+  projectId: string;
   introduction?: string;
   instructions?: string;
 }
@@ -1742,7 +1742,7 @@ export interface MessageNode {
   recruiterId: string;
   message: string;
   candidateId: string;
-  jobsId: string;
+  projectsId: string;
   position: number;
   messageType: string;
   phoneTo: string;
@@ -1823,7 +1823,7 @@ export interface InterviewLink {
 //   id: string;
 //   name: string;
 //   startChat: boolean;
-//   jobs: Jobs;
+//   projects: Projects;
 //   people: {
 //     id: string;
 //     name: {
@@ -1863,8 +1863,8 @@ export interface CandidateNode {
   status: string;
   whatsappMessages: WhatsAppMessages;
   emailMessages: EmailMessages;
-  jobs: Job;
-  jobsId?: string;
+  projects: Project;
+  projectsId?: string;
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
   candidateReminders: Reminders;
@@ -1900,7 +1900,7 @@ export interface CandidateNode {
 //   status: string;
 //   whatsappMessages: WhatsAppMessages;
 //   emailMessages: EmailMessages;
-//   jobs: Jobs;
+//   projects: Projects;
 //   candidateFieldValues: CandidateFieldValues;
 //   candidateReminders: Reminders;
 //   clientInterview?: ClientInterviews;
@@ -1972,7 +1972,7 @@ export interface EmailMessageNode {
   subject: string;
   recruiterId: string;
   candidateId: string;
-  jobsId: string;
+  projectsId: string;
   // messageType: string;
   messageThreadId: string;
   receivedAt: string;
@@ -2003,8 +2003,8 @@ export interface InterviewSchedules {
 }
 
 
-export interface JobEdge {
-  node: Job;
+export interface ProjectEdge {
+  node: Project;
 }
 
 
@@ -2014,7 +2014,7 @@ export interface JobEdge {
 /** Default delay (minutes) after last message before processing engagement. Used when job has no engagementProcessingDelayMinutes set. */
 export const DEFAULT_ENGAGEMENT_PROCESSING_DELAY_MINUTES = 2;
 
-export interface Job {
+export interface Project {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
   chatQuestions?: string[];
   /** Delay in minutes after last message before processing from queue. Recruiter-configurable per job. */
@@ -2050,7 +2050,7 @@ export interface InterviewScheduleEdge {
 
 export interface InterviewSchedule {
   meetingType: string;
-  jobId: string;
+  projectId: string;
   id: string;
   slotsAvailable: any;
   interviewTime: InterviewTime;
@@ -2089,7 +2089,7 @@ export const emptyInterviewData: InterviewData = {
   name: '',
   candidate: {
     id: '',
-    jobs: {
+    projects: {
       id: '',
       name: '',
       recruiterId: '',
@@ -2138,7 +2138,7 @@ export const emptyInterviewData: InterviewData = {
   }
 
 export interface InterviewDataJobTemplate {
-  job: Job;
+  job: Project;
   videoInterviewTemplate: {
     videoInterviewQuestions: {
       edges: Array<{
@@ -2154,7 +2154,7 @@ export interface InterviewData {
   name: string;
   candidate: {
     id: string;
-    jobs: {
+    projects: {
       id: string;
       recruiterId: string;
       name: string;
@@ -2230,7 +2230,7 @@ interface videoInterviewQuestion {
   };
 }
 
-export interface JobNode {
+export interface ProjectNode {
   node: {
     id: string;
     name: string;

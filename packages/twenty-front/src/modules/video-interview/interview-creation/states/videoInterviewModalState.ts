@@ -1,6 +1,6 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const isVideoInterviewModalOpenState = createState<boolean>({
+export const isVideoInterviewModalOpenState = createAtomState<boolean>({
   key: 'isVideoInterviewModalOpenState',
   defaultValue: false,
 });

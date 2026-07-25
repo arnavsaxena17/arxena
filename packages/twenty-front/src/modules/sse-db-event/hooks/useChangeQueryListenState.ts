@@ -1,9 +1,6 @@
 import { requiredQueryListenersState } from '@/sse-db-event/states/requiredQueryListenersState';
 import { useCallback } from 'react';
-import {
-  type MetadataGqlOperationSignature,
-  type RecordGqlOperationSignature,
-} from 'twenty-shared/types';
+import type { MetadataGqlOperationSignature, RecordGqlOperationSignature } from 'twenty-shared/types';
 import { useStore } from 'jotai';
 
 export const useChangeQueryListenState = () => {

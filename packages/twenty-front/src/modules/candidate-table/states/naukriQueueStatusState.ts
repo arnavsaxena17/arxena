@@ -1,8 +1,10 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 import { NaukriQueueSnapshot } from '@/chrome-extension/utils/naukriQueueExtensionBridge';
 
-export const naukriQueueStatusState = atom<NaukriQueueSnapshot | null>({
-  key: 'naukriQueueStatusState',
-  default: null,
-});
+export const naukriQueueStatusState = createAtomState<NaukriQueueSnapshot | null>(
+  {
+    key: 'naukriQueueStatusState',
+    defaultValue: null,
+  },
+);

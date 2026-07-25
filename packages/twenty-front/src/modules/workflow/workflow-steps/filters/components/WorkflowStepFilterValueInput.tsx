@@ -19,17 +19,8 @@ import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components
 import { useLingui } from '@lingui/react/macro';
 import { isObject, isString } from '@sniptt/guards';
 import { useContext } from 'react';
-import {
-  FieldMetadataType,
-  ViewFilterOperand,
-  type StepFilter,
-} from 'twenty-shared/types';
-import {
-  isDefined,
-  parseJson,
-  safeParseRelativeDateFilterJsonStringified,
-  type RelativeDateFilter,
-} from 'twenty-shared/utils';
+import { FieldMetadataType, ViewFilterOperand, type StepFilter } from 'twenty-shared/types';
+import { isDefined, parseJson, safeParseRelativeDateFilterJsonStringified, type RelativeDateFilter } from 'twenty-shared/utils';
 import { parseBooleanFromStringValue } from 'twenty-shared/workflow';
 import { type JsonValue } from 'type-fest';
 

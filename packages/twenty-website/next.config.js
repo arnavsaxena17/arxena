@@ -1,0 +1,102 @@
+/** @type {import('next').NextConfig} */
+
+const path = require('path');
+const webpack = require('webpack');
+
+const orgchartDist = path.resolve(__dirname, '../twenty-orgchart/dist');
+
+const nextConfig = {
+  // Website package does not ship eslint; lint via nx target instead.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  // React 18 (website) vs React 19 (@types from monorepo root / orgchart d.ts)
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+      serverActions: {
+        // Allow Server Actions from our domains when requests are forwarded (e.g. behind proxy/CDN).
+        // Bots/crawlers often omit Origin; middleware sets it from Host when missing.
+        allowedOrigins: [
+          'arxena.com',
+          'www.arxena.com',
+          'app.arxena.com',
+          'localhost:3000',
+          'localhost:3001',
+        ],
+        // Multi-process / rolling deploys: set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 AES
+        // 16/24/32 bytes) at build time so all instances share action IDs — see
+        // https://nextjs.org/docs/messages/failed-to-find-server-action
+      },
+    },
+  async redirects() {
+    const arxenaSiteUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://services.arxena.com'
+        : 'http://localhost:5050';
+
+    return [
+      {
+        source: '/favicon.ico',
+        destination: '/images/favicon/icon-96.png',
+        permanent: true,
+      },
+      {
+        source: '/sitemap.xml',
+        destination: '/sitemap-main.xml',
+        permanent: true,
+      },
+      // Redirect extension and app download to arxena-site (services.arxena.com in prod, localhost:5050 in dev)
+      {
+        source: '/extension',
+        destination: `${arxenaSiteUrl}/extension`,
+        permanent: false,
+      },
+      {
+        source: '/download-app',
+        destination: `${arxenaSiteUrl}/download-app`,
+        permanent: false,
+      },
+      {
+        source: '/signup',
+        destination: 'https://app.arxena.com/sign-up',
+        permanent: true,
+      },
+      // Company slug aliases (meta→facebook, tesla→tesla-motors, etc.) are handled in
+      // twenty-shared orgChartCompanyAliases + app-level redirect in org-chart page.
+      // /global/fullcompany is equivalent to base URL - redirect to canonical form
+      {
+        source: '/org-chart/:companyId/global/fullcompany',
+        destination: '/org-chart/:companyId',
+        permanent: true,
+      },
+    ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+      },
+    ],
+  },
+  webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'twenty-orgchart': orgchartDist,
+      'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
+    };
+
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.ProvidePlugin({
+          process: 'process/browser',
+        })
+      );
+    }
+    return config;
+  },
+};
+
+module.exports = nextConfig;

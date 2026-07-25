@@ -50,8 +50,8 @@ const VideoDownloaderPlayer: React.FC<VideoDownloaderPlayerProps> = ({ videoUrl 
       playsinline
       width="100%"
       height="auto"
-      onError={(e) => {
-        console.error('ReactPlayer error:', e);
+      onError={(error: unknown) => {
+        console.error('ReactPlayer error:', error);
         setError('Error playing video. Please try again.');
       }}
     />

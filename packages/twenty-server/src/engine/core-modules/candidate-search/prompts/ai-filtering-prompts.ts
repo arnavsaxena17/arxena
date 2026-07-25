@@ -25,7 +25,7 @@ export class AiFilteringPrompts {
       - Location: Geographic analysis and distance calculations
       - Experience: Experience level analysis and career progression
       - Cultural: Cultural fit assessment and company alignment
-      - Custom: Job-specific custom classifications
+      - Custom: Project-specific custom classifications
 
       Field Types:
       - text: Free-form text analysis
@@ -50,7 +50,7 @@ export class AiFilteringPrompts {
   ): string {
     let prompt = `Analyze the following job description and search parameters to create AI filter configurations for candidate data analysis.
 
-      Job Description:
+      Project Description:
       - Job Title: ${parsedJD?.jobTitle}
       - Company: ${parsedJD?.company}
       - Location: ${parsedJD?.location}

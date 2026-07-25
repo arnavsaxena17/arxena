@@ -1,4 +1,4 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 export type OrgChartContactInfo = {
   email?: string;
@@ -16,10 +16,9 @@ export type OrgChartContactInfo = {
  * - `m7kq:<companyDomain>:<personId>` when `raw.id` + company domain are available
  * - `li:<linkedinUrl>` fallback
  */
-export const orgChartContactsByKeyState = atom<Record<string, OrgChartContactInfo>>(
-  {
-    key: 'orgchart/orgChartContactsByKeyState',
-    default: {},
-  },
-);
-
+export const orgChartContactsByKeyState = createAtomState<
+  Record<string, OrgChartContactInfo>
+>({
+  key: 'orgchart/orgChartContactsByKeyState',
+  defaultValue: {},
+});

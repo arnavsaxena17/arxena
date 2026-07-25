@@ -50,7 +50,7 @@ export class UnipileAccountPoolService {
   );
 
   constructor(
-    @InjectDataSource('metadata')
+    @InjectDataSource()
     private readonly metadataDataSource: DataSource,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -233,12 +233,12 @@ export class UnipileAccountPoolService {
 
     const rows = accountType
       ? await this.metadataDataSource.query(
-          `SELECT account_id, workspace_id, account_type FROM metadata.unipile_accounts 
+          `SELECT account_id, workspace_id, account_type FROM metadata.unipile_accounts
            WHERE workspace_member_id = $1 AND account_type = $2`,
           [workspaceMemberId, accountType],
         )
       : await this.metadataDataSource.query(
-          `SELECT account_id, workspace_id, account_type FROM metadata.unipile_accounts 
+          `SELECT account_id, workspace_id, account_type FROM metadata.unipile_accounts
            WHERE workspace_member_id = $1`,
           [workspaceMemberId],
         );
@@ -310,8 +310,8 @@ export class UnipileAccountPoolService {
       10,
     );
     const rows = await this.metadataDataSource.query(
-      `SELECT workspace_member_id, account_id, workspace_id, account_type 
-       FROM metadata.unipile_accounts 
+      `SELECT workspace_member_id, account_id, workspace_id, account_type
+       FROM metadata.unipile_accounts
        WHERE account_type = 'LINKEDIN'
          AND last_active < NOW() - INTERVAL '1 minute' * $1`,
       [thresholdMinutes],
@@ -345,7 +345,7 @@ export class UnipileAccountPoolService {
     accountType: UnipileAccountType = 'LINKEDIN',
   ): Promise<void> {
     await this.metadataDataSource.query(
-      `UPDATE metadata.unipile_accounts SET last_active = NOW() 
+      `UPDATE metadata.unipile_accounts SET last_active = NOW()
        WHERE workspace_member_id = $1 AND account_type = $2`,
       [workspaceMemberId, accountType],
     );
@@ -416,21 +416,16 @@ export class UnipileAccountPoolService {
   ): Promise<void> {
     const fieldName =
       type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
-    const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-    const profileTable =
-      await this.workspaceQueryService.resolveWorkspaceMemberProfileTableName(
-        schema,
-      );
-
-    if (!profileTable) {
-      return;
-    }
 
     try {
-      await this.workspaceQueryService.executeRawQuery(
-        `UPDATE ${schema}."${profileTable}" SET "${fieldName}" = NULL WHERE "workspaceMemberId" = $1`,
-        [workspaceMemberId],
-        workspaceId,
+      const profileRepository =
+        await this.workspaceQueryService.getObjectRepository<
+          Record<string, unknown>
+        >(workspaceId, 'workspaceMemberProfile');
+
+      await profileRepository.update(
+        { workspaceMemberId },
+        { [fieldName]: null },
       );
     } catch (err) {
       this.logger.warn(

@@ -1,9 +1,4 @@
-import {
-  StepLogicalOperator,
-  ViewFilterOperand,
-  type StepFilter,
-  type StepFilterGroup,
-} from 'twenty-shared/types';
+import { StepLogicalOperator, ViewFilterOperand, type StepFilter, type StepFilterGroup } from 'twenty-shared/types';
 import { v4 } from 'uuid';
 
 export const createElseIfBranch = (): {

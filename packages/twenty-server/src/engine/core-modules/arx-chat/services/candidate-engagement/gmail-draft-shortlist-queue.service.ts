@@ -17,7 +17,7 @@ export class GmailDraftShortlistQueueService {
     candidateIds: string[],
     origin: string,
     apiToken: string,
-    jobId?: string,
+    projectId?: string,
     jobName?: string,
     batchName?: string,
     timestamp?: string,
@@ -29,7 +29,7 @@ export class GmailDraftShortlistQueueService {
         candidateIds,
         origin,
         apiToken,
-        jobId,
+        projectId,
         jobName,
         batchName,
         timestamp,
@@ -42,14 +42,14 @@ export class GmailDraftShortlistQueueService {
       };
 
       // Create unique job ID to prevent duplicate processing
-      const uniqueJobId = `gmail-draft-shortlist-${jobId || 'default'}-${candidateIds.length}`;
+      const uniqueProjectId = `gmail-draft-shortlist-${projectId || 'default'}-${candidateIds.length}`;
       
       await this.messageQueueService.add<GmailDraftShortlistJobData>(
         'GmailDraftShortlistQueueProcessor',
         jobData,
         {
           ...queueJobOptions,
-          id: uniqueJobId, // Add unique ID to prevent duplicates
+          id: uniqueProjectId, // Add unique ID to prevent duplicates
         },
       );
 

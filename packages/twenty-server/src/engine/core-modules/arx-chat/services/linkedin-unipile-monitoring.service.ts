@@ -6,7 +6,7 @@ import {
 } from 'src/engine/core-modules/arx-chat/dtos/linkedin-unipile-monitoring.dto';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { Workspace } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 type LinkedInAccountRow = {
   id?: string;
@@ -26,7 +26,7 @@ export class LinkedInUnipileMonitoringService {
   ) {}
 
   async getLinkedInUnipileHealthStatus(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<LinkedInUnipileHealthStatus> {
     const accounts = await this.fetchAccounts(workspace);
     const metrics = accounts.map((a) => this.accountToMetric(a));
@@ -45,7 +45,7 @@ export class LinkedInUnipileMonitoringService {
   }
 
   async getLinkedInUnipileSessionStats(
-    workspace: Workspace,
+    workspace: WorkspaceEntity,
   ): Promise<LinkedInUnipileSessionStats> {
     const accounts = await this.fetchAccounts(workspace);
     const metrics = accounts.map((a) => this.accountToMetric(a));
@@ -63,7 +63,7 @@ export class LinkedInUnipileMonitoringService {
     };
   }
 
-  private async fetchAccounts(workspace: Workspace): Promise<LinkedInAccountRow[]> {
+  private async fetchAccounts(workspace: WorkspaceEntity): Promise<LinkedInAccountRow[]> {
     const keys = await this.workspaceQueryService.getWorkspaceKeys(workspace.id);
     if (
       !keys.linkedin_url?.trim() &&

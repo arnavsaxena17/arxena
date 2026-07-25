@@ -1,6 +1,8 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const isLoadingTokensFromExtensionState = createState<boolean | null>({
+export const isLoadingTokensFromExtensionState = createAtomState<
+  boolean | null
+>({
   key: 'isLoadingTokensFromExtensionState',
   defaultValue: null,
 });

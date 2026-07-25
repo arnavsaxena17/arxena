@@ -1,7 +1,4 @@
-import {
-  type CoreObjectNameSingular,
-  type RecordGqlOperationOrderBy,
-} from 'twenty-shared/types';
+import type { CoreObjectNameSingular, RecordGqlOperationOrderBy } from 'twenty-shared/types';
 
 import { findActivityTargetsOperationSignatureFactory } from '@/activities/graphql/operation-signatures/factories/findActivityTargetsOperationSignatureFactory';
 import { type ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';

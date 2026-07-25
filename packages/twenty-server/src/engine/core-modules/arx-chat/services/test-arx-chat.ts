@@ -30,12 +30,12 @@ export class TestArxChat {
     try {
       // Step 1: Get all jobs and take the first one
       const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
-        'query { jobs { edges { node { id name } } } }',
+        'query { projects { edges { node { id name } } } }',
         { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
         apiToken,
       );
       
-      const jobs = responseFromGetAllJobs?.data?.data?.jobs?.edges;
+      const projects = responseFromGetAllJobs?.data?.data?.projects?.edges;
       if (!jobs || jobs.length === 0) {
         throw new Error('No jobs found');
       }
@@ -43,11 +43,11 @@ export class TestArxChat {
       const firstJob = jobs[0].node;
       console.log('Selected job:', firstJob.name);
 
-      // Step 2: Get candidates for this job (same logic as CandidateSourcingController.getCandidatesByJobId)
+      // Step 2: Get candidates for this project(same logic as CandidateSourcingController.getCandidatesByProjectId)
       const allCandidates: Candidate[] = [];
       let lastCursor: string | null = null;
       let hasNextPage = true;
-      const timestampedFilter = { jobsId: { eq: firstJob.id } };
+      const timestampedFilter = { projectsId: { eq: firstJob.id } };
       while (hasNextPage) {
         const response = await this.staticGraphQLService.executeGraphQL(
           graphqlToFetchAllCandidateDataWithFieldValues,
@@ -142,7 +142,7 @@ export class TestArxChat {
         status: 'Success',
         message: 'Chat flow test completed successfully',
         details: {
-          jobId: firstJob.id,
+          projectId: firstJob.id,
           candidateId: candidateToUpdate.id,
           messageCount: messages.length
         }

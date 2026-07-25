@@ -301,6 +301,139 @@ export class WorkspaceEntity {
   @Column({ default: false })
   isInternalMessagesImportEnabled: boolean;
 
+  // ARX integration keys (snake_case column names match existing runtime ALTER columns)
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'openaikey' })
+  openaikey: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'twilio_account_sid',
+  })
+  twilioAccountSid: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'twilio_auth_token',
+  })
+  twilioAuthToken: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'linkedin_url',
+  })
+  linkedinUrl: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'whatsapp_key',
+  })
+  whatsappKey: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'linkedin_unipile_account_id',
+  })
+  linkedinUnipileAccountId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'whatsapp_unipile_account_id',
+  })
+  whatsappUnipileAccountId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'linkedin_profile_id',
+  })
+  linkedinProfileId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'anthropic_key',
+  })
+  anthropicKey: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'facebook_whatsapp_api_token',
+  })
+  facebookWhatsappApiToken: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'facebook_whatsapp_phone_number_id',
+  })
+  facebookWhatsappPhoneNumberId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'whatsapp_web_phone_number',
+  })
+  whatsappWebPhoneNumber: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'facebook_whatsapp_app_id',
+  })
+  facebookWhatsappAppId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'facebook_whatsapp_asset_id',
+  })
+  facebookWhatsappAssetId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'is_chrome_extension_installed',
+    default: 'false',
+  })
+  isChromeExtensionInstalled: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'chrome_extension_id',
+  })
+  chromeExtensionId: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'is_org_chart_enabled',
+  })
+  isOrgChartEnabled: string | null;
+
   @Field(() => [String], { nullable: true })
   @Column({
     type: 'varchar',

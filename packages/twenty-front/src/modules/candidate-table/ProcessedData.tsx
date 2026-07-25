@@ -1,4 +1,5 @@
-import { CandidateNode, getResolvedOtherFields, otherFieldsToFlatRow } from "twenty-shared";
+import type { CandidateNode } from 'twenty-shared/arx';
+import { getResolvedOtherFields, otherFieldsToFlatRow } from 'twenty-shared/utils';
 import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from "../../utils/linkedinUrlUtils";
 import { ProcessedDataItem } from "./TableColumns";
 

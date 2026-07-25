@@ -4,94 +4,96 @@ import type {
   WarmPathNetworkPerson,
   WarmPathRankedBridge,
 } from '@/candidate-table/types/warm-path.types';
-import styled from '@emotion/styled';
-import { IconExternalLink, IconRefresh, IconRoute } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconArrowsSplit2, IconExternalLink, IconRefresh } from 'twenty-ui/icon';
 import { useEffect } from 'react';
-import { Button, IconButton, Status } from 'twenty-ui';
+import { Button, IconButton } from 'twenty-ui/input';
+import { Status } from 'twenty-ui/data-display';
 
 const StyledTabRoot = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]};
   overflow-y: auto;
   height: 100%;
 `;
 
 const StyledSummaryCard = styled.div`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.secondary};
-  padding: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSummaryTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledSummaryMeta = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   line-height: 1.4;
 `;
 
 const StyledHonesty = styled.p`
   margin: 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledSectionTitle = styled.h3`
-  margin: ${({ theme }) => theme.spacing(1)} 0 0;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  margin: ${themeCssVariables.spacing[1]} 0 0;
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledPathCard = styled.div`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.primary};
-  padding: ${({ theme }) => theme.spacing(2)};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.primary};
+  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledPathSummary = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledStepper = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[0.5]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledStep = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
+  gap: ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledStepArrow = styled.span`
-  color: ${({ theme }) => theme.font.color.light};
+  color: ${themeCssVariables.font.color.light};
 `;
 
 const StyledPersonLink = styled.a`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   text-decoration: none;
   &:hover {
     text-decoration: underline;
@@ -101,36 +103,36 @@ const StyledPersonLink = styled.a`
 const StyledChipRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledChip = styled.div`
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.pill};
-  padding: ${({ theme }) => `${theme.spacing(0.5)} ${theme.spacing(1.5)}`};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.secondary};
-  background: ${({ theme }) => theme.background.tertiary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.pill};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]}`};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  background: ${themeCssVariables.background.tertiary};
 `;
 
 const StyledEmpty = styled.div`
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   text-align: center;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledError = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  background: ${({ theme }) => theme.background.danger};
-  color: ${({ theme }) => theme.font.color.danger};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.md};
+  background: ${themeCssVariables.background.danger};
+  color: ${themeCssVariables.font.color.danger};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledActions = styled.div`
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   flex-wrap: wrap;
 `;
 
@@ -245,7 +247,7 @@ export const CandidateWarmPathTab = ({
 
       {isLoading ? (
         <StyledEmpty>
-          <IconRoute size={20} style={{ marginBottom: 8 }} />
+          <IconArrowsSplit2 size={20} style={{ marginBottom: 8 }} />
           <div>Mapping warm paths…</div>
         </StyledEmpty>
       ) : null}

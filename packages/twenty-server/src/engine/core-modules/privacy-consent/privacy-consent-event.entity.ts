@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { User } from 'src/engine/core-modules/user/user.entity';
+import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 
 export enum PrivacyConsentActionEnum {
   ACCEPT_ALL = 'accept_all',
@@ -62,9 +62,9 @@ export class PrivacyConsentEventEntity {
   @Column({ type: 'uuid', nullable: true })
   userId: string | null;
 
-  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'userId' })
-  user: Relation<User> | null;
+  user: Relation<UserEntity> | null;
 
   @Field(() => UUIDScalarType)
   @Column({ type: 'uuid' })

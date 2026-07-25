@@ -44,7 +44,7 @@ export interface CandidateSummary {
   jobCompanyName?: string;
   engagementStatus?: boolean;
   remarks?: string;
-  jobId?: string;
+  projectId?: string;
   jobName?: string;
   peopleId?: string;
   updatedAt?: string;

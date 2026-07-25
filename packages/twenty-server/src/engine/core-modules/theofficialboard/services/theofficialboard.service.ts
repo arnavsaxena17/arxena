@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 import { BrightDataResidentialProxyService } from 'src/engine/core-modules/bright-data/services/bright-data-residential-proxy.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { BrightDataUnlockerService } from 'src/engine/core-modules/bright-data/services/bright-data-unlocker.service';
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import type {
   TheOfficialBoardCandidate,
   TheOfficialBoardCompanyResponse,

@@ -1,7 +1,10 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { useId } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { InputHotkeyScope } from '@/ui/input/types/InputHotkeyScope';
-import { usePreviousHotkeyScope } from '@/ui/utilities/hotkey/hooks/usePreviousHotkeyScope';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
 import { VideoInterviewCreateButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewCreateButton';
 import { VideoInterviewModalCloseButton } from '@/video-interview/interview-creation/right-side/components/video-interview-name/VideoInterviewModalCloseButton';
 
@@ -12,10 +15,10 @@ const StyledVideoInterviewNameContainer = styled.div`
 const StyledInput = styled.input`
   align-items: flex-start;
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.tertiary};
-    font-size: ${({ theme }) => theme.font.size.lg};
-    font-weight: ${({ theme }) => theme.font.weight.medium};
-    font-family: ${({ theme }) => theme.font.family};
+    color: ${themeCssVariables.font.color.tertiary};
+    font-size: ${themeCssVariables.font.size.lg};
+    font-weight: ${themeCssVariables.font.weight.medium};
+    font-family: ${themeCssVariables.font.family};
   }
   &:focus {
     outline: none;
@@ -24,10 +27,10 @@ const StyledInput = styled.input`
   flex-grow: 1;
   border: none;
   height: auto;
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-family: ${({ theme }) => theme.font.family};
-  font-size: ${({ theme }) => theme.font.size.lg};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.secondary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledButtonsContainer = styled.div`
@@ -37,11 +40,32 @@ const StyledButtonsContainer = styled.div`
   gap: 8px;
 `;
 
-export const VideoInterviewName = ({ closeModal }: { closeModal: () => void }) => {
-  const { goBackToPreviousHotkeyScope, setHotkeyScopeAndMemorizePreviousScope, } = usePreviousHotkeyScope();
-  const handleFocus = () => { setHotkeyScopeAndMemorizePreviousScope(InputHotkeyScope.TextInput); };
-  const handleBlur = () => { goBackToPreviousHotkeyScope(); };
+export const VideoInterviewName = ({
+  closeModal,
+}: {
+  closeModal: () => void;
+}) => {
+  const focusId = useId();
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
 
+  const handleFocus = () => {
+    pushFocusItemToFocusStack({
+      focusId,
+      component: {
+        type: FocusComponentType.TEXT_INPUT,
+        instanceId: focusId,
+      },
+      globalHotkeysConfig: {
+        enableGlobalHotkeysConflictingWithKeyboard: false,
+      },
+    });
+  };
+
+  const handleBlur = () => {
+    removeFocusItemFromFocusStackById({ focusId });
+  };
 
   return (
     <StyledVideoInterviewNameContainer>
@@ -52,7 +76,6 @@ export const VideoInterviewName = ({ closeModal }: { closeModal: () => void }) =
         required
         onFocus={handleFocus}
         onBlur={handleBlur}
-
       />
       <StyledButtonsContainer>
         <VideoInterviewModalCloseButton closeModal={closeModal} />

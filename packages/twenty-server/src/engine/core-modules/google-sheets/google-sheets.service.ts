@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { columnDefinitions, Job, UpdateOneJob, UserProfile } from 'twenty-shared';
+import { columnDefinitions, Project, UpdateOneProject, UserProfile } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 
@@ -514,14 +514,14 @@ export class GoogleSheetsService {
     console.log(`Successfully appended ${candidateRows.length} new candidates to Google Sheet`);
   }
 
-  private async updateJobWithSheetDetails(jobObject: Job, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
+  private async updateProjectWithSheetDetails(jobObject: Project, googleSheetUrl: string, googleSheetId: string, apiToken: string): Promise<void> {
     console.log('This is the jobObject:', jobObject);
     console.log('This Updating sheet with usrl:', googleSheetUrl);
     console.log('This Updating sheet with googleSheetId:', googleSheetId);
 
 
     try {
-      const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(UpdateOneJob,  {
+      const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(UpdateOneProject,  {
         idToUpdate: jobObject?.id,
         input: {
           googleSheetUrl: { primaryLinkLabel: googleSheetUrl, primaryLinkUrl: googleSheetUrl },
@@ -534,7 +534,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Job): Promise<void> {
+  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Project): Promise<void> {
     return this.retryWithBackoff(async () => {
       try {
         const auth = await this.loadSavedCredentialsIfExist(apiToken);
@@ -605,12 +605,12 @@ export class GoogleSheetsService {
     });
   }
 
-  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: Job, apiToken: string): Promise<string> {
+  private async createAndInitializeSheet(auth: any, headers:string[], jobObject: Project, apiToken: string): Promise<string> {
     console.log('Creating and initializing sheet');
     const newSheet = await this.createSpreadsheetForJob(jobObject.name, apiToken);
     const googleSheetId = newSheet.googleSheetId;
     const googleSheetUrl = `https://docs.google.com/spreadsheets/d/${googleSheetId}`;
-    await this.updateJobWithSheetDetails(jobObject, googleSheetUrl, googleSheetId, apiToken);
+    await this.updateProjectWithSheetDetails(jobObject, googleSheetUrl, googleSheetId, apiToken);
     return googleSheetId;
   }
 
@@ -659,7 +659,7 @@ export class GoogleSheetsService {
   async findSpreadsheetByJobName(auth: any, jobName: string): Promise<{ id: string; url: string } | null> {
     console.log('looking for existing files');
     const drive = google.drive({ version: 'v3', auth });
-    const searchQuery = `name = '${jobName} - Job Tracking' and mimeType = 'application/vnd.google-apps.spreadsheet'`;
+    const searchQuery = `name = '${jobName} - Project Tracking' and mimeType = 'application/vnd.google-apps.spreadsheet'`;
 
     try {
       const response = await drive.files.list({
@@ -857,7 +857,7 @@ export class GoogleSheetsService {
 
       const sheets = google.sheets({ version: 'v4', auth: auth as OAuth2Client });
       console.log("Got to sheets and This is the jobName:::", jobName);
-      const spreadsheetTitle = `${jobName} - Job Tracking`;
+      const spreadsheetTitle = `${jobName} - Project Tracking`;
       console.log("This is the spreadsheetTitle:::", spreadsheetTitle);
 
       // Create new spreadsheet

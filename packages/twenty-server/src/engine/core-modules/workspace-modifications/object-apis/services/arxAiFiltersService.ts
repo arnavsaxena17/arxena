@@ -6,9 +6,13 @@ export async function createArxAiFilters(apiToken: string): Promise<void> {
 
     for (const aiFilter of arxAiFilters) {
         try {
-            (aiFilter as unknown as Record<string, unknown>)['name'] = aiFilter.modelName;
+            const { fields, ...aiFilterWithoutFields } = aiFilter;
             await executeGraphQLQuery(mutationToCreateOneCandidateEnrichment, {
-                input: aiFilter
+                input: {
+                    ...aiFilterWithoutFields,
+                    name: aiFilter.modelName,
+                    filterFields: fields,
+                },
             }, apiToken);
             console.log(`Created arx AI filter: ${aiFilter.modelName}`);
         } catch (error) {

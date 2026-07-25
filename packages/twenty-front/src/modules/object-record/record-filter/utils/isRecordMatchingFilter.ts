@@ -1,33 +1,6 @@
 import { isObject } from '@sniptt/guards';
 
-import {
-  FieldMetadataType,
-  type ActorFilter,
-  type AddressFilter,
-  type AndObjectRecordFilter,
-  type ArrayFilter,
-  type BooleanFilter,
-  type CurrencyFilter,
-  type DateFilter,
-  type EmailsFilter,
-  type FilesFilter,
-  type FloatFilter,
-  type FullNameFilter,
-  type LeafObjectRecordFilter,
-  type LinksFilter,
-  type MultiSelectFilter,
-  type NotObjectRecordFilter,
-  type OrObjectRecordFilter,
-  type PhonesFilter,
-  type RatingFilter,
-  type RawJsonFilter,
-  type RecordGqlOperationFilter,
-  type RichTextFilter,
-  type SelectFilter,
-  type StringFilter,
-  type TSVectorFilter,
-  type UUIDFilter,
-} from 'twenty-shared/types';
+import { FieldMetadataType, type ActorFilter, type AddressFilter, type AndObjectRecordFilter, type ArrayFilter, type BooleanFilter, type CurrencyFilter, type DateFilter, type EmailsFilter, type FilesFilter, type FloatFilter, type FullNameFilter, type LeafObjectRecordFilter, type LinksFilter, type MultiSelectFilter, type NotObjectRecordFilter, type OrObjectRecordFilter, type PhonesFilter, type RatingFilter, type RawJsonFilter, type RecordGqlOperationFilter, type RichTextFilter, type SelectFilter, type StringFilter, type TSVectorFilter, type UUIDFilter } from 'twenty-shared/types';
 import {
   computeRelationGqlFieldJoinColumnName,
   isDefined,

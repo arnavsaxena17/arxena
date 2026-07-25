@@ -1,4 +1,3 @@
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { mapRLSOperandToRecordFilterOperand } from '@/object-record/record-filter/utils/mapRLSOperandToRecordFilterOperand';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
@@ -11,7 +10,6 @@ import { SettingsWizardStepBar } from '@/settings/components/layout/SettingsWiza
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
 import { t } from '@lingui/core/macro';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { SettingsPath } from 'twenty-shared/types';
 import {
   getSettingsPath,
@@ -21,11 +19,7 @@ import {
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useQuery } from '@apollo/client/react';
-import {
-  type BillingEntitlement,
-  BillingEntitlementKey,
-  FindOneAgentDocument,
-} from '~/generated-metadata/graphql';
+import { FindOneAgentDocument } from '~/generated-metadata/graphql';
 
 type SettingsRolePermissionsObjectLevelObjectFormProps = {
   roleId: string;
@@ -40,8 +34,6 @@ export const SettingsRolePermissionsObjectLevelObjectForm = ({
   const navigate = useNavigate();
   const fromAgentId = searchParams.get('fromAgent');
 
-  const currentWorkspace = useAtomStateValue(currentWorkspaceState);
-
   const settingsDraftRole = useAtomFamilyStateValue(
     settingsDraftRoleFamilyState,
     roleId,
@@ -55,15 +47,6 @@ export const SettingsRolePermissionsObjectLevelObjectForm = ({
   const objectMetadata = useObjectMetadataItemById({
     objectId: objectMetadataId,
   });
-
-  const workspaceBillingEntitlements = currentWorkspace?.billingEntitlements;
-
-  const isRLSBillingEntitlementEnabled =
-    workspaceBillingEntitlements?.some(
-      (entitlement: BillingEntitlement) =>
-        entitlement.key === BillingEntitlementKey.RLS &&
-        entitlement.value === true,
-    ) ?? false;
 
   const objectMetadataItem = objectMetadata.objectMetadataItem;
 
@@ -181,7 +164,6 @@ export const SettingsRolePermissionsObjectLevelObjectForm = ({
         <SettingsRolePermissionsObjectLevelRecordLevelSection
           objectMetadataItem={objectMetadataItem}
           roleId={roleId}
-          hasOrganizationPlan={isRLSBillingEntitlementEnabled}
         />
       </SettingsPageContainer>
     </SettingsPageLayout>

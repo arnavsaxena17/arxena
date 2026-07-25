@@ -3,10 +3,7 @@ import { useEffect } from 'react';
 import { readUIMessageStream, type UIMessageChunk } from 'ai';
 import { print, type ExecutionResult } from 'graphql';
 import { useStore } from 'jotai';
-import {
-  type AgentChatSubscriptionEvent,
-  type ExtendedUIMessage,
-} from 'twenty-shared/ai';
+import type { AgentChatSubscriptionEvent, ExtendedUIMessage } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { v4 } from 'uuid';
 

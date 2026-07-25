@@ -1,6 +1,6 @@
-import { useTheme } from '@emotion/react';
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
 import React, { useEffect, useRef } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
@@ -12,7 +12,7 @@ import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
 import { AssistantThread } from '@/assistant/types/assistant.types';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
-import { JobDetailsForm, RecruiterDetails } from './JobDetailsForm';
+import { ProjectDetailsForm, RecruiterDetails } from './ProjectDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
 import { VideoQuestionsSection } from './VideoQuestionsSection';
 
@@ -29,7 +29,7 @@ const StyledContentWrapper = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 export type ArxJDFormStepperProps = FormComponentProps & {
@@ -73,22 +73,21 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   onCreateJobFromName,
   onAssistantThreadUpdate,
 }) => {
-  const theme = useTheme();
   const { activeStep, nextStep, prevStep, setStep, availableSteps, currentStepType, isFirstStep, isLastStep } =
     useArxJDFormStepper(0);
-  
+
   // For debugging
   console.log('ArxJDFormStepper rendering with activeStep:', activeStep, 'currentStepType:', currentStepType);
-  
+
   // Use the available steps from the hook, which already handles LinkedIn Unipile Account ID condition
   const customAvailableSteps = availableSteps;
-  
+
   // Get current step info - for child components
   const currentStep = activeStep + 1;
   const totalSteps = customAvailableSteps.length;
-  
+
   console.log('ArxJDFormStepper - customAvailableSteps:', customAvailableSteps, 'currentStep:', currentStep, 'totalSteps:', totalSteps);
-  
+
   // Recalculate steps whenever chat flow order changes
   useEffect(() => {
     // This effect will re-execute when parsedJD or its chatFlow settings change
@@ -156,9 +155,9 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
   // eslint-disable-next-line @nx/workspace-no-state-useref
   const hasAutoAdvancedRef = useRef(false);
 
-  // Note: We're disabling auto-advancing here and will let the user 
+  // Note: We're disabling auto-advancing here and will let the user
   // manually navigate to the next step using the Continue button
-  
+
   // Handle step navigation
   const handleNext = () => {
     if (activeStep < customAvailableSteps.length - 1) {
@@ -180,9 +179,9 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
         </StyledContentWrapper>
       );
     }
-    
+
     console.log('Rendering step content for step:', activeStep, 'of type:', currentStepType);
-    
+
     if (currentStepType === ArxJDFormStepType.UploadJD) {
       return (
         <ArxJDUploadStep
@@ -227,14 +226,14 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       return (
         <StyledContentWrapper>
           <ArxJDStepHeading
-            title="Job Details"
+            title="Project Details"
             description="Review job details"
             currentStep={currentStep}
             totalSteps={totalSteps}
           />
-          <JobDetailsForm 
-            parsedJD={parsedJD} 
-            setParsedJD={setParsedJD} 
+          <ProjectDetailsForm
+            parsedJD={parsedJD}
+            setParsedJD={setParsedJD}
             onRecruiterInfoChange={onRecruiterInfoChange}
           />
         </StyledContentWrapper>
@@ -244,7 +243,7 @@ export const ArxJDFormStepper: React.FC<ArxJDFormStepperProps> = ({
       return (
         <StyledContentWrapper>
 
-     
+
         </StyledContentWrapper>
       );
     }

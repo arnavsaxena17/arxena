@@ -1,10 +1,4 @@
-import {
-  type MessageChannelType,
-  type MessageChannelContactAutoCreationPolicy,
-  type MessageChannelSyncStage,
-  type MessageChannelSyncStatus,
-  type MessageFolderImportPolicy,
-} from 'twenty-shared/types';
+import type { MessageChannelType, MessageChannelContactAutoCreationPolicy, MessageChannelSyncStage, MessageChannelSyncStatus, MessageFolderImportPolicy } from 'twenty-shared/types';
 import { type MessageChannelVisibility } from '~/generated/graphql';
 
 export type MessageChannel = {

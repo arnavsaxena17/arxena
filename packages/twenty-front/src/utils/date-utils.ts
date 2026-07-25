@@ -220,6 +220,15 @@ export const formatToHumanReadableDate = (date: Date | string) => {
   return i18n.date(parsedJSDate, { dateStyle: 'medium' });
 };
 
+export const formatToHumanReadableDateTime = (date: Date | string) => {
+  const parsedJSDate = parseDate(date);
+
+  return i18n.date(parsedJSDate, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+};
+
 const getTimePattern = (timeFormat: TimeFormat) => {
   return timeFormat === TimeFormat.HOUR_12 ? 'hh:mm a' : 'HH:mm';
 };

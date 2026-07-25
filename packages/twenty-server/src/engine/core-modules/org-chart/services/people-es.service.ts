@@ -34,11 +34,7 @@ export class PeopleEsService {
 
   constructor(private readonly environmentService: EnvironmentService) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
-    const index =
-      (this.environmentService.get('PEOPLE_ES_INDEX') as string | undefined) ??
-      'people_all';
-
-    this.peopleIndex = index;
+    this.peopleIndex = this.environmentService.get('PEOPLE_ES_INDEX');
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
       this.client = new Client({

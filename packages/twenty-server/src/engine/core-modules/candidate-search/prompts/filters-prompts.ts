@@ -67,7 +67,7 @@ export class FiltersPrompts {
   ): string {
     let prompt = `Analyze the following job description and AI filter configurations to create intelligent filter strategies for candidate shortlisting.
 
-    Job Description:
+    Project Description:
     - Job Title: ${parsedJD.jobTitle}
     - Company: ${parsedJD.company}
     - Location: ${parsedJD.location}

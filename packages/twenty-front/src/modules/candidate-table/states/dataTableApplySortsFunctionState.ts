@@ -1,8 +1,9 @@
-import { atom } from 'recoil';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
 type DataTableApplySortsFunction = (sorts: any) => void;
 
-export const dataTableApplySortsFunctionState = atom<DataTableApplySortsFunction | null>({
-  key: 'dataTableApplySortsFunctionState',
-  default: null,
-});
+export const dataTableApplySortsFunctionState =
+  createAtomState<DataTableApplySortsFunction | null>({
+    key: 'dataTableApplySortsFunctionState',
+    defaultValue: null,
+  });

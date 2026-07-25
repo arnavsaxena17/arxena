@@ -1,5 +1,5 @@
 import { type WorkflowStep } from '@/workflow/types/Workflow';
-import { type WorkflowRunStepInfo, StepStatus } from 'twenty-shared/workflow';
+import { StepStatus, type WorkflowRunStepInfo } from 'twenty-shared/workflow';
 import { getStepInfoHistoryItem } from '@/workflow/workflow-steps/utils/getStepInfoHistoryItem';
 
 describe('getStepInfoHistoryItem', () => {

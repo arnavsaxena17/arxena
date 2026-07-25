@@ -117,12 +117,12 @@ export const SettingsAiOverviewTab = () => {
       <Section>
         <H2Title
           title={t`MCP Server`}
-          description={t`Connect AI assistants like Claude or Cursor to your workspace via the Model Context Protocol`}
+          description={t`Connect Cursor/Claude to Nest /mcp (outbound), or add upstream MCP servers under the MCP servers tab so Ask AI can use their tools`}
         />
         <UndecoratedLink to={MCP_DEEP_LINK}>
           <SettingsCard
             Icon={<IconSparkle2 size={theme.icon.size.md} />}
-            title={t`Set up MCP`}
+            title={t`Set up MCP client connection`}
           />
         </UndecoratedLink>
       </Section>

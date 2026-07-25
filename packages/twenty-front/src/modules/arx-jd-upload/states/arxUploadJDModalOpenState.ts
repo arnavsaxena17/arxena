@@ -1,21 +1,21 @@
-import { createState } from 'twenty-ui';
+import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-export const isArxUploadJDModalOpenState = createState<boolean>({
+export const isArxUploadJDModalOpenState = createAtomState<boolean>({
   key: 'isArxUploadJDModalOpenState',
   defaultValue: false,
 });
 
-export const arxUploadJDModalModeState = createState<'create' | 'edit'>({
+export const arxUploadJDModalModeState = createAtomState<'create' | 'edit'>({
   key: 'arxUploadJDModalModeState',
   defaultValue: 'create',
 });
 
-// export const enrichmentsState = createState<any[]>({
+// export const enrichmentsState = createAtomState<any[]>({
 //   key: 'enrichmentsState',
 //   defaultValue: [],
 // });
 
-// export const activeEnrichmentState = createState<number | null>({
+// export const activeEnrichmentState = createAtomState<number | null>({
 //   key: 'activeEnrichmentState',
 //   defaultValue: null,
 // });

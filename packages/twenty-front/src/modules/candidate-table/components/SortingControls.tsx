@@ -1,86 +1,87 @@
 import { SortConfig } from '@/candidate-table/states/states';
-import styled from '@emotion/styled';
-import { IconArrowDown, IconArrowUp, IconPlus, IconX } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconArrowDown, IconArrowUp, IconPlus, IconX } from 'twenty-ui/icon';
 import Handsontable from 'handsontable';
 import { useState } from 'react';
 
 const StyledSortingContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  padding: ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
+  gap: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
 `;
 
 const StyledSortingHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSortingList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSortingItem = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)};
-  background-color: ${({ theme }) => theme.background.primary};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.primary};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledColumnSelect = styled.select`
   flex: 1;
-  padding: ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledOrderSelect = styled.select`
-  padding: ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledSortButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[1]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    color: ${({ theme }) => theme.font.color.primary};
+    background-color: ${themeCssVariables.background.secondary};
+    color: ${themeCssVariables.font.color.primary};
   }
 
   &.asc {
-    color: ${({ theme }) => theme.color.blue};
+    color: ${themeCssVariables.color.blue};
   }
 
   &.desc {
-    color: ${({ theme }) => theme.color.red};
+    color: ${themeCssVariables.color.red};
   }
 `;
 
@@ -88,17 +89,17 @@ const StyledRemoveButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${themeCssVariables.spacing[1]};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.xs};
+  border-radius: ${themeCssVariables.border.radius.xs};
   background-color: transparent;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    color: ${({ theme }) => theme.color.red};
+    background-color: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.color.red};
   }
 `;
 
@@ -106,20 +107,20 @@ const StyledAddButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px dashed ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px dashed ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.xs};
   background-color: transparent;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 
   &:hover {
-    border-color: ${({ theme }) => theme.color.blue};
-    color: ${({ theme }) => theme.color.blue};
-    background-color: ${({ theme }) => theme.background.tertiary};
+    border-color: ${themeCssVariables.color.blue};
+    color: ${themeCssVariables.color.blue};
+    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
@@ -127,20 +128,20 @@ const StyledClearAllButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  background-color: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.secondary};
-    color: ${({ theme }) => theme.color.red};
-    border-color: ${({ theme }) => theme.color.red};
+    background-color: ${themeCssVariables.background.secondary};
+    color: ${themeCssVariables.color.red};
+    border-color: ${themeCssVariables.color.red};
   }
 `;
 

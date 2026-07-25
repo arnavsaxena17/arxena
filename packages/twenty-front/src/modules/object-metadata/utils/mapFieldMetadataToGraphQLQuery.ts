@@ -5,11 +5,7 @@ import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/Enriche
 import { getObjectPermissionsForObject } from '@/object-metadata/utils/getObjectPermissionsForObject';
 import { type RecordGqlFields } from '@/object-record/graphql/record-gql-fields/types/RecordGqlFields';
 import { isNonCompositeField } from '@/object-record/object-filter-dropdown/utils/isNonCompositeField';
-import {
-  FieldMetadataType,
-  type ObjectPermissions,
-  RelationType,
-} from 'twenty-shared/types';
+import { FieldMetadataType, RelationType, type ObjectPermissions } from 'twenty-shared/types';
 import {
   computeMorphRelationGqlFieldName,
   computeRelationGqlFieldJoinColumnName,

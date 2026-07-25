@@ -1,10 +1,14 @@
 /* @license Enterprise */
 
 import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
-import { Args, Mutation, Query } from '@nestjs/graphql';
+import { Args, Context, Int, Mutation, Query } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
 
+import { type Request } from 'express';
 import { PermissionFlagType } from 'twenty-shared/constants';
+import { getRevealCost } from 'twenty-shared';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { type Repository } from 'typeorm';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { type ApiKeyEntity } from 'src/engine/core-modules/api-key/api-key.entity';
@@ -18,14 +22,35 @@ import { BillingUpdateDTO } from 'src/engine/core-modules/billing/dtos/billing-u
 import { BillingCheckoutSessionInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-checkout-session.input';
 import { BillingSessionInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-session.input';
 import { BillingUpdateSubscriptionItemPriceInput } from 'src/engine/core-modules/billing/dtos/inputs/billing-update-subscription-item-price.input';
+import { CreateRazorpayOrderInput } from 'src/engine/core-modules/billing/dtos/inputs/create-razorpay-order.input';
+import { RequestInvoiceForCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/request-invoice-for-credits.input';
+import {
+  BillingProviderEnum,
+  BillingProviderOutput,
+} from 'src/engine/core-modules/billing/dtos/outputs/billing-provider.output';
+import { CreditPackOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-pack.output';
+import { CreditTransactionsOutput } from 'src/engine/core-modules/billing/dtos/outputs/credit-transaction.output';
+import { EngagementPlanOutput } from 'src/engine/core-modules/billing/dtos/outputs/engagement-plan.output';
+import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/outputs/razorpay-order.output';
+import { RequestInvoiceForCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/request-invoice-for-credits.output';
+import { WorkspaceCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/workspace-credits.output';
+import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
+import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingPlanKey } from 'src/engine/core-modules/billing/enums/billing-plan-key.enum';
+import { SubscriptionInterval } from 'src/engine/core-modules/billing/enums/billing-subscription-interval.enum';
+import { RAZORPAY_CREDIT_PACKS } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
+import { RazorpayOrderService } from 'src/engine/core-modules/billing/razorpay/services/razorpay-order.service';
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
 import { BillingPortalWorkspaceService } from 'src/engine/core-modules/billing/services/billing-portal.workspace-service';
 import { BillingSubscriptionUpdateService } from 'src/engine/core-modules/billing/services/billing-subscription-update.service';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
+import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
+import { PricingCurrencyService } from 'src/engine/core-modules/billing/services/pricing-currency.service';
 import { formatBillingDatabaseProductToGraphqlDTO } from 'src/engine/core-modules/billing/utils/format-database-product-to-graphql-dto.util';
+import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { PreventNestToAutoLogGraphqlErrorsFilter } from 'src/engine/core-modules/graphql/filters/prevent-nest-to-auto-log-graphql-errors.filter';
 import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import {
@@ -63,6 +88,15 @@ export class BillingResolver {
     private readonly billingService: BillingService,
     private readonly billingUsageService: BillingUsageService,
     private readonly permissionsService: PermissionsService,
+    private readonly environmentService: EnvironmentService,
+    private readonly razorpayOrderService: RazorpayOrderService,
+    private readonly invoiceRequestService: InvoiceRequestService,
+    private readonly pricingCurrencyService: PricingCurrencyService,
+    private readonly creditTransactionService: CreditTransactionService,
+    @InjectRepository(WorkspaceCredits)
+    private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
+    @InjectRepository(BillingPriceEntity)
+    private readonly billingPriceRepository: Repository<BillingPriceEntity>,
   ) {}
 
   @Query(() => BillingSessionDTO)
@@ -93,8 +127,11 @@ export class BillingResolver {
     {
       recurringInterval,
       successUrlPath,
+      successReturnUrl,
       plan,
       requirePaymentMethod,
+      razorpayPlanId,
+      quantity,
     }: BillingCheckoutSessionInput,
     @AuthApiKey() apiKey?: ApiKeyEntity,
   ) {
@@ -104,6 +141,26 @@ export class BillingResolver {
       apiKeyId: apiKey?.id,
       workspaceActivationStatus: workspace.activationStatus,
     });
+
+    if (this.environmentService.get('BILLING_PROVIDER') === 'razorpay') {
+      const { subscriptionId, keyId, callbackUrl } =
+        await this.billingPortalWorkspaceService.computeRazorpayCheckoutSession(
+          {
+            workspace,
+            successUrlPath: successUrlPath ?? '',
+            successReturnUrl,
+            razorpayPlanId,
+            quantity,
+          },
+        );
+
+      return {
+        url: null,
+        razorpaySubscriptionId: subscriptionId,
+        razorpayKeyId: keyId,
+        razorpayCallbackUrl: callbackUrl,
+      };
+    }
 
     const checkoutSessionParams = {
       user,
@@ -386,6 +443,181 @@ export class BillingResolver {
           { workspaceId: workspace.id },
         ),
     };
+  }
+
+
+  @Query(() => BillingProviderOutput)
+  billingProvider(): BillingProviderOutput {
+    const provider = this.environmentService.get('BILLING_PROVIDER');
+
+    return {
+      provider:
+        provider === 'razorpay'
+          ? BillingProviderEnum.razorpay
+          : BillingProviderEnum.stripe,
+    };
+  }
+
+  @Query(() => String)
+  async requestPricingCurrency(
+    @Context() context: { req: Request },
+  ): Promise<string> {
+    return this.pricingCurrencyService.getRequestPricingCurrency(context.req);
+  }
+
+  @Query(() => [CreditPackOutput])
+  creditPacks(): CreditPackOutput[] {
+    return RAZORPAY_CREDIT_PACKS.map((pack) => ({
+      key: pack.key,
+      name: pack.name,
+      credits: pack.credits,
+      amountSubunits: pack.amountSubunits,
+      currency: pack.currency,
+      planId: pack.planId,
+      intent: pack.intent,
+      mapsCount: pack.mapsCount,
+      mapType: pack.mapType,
+      mapTypeLabel: pack.mapTypeLabel,
+      tagline: pack.tagline,
+      inheritedFromPlanId: pack.inheritedFromPlanId,
+      ownFeatures: pack.features,
+      includedEmailCredits: pack.includedEmailCredits,
+      includedPhoneCredits: pack.includedPhoneCredits,
+      creditsDisplay: pack.creditsDisplay,
+      pricesSubunitsJson: JSON.stringify(pack.pricesSubunits),
+    }));
+  }
+
+  @Query(() => [EngagementPlanOutput])
+  @UseGuards(WorkspaceAuthGuard)
+  async engagementPlans(): Promise<EngagementPlanOutput[]> {
+    const prices = await this.billingPriceRepository.find({
+      where: { active: true },
+      order: { unitAmount: 'ASC' },
+    });
+
+    return prices
+      .filter(
+        (price): price is BillingPriceEntity & { razorpayPlanId: string } =>
+          price.razorpayPlanId != null && price.razorpayPlanId !== '',
+      )
+      .map((price) => {
+        const intervalCount = price.recurring?.interval_count ?? 1;
+        const isYearly = price.interval === SubscriptionInterval.Year;
+        let period = 'monthly';
+
+        if (isYearly) {
+          period = 'yearly';
+        } else if (intervalCount === 3) {
+          period = 'quarterly';
+        } else if (intervalCount === 6) {
+          period = '6-month';
+        }
+
+        return {
+          id: price.razorpayPlanId,
+          name: price.nickname ?? price.razorpayPlanId,
+          amount: Number(price.unitAmount) ?? 0,
+          currency: price.currency,
+          period,
+          interval: isYearly ? 12 : intervalCount,
+        };
+      });
+  }
+
+  @Query(() => CreditTransactionsOutput)
+  @UseGuards(WorkspaceAuthGuard)
+  async creditTransactions(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('limit', { type: () => Int, nullable: true }) limit?: number,
+    @Args('cursor', { nullable: true }) cursor?: string,
+  ): Promise<CreditTransactionsOutput> {
+    const { items, nextCursor } =
+      await this.creditTransactionService.findByWorkspace(workspace.id, {
+        limit,
+        cursor,
+      });
+
+    return {
+      items: items.map((transaction) => ({
+        id: transaction.id,
+        type: transaction.type,
+        creditType: transaction.creditType,
+        amount: transaction.amount,
+        metadata: transaction.metadata,
+        createdAt: transaction.createdAt,
+      })),
+      nextCursor,
+    };
+  }
+
+  @Query(() => WorkspaceCreditsOutput)
+  @UseGuards(WorkspaceAuthGuard)
+  async workspaceCredits(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ): Promise<WorkspaceCreditsOutput> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId: workspace.id },
+    });
+
+    const orgChartCredits = row?.orgChartCredits ?? 0;
+    const revealCredits = row?.revealCredits ?? 0;
+    const emailRevealCost = getRevealCost('email');
+    const phoneRevealCost = getRevealCost('phone');
+
+    return {
+      orgChartCredits,
+      revealCredits,
+      revealCreditsAsEmailEquivalent:
+        emailRevealCost > 0 ? Math.floor(revealCredits / emailRevealCost) : 0,
+      revealCreditsAsPhoneEquivalent:
+        phoneRevealCost > 0 ? Math.floor(revealCredits / phoneRevealCost) : 0,
+      emailRevealCost,
+      phoneRevealCost,
+    };
+  }
+
+  @Mutation(() => RazorpayOrderOutput)
+  @UseGuards(WorkspaceAuthGuard)
+  async createRazorpayOrderForCredits(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('input', { type: () => CreateRazorpayOrderInput })
+    input: CreateRazorpayOrderInput,
+  ): Promise<RazorpayOrderOutput> {
+    const result = await this.razorpayOrderService.createOrderForCredits(
+      workspace.id,
+      input.creditPackKey,
+      input.currency,
+    );
+
+    return {
+      orderId: result.orderId,
+      amount: result.amount,
+      currency: result.currency,
+      keyId: result.keyId,
+    };
+  }
+
+  @Mutation(() => RequestInvoiceForCreditsOutput)
+  @UseGuards(WorkspaceAuthGuard, UserAuthGuard)
+  async requestInvoiceForCredits(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @AuthUser() user: AuthContextUser,
+    @Args('input', { type: () => RequestInvoiceForCreditsInput })
+    input: RequestInvoiceForCreditsInput,
+  ): Promise<RequestInvoiceForCreditsOutput> {
+    await this.invoiceRequestService.requestInvoice({
+      workspaceId: workspace.id,
+      userEmail: user.email,
+      creditPackKey: input.creditPackKey,
+      companyName: input.companyName,
+      billingAddress: input.billingAddress,
+      billingEmail: input.billingEmail,
+      vatNumber: input.vatNumber,
+      currency: input.currency,
+    });
+
+    return { success: true };
   }
 
   private async validateCanCheckoutSessionPermissionOrThrow({

@@ -1,13 +1,15 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export type LinkedinXrayStatusEvent = {
   message: string;
   page?: number;
   engine?: 'google' | 'bing';
   candidatesCollectedSoFar?: number;
-  searchJobId?: string;
+  searchProjectId?: string;
   heartbeat?: boolean;
   timestamp?: string;
 };
@@ -21,7 +23,7 @@ export type LinkedinXrayPageResultsEvent = {
   fetchedPages?: number[];
   pagesByEngine?: Record<string, number[]>;
   strategyLabel?: string;
-  searchJobId?: string;
+  searchProjectId?: string;
 };
 
 export type LinkedinXrayCandidateBatchEvent = {
@@ -31,7 +33,7 @@ export type LinkedinXrayCandidateBatchEvent = {
   totalCandidatesSoFar?: number;
   fetchedPages?: number[];
   pagesByEngine?: Record<string, number[]>;
-  searchJobId?: string;
+  searchProjectId?: string;
 };
 
 export type LinkedinXrayCompleteEvent = {
@@ -39,11 +41,11 @@ export type LinkedinXrayCompleteEvent = {
   candidates?: Array<Record<string, unknown>>;
   totalCandidates?: number;
   pagesByEngine?: Record<string, number[]>;
-  searchJobId?: string;
+  searchProjectId?: string;
 };
 
 export const useLinkedinXrayProgress = (enabled = true) => {
-  const tokenPair = useRecoilValue(tokenPairState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const [isConnected, setIsConnected] = useState(false);
@@ -58,7 +60,7 @@ export const useLinkedinXrayProgress = (enabled = true) => {
   >([]);
 
   useEffect(() => {
-    if (!enabled || !tokenPair?.accessToken?.token) {
+    if (!enabled || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
       setIsConnected(false);
@@ -66,9 +68,9 @@ export const useLinkedinXrayProgress = (enabled = true) => {
     }
 
     const url = new URL(
-      `${process.env.REACT_APP_SERVER_BASE_URL}/linkedin-xray-progress/stream`,
+      `${REACT_APP_SERVER_BASE_URL}/linkedin-xray-progress/stream`,
     );
-    url.searchParams.set('token', tokenPair.accessToken.token);
+    url.searchParams.set('token', tokenPair.accessOrWorkspaceAgnosticToken.token);
     url.searchParams.set('origin', window.location.origin);
 
     const eventSource = new EventSource(url.toString());
@@ -124,7 +126,7 @@ export const useLinkedinXrayProgress = (enabled = true) => {
       eventSourceRef.current = null;
       setIsConnected(false);
     };
-  }, [enabled, tokenPair?.accessToken?.token]);
+  }, [enabled, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   const flattenedCandidates = useMemo(
     () => candidateBatches.flatMap((batch) => batch.candidates || []),

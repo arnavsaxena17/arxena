@@ -63,8 +63,8 @@ describe('computeMetadataNamesFromLabelsOrThrow', () => {
 
   it('should apply custom suffix for reserved words by default', () => {
     const result = computeMetadataNamesFromLabelsOrThrow({
-      labelSingular: 'Job',
-      labelPlural: 'Jobs',
+      labelSingular: 'Project',
+      labelPlural: 'Projects',
     });
 
     expect(result.nameSingular).toBe('jobCustom');
@@ -73,8 +73,8 @@ describe('computeMetadataNamesFromLabelsOrThrow', () => {
 
   it('should skip custom suffix when applyCustomSuffix is false', () => {
     const result = computeMetadataNamesFromLabelsOrThrow({
-      labelSingular: 'Job',
-      labelPlural: 'Jobs',
+      labelSingular: 'Project',
+      labelPlural: 'Projects',
       applyCustomSuffix: false,
     });
 

@@ -11,7 +11,7 @@ export const normalizeEnrichmentResumeFlag = (
     ...enrichment,
     includeResume: enrichment.includeResume === true || hasResumeMarker,
     selectedMetadataFields: selectedMetadataFields.filter(
-      (field) => field !== RESUME_METADATA_FIELD,
+      (field: string) => field !== RESUME_METADATA_FIELD,
     ),
   };
 };
@@ -20,7 +20,7 @@ export const buildSelectedMetadataFieldsForPersist = (
   enrichment: Enrichment,
 ): string[] => {
   const fields = (enrichment.selectedMetadataFields || []).filter(
-    (field) => field !== RESUME_METADATA_FIELD,
+    (field: string) => field !== RESUME_METADATA_FIELD,
   );
 
   if (enrichment.includeResume) {

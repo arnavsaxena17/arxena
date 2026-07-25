@@ -101,7 +101,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
       
       // Set highest education level if available
       if (candidateData.highest_education_level) {
-        // this.addJobProcessEvent(userProfile, 'highest_education_level', candidateData.highest_education_level);
+        // this.addProjectProcessEvent(userProfile, 'highest_education_level', candidateData.highest_education_level);
       }
     }
   }
@@ -150,16 +150,16 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     
     if (profilePhotoUrl) {
       userProfile.displayPicture = profilePhotoUrl;
-      // this.addJobProcessEvent(userProfile, 'profile_picture', profilePhotoUrl);
+      // this.addProjectProcessEvent(userProfile, 'profile_picture', profilePhotoUrl);
     }
   }
 
   private processApnaSpecificData(candidateData: any, userProfile: UserProfile): void {
     // Use utility method for events
-    // this.addJobProcessEvent(userProfile, 'last_active', candidateData.activeOn);
-    // this.addJobProcessEvent(userProfile, 'last_updated', candidateData.updatedOn);
-    // this.addJobProcessEvent(userProfile, 'is_cv_attached', candidateData.isCvAttached);
-    // this.addJobProcessEvent(userProfile, 'profile_picture', candidateData.profilePhotoUrl);
+    // this.addProjectProcessEvent(userProfile, 'last_active', candidateData.activeOn);
+    // this.addProjectProcessEvent(userProfile, 'last_updated', candidateData.updatedOn);
+    // this.addProjectProcessEvent(userProfile, 'is_cv_attached', candidateData.isCvAttached);
+    // this.addProjectProcessEvent(userProfile, 'profile_picture', candidateData.profilePhotoUrl);
 
     // Process gender
     const gender = candidateData.gender?.toLowerCase();
@@ -174,17 +174,17 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
 
     // Process various Apna-specific events using utility method
-    // this.addJobProcessEvent(userProfile, 'preferred_locations', 
+    // this.addProjectProcessEvent(userProfile, 'preferred_locations', 
       // candidateData.preferredLocation?.join(', '));
-    // this.addJobProcessEvent(userProfile, 'experience_departments', 
+    // this.addProjectProcessEvent(userProfile, 'experience_departments', 
       // candidateData.experienceDepartments?.join(','));
-    // this.addJobProcessEvent(userProfile, 'languages', candidateData.languages);
-    // this.addJobProcessEvent(userProfile, 'english_level', candidateData.englishLevel);
-    // this.addJobProcessEvent(userProfile, 'english_audio_intro_url', candidateData.english_audio_intro_url);
-    // this.addJobProcessEvent(userProfile, 'may_also_know', candidateData.mayAlsoKnow);
-    // this.addJobProcessEvent(userProfile, 'is_fresher', candidateData.fresher);
-    // this.addJobProcessEvent(userProfile, 'is_experienced', candidateData.isExperienced);
-    // this.addJobProcessEvent(userProfile, 'token', candidateData.token);
+    // this.addProjectProcessEvent(userProfile, 'languages', candidateData.languages);
+    // this.addProjectProcessEvent(userProfile, 'english_level', candidateData.englishLevel);
+    // this.addProjectProcessEvent(userProfile, 'english_audio_intro_url', candidateData.english_audio_intro_url);
+    // this.addProjectProcessEvent(userProfile, 'may_also_know', candidateData.mayAlsoKnow);
+    // this.addProjectProcessEvent(userProfile, 'is_fresher', candidateData.fresher);
+    // this.addProjectProcessEvent(userProfile, 'is_experienced', candidateData.isExperienced);
+    // this.addProjectProcessEvent(userProfile, 'token', candidateData.token);
   }
 
   /**

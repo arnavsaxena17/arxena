@@ -153,7 +153,7 @@ export const SalesNavigatorPeopleParameters = ({ parameters, updateParameters, o
 
       <LinkedInParameterSelector
         parameterType="JOB_FUNCTION"
-        label="Job Functions"
+        label="Project Functions"
         selectedValues={parameters.function?.include || []}
         onSelectionChange={(values) => updateParameters({ 
           function: { 

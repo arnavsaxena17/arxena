@@ -1,8 +1,10 @@
-import styled from '@emotion/styled';
-import { IconInfoCircle } from 'twenty-ui/icons';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { IconInfoCircle } from 'twenty-ui/icon';
 import React, { useEffect } from 'react';
-import { MenuItemSelect } from 'twenty-ui';
+import { MenuItemSelect } from 'twenty-ui/navigation';
 import { FormComponentProps } from '../types/FormComponentProps';
+import { ParsedJD } from '../types/ParsedJD';
 import {
   StyledSection,
   StyledSectionContent,
@@ -12,7 +14,7 @@ import {
 const StyledHeaderContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledIconContainer = styled.div`
@@ -28,15 +30,15 @@ const StyledIconContainer = styled.div`
     top: -10px;
     left: 24px;
     transform: translateY(-100%);
-    background-color: ${({ theme }) => theme.background.primary};
-    color: ${({ theme }) => theme.font.color.primary};
-    padding: ${({ theme }) => theme.spacing(2)};
-    border-radius: ${({ theme }) => theme.border.radius.sm};
-    box-shadow: ${({ theme }) => theme.boxShadow.light};
+    background-color: ${themeCssVariables.background.primary};
+    color: ${themeCssVariables.font.color.primary};
+    padding: ${themeCssVariables.spacing[2]};
+    border-radius: ${themeCssVariables.border.radius.sm};
+    box-shadow: ${themeCssVariables.boxShadow.light};
     width: max-content;
     max-width: 250px;
     z-index: 1000;
-    font-size: ${({ theme }) => theme.font.size.sm};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 
@@ -49,16 +51,16 @@ const StyledMenuItemContainer = styled.div`
     left: 50%;
     bottom: 100%;
     transform: translateX(-50%);
-    background-color: ${({ theme }) => theme.background.primary};
-    color: ${({ theme }) => theme.font.color.primary};
-    padding: ${({ theme }) => theme.spacing(2)};
-    border-radius: ${({ theme }) => theme.border.radius.sm};
-    box-shadow: ${({ theme }) => theme.boxShadow.light};
+    background-color: ${themeCssVariables.background.primary};
+    color: ${themeCssVariables.font.color.primary};
+    padding: ${themeCssVariables.spacing[2]};
+    border-radius: ${themeCssVariables.border.radius.sm};
+    box-shadow: ${themeCssVariables.boxShadow.light};
     width: max-content;
     max-width: 300px;
     z-index: 1000;
-    margin-bottom: ${({ theme }) => theme.spacing(2)};
-    font-size: ${({ theme }) => theme.font.size.sm};
+    margin-bottom: ${themeCssVariables.spacing[2]};
+    font-size: ${themeCssVariables.font.size.sm};
   }
 `;
 
@@ -66,21 +68,26 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
 }) => {
-  // Ensure initialChat is always selected when component mounts
   useEffect(() => {
-    if (!parsedJD.chatFlow.order.initialChat) {
-      setParsedJD({
-        ...parsedJD,
-        chatFlow: {
-          ...parsedJD.chatFlow,
-          order: {
-            ...parsedJD.chatFlow.order,
-            initialChat: true,
-          },
-        },
-      });
+    if (!parsedJD || parsedJD.chatFlow.order.initialChat) {
+      return;
     }
+
+    setParsedJD({
+      ...parsedJD,
+      chatFlow: {
+        ...parsedJD.chatFlow,
+        order: {
+          ...parsedJD.chatFlow.order,
+          initialChat: true,
+        },
+      },
+    } as ParsedJD);
   }, [parsedJD, setParsedJD]);
+
+  if (!parsedJD) {
+    return null;
+  }
 
   const handleChatFlowOrderChange = (selectedId: string) => {
     // Prevent deselecting initialChat
@@ -110,7 +117,7 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           ...parsedJD.chatFlow,
           order: newOrder,
         },
-      });
+      } as ParsedJD);
     }
     // If meetingScheduling is being turned off and videoInterview is on,
     // we need to handle the step navigation properly
@@ -126,7 +133,7 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           ...parsedJD.chatFlow,
           order: newOrder,
         },
-      });
+      } as ParsedJD);
     }
     // Normal case
     else {
@@ -136,7 +143,7 @@ export const ChatFlowSection: React.FC<FormComponentProps> = ({
           ...parsedJD.chatFlow,
           order: newOrder,
         },
-      });
+      } as ParsedJD);
     }
   };
 

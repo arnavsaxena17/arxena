@@ -1,26 +1,27 @@
-import { IconX } from 'twenty-ui/icons';
-import styled from '@emotion/styled';
+import { IconX } from 'twenty-ui/icon';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { memo, useCallback } from 'react';
 
 const StyledFilterChipsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   align-items: center;
-  margin-bottom: ${({ theme }) => theme.spacing(2)};
-  padding: ${({ theme }) => theme.spacing(1)} 0;
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1]} 0;
 `;
 
 const StyledFilterChip = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.secondary};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   max-width: 320px;
@@ -34,8 +35,8 @@ const StyledFilterChip = styled.div`
   }
 
   &:hover {
-    background-color: ${({ theme }) => theme.background.tertiary};
-    border-color: ${({ theme }) => theme.border.color.medium};
+    background-color: ${themeCssVariables.background.tertiary};
+    border-color: ${themeCssVariables.border.color.medium};
   }
 `;
 
@@ -47,32 +48,32 @@ const StyledClearButton = styled.button`
   border: none;
   cursor: pointer;
   padding: 0;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   border-radius: 50%;
   width: 16px;
   height: 16px;
   
   &:hover {
-    color: ${({ theme }) => theme.font.color.secondary};
-    background-color: ${({ theme }) => theme.background.tertiary};
+    color: ${themeCssVariables.font.color.secondary};
+    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
 const StyledClearAllButton = styled.button`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background-color: ${({ theme }) => theme.color.red};
-  color: ${({ theme }) => theme.color.white};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.color.red};
+  color: ${themeCssVariables.font.color.inverted};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 
   &:hover {
-    background-color: ${({ theme }) => theme.color.redDark};
+    background-color: ${themeCssVariables.color.red10};
   }
 `;
 

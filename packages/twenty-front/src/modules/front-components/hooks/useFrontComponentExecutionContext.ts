@@ -6,12 +6,8 @@ import {
   type FrontComponentExecutionContext,
   type FrontComponentHostCommunicationApi,
 } from 'twenty-front-component-renderer';
-import {
-  AppPath,
-  SidePanelPages,
-  type EnqueueSnackbarParams,
-} from 'twenty-shared/types';
-import { type AppLocale } from 'twenty-shared/translations';
+import { AppPath, SidePanelPages, type EnqueueSnackbarParams } from 'twenty-shared/types';
+import type { AppLocale } from 'twenty-shared/translations';
 
 import { useOpenAskAiPageWithPreprompt } from '@/ai/hooks/useOpenAskAiPageWithPreprompt';
 import { currentUserState } from '@/auth/states/currentUserState';

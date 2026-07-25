@@ -53,7 +53,7 @@ export class VideoInterviewChatProcesses {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchCandidateByCandidateId(candidateId, apiToken);
-      const jobId = candidateObj?.jobs?.id;
+      const projectId = candidateObj?.projects?.id;
 
 
       const publicWorkspaceDataByDomain = `query GetPublicWorkspaceDataByDomain {
@@ -81,11 +81,11 @@ export class VideoInterviewChatProcesses {
         publicWorkspaceDataResponse?.data?.data?.getPublicWorkspaceDataByDomain,
       );
 
-      console.log('jobId:', jobId);
+      console.log('projectId:', projectId);
       const interviewObj = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).getInterviewByJobId(jobId, apiToken);
+      ).getInterviewByProjectId(projectId, apiToken);
 
       console.log('interviewObj:::', interviewObj);
       const videoInterviewId = v4();
@@ -101,7 +101,7 @@ export class VideoInterviewChatProcesses {
               'Interview - ' +
               candidateObj?.name +
               ' for ' +
-              candidateObj?.jobs?.name,
+              candidateObj?.projects?.name,
             videoInterviewTemplateId: interviewObj?.id,
             interviewStarted: false,
             interviewCompleted: false,
@@ -120,7 +120,7 @@ export class VideoInterviewChatProcesses {
         },
       });
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateVideoInterview, { input: { id: videoInterviewId, candidateId: candidateObj?.id, name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.jobs?.name, videoInterviewTemplateId: interviewObj?.id, interviewStarted: false, interviewCompleted: false, interviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, interviewReviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, position: 'first' } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateVideoInterview, { input: { id: videoInterviewId, candidateId: candidateObj?.id, name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.projects?.name, videoInterviewTemplateId: interviewObj?.id, interviewStarted: false, interviewCompleted: false, interviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, interviewReviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, position: 'first' } }, apiToken);
 
       if (response.data.errors) {
         console.log(

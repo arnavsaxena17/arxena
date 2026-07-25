@@ -1,29 +1,36 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { RecoilRoot, useRecoilValue, type MutableSnapshot } from 'recoil';
+import { Provider as JotaiProvider } from 'jotai';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { jobIdAtom, jobsState } from '@/candidate-table/states/states';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
+import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { BaseThemeProvider } from '@/ui/theme/components/BaseThemeProvider';
 
 import type { ContextResultItem } from '../../types';
 import { OrgChartOutreachModal } from '../OrgChartOutreachModal';
 
-const JobIdProbe = () => {
-  const jobId = useRecoilValue(jobIdAtom);
-  return <div data-testid="job-id-probe">{jobId}</div>;
+const ProjectIdProbe = () => {
+  const projectId = useAtomStateValue(projectIdAtom);
+  return <div data-testid="job-id-probe">{projectId}</div>;
 };
 
 const mockRefetchJobs = jest.fn().mockResolvedValue(undefined);
 const mockEnqueueSnackBar = jest.fn();
 
-jest.mock('@/candidate-table/hooks/useJobRefetch', () => ({
-  useJobRefetch: () => ({ refetchJobs: mockRefetchJobs }),
+jest.mock('@/candidate-table/hooks/useProjectRefetch', () => ({
+  useProjectRefetch: () => ({ refetchJobs: mockRefetchJobs }),
 }));
 
 jest.mock('@/ui/feedback/snack-bar-manager/hooks/useSnackBar', () => ({
-  useSnackBar: () => ({ enqueueSnackBar: mockEnqueueSnackBar }),
+  useSnackBar: () => ({
+    enqueueSuccessSnackBar: mockEnqueueSnackBar,
+    enqueueErrorSnackBar: mockEnqueueSnackBar,
+    enqueueInfoSnackBar: mockEnqueueSnackBar,
+    enqueueWarningSnackBar: mockEnqueueSnackBar,
+  }),
 }));
 
 jest.mock('@/websocket-context/hooks/useUploadProgressSseSession', () => ({
@@ -56,13 +63,13 @@ const contextItem: ContextResultItem = {
   raw: {},
 };
 
-const initializeState = ({ set }: MutableSnapshot) => {
-  set(tokenPairState, {
+const initializeState = () => {
+  jotaiStore.set(tokenPairState.atom, {
     accessToken: { token: 'test-token', expiresAt: '' },
     refreshToken: { token: 'r', expiresAt: '' },
   } as never);
-  set(currentWorkspaceMemberState, { id: 'wm-1' } as never);
-  set(jobsState, [
+  jotaiStore.set(currentWorkspaceMemberState.atom, { id: 'wm-1' } as never);
+  jotaiStore.set(projectsState.atom, [
     {
       id: 'job-a',
       name: 'Open role',
@@ -70,29 +77,27 @@ const initializeState = ({ set }: MutableSnapshot) => {
       createdAt: '2024-01-01T00:00:00Z',
     },
   ]);
-  set(jobIdAtom, 'job-a');
+  jotaiStore.set(projectIdAtom.atom, 'job-a');
 };
 
-describe('OrgChartOutreachModal', () => {
-  const originalEnv = process.env.REACT_APP_SERVER_BASE_URL;
+jest.mock('~/config', () => ({
+  REACT_APP_SERVER_BASE_URL: 'http://localhost:3000',
+}));
 
+describe('OrgChartOutreachModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.REACT_APP_SERVER_BASE_URL = 'http://localhost:3000';
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
     }) as jest.Mock;
-  });
-
-  afterEach(() => {
-    process.env.REACT_APP_SERVER_BASE_URL = originalEnv;
+    initializeState();
   });
 
   it('updates message textarea when template selection changes', async () => {
     console.log('OrgChartOutreachModal: template change test start');
     render(
-      <RecoilRoot initializeState={initializeState}>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <OrgChartOutreachModal
             isOpen
@@ -103,7 +108,7 @@ describe('OrgChartOutreachModal', () => {
             companyName="Acme"
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     const templateSelect = screen.getByTestId('orgchart-outreach-template-select');
@@ -121,7 +126,7 @@ describe('OrgChartOutreachModal', () => {
   it('shows subject field for email channel', () => {
     console.log('OrgChartOutreachModal: email subject visible');
     render(
-      <RecoilRoot initializeState={initializeState}>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
           <OrgChartOutreachModal
             isOpen
@@ -131,36 +136,33 @@ describe('OrgChartOutreachModal', () => {
             node={null}
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
     expect(screen.getByTestId('orgchart-outreach-subject')).toBeInTheDocument();
   });
 
   it('persists selected job as active job', async () => {
-    console.log('OrgChartOutreachModal: job selection persists to recoil');
-    const initWithTwoJobs = ({ set }: MutableSnapshot) => {
-      initializeState({ set } as MutableSnapshot);
-      set(jobsState, [
-        {
-          id: 'job-a',
-          name: 'Open role',
-          isActive: true,
-          createdAt: '2024-01-01T00:00:00Z',
-        },
-        {
-          id: 'job-b',
-          name: 'Another role',
-          isActive: true,
-          createdAt: '2024-01-02T00:00:00Z',
-        },
-      ]);
-      set(jobIdAtom, 'job-a');
-    };
+    console.log('OrgChartOutreachModal: job selection persists to jotai');
+    jotaiStore.set(projectsState.atom, [
+      {
+        id: 'job-a',
+        name: 'Open role',
+        isActive: true,
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+      {
+        id: 'job-b',
+        name: 'Another role',
+        isActive: true,
+        createdAt: '2024-01-02T00:00:00Z',
+      },
+    ]);
+    jotaiStore.set(projectIdAtom.atom, 'job-a');
 
     render(
-      <RecoilRoot initializeState={initWithTwoJobs}>
+      <JotaiProvider store={jotaiStore}>
         <BaseThemeProvider>
-          <JobIdProbe />
+          <ProjectIdProbe />
           <OrgChartOutreachModal
             isOpen
             onClose={jest.fn()}
@@ -170,7 +172,7 @@ describe('OrgChartOutreachModal', () => {
             companyName="Acme"
           />
         </BaseThemeProvider>
-      </RecoilRoot>,
+      </JotaiProvider>,
     );
 
     expect(screen.getByTestId('job-id-probe').textContent).toBe('job-a');

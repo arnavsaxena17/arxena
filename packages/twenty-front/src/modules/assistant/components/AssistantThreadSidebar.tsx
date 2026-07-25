@@ -1,8 +1,9 @@
 import type { AssistantThread } from '@/assistant/types/assistant.types';
-import styled from '@emotion/styled';
-import { Loader } from 'twenty-ui';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Button } from 'twenty-ui/input';
+import { Loader } from 'twenty-ui/feedback';
 import type { MouseEvent } from 'react';
-import { Button } from 'twenty-ui';
 
 import { displayThreadName } from './AssistantThreadUtils';
 
@@ -12,8 +13,8 @@ const StyledThreadSidebar = styled.aside<{ isMobile: boolean }>`
   flex: 0 0 260px;
   max-width: 280px;
   min-width: 220px;
-  border-right: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.secondary};
+  border-right: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.secondary};
   overflow: hidden;
 `;
 
@@ -21,17 +22,17 @@ const StyledThreadSidebarHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing(2, 3)};
-  border-bottom: 1px solid ${({ theme }) => theme.border.color.medium};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.secondary};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledNewThreadHeaderRight = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSmallInlineLoader = styled.div`
@@ -46,7 +47,7 @@ const StyledThreadSidebarList = styled.div`
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: ${({ theme }) => theme.spacing(1, 1, 2)};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   scrollbar-width: thin;
 `;
 
@@ -55,31 +56,31 @@ const StyledThreadSidebarItem = styled.button<{ isActive: boolean }>`
   flex-direction: column;
   width: 100%;
   text-align: left;
-  padding: ${({ theme }) => theme.spacing(1.5, 2)};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing[2]};
+  border-radius: ${themeCssVariables.border.radius.sm};
   border: none;
-  background: ${({ theme, isActive }) =>
-    isActive ? theme.background.primary : 'transparent'};
-  color: ${({ theme }) => theme.font.color.primary};
+  background: ${({ isActive }) =>
+    isActive ? themeCssVariables.background.primary : 'transparent'};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  margin-bottom: ${themeCssVariables.spacing[1]};
   transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 
   &:hover {
-    background: ${({ theme }) => theme.background.primary};
+    background: ${themeCssVariables.background.primary};
   }
 
-  ${({ isActive, theme }) =>
+  ${({ isActive }) =>
     isActive
-      ? `box-shadow: 0 0 0 1px ${theme.border.color.medium};`
+      ? `box-shadow: 0 0 0 1px ${themeCssVariables.border.color.medium};`
       : ''}
 `;
 
 const StyledThreadSidebarItemTitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
-  color: ${({ theme }) => theme.font.color.primary};
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  margin-bottom: ${themeCssVariables.spacing[1]};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -89,23 +90,23 @@ const StyledThreadModeBadge = styled.span<{ mode: 'fully_autonomous' | 'permissi
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: ${({ theme }) => theme.spacing(0.5)};
-  padding: 0 ${({ theme }) => theme.spacing(0.75)};
-  border-radius: ${({ theme }) => theme.border.radius.xs};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  margin-left: ${themeCssVariables.spacing[1]};
+  padding: 0 ${themeCssVariables.spacing['1']};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: ${({ theme, mode }) =>
+  background: ${({ mode }) =>
     mode === 'fully_autonomous'
-      ? theme.background.tertiary
-      : theme.background.quaternary};
-  color: ${({ theme }) => theme.font.color.secondary};
+      ? themeCssVariables.background.tertiary
+      : themeCssVariables.background.quaternary};
+  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledThreadSidebarItemSubtitle = styled.div`
-  font-size: ${({ theme }) => theme.font.size.xs};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -122,7 +123,7 @@ type AssistantThreadSidebarProps = {
   isCreatingNewThread: boolean;
   onPatchThread: (
     threadId: string,
-    patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; jobId?: string | null; name?: string },
+    patch: { assistantMode?: 'fully_autonomous' | 'permissioned'; projectId?: string | null; name?: string },
   ) => Promise<void> | void;
   threadPatchInFlightById: Record<string, boolean>;
 };

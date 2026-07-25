@@ -7,9 +7,6 @@ import { v4 } from 'uuid';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
-import { BillingEntitlementKey } from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
-import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
-import { EnterprisePlanService } from 'src/engine/core-modules/enterprise/services/enterprise-plan.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type AllFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/all-flat-entity-maps.type';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
@@ -29,10 +26,6 @@ import {
 } from 'src/engine/metadata-modules/row-level-permission-predicate/dtos/inputs/upsert-row-level-permission-predicates.input';
 import { RowLevelPermissionPredicateGroupDTO } from 'src/engine/metadata-modules/row-level-permission-predicate/dtos/row-level-permission-predicate-group.dto';
 import { RowLevelPermissionPredicateDTO } from 'src/engine/metadata-modules/row-level-permission-predicate/dtos/row-level-permission-predicate.dto';
-import {
-  RowLevelPermissionPredicateException,
-  RowLevelPermissionPredicateExceptionCode,
-} from 'src/engine/metadata-modules/row-level-permission-predicate/exceptions/row-level-permission-predicate.exception';
 import { type FlatRowLevelPermissionPredicateGroup } from 'src/engine/metadata-modules/row-level-permission-predicate/types/flat-row-level-permission-predicate-group.type';
 import { type FlatRowLevelPermissionPredicate } from 'src/engine/metadata-modules/row-level-permission-predicate/types/flat-row-level-permission-predicate.type';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
@@ -45,21 +38,12 @@ export class RowLevelPermissionPredicateService {
     private readonly workspaceMigrationValidateBuildAndRunService: WorkspaceMigrationValidateBuildAndRunService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly workspaceCacheService: WorkspaceCacheService,
-    private readonly billingService: BillingService,
     private readonly applicationService: ApplicationService,
-    private readonly enterprisePlanService: EnterprisePlanService,
   ) {}
 
   async findByWorkspaceId(
     workspaceId: string,
   ): Promise<RowLevelPermissionPredicateDTO[]> {
-    const hasRowLevelPermissionFeature =
-      await this.hasRowLevelPermissionFeature(workspaceId);
-
-    if (!hasRowLevelPermissionFeature) {
-      return [];
-    }
-
     const { flatRowLevelPermissionPredicateMaps } =
       await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
         {
@@ -86,13 +70,6 @@ export class RowLevelPermissionPredicateService {
     roleId: string,
     objectMetadataId: string,
   ): Promise<RowLevelPermissionPredicateDTO[]> {
-    const hasRowLevelPermissionFeature =
-      await this.hasRowLevelPermissionFeature(workspaceId);
-
-    if (!hasRowLevelPermissionFeature) {
-      return [];
-    }
-
     const { flatRowLevelPermissionPredicateMaps } =
       await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
         {
@@ -123,13 +100,6 @@ export class RowLevelPermissionPredicateService {
     id: string,
     workspaceId: string,
   ): Promise<RowLevelPermissionPredicateDTO | null> {
-    const hasRowLevelPermissionFeature =
-      await this.hasRowLevelPermissionFeature(workspaceId);
-
-    if (!hasRowLevelPermissionFeature) {
-      return null;
-    }
-
     const { flatRowLevelPermissionPredicateMaps } =
       await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
         {
@@ -160,8 +130,6 @@ export class RowLevelPermissionPredicateService {
     predicates: RowLevelPermissionPredicateDTO[];
     predicateGroups: RowLevelPermissionPredicateGroupDTO[];
   }> {
-    await this.hasRowLevelPermissionFeatureOrThrow(workspaceId);
-
     const { roleId, objectMetadataId, predicates, predicateGroups } = input;
 
     const { workspaceCustomFlatApplication } =
@@ -550,31 +518,5 @@ export class RowLevelPermissionPredicateService {
     await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
       'rolesPermissions',
     ]);
-  }
-
-  private async hasRowLevelPermissionFeature(
-    workspaceId: string,
-  ): Promise<boolean> {
-    const hasValidEnterprisePlan = this.enterprisePlanService.isValid();
-
-    const isRowLevelPermissionEnabled =
-      await this.billingService.hasEntitlement(
-        workspaceId,
-        BillingEntitlementKey.RLS,
-      );
-
-    return hasValidEnterprisePlan && isRowLevelPermissionEnabled;
-  }
-
-  private async hasRowLevelPermissionFeatureOrThrow(workspaceId: string) {
-    const hasRowLevelPermissionFeature =
-      await this.hasRowLevelPermissionFeature(workspaceId);
-
-    if (!hasRowLevelPermissionFeature) {
-      throw new RowLevelPermissionPredicateException(
-        'Row level permission predicate feature is disabled',
-        RowLevelPermissionPredicateExceptionCode.ROW_LEVEL_PERMISSION_FEATURE_DISABLED,
-      );
-    }
   }
 }

@@ -1,10 +1,20 @@
 /*
- * _____                    _
- *|_   _|_      _____ _ __ | |_ _   _
- *  | | \ \ /\ / / _ \ '_ \| __| | | | Auto-generated file
- *  | |  \ V  V /  __/ | | | |_| |_| | Any edits to this will be overridden
- *  |_|   \_/\_/ \___|_| |_|\__|\__, |
- *                              |___/
+ * Compatibility barrel for bare `twenty-shared` imports.
+ * Prefer subpath imports (e.g. `twenty-shared/arx`) for new code.
  */
-
-export default {};
+export * from './ai';
+export * from './application';
+export * from './arx';
+export * from './constants';
+export * from './database-events';
+export * from './graphql';
+export * from './i18n';
+export * from './logic-function';
+export * from './metadata';
+export * from './testing';
+export * from './timeline';
+export * from './translations';
+export * from './types';
+export * from './utils';
+export * from './workflow';
+export * from './workspace';

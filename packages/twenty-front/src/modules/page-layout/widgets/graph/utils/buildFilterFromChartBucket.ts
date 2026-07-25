@@ -7,11 +7,7 @@ import { isCyclicalDateGranularity } from '@/page-layout/widgets/graph/utils/isC
 import { isTimeRangeDateGranularity } from '@/page-layout/widgets/graph/utils/isTimeRangeDateGranularity';
 import { serializeChartBucketValueForFilter } from '@/page-layout/widgets/graph/utils/serializeChartBucketValueForFilter';
 import { isNonEmptyString } from '@sniptt/guards';
-import {
-  type FirstDayOfTheWeek,
-  ObjectRecordGroupByDateGranularity,
-  ViewFilterOperand,
-} from 'twenty-shared/types';
+import { ObjectRecordGroupByDateGranularity, ViewFilterOperand, type FirstDayOfTheWeek } from 'twenty-shared/types';
 import {
   getFilterTypeFromFieldType,
   isDefined,

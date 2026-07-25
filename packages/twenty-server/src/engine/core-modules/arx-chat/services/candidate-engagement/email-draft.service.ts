@@ -38,7 +38,7 @@ export class EmailDraftService {
   ): Promise<EmailDraftResult> {
     try {
       console.log('Creating draft email with shortlist');
-      console.log('Job:', job.name);
+      console.log('Project:', job.name);
       console.log('Candidate IDs:', candidateIds);
 
       // Step 1: Upload shortlist documents
@@ -124,12 +124,12 @@ export class EmailDraftService {
   ): Promise<any> {
     try {
       const uploadUrl = `${process.env.SERVER_BASE_URL}/graphql`;
-      
+
       const fileExtension = filePath.split('.').pop();
-      const fileName = isExcel 
-        ? 'shortlist.xlsx' 
-        : fileExtension === 'docx' 
-          ? 'Executive Shortlist.docx' 
+      const fileName = isExcel
+        ? 'shortlist.xlsx'
+        : fileExtension === 'docx'
+          ? 'Executive Shortlist.docx'
           : 'Executive Shortlist.pdf';
 
       const payload = {
@@ -157,13 +157,13 @@ export class EmailDraftService {
       };
 
       const response = await axios.post(uploadUrl, formData, { headers });
-      
+
       // Check for GraphQL errors
       if (response.data.errors) {
         console.error('GraphQL errors in uploadFile response:', response.data.errors);
         throw new Error(`GraphQL error: ${JSON.stringify(response.data.errors)}`);
       }
-      
+
       const uploadedFilePath = response.data?.data?.uploadFile;
       if (!uploadedFilePath) {
         console.error('Upload response structure:', JSON.stringify(response.data, null, 2));
@@ -177,9 +177,8 @@ export class EmailDraftService {
           input: {
             name: fileName,
             fullPath: uploadedFilePath,
-            type: 'Other',
+            fileCategory: 'OTHER',
             cvSentId: cvSentId,
-            authorId: user.currentWorkspaceMemberId,
           },
         },
         query: graphQLtoCreateOneAttachmentFromFilePath,
@@ -222,7 +221,7 @@ export class EmailDraftService {
   ): Promise<any> {
     try {
       const url = `${process.env.SERVER_BASE_URL}/gmail-calendar-contacts/save-draft-mail-with-attachment`;
-      
+
       const headers = {
         'Authorization': `Bearer ${apiToken}`,
         'Content-Type': 'application/json',
@@ -232,7 +231,7 @@ export class EmailDraftService {
       console.log('Email data:', emailData);
 
       const response = await axios.post(url, emailData, { headers, timeout: 60000 });
-      
+
       console.log('Draft email response:', response.data);
       return response.data;
     } catch (error) {
