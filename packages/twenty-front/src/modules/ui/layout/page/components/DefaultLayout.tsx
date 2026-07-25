@@ -1,6 +1,5 @@
 import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
 import { AppFullScreenErrorFallback } from '@/error-handler/components/AppFullScreenErrorFallback';
-import { AppPageErrorFallback } from '@/error-handler/components/AppPageErrorFallback';
 import { FileUploadProvider } from '@/file-upload/components/FileUploadProvider';
 import { InformationBannerIsImpersonating } from '@/information-banner/components/impersonate/InformationBannerIsImpersonating';
 import { KeyboardShortcutMenu } from '@/keyboard-shortcut-menu/components/KeyboardShortcutMenu';
@@ -92,9 +91,9 @@ export const DefaultLayout = () => {
                   </StyledNavigationDrawerWrapper>
                 )}
                 <StyledMainContainer>
-                  <AppErrorBoundary FallbackComponent={AppPageErrorFallback}>
-                    <Outlet />
-                  </AppErrorBoundary>
+                  {/* Page-level isolation lives in MainAppLayoutWithSidePanel so
+                      SidePanel/CommandMenu crashes cannot take down route content */}
+                  <Outlet />
                 </StyledMainContainer>
               </PageDragDropProvider>
             </StyledPageContainer>

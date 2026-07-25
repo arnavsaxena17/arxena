@@ -1,10 +1,13 @@
 import { CommandMenuForMobile } from '@/command-menu/components/CommandMenuForMobile';
 import { useCommandMenuHotKeys } from '@/command-menu/hooks/useCommandMenuHotKeys';
+import { AppErrorBoundary } from '@/error-handler/components/AppErrorBoundary';
+import { AppPageErrorFallback } from '@/error-handler/components/AppPageErrorFallback';
 import { SidePanelForDesktop } from '@/side-panel/components/SidePanelForDesktop';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 import { styled } from '@linaria/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AppPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -134,9 +137,14 @@ export const MainAppLayoutWithSidePanel = () => {
   return (
     <StyledRow>
       <StyledContent>
-        <MainAppLayoutOutlet />
+        <AppErrorBoundary FallbackComponent={AppPageErrorFallback}>
+          <MainAppLayoutOutlet />
+        </AppErrorBoundary>
       </StyledContent>
-      {isMobile ? <CommandMenuForMobile /> : <SidePanelForDesktop />}
+      {/* Isolate chrome failures so a side-panel crash cannot blank every route */}
+      <ErrorBoundary fallbackRender={() => null}>
+        {isMobile ? <CommandMenuForMobile /> : <SidePanelForDesktop />}
+      </ErrorBoundary>
     </StyledRow>
   );
 };

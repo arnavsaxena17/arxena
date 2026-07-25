@@ -30,7 +30,7 @@ const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
   border-radius: 4px;
   padding: 1rem;
   margin-bottom: 1.5rem;
-  
+
   ${props => {
     switch (props.variant) {
       case 'error':
@@ -84,7 +84,7 @@ const Input = styled.input`
   border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 0.875rem;
-  
+
   &:focus {
     outline: none;
     border-color: #2563eb;
@@ -99,7 +99,7 @@ const Textarea = styled.textarea`
   font-size: 0.875rem;
   min-height: 100px;
   resize: vertical;
-  
+
   &:focus {
     outline: none;
     border-color: #2563eb;
@@ -116,7 +116,7 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   font-weight: 600;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
-  
+
   ${props => {
     switch (props.variant) {
       case 'primary':
@@ -195,7 +195,7 @@ const Tab = styled.button<{ active: boolean }>`
   font-weight: 500;
   color: ${props => props.active ? '#0077b5' : '#6b7280'};
   border-bottom: 2px solid ${props => props.active ? '#0077b5' : 'transparent'};
-  
+
   &:hover {
     color: #0077b5;
   }
@@ -224,9 +224,8 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
     user_agent: '',
   });
 
-  // Get access token from Recoil state
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken.token;
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
   const handleError = useCallback((error: Error | string) => {
     const errorMessage = typeof error === 'string' ? error : error.message;
@@ -250,11 +249,11 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
     Mixpanel.track('linkedin_connect_start', { method: 'credentials' });
     setLoading(true);
     setError(null);
-    
+
     try {
       const service = getLinkedinService();
       const response = await service.connectWithCredentials(credentialsForm, accessToken);
-      
+
       if (response.success && response.data) {
         if (response.data.status === 'checkpoint_required') {
           setAccountId(response.data.account_id);
@@ -287,11 +286,11 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
     Mixpanel.track('linkedin_connect_start', { method: 'cookie' });
     setLoading(true);
     setError(null);
-    
+
     try {
       const service = getLinkedinService();
       const response = await service.connectWithCookie(cookieForm, accessToken);
-      
+
       if (response.success && response.data) {
         if (response.data.status === 'checkpoint_required') {
           setAccountId(response.data.account_id);
@@ -317,11 +316,11 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
     Mixpanel.track('linkedin_connect_start', { method: 'hosted_auth' });
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log("handleHostedAuth got called");
       const service = getLinkedinService();
-      
+
       // Get current URL without hash/query params for cleaner redirects
       const currentUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
       console.log("window.location.protocol:", window.location.protocol);
@@ -334,9 +333,9 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
         success_redirect_url: `${currentUrl}?linkedin_auth=success`,
         failure_redirect_url: `${currentUrl}?linkedin_auth=failure`,
       }, accessToken);
-      
 
-      console.log("response:", response); 
+
+      console.log("response:", response);
       if (response.success && response.hosted_link) {
         // Redirect to hosted auth wizard (recommended approach from Unipile docs)
         window.location.href = response.hosted_link;
@@ -382,7 +381,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const service = getLinkedinService();
       const response = await service.solveCheckpoint({
@@ -390,7 +389,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
         provider: 'LINKEDIN',
         code: checkpointCode,
       }, accessToken);
-      
+
       if (response.success && response.data) {
         if (response.data.status === 'checkpoint_required') {
           setAccountId(response.data.account_id);
@@ -420,7 +419,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
         <CardHeader>
           <CardTitle>LinkedIn Verification Required</CardTitle>
         </CardHeader>
-        
+
         <Alert variant="info">
           <AlertDescription>
             LinkedIn requires additional verification. Please check your email or LinkedIn notifications for a verification code.
@@ -490,20 +489,20 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
       </Alert>
 
       <TabContainer>
-        <Tab 
-          active={authMethod === 'hosted'} 
+        <Tab
+          active={authMethod === 'hosted'}
           onClick={() => setAuthMethod('hosted')}
         >
           Secure Login (Recommended)
         </Tab>
-        <Tab 
-          active={authMethod === 'credentials'} 
+        <Tab
+          active={authMethod === 'credentials'}
           onClick={() => setAuthMethod('credentials')}
         >
           Username/Password
         </Tab>
-        <Tab 
-          active={authMethod === 'cookie'} 
+        <Tab
+          active={authMethod === 'cookie'}
           onClick={() => setAuthMethod('cookie')}
         >
           Cookie/User-Agent
@@ -559,7 +558,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
               type="text"
               value={cookieForm.user_agent}
               onChange={(e) => setCookieForm(prev => ({ ...prev, user_agent: e.target.value }))}
-              placeholder={typeof window !== "undefined" && window.navigator?.userAgent ? window.navigator.userAgent : ""}         
+              placeholder={typeof window !== "undefined" && window.navigator?.userAgent ? window.navigator.userAgent : ""}
               required
             />
           </FormGroup>
@@ -578,7 +577,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
               Use Arxena's secure hosted authentication wizard for the safest and most reliable LinkedIn connection. This method supports OAuth, QR codes, and handles captchas automatically. You'll be redirected to a secure authentication page.
             </AlertDescription>
           </Alert>
-          
+
           <div style={{ marginBottom: '1rem' }}>
             <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: '600', color: '#374151' }}>
               ✅ Benefits of Hosted Auth:
@@ -591,7 +590,7 @@ export const LinkedinSignup: React.FC<LinkedinSignupProps> = ({
               <li>No credential storage on your device</li>
             </ul>
           </div>
-          
+
           <Button onClick={handleHostedAuth} variant="primary" disabled={loading}>
             {loading && <LoadingSpinner />}
             Connect with LinkedIn Securely

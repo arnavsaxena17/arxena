@@ -47,7 +47,7 @@ export const BaileysAccounts = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = useCallback(async () => {
-    if (!socket || !tokenPair?.accessToken?.token) {
+    if (!socket || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       enqueueErrorSnackBar({
         message: t`WhatsApp socket connection not available`,
       });
@@ -59,12 +59,12 @@ export const BaileysAccounts = () => {
       const response = await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/logout`,
         {
-          sessionId: tokenPair.accessToken.token,
+          sessionId: tokenPair.accessOrWorkspaceAgnosticToken.token,
           origin: window.location.origin,
         },
         {
           headers: {
-            Authorization: `Bearer ${tokenPair.accessToken.token}`,
+            Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
         },
       );
@@ -90,7 +90,7 @@ export const BaileysAccounts = () => {
     enqueueSuccessSnackBar,
     socket,
     t,
-    tokenPair?.accessToken?.token,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
   ]);
 
   const renderConnectionContent = () => {

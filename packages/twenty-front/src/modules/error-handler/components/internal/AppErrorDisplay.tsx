@@ -11,6 +11,7 @@ import {
 } from 'twenty-ui/feedback';
 
 export const AppErrorDisplay = ({
+  error,
   title = t`Sorry, something went wrong`,
 }: AppErrorDisplayProps) => {
   return (
@@ -21,6 +22,11 @@ export const AppErrorDisplay = ({
         <AnimatedPlaceholderEmptySubTitle>
           {t`Try another page, or refresh.`}
         </AnimatedPlaceholderEmptySubTitle>
+        {error.message && (
+          <AnimatedPlaceholderEmptySubTitle>
+            {error.message}
+          </AnimatedPlaceholderEmptySubTitle>
+        )}
       </AnimatedPlaceholderEmptyTextContainer>
       <Button
         Icon={IconRefresh}

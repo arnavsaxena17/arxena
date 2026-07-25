@@ -55,7 +55,10 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 | Billing Linaria `spacing[220]` | invalid key (spacing only `'0'`…`'32'`) → Vite 500; was `theme.spacing(220)` = `880px` | `SettingsBillingPricing.tsx` |
 | Search results Redis cache | `get()` required `payload.projectId`; pre-rename entries only had `jobId` → false 404 on project page | `search-results-cache.service.ts` |
 | Object index ViewBar refresh | Ported workflows refresh onto `RecordIndexViewBar` + `ViewBar`; table reload via `recordIndexTableRefreshFunctionState` → `resetVirtualizationBecauseDataChanged` (not blanket `FindMany*` refetchQueries) | `ViewBar.tsx`, `RecordIndexViewBar.tsx`, `RecordIndexTableRefreshEffect.tsx` |
-| Projects Menu dropdown UI | Legacy `dropdownMenuWidth` / `dropdownHotkeyScope` ignored; missing `DropdownContent`; icons used CSS-var string as `size`; mis-anchored + blue blur over Credits. Fixed + siblings | `CandidateTableProjectsPageMenuDropdown.tsx`, `ChatOptionsDropdownButton.tsx`, `SearchPanel.tsx` (§2.3) |
+| Projects Menu dropdown UI | Header z-20 vs PageBody z-25 hid in-header menu under table. Portaled fixed panel (z-38) anchored to Menu via getBoundingClientRect | `CandidateTableProjectsPageMenuDropdown.tsx`, `CandidateTablePageHeader.tsx` (§2.3) |
+| Linaria + `react-pdf` | wyw-in-js evaluates Linaria modules and chokes on `pdfjs-dist` private fields (`#divider`); lazy-load PDF viewer without Linaria | `AttachmentPanel.tsx` → `AttachmentPdfViewer.tsx` |
+| Website testimonial photos | Paths `/img/testimonials/{aaron-lintz,craig-rajpal,john-calvani}.jpg` were never backed by files on workflows or current — only `mannan-pacha.webp` exists. Legacy `lintz.jpg`/`rajpal.jpg`/`calvani.jpg` gitignored in arxena-site and missing on prod. Cleared broken paths → ui-avatars | `twenty-website` `homepage-content.ts` |
+| AuthTokenPair field rename | `tokenPair.accessToken` → `accessOrWorkspaceAgnosticToken` (LinkedIn signup crash + Baileys `hasToken: false`) | §2.5; LinkedIn/WhatsApp Unipile/Baileys settings |
 
 ---
 
@@ -135,6 +138,7 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `AnimatedPlaceholder*` from `twenty-ui` root | current twenty-ui export path for placeholders |
 | `@emotion/styled` + `theme.*` | `@linaria/react` + `themeCssVariables` from `twenty-ui/theme-constants` |
 | `styled(IconX)` from `@tabler/icons-react` in `twenty-orgchart` | styled wrapper + `<IconX size={…} />` (Linaria resolves package under package-local `node_modules`, missing under Yarn hoist) |
+| Static `react-pdf` / `pdfjs-dist` import in a Linaria module | Lazy-load a non-Linaria viewer (`AttachmentPdfViewer`); wyw-in-js cannot parse pdfjs private fields |
 | `theme.spacing(n)` | `themeCssVariables.spacing[n]` |
 | `enqueueSnackBar` | `enqueueSuccessSnackBar` / `enqueueErrorSnackBar` / `enqueueInfoSnackBar` / `enqueueWarningSnackBar` |
 | `useRightDrawer` / `RightDrawerPages` | side-panel APIs (`useSidePanelMenu`, `SidePanelPages` from `twenty-shared/types`) |
@@ -189,8 +193,17 @@ import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared/constants';
 | Broken | Correct |
 | --- | --- |
 | `AuthTokenPair` from `~/generated/graphql` | `~/generated-metadata/graphql` |
+| `tokenPair?.accessToken?.token` / `tokenPair.accessToken.token` | `tokenPair?.accessOrWorkspaceAgnosticToken?.token` (`AuthTokenPair` no longer has `accessToken`) |
 | Metadata documents (`FindOneAgentDocument`, permission enums, …) | `~/generated-metadata/graphql` |
 | Workspace record codegen (when used) | `~/generated/graphql` + Apollo **core** client |
+
+```bash
+# Should return no matches after cleanup (ARX / settings Unipile + Baileys)
+rg "tokenPair\??\.accessToken" packages/twenty-front/src
+```
+
+Fixed: `LinkedinSignup`, `ConnectedLinkedinAccounts`, `WhatsappUnipileQrCode`,
+`ConnectedWhatsappUnipileAccounts`, `BaileysContext`, `BaileysAccounts`.
 
 ### 2.6 Third-party UI swaps
 
@@ -418,6 +431,8 @@ Tracked from current tree greps — fix then tick §7.
 | OrgChart lazy import fail during Vite reconnect | **mitigated** — `OrgChartRoute` retries dynamic import once; hard-refresh if HMR thrash persists |
 | OrgChart Linaria `styled(Icon*)` ENOENT | **done** — wrapper + size props in `twenty-orgchart` (§0 / §2.2) |
 | Billing Linaria invalid spacing keys | **done** — `spacing[220]` → `880px`, `spacing[2.5]` → `10px` in `SettingsBillingPricing.tsx` |
+| Linaria + `react-pdf` / pdfjs `#divider` | **done** — lazy `AttachmentPdfViewer` (no Linaria) from `AttachmentPanel` (§0 / §2.2) |
+| Website testimonial JPGs 404 | **partial** — broken paths cleared (ui-avatars). Drop real photos into `public/img/testimonials/` and restore `photo` in `homepage-content.ts` when assets are recovered |
 
 ```bash
 rg -n "enqueueSnackBar\\b" packages/twenty-front/src/modules/{orgchart,arx-jd-upload}

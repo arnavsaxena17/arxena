@@ -17,19 +17,29 @@ import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 const StyledCompanySearchWrapper = styled.div`
   position: absolute;
-  left: 45%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: min(420px, 100%);
   flex: 0 1 420px;
   min-width: 350px;
   max-width: 420px;
   z-index: 1;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
 
   @media (max-width: 1024px) {
     position: relative;
     left: auto;
-    transform: none;
+    right: auto;
+    margin-inline: 0;
+    width: auto;
     flex: 1 1 auto;
     max-width: 100%;
+    pointer-events: auto;
   }
 `;
 
@@ -41,8 +51,9 @@ const StyledOrgChartSearchRow = styled.div`
 
 const StyledPageHeaderShell = styled.div`
   flex-shrink: 0;
+  overflow: visible;
   position: relative;
-  /* Below top bar tooltips (25) and right drawer (30) */
+  /* Below top bar tooltips (25) and right drawer (30); above page body */
   z-index: 20;
 `;
 

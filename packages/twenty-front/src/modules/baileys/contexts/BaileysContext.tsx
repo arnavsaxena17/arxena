@@ -38,9 +38,12 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   useEffect(() => {
     // Ensure we have all required data before connecting
-    if (!tokenPair?.accessToken?.token || !currentWorkspaceMember?.id) {
+    if (
+      !tokenPair?.accessOrWorkspaceAgnosticToken?.token ||
+      !currentWorkspaceMember?.id
+    ) {
       console.log('Missing required data for Baileys WebSocket connection:', {
-        hasToken: !!tokenPair?.accessToken?.token,
+        hasToken: !!tokenPair?.accessOrWorkspaceAgnosticToken?.token,
         workspaceMemberId: currentWorkspaceMember?.id,
         workspaceMemberName: currentWorkspaceMember?.name,
       });
@@ -61,10 +64,10 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const url = new URL(window.location.href);
     const socketURL = url.origin.includes('localhost') ? 'http://localhost:3000' : "https://app.arxena.com";
-    
+
     const newSocket = io(socketURL, {
       query: {
-        token: tokenPair.accessToken.token,
+        token: tokenPair.accessOrWorkspaceAgnosticToken.token,
         origin: socketURL,
         workspaceMemberId: currentWorkspaceMember.id,
         workspaceMemberName: currentWorkspaceMember.name.firstName + ' ' + currentWorkspaceMember.name.lastName,
@@ -138,9 +141,9 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
     newSocket.on('recruiterDetails', (details: { name: string; id: string }) => {
       console.log('Received recruiter details:', details, 'for workspaceMember:', currentWorkspaceMember.id);
       if (details && typeof details.name === 'string' && typeof details.id === 'string') {
-        setRecruiterDetails(prevDetails => 
-          !prevDetails || prevDetails.name !== details.name || prevDetails.id !== details.id 
-            ? details 
+        setRecruiterDetails(prevDetails =>
+          !prevDetails || prevDetails.name !== details.name || prevDetails.id !== details.id
+            ? details
             : prevDetails
         );
       }
@@ -157,7 +160,10 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
       newSocket.off('disconnect');
       newSocket.disconnect();
     };
-  }, [tokenPair?.accessToken?.token, currentWorkspaceMember?.id]);
+  }, [
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    currentWorkspaceMember?.id,
+  ]);
 
   // Memoize connection status separately to prevent rerenders when only QR code changes
   const connectionContextValue = useMemo(() => ({
@@ -184,4 +190,4 @@ export const BaileysProvider: React.FC<{ children: React.ReactNode }> = ({ child
 export const useBaileys = () => useContext(BaileysContext);
 
 // Hook for components that only need connection status (prevents rerenders on QR code updates)
-export const useBaileysConnection = () => useContext(BaileysConnectionContext); 
+export const useBaileysConnection = () => useContext(BaileysConnectionContext);

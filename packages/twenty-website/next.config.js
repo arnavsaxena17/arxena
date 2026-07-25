@@ -86,6 +86,7 @@ const nextConfig = {
       ...config.resolve.alias,
       'twenty-orgchart': orgchartDist,
       'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
+      'twenty-orgchart/style.css': path.join(orgchartDist, 'twenty-orgchart.css'),
     };
 
     if (!isServer) {

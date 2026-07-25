@@ -207,9 +207,8 @@ export const ConnectedLinkedinAccounts: React.FC<
   const [error, setError] = useState<string | null>(null);
   const previousAccountsRef = useRef<UnipileLinkedinAccount[]>([]);
 
-  // Get access token from Recoil state
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const setLinkedinUnipileAccounts = useSetAtomState(
     linkedinUnipileAccountsState,
   );

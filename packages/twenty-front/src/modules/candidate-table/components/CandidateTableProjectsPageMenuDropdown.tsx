@@ -1,3 +1,5 @@
+import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MenuItem } from 'twenty-ui/navigation';
 import { Button } from 'twenty-ui/input';
 import {
@@ -14,18 +16,24 @@ import {
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
-import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { RootStackingContextZIndices } from '@/ui/layout/constants/RootStackingContextZIndices';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
+import { DropdownComponentInstanceContext } from '@/ui/layout/dropdown/contexts/DropdownComponentInstanceContext';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
+import { useToggleDropdown } from '@/ui/layout/dropdown/hooks/useToggleDropdown';
+import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
+import { OverlayContainer } from '@/ui/layout/overlay/components/OverlayContainer';
+import { useListenClickOutside } from '@/ui/utilities/pointer-event/hooks/useListenClickOutside';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useTheme } from 'twenty-ui/theme-constants';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared/constants';
 import type { LinkedInSearchType } from 'twenty-shared/types';
-import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
   value: LinkedInSearchType;
@@ -45,6 +53,18 @@ const ORG_CHART_LINKEDIN_SEARCH_TYPE_TITLE: Record<LinkedInSearchType, string> =
 
 const CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID =
   'candidate-table-jobs-page-menu';
+
+// Trigger stays in-header; panel is portaled so it can stack above PageBody (z-index 25)
+const StyledMenuDropdownRoot = styled.div`
+  display: inline-flex;
+  flex-shrink: 0;
+  position: relative;
+`;
+
+const StyledMenuDropdownPanel = styled.div`
+  position: fixed;
+  z-index: ${RootStackingContextZIndices.DropdownPortalBelowModal};
+`;
 
 const StyledMenuTriggerButton = styled(Button)`
   flex-direction: row-reverse;
@@ -189,13 +209,57 @@ export const CandidateTableProjectsPageMenuDropdown = ({
   onCreditsClick,
 }: CandidateTableProjectsPageMenuDropdownProps) => {
   const theme = useTheme();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
   const { closeDropdown } = useCloseDropdown();
+  const { toggleDropdown } = useToggleDropdown();
+  const isDropdownOpen = useAtomComponentStateValue(
+    isDropdownOpenComponentState,
+    CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+  );
   const [orgChartLinkedinCandidateSource, setOrgChartLinkedinCandidateSource] =
     useAtomState(orgChartLinkedinCandidateSourceState);
   const [orgChartLinkedInSearchType, setOrgChartLinkedInSearchType] =
     useAtomState(orgChartLinkedInSearchTypeState);
 
   const iconSm = theme.icon.size.sm;
+
+  useLayoutEffect(() => {
+    if (!isDropdownOpen || !rootRef.current) {
+      return;
+    }
+
+    const updatePanelPosition = () => {
+      if (!rootRef.current) {
+        return;
+      }
+
+      const triggerRect = rootRef.current.getBoundingClientRect();
+      setPanelStyle({
+        top: triggerRect.bottom + 4,
+        right: window.innerWidth - triggerRect.right,
+      });
+    };
+
+    updatePanelPosition();
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [isDropdownOpen]);
+
+  useListenClickOutside({
+    refs: [rootRef, panelRef],
+    listenerId: CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+    enabled: isDropdownOpen,
+    callback: () => {
+      closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
+    },
+  });
 
   const chromeExtensionStatus = (() => {
     if (isExtensionChecking) {
@@ -207,13 +271,20 @@ export const CandidateTableProjectsPageMenuDropdown = ({
     return { key: 'not_installed' as const, text: 'Not installed' };
   })();
 
+  const handleToggleMenu = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.preventDefault();
+    toggleDropdown({
+      dropdownComponentInstanceIdFromProps:
+        CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+    });
+  };
+
   return (
-    <Dropdown
-      dropdownId={CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID}
-      dropdownPlacement="bottom-end"
-      dropdownStrategy="fixed"
-      dropdownOffset={{ y: 4 }}
-      clickableComponent={
+    <DropdownComponentInstanceContext.Provider
+      value={{ instanceId: CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID }}
+    >
+      <StyledMenuDropdownRoot ref={rootRef}>
         <StyledMenuTriggerButton
           variant="secondary"
           size="small"
@@ -221,202 +292,241 @@ export const CandidateTableProjectsPageMenuDropdown = ({
           Icon={IconChevronDown}
           dataTestId="candidate-table-jobs-menu"
           ariaLabel="Open jobs menu"
+          onClick={handleToggleMenu}
         />
-      }
-      dropdownComponents={
-        <DropdownContent widthInPixels={GenericDropdownContentWidth.ExtraLarge}>
-          <DropdownMenuItemsContainer>
-            <MenuItem
-              testId="add-new-job"
-              text="Add New Project"
-              LeftIcon={IconPlus}
-              onClick={() => {
-                onAddJob();
-                closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
-              }}
-            />
-            {onMergeJobs !== undefined && !isMergeMode && (
-              <MenuItem
-                testId="merge-jobs"
-                text="Merge jobs"
-                LeftIcon={IconGitCommit}
-                onClick={() => {
-                  onMergeJobs();
-                  closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
-                }}
-              />
-            )}
-            {!isExtensionInstalled && (
-              <MenuItem
-                testId="download-app"
-                text="Download App"
-                LeftIcon={IconDownload}
-                onClick={() => {
-                  onDownloadClick();
-                  closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
-                }}
-              />
-            )}
-            <MenuItem
-              testId="download-chrome-extension"
-              text="Download Chrome Extension"
-              LeftIcon={IconBrowserMaximize}
-              onClick={() => {
-                window.open(
-                  ARXENA_CHROME_WEBSTORE_URL,
-                  '_blank',
-                  'noopener,noreferrer',
-                );
-                closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
-              }}
-            />
-
-            {creditsTotal !== undefined && onCreditsClick !== undefined && (
-              <MenuItem
-                testId="credits-button"
-                text="Credits"
-                LeftIcon={IconCoins}
-                contextualText={String(creditsTotal)}
-                contextualTextPosition="right"
-                onClick={() => {
-                  onCreditsClick();
-                  closeDropdown(CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID);
-                }}
-              />
-            )}
-            <DropdownMenuSeparator />
-            <StyledOrgChartSourceBlock
-              role="radiogroup"
-              aria-label="Org chart data source"
+        {isDropdownOpen &&
+          createPortal(
+            <StyledMenuDropdownPanel
+              ref={panelRef}
+              style={panelStyle}
+              id={`${CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID}-options`}
+              role="listbox"
             >
-              <StyledOrgChartSourceLabel>
-                Org chart data source
-              </StyledOrgChartSourceLabel>
-              <StyledOrgChartExtensionRow>
-                <StyledOrgChartExtensionLabel>
-                  Chrome extension
-                </StyledOrgChartExtensionLabel>
-                <StyledOrgChartExtensionStatus
-                  status={chromeExtensionStatus.key}
-                  data-testid="org-chart-chrome-extension-status"
+              <OverlayContainer>
+                <DropdownContent
+                  widthInPixels={GenericDropdownContentWidth.ExtraLarge}
                 >
-                  {chromeExtensionStatus.text}
-                </StyledOrgChartExtensionStatus>
-              </StyledOrgChartExtensionRow>
-              <StyledSegmentedTrack>
-                <StyledSegmentedOption
-                  type="button"
-                  data-testid="org-chart-source-linkedin"
-                  isActive={orgChartLinkedinCandidateSource === 'unipile'}
-                  role="radio"
-                  aria-checked={orgChartLinkedinCandidateSource === 'unipile'}
-                  onClick={() => {
-                    setOrgChartLinkedinCandidateSource('unipile');
-                  }}
-                >
-                  <IconBrandLinkedin size={iconSm} />
-                  <StyledSegmentedOptionLabel>
-                    LinkedIn
-                  </StyledSegmentedOptionLabel>
-                </StyledSegmentedOption>
-                <StyledSegmentedOption
-                  type="button"
-                  data-testid="org-chart-source-harvest"
-                  isActive={orgChartLinkedinCandidateSource === 'harvest'}
-                  role="radio"
-                  aria-checked={orgChartLinkedinCandidateSource === 'harvest'}
-                  onClick={() => {
-                    setOrgChartLinkedinCandidateSource('harvest');
-                  }}
-                >
-                  <IconApi size={iconSm} />
-                  <StyledSegmentedOptionLabel>
-                    Harvest
-                  </StyledSegmentedOptionLabel>
-                </StyledSegmentedOption>
-                <StyledSegmentedOption
-                  type="button"
-                  data-testid="org-chart-source-m7kq"
-                  isActive={
-                    orgChartLinkedinCandidateSource ===
-                    ORG_CHART_CANDIDATE_SOURCE_M7KQ
-                  }
-                  role="radio"
-                  aria-checked={
-                    orgChartLinkedinCandidateSource ===
-                    ORG_CHART_CANDIDATE_SOURCE_M7KQ
-                  }
-                  title="Company directory (public data)"
-                  onClick={() => {
-                    setOrgChartLinkedinCandidateSource(
-                      ORG_CHART_CANDIDATE_SOURCE_M7KQ,
-                    );
-                  }}
-                >
-                  <IconApi size={iconSm} />
-                  <StyledSegmentedOptionLabel>
-                    Directory
-                  </StyledSegmentedOptionLabel>
-                </StyledSegmentedOption>
-              </StyledSegmentedTrack>
-              {orgChartLinkedinCandidateSource === 'unipile' && (
-                <>
-                  <StyledOrgChartSourceLabel>
-                    LinkedIn search type
-                  </StyledOrgChartSourceLabel>
-                  <StyledSegmentedTrack
-                    role="radiogroup"
-                    aria-label="LinkedIn search type"
-                  >
-                    {ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS.map((option) => (
-                      <StyledSegmentedOption
-                        key={option.value}
-                        type="button"
-                        $layout="row"
-                        data-testid={`org-chart-search-type-${option.value}`}
-                        isActive={orgChartLinkedInSearchType === option.value}
-                        role="radio"
-                        aria-checked={
-                          orgChartLinkedInSearchType === option.value
-                        }
-                        title={
-                          ORG_CHART_LINKEDIN_SEARCH_TYPE_TITLE[option.value]
-                        }
+                  <DropdownMenuItemsContainer>
+                    <MenuItem
+                      testId="add-new-job"
+                      text="Add New Project"
+                      LeftIcon={IconPlus}
+                      onClick={() => {
+                        onAddJob();
+                        closeDropdown(
+                          CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                        );
+                      }}
+                    />
+                    {onMergeJobs !== undefined && !isMergeMode && (
+                      <MenuItem
+                        testId="merge-jobs"
+                        text="Merge jobs"
+                        LeftIcon={IconGitCommit}
                         onClick={() => {
-                          setOrgChartLinkedInSearchType(option.value);
+                          onMergeJobs();
+                          closeDropdown(
+                            CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                          );
                         }}
-                      >
-                        <StyledSegmentedOptionLabel>
-                          {option.label}
-                        </StyledSegmentedOptionLabel>
-                      </StyledSegmentedOption>
-                    ))}
-                  </StyledSegmentedTrack>
-                </>
-              )}
-            </StyledOrgChartSourceBlock>
-            <DropdownMenuSeparator />
-            <MenuItem
-              text="LinkedIn"
-              LeftIcon={IconBrandLinkedin}
-              contextualText={
-                isLinkedinConnected ? 'Connected' : 'Disconnected'
-              }
-              contextualTextPosition="right"
-              disabled
-            />
-            <MenuItem
-              text="WhatsApp"
-              LeftIcon={IconComment}
-              contextualText={
-                isWhatsappLoggedIn ? 'Connected' : 'Disconnected'
-              }
-              contextualTextPosition="right"
-              disabled
-            />
-          </DropdownMenuItemsContainer>
-        </DropdownContent>
-      }
-    />
+                      />
+                    )}
+                    {!isExtensionInstalled && (
+                      <MenuItem
+                        testId="download-app"
+                        text="Download App"
+                        LeftIcon={IconDownload}
+                        onClick={() => {
+                          onDownloadClick();
+                          closeDropdown(
+                            CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                          );
+                        }}
+                      />
+                    )}
+                    <MenuItem
+                      testId="download-chrome-extension"
+                      text="Download Chrome Extension"
+                      LeftIcon={IconBrowserMaximize}
+                      onClick={() => {
+                        window.open(
+                          ARXENA_CHROME_WEBSTORE_URL,
+                          '_blank',
+                          'noopener,noreferrer',
+                        );
+                        closeDropdown(
+                          CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                        );
+                      }}
+                    />
+
+                    {creditsTotal !== undefined &&
+                      onCreditsClick !== undefined && (
+                        <MenuItem
+                          testId="credits-button"
+                          text="Credits"
+                          LeftIcon={IconCoins}
+                          contextualText={String(creditsTotal)}
+                          contextualTextPosition="right"
+                          onClick={() => {
+                            onCreditsClick();
+                            closeDropdown(
+                              CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                            );
+                          }}
+                        />
+                      )}
+                    <DropdownMenuSeparator />
+                    <StyledOrgChartSourceBlock
+                      role="radiogroup"
+                      aria-label="Org chart data source"
+                    >
+                      <StyledOrgChartSourceLabel>
+                        Org chart data source
+                      </StyledOrgChartSourceLabel>
+                      <StyledOrgChartExtensionRow>
+                        <StyledOrgChartExtensionLabel>
+                          Chrome extension
+                        </StyledOrgChartExtensionLabel>
+                        <StyledOrgChartExtensionStatus
+                          status={chromeExtensionStatus.key}
+                          data-testid="org-chart-chrome-extension-status"
+                        >
+                          {chromeExtensionStatus.text}
+                        </StyledOrgChartExtensionStatus>
+                      </StyledOrgChartExtensionRow>
+                      <StyledSegmentedTrack>
+                        <StyledSegmentedOption
+                          type="button"
+                          data-testid="org-chart-source-linkedin"
+                          isActive={
+                            orgChartLinkedinCandidateSource === 'unipile'
+                          }
+                          role="radio"
+                          aria-checked={
+                            orgChartLinkedinCandidateSource === 'unipile'
+                          }
+                          onClick={() => {
+                            setOrgChartLinkedinCandidateSource('unipile');
+                          }}
+                        >
+                          <IconBrandLinkedin size={iconSm} />
+                          <StyledSegmentedOptionLabel>
+                            LinkedIn
+                          </StyledSegmentedOptionLabel>
+                        </StyledSegmentedOption>
+                        <StyledSegmentedOption
+                          type="button"
+                          data-testid="org-chart-source-harvest"
+                          isActive={
+                            orgChartLinkedinCandidateSource === 'harvest'
+                          }
+                          role="radio"
+                          aria-checked={
+                            orgChartLinkedinCandidateSource === 'harvest'
+                          }
+                          onClick={() => {
+                            setOrgChartLinkedinCandidateSource('harvest');
+                          }}
+                        >
+                          <IconApi size={iconSm} />
+                          <StyledSegmentedOptionLabel>
+                            Harvest
+                          </StyledSegmentedOptionLabel>
+                        </StyledSegmentedOption>
+                        <StyledSegmentedOption
+                          type="button"
+                          data-testid="org-chart-source-m7kq"
+                          isActive={
+                            orgChartLinkedinCandidateSource ===
+                            ORG_CHART_CANDIDATE_SOURCE_M7KQ
+                          }
+                          role="radio"
+                          aria-checked={
+                            orgChartLinkedinCandidateSource ===
+                            ORG_CHART_CANDIDATE_SOURCE_M7KQ
+                          }
+                          title="Company directory (public data)"
+                          onClick={() => {
+                            setOrgChartLinkedinCandidateSource(
+                              ORG_CHART_CANDIDATE_SOURCE_M7KQ,
+                            );
+                          }}
+                        >
+                          <IconApi size={iconSm} />
+                          <StyledSegmentedOptionLabel>
+                            Directory
+                          </StyledSegmentedOptionLabel>
+                        </StyledSegmentedOption>
+                      </StyledSegmentedTrack>
+                      {orgChartLinkedinCandidateSource === 'unipile' && (
+                        <>
+                          <StyledOrgChartSourceLabel>
+                            LinkedIn search type
+                          </StyledOrgChartSourceLabel>
+                          <StyledSegmentedTrack
+                            role="radiogroup"
+                            aria-label="LinkedIn search type"
+                          >
+                            {ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS.map(
+                              (option) => (
+                                <StyledSegmentedOption
+                                  key={option.value}
+                                  type="button"
+                                  $layout="row"
+                                  data-testid={`org-chart-search-type-${option.value}`}
+                                  isActive={
+                                    orgChartLinkedInSearchType === option.value
+                                  }
+                                  role="radio"
+                                  aria-checked={
+                                    orgChartLinkedInSearchType === option.value
+                                  }
+                                  title={
+                                    ORG_CHART_LINKEDIN_SEARCH_TYPE_TITLE[
+                                      option.value
+                                    ]
+                                  }
+                                  onClick={() => {
+                                    setOrgChartLinkedInSearchType(option.value);
+                                  }}
+                                >
+                                  <StyledSegmentedOptionLabel>
+                                    {option.label}
+                                  </StyledSegmentedOptionLabel>
+                                </StyledSegmentedOption>
+                              ),
+                            )}
+                          </StyledSegmentedTrack>
+                        </>
+                      )}
+                    </StyledOrgChartSourceBlock>
+                    <DropdownMenuSeparator />
+                    <MenuItem
+                      text="LinkedIn"
+                      LeftIcon={IconBrandLinkedin}
+                      contextualText={
+                        isLinkedinConnected ? 'Connected' : 'Disconnected'
+                      }
+                      contextualTextPosition="right"
+                      disabled
+                    />
+                    <MenuItem
+                      text="WhatsApp"
+                      LeftIcon={IconComment}
+                      contextualText={
+                        isWhatsappLoggedIn ? 'Connected' : 'Disconnected'
+                      }
+                      contextualTextPosition="right"
+                      disabled
+                    />
+                  </DropdownMenuItemsContainer>
+                </DropdownContent>
+              </OverlayContainer>
+            </StyledMenuDropdownPanel>,
+            document.body,
+          )}
+      </StyledMenuDropdownRoot>
+    </DropdownComponentInstanceContext.Provider>
   );
 };

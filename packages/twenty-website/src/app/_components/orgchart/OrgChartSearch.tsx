@@ -1,6 +1,5 @@
 'use client';
 
-import { ThemeProvider } from '@emotion/react';
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,16 +12,11 @@ import { trackWebsiteEvent } from '@/lib/mixpanel';
 const CompanySearchAutocomplete = dynamic(
   () =>
     import('@/lib/company-search').then((mod) => {
-      const { CompanySearchAutocomplete: Search, companySearchLightTheme } =
-        mod;
-      return function CompanySearchWithTheme(
+      const { CompanySearchAutocomplete: Search } = mod;
+      return function CompanySearchLoader(
         props: Parameters<typeof Search>[0],
       ) {
-        return (
-          <ThemeProvider theme={companySearchLightTheme}>
-            <Search {...props} />
-          </ThemeProvider>
-        );
+        return <Search {...props} />;
       };
     }),
   {

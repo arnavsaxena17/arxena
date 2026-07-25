@@ -17,6 +17,10 @@ import { WebSiteStructuredData } from './_components/StructuredData';
 import { ConditionalFooter } from './_components/ui/layout/footer';
 import EmotionRootStyleRegistry from './emotion-root-style-registry';
 
+// Linaria styles from twenty-orgchart (search, filters, sign-up intro, …)
+import '../../../twenty-orgchart/dist/twenty-orgchart.css';
+import '@/lib/company-search-theme.css';
+
 import './layout.css';
 
 export const dynamic = 'force-dynamic';

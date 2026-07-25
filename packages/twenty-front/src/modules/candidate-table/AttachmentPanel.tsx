@@ -6,21 +6,24 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import mammoth from 'mammoth';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 // import { extractRawText } from 'docx2html';
 import { TextDecoder } from 'util';
 import { UploadCV } from './UploadCV';
 
+// Lazy: keep react-pdf/pdfjs-dist out of wyw-in-js evaluation of this Linaria module
+const AttachmentPdfViewer = lazy(() =>
+  import('./AttachmentPdfViewer').then((module) => ({
+    default: module.AttachmentPdfViewer,
+  })),
+);
+
 // Add a type declaration for the handleDocFile function
 type DocHandlerResult = {
   value: string;
 };
-
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
 
 // const PanelContainer = styled.div<{ isOpen: boolean }>`
 //   position: fixed;
@@ -174,7 +177,7 @@ const NavButton = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  
+
   &:hover:not(:disabled) {
     background: ${themeCssVariables.background.tertiary};
   }
@@ -363,7 +366,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 }) => {
   const Container = PanelContainer || DefaultPanelContainer;
   const isInline = PanelContainer !== DefaultPanelContainer;
-  
+
   const [attachments, setAttachments] = useState<
     Array<{ id: string; name: string; fullPath: string }>
   >([]);
@@ -379,44 +382,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
-
   // Add state to track when CV is uploaded
   const [uploadSuccess, setUploadSuccess] = useState(false);
-
-  const [pdfLoadError, setPdfLoadError] = useState<string | null>(null);
-
-  const onDocumentLoadSuccess = useCallback(
-    ({ numPages }: { numPages: number }) => {
-      setNumPages(numPages);
-      console.log('PDF loaded successfully. Number of pages:', numPages);
-    },
-    [],
-  );
-
-  const options = useMemo(
-    () => ({
-      cMapUrl: 'cmaps/',
-      cMapPacked: true,
-    }),
-    [],
-  );
-
-  function onDocumentLoadError(error: Error) {
-    console.error('Error loading PDF:', error);
-    setPdfLoadError('Failed to load PDF. The file might be corrupted or temporarily unavailable.');
-  }
-
-  const handlePrevPage = useCallback(() => {
-    setPageNumber((prevPageNumber) => Math.max(prevPageNumber - 1, 1));
-  }, []);
-
-  const handleNextPage = useCallback(() => {
-    setPageNumber((prevPageNumber) =>
-      Math.min(prevPageNumber + 1, numPages || 1),
-    );
-  }, [numPages]);
 
   useEffect(() => {
     if (isOpen && candidateId) {
@@ -430,12 +397,12 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const fetchedAttachments = await findManyAttachments({
         filter: { candidateId: { eq: candidateId } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
-      
+
       setAttachments(fetchedAttachments);
       setCurrentAttachmentIndex(0);
       console.log('Total Attachments: ', fetchedAttachments?.length || 0);
@@ -640,10 +607,10 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   console.log('Current Attachment ::', currentAttachment);
   console.log('Total Attachments : ', attachments?.length);
-  
+
   // Choose the appropriate content container based on whether we're inline
   const CustomContentContainer = isInline ? InlineContentContainer : ContentContainer;
-  
+
   // Handle successful upload
   const handleUploadSuccess = useCallback(() => {
     setUploadSuccess(true);
@@ -652,13 +619,13 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   const handleDownload = useCallback(async () => {
     if (!currentAttachment) return;
-    
+
     try {
       const response = await axios.get(currentAttachment.fullPath, {
         headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         responseType: 'blob'
       });
-      
+
       const blob = new Blob([response.data]);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -675,7 +642,6 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   }, [currentAttachment, tokenPair]);
 
   const handleRetry = useCallback(() => {
-    setPdfLoadError(null);
     setError(null);
     if (currentAttachment) {
       fetchFileContent(currentAttachment);
@@ -698,8 +664,8 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             &#9650;
           </NavButton>
           <AttachmentCounter>
-            {attachments.length > 0 
-              ? `${currentAttachmentIndex + 1} of ${attachments.length}` 
+            {attachments.length > 0
+              ? `${currentAttachmentIndex + 1} of ${attachments.length}`
               : 'No attachments'}
           </AttachmentCounter>
           <NavButton
@@ -709,7 +675,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             &#9660;
           </NavButton>
           {currentAttachment && (
-            <DownloadButton 
+            <DownloadButton
               onClick={handleDownload}
               disabled={isLoading}
             >
@@ -733,7 +699,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             <NotFoundMessage>No attachments found for this candidate</NotFoundMessage>
             <UploadContainer>
               <UploadMessage>Upload a CV for this candidate</UploadMessage>
-              <UploadCV 
+              <UploadCV
                 candidateId={candidateId}
                 tokenPair={tokenPair}
                 onUploadSuccess={handleUploadSuccess}
@@ -746,30 +712,12 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
           typeof fileContent === 'string' &&
           fileContent.startsWith('blob:') ? (
             <PDFContainer>
-              {pdfLoadError ? (
-                <ErrorContainer>
-                  <ErrorMessage>{pdfLoadError}</ErrorMessage>
-                  <RetryButton onClick={handleRetry}>
-                    Reload PDF
-                  </RetryButton>
-                </ErrorContainer>
-              ) : (
-                <Document
-                  file={fileContent}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={onDocumentLoadError}
-                  options={options}
-                >
-                  {Array.from(new Array(numPages), (el, index) => (
-                    <Page
-                      key={`page_${index + 1}`}
-                      pageNumber={index + 1}
-                      renderTextLayer={false}
-                      renderAnnotationLayer={false}
-                    />
-                  ))}
-                </Document>
-              )}
+              <Suspense fallback={<div>Loading PDF...</div>}>
+                <AttachmentPdfViewer
+                  fileUrl={fileContent}
+                  onRetry={handleRetry}
+                />
+              </Suspense>
             </PDFContainer>
           ) : typeof fileContent === 'string' &&
             fileContent.startsWith('<') ? (

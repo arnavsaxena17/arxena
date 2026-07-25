@@ -29,7 +29,7 @@ const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
   border-radius: 4px;
   padding: 1rem;
   margin-bottom: 1.5rem;
-  
+
   ${props => {
     switch (props.variant) {
       case 'error':
@@ -94,7 +94,7 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   font-weight: 600;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
-  
+
   ${props => {
     switch (props.variant) {
       case 'primary':
@@ -161,7 +161,7 @@ const StatusIndicator = styled.div<{ status: 'connecting' | 'connected' | 'error
   border-radius: 4px;
   font-size: 0.875rem;
   font-weight: 500;
-  
+
   ${props => {
     switch (props.status) {
       case 'connecting':
@@ -197,21 +197,21 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
   const [accountId, setAccountId] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const pollingStartTimeRef = useRef<number | null>(null);
-  
+
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const startPolling = useCallback((accountIdToPoll: string) => {
     const service = getWhatsappUnipileService();
     let disconnectedCount = 0;
     const interval = setInterval(async () => {
       try {
         const statusResponse = await service.checkAccountStatus(accountIdToPoll, accessToken);
-        
+
         if (statusResponse.status === 'connected') {
           setStatus('connected');
           clearInterval(interval);
           setPollingInterval(null);
-          
+
           // Update workspace member profile with WhatsApp Unipile account ID
           try {
             const service = getWhatsappUnipileService();
@@ -222,7 +222,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
           } catch (apiKeyError) {
             console.error('Failed to update workspace member profile with WhatsApp account ID:', apiKeyError);
           }
-          
+
           if (onConnected) {
             onConnected(statusResponse.account_id);
           }
@@ -231,7 +231,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
           // This gives the user time to scan the QR code
           const timeSinceStart = pollingStartTimeRef.current ? Date.now() - pollingStartTimeRef.current : 0;
           disconnectedCount++;
-          
+
           // Show error only after 30 seconds of polling or 3 consecutive disconnected checks
           if (timeSinceStart > 30000 || disconnectedCount >= 3) {
             setStatus('error');
@@ -252,7 +252,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
     }, 3000); // Poll every 3 seconds
 
     setPollingInterval(interval);
-    
+
     // Stop polling after 5 minutes (300 seconds)
     setTimeout(() => {
       clearInterval(interval);
@@ -282,7 +282,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
       setLoading(true);
       setError(null);
       setStatus('connecting');
-      
+
       const service = getWhatsappUnipileService();
       const response = await service.requestQrCode(accessToken);
 
@@ -300,7 +300,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
         setQrCode(response.code);
         setAccountId(response.account_id || null);
         pollingStartTimeRef.current = null;
-        
+
         if (response.account_id) {
           const accountIdToPoll = response.account_id;
           // Wait 10 seconds before starting to poll to give user time to scan
@@ -419,7 +419,7 @@ export const WhatsappUnipileQrCode: React.FC<WhatsappUnipileQrCodeProps> = ({
 
       <Alert variant="info">
         <AlertDescription>
-          Scan the QR code with your WhatsApp mobile app to connect your account. 
+          Scan the QR code with your WhatsApp mobile app to connect your account.
           Open WhatsApp → Settings → Linked Devices → Link a Device
         </AlertDescription>
       </Alert>

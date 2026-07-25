@@ -1,13 +1,21 @@
 import { SECTION_SUBTITLES } from '@/lib/brand-content';
 
-export const TESTIMONIALS = [
+type Testimonial = {
+  quote: string;
+  name: string;
+  title: string;
+  company: string;
+  photo?: string;
+};
+
+export const TESTIMONIALS: Testimonial[] = [
   {
     quote:
       "Arxena is a unique tool that I've been waiting for someone to build. In minutes you get a birds-eye view of any company's team structure and location. This process would take a day to do manually — and that's before you've even sent a single message.",
     name: 'Aaron Lintz',
     title: 'Sr. Talent Sourcing Specialist',
     company: 'Thoughtworks',
-    photo: '/img/testimonials/aaron-lintz.jpg',
+    // No asset: workflows never shipped aaron-lintz.jpg (legacy lintz.jpg missing/gitignored)
   },
   {
     quote:
@@ -15,7 +23,6 @@ export const TESTIMONIALS = [
     name: 'Craig Rajpal',
     title: 'Enterprise Sales Director',
     company: 'Workato',
-    photo: '/img/testimonials/craig-rajpal.jpg',
   },
   {
     quote:
@@ -23,7 +30,6 @@ export const TESTIMONIALS = [
     name: 'John Calvani',
     title: 'Sr. Resourcing Associate',
     company: 'Triton Exec',
-    photo: '/img/testimonials/john-calvani.jpg',
   },
   {
     quote:
@@ -33,7 +39,7 @@ export const TESTIMONIALS = [
     company: 'Ernst & Young',
     photo: '/img/testimonials/mannan-pacha.webp',
   },
-] as const;
+];
 
 export const USE_CASES_SECTION_SUBTITLE = SECTION_SUBTITLES.useCases;
 

@@ -22,8 +22,11 @@
       "types": "./dist/orgchart-core.d.ts",
       "import": "./dist/orgchart-core.js",
       "require": "./dist/orgchart-core.cjs"
-    }
+    },
+    "./style.css": "./dist/twenty-orgchart.css"
   },
+  "style": "./dist/twenty-orgchart.css",
+
   "dependencies": {
     "@linaria/react": "^7.0.1",
     "@tabler/icons-react": "^2.44.0",

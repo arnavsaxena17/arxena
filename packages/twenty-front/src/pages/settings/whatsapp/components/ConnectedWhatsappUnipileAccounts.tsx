@@ -210,7 +210,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
   const previousAccountsRef = useRef<UnipileWhatsappAccount[]>([]);
 
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessToken?.token;
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const setWhatsappUnipileAccounts = useSetAtomState(
     whatsappUnipileAccountsState,
   );
