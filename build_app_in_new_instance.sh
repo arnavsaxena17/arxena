@@ -35,12 +35,20 @@ if [ "${SKIP_REPO_SYNC:-0}" != "1" ] && [ -d "$REPO_DIR/.git" ]; then
   git fetch origin
   git checkout "$BUILD_BRANCH"
   git pull origin "$BUILD_BRANCH" || true
-  # Keep local arxmukti/private-IP build script overrides when present
-  for f in build_app_in_new_instance.sh build_chatwoot_in_new_instance.sh script_to_build_app_in_new_instance.sh script_to_build_chatwoot_in_new_instance.sh; do
-    if [ -f "/tmp/build-script-keep/$f" ]; then
-      cp "/tmp/build-script-keep/$f" "$REPO_DIR/$f"
-    fi
-  done
+  # Never restore builder scripts from /tmp/build-script-keep — a stale copy
+  # previously overwrote the SWC native-binding fix and broke twenty-server on arm64
+  # ("Git pulled, going to nest build" with no ensure_swc_native_binding).
+  # Orchestrator overrides are opt-in only (KEEP_LOCAL_BUILD_SCRIPTS=1).
+  if [ "${KEEP_LOCAL_BUILD_SCRIPTS:-0}" = "1" ]; then
+    for f in build_app_in_new_instance.sh build_chatwoot_in_new_instance.sh; do
+      if [ -f "/tmp/build-script-keep/$f" ]; then
+        echo "Restoring local override from /tmp/build-script-keep/$f"
+        cp "/tmp/build-script-keep/$f" "$REPO_DIR/$f"
+      fi
+    done
+  elif [ -d /tmp/build-script-keep ]; then
+    echo "Ignoring /tmp/build-script-keep (set KEEP_LOCAL_BUILD_SCRIPTS=1 to restore orchestrator overrides)"
+  fi
   cd "$SCRIPT_DIR"
   echo "Re-executing build script after repo sync..."
   exec env SKIP_REPO_SYNC=1 "$REPO_DIR/build_app_in_new_instance.sh" "$@"

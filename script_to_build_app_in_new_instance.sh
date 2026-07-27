@@ -61,21 +61,27 @@ yarn
 # enableScripts:false, so @swc/core postinstall is skipped and nest build can fail on
 # linux-arm64 builders with "Failed to load @swc/cli and/or @swc/core".
 ensure_swc_native_binding() {
-  if node -e "require('@swc/core'); require('@swc/cli/lib/swc/dir')" >/dev/null 2>&1; then
+  local swc_check_cmd="require('@swc/core'); require('@swc/cli'); require('@swc/cli/lib/swc/dir')"
+
+  if node -e "$swc_check_cmd" >/dev/null 2>&1; then
     echo "SWC native binding OK"
     return 0
   fi
 
   echo "Repairing @swc/core native binding for nest build..."
-  if ! YARN_ENABLE_SCRIPTS=true yarn rebuild @swc/core; then
-    echo "yarn rebuild @swc/core failed; trying explicit linux-arm64 package"
+  YARN_ENABLE_SCRIPTS=true yarn rebuild @swc/core || true
+
+  if ! node -e "$swc_check_cmd" >/dev/null 2>&1; then
+    echo "yarn rebuild insufficient; installing explicit linux-arm64 @swc/core binary"
     local swc_core_version
     swc_core_version="$(node -p "require('@swc/core/package.json').version")"
     yarn add -D -W "@swc/core-linux-arm64-gnu@npm:${swc_core_version}" || true
+    YARN_ENABLE_SCRIPTS=true yarn rebuild @swc/core || true
   fi
 
-  if ! node -e "require('@swc/core'); require('@swc/cli/lib/swc/dir'); console.log('SWC native binding repaired')"; then
+  if ! node -e "$swc_check_cmd; console.log('SWC native binding repaired')"; then
     echo "SWC native binding still broken after repair; nest build will fail" >&2
+    node -e "$swc_check_cmd" 2>&1 || true
     return 1
   fi
 }
@@ -86,7 +92,7 @@ fi
 node scripts/patch-gojs.cjs
 rm -rf node_modules/.vite/packages/twenty-front/deps
 
-echo "Git pulled, going to package builds"
+echo "Git pulled, SWC check done, going to package builds"
 cd ~/twenty/
 yarn cache clean
 build_step TWENTY_SHARED npx nx build twenty-shared
