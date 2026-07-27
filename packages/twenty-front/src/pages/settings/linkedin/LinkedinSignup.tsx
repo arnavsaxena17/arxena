@@ -1,10 +1,10 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
 import React, { useCallback, useState } from 'react';
 import type { LinkedinCookieAuth, LinkedinCredentials, LinkedinSignupCompleteData, LinkedinSignupProps } from 'twenty-shared/arx';
 import { Mixpanel } from '~/mixpanel';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const Card = styled.div`
   background: white;
@@ -108,7 +108,6 @@ const Textarea = styled.textarea`
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -116,40 +115,38 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   font-weight: 600;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
-
-  ${props => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: #0077b5;
-          color: white;
-          &:hover {
-            background-color: #005885;
-          }
-          &:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-          }
-        `;
-      case 'danger':
-        return `
-          background-color: #dc2626;
-          color: white;
-          &:hover {
-            background-color: #b91c1c;
-          }
-        `;
-      default:
-        return `
-          background-color: #f8fafc;
-          color: #475569;
-          border: 1px solid #d1d5db;
-          &:hover {
-            background-color: #f1f5f9;
-          }
-        `;
+  background-color: ${({ variant }) => {
+    if (variant === 'primary') {
+      return '#0077b5';
     }
-  }}
+    if (variant === 'danger') {
+      return '#dc2626';
+    }
+    return '#f8fafc';
+  }};
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger' ? 'white' : '#475569'};
+  border: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger'
+      ? 'none'
+      : '1px solid #d1d5db'};
+
+  &:hover {
+    background-color: ${({ variant }) => {
+      if (variant === 'primary') {
+        return '#005885';
+      }
+      if (variant === 'danger') {
+        return '#b91c1c';
+      }
+      return '#f1f5f9';
+    }};
+  }
+
+  &:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+  }
 
   &:focus {
     outline: none;

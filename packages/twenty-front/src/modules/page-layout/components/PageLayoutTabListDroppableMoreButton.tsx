@@ -14,13 +14,12 @@ type PageLayoutTabListDroppableMoreButtonProps = {
 };
 
 const StyledTabMoreButtonWrapper = styled.div<{ isDraggingOver: boolean }>`
-  ${({ isDraggingOver }) =>
+  background-color: ${({ isDraggingOver }) =>
     isDraggingOver
-      ? `
-    background-color: ${themeCssVariables.background.transparent.blue};
-    pointer-events: none;
-  `
-      : ''}
+      ? themeCssVariables.background.transparent.blue
+      : 'transparent'};
+  pointer-events: ${({ isDraggingOver }) =>
+    isDraggingOver ? 'none' : 'auto'};
 `;
 
 export const PageLayoutTabListDroppableMoreButton = ({

@@ -1,10 +1,9 @@
-import { IconDatabase, IconTrash } from 'twenty-ui/icon';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { fetchedCandidatesCountSelector } from '@/candidate-search/states/searchResultsState';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { IconBolt } from 'twenty-ui/icon';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import { IconBolt, IconDatabase, IconTrash } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContextHintBar = styled.div`
   display: flex;
@@ -42,7 +41,9 @@ const StyledActionButtons = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
+const StyledActionButton = styled.button<{
+  variant?: 'primary' | 'secondary' | 'danger';
+}>`
   display: flex;
   align-items: center;
   gap: ${themeCssVariables.spacing[1]};
@@ -52,43 +53,49 @@ const StyledActionButton = styled.button<{ variant?: 'primary' | 'secondary' | '
   font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
   transition: all 0.2s ease;
-  
-  ${({ variant }) => {
-    switch (variant) {
-      case 'primary':
-        return `
-          background-color: ${themeCssVariables.color.blue};
-          color: white;
-          border-color: ${themeCssVariables.color.blue};
-          
-          &:hover {
-            background-color: ${themeCssVariables.color.blue6};
-            border-color: ${themeCssVariables.color.blue6};
-          }
-        `;
-      case 'danger':
-        return `
-          background-color: ${themeCssVariables.color.red};
-          color: white;
-          border-color: ${themeCssVariables.color.red};
-          
-          &:hover {
-            background-color: ${themeCssVariables.color.red6};
-            border-color: ${themeCssVariables.color.red6};
-          }
-        `;
-      default:
-        return `
-          background-color: ${themeCssVariables.background.primary};
-          color: ${themeCssVariables.font.color.primary};
-          
-          &:hover {
-            background-color: ${themeCssVariables.background.secondary};
-            border-color: ${themeCssVariables.border.color.strong};
-          }
-        `;
+  background-color: ${({ variant }) => {
+    if (variant === 'primary') {
+      return themeCssVariables.color.blue;
     }
-  }}
+    if (variant === 'danger') {
+      return themeCssVariables.color.red;
+    }
+    return themeCssVariables.background.primary;
+  }};
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger'
+      ? 'white'
+      : themeCssVariables.font.color.primary};
+  border-color: ${({ variant }) => {
+    if (variant === 'primary') {
+      return themeCssVariables.color.blue;
+    }
+    if (variant === 'danger') {
+      return themeCssVariables.color.red;
+    }
+    return themeCssVariables.border.color.medium;
+  }};
+
+  &:hover {
+    background-color: ${({ variant }) => {
+      if (variant === 'primary') {
+        return themeCssVariables.color.blue6;
+      }
+      if (variant === 'danger') {
+        return themeCssVariables.color.red6;
+      }
+      return themeCssVariables.background.secondary;
+    }};
+    border-color: ${({ variant }) => {
+      if (variant === 'primary') {
+        return themeCssVariables.color.blue6;
+      }
+      if (variant === 'danger') {
+        return themeCssVariables.color.red6;
+      }
+      return themeCssVariables.border.color.strong;
+    }};
+  }
 `;
 
 type ContextHintBarProps = {
@@ -98,11 +105,11 @@ type ContextHintBarProps = {
   className?: string;
 };
 
-export const ContextHintBar = ({ 
-  onCreateEnrichment, 
-  onSaveAll, 
+export const ContextHintBar = ({
+  onCreateEnrichment,
+  onSaveAll,
   onDiscard,
-  className 
+  className
 }: ContextHintBarProps) => {
   const fetchedCount = useAtomStateValue(fetchedCandidatesCountSelector);
   const parsedJD = useAtomStateValue(parsedJDSelector);

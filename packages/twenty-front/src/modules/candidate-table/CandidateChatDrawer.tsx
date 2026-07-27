@@ -2,31 +2,30 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
 import { candidateDataState, processedDataSelector, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
+import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconUser, IconVideo } from 'twenty-ui/icon';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { IconArrowsSplit2, IconFileText, IconMessage, IconUser, IconVideo } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
-
-const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import { CandidateProfileTab } from './CandidateProfileTab';
 import { CandidateWarmPathTab } from './CandidateWarmPathTab';
 import VideoInterviewTab from './VideoInterviewTab';
 import { useTemplates } from './hooks/useTemplates';
+
+const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 
 const StyledContainer = styled.div`
   display: flex;
@@ -100,11 +99,8 @@ const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
     props.deliveryFailed ? `2px solid ${themeCssVariables.color.red}` : 'none'};
   box-sizing: border-box;
 
-  ${props => props.isSent ? `
-    border-bottom-right-radius: 4px;
-  ` : `
-    border-bottom-left-radius: 4px;
-  `}
+  border-bottom-right-radius: ${props => (props.isSent ? '4px' : '16px')};
+  border-bottom-left-radius: ${props => (props.isSent ? '16px' : '4px')};
 `;
 
 const MessageStatus = styled.div<{ isSent: boolean }>`

@@ -1,4 +1,3 @@
-import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui/icon';
 import { useArxJDUpload } from '@/arx-jd-upload/hooks/useArxJDUpload';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
@@ -24,18 +23,18 @@ import {
     recentSearchesState
 } from '@/candidate-search/states/searchPanelState';
 import { addSearchResults, persistSearchMetadataToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import {
+    LinkedInSearchCategory,
+    LinkedInSearchType,
+} from '@/candidate-search/types/candidate-search.types';
 import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { useTheme } from 'twenty-ui/theme-constants';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  LinkedInSearchCategory,
-  LinkedInSearchType,
-} from '@/candidate-search/types/candidate-search.types';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { IconApi, IconBrandLinkedin, IconSearch, IconX } from 'twenty-ui/icon';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
 const StyledSearchPanel = styled.div<{ isOpen: boolean; width: number }>`
   position: fixed;
@@ -114,22 +113,22 @@ const StyledDataSourceOption = styled.button<{ isActive: boolean }>`
   font-weight: ${themeCssVariables.font.weight.medium};
   font-family: inherit;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-
-  ${({ isActive }) =>
+  background: ${({ isActive }) =>
+    isActive ? themeCssVariables.background.primary : 'transparent'};
+  color: ${({ isActive }) =>
     isActive
-      ? `
-    background: ${themeCssVariables.background.primary};
+      ? themeCssVariables.font.color.primary
+      : themeCssVariables.font.color.secondary};
+  box-shadow: ${({ isActive }) =>
+    isActive ? themeCssVariables.boxShadow.light : 'none'};
+
+  &:hover {
+    background: ${({ isActive }) =>
+      isActive
+        ? themeCssVariables.background.primary
+        : themeCssVariables.background.transparent.light};
     color: ${themeCssVariables.font.color.primary};
-    box-shadow: ${themeCssVariables.boxShadow.light};
-  `
-      : `
-    background: transparent;
-    color: ${themeCssVariables.font.color.secondary};
-    &:hover {
-      background: ${themeCssVariables.background.transparent.light};
-      color: ${themeCssVariables.font.color.primary};
-    }
-  `}
+  }
 
   &:focus-visible {
     outline: 2px solid ${themeCssVariables.color.blue};

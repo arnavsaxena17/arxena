@@ -9,10 +9,10 @@ import { TableCell } from '@/ui/layout/table/components/TableCell';
 import { TableHeader } from '@/ui/layout/table/components/TableHeader';
 import { TableRow } from '@/ui/layout/table/components/TableRow';
 import { IconChevronRight, IconPlus } from 'twenty-ui/icon';
-import { H2Title } from 'twenty-ui/typography';
 import { Button } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { H2Title } from 'twenty-ui/typography';
 
 const StyledTableRows = styled.div`
   padding-bottom: ${themeCssVariables.spacing[2]};
@@ -20,17 +20,15 @@ const StyledTableRows = styled.div`
 `;
 
 const StyledRowWrapper = styled.div<{ clickable: boolean }>`
-  ${({ clickable }) =>
-    clickable
-      ? `
-        > * {
-          &:hover {
-            background-color: ${themeCssVariables.background.transparent.light};
-            cursor: pointer;
-          }
-        }
-      `
-      : ''}
+  > * {
+    &:hover {
+      background-color: ${({ clickable }) =>
+        clickable
+          ? themeCssVariables.background.transparent.light
+          : 'transparent'};
+      cursor: ${({ clickable }) => (clickable ? 'pointer' : 'default')};
+    }
+  }
 `;
 
 const StyledFooter = styled.div`

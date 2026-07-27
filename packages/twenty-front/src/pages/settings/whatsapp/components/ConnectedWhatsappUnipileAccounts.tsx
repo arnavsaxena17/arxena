@@ -1,24 +1,24 @@
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
 import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from 'react';
 import type { UnipileWhatsappAccount } from 'twenty-shared/arx';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import {
-  filterWhatsappAccountsForWorkspaceMemberProfile,
-  shouldRestrictWhatsappByProfile,
-  shouldShowWhatsappUnipileConnectQr,
-  whatsappAccountMatchesWorkspaceMemberProfile,
+    filterWhatsappAccountsForWorkspaceMemberProfile,
+    shouldRestrictWhatsappByProfile,
+    shouldShowWhatsappUnipileConnectQr,
+    whatsappAccountMatchesWorkspaceMemberProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 const AccountsContainer = styled.div`
   margin-top: 2rem;
@@ -128,35 +128,29 @@ const ActionButton = styled.button<{
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-
-  ${(props) => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: #25d366;
-          color: white;
-          &:hover {
-            background-color: #128c7e;
-          }
-        `;
-      case 'danger':
-        return `
-          background-color: #dc2626;
-          color: white;
-          &:hover {
-            background-color: #b91c1c;
-          }
-        `;
-      default:
-        return `
-          background-color: #f3f4f6;
-          color: #374151;
-          &:hover {
-            background-color: #e5e7eb;
-          }
-        `;
+  background-color: ${({ variant }) => {
+    if (variant === 'primary') {
+      return '#25d366';
     }
-  }}
+    if (variant === 'danger') {
+      return '#dc2626';
+    }
+    return '#f3f4f6';
+  }};
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger' ? 'white' : '#374151'};
+
+  &:hover {
+    background-color: ${({ variant }) => {
+      if (variant === 'primary') {
+        return '#128c7e';
+      }
+      if (variant === 'danger') {
+        return '#b91c1c';
+      }
+      return '#e5e7eb';
+    }};
+  }
 `;
 
 const EmptyState = styled.div`

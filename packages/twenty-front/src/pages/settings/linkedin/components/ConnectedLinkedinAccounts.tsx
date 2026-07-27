@@ -1,3 +1,6 @@
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
 import { styled } from '@linaria/react';
 import React, {
     useCallback,
@@ -17,10 +20,7 @@ import {
     linkedinAccountMatchesWorkspaceMemberProfile,
     shouldRestrictLinkedinByProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
-import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 const AccountsContainer = styled.div`
   margin-top: 2rem;
@@ -128,35 +128,29 @@ const ActionButton = styled.button<{
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-
-  ${(props) => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: #0077b5;
-          color: white;
-          &:hover {
-            background-color: #005885;
-          }
-        `;
-      case 'danger':
-        return `
-          background-color: #dc2626;
-          color: white;
-          &:hover {
-            background-color: #b91c1c;
-          }
-        `;
-      default:
-        return `
-          background-color: #f3f4f6;
-          color: #374151;
-          &:hover {
-            background-color: #e5e7eb;
-          }
-        `;
+  background-color: ${({ variant }) => {
+    if (variant === 'primary') {
+      return '#0077b5';
     }
-  }}
+    if (variant === 'danger') {
+      return '#dc2626';
+    }
+    return '#f3f4f6';
+  }};
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger' ? 'white' : '#374151'};
+
+  &:hover {
+    background-color: ${({ variant }) => {
+      if (variant === 'primary') {
+        return '#005885';
+      }
+      if (variant === 'danger') {
+        return '#b91c1c';
+      }
+      return '#e5e7eb';
+    }};
+  }
 `;
 
 const EmptyState = styled.div`

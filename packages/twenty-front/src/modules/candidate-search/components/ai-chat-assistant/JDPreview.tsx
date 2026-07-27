@@ -28,7 +28,7 @@ const StyledJDDetail = styled.div`
     color: ${themeCssVariables.font.color.primary};
     font-weight: ${themeCssVariables.font.weight.semiBold};
   }
-  
+
   span {
     color: ${themeCssVariables.font.color.secondary};
   }
@@ -42,16 +42,14 @@ const StyledChip = styled.span<{ clickable?: boolean }>`
   border-radius: ${themeCssVariables.border.radius.sm};
   font-size: ${themeCssVariables.font.size.sm};
   margin: ${themeCssVariables.spacing[1]};
-  ${({ clickable }) => (clickable ? 'cursor: pointer;' : '')}
-  
-  ${({ clickable }) =>
-    clickable
-      ? `
-    &:hover {
-      background-color: ${themeCssVariables.color.blue2};
-    }
-  `
-      : ''}
+  cursor: ${({ clickable }) => (clickable ? 'pointer' : 'default')};
+
+  &:hover {
+    background-color: ${({ clickable }) =>
+      clickable
+        ? themeCssVariables.color.blue2
+        : themeCssVariables.color.blue10};
+  }
 `;
 
 interface ParsedJobDescription {
@@ -70,7 +68,7 @@ export const JDPreview = ({ parsedJobDescription }: JDPreviewProps) => {
   if (!parsedJobDescription) return null;
 
   const jd = parsedJobDescription;
-  
+
   return (
     <StyledJDPreview>
       <StyledJDTitle>Project Description Preview</StyledJDTitle>

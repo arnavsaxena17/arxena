@@ -1,13 +1,13 @@
 import { SearchParametersResponse } from '@/candidate-search/types/candidate-search.types';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AiFiltersResponse, FiltersResponse, SortsResponse } from 'twenty-shared/types';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { JsonMessageViewer } from '~/utils/JsonMessageViewer';
 import { AiFiltersMessage } from './AiFiltersMessage';
 import { FiltersMessage } from './FiltersMessage';
 import { SearchParametersMessage } from './SearchParametersMessage';
 import { SortsMessage } from './SortsMessage';
-import { JsonMessageViewer } from '~/utils/JsonMessageViewer';
 
 const StyledChatMessages = styled.div`
   flex: 1;
@@ -86,14 +86,22 @@ const StyledMessage = styled.div<{ isUser?: boolean }>`
   display: flex;
   align-items: flex-start;
   gap: ${themeCssVariables.spacing[2]};
-  ${({ isUser }) => (isUser ? 'flex-direction: row-reverse;' : '')}
+  flex-direction: ${({ isUser }) => (isUser ? 'row-reverse' : 'row')};
 `;
 
-const StyledMessageContent = styled.div<{ isUser?: boolean; isStreaming?: boolean }>`
-  background-color: ${({ isUser }) => 
-    isUser ? themeCssVariables.color.blue10 : themeCssVariables.background.secondary};
-  border: 1px solid ${({ isUser }) => 
-    isUser ? themeCssVariables.color.blue2 : themeCssVariables.border.color.light};
+const StyledMessageContent = styled.div<{
+  isUser?: boolean;
+  isStreaming?: boolean;
+}>`
+  background-color: ${({ isUser }) =>
+    isUser
+      ? themeCssVariables.color.blue10
+      : themeCssVariables.background.secondary};
+  border: 1px solid
+    ${({ isUser }) =>
+      isUser
+        ? themeCssVariables.color.blue2
+        : themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
   padding: ${themeCssVariables.spacing[2]};
   max-width: 80%;
@@ -103,21 +111,25 @@ const StyledMessageContent = styled.div<{ isUser?: boolean; isStreaming?: boolea
   overflow-wrap: break-word;
   white-space: pre-wrap;
   position: relative;
-  ${({ isStreaming }) =>
-    isStreaming
-      ? `
-    &::after {
-      content: '▋';
-      animation: blink 1s infinite;
-      margin-left: 2px;
+
+  &::after {
+    content: ${({ isStreaming }) => (isStreaming ? "'▋'" : "''")};
+    display: ${({ isStreaming }) => (isStreaming ? 'inline' : 'none')};
+    animation: ${({ isStreaming }) =>
+      isStreaming ? 'blink 1s infinite' : 'none'};
+    margin-left: ${({ isStreaming }) => (isStreaming ? '2px' : '0')};
+  }
+
+  @keyframes blink {
+    0%,
+    50% {
+      opacity: 1;
     }
-    
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
+    51%,
+    100% {
+      opacity: 0;
     }
-  `
-      : ''}
+  }
 `;
 
 const StyledMessageIcon = styled.div`
@@ -148,12 +160,12 @@ const StyledScrollToBottomButton = styled.button`
   box-shadow: ${themeCssVariables.boxShadow.strong};
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 10;
-  
+
   &:hover {
     transform: scale(1.1);
     background-color: ${themeCssVariables.color.blue2};
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -209,8 +221,8 @@ type ChatMessagesProps = {
   isTerminated?: boolean;
 };
 
-export const ChatMessages = ({ 
-  messages, 
+export const ChatMessages = ({
+  messages,
   onSearchVariationSelect,
   onGenerateAiFilters,
   onExecuteAiFilters,
@@ -336,24 +348,24 @@ export const ChatMessages = ({
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      
+
       if (escapeNext) {
         escapeNext = false;
         continue;
       }
-      
+
       if (char === '\\') {
         escapeNext = true;
         continue;
       }
-      
+
       if (char === '"' && !escapeNext) {
         inString = !inString;
         continue;
       }
-      
+
       if (inString) continue;
-      
+
       if (char === '{') openBraces++;
       if (char === '}') closeBraces++;
       if (char === '[') openBrackets++;
@@ -374,24 +386,24 @@ export const ChatMessages = ({
 
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      
+
       if (escapeNext) {
         escapeNext = false;
         continue;
       }
-      
+
       if (char === '\\') {
         escapeNext = true;
         continue;
       }
-      
+
       if (char === '"' && !escapeNext) {
         inString = !inString;
         continue;
       }
-      
+
       if (inString) continue;
-      
+
       if (char === '{') {
         if (jsonStartIndex === -1) jsonStartIndex = i;
         braceCount++;
@@ -413,7 +425,7 @@ export const ChatMessages = ({
       }
     }
 
-    return jsonStartIndex !== -1 && jsonEndIndex !== -1 
+    return jsonStartIndex !== -1 && jsonEndIndex !== -1
       ? { start: jsonStartIndex, end: jsonEndIndex }
       : null;
   };
@@ -421,19 +433,19 @@ export const ChatMessages = ({
   // Helper: Fix incomplete JSON by adding missing braces/brackets
   const fixIncompleteJson = (json: string): string => {
     const { openBraces, closeBraces, openBrackets, closeBrackets } = countBracesAndBrackets(json);
-    
+
     let fixed = json;
-    
+
     // Add missing closing brackets before braces
     if (openBrackets > closeBrackets) {
       fixed = fixed.replace(/\}*$/, '') + ']'.repeat(openBrackets - closeBrackets);
     }
-    
+
     // Add missing closing braces
     if (openBraces > closeBraces) {
       fixed = fixed + '}'.repeat(openBraces - closeBraces);
     }
-    
+
     return fixed;
   };
 
@@ -656,7 +668,7 @@ export const ChatMessages = ({
 
       default: {
         const jsonResult = detectAndParseJson(message);
-        
+
         return (
           <StyledMessage key={message.id} isUser={message.type === 'user'}>
             <StyledMessageIcon>

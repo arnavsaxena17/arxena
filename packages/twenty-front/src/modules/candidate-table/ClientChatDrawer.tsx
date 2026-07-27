@@ -1,6 +1,6 @@
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useMemo, useState } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 type ClientMessage = {
   id: string;
@@ -54,7 +54,10 @@ const StyledMessageRow = styled.div<{ from: ClientMessage['from'] }>`
   justify-content: ${({ from }) => (from === 'recruiter' ? 'flex-end' : 'flex-start')};
 `;
 
-const StyledMessageBubble = styled.div<{ from: ClientMessage['from']; role: ClientMessage['role'] }>`
+const StyledMessageBubble = styled.div<{
+  from: ClientMessage['from'];
+  role: ClientMessage['role'];
+}>`
   max-width: 80%;
   padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
   border-radius: ${themeCssVariables.border.radius.lg};
@@ -62,26 +65,29 @@ const StyledMessageBubble = styled.div<{ from: ClientMessage['from']; role: Clie
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-
-  ${({ from }) =>
+  background-color: ${({ from }) =>
     from === 'recruiter'
-      ? `
-    background-color: ${themeCssVariables.color.blue8};
-    color: white;
-    border-bottom-right-radius: ${themeCssVariables.border.radius.sm};
-  `
-      : `
-    background-color: ${themeCssVariables.background.primary};
-    color: ${themeCssVariables.font.color.primary};
-    border-bottom-left-radius: ${themeCssVariables.border.radius.sm};
-  `}
-
-  ${({ role }) =>
-    role === 'fee'
-      ? `box-shadow: 0 0 0 1px ${themeCssVariables.color.orange}`
-      : role === 'offer'
-        ? `box-shadow: 0 0 0 1px ${themeCssVariables.color.green}`
-        : ''}
+      ? themeCssVariables.color.blue8
+      : themeCssVariables.background.primary};
+  color: ${({ from }) =>
+    from === 'recruiter' ? 'white' : themeCssVariables.font.color.primary};
+  border-bottom-right-radius: ${({ from }) =>
+    from === 'recruiter'
+      ? themeCssVariables.border.radius.sm
+      : themeCssVariables.border.radius.lg};
+  border-bottom-left-radius: ${({ from }) =>
+    from === 'recruiter'
+      ? themeCssVariables.border.radius.lg
+      : themeCssVariables.border.radius.sm};
+  box-shadow: ${({ role }) => {
+    if (role === 'fee') {
+      return `0 0 0 1px ${themeCssVariables.color.orange}`;
+    }
+    if (role === 'offer') {
+      return `0 0 0 1px ${themeCssVariables.color.green}`;
+    }
+    return 'none';
+  }};
 `;
 
 const StyledTimestamp = styled.div`

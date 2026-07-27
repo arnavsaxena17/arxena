@@ -1,9 +1,9 @@
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const Card = styled.div`
   background: white;
@@ -86,7 +86,6 @@ const Instructions = styled.div`
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
@@ -94,32 +93,21 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   font-weight: 600;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
+  background-color: ${({ variant }) =>
+    variant === 'primary' ? '#25d366' : '#f8fafc'};
+  color: ${({ variant }) => (variant === 'primary' ? 'white' : '#475569')};
+  border: ${({ variant }) =>
+    variant === 'primary' ? 'none' : '1px solid #d1d5db'};
 
-  ${props => {
-    switch (props.variant) {
-      case 'primary':
-        return `
-          background-color: #25d366;
-          color: white;
-          &:hover {
-            background-color: #128c7e;
-          }
-          &:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-          }
-        `;
-      default:
-        return `
-          background-color: #f8fafc;
-          color: #475569;
-          border: 1px solid #d1d5db;
-          &:hover {
-            background-color: #f1f5f9;
-          }
-        `;
-    }
-  }}
+  &:hover {
+    background-color: ${({ variant }) =>
+      variant === 'primary' ? '#128c7e' : '#f1f5f9'};
+  }
+
+  &:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+  }
 
   &:focus {
     outline: none;

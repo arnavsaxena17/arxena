@@ -1,18 +1,3 @@
-import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { MenuItem } from 'twenty-ui/navigation';
-import { Button } from 'twenty-ui/input';
-import {
-  IconApi,
-  IconBrowserMaximize,
-  IconBrandLinkedin,
-  IconChevronDown,
-  IconCoins,
-  IconComment,
-  IconDownload,
-  IconGitCommit,
-  IconPlus,
-} from 'twenty-ui/icon';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
@@ -20,8 +5,8 @@ import { RootStackingContextZIndices } from '@/ui/layout/constants/RootStackingC
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
-import { DropdownComponentInstanceContext } from '@/ui/layout/dropdown/contexts/DropdownComponentInstanceContext';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
+import { DropdownComponentInstanceContext } from '@/ui/layout/dropdown/contexts/DropdownComponentInstanceContext';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { useToggleDropdown } from '@/ui/layout/dropdown/hooks/useToggleDropdown';
 import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
@@ -29,11 +14,25 @@ import { OverlayContainer } from '@/ui/layout/overlay/components/OverlayContaine
 import { useListenClickOutside } from '@/ui/utilities/pointer-event/hooks/useListenClickOutside';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
-import { useTheme } from 'twenty-ui/theme-constants';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { type CSSProperties, type MouseEvent, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ARXENA_CHROME_WEBSTORE_URL } from 'twenty-shared/constants';
 import type { LinkedInSearchType } from 'twenty-shared/types';
+import {
+    IconApi,
+    IconBrandLinkedin,
+    IconBrowserMaximize,
+    IconChevronDown,
+    IconCoins,
+    IconComment,
+    IconDownload,
+    IconGitCommit,
+    IconPlus,
+} from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/input';
+import { MenuItem } from 'twenty-ui/navigation';
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
 const ORG_CHART_LINKEDIN_SEARCH_TYPE_OPTIONS: {
   value: LinkedInSearchType;
@@ -154,22 +153,22 @@ const StyledSegmentedOption = styled.button<{
     background 0.15s ease,
     color 0.15s ease,
     box-shadow 0.15s ease;
-
-  ${({ isActive }) =>
+  background: ${({ isActive }) =>
+    isActive ? themeCssVariables.background.primary : 'transparent'};
+  color: ${({ isActive }) =>
     isActive
-      ? `
-    background: ${themeCssVariables.background.primary};
+      ? themeCssVariables.font.color.primary
+      : themeCssVariables.font.color.secondary};
+  box-shadow: ${({ isActive }) =>
+    isActive ? themeCssVariables.boxShadow.light : 'none'};
+
+  &:hover {
+    background: ${({ isActive }) =>
+      isActive
+        ? themeCssVariables.background.primary
+        : themeCssVariables.background.transparent.light};
     color: ${themeCssVariables.font.color.primary};
-    box-shadow: ${themeCssVariables.boxShadow.light};
-  `
-      : `
-    background: transparent;
-    color: ${themeCssVariables.font.color.secondary};
-    &:hover {
-      background: ${themeCssVariables.background.transparent.light};
-      color: ${themeCssVariables.font.color.primary};
-    }
-  `}
+  }
 
   &:focus-visible {
     outline: 2px solid ${themeCssVariables.color.blue};

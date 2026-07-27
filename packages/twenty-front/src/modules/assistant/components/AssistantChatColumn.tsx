@@ -1,20 +1,20 @@
-import { IconDotsVertical, IconFile, IconX } from 'twenty-ui/icon';
 import { parsedJDSelector } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { AssistantThreadNotes } from '@/assistant/components/AssistantThreadNotes';
 import type {
-  AssistantAgentEvent,
-  AssistantStatusMessagePolicy,
-  AssistantThread,
-  LinkedInSearchType,
-  OrgChartPreview,
+    AssistantAgentEvent,
+    AssistantStatusMessagePolicy,
+    AssistantThread,
+    LinkedInSearchType,
+    OrgChartPreview,
 } from '@/assistant/types/assistant.types';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconDotsVertical, IconFile, IconX } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
@@ -33,10 +33,12 @@ const StyledChatPanel = styled.div<{ isMobile: boolean }>`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  ${({ isMobile }) =>
-    isMobile
-      ? 'min-height: 40%; max-height: 60%; min-width: 0;'
-      : 'flex: 0 0 420px; min-width: 420px; max-width: 480px; flex-shrink: 0;'}
+  flex: ${({ isMobile }) => (isMobile ? '1 1 auto' : '0 0 420px')};
+  min-height: ${({ isMobile }) => (isMobile ? '40%' : 'auto')};
+  max-height: ${({ isMobile }) => (isMobile ? '60%' : 'none')};
+  min-width: ${({ isMobile }) => (isMobile ? '0' : '420px')};
+  max-width: ${({ isMobile }) => (isMobile ? 'none' : '480px')};
+  flex-shrink: ${({ isMobile }) => (isMobile ? '1' : '0')};
   border-right: ${({ isMobile }) =>
     isMobile ? 'none' : `1px solid ${themeCssVariables.border.color.medium}`};
   border-bottom: ${({ isMobile }) =>

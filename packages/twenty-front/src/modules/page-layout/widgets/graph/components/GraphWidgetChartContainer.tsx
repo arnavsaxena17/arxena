@@ -1,23 +1,37 @@
 import { styled } from '@linaria/react';
+import {
+    forwardRef,
+    type ComponentPropsWithoutRef,
+    type ElementRef,
+} from 'react';
 
-type GraphWidgetChartContainerProps = {
-  $isClickable?: boolean;
-  $cursorSelector?: string;
-};
-
-const StyledGraphWidgetChartContainer = styled.div<GraphWidgetChartContainerProps>`
+const StyledGraphWidgetChartContainer = styled.div`
   flex: 1;
   position: relative;
   width: 100%;
 
-  ${({ $isClickable, $cursorSelector }) =>
-    $isClickable && $cursorSelector
-      ? `
-    ${$cursorSelector} {
-      cursor: pointer;
-    }
-  `
-      : ''}
+  &[data-clickable='true'][data-cursor-selector='svg g path'] svg g path {
+    cursor: pointer;
+  }
+
+  &[data-clickable='true'][data-cursor-selector='canvas'] canvas {
+    cursor: pointer;
+  }
 `;
 
-export const GraphWidgetChartContainer = StyledGraphWidgetChartContainer;
+type GraphWidgetChartContainerProps = ComponentPropsWithoutRef<'div'> & {
+  $isClickable?: boolean;
+  $cursorSelector?: string;
+};
+
+export const GraphWidgetChartContainer = forwardRef<
+  ElementRef<'div'>,
+  GraphWidgetChartContainerProps
+>(({ $isClickable, $cursorSelector, ...props }, ref) => (
+  <StyledGraphWidgetChartContainer
+    ref={ref}
+    {...props}
+    data-clickable={$isClickable === true ? 'true' : undefined}
+    data-cursor-selector={$cursorSelector}
+  />
+));
