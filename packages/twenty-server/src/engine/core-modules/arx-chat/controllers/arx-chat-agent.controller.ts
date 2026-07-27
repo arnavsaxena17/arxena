@@ -76,11 +76,11 @@ export class ArxChatEndpoint {
   async startChat(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateId = request.body.candidateId;
-    
+
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
-    
+
     // Step 1: Set startChat to true
     const response = await this.candidateEngagementArx.createChatControl(
       candidateId,
@@ -98,7 +98,7 @@ export class ArxChatEndpoint {
         candidateId,
         apiToken
       );
-      
+
       console.log('Successfully created interim chat message for candidate', candidateId);
     } catch (error) {
       console.error('Error creating interim chat message:', error);
@@ -113,7 +113,7 @@ export class ArxChatEndpoint {
   async startChatQueue(@Req() request: any) {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateId = request.body.candidateId;
-    
+
     // Queue the candidate for engagement processing with all operations moved to worker
     // This includes createChatControl and createInterimChat operations
     try {
@@ -122,7 +122,7 @@ export class ArxChatEndpoint {
         candidateId,
         apiToken
       );
-      
+
       console.log('Successfully queued candidate for start chat processing', candidateId);
     } catch (error) {
       console.error('Error queuing candidate for start chat processing:', error);
@@ -162,7 +162,7 @@ export class ArxChatEndpoint {
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats', candidateIds.length);
-    
+
     for (const candidateId of candidateIds) {
       try {
         // Step 1: Set startChat to true
@@ -181,14 +181,14 @@ export class ArxChatEndpoint {
           candidateId,
           apiToken
         );
-        
+
         console.log('Successfully started chat and engagement for candidate', candidateId);
       } catch (error) {
         console.error(`Error starting chat for candidate ${candidateId}:`, error);
         // Continue with next candidate even if this one fails
       }
     }
-    
+
     // Step 3: Add all candidates via the same path as right-drawer "Add to Google Contacts"
     if (candidateIds.length > 0) {
       try {
@@ -206,7 +206,7 @@ export class ArxChatEndpoint {
         // Don't fail the entire operation if Google Contacts creation fails
       }
     }
-    
+
     return { status: 'Success', message: `Processed ${candidateIds.length} candidates` };
   }
 
@@ -269,14 +269,14 @@ export class ArxChatEndpoint {
           apiToken,
           { delayMs },
         );
-        
+
         console.log('Successfully queued chat and engagement for candidate', candidateId);
       } catch (error) {
         console.error(`Error queuing chat for candidate ${candidateId}:`, error);
         // Continue with next candidate even if this one fails
       }
     }
-    
+
     // Add all candidates via the same path as right-drawer "Add to Google Contacts"
     if (candidateIds.length > 0) {
       try {
@@ -294,7 +294,7 @@ export class ArxChatEndpoint {
         // Don't fail the entire operation if Google Contacts creation fails
       }
     }
-    
+
     return { status: 'Success', message: `Queued ${candidateIds.length} candidates for engagement processing` };
   }
 
@@ -423,7 +423,7 @@ export class ArxChatEndpoint {
     await this.updateChat.resetMessagesFromWhatsapp(
       candidateId,
       apiToken,
-    ); 
+    );
 
     const graphqlVariablesStopChat = {
       idToUpdate: candidateId,
@@ -512,9 +512,9 @@ export class ArxChatEndpoint {
     return { status: 'Success', updated, failed };
   }
 
-  @Post('move-candidates-to-job')
+  @Post(['move-candidates-to-project', 'move-candidates-to-job'])
   @UseGuards(JwtAuthGuard)
-  async moveCandidatesToJob(
+  async moveCandidatesToProject(
     @Req() request: any,
   ): Promise<{ status: string; updated: number; failed: number }> {
     const authHeader = request.headers.authorization;
@@ -524,7 +524,9 @@ export class ArxChatEndpoint {
         : '';
 
     const candidateIdsRaw = request.body?.candidateIds;
-    const projectIdRaw = request.body?.projectId as string | undefined;
+    const projectIdRaw =
+      (request.body?.projectId as string | undefined) ??
+      (request.body?.jobId as string | undefined);
 
     if (!Array.isArray(candidateIdsRaw) || candidateIdsRaw.length === 0) {
       throw new BadRequestException('candidateIds must be a non-empty array');
@@ -556,7 +558,7 @@ export class ArxChatEndpoint {
         updated += 1;
       } catch (error) {
         console.error(
-          `moveCandidatesToJob failed for ${candidateId}:`,
+          `moveCandidatesToProject failed for ${candidateId}:`,
           error,
         );
         failed += 1;
@@ -619,7 +621,7 @@ export class ArxChatEndpoint {
     console.log("This is the whatsapp provider ::", personObj?.candidates?.edges.filter(
       (candidate) => candidate.node.projects.id == candidateJob?.id,
     )[0]?.node.whatsappProvider)
-      
+
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       candidateProfile: personObj?.candidates?.edges?.filter(
@@ -648,7 +650,7 @@ export class ArxChatEndpoint {
     const candidateNode = personObj?.candidates?.edges?.filter(
       (candidate) => candidate.node.projects.id == candidateJob?.id,
     )[0]?.node as CandidateNode;
-    
+
     const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
     const candidateChatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
@@ -924,7 +926,7 @@ export class ArxChatEndpoint {
         filter: { id: { eq: candidateId } },
       }, apiToken);
 
-      const candidates = candidateResponse?.data?.data?.candidates as {   
+      const candidates = candidateResponse?.data?.data?.candidates as {
         edges: CandidateEdge[];
         pageInfo: PageInfo;
       } | undefined;
@@ -945,7 +947,7 @@ export class ArxChatEndpoint {
       ).getPersonDetailsByPersonId(personId, apiToken);
 
       console.log('personObj:', personObj);
-      
+
       if (!personObj) {
         throw new HttpException(
           'Person details not found',
@@ -983,10 +985,10 @@ export class ArxChatEndpoint {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
-      
+
       // Import the BaileysWhatsappAPI class
       const { BaileysWhatsappAPI } = await import('../services/whatsapp-api/baileys/callBaileys');
-      
+
       // Create instance of BaileysWhatsappAPI
       const baileysAPI = new BaileysWhatsappAPI(
         this.workspaceQueryService,
@@ -997,7 +999,7 @@ export class ArxChatEndpoint {
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       console.log('recruiterProfile', recruiterProfile);
-      
+
       if (!recruiterProfile?.phoneNumber) {
         throw new HttpException('Recruiter phone number not found', HttpStatus.BAD_REQUEST);
       }

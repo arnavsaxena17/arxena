@@ -24,7 +24,7 @@ const mapRightDrawerPageToSidePanelPage = (
     case RightDrawerPages.CandidateChat:
       return SidePanelPages.CandidateChat;
     case RightDrawerPages.CandidateActions:
-      return null;
+      return SidePanelPages.CommandMenuDisplay;
     default:
       return null;
   }

@@ -410,6 +410,10 @@ ${tools
         return 'Navigation Menu Item Tools (sidebar entries, folders, and user favorites)';
       case ToolCategory.WEBHOOK:
         return 'Webhook Tools (outgoing webhooks)';
+      case ToolCategory.ARXENA:
+        return 'Arxena Tools (first-party CRM actions)';
+      case ToolCategory.EXTERNAL_MCP:
+        return 'External MCP Tools (tools proxied from external providers)';
       default:
         return assertUnreachable(category);
     }

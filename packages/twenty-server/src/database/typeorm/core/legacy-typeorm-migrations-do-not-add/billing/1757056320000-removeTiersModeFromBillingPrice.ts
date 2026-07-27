@@ -5,7 +5,7 @@ export class RemoveTiersModeFromBillingPrice1757056320000 implements MigrationIn
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "core"."billingPrice" DROP COLUMN "tiersMode"`,
+      `ALTER TABLE "core"."billingPrice" DROP COLUMN IF EXISTS "tiersMode"`,
     );
 
     await queryRunner.query(
@@ -15,10 +15,10 @@ export class RemoveTiersModeFromBillingPrice1757056320000 implements MigrationIn
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TYPE "core"."billingPrice_tiersmode_enum" AS ENUM('GRADUATED', 'VOLUME')`,
+      `DO $$ BEGIN CREATE TYPE "core"."billingPrice_tiersmode_enum" AS ENUM('GRADUATED', 'VOLUME'); EXCEPTION WHEN duplicate_object THEN null; END $$`,
     );
     await queryRunner.query(
-      `ALTER TABLE "core"."billingPrice" ADD "tiersMode" "core"."billingPrice_tiersmode_enum"`,
+      `ALTER TABLE "core"."billingPrice" ADD COLUMN IF NOT EXISTS "tiersMode" "core"."billingPrice_tiersmode_enum"`,
     );
   }
 }

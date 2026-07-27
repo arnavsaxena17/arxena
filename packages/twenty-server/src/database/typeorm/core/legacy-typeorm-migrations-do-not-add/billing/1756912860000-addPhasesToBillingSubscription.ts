@@ -5,13 +5,13 @@ export class AddPhasesToBillingSubscription1756912860000 implements MigrationInt
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "core"."billingSubscription" ADD "phases" jsonb NOT NULL DEFAULT '[]'`,
+      `ALTER TABLE "core"."billingSubscription" ADD COLUMN IF NOT EXISTS "phases" jsonb NOT NULL DEFAULT '[]'`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "core"."billingSubscription" DROP COLUMN "phases"`,
+      `ALTER TABLE "core"."billingSubscription" DROP COLUMN IF EXISTS "phases"`,
     );
   }
 }

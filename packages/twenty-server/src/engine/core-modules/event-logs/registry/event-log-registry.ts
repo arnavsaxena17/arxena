@@ -46,25 +46,25 @@ const normalizeGenericEvent =
 export const EVENT_LOG_TYPES: Record<EventLogTable, EventLogTypeDefinition> = {
   [EventLogTable.WORKSPACE_EVENT]: {
     clickHouseTable: 'workspaceEvent',
-    requiresEntitlement: BillingEntitlementKey.AUDIT_LOGS,
+    requiresEntitlement: null,
     eventFieldName: 'event',
     normalize: normalizeGenericEvent('event'),
   },
   [EventLogTable.PAGEVIEW]: {
     clickHouseTable: 'pageview',
-    requiresEntitlement: BillingEntitlementKey.AUDIT_LOGS,
+    requiresEntitlement: null,
     eventFieldName: 'name',
     normalize: normalizeGenericEvent('name'),
   },
   [EventLogTable.OBJECT_EVENT]: {
     clickHouseTable: 'objectEvent',
-    requiresEntitlement: BillingEntitlementKey.AUDIT_LOGS,
+    requiresEntitlement: null,
     eventFieldName: 'event',
     normalize: normalizeGenericEvent('event'),
   },
   [EventLogTable.USAGE_EVENT]: {
     clickHouseTable: 'usageEvent',
-    requiresEntitlement: BillingEntitlementKey.AUDIT_LOGS,
+    requiresEntitlement: null,
     eventFieldName: 'resourceType',
     normalize: (row) => {
       const record = row as StoredRow<UsageEventRow>;

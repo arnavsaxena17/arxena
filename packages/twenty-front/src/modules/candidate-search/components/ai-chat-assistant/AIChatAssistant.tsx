@@ -399,7 +399,7 @@ export const AIChatAssistant = ({
 
       try {
         const fetchedAttachments = await findManyAttachments({
-          filter: { projectId: { eq: parsedJD.id } },
+          filter: { targetProjectId: { eq: parsedJD.id } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
         });
         setAttachments(fetchedAttachments);

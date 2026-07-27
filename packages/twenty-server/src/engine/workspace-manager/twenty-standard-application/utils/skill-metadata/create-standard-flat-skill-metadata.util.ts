@@ -187,7 +187,7 @@ For anything beyond a handful of rows (>~50), do the ENTIRE import inside a SING
 
 This means: read the file, parse it, inspect schemas, resolve IDs, write all records, and print the summary — all inside one \`code_interpreter\` call. Not two. Not five. One.
 
-The sandbox exposes a pre-bound \`twenty\` object (see the code-interpreter skill). Use its bulk helpers instead of hand-rolling loops.
+The sandbox exposes a pre-bound \`arxena\` object (see the code-interpreter skill). Use its bulk helpers instead of hand-rolling loops.
 
 ### Pre-flight: inspect schemas at the LLM level before entering the sandbox
 
@@ -197,7 +197,7 @@ The sandbox exposes a pre-bound \`twenty\` object (see the code-interpreter skil
 learn_tools(["create_one_company", "create_one_person", "create_one_opportunity"])
 \`\`\`
 
-This is free — it runs before the sandbox and does not add a code_interpreter round-trip. You will know the exact field names before writing any code. Do NOT call \`twenty.call_tool('learn_tools', ...)\` from inside the sandbox to learn schemas — that wastes a full sandbox round-trip per schema and pollutes the conversation context.
+This is free — it runs before the sandbox and does not add a code_interpreter round-trip. You will know the exact field names before writing any code. Do NOT call \`arxena.call_tool('learn_tools', ...)\` from inside the sandbox to learn schemas — that wastes a full sandbox round-trip per schema and pollutes the conversation context.
 
 ### Recipe
 
@@ -208,10 +208,10 @@ This is free — it runs before the sandbox and does not add a code_interpreter 
    \`\`\`
    Read and parse the file in the same code cell — never split file reading across multiple \`code_interpreter\` calls.
    Inspect columns and a few rows once with \`df.head()\` — never re-dump the full frame.
-2. **Use schemas learned at step 0.** You already know the field names from the pre-flight \`learn_tools\` call. Do not call \`twenty.call_tool('learn_tools', ...)\` inside the sandbox unless you genuinely missed a schema. If you do need it, call it once and cache the result in a Python variable.
+2. **Use schemas learned at step 0.** You already know the field names from the pre-flight \`learn_tools\` call. Do not call \`arxena.call_tool('learn_tools', ...)\` inside the sandbox unless you genuinely missed a schema. If you do need it, call it once and cache the result in a Python variable.
 3. **Resolve relations to IDs.** Relations link by ID, not by name. Build a lookup map ONCE for only the values referenced in the file:
    \`\`\`python
-   company_ids = twenty.lookup_by('companies', 'name', df['company'].dropna().unique().tolist())
+   company_ids = arxena.lookup_by('companies', 'name', df['company'].dropna().unique().tolist())
    \`\`\`
    Then set each row's relation via the scalar foreign key — NOT a nested object:
    \`\`\`python
@@ -223,7 +223,7 @@ This is free — it runs before the sandbox and does not add a code_interpreter 
 4. **Resolve just-created IDs with a bounded \`lookup_by\` — never paginate the table.** \`bulk_upsert\` returns only a count summary (created / updated / failed), not the records, so to link subsequent records (e.g. people to the companies you just upserted) resolve the IDs you need with a \`lookup_by\` bounded to your own values:
    \`\`\`python
    # After upserting companies, resolve by name using lookup_by (bounded to your values, not the whole table)
-   company_ids = twenty.lookup_by('companies', 'name', [r['name'] for r in company_records])
+   company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_records])
    # Then use company_ids to set companyId on person records
    \`\`\`
    Never paginate through hundreds of existing records with \`find_many_*\` to find the ones you just created.
@@ -231,7 +231,7 @@ This is free — it runs before the sandbox and does not add a code_interpreter 
 6. **Silently validate the mapping with a 2-row upsert.** Inside the same \`code_interpreter\` run, upsert just 2 rows as an internal correctness check. This is NOT a user-facing step: do not announce or narrate it. Only surface it if it FAILS — then report the error and the offending mapping so it can be fixed before the full import.
 7. **Write with bulk_upsert.** Prefer upsert so dedup on unique fields (e.g. email) is handled server-side and re-runs are idempotent:
    \`\`\`python
-   summary = twenty.bulk_upsert('people', records)
+   summary = arxena.bulk_upsert('people', records)
    print(summary)  # { 'created': 4000, 'updated': 380, 'upserted': 4380, 'failed': 0, 'errors': [] }
    \`\`\`
    \`bulk_upsert\` batches at 200 (the platform maximum) and paginates to completion. Never stop at "partial" — if some batches failed, report the count and retry the failed offsets.
@@ -240,7 +240,7 @@ This is free — it runs before the sandbox and does not add a code_interpreter 
 ### Anti-patterns — never do these
 
 - **Reading a file across multiple sandbox calls.** Do \`print(content[:3000])\` then \`print(content[3000:])\` in separate calls? That is two wasted round-trips. Read once, parse once, in the same cell.
-- **Calling \`twenty.call_tool('learn_tools', ...)\` inside the sandbox** to discover field names. Inspect schemas at the LLM level with \`learn_tools\` before entering the sandbox. Guessing a field name and fixing the failure (e.g. \`annualRecurringRevenue\` → 10 failed writes → re-fetch schema) costs one failed batch plus a round-trip.
+- **Calling \`arxena.call_tool('learn_tools', ...)\` inside the sandbox** to discover field names. Inspect schemas at the LLM level with \`learn_tools\` before entering the sandbox. Guessing a field name and fixing the failure (e.g. \`annualRecurringRevenue\` → 10 failed writes → re-fetch schema) costs one failed batch plus a round-trip.
 - **Re-fetching records you just created** to build an ID map. Use \`lookup_by\` bounded to the values you need, not \`find_many_*\` with pagination through the whole table.
 - **Looping \`find_many_*\` one record at a time** inside the sandbox to resolve IDs (N+1 pattern). Use \`lookup_by\` instead — it batches the query server-side.
 - **Multiple \`code_interpreter\` calls for a single import.** Each extra call is a full sandbox round-trip that adds latency, costs tokens, and accumulates output in the conversation context. Everything from file reading to final summary belongs in one call.
@@ -754,10 +754,10 @@ plt.savefig('/home/user/output/analysis.png')
 print('Analysis complete!')
 \`\`\`
 
-## Calling Twenty Tools from Python (MCP Bridge)
+## Calling Arxena Tools from Python (MCP Bridge)
 
-**A \`twenty\` variable is already bound in your code's scope.** Do NOT write
-\`import twenty\` — there is no Python package by that name. The helper is an
+**An \`arxena\` variable is already bound in your code's scope.** Do NOT write
+\`import arxena\` — there is no Python package by that name. The helper is an
 instance of a class that has been pre-instantiated for you; just call methods
 on it directly.
 
@@ -765,25 +765,25 @@ Real catalog tools follow the pattern \`find_many_<object>\` / \`find_one_<objec
 \`create_one_<object>\` / \`create_many_<object>\` / \`update_one_<object>\` / \`update_many_<object>\` /
 \`delete_one_<object>\` / \`delete_many_<object>\` / \`group_by_<object>\` —
 e.g. \`find_many_companies\`, \`find_one_company\`, \`create_one_person\`.
-Call \`twenty.list_tools()\` to discover exact names. Catalog tools are routed
+Call \`arxena.list_tools()\` to discover exact names. Catalog tools are routed
 through \`execute_tool\` automatically, and the helper raises an Exception on
 server-side failures with the error message.
 
 \`\`\`python
 # List catalog tools (flat list, not grouped)
-tools = twenty.list_tools()
+tools = arxena.list_tools()
 print(f"{len(tools)} catalog tools available")
 for tool in tools[:5]:
     print(f"- {tool['name']}")
 
 # Find records — returns { 'records': [...], 'count': '5' }
-companies = twenty.call_tool('find_many_companies', {'limit': 5, 'offset': 0})
+companies = arxena.call_tool('find_many_companies', {'limit': 5, 'offset': 0})
 for c in companies['records']:
     print(c['name'], c.get('employees'))
 
 # Create a record — arguments match the tool's inputSchema directly,
 # no nested 'data' wrapper.
-result = twenty.call_tool('create_one_company', {
+result = arxena.call_tool('create_one_company', {
     'name': 'Acme Corp',
     'domainName': {'primaryLinkUrl': 'https://acme.com'},
     'position': 'first',
@@ -791,7 +791,7 @@ result = twenty.call_tool('create_one_company', {
 print(f"Created company id={result['id']}")
 
 # Update a record
-twenty.call_tool('update_one_person', {
+arxena.call_tool('update_one_person', {
     'id': 'person-uuid-here',
     'jobTitle': 'CEO',
 })
@@ -809,7 +809,7 @@ If you need to know a tool's input schema (e.g. field names for \`create_one_com
 learn_tools(["create_one_company", "create_one_person"])
 \`\`\`
 
-Do NOT call \`twenty.call_tool('learn_tools', ...)\` from inside the sandbox to learn schemas — that costs a full round-trip, adds output to the conversation context, and is unnecessary when you can inspect the schema for free before writing any code. Only use \`twenty.call_tool('learn_tools', ...)\` inside the sandbox if you discover at runtime that you need a schema you could not have anticipated beforehand.
+Do NOT call \`arxena.call_tool('learn_tools', ...)\` from inside the sandbox to learn schemas — that costs a full round-trip, adds output to the conversation context, and is unnecessary when you can inspect the schema for free before writing any code. Only use \`arxena.call_tool('learn_tools', ...)\` inside the sandbox if you discover at runtime that you need a schema you could not have anticipated beforehand.
 
 ## One sandbox run per task
 
@@ -827,12 +827,12 @@ For bulk writes, prefer these higher-level helpers over hand-rolled loops:
 \`\`\`python
 # Idempotent batched write (max 200/batch, paginates to completion).
 # Dedupes on unique fields server-side; safe to re-run.
-summary = twenty.bulk_upsert('people', records)  # { 'created': C, 'updated': U, 'upserted': N, 'failed': 0, 'errors': [] }
+summary = arxena.bulk_upsert('people', records)  # { 'created': C, 'updated': U, 'upserted': N, 'failed': 0, 'errors': [] }
 
 # Bounded { value: id } map for resolving relations to IDs, scoped to the
 # values you pass (NOT the whole table). Link to-one relations via the scalar
 # FK (e.g. record['companyId'] = company_ids[...]), never a nested {'id': ...}.
-company_ids = twenty.lookup_by('companies', 'name', ['Acme', 'Globex'])
+company_ids = arxena.lookup_by('companies', 'name', ['Acme', 'Globex'])
 \`\`\`
 
 For importing CSV/Excel/spreadsheet data, load the \`data-manipulation\` skill for the full recipe.`,

@@ -567,23 +567,26 @@ export class FacebookWhatsappChatApi {
             );
           }
 
-          const attachmentObj =
-            await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
+          const uploaded =
+            await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(
               filePath,
               apiToken,
+              sendTemplateMessageObj.filename,
             );
 
-          await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(
-            {
-              input: {
-                name: filePath.replace(`${process.cwd()}/`, ''),
-                fullPath: attachmentObj?.data?.uploadFile,
-                fileCategory: 'TEXT_DOCUMENT',
-                candidateId: candidateProfileData.id,
+          if (uploaded?.fileId) {
+            await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(
+              {
+                input: {
+                  name: sendTemplateMessageObj.filename,
+                  file: [{ fileId: uploaded.fileId, label: sendTemplateMessageObj.filename }],
+                  fileCategory: 'TEXT_DOCUMENT',
+                  targetCandidateId: candidateProfileData.id,
+                },
               },
-            },
-            apiToken,
-          );
+              apiToken,
+            );
+          }
           resolve(null);
         } catch (error) {
           reject(error);
@@ -776,16 +779,17 @@ export class FacebookWhatsappChatApi {
         );
       }
 
-      const attachmentObj =
-        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
+      const uploaded =
+        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(
           filePath,
           apiToken,
+          audioMessageObject.filename,
         );
       const audioTranscriptionText =
         await getTranscriptionFromWhisper(filePath);
 
       return {
-        databaseFilePath: attachmentObj?.data?.uploadFile,
+        databaseFilePath: uploaded?.url,
         audioTranscriptionText,
       };
     } catch (error) {

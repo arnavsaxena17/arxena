@@ -186,6 +186,33 @@ enum EngineComponentKey {
   REPLY_TO_EMAIL_THREAD
   COMPOSE_EMAIL
   COMPOSE_CAMPAIGN
+  ARX_CLONE_MULTIPLE_RECORDS
+  ARX_CREATE_VINT_LINK
+  ARX_SHARE_VINT_LINK
+  ARX_START_CHAT_WITH_CANDIDATES
+  ARX_STOP_CHAT_WITH_CANDIDATES
+  ARX_UPDATE_MESSAGING_CHANNEL_FOR_CANDIDATES
+  ARX_MOVE_CANDIDATES_TO_ANOTHER_PROJECT
+  ARX_REFRESH_CHAT_STATUS
+  ARX_REFRESH_CHAT_COUNT
+  ARX_POPULATE_SHORTLIST
+  ARX_SHARE_CHAT_BASED_SHORTLIST
+  ARX_UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS
+  ARX_CHAT_AND_VIDEO_INTERVIEW_SHORTLIST
+  ARX_DOWNLOAD_SHORTLIST
+  ARX_SEND_TO_WHATSAPP
+  ARX_DELETE_CANDIDATES_AND_PEOPLE
+  ARX_DOWNLOAD_CANDIDATE_CVS
+  ARX_ADD_TO_GOOGLE_CONTACTS
+  ARX_RESTART_MSGS
+  ARX_RESET_MSGS_FROM_WHATSAPP
+  ARX_SYNC_CHATS_WITH_WHATSAPP
+  ARX_DOWNLOAD_AS_EXCEL
+  ARX_CHECK_CONTACT_AVAILABILITY
+  ARX_FETCH_CONTACT_DETAILS
+  ARX_CREATE_INTERVIEWER_AVATAR_VIDEOS
+  ARX_CHECK_DATA_INTEGRITY_OF_PROJECT
+  ARX_TRANSCRIBE_CALL
   GO_TO_PEOPLE
   GO_TO_COMPANIES
   GO_TO_DASHBOARDS
@@ -1607,6 +1634,9 @@ type BillingPaymentIntent {
 
 type BillingSession {
   url: String
+  razorpaySubscriptionId: String
+  razorpayKeyId: String
+  razorpayCallbackUrl: String
 }
 
 type BillingUpdate {
@@ -1615,6 +1645,86 @@ type BillingUpdate {
 
   """All billing subscriptions"""
   billingSubscriptions: [BillingSubscription!]!
+}
+
+type BillingProviderOutput {
+  provider: BillingProviderEnum!
+}
+
+enum BillingProviderEnum {
+  razorpay
+  stripe
+}
+
+type CreditPackOutput {
+  key: String!
+  name: String!
+  credits: Float!
+  amountSubunits: Float!
+  currency: String!
+  planId: String!
+  intent: String!
+  mapsCount: Float!
+  mapType: String!
+  mapTypeLabel: String!
+  tagline: String!
+  inheritedFromPlanId: String
+  ownFeatures: [String!]!
+  includedEmailCredits: Float!
+  includedPhoneCredits: Float!
+  creditsDisplay: String!
+  pricesSubunitsJson: String!
+}
+
+type CreditTransactionOutput {
+  id: String!
+  type: String!
+  creditType: String!
+  amount: Float!
+  metadata: JSON
+  createdAt: DateTime!
+}
+
+type CreditTransactionsOutput {
+  items: [CreditTransactionOutput!]!
+  nextCursor: String
+}
+
+type EngagementPlanOutput {
+  id: String!
+  name: String!
+  amount: Float!
+  currency: String!
+  period: String!
+  interval: Float!
+}
+
+type RazorpayOrderOutput {
+  orderId: String!
+  amount: Float!
+  currency: String!
+  keyId: String!
+}
+
+type RequestInvoiceForCreditsOutput {
+  success: Boolean!
+}
+
+type WorkspaceCreditsOutput {
+  orgChartCredits: Float!
+  revealCredits: Float!
+  revealCreditsAsEmailEquivalent: Float!
+  revealCreditsAsPhoneEquivalent: Float!
+  emailRevealCost: Float!
+  phoneRevealCost: Float!
+}
+
+type AiProviderCredential {
+  id: String!
+  providerName: String!
+  isFilled: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type InviteSuggestion {
@@ -1865,6 +1975,7 @@ type Billing {
   isBillingEnabled: Boolean!
   billingUrl: String
   stripePublishableKey: String
+  provider: String
   trialPeriods: [BillingTrialPeriod!]!
 }
 
@@ -1931,6 +2042,7 @@ type ClientConfig {
   isAttachmentPreviewEnabled: Boolean!
   sentry: Sentry!
   captcha: Captcha!
+  chromeExtensionId: String
   api: ApiConfig!
   canManageFeatureFlags: Boolean!
   publicFeatureFlags: [PublicFeatureFlag!]!
@@ -2495,6 +2607,52 @@ enum EmailingDomainStatus {
   TEMPORARY_FAILURE
 }
 
+type AutocompleteResult {
+  text: String!
+  placeId: String!
+}
+
+type Location {
+  lat: Float
+  lng: Float
+}
+
+type PlaceDetailsResult {
+  street: String
+  state: String
+  postcode: String
+  city: String
+  country: String
+  location: Location
+}
+
+type ImapSmtpCaldavPublicConnectionParams {
+  host: String!
+  port: Float!
+  username: String
+  connectionSecurity: EmailConnectionSecurity
+}
+
+type ImapSmtpCaldavPublicConnectionParameters {
+  name: String
+  IMAP: ImapSmtpCaldavPublicConnectionParams
+  SMTP: ImapSmtpCaldavPublicConnectionParams
+  CALDAV: ImapSmtpCaldavPublicConnectionParams
+}
+
+type ConnectedImapSmtpCaldavAccount {
+  id: UUID!
+  handle: String!
+  provider: String!
+  userWorkspaceId: UUID!
+  connectionParameters: ImapSmtpCaldavPublicConnectionParameters
+}
+
+type ImapSmtpCaldavConnectionSuccess {
+  success: Boolean!
+  connectedAccountId: String!
+}
+
 type MessageChannel {
   id: UUID!
   visibility: MessageChannelVisibility!
@@ -2611,52 +2769,6 @@ enum UnsubscribeTopicVisibility {
   PRIVATE
 }
 
-type AutocompleteResult {
-  text: String!
-  placeId: String!
-}
-
-type Location {
-  lat: Float
-  lng: Float
-}
-
-type PlaceDetailsResult {
-  street: String
-  state: String
-  postcode: String
-  city: String
-  country: String
-  location: Location
-}
-
-type ImapSmtpCaldavPublicConnectionParams {
-  host: String!
-  port: Float!
-  username: String
-  connectionSecurity: EmailConnectionSecurity
-}
-
-type ImapSmtpCaldavPublicConnectionParameters {
-  name: String
-  IMAP: ImapSmtpCaldavPublicConnectionParams
-  SMTP: ImapSmtpCaldavPublicConnectionParams
-  CALDAV: ImapSmtpCaldavPublicConnectionParams
-}
-
-type ConnectedImapSmtpCaldavAccount {
-  id: UUID!
-  handle: String!
-  provider: String!
-  userWorkspaceId: UUID!
-  connectionParameters: ImapSmtpCaldavPublicConnectionParameters
-}
-
-type ImapSmtpCaldavConnectionSuccess {
-  success: Boolean!
-  connectedAccountId: String!
-}
-
 type Webhook {
   id: UUID!
   targetUrl: String!
@@ -2715,15 +2827,15 @@ type RunAgentResult {
   success: Boolean!
 }
 
-type ChannelSyncSuccess {
-  success: Boolean!
-}
-
 type CreateCalendarEventOutput {
   success: Boolean!
   iCalUid: String
   conferenceLink: String
   error: String
+}
+
+type ChannelSyncSuccess {
+  success: Boolean!
 }
 
 type BarChartSeries {
@@ -3072,6 +3184,7 @@ type Query {
   enterprisePortalSession(returnUrlPath: String): String
   enterpriseCheckoutSession(billingInterval: String): String
   enterpriseSubscriptionStatus: EnterpriseSubscriptionStatusDTO
+  aiProviderCredential(providerName: String!): AiProviderCredential
   getViewFilterGroups(viewId: String): [ViewFilterGroup!]!
   getViewFilterGroup(id: String!): ViewFilterGroup
   getViewFilters(viewId: String): [ViewFilter!]!
@@ -3092,6 +3205,12 @@ type Query {
   billingPortalSession(returnUrlPath: String, forPaymentMethodUpdate: Boolean): BillingSession!
   listPlans: [BillingPlan!]!
   getResourceCreditUsage: [BillingResourceCreditUsage!]!
+  billingProvider: BillingProviderOutput!
+  requestPricingCurrency: String!
+  creditPacks: [CreditPackOutput!]!
+  engagementPlans: [EngagementPlanOutput!]!
+  creditTransactions(limit: Int, cursor: String): CreditTransactionsOutput!
+  workspaceCredits: WorkspaceCreditsOutput!
   findWorkspaceInvitations: [WorkspaceInvitation!]!
   getApprovedAccessDomains: [ApprovedAccessDomain!]!
   getPageLayoutTabs(pageLayoutId: String!): [PageLayoutTab!]!
@@ -3318,6 +3437,7 @@ type Mutation {
   uploadWorkspaceMemberProfilePicture(file: Upload!): FileWithSignedUrl!
   uploadFilesFieldFile(file: Upload!, fieldMetadataId: String!): FileWithSignedUrl!
   uploadFilesFieldFileByUniversalIdentifier(file: Upload!, fieldMetadataUniversalIdentifier: String!): FileWithSignedUrl!
+  upsertAiProviderCredential(input: UpsertAiProviderCredentialInput!): AiProviderCredential!
   createViewFilterGroup(input: CreateViewFilterGroupInput!): ViewFilterGroup!
   updateViewFilterGroup(id: String!, input: UpdateViewFilterGroupInput!): ViewFilterGroup!
   deleteViewFilterGroup(id: String!): Boolean!
@@ -3353,8 +3473,8 @@ type Mutation {
   skipSyncEmailOnboardingStep: OnboardingStepSuccess!
   triggerInstallAppsOnboardingStep(universalIdentifiers: [String!]!): OnboardingStepSuccess!
   updateOneApplicationVariable(key: String!, value: String!, applicationId: UUID!): Boolean!
-  checkoutSession(recurringInterval: SubscriptionInterval!, plan: BillingPlanKey! = PRO, requirePaymentMethod: Boolean! = true, successUrlPath: String): BillingSession!
-  createSubscriptionPaymentIntent(recurringInterval: SubscriptionInterval!, plan: BillingPlanKey! = PRO, requirePaymentMethod: Boolean! = true, successUrlPath: String, idempotencyKey: String!): BillingPaymentIntent!
+  checkoutSession(recurringInterval: SubscriptionInterval!, plan: BillingPlanKey! = PRO, requirePaymentMethod: Boolean! = true, successUrlPath: String, successReturnUrl: String, razorpayPlanId: String, quantity: Int): BillingSession!
+  createSubscriptionPaymentIntent(recurringInterval: SubscriptionInterval!, plan: BillingPlanKey! = PRO, requirePaymentMethod: Boolean! = true, successUrlPath: String, successReturnUrl: String, razorpayPlanId: String, quantity: Int, idempotencyKey: String!): BillingPaymentIntent!
   createBillingPaymentMethodSetupIntent: BillingPaymentIntent!
   switchSubscriptionInterval: BillingUpdate!
   switchBillingPlan: BillingUpdate!
@@ -3363,6 +3483,8 @@ type Mutation {
   setResourceCreditSubscriptionPrice(priceId: String!): BillingUpdate!
   endSubscriptionTrialPeriod: BillingEndTrialPeriod!
   cancelSwitchResourceCreditPrice: BillingUpdate!
+  createRazorpayOrderForCredits(input: CreateRazorpayOrderInput!): RazorpayOrderOutput!
+  requestInvoiceForCredits(input: RequestInvoiceForCreditsInput!): RequestInvoiceForCreditsOutput!
   deleteWorkspaceInvitation(appTokenId: String!): String!
   resendWorkspaceInvitation(appTokenId: String!): SendInvitations!
   sendInvitations(emails: [String!]!, roleId: UUID): SendInvitations!
@@ -3591,6 +3713,11 @@ enum FileFolder {
 
 """The `Upload` scalar type represents a file upload."""
 scalar Upload
+
+input UpsertAiProviderCredentialInput {
+  providerName: String!
+  apiKey: String
+}
 
 input CreateViewFilterGroupInput {
   id: UUID
@@ -3918,6 +4045,20 @@ input UpdateApiKeyInput {
 
 input RevokeApiKeyInput {
   id: UUID!
+}
+
+input CreateRazorpayOrderInput {
+  creditPackKey: String!
+  currency: String
+}
+
+input RequestInvoiceForCreditsInput {
+  creditPackKey: String!
+  companyName: String!
+  billingAddress: String!
+  billingEmail: String!
+  vatNumber: String
+  currency: String
 }
 
 input CreateApprovedAccessDomainInput {

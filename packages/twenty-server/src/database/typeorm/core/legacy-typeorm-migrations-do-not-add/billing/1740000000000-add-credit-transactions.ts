@@ -5,7 +5,7 @@ export class AddCreditTransactions1740000000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "core"."creditTransactions" (
+      CREATE TABLE IF NOT EXISTS "core"."creditTransactions" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         "workspaceId" uuid NOT NULL,
@@ -17,14 +17,16 @@ export class AddCreditTransactions1740000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX "IDX_creditTransactions_workspaceId_createdAt" ON "core"."creditTransactions" ("workspaceId", "createdAt" DESC)`,
+      `CREATE INDEX IF NOT EXISTS "IDX_creditTransactions_workspaceId_createdAt" ON "core"."creditTransactions" ("workspaceId", "createdAt" DESC)`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `DROP INDEX "core"."IDX_creditTransactions_workspaceId_createdAt"`,
+      `DROP INDEX IF EXISTS "core"."IDX_creditTransactions_workspaceId_createdAt"`,
     );
-    await queryRunner.query(`DROP TABLE "core"."creditTransactions"`);
+    await queryRunner.query(
+      `DROP TABLE IF EXISTS "core"."creditTransactions"`,
+    );
   }
 }

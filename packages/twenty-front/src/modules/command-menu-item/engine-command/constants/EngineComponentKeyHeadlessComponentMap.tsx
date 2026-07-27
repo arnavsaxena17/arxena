@@ -4,6 +4,35 @@ import { HeadlessOpenSidePanelPageEngineCommand } from '@/command-menu-item/engi
 import { NavigationEngineCommand } from '@/command-menu-item/engine-command/components/NavigationEngineCommand';
 import { ComposeCampaignCommand } from '@/command-menu-item/engine-command/global/components/ComposeCampaignCommand';
 import { ComposeEmailCommand } from '@/command-menu-item/engine-command/global/components/ComposeEmailCommand';
+import {
+  ArxAddToGoogleContactsCommand,
+  ArxCheckContactAvailabilityCommand,
+  ArxCheckDataIntegrityOfProjectCommand,
+  ArxCloneMultipleRecordsCommand,
+  ArxCreateInterviewVideosCommand,
+  ArxCreateMultipleVideoInterviewLinksCommand,
+  ArxDeleteCandidatesAndPeopleCommand,
+  ArxDownloadAsExcelCommand,
+  ArxDownloadCandidateCVsCommand,
+  ArxDownloadShortlistCommand,
+  ArxFetchContactDetailsCommand,
+  ArxMoveCandidatesToAnotherProjectCommand,
+  ArxPopulateShortlistCommand,
+  ArxRefreshChatCountsCommand,
+  ArxRefreshChatStatusesCommand,
+  ArxResetMessagesFromWhatsappCommand,
+  ArxRestartMessagesCommand,
+  ArxSendToWhatsappCommand,
+  ArxShareChatAndVideoInterviewBasedShortlistCommand,
+  ArxShareChatBasedShortlistCommand,
+  ArxShareMultipleVideoInterviewLinksCommand,
+  ArxStartChatWithCandidatesCommand,
+  ArxStopChatWithCandidatesCommand,
+  ArxSyncChatsWithWhatsappCommand,
+  ArxTranscribeCallCommand,
+  ArxUpdateMessagingChannelForCandidatesCommand,
+  ArxUpdateSnapshotProfilesFromJobBoardsCommand,
+} from '@/command-menu-item/engine-command/record/arx';
 import { DeleteRecordsCommand } from '@/command-menu-item/engine-command/record/components/DeleteRecordsCommand';
 import { DestroyRecordsCommand } from '@/command-menu-item/engine-command/record/components/DestroyRecordsCommand';
 import { ExportRecordsCommand } from '@/command-menu-item/engine-command/record/components/ExportRecordsCommand';
@@ -254,6 +283,74 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.REPLY_TO_EMAIL_THREAD]: <ReplyToEmailThreadCommand />,
   [EngineComponentKey.COMPOSE_EMAIL]: <ComposeEmailCommand />,
   [EngineComponentKey.COMPOSE_CAMPAIGN]: <ComposeCampaignCommand />,
+
+  [EngineComponentKey.ARX_CLONE_MULTIPLE_RECORDS]: (
+    <ArxCloneMultipleRecordsCommand />
+  ),
+  [EngineComponentKey.ARX_CREATE_VINT_LINK]: (
+    <ArxCreateMultipleVideoInterviewLinksCommand />
+  ),
+  [EngineComponentKey.ARX_SHARE_VINT_LINK]: (
+    <ArxShareMultipleVideoInterviewLinksCommand />
+  ),
+  [EngineComponentKey.ARX_START_CHAT_WITH_CANDIDATES]: (
+    <ArxStartChatWithCandidatesCommand />
+  ),
+  [EngineComponentKey.ARX_STOP_CHAT_WITH_CANDIDATES]: (
+    <ArxStopChatWithCandidatesCommand />
+  ),
+  [EngineComponentKey.ARX_UPDATE_MESSAGING_CHANNEL_FOR_CANDIDATES]: (
+    <ArxUpdateMessagingChannelForCandidatesCommand />
+  ),
+  [EngineComponentKey.ARX_MOVE_CANDIDATES_TO_ANOTHER_PROJECT]: (
+    <ArxMoveCandidatesToAnotherProjectCommand />
+  ),
+  [EngineComponentKey.ARX_REFRESH_CHAT_STATUS]: (
+    <ArxRefreshChatStatusesCommand />
+  ),
+  [EngineComponentKey.ARX_REFRESH_CHAT_COUNT]: <ArxRefreshChatCountsCommand />,
+  [EngineComponentKey.ARX_POPULATE_SHORTLIST]: <ArxPopulateShortlistCommand />,
+  [EngineComponentKey.ARX_SHARE_CHAT_BASED_SHORTLIST]: (
+    <ArxShareChatBasedShortlistCommand />
+  ),
+  [EngineComponentKey.ARX_UPDATE_SNAPSHOT_PROFILES_FROM_JOB_BOARDS]: (
+    <ArxUpdateSnapshotProfilesFromJobBoardsCommand />
+  ),
+  [EngineComponentKey.ARX_CHAT_AND_VIDEO_INTERVIEW_SHORTLIST]: (
+    <ArxShareChatAndVideoInterviewBasedShortlistCommand />
+  ),
+  [EngineComponentKey.ARX_DOWNLOAD_SHORTLIST]: <ArxDownloadShortlistCommand />,
+  [EngineComponentKey.ARX_SEND_TO_WHATSAPP]: <ArxSendToWhatsappCommand />,
+  [EngineComponentKey.ARX_DELETE_CANDIDATES_AND_PEOPLE]: (
+    <ArxDeleteCandidatesAndPeopleCommand />
+  ),
+  [EngineComponentKey.ARX_DOWNLOAD_CANDIDATE_CVS]: (
+    <ArxDownloadCandidateCVsCommand />
+  ),
+  [EngineComponentKey.ARX_ADD_TO_GOOGLE_CONTACTS]: (
+    <ArxAddToGoogleContactsCommand />
+  ),
+  [EngineComponentKey.ARX_RESTART_MSGS]: <ArxRestartMessagesCommand />,
+  [EngineComponentKey.ARX_RESET_MSGS_FROM_WHATSAPP]: (
+    <ArxResetMessagesFromWhatsappCommand />
+  ),
+  [EngineComponentKey.ARX_SYNC_CHATS_WITH_WHATSAPP]: (
+    <ArxSyncChatsWithWhatsappCommand />
+  ),
+  [EngineComponentKey.ARX_DOWNLOAD_AS_EXCEL]: <ArxDownloadAsExcelCommand />,
+  [EngineComponentKey.ARX_CHECK_CONTACT_AVAILABILITY]: (
+    <ArxCheckContactAvailabilityCommand />
+  ),
+  [EngineComponentKey.ARX_FETCH_CONTACT_DETAILS]: (
+    <ArxFetchContactDetailsCommand />
+  ),
+  [EngineComponentKey.ARX_CREATE_INTERVIEWER_AVATAR_VIDEOS]: (
+    <ArxCreateInterviewVideosCommand />
+  ),
+  [EngineComponentKey.ARX_CHECK_DATA_INTEGRITY_OF_PROJECT]: (
+    <ArxCheckDataIntegrityOfProjectCommand />
+  ),
+  [EngineComponentKey.ARX_TRANSCRIBE_CALL]: <ArxTranscribeCallCommand />,
 
   // Deprecated keys kept for backward compatibility until migration runs
   [EngineComponentKey.DELETE_SINGLE_RECORD]: <DeleteRecordsCommand />,

@@ -9,6 +9,7 @@ import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useRef, useState } from 'react';
 import { graphqlToFindManyProjects } from 'twenty-shared/graphql';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 
 import { useSetParsedJDInternalState } from '../hooks/useParsedJDState';
 
@@ -82,7 +83,7 @@ export const ArxJDUploadModal = ({
   const fetchJobAttachments = async (projectId: string) => {
     try {
       const attachments = await findManyAttachments({
-        filter: { projectId: { eq: projectId } },
+        filter: { targetProjectId: { eq: projectId } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
         limit: 1,
       });
@@ -146,8 +147,9 @@ export const ArxJDUploadModal = ({
         // Fetch attachment and check if parsed job description exists
         let parsedJobDescription: any = null;
         const attachment = await fetchJobAttachments(jobData.id);
-        if (attachment?.fullPath) {
-          console.log('Found attachment:', attachment.fullPath);
+        const attachmentDownloadUrl = getAttachmentDownloadUrl(attachment);
+        if (attachmentDownloadUrl) {
+          console.log('Found attachment:', attachmentDownloadUrl);
 
           // In edit mode, we don't need to parse the JD again since we already have the job data
           // Just set a placeholder for parsedJobDescription to maintain compatibility
@@ -199,7 +201,7 @@ export const ArxJDUploadModal = ({
           isActive: jobData.isActive !== undefined ? jobData.isActive : true,
           companyId: jobData.companyId,
           companyName: jobData.company?.name,
-          filePath: attachment?.fullPath,
+          filePath: attachmentDownloadUrl,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
           assistantThreads: jobData.assistantThread?.edges?.map((edge: any) => ({
             id: edge.node.id,

@@ -59,7 +59,7 @@ export const useSubmitSubscriptionPayment = ({
       const paymentIntent = data?.createSubscriptionPaymentIntent;
       if (!isDefined(paymentIntent?.clientSecret)) {
         enqueueErrorSnackBar({
-          message: t`Subscription error. Please retry or contact Twenty team`,
+          message: t`Subscription error. Please retry or contact Arxena team`,
         });
         setIsSubmitting(false);
         return;
@@ -96,7 +96,7 @@ export const useSubmitSubscriptionPayment = ({
         enqueueErrorSnackBar({ apolloError: error });
       } else {
         enqueueErrorSnackBar({
-          message: t`Subscription error. Please retry or contact Twenty team`,
+          message: t`Subscription error. Please retry or contact Arxena team`,
         });
       }
       setIsSubmitting(false);

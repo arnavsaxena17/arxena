@@ -95,7 +95,7 @@ msgstr "Սերվերի ադմինիստրատորի մուտքի իրավուն�
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
-msgid "Join your team on Twenty"
+msgid "Join your team on Arxena"
 msgstr "Միացեք ձեր թիմին Twenty պլատֆորմում"
 
 #. js-lingui-explicit-id
@@ -150,7 +150,7 @@ msgstr "Եթե դուք չեք նախաձեռնել այս փոփոխությո�
 
 #. js-lingui-explicit-id
 #: src/emails/password-update-notify.email.tsx
-msgid "Connect to Twenty"
+msgid "Connect to Arxena"
 msgstr "Միացեք Twenty պլատֆորմին"
 
 #. js-lingui-explicit-id
@@ -170,7 +170,7 @@ msgstr "Այն տվյալները հեռացվել են և այլևս cannot be 
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
-msgid "If you'd ever like to give Twenty another try, you can start a fresh workspace in minutes — we'd love to have you back."
+msgid "If you'd ever like to give Arxena another try, you can start a fresh workspace in minutes — we'd love to have you back."
 msgstr "Եթե երբևէ ցանկանաք նորից փորձել Twenty-ը, կարող եք մի քանի րոպեում սկսել նոր workspace՝ մենք ուրախ կլինենք կրկին ձեզ տեսնել։"
 
 #. js-lingui-explicit-id
@@ -225,7 +225,7 @@ msgstr "Ձեր <0>{workspaceDisplayName}</0> workspace-ի անվճար փորձ�
 
 #. js-lingui-explicit-id
 #: src/emails/billing-trial-converting.email.tsx
-msgid "If Twenty is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
+msgid "If Arxena is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
 msgstr "Եթե Twenty-ը ձեզ հարմար է, ամեն ինչ կարգին է՝ այլևս ոչինչ անել պետք չէ։ Եթե այն ձեզ համար չէ, կարող եք մինչև այդ մեկ սեղմումով չեղարկել, և գանձում չի կատարվի։"
 
 #. js-lingui-explicit-id
@@ -281,7 +281,7 @@ msgstr "Եթե ցանկանում եք շարունակել, որևէ գործո
 
 #. js-lingui-explicit-id
 #: src/components/WhatIsTwenty.tsx
-msgid "What is Twenty?"
+msgid "What is Arxena?"
 msgstr "Ի՞նչ է Twenty-ը։"
 
 #. js-lingui-explicit-id
@@ -296,17 +296,17 @@ msgstr "Վեբկայք"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's website"
+msgid "Visit Arxena's website"
 msgstr "Այցելեք Twenty-ի վեբկայքը"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Github"
+msgid "LinkedIn"
 msgstr "GitHub"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's GitHub repository"
+msgid "Visit Arxena's LinkedIn"
 msgstr "Այցելեք Twenty-ի GitHub պահոցը"
 
 #. js-lingui-explicit-id
@@ -316,7 +316,7 @@ msgstr "Օգտվողի ձեռնարկ"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Read Twenty's user guide"
+msgid "Read Arxena's user guide"
 msgstr "Կարդացեք Twenty-ի օգտվողի ձեռնարկը"
 
 #. js-lingui-explicit-id
@@ -326,12 +326,12 @@ msgstr "Ծրագրավորողներ"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's developer documentation"
+msgid "Visit Arxena's documentation"
 msgstr "Այցելեք Twenty-ի ծրագրավորողների փաստաթղթավորումը"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Twenty.com, Public Benefit Corporation"
+msgid "Arxena, Inc."
 msgstr "Twenty.com, հասարակային շահի կորպորացիա"
 
 #. js-lingui-explicit-id

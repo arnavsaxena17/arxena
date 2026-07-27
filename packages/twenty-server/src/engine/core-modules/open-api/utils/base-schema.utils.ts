@@ -11,7 +11,7 @@ export const baseSchema = (
   return {
     openapi: '3.1.1',
     info: {
-      title: 'Twenty Api',
+      title: 'Arxena Api',
       description: `Use this page to explore and call the **REST API**.
 
 ## Authentication

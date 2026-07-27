@@ -16,7 +16,7 @@ const buildResolvedWithConditionalBlock = (
   title: 'Test DPA',
   sccSectionActive,
   values: {
-    PROCESSOR_ENTITY: 'Twenty.com SAS',
+    PROCESSOR_ENTITY: 'Arxena, Inc.',
     PROCESSOR_LEGAL_FORM: 'x',
     PROCESSOR_ADDRESS: 'x',
     HOSTING_REGION: 'x',
@@ -40,7 +40,7 @@ describe('renderDpaToHtml', () => {
   it('renders the title and last-updated line', () => {
     const html = renderDpaToHtml(resolveDpa(baseContext));
 
-    expect(html).toContain('Twenty Data Processing Agreement (DPA)');
+    expect(html).toContain('Arxena Data Processing Agreement (DPA)');
     expect(html).toContain('Last Updated: June 2026');
   });
 
@@ -87,7 +87,7 @@ describe('renderDpaToHtml', () => {
 
     expect(html).toContain('Acme GmbH');
     expect(html).toContain('Jane Doe');
-    expect(html).toContain('Twenty.com SAS');
+    expect(html).toContain('Arxena, Inc.');
   });
 
   it('renders a clean cloud DPA: no merge tokens, drafting notes, placeholders, or self-hosted banner', () => {
@@ -114,7 +114,7 @@ describe('renderDpaToHtml', () => {
       expect(html).not.toContain(forbidden);
     }
 
-    expect(html).toContain('Stéphanie Joly');
+    expect(html).toContain('privacy@arxena.com');
     expect(
       html.match(/7\.1 Data Hosting and Localization:/g) ?? [],
     ).toHaveLength(1);

@@ -1,10 +1,7 @@
+import { useUploadAttachmentFile } from '@/activities/files/hooks/useUploadAttachmentFile';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { styled } from '@linaria/react';
-import axios from 'axios';
 import { useRef } from 'react';
-import { graphQLtoCreateOneAttachmentFromFilePath } from 'twenty-shared/graphql';
-
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledButton = styled.button<{ bgColor: string }>`
   display: flex;
@@ -49,61 +46,35 @@ const UploadCVButton = styled(StyledButton)`
   margin-left: 8px;
 `;
 
-
 type UploadCVProps = {
   candidateId: string;
-  tokenPair: any;
   onUploadSuccess: () => void;
+  /** @deprecated Unused — auth comes from Apollo / workspace session */
+  tokenPair?: any;
   /** @deprecated Unused — createdBy comes from auth context */
   currentIndividual?: any;
   buttonColor?: string;
 };
 
-export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, buttonColor = "#4CAF50" }: UploadCVProps) => {
+export const UploadCV = ({
+  candidateId,
+  onUploadSuccess,
+  buttonColor = '#4CAF50',
+}: UploadCVProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
+  const { uploadAttachmentFile } = useUploadAttachmentFile();
 
   const handleUpload = async (file: File) => {
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append(
-      'operations',
-      '{"operationName":"uploadFile","variables":{"file":null,"fileFolder":"Attachment"},"query":"mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}"}',
-    );
-    formData.append('map', '{"1":["variables.file"]}');
-    formData.append('1', file);
+    if (!file) {
+      return;
+    }
 
     try {
-      // Upload file
-      const uploadResponse = await axios.post(
-        `${REACT_APP_SERVER_BASE_URL}/graphql`,
-        formData,
-        {
-          headers: {
-            authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
-            accept: '*/*',
-          },
-        },
-      );
-
-      const uploadedFilePath = uploadResponse.data.data.uploadFile;
-
-      // Create attachment (createdBy is set from auth context)
-      const attachmentData = {
-        input: {
-          name: file.name,
-          fullPath: uploadedFilePath,
-          fileCategory: 'TEXT_DOCUMENT',
-          candidateId: candidateId,
-        },
-      };
-
-      await axios.post(
-        `${REACT_APP_SERVER_BASE_URL}/graphql`,
-        { query: graphQLtoCreateOneAttachmentFromFilePath, variables: attachmentData, },
-        { headers: { authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`, 'content-type': 'application/json', }, },
-      );
+      await uploadAttachmentFile(file, {
+        targetObjectNameSingular: 'candidate',
+        id: candidateId,
+      });
 
       enqueueSuccessSnackBar({ message: 'CV uploaded successfully' });
       onUploadSuccess();
@@ -124,7 +95,9 @@ export const UploadCV = ({ candidateId, tokenPair, onUploadSuccess, buttonColor 
         ref={fileInputRef}
         style={{ display: 'none' }}
         accept=".pdf,.doc,.docx"
-        onChange={(e) => e.target.files && handleUpload(e.target.files[0])}
+        onChange={(event) =>
+          event.target.files && handleUpload(event.target.files[0])
+        }
       />
       <UploadCVButton
         onClick={handleClick}

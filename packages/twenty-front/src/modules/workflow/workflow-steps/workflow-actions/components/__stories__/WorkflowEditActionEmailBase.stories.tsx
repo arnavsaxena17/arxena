@@ -81,8 +81,8 @@ const CONFIGURED_SEND_EMAIL_ACTION: WorkflowSendEmailAction = {
         cc: '',
         bcc: '',
       },
-      subject: 'Welcome to Twenty!',
-      body: 'Dear Tim,\n\nWelcome to Twenty! We are excited to have you on board.\n\nBest regards,\nThe Team',
+      subject: 'Welcome to Arxena!',
+      body: 'Dear Tim,\n\nWelcome to Arxena! We are excited to have you on board.\n\nBest regards,\nThe Team',
       files: [],
       inReplyTo: '',
     },
@@ -141,7 +141,7 @@ const VARIABLE_SENDER_SEND_EMAIL_ACTION: WorkflowSendEmailAction = {
         cc: '',
         bcc: '',
       },
-      subject: 'Welcome to Twenty!',
+      subject: 'Welcome to Arxena!',
       body: 'Hello',
       files: [],
       inReplyTo: '',
@@ -171,7 +171,7 @@ const VARIABLE_SENDER_DRAFT_EMAIL_ACTION: WorkflowDraftEmailAction = {
         cc: '',
         bcc: '',
       },
-      subject: 'Welcome to Twenty!',
+      subject: 'Welcome to Arxena!',
       body: 'Hello',
       files: [],
       inReplyTo: '',
@@ -270,7 +270,7 @@ export const Configured: Story = {
     const emailInput = await canvas.findByText('test@twenty.com');
     expect(emailInput).toBeVisible();
 
-    const subjectInput = await canvas.findByText('Welcome to Twenty!');
+    const subjectInput = await canvas.findByText('Welcome to Arxena!');
     expect(subjectInput).toBeVisible();
   },
 };

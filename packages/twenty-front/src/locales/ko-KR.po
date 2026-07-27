@@ -1450,32 +1450,32 @@ msgstr ""
 
 #. js-lingui-id: FKGcEL
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server as a remote context server in Zed."
+msgid "Add the Arxena MCP server as a remote context server in Zed."
 msgstr "Zed에서 Twenty MCP 서버를 원격 컨텍스트 서버로 추가하세요."
 
 #. js-lingui-id: iA2nHX
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Augment Code settings."
+msgid "Add the Arxena MCP server from Augment Code settings."
 msgstr "Augment Code 설정에서 Twenty MCP 서버를 추가하세요."
 
 #. js-lingui-id: l+NzAk
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Raycast's MCP commands or settings."
+msgid "Add the Arxena MCP server from Raycast's MCP commands or settings."
 msgstr "Raycast의 MCP 명령 또는 설정에서 Twenty MCP 서버를 추가하세요."
 
 #. js-lingui-id: j6G/yI
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server in Gemini CLI settings."
+msgid "Add the Arxena MCP server in Gemini CLI settings."
 msgstr "Gemini CLI 설정에서 Twenty MCP 서버를 추가하세요."
 
 #. js-lingui-id: /OyhlM
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server to your LibreChat configuration file."
+msgid "Add the Arxena MCP server to your LibreChat configuration file."
 msgstr "LibreChat 구성 파일에 Twenty MCP 서버를 추가하세요."
 
 #. js-lingui-id: K0DXoj
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty remote server with LM Studio's install link."
+msgid "Add the Arxena remote server with LM Studio's install link."
 msgstr "LM Studio의 설치 링크로 Twenty 원격 서버를 추가하세요."
 
 #. js-lingui-id: 5+ttxv
@@ -1495,7 +1495,7 @@ msgstr "주제 추가"
 
 #. js-lingui-id: 4D/zWv
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add Twenty as a Streamable HTTP extension in Goose."
+msgid "Add Arxena as a Streamable HTTP extension in Goose."
 msgstr "Goose에서 Twenty를 Streamable HTTP 확장으로 추가하세요."
 
 #. js-lingui-id: XnwceV
@@ -3094,7 +3094,7 @@ msgstr "청구 기간"
 
 #. js-lingui-id: xF/NXI
 #: src/modules/settings/billing/hooks/useBillingPortalSession.ts
-msgid "Billing portal session error. Please retry or contact Twenty team"
+msgid "Billing portal session error. Please retry or contact Arxena team"
 msgstr "결제 포털 세션 오류입니다. 다시 시도하거나 Twenty 팀에 문의하세요"
 
 #. js-lingui-id: K1172m
@@ -3221,7 +3221,7 @@ msgstr "제작: {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Arxena, you agree to the"
 msgstr "Twenty를 사용함으로써 귀하는 다음에 동의합니다"
 
 #. js-lingui-id: Yx41df
@@ -3681,7 +3681,7 @@ msgstr "새 이메일 주소를 확인하려면 받은 편지함을 확인하세
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Arxena team"
 msgstr "결제 세션 오류입니다. 다시 시도하거나 Twenty 팀에 문의하십시오"
 
 #. js-lingui-id: SviKkE
@@ -4285,12 +4285,12 @@ msgstr "Amazon Q Developer의 MCP 설정에서 원격 서버를 구성하세요.
 
 #. js-lingui-id: g1/8jH
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cascade."
+msgid "Configure the Arxena MCP server manually in Cascade."
 msgstr "Cascade에서 Twenty MCP 서버를 수동으로 구성하세요."
 
 #. js-lingui-id: XiyvRh
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cline."
+msgid "Configure the Arxena MCP server manually in Cline."
 msgstr "Cline에서 Twenty MCP 서버를 수동으로 구성하세요."
 
 #. js-lingui-id: qA9AGQ
@@ -7571,7 +7571,7 @@ msgstr "플랜 전환 취소 중 오류 발생."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Arxena team."
 msgstr "시험 기간 종료 중 오류가 발생했습니다. Twenty 팀에 문의하세요."
 
 #. js-lingui-id: 5g78zo
@@ -9237,7 +9237,7 @@ msgstr "시스템 인덱스 숨기기"
 
 #. js-lingui-id: 1ETc0T
 #: src/pages/settings/community/SettingsCommunity.tsx
-msgid "Hire a partner to help you implement and customize Twenty."
+msgid "Hire a partner to help you implement and customize Arxena."
 msgstr "Twenty의 구현 및 맞춤 설정을 도와줄 파트너를 고용하세요."
 
 #. js-lingui-id: i0qMbr
@@ -13290,7 +13290,7 @@ msgstr "하나 이상의 필터가 비활성화되었거나 삭제된 필드를 
 
 #. js-lingui-id: 2l4SGU
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
-msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Twenty on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
+msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Arxena on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
 msgstr "하나의 구독은 하나의 프로덕션 인스턴스와 하나의 스테이징 또는 테스트 인스턴스를 구동하는 엔터프라이즈 키 한 개를 제공합니다. 스테이징 또는 테스트 환경을 실행하려면 두 번째 서버에 Twenty를 설치하고, 동일한 엔터프라이즈 키로 활성화한 다음 해당 서버를 개발 인스턴스로 등록하세요. 개발 인스턴스는 추가 청구 없이 엔터프라이즈 기능을 활성화하며 프로덕션 좌석 수에 포함되지 않습니다."
 
 #. js-lingui-id: oFTo3P
@@ -13377,12 +13377,12 @@ msgstr "링크로 열기"
 
 #. js-lingui-id: n0vVgf
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Claude with the Twenty connector name and MCP URL prefilled."
+msgid "Open Claude with the Arxena connector name and MCP URL prefilled."
 msgstr "Twenty 커넥터 이름과 MCP URL이 미리 채워진 상태로 Claude를 여세요."
 
 #. js-lingui-id: +n2jpB
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Cursor's MCP installer with the Twenty remote server config."
+msgid "Open Cursor's MCP installer with the Arxena remote server config."
 msgstr "Twenty 원격 서버 구성이 미리 채워진 상태로 Cursor의 MCP 설치 프로그램을 여세요."
 
 #. js-lingui-id: pZZH4Q
@@ -13418,12 +13418,12 @@ msgstr "레코드를 다음에서 열기"
 
 #. js-lingui-id: q170S2
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Replit with the Twenty remote server config."
+msgid "Open Replit with the Arxena remote server config."
 msgstr "Twenty 원격 서버 구성이 미리 채워진 상태로 Replit을 여세요."
 
 #. js-lingui-id: sBd/cl
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Twenty's official ChatGPT integration for your workspace."
+msgid "Open Arxena's ChatGPT integration for your workspace."
 msgstr "워크스페이스용 Twenty 공식 ChatGPT 통합을 여세요."
 
 #. js-lingui-id: OV5wZZ
@@ -13707,7 +13707,7 @@ msgstr "페이지 이름"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Arxena"
 msgstr "페이지를 찾을 수 없음 | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -17113,7 +17113,7 @@ msgstr "하위 도메인"
 
 #. js-lingui-id: Sv4BSp
 #: src/modules/settings/billing/constants/SettingsBillingPlanComparisonRows.ts
-msgid "Subdomain (yourco.twenty.com)"
+msgid "Subdomain (yourco.arxena.com)"
 msgstr "서브도메인 (yourco.twenty.com)"
 
 #. js-lingui-id: mGO3xy
@@ -17210,7 +17210,7 @@ msgstr "구독이 활성화되었습니다."
 #: src/modules/settings/billing/components/AddPaymentMethodForm.tsx
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
-msgid "Subscription error. Please retry or contact Twenty team"
+msgid "Subscription error. Please retry or contact Arxena team"
 msgstr "구독 오류입니다. 다시 시도하거나 Twenty 팀에 문의하세요"
 
 #. js-lingui-id: FooJUj
@@ -17588,11 +17588,11 @@ msgstr "Bedrock용 AWS 리전"
 #. js-lingui-id: HP7per
 #: src/pages/settings/applications/utils/getStandardApplicationDescription.ts
 msgid ""
-"The base data model every Twenty workspace runs on.\n"
+"The base data model every Arxena workspace runs on.\n"
 "\n"
 "#### What \"foundation\" means\n"
 "\n"
-"Every Twenty workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
+"Every Arxena workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
 "\n"
 "#### Included objects\n"
 "- **People & Companies**: contact and account records\n"
@@ -17600,11 +17600,11 @@ msgid ""
 "- **Notes & Tasks**: activity and follow-ups\n"
 "- **Workflows & Dashboards**: automation and reporting\n"
 "\n"
-"Remove this app and the rest of Twenty has nothing to hang off.\n"
+"Remove this app and the rest of Arxena has nothing to hang off.\n"
 "\n"
 "#### Build your own app\n"
 "\n"
-"Extend Twenty with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
+"Extend Arxena with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
 "\n"
 "```bash\n"
 "npx create-twenty-app@latest my-twenty-app\n"
@@ -17734,7 +17734,7 @@ msgstr "사용자가 이메일 수신을 거부하기 위해 리디렉션되는 
 
 #. js-lingui-id: Ya1wb4
 #: src/pages/settings/legal/SettingsLegalDpaNew.tsx
-msgid "The PDF is pre-signed by Twenty and executed with your legal entity and authorized signatory."
+msgid "The PDF is pre-signed by Arxena and executed with your legal entity and authorized signatory."
 msgstr "이 PDF는 Twenty에서 미리 서명했으며, 귀하의 법인과 승인된 서명권자와 함께 체결됩니다."
 
 #. js-lingui-id: wxyrqd
@@ -18616,7 +18616,7 @@ msgstr "터콰이즈"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Arxena fields"
 msgstr "Twenty 필드"
 
 #. js-lingui-id: YIjS4q
@@ -20108,7 +20108,7 @@ msgstr "가중치"
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Arxena"
 msgstr "Twenty에 오신 것을 환영합니다"
 
 #. js-lingui-id: t8ZvkC

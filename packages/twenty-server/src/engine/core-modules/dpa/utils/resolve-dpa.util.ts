@@ -60,7 +60,7 @@ const buildExecutionBlocks = (
       kind: 'signatureField',
       text: '',
       label: `Processor — ${values.PROCESSOR_ENTITY}`,
-      value: `Signed on behalf of ${values.PROCESSOR_ENTITY} (pre-signed by Twenty)\nName: ${TWENTY_PRESIGNED_SIGNATORY.name}\nTitle: ${TWENTY_PRESIGNED_SIGNATORY.title}`,
+      value: `Signed on behalf of ${values.PROCESSOR_ENTITY} (pre-signed by Arxena)\nName: ${TWENTY_PRESIGNED_SIGNATORY.name}\nTitle: ${TWENTY_PRESIGNED_SIGNATORY.title}`,
     },
     {
       kind: 'signatureField',

@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro';
 
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
@@ -14,9 +15,10 @@ import { NameField } from '@/settings/workspace/components/NameField';
 import { WorkspaceLogoUploader } from '@/settings/workspace/components/WorkspaceLogoUploader';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { IconHistory, IconKey, IconSettings } from 'twenty-ui/icon';
-import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
+import { H2Title } from 'twenty-ui/typography';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
+import { ApiKeysForm } from '~/pages/settings/ApiKeysForm';
 import { MetadataStructureSection } from '~/pages/settings/MetaDataStructure';
 
 const SETTINGS_GENERAL_TABS_INSTANCE_ID = 'settings-general-tabs';
@@ -84,6 +86,9 @@ export const SettingsGeneral = () => {
             </Section>
           </>
         )}
+        <ApiKeysProvider>
+          <ApiKeysForm />
+        </ApiKeysProvider>
         <Section>
           <DeleteWorkspace />
         </Section>

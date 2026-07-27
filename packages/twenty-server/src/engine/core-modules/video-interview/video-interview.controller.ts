@@ -4,7 +4,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
-import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
+import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, getAttachmentDownloadUrl, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { TranscriptionService } from './transcription.service';
 
@@ -18,7 +18,12 @@ interface GetInterviewDetailsResponse {
   recruiterProfile:any;
   responseFromInterviewRequests: any;
   videoInterviewAttachmentResponse: any;
-  questionsAttachments: { id: string; fullPath: string; name: string }[];
+  questionsAttachments: {
+    id: string;
+    name: string;
+    downloadUrl: string | null;
+    fullPath?: string | null;
+  }[];
 }
 
 @Controller('video-interview-controller')
@@ -191,35 +196,40 @@ export class VideoInterviewController {
         videoFilePath = await this.convertToWebM(videoFilePath);
       }
 
-      const videoAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(videoFilePath,apiToken);
+      const videoAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(videoFilePath,apiToken);
       // Upload audio file to Twenty
 
-      const audioAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(audioFilePath,apiToken);
+      const audioAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(audioFilePath,apiToken);
       console.log('Audio attachment upload response:', audioAttachmentObj);
       console.log('interviewData::', interviewData);
-      // Prepare data for attachment table
+      const videoFileName = videoFilePath.replace(`${process.cwd()}/`, '');
+      const audioFileName = audioFilePath.replace(`${process.cwd()}/`, '');
       const videoDataToUploadInAttachmentTable = {
         input: {
-          name: videoFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: videoAttachmentObj?.data?.uploadFile,
+          name: videoFileName,
+          file: videoAttachmentObj
+            ? [{ fileId: videoAttachmentObj.fileId, label: videoFileName }]
+            : [],
           fileCategory: 'VIDEO',
-          candidateId: interviewData.candidate.id,
+          targetCandidateId: interviewData.candidate.id,
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      const videoAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(videoDataToUploadInAttachmentTable,apiToken);
+      const videoAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(videoDataToUploadInAttachmentTable,apiToken);
       console.log("videoAttachment:"  , videoAttachment)
 
       const audioDataToUploadInAttachmentTable = {
         input: {
-          name: audioFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: audioAttachmentObj?.data?.uploadFile,
+          name: audioFileName,
+          file: audioAttachmentObj
+            ? [{ fileId: audioAttachmentObj.fileId, label: audioFileName }]
+            : [],
           fileCategory: 'AUDIO',
-          candidateId: interviewData.candidate.id,
+          targetCandidateId: interviewData.candidate.id,
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(audioDataToUploadInAttachmentTable,apiToken);
+      const audioAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(audioDataToUploadInAttachmentTable,apiToken);
       console.log("audioAttachment:"  , audioAttachment)
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
@@ -261,25 +271,29 @@ export class VideoInterviewController {
       const responseId = graphqlQueryObjForCreationOfResponse.data.createVideoInterviewResponse.id;
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
-          name: videoFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: videoAttachmentObj?.data?.uploadFile,
+          name: videoFileName,
+          file: videoAttachmentObj
+            ? [{ fileId: videoAttachmentObj.fileId, label: videoFileName }]
+            : [],
           fileCategory: 'VIDEO',
           videoInterviewResponseId: responseId,
         },
       };
       console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
-      const videoAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(videoDataToUploadInAttachmentResponseTable,apiToken);
+      const videoAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(videoDataToUploadInAttachmentResponseTable,apiToken);
       console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
       const audioDataToUploadInAttachmentResponseTable = {
         input: {
-          name: audioFilePath.replace(`${process.cwd()}/`, ''),
-          fullPath: audioAttachmentObj?.data?.uploadFile,
+          name: audioFileName,
+          file: audioAttachmentObj
+            ? [{ fileId: audioAttachmentObj.fileId, label: audioFileName }]
+            : [],
           fileCategory: 'AUDIO',
           videoInterviewResponseId: responseId,
         },
       };
       console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(audioDataToUploadInAttachmentResponseTable,apiToken);
+      const audioAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(audioDataToUploadInAttachmentResponseTable,apiToken);
       console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload);
 
 
@@ -585,7 +599,12 @@ export class VideoInterviewController {
         }
 
         questionsAttachmentsResponse = responseForVideoInterviewQuestionAttachments.flatMap(response =>
-          response.data?.data?.attachments?.edges?.map((edge: { node: { id: string; fullPath: string; name: string } }) => edge.node) || []
+          response.data?.data?.attachments?.edges?.map((edge: { node: Record<string, unknown> }) => ({
+            id: edge.node.id as string,
+            name: edge.node.name as string,
+            downloadUrl: getAttachmentDownloadUrl(edge.node),
+            fullPath: edge.node.fullPath as string | null | undefined,
+          })) || []
         );
       }
 

@@ -26,16 +26,10 @@ describe('event-log registry', () => {
     );
   });
 
-  it('gates every table except application logs behind an entitlement', () => {
-    expect(
-      EVENT_LOG_TYPES[EventLogTable.APPLICATION_LOG].requiresEntitlement,
-    ).toBeNull();
-    expect(
-      EVENT_LOG_TYPES[EventLogTable.WORKSPACE_EVENT].requiresEntitlement,
-    ).not.toBeNull();
-    expect(
-      EVENT_LOG_TYPES[EventLogTable.USAGE_EVENT].requiresEntitlement,
-    ).not.toBeNull();
+  it('makes every log table free on every plan', () => {
+    for (const table of Object.values(EventLogTable)) {
+      expect(EVENT_LOG_TYPES[table].requiresEntitlement).toBeNull();
+    }
   });
 
   describe('normalize', () => {

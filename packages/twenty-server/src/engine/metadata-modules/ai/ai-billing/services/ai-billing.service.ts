@@ -15,6 +15,7 @@ import { computeCostBreakdown } from 'src/engine/metadata-modules/ai/ai-billing/
 import { convertDollarsToBillingCredits } from 'src/engine/metadata-modules/ai/ai-billing/utils/convert-dollars-to-billing-credits.util';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { type ModelId } from 'src/engine/metadata-modules/ai/ai-models/types/model-id.type';
+import { AiProviderCredentialsService } from 'src/engine/metadata-modules/ai/ai-provider-credentials/services/ai-provider-credentials.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 
@@ -32,8 +33,58 @@ export class AiBillingService {
     private readonly aiModelRegistryService: AiModelRegistryService,
     private readonly billingService: BillingService,
     private readonly billingUsageService: BillingUsageService,
+    private readonly aiProviderCredentialsService: AiProviderCredentialsService,
     private readonly workspaceCacheService: WorkspaceCacheService,
   ) {}
+
+  private async shouldBypassBillingForModel(
+    workspaceId: string,
+    modelId: ModelId,
+  ): Promise<boolean> {
+    if (!this.billingService.isBillingEnabled()) {
+      return true;
+    }
+
+    let providerName: string | undefined;
+
+    try {
+      const effectiveModelId =
+        await this.aiModelRegistryService.resolveModelIdForWorkspace(
+          modelId,
+          workspaceId,
+        );
+
+      providerName =
+        this.aiModelRegistryService.getProviderNameForModelId(effectiveModelId);
+    } catch {
+      providerName = undefined;
+    }
+
+    if (!providerName) {
+      return false;
+    }
+
+    return this.aiProviderCredentialsService.hasApiKeyConfigured(
+      workspaceId,
+      providerName,
+    );
+  }
+
+  async assertHasAvailableCreditsOrThrow(
+    workspaceId: string,
+    modelId: ModelId,
+  ): Promise<void> {
+    const shouldBypass = await this.shouldBypassBillingForModel(
+      workspaceId,
+      modelId,
+    );
+
+    if (shouldBypass) {
+      return;
+    }
+
+    await this.billingUsageService.hasAvailableCreditsOrThrow(workspaceId);
+  }
 
   calculateCost(modelId: ModelId, billingInput: BillingUsageInput): number {
     const model = this.aiModelRegistryService.getEffectiveModelConfig(modelId);
@@ -77,7 +128,7 @@ export class AiBillingService {
       (billingInput.usage.outputTokens ?? 0) +
       (billingInput.cacheCreationTokens ?? 0);
 
-    if (this.billingService.isBillingEnabled()) {
+    if (!await this.shouldBypassBillingForModel(workspaceId, modelId)) {
       await this.billingUsageService.decrementAvailableCreditsInCache({
         workspaceId,
         usedCredits: creditsUsedMicro,
@@ -104,6 +155,10 @@ export class AiBillingService {
       return { hasNoMoreAvailableCredits: false };
     }
 
+    if (await this.shouldBypassBillingForModel(workspaceId, modelId)) {
+      return { hasNoMoreAvailableCredits: false };
+    }
+
     const costInDollars = this.calculateCost(modelId, billingInput);
     const creditsUsedMicro = Math.round(
       convertDollarsToBillingCredits(costInDollars),
@@ -121,6 +176,7 @@ export class AiBillingService {
   async billNativeWebSearchUsage(
     nativeWebSearchCallCount: number,
     workspaceId: string,
+    modelId: ModelId,
     userWorkspaceId?: string | null,
   ): Promise<void> {
     if (nativeWebSearchCallCount <= 0) {
@@ -139,7 +195,12 @@ export class AiBillingService {
 
     let periodStart: Date | undefined;
 
-    if (this.billingService.isBillingEnabled()) {
+    const shouldBypass = await this.shouldBypassBillingForModel(
+      workspaceId,
+      modelId,
+    );
+
+    if (this.billingService.isBillingEnabled() && !shouldBypass) {
       const { currentBillingSubscription } =
         await this.workspaceCacheService.getOrRecompute(workspaceId, [
           'currentBillingSubscription',
@@ -183,7 +244,10 @@ export class AiBillingService {
   ): Promise<void> {
     let periodStart: Date | undefined;
 
-    if (this.billingService.isBillingEnabled()) {
+    if (
+      this.billingService.isBillingEnabled() &&
+      !(await this.shouldBypassBillingForModel(workspaceId, modelId))
+    ) {
       const { currentBillingSubscription } =
         await this.workspaceCacheService.getOrRecompute(workspaceId, [
           'currentBillingSubscription',

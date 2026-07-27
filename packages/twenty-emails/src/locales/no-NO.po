@@ -65,7 +65,7 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/emails/password-update-notify.email.tsx
-msgid "Connect to Twenty"
+msgid "Connect to Arxena"
 msgstr "Koble til Twenty"
 
 #. js-lingui-explicit-id
@@ -90,8 +90,8 @@ msgstr "Aktivert"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Github"
-msgstr "Github"
+msgid "LinkedIn"
+msgstr "LinkedIn"
 
 #. js-lingui-explicit-id
 #: src/emails/warn-suspended-workspace.email.tsx
@@ -119,7 +119,7 @@ msgstr "Hei {userName},"
 
 #. js-lingui-explicit-id
 #: src/emails/billing-trial-converting.email.tsx
-msgid "If Twenty is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
+msgid "If Arxena is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
 msgstr "Hvis Twenty fungerer for deg, er alt klart — du trenger ikke å gjøre noe. Hvis det ikke er den rette løsningen, kan du avbryte med ett klikk før den tid, og du blir ikke belastet."
 
 #. js-lingui-explicit-id
@@ -134,7 +134,7 @@ msgstr "Hvis du ikke gjør noe, setter vi arbeidsområdet ditt på pause og hold
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
-msgid "If you'd ever like to give Twenty another try, you can start a fresh workspace in minutes — we'd love to have you back."
+msgid "If you'd ever like to give Arxena another try, you can start a fresh workspace in minutes — we'd love to have you back."
 msgstr "Hvis du noen gang har lyst til å gi Twenty et nytt forsøk, kan du starte et nytt arbeidsområde i løpet av noen få minutter — vi vil gjerne ha deg tilbake."
 
 #. js-lingui-explicit-id
@@ -149,7 +149,7 @@ msgstr "Dataene har blitt fjernet og kan ikke lenger gjenopprettes."
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
-msgid "Join your team on Twenty"
+msgid "Join your team on Arxena"
 msgstr "Bli med teamet ditt på Twenty"
 
 #. js-lingui-explicit-id
@@ -185,7 +185,7 @@ msgstr "Aktiver arbeidsområde på nytt"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Read Twenty's user guide"
+msgid "Read Arxena's user guide"
 msgstr "Les Twenty's brukerveiledning"
 
 #. js-lingui-explicit-id
@@ -265,7 +265,7 @@ msgstr "For å beholde arbeidsområdet ditt og alt du har bygget, legg til en be
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Twenty.com, Public Benefit Corporation"
+msgid "Arxena, Inc."
 msgstr "Twenty.com, Offentlig Fordel Selskap"
 
 #. js-lingui-explicit-id
@@ -286,17 +286,17 @@ msgstr "Verifiser e-post"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's developer documentation"
+msgid "Visit Arxena's documentation"
 msgstr "Besøk Twenty's utviklerdokumentasjon"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's GitHub repository"
+msgid "Visit Arxena's LinkedIn"
 msgstr "Besøk Twenty's GitHub-repository"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's website"
+msgid "Visit Arxena's website"
 msgstr "Besøk Twenty's nettsted"
 
 #. js-lingui-explicit-id
@@ -311,7 +311,7 @@ msgstr "Nettside"
 
 #. js-lingui-explicit-id
 #: src/components/WhatIsTwenty.tsx
-msgid "What is Twenty?"
+msgid "What is Arxena?"
 msgstr "Hva er Twenty?"
 
 #. js-lingui-explicit-id

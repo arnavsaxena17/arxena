@@ -90,12 +90,19 @@ Wave 2: `orgchart`, `candidate-table`, `candidate-search`, `arx-jd-upload`
 - Org chart app route: `OrgChartRoute` restores workflows `:companyKey` + location-state wiring (was bare `<ArxOrgChart />`)
 - Project DataTable blank: restored `flex:1`/`min-height:0` on upstream `PageBody`/`PagePanel` (Handsontable height chain) — see migration track §0/§9.2
 - Candidate name click: `SidePanelPages.CandidateChat` mounts `CandidateChatDrawer` (stubbed `useRightDrawer` previously set `isRightPanelOpen` with no UI)
+- Record selection actions: workflows `action-menu` configs/hooks → `EngineComponentKey` + `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*`; HotTable bottom bar + All Actions → side panel (migration track §2.11). Needs workspace metadata sync for new CMIs.
 
 Wave 3: `assistant`, `arx-ai-filtering`
 
-Wave 4: `unipile`, chrome-extension*, linkedin-unipile, whatsapp-unipile
+Wave 4: `unipile`, chrome-extension* (AuthBridge + Sidecar + `CHROME_EXTENSION_ID` client-config wired), linkedin-unipile, whatsapp-unipile
 
 Settings Accounts (messaging connections): WhatsApp Unipile, WhatsApp Business / Facebook Official, Baileys, LinkedIn Business, Google Contacts — nav + routes + pages on `port/arxena-modules`. Google OAuth scopes aligned with workflows (`contacts`, `drive`, `gmail.modify`).
+
+Settings Profile: restored workflows account IDs card (member/user/workspace id, schema, names) on `SettingsProfile` using `SettingsTableCard`.
+
+Settings General: restored workflows workspace integration keys form (`ApiKeysForm`) grouped by AI / Messaging / LinkedIn / Twilio / Workspace & extension; wired via `ApiKeysProvider` + `POST /workspace-modifications/workspace-keys`.
+
+Deferred chrome-extension UX (not protocol): `ExtensionInstallOnboarding`, LinkedIn auto-connect information banner, job-boards Naukri action; OAuth chrome client now via ApplicationRegistration not hardcoded `CHROME_EXTENSION_ID` redirect.
 
 Wave 5: `video-interview`
 
@@ -127,7 +134,7 @@ Ignore Twenty leftovers: `favorites`, `prefetch`, `serverless-functions`, `datab
 
 Next follow-ups: fix front compile errors module-by-module, nav drawer items, Unipile providers (migrate remaining `process.env.UNIPILE_*` call sites to EnvironmentService / TwentyConfigService), and yarn install for mcp/embed package deps.
 
-**Front runtime:** ARX modules must use `REACT_APP_SERVER_BASE_URL` from `~/config` (not `process.env.REACT_APP_SERVER_BASE_URL` — that becomes `/undefined/…` under Vite). Candidate-sourcing HTTP paths are dual-mounted as `get-all-projects` (+ legacy `get-all-jobs` aliases); see migration track §3. See also §2.8. Workspace GraphQL remaps for Attachment (`authorId`/`type` → `createdBy`/`fileCategory`), CandidateEnrichment (`fields` → `filterFields`), record id scalars (`ID!` → `UUID!`), and `FindOneProject` response key (`job` → `project`) are in migration track §2.10. After `nx build twenty-shared`, restart nest so GraphQLExecutionService picks up new query strings.
+**Front runtime:** ARX modules must use `REACT_APP_SERVER_BASE_URL` from `~/config` (not `process.env.REACT_APP_SERVER_BASE_URL` — that becomes `/undefined/…` under Vite). Candidate-sourcing HTTP paths are dual-mounted as `get-all-projects` (+ legacy `get-all-jobs` aliases); see migration track §3. See also §2.8. Workspace GraphQL remaps for Attachment (`authorId`/`type` → `createdBy`/`fileCategory`; FILES-field upload + `target*Id` morph FKs + `getAttachmentDownloadUrl` — skill `attachment-files-field-migration`), CandidateEnrichment (`fields` → `filterFields`), record id scalars (`ID!` → `UUID!`), `FindOneProject` response key (`job` → `project`), and metadata SDL (`isCustom`/`dataSourceId`/`relationDefinition` dropped) are in migration track §2.10. After `nx build twenty-shared`, restart nest so GraphQLExecutionService / workspace-modifications pick up new query strings.
 
 **Front import / Apollo migration track:** see [`docs/port-front-migration-track.md`](./port-front-migration-track.md) — path remaps, Apollo `/graphql` vs `/metadata`, Job→Project, and **§9 catalog of upstream/core files altered** on this branch.
 

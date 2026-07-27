@@ -19,7 +19,7 @@ describe('resolveDpa', () => {
     });
 
     expect(resolved.region).toBe('EU');
-    expect(resolved.values.PROCESSOR_ENTITY).toBe('Twenty.com SAS');
+    expect(resolved.values.PROCESSOR_ENTITY).toBe('Arxena, Inc.');
     expect(resolved.values.PROCESSOR_LEGAL_FORM).toContain('France');
     expect(resolved.values.HOSTING_REGION).toContain('Frankfurt');
     expect(resolved.values.GOVERNING_LAW).toBe('France');
@@ -31,7 +31,7 @@ describe('resolveDpa', () => {
     const resolved = resolveDpa({ region: DpaRegion.US, mode: 'preview' });
 
     expect(resolved.region).toBe('US');
-    expect(resolved.values.PROCESSOR_ENTITY).toBe('Twenty.com PBC');
+    expect(resolved.values.PROCESSOR_ENTITY).toBe('Arxena, Inc.');
     expect(resolved.values.PROCESSOR_LEGAL_FORM).toContain('Delaware');
     expect(resolved.values.HOSTING_REGION).toBe('United States');
     expect(resolved.sccSectionActive).toBe(true);
@@ -41,10 +41,10 @@ describe('resolveDpa', () => {
     const eu = resolveDpa({ region: DpaRegion.EU, mode: 'preview' });
     const us = resolveDpa({ region: DpaRegion.US, mode: 'preview' });
 
-    // Assert on the contracting clause (block 0), not the whole doc: "Twenty.com PBC"
+    // Assert on the contracting clause (block 0), not the whole doc: "Arxena, Inc."
     // also appears verbatim in Annex A's "for US deployments" note.
-    expect(eu.blocks[0].text).toContain('between Twenty.com SAS (');
-    expect(us.blocks[0].text).toContain('between Twenty.com PBC (');
+    expect(eu.blocks[0].text).toContain('between Arxena, Inc. (');
+    expect(us.blocks[0].text).toContain('between Arxena, Inc. (');
   });
 
   it('keeps the SCC/transfer sections (7.2–7.5) in the document for BOTH regions (document is not branched)', () => {
@@ -174,8 +174,7 @@ describe('resolveDpa', () => {
   it('renders the DPO name and contact', () => {
     const text = resolvedText(DpaRegion.EU, 'signed');
 
-    expect(text).toContain('Stéphanie Joly');
-    expect(text).toContain('privacy@twenty.com');
+    expect(text).toContain('privacy@arxena.com');
   });
 
   it('states the §7.1 hosting location per region without contradicting the deployment', () => {

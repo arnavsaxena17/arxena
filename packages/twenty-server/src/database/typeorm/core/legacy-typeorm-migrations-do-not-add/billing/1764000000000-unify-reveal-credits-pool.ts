@@ -4,46 +4,58 @@ export class UnifyRevealCreditsPool1764000000000 implements MigrationInterface {
   name = 'UnifyRevealCreditsPool1764000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1) Add the unified pool column.
-    await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "revealCredits" integer NOT NULL DEFAULT 0`,
+    const existingRevealCreditsColumn = await queryRunner.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = 'core'
+         AND table_name = 'workspaceCredits'
+         AND column_name = 'revealCredits'
+       LIMIT 1`,
     );
 
-    // 2) Backfill: sum existing email + phone contact credits (defensive — both
-    //    columns are effectively zero today because the webhook never funded
-    //    them, but the SUM keeps any manually adjusted balances intact).
-    await queryRunner.query(
-      `UPDATE "core"."workspaceCredits"
-         SET "revealCredits" = COALESCE("emailContactCredits", 0) + COALESCE("phoneContactCredits", 0)`,
-    );
+    if (existingRevealCreditsColumn.length === 0) {
+      await queryRunner.query(
+        `ALTER TABLE "core"."workspaceCredits" ADD "revealCredits" integer NOT NULL DEFAULT 0`,
+      );
 
-    // 3) Drop the legacy columns.
+      const existingEmailContactCreditsColumn = await queryRunner.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = 'core'
+           AND table_name = 'workspaceCredits'
+           AND column_name = 'emailContactCredits'
+         LIMIT 1`,
+      );
+
+      if (existingEmailContactCreditsColumn.length > 0) {
+        await queryRunner.query(
+          `UPDATE "core"."workspaceCredits"
+             SET "revealCredits" = COALESCE("emailContactCredits", 0) + COALESCE("phoneContactCredits", 0)`,
+        );
+      }
+    }
+
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "emailContactCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "emailContactCredits"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "phoneContactCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "phoneContactCredits"`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Re-add the legacy columns.
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "emailContactCredits" integer NOT NULL DEFAULT 0`,
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "emailContactCredits" integer NOT NULL DEFAULT 0`,
     );
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "phoneContactCredits" integer NOT NULL DEFAULT 0`,
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "phoneContactCredits" integer NOT NULL DEFAULT 0`,
     );
-
-    // Restore the previous balances by parking everything in the email column
-    // (we cannot recover the original split; this is the best-effort inverse).
     await queryRunner.query(
       `UPDATE "core"."workspaceCredits"
          SET "emailContactCredits" = "revealCredits"`,
     );
-
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "revealCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "revealCredits"`,
     );
   }
 }

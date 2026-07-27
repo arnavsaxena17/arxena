@@ -19,6 +19,8 @@ export type Attachment = {
   opportunityId?: string | null;
   dashboardId?: string | null;
   workflowId?: string | null;
+  candidateId?: string | null;
+  projectId?: string | null;
   targetCompanyId?: string | null;
   targetPersonId?: string | null;
   targetTaskId?: string | null;
@@ -26,6 +28,8 @@ export type Attachment = {
   targetOpportunityId?: string | null;
   targetDashboardId?: string | null;
   targetWorkflowId?: string | null;
+  targetCandidateId?: string | null;
+  targetProjectId?: string | null;
   createdBy?: {
     source: string;
     workspaceMemberId: string | null;

@@ -1450,32 +1450,32 @@ msgstr ""
 
 #. js-lingui-id: FKGcEL
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server as a remote context server in Zed."
+msgid "Add the Arxena MCP server as a remote context server in Zed."
 msgstr "Voeg de Twenty MCP-server toe als externe contextserver in Zed."
 
 #. js-lingui-id: iA2nHX
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Augment Code settings."
+msgid "Add the Arxena MCP server from Augment Code settings."
 msgstr "Voeg de Twenty MCP-server toe via de Augment Code-instellingen."
 
 #. js-lingui-id: l+NzAk
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Raycast's MCP commands or settings."
+msgid "Add the Arxena MCP server from Raycast's MCP commands or settings."
 msgstr "Voeg de Twenty MCP-server toe via de MCP-opdrachten of -instellingen van Raycast."
 
 #. js-lingui-id: j6G/yI
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server in Gemini CLI settings."
+msgid "Add the Arxena MCP server in Gemini CLI settings."
 msgstr "Voeg de Twenty MCP-server toe in de instellingen van Gemini CLI."
 
 #. js-lingui-id: /OyhlM
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server to your LibreChat configuration file."
+msgid "Add the Arxena MCP server to your LibreChat configuration file."
 msgstr "Voeg de Twenty MCP-server toe aan uw LibreChat-configuratiebestand."
 
 #. js-lingui-id: K0DXoj
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty remote server with LM Studio's install link."
+msgid "Add the Arxena remote server with LM Studio's install link."
 msgstr "Voeg de Twenty externe server toe met de installatielink van LM Studio."
 
 #. js-lingui-id: 5+ttxv
@@ -1495,7 +1495,7 @@ msgstr "Onderwerp toevoegen"
 
 #. js-lingui-id: 4D/zWv
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add Twenty as a Streamable HTTP extension in Goose."
+msgid "Add Arxena as a Streamable HTTP extension in Goose."
 msgstr "Voeg Twenty toe als Streamable HTTP-extensie in Goose."
 
 #. js-lingui-id: XnwceV
@@ -3094,7 +3094,7 @@ msgstr "Facturatieperiode"
 
 #. js-lingui-id: xF/NXI
 #: src/modules/settings/billing/hooks/useBillingPortalSession.ts
-msgid "Billing portal session error. Please retry or contact Twenty team"
+msgid "Billing portal session error. Please retry or contact Arxena team"
 msgstr "Fout in sessie van facturatieportaal. Probeer het opnieuw of neem contact op met het Twenty-team"
 
 #. js-lingui-id: K1172m
@@ -3221,7 +3221,7 @@ msgstr "door {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Arxena, you agree to the"
 msgstr "Door gebruik te maken van Twenty, gaat u akkoord met de"
 
 #. js-lingui-id: Yx41df
@@ -3681,7 +3681,7 @@ msgstr "Controleer je inbox om je nieuwe e-mailadres te bevestigen."
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Arxena team"
 msgstr "Checkout-sessie fout. Probeer het opnieuw of neem contact op met het Twenty-team"
 
 #. js-lingui-id: SviKkE
@@ -4285,12 +4285,12 @@ msgstr "Configureer de externe server in de MCP-instellingen van Amazon Q Develo
 
 #. js-lingui-id: g1/8jH
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cascade."
+msgid "Configure the Arxena MCP server manually in Cascade."
 msgstr "Configureer de Twenty MCP-server handmatig in Cascade."
 
 #. js-lingui-id: XiyvRh
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cline."
+msgid "Configure the Arxena MCP server manually in Cline."
 msgstr "Configureer de Twenty MCP-server handmatig in Cline."
 
 #. js-lingui-id: qA9AGQ
@@ -7571,7 +7571,7 @@ msgstr "Fout bij het annuleren van planwisseling."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Arxena team."
 msgstr "Fout tijdens het beëindigen van de proefperiode. Neem contact op met het Twenty-team."
 
 #. js-lingui-id: 5g78zo
@@ -9237,7 +9237,7 @@ msgstr "Systeemindexen verbergen"
 
 #. js-lingui-id: 1ETc0T
 #: src/pages/settings/community/SettingsCommunity.tsx
-msgid "Hire a partner to help you implement and customize Twenty."
+msgid "Hire a partner to help you implement and customize Arxena."
 msgstr "Huur een partner in om je te helpen Twenty te implementeren en aan te passen."
 
 #. js-lingui-id: i0qMbr
@@ -13290,7 +13290,7 @@ msgstr "Een of meer filters verwijzen naar gedeactiveerde of verwijderde velden 
 
 #. js-lingui-id: 2l4SGU
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
-msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Twenty on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
+msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Arxena on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
 msgstr "Eén abonnement levert één enterprise-sleutel die één productie-instantie en één mogelijke staging- of testinstantie aanstuurt. Om een staging- of testomgeving te draaien, installeert u Twenty op een tweede server, activeert u deze met dezelfde enterprise-sleutel en registreert u die server vervolgens als ontwikkelinstantie. Ontwikkelinstanties ontgrendelen enterprisefuncties zonder extra facturatie en tellen niet mee voor uw productieplaatsen."
 
 #. js-lingui-id: oFTo3P
@@ -13377,12 +13377,12 @@ msgstr "Als link openen"
 
 #. js-lingui-id: n0vVgf
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Claude with the Twenty connector name and MCP URL prefilled."
+msgid "Open Claude with the Arxena connector name and MCP URL prefilled."
 msgstr "Open Claude met de naam van de Twenty-connector en MCP-URL vooraf ingevuld."
 
 #. js-lingui-id: +n2jpB
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Cursor's MCP installer with the Twenty remote server config."
+msgid "Open Cursor's MCP installer with the Arxena remote server config."
 msgstr "Open de MCP-installer van Cursor met de Twenty-configuratie voor externe server."
 
 #. js-lingui-id: pZZH4Q
@@ -13418,12 +13418,12 @@ msgstr "Records openen in"
 
 #. js-lingui-id: q170S2
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Replit with the Twenty remote server config."
+msgid "Open Replit with the Arxena remote server config."
 msgstr "Open Replit met de Twenty-configuratie voor externe server."
 
 #. js-lingui-id: sBd/cl
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Twenty's official ChatGPT integration for your workspace."
+msgid "Open Arxena's ChatGPT integration for your workspace."
 msgstr "Open de officiële ChatGPT-integratie van Twenty voor uw werkruimte."
 
 #. js-lingui-id: OV5wZZ
@@ -13707,7 +13707,7 @@ msgstr "Paginanaam"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Arxena"
 msgstr "Pagina niet gevonden | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -17113,7 +17113,7 @@ msgstr "Subdomein"
 
 #. js-lingui-id: Sv4BSp
 #: src/modules/settings/billing/constants/SettingsBillingPlanComparisonRows.ts
-msgid "Subdomain (yourco.twenty.com)"
+msgid "Subdomain (yourco.arxena.com)"
 msgstr "Subdomein (yourco.twenty.com)"
 
 #. js-lingui-id: mGO3xy
@@ -17210,7 +17210,7 @@ msgstr "Abonnement geactiveerd."
 #: src/modules/settings/billing/components/AddPaymentMethodForm.tsx
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
-msgid "Subscription error. Please retry or contact Twenty team"
+msgid "Subscription error. Please retry or contact Arxena team"
 msgstr "Abonnementsfout. Probeer het opnieuw of neem contact op met het Twenty-team"
 
 #. js-lingui-id: FooJUj
@@ -17588,11 +17588,11 @@ msgstr "De AWS-regio voor Bedrock"
 #. js-lingui-id: HP7per
 #: src/pages/settings/applications/utils/getStandardApplicationDescription.ts
 msgid ""
-"The base data model every Twenty workspace runs on.\n"
+"The base data model every Arxena workspace runs on.\n"
 "\n"
 "#### What \"foundation\" means\n"
 "\n"
-"Every Twenty workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
+"Every Arxena workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
 "\n"
 "#### Included objects\n"
 "- **People & Companies**: contact and account records\n"
@@ -17600,11 +17600,11 @@ msgid ""
 "- **Notes & Tasks**: activity and follow-ups\n"
 "- **Workflows & Dashboards**: automation and reporting\n"
 "\n"
-"Remove this app and the rest of Twenty has nothing to hang off.\n"
+"Remove this app and the rest of Arxena has nothing to hang off.\n"
 "\n"
 "#### Build your own app\n"
 "\n"
-"Extend Twenty with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
+"Extend Arxena with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
 "\n"
 "```bash\n"
 "npx create-twenty-app@latest my-twenty-app\n"
@@ -17734,7 +17734,7 @@ msgstr "De pagina waarnaar je gebruikers worden doorgestuurd om zich uit te schr
 
 #. js-lingui-id: Ya1wb4
 #: src/pages/settings/legal/SettingsLegalDpaNew.tsx
-msgid "The PDF is pre-signed by Twenty and executed with your legal entity and authorized signatory."
+msgid "The PDF is pre-signed by Arxena and executed with your legal entity and authorized signatory."
 msgstr "De PDF is vooraf ondertekend door Twenty en wordt namens jouw rechtspersoon door de bevoegde ondertekenaar ondertekend."
 
 #. js-lingui-id: wxyrqd
@@ -18618,7 +18618,7 @@ msgstr "Turkoois"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Arxena fields"
 msgstr "Twenty-velden"
 
 #. js-lingui-id: YIjS4q
@@ -20110,7 +20110,7 @@ msgstr "Weging"
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Arxena"
 msgstr "Welkom bij Twenty"
 
 #. js-lingui-id: t8ZvkC

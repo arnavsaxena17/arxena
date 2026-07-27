@@ -1312,22 +1312,25 @@ export class BaileysWhatsappService {
       console.log(file.filePath);
       await fs.promises.writeFile(file.filePath, file.fileBuffer);
       const attachmentObj =
-        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentToTwenty(
+        await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(
           file.filePath,
           apiToken,
+          file.fileName,
         );
 
-      const dataToUploadInAttachmentTable = {
-        input: {
-          name: file.fileName,
-          fullPath: attachmentObj.data.uploadFile,
-          fileCategory: 'TEXT_DOCUMENT',
-          candidateId: candidateProfileData.id,
-        },
-      };
+      if (!attachmentObj?.fileId) {
+        throw new Error('Failed to upload attachment file to FILES field');
+      }
 
-      await new AttachmentProcessingService(this.staticGraphQLService).createOneAttachmentFromFilePath(
-        dataToUploadInAttachmentTable,
+      await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(
+        {
+          input: {
+            name: file.fileName,
+            file: [{ fileId: attachmentObj.fileId, label: file.fileName }],
+            fileCategory: 'TEXT_DOCUMENT',
+            targetCandidateId: candidateProfileData.id,
+          },
+        },
         apiToken,
       );
 

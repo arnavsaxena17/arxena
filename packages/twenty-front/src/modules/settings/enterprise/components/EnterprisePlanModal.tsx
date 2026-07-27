@@ -98,8 +98,6 @@ export const EnterprisePlanModal = () => {
 
   const benefits = [
     t`SSO (SAML / OIDC)`,
-    t`Row-level security`,
-    t`Audit logs`,
     t`Advanced Encryption`,
     t`Custom AI Models`,
   ];

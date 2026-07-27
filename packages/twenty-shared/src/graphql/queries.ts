@@ -1006,30 +1006,36 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
     ) {
       edges {
         node {
-          whatsappMessageId
+          id
+          name
+          fullPath
+          fileCategory
+          file {
+            fileId
+            label
+            extension
+            url
+          }
           createdBy {
             workspaceMemberId
             name
             source
           }
-          candidateId
-          fullPath
-          personId
-          name
-          opportunityId
+          targetCandidateId
+          targetProjectId
+          targetPersonId
+          targetCompanyId
+          targetOpportunityId
+          whatsappMessageId
           cvSentId
-          updatedAt
-          createdAt
-          projectId
-          fileCategory
-          companyId
           screeningId
           clientInterviewId
-          id
           recruiterInterviewId
           offerId
           candidateFieldValueId
           candidateFieldId
+          updatedAt
+          createdAt
         }
         cursor
       }
@@ -1200,6 +1206,12 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             node {
               id
               fullPath
+              file {
+                fileId
+                label
+                extension
+                url
+              }
               name
             }
           }
@@ -1226,6 +1238,12 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
                     node {
                       id
                       fullPath
+                      file {
+                        fileId
+                        label
+                        extension
+                        url
+                      }
                       name
                     }
                   }
@@ -1353,14 +1371,12 @@ export const fullFindManyObjectsFieldsQuery = `query ObjectMetadataItems {
       edges {
         node {
           id
-          dataSourceId
           nameSingular
           namePlural
           labelSingular
           labelPlural
           description
           icon
-          isCustom
           isRemote
           isActive
           isSystem
@@ -1402,7 +1418,6 @@ export const fullFindManyObjectsFieldsQuery = `query ObjectMetadataItems {
             label
             description
             icon
-            isCustom
             isActive
             isSystem
             isNullable
@@ -1413,9 +1428,8 @@ export const fullFindManyObjectsFieldsQuery = `query ObjectMetadataItems {
             options
             settings
             isLabelSyncedWithName
-            relationDefinition {
-              relationId
-              direction
+            relation {
+              type
               sourceObjectMetadata {
                 id
                 nameSingular
@@ -1475,7 +1489,6 @@ export const queryObjectMetadataItemsForComparison = `query ObjectMetadataItems(
     edges {
       node {
         id
-        dataSourceId
         nameSingular
         namePlural
         fields(paging: {first: 1000}, filter: $fieldFilter) {
@@ -2194,7 +2207,6 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           phoneCallId
           whatsappMessageId
           candidateReminderId
-          opportunityId
           videoInterviewModelId
           name
           videoInterviewId
@@ -2205,26 +2217,33 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
             source
           }
           clientContactId
-          projectId
+          targetProjectId
           fileCategory
           id
           createdAt
           textMessageId
           fullPath
+          file {
+            fileId
+            label
+            extension
+            url
+          }
           videoInterviewQuestionId
           interviewScheduleId
           candidateEnrichmentId
           screeningId
           shortlistId
           workspaceMemberProfileId
-          candidateId
+          targetCandidateId
           promptId
           candidateFieldId
-          personId
+          targetPersonId
           videoInterviewTemplateId
           offerId
           cvSentId
-          companyId
+          targetCompanyId
+          targetOpportunityId
           videoInterviewResponseId
           candidateFieldValueId
           recruiterInterviewId
@@ -2334,6 +2353,12 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
                 id
                 fileCategory
                 fullPath
+                file {
+                  fileId
+                  label
+                  extension
+                  url
+                }
                 name
               }
             }
@@ -2657,6 +2682,12 @@ export const graphqlToFetchAllCandidateData = `
                 }
                 createdAt
                 fullPath
+                file {
+                  fileId
+                  label
+                  extension
+                  url
+                }
                 id
                 name
                 fileCategory
@@ -2796,6 +2827,12 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 }
                 createdAt
                 fullPath
+                file {
+                  fileId
+                  label
+                  extension
+                  url
+                }
                 id
                 name
                 fileCategory
@@ -2899,6 +2936,12 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 }
                 createdAt
                 fullPath
+                file {
+                  fileId
+                  label
+                  extension
+                  url
+                }
                 id
                 name
                 fileCategory
@@ -2955,6 +2998,12 @@ export const findManyPhoneCalls = `
                               name
                               id
                               fullPath
+                              file {
+                                fileId
+                                label
+                                extension
+                                url
+                              }
                           }
                       }
                   }
@@ -3075,6 +3124,12 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
                               name
                               id
                               fullPath
+                              file {
+                                fileId
+                                label
+                                extension
+                                url
+                              }
                           }
                       }
                   }

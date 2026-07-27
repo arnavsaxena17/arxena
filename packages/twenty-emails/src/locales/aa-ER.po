@@ -95,7 +95,7 @@ msgstr "crwdns134399:0crwdne134399:0"
 
 #. js-lingui-explicit-id
 #: src/emails/send-invite-link.email.tsx
-msgid "Join your team on Twenty"
+msgid "Join your team on Arxena"
 msgstr "crwdns23:0crwdne23:0"
 
 #. js-lingui-explicit-id
@@ -150,7 +150,7 @@ msgstr "crwdns15:0crwdne15:0"
 
 #. js-lingui-explicit-id
 #: src/emails/password-update-notify.email.tsx
-msgid "Connect to Twenty"
+msgid "Connect to Arxena"
 msgstr "crwdns7:0crwdne7:0"
 
 #. js-lingui-explicit-id
@@ -170,7 +170,7 @@ msgstr "crwdns134415:0crwdne134415:0"
 
 #. js-lingui-explicit-id
 #: src/emails/clean-suspended-workspace.email.tsx
-msgid "If you'd ever like to give Twenty another try, you can start a fresh workspace in minutes — we'd love to have you back."
+msgid "If you'd ever like to give Arxena another try, you can start a fresh workspace in minutes — we'd love to have you back."
 msgstr "crwdns134417:0crwdne134417:0"
 
 #. js-lingui-explicit-id
@@ -225,7 +225,7 @@ msgstr "crwdns134427:0{workspaceDisplayName}crwdnd134427:0{formattedDate}crwdne1
 
 #. js-lingui-explicit-id
 #: src/emails/billing-trial-converting.email.tsx
-msgid "If Twenty is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
+msgid "If Arxena is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged."
 msgstr "crwdns134429:0crwdne134429:0"
 
 #. js-lingui-explicit-id
@@ -281,7 +281,7 @@ msgstr "crwdns134439:0crwdne134439:0"
 
 #. js-lingui-explicit-id
 #: src/components/WhatIsTwenty.tsx
-msgid "What is Twenty?"
+msgid "What is Arxena?"
 msgstr "crwdns5774:0crwdne5774:0"
 
 #. js-lingui-explicit-id
@@ -296,17 +296,17 @@ msgstr "crwdns5778:0crwdne5778:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's website"
+msgid "Visit Arxena's website"
 msgstr "crwdns5780:0crwdne5780:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Github"
+msgid "LinkedIn"
 msgstr "crwdns5782:0crwdne5782:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's GitHub repository"
+msgid "Visit Arxena's LinkedIn"
 msgstr "crwdns5784:0crwdne5784:0"
 
 #. js-lingui-explicit-id
@@ -316,7 +316,7 @@ msgstr "crwdns5786:0crwdne5786:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Read Twenty's user guide"
+msgid "Read Arxena's user guide"
 msgstr "crwdns5788:0crwdne5788:0"
 
 #. js-lingui-explicit-id
@@ -326,12 +326,12 @@ msgstr "crwdns5790:0crwdne5790:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Visit Twenty's developer documentation"
+msgid "Visit Arxena's documentation"
 msgstr "crwdns5792:0crwdne5792:0"
 
 #. js-lingui-explicit-id
 #: src/components/Footer.tsx
-msgid "Twenty.com, Public Benefit Corporation"
+msgid "Arxena, Inc."
 msgstr "crwdns5794:0crwdne5794:0"
 
 #. js-lingui-explicit-id

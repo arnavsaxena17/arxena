@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { VideoPlayer } from './utils/videoPlaybackUtils';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // import {recruiterProfile} from '../../activities/chats/types/front-chat-types';
 
 
 import type { StartInterviewPageProps } from 'twenty-shared/arx';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { useStream } from '../StreamManager';
 import {
   AccessMessage,
@@ -53,14 +53,14 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
 
     // Preload the introduction video when component mounts
     useEffect(() => {
-      if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        // const videoUrl = `${REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
-        const videoUrl = `${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
-        // Create a new video element for preloading
+      const introductionAttachment =
+        introductionVideoData?.data?.attachments?.edges[0]?.node;
+      const introductionVideoUrl = getAttachmentDownloadUrl(introductionAttachment);
+
+      if (introductionVideoUrl) {
         const preloadVideo = document.createElement('video');
-        preloadVideo.src = videoUrl;
+        preloadVideo.src = introductionVideoUrl;
         preloadVideo.preload = 'auto';
-        // Start loading the video
         preloadVideo.load();
       }
     }, [introductionVideoData]);
@@ -101,8 +101,9 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
   // const recruiterProfile = InterviewData?.candidate?.projects?
 
   console.log("This is the intorduction interview data::", introductionVideoData)
-  // console.log("This is the intorduction interview data::", introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath)
-  const introductionVideoURL = introductionVideoData?.data?.attachments?.edges[0]?.node.fullPath;
+  const introductionVideoURL = getAttachmentDownloadUrl(
+    introductionVideoData?.data?.attachments?.edges[0]?.node,
+  );
   console.log("THis is introductionVideoURL:", introductionVideoURL)
   return (
     <StyledContainer>
@@ -111,7 +112,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer 
-          src={`${introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath}`}
+          src={introductionVideoURL ?? ''}
           videoRef={videoRef}
           isPlaying={videoPlaybackState.isPlaying}
           setIsPlaying={handlePlaybackChange}

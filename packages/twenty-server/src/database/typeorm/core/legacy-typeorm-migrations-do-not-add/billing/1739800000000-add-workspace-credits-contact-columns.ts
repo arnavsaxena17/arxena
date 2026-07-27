@@ -6,48 +6,65 @@ export class AddWorkspaceCreditsContactColumns1739800000000
   name = 'AddWorkspaceCreditsContactColumns1739800000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add new columns
-    await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "orgChartCredits" integer NOT NULL DEFAULT 0`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "emailContactCredits" integer NOT NULL DEFAULT 0`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "phoneContactCredits" integer NOT NULL DEFAULT 0`,
-    );
-
-    // Migrate existing credits to orgChartCredits
-    await queryRunner.query(
-      `UPDATE "core"."workspaceCredits" SET "orgChartCredits" = "credits"`,
+    // Schema may already be past this migration (orgChartCredits present,
+    // credits already dropped / revealCredits unified later).
+    const existingOrgChartCreditsColumn = await queryRunner.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = 'core'
+         AND table_name = 'workspaceCredits'
+         AND column_name = 'orgChartCredits'
+       LIMIT 1`,
     );
 
-    // Drop old credits column
+    if (existingOrgChartCreditsColumn.length > 0) {
+      return;
+    }
+
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "credits"`,
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "orgChartCredits" integer NOT NULL DEFAULT 0`,
     );
+    await queryRunner.query(
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "emailContactCredits" integer NOT NULL DEFAULT 0`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "phoneContactCredits" integer NOT NULL DEFAULT 0`,
+    );
+
+    const existingCreditsColumn = await queryRunner.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_schema = 'core'
+         AND table_name = 'workspaceCredits'
+         AND column_name = 'credits'
+       LIMIT 1`,
+    );
+
+    if (existingCreditsColumn.length > 0) {
+      await queryRunner.query(
+        `UPDATE "core"."workspaceCredits" SET "orgChartCredits" = "credits"`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "credits"`,
+      );
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Add back credits column
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" ADD "credits" integer NOT NULL DEFAULT 0`,
+      `ALTER TABLE "core"."workspaceCredits" ADD COLUMN IF NOT EXISTS "credits" integer NOT NULL DEFAULT 0`,
     );
-
-    // Migrate orgChartCredits back to credits
     await queryRunner.query(
       `UPDATE "core"."workspaceCredits" SET "credits" = "orgChartCredits"`,
     );
-
-    // Drop new columns
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "phoneContactCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "phoneContactCredits"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "emailContactCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "emailContactCredits"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN "orgChartCredits"`,
+      `ALTER TABLE "core"."workspaceCredits" DROP COLUMN IF EXISTS "orgChartCredits"`,
     );
   }
 }

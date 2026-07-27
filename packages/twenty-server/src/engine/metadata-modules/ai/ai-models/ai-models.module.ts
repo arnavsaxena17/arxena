@@ -8,9 +8,11 @@ import { ModelsDevCatalogService } from 'src/engine/metadata-modules/ai/ai-model
 import { NativeToolBinderService } from 'src/engine/metadata-modules/ai/ai-models/services/native-tool-binder.service';
 import { ProviderConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/provider-config.service';
 import { SdkProviderFactoryService } from 'src/engine/metadata-modules/ai/ai-models/services/sdk-provider-factory.service';
+import { AiProviderCredentialsModule } from 'src/engine/metadata-modules/ai/ai-provider-credentials/ai-provider-credentials.module';
 
 @Global()
 @Module({
+  imports: [AiProviderCredentialsModule],
   providers: [
     DefaultAiCatalogService,
     ProviderConfigService,

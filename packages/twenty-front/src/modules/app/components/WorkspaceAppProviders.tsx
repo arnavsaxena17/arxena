@@ -12,6 +12,7 @@ import { SignOutOnOtherTabSignOutEffect } from '@/auth/effect-components/SignOut
 import { BaileysProvider } from '@/baileys/contexts/BaileysContext';
 import { CaptchaProvider } from '@/captcha/components/CaptchaProvider';
 import { RequestFreshCaptchaTokenEffect } from '@/captcha/components/RequestFreshCaptchaTokenEffect';
+import { ChromeExtensionAuthBridgeEffect } from '@/chrome-extension/components/ChromeExtensionAuthBridgeEffect';
 import { CommandMenuConfirmationModalManager } from '@/command-menu-item/confirmation-modal/components/CommandMenuConfirmationModalManager';
 import { CommandRunner } from '@/command-menu-item/engine-command/components/CommandRunner';
 import { MainContextStoreProvider } from '@/context-store/components/MainContextStoreProvider';
@@ -64,6 +65,7 @@ export const WorkspaceAppProviders = () => {
                       <NotificationProvider>
                         <UnipileProvider>
                           <BaileysProvider>
+                            <ChromeExtensionAuthBridgeEffect />
                             <WorkspaceMemberProfileUnipileSyncEffect />
                             <AgentChatProvider>
                               <DialogComponentInstanceContext.Provider

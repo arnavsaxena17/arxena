@@ -7,11 +7,11 @@ import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { useContext } from 'react';
 import {
+  IconBrandLinkedin,
   IconBrandX,
   IconBriefcase,
   IconTransform,
   type IconComponent,
-  useIcons,
 } from 'twenty-ui/icon';
 import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
@@ -57,18 +57,16 @@ type SettingsCommunityLink = {
 
 export const SettingsCommunity = () => {
   const { theme } = useContext(ThemeContext);
-  const { getIcon } = useIcons();
-  const IconBrandDiscord = getIcon('IconBrandDiscord');
 
   const socialLinks: SettingsCommunityLink[] = [
     {
-      href: 'https://discord.com/invite/cx5n4Jzs57',
-      Icon: IconBrandDiscord,
+      href: 'https://www.linkedin.com/company/arxena',
+      Icon: IconBrandLinkedin,
       iconColor: themeCssVariables.color.blue9,
-      cardTitle: t`Join our Discord`,
+      cardTitle: t`Follow us on LinkedIn`,
     },
     {
-      href: 'https://x.com/twentycrm',
+      href: 'https://twitter.com/arxenainc',
       Icon: IconBrandX,
       iconColor: themeCssVariables.font.color.primary,
       cardTitle: t`Follow us on X`,
@@ -127,10 +125,10 @@ export const SettingsCommunity = () => {
         <Section>
           <H2Title
             title={t`Partners`}
-            description={t`Hire a partner to help you implement and customize Twenty.`}
+            description={t`Hire a partner to help you implement and customize Arxena.`}
           />
           <StyledCardLink
-            href="https://twenty.com/partners/list"
+            href="https://arxena.com"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -154,7 +152,7 @@ export const SettingsCommunity = () => {
           <StyledFeaturesContent>
             <SettingsLabContent />
             <StyledCardLink
-              href="https://twenty.com/releases"
+              href="https://arxena.com"
               target="_blank"
               rel="noopener noreferrer"
             >

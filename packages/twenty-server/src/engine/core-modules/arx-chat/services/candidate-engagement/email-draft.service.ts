@@ -1,37 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import {
-  graphQLtoCreateOneAttachmentFromFilePath,
-} from 'twenty-shared';
+import { getAttachmentDownloadUrl } from 'twenty-shared';
 
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-export interface EmailAttachment {
+export type EmailAttachment = {
   filename: string;
   path: string;
-}
+};
 
-export interface EmailDraftResult {
+export type EmailDraftResult = {
   success: boolean;
   draft_id?: string;
   error?: string;
-}
+};
 
 @Injectable()
 export class EmailDraftService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly attachmentProcessing: AttachmentProcessingService,
   ) {}
 
   async createDraftEmailWithShortlist(
-    user: any,
-    job: any,
+    user: Record<string, unknown>,
+    job: Record<string, unknown>,
     candidateIds: string[],
     shortlistPath: string,
     excelPath: string | undefined,
-    attachments: any[],
+    attachments: Array<{ name: string; downloadUrl?: string | null; fullPath?: string }>,
     cvSentId: string,
     origin: string,
     apiToken: string,
@@ -41,9 +41,7 @@ export class EmailDraftService {
       console.log('Project:', job.name);
       console.log('Candidate IDs:', candidateIds);
 
-      // Step 1: Upload shortlist documents
       const shortlistAttachment = await this.uploadShortlistDocument(
-        user,
         shortlistPath,
         cvSentId,
         apiToken,
@@ -52,43 +50,51 @@ export class EmailDraftService {
       let excelAttachment;
       if (excelPath) {
         excelAttachment = await this.uploadShortlistDocument(
-          user,
           excelPath,
           cvSentId,
           apiToken,
-          true, // isExcel
+          true,
         );
       }
 
-      // Step 2: Prepare email attachments
       const emailAttachments: EmailAttachment[] = [];
 
-      // Add candidate attachments
-      attachments.forEach(attachment => {
+      attachments.forEach((attachment) => {
+        const path =
+          attachment.downloadUrl ||
+          getAttachmentDownloadUrl(attachment) ||
+          attachment.fullPath;
+        if (!path) {
+          return;
+        }
         emailAttachments.push({
           filename: attachment.name,
-          path: attachment.fullPath,
+          path,
         });
       });
 
-      // Add shortlist documents
       if (shortlistAttachment) {
-        emailAttachments.push({
-          filename: shortlistAttachment.name,
-          path: shortlistAttachment.fullPath,
-        });
+        const shortlistUrl = getAttachmentDownloadUrl(shortlistAttachment);
+        if (shortlistUrl) {
+          emailAttachments.push({
+            filename: shortlistAttachment.name,
+            path: shortlistUrl,
+          });
+        }
       }
 
       if (excelAttachment) {
-        emailAttachments.push({
-          filename: excelAttachment.name,
-          path: excelAttachment.fullPath,
-        });
+        const excelUrl = getAttachmentDownloadUrl(excelAttachment);
+        if (excelUrl) {
+          emailAttachments.push({
+            filename: excelAttachment.name,
+            path: excelUrl,
+          });
+        }
       }
 
-      // Step 3: Create email draft
       const emailData = {
-        phoneNumber: '918411937769', // This should be configurable
+        phoneNumber: '918411937769',
         candidateId: candidateIds[0],
         newPositionObj: job,
         subject: 'Candidate Shortlist and Documentation',
@@ -110,21 +116,18 @@ export class EmailDraftService {
       console.error('Error creating draft email:', error);
       return {
         success: false,
-        error: error.message || 'Unknown error occurred',
+        error: (error as Error).message || 'Unknown error occurred',
       };
     }
   }
 
   private async uploadShortlistDocument(
-    user: any,
     filePath: string,
     cvSentId: string,
     apiToken: string,
-    isExcel: boolean = false,
-  ): Promise<any> {
+    isExcel = false,
+  ): Promise<{ id: string; name: string; file?: Array<{ url?: string | null }> } | null> {
     try {
-      const uploadUrl = `${process.env.SERVER_BASE_URL}/graphql`;
-
       const fileExtension = filePath.split('.').pop();
       const fileName = isExcel
         ? 'shortlist.xlsx'
@@ -132,79 +135,34 @@ export class EmailDraftService {
           ? 'Executive Shortlist.docx'
           : 'Executive Shortlist.pdf';
 
-      const payload = {
-        operations: JSON.stringify({
-          operationName: 'uploadFile',
-          variables: { file: null, fileFolder: 'Attachment' },
-          query: 'mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\\n  uploadFile(file: $file, fileFolder: $fileFolder)\\n}',
-        }),
-        map: JSON.stringify({ '1': ['variables.file'] }),
-      };
-
-      const FormData = require('form-data');
-      const formData = new FormData();
-      formData.append('operations', payload.operations);
-      formData.append('map', payload.map);
-      formData.append('1', require('fs').createReadStream(filePath), {
-        filename: fileName,
-        contentType: 'application/octet-stream',
-      });
-
-      const headers = {
-        accept: '*/*',
-        authorization: `Bearer ${apiToken}`,
-        ...formData.getHeaders(),
-      };
-
-      const response = await axios.post(uploadUrl, formData, { headers });
-
-      // Check for GraphQL errors
-      if (response.data.errors) {
-        console.error('GraphQL errors in uploadFile response:', response.data.errors);
-        throw new Error(`GraphQL error: ${JSON.stringify(response.data.errors)}`);
-      }
-
-      const uploadedFilePath = response.data?.data?.uploadFile;
-      if (!uploadedFilePath) {
-        console.error('Upload response structure:', JSON.stringify(response.data, null, 2));
-        throw new Error('Failed to get upload file path from response');
-      }
-
-      // Create attachment record
-      const createAttachmentPayload = {
-        operationName: 'CreateOneAttachment',
-        variables: {
-          input: {
-            name: fileName,
-            fullPath: uploadedFilePath,
-            fileCategory: 'OTHER',
-            cvSentId: cvSentId,
-          },
-        },
-        query: graphQLtoCreateOneAttachmentFromFilePath,
-      };
-
-      const attachmentResponse = await axios.post(
-        uploadUrl,
-        createAttachmentPayload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            authorization: `Bearer ${apiToken}`,
-          },
-        },
+      const uploaded = await this.attachmentProcessing.uploadAttachmentFile(
+        filePath,
+        apiToken,
+        fileName,
       );
 
-      // Check for GraphQL errors
-      if (attachmentResponse.data.errors) {
-        console.error('GraphQL errors in createAttachment response:', attachmentResponse.data.errors);
-        throw new Error(`GraphQL error: ${JSON.stringify(attachmentResponse.data.errors)}`);
+      if (!uploaded?.fileId) {
+        throw new Error('Failed to upload shortlist document to FILES field');
       }
 
-      const createdAttachment = attachmentResponse.data?.data?.createAttachment;
+      const attachmentResponse =
+        await this.attachmentProcessing.createAttachmentFromUploadedFile(
+          {
+            input: {
+              name: fileName,
+              file: [{ fileId: uploaded.fileId, label: fileName }],
+              fileCategory: 'OTHER',
+              cvSentId,
+            },
+          },
+          apiToken,
+        );
+
+      const createdAttachment =
+        attachmentResponse?.data?.data?.createAttachment;
+
       if (!createdAttachment) {
-        console.error('Create attachment response structure:', JSON.stringify(attachmentResponse.data, null, 2));
-        throw new Error('Failed to create attachment record');
+        throw new Error('Failed to create shortlist attachment record');
       }
 
       return createdAttachment;
@@ -215,22 +173,25 @@ export class EmailDraftService {
   }
 
   private async createDraftEmail(
-    emailData: any,
+    emailData: Record<string, unknown>,
     origin: string,
     apiToken: string,
-  ): Promise<any> {
+  ): Promise<{ draft_id?: string }> {
     try {
       const url = `${process.env.SERVER_BASE_URL}/gmail-calendar-contacts/save-draft-mail-with-attachment`;
 
       const headers = {
-        'Authorization': `Bearer ${apiToken}`,
+        Authorization: `Bearer ${apiToken}`,
         'Content-Type': 'application/json',
       };
 
       console.log('Creating draft email:', url);
       console.log('Email data:', emailData);
 
-      const response = await axios.post(url, emailData, { headers, timeout: 60000 });
+      const response = await axios.post(url, emailData, {
+        headers,
+        timeout: 60000,
+      });
 
       console.log('Draft email response:', response.data);
       return response.data;

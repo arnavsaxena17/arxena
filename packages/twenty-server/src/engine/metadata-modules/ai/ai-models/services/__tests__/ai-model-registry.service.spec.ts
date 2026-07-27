@@ -6,6 +6,7 @@ import { AiModelPreferencesService } from 'src/engine/metadata-modules/ai/ai-mod
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { ProviderConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/provider-config.service';
 import { SdkProviderFactoryService } from 'src/engine/metadata-modules/ai/ai-models/services/sdk-provider-factory.service';
+import { AiProviderCredentialsService } from 'src/engine/metadata-modules/ai/ai-provider-credentials/services/ai-provider-credentials.service';
 import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 
 describe('AiModelRegistryService', () => {
@@ -53,6 +54,10 @@ describe('AiModelRegistryService', () => {
           provide: ConfigGroupHashService,
           useValue: { computeHash: jest.fn().mockReturnValue('') },
         },
+        {
+          provide: AiProviderCredentialsService,
+          useValue: {},
+        },
       ],
     }).compile();
 
@@ -73,6 +78,7 @@ describe('AiModelRegistryService', () => {
         modelId: 'openai/gpt-5.2',
         sdkPackage: '@ai-sdk/openai',
         model: {} as any,
+        rawProvider: {},
       },
     ]);
 
@@ -80,6 +86,7 @@ describe('AiModelRegistryService', () => {
       modelId: 'openai/gpt-5.2',
       sdkPackage: '@ai-sdk/openai',
       model: {} as any,
+      rawProvider: {},
     });
 
     const result = service.getEffectiveModelConfig(AUTO_SELECT_SMART_MODEL_ID);
@@ -95,6 +102,7 @@ describe('AiModelRegistryService', () => {
         modelId: 'custom/mistral',
         sdkPackage: '@ai-sdk/openai-compatible',
         model: {} as any,
+        rawProvider: {},
       },
     ]);
 
@@ -102,6 +110,7 @@ describe('AiModelRegistryService', () => {
       modelId: 'custom/mistral',
       sdkPackage: '@ai-sdk/openai-compatible',
       model: {} as any,
+      rawProvider: {},
     });
 
     const result = service.getEffectiveModelConfig(AUTO_SELECT_SMART_MODEL_ID);
@@ -119,6 +128,7 @@ describe('AiModelRegistryService', () => {
       modelId: 'custom/mistral',
       sdkPackage: '@ai-sdk/openai-compatible',
       model: {} as any,
+      rawProvider: {},
     });
 
     const result = service.getEffectiveModelConfig('custom/mistral');
@@ -156,6 +166,7 @@ describe('AiModelRegistryService', () => {
             modelId: 'anthropic/claude-haiku-4-5-20251001',
             sdkPackage: '@ai-sdk/anthropic',
             model: {} as any,
+            rawProvider: {},
           };
         }
 
@@ -183,6 +194,7 @@ describe('AiModelRegistryService', () => {
         modelId: 'fallback-model',
         sdkPackage: '@ai-sdk/openai-compatible',
         model: {} as any,
+        rawProvider: {},
       },
     ]);
 

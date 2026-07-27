@@ -8,6 +8,7 @@ import { StartInterviewPage } from './StartInterviewPage';
 import { InterviewPage } from './components/InterviewPage';
 
 import { emptyInterviewData, type GetInterviewDetailsResponse, type InterviewData, type VideoInterviewAttachment } from 'twenty-shared/arx';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { StreamProvider, useStream } from '../StreamManager';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -142,16 +143,25 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
   // Preload all videos when interview data is fetched
   useEffect(() => {
     const preloadAllVideos = async () => {
-      if (introductionVideoData?.data?.attachments?.edges[0]?.node?.fullPath) {
-        const introUrl = `${REACT_APP_SERVER_BASE_URL}/files/${introductionVideoData.data.attachments.edges[0].node.fullPath}`;
+      const introAttachment =
+        introductionVideoData?.data?.attachments?.edges[0]?.node;
+      const introDownloadUrl = getAttachmentDownloadUrl(introAttachment);
+
+      if (introDownloadUrl) {
+        const introUrl = introDownloadUrl.startsWith('http')
+          ? introDownloadUrl
+          : `${REACT_APP_SERVER_BASE_URL}/files/${introDownloadUrl}`;
         preloadVideo(introUrl);
       }
 
-      // Preload all question videos
       if (questionsVideoData?.length > 0) {
-        questionsVideoData.forEach(attachment => {
-          if (attachment?.fullPath) {
-            const videoUrl = `${REACT_APP_SERVER_BASE_URL}/files/${attachment.fullPath}`;
+        questionsVideoData.forEach((attachment) => {
+          const attachmentDownloadUrl = getAttachmentDownloadUrl(attachment);
+
+          if (attachmentDownloadUrl) {
+            const videoUrl = attachmentDownloadUrl.startsWith('http')
+              ? attachmentDownloadUrl
+              : `${REACT_APP_SERVER_BASE_URL}/files/${attachmentDownloadUrl}`;
             preloadVideo(videoUrl);
           }
         });

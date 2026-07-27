@@ -1450,32 +1450,32 @@ msgstr ""
 
 #. js-lingui-id: FKGcEL
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server as a remote context server in Zed."
+msgid "Add the Arxena MCP server as a remote context server in Zed."
 msgstr "Adăugați serverul Twenty MCP ca server de context la distanță în Zed."
 
 #. js-lingui-id: iA2nHX
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Augment Code settings."
+msgid "Add the Arxena MCP server from Augment Code settings."
 msgstr "Adăugați serverul Twenty MCP din setările Augment Code."
 
 #. js-lingui-id: l+NzAk
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server from Raycast's MCP commands or settings."
+msgid "Add the Arxena MCP server from Raycast's MCP commands or settings."
 msgstr "Adăugați serverul Twenty MCP din comenzile sau setările MCP ale Raycast."
 
 #. js-lingui-id: j6G/yI
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server in Gemini CLI settings."
+msgid "Add the Arxena MCP server in Gemini CLI settings."
 msgstr "Adăugați serverul Twenty MCP în setările Gemini CLI."
 
 #. js-lingui-id: /OyhlM
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty MCP server to your LibreChat configuration file."
+msgid "Add the Arxena MCP server to your LibreChat configuration file."
 msgstr "Adăugați serverul Twenty MCP în fișierul dvs. de configurare LibreChat."
 
 #. js-lingui-id: K0DXoj
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add the Twenty remote server with LM Studio's install link."
+msgid "Add the Arxena remote server with LM Studio's install link."
 msgstr "Adăugați serverul Twenty la distanță cu linkul de instalare al LM Studio."
 
 #. js-lingui-id: 5+ttxv
@@ -1495,7 +1495,7 @@ msgstr "Adăugați subiect"
 
 #. js-lingui-id: 4D/zWv
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Add Twenty as a Streamable HTTP extension in Goose."
+msgid "Add Arxena as a Streamable HTTP extension in Goose."
 msgstr "Adăugați Twenty ca extensie Streamable HTTP în Goose."
 
 #. js-lingui-id: XnwceV
@@ -3094,7 +3094,7 @@ msgstr "Perioadă de facturare"
 
 #. js-lingui-id: xF/NXI
 #: src/modules/settings/billing/hooks/useBillingPortalSession.ts
-msgid "Billing portal session error. Please retry or contact Twenty team"
+msgid "Billing portal session error. Please retry or contact Arxena team"
 msgstr "Eroare de sesiune în portalul de facturare. Te rog să încerci din nou sau contactează echipa Twenty"
 
 #. js-lingui-id: K1172m
@@ -3221,7 +3221,7 @@ msgstr "de {author}"
 
 #. js-lingui-id: 8Pfllj
 #: src/modules/auth/sign-in-up/components/FooterNote.tsx
-msgid "By using Twenty, you agree to the"
+msgid "By using Arxena, you agree to the"
 msgstr "Folosind Twenty, sunteți de acord cu"
 
 #. js-lingui-id: Yx41df
@@ -3681,7 +3681,7 @@ msgstr "Verificați-vă căsuța de e-mail pentru a confirma noua adresă de e-m
 #. js-lingui-id: SxwQE8
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
-msgid "Checkout session error. Please retry or contact Twenty team"
+msgid "Checkout session error. Please retry or contact Arxena team"
 msgstr "Eroare de sesiune de checkout. Te rog să încerci din nou sau contactează echipa Twenty"
 
 #. js-lingui-id: SviKkE
@@ -4285,12 +4285,12 @@ msgstr "Configurați serverul la distanță în setările MCP ale Amazon Q Devel
 
 #. js-lingui-id: g1/8jH
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cascade."
+msgid "Configure the Arxena MCP server manually in Cascade."
 msgstr "Configurați manual serverul Twenty MCP în Cascade."
 
 #. js-lingui-id: XiyvRh
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Configure the Twenty MCP server manually in Cline."
+msgid "Configure the Arxena MCP server manually in Cline."
 msgstr "Configurați manual serverul Twenty MCP în Cline."
 
 #. js-lingui-id: qA9AGQ
@@ -7571,7 +7571,7 @@ msgstr "Eroare la anularea schimbării planului."
 
 #. js-lingui-id: QmR+2U
 #: src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts
-msgid "Error while ending trial period. Please contact Twenty team."
+msgid "Error while ending trial period. Please contact Arxena team."
 msgstr "Eroare la terminarea perioadei de probă. Vă rugăm contactaţi echipa Twenty."
 
 #. js-lingui-id: 5g78zo
@@ -9237,7 +9237,7 @@ msgstr "Ascunde indexurile de sistem"
 
 #. js-lingui-id: 1ETc0T
 #: src/pages/settings/community/SettingsCommunity.tsx
-msgid "Hire a partner to help you implement and customize Twenty."
+msgid "Hire a partner to help you implement and customize Arxena."
 msgstr "Angajați un partener care să vă ajute să implementați și să personalizați Twenty."
 
 #. js-lingui-id: i0qMbr
@@ -13290,7 +13290,7 @@ msgstr "Unul sau mai multe filtre fac referire la câmpuri dezactivate sau șter
 
 #. js-lingui-id: 2l4SGU
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
-msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Twenty on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
+msgid "One subscription provides one enterprise key that powers one production instance and one potential staging or test instance. To run a staging or test environment, install Arxena on a second server, activate it with this same enterprise key, then register that server as a development instance. Development instances unlock enterprise features without extra billing and do not count toward your production seats."
 msgstr "Un abonament oferă o singură cheie enterprise, care alimentează o instanță de producție și o posibilă instanță de staging sau test. Pentru a rula un mediu de staging sau test, instalați Twenty pe un al doilea server, activați-l cu aceeași cheie enterprise, apoi înregistrați acel server ca instanță de dezvoltare. Instanțele de dezvoltare deblochează funcțiile enterprise fără costuri suplimentare de facturare și nu sunt luate în calcul la locurile din producție."
 
 #. js-lingui-id: oFTo3P
@@ -13377,12 +13377,12 @@ msgstr "Deschide ca link"
 
 #. js-lingui-id: n0vVgf
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Claude with the Twenty connector name and MCP URL prefilled."
+msgid "Open Claude with the Arxena connector name and MCP URL prefilled."
 msgstr "Deschideți Claude cu numele conectorului Twenty și URL-ul MCP precompletate."
 
 #. js-lingui-id: +n2jpB
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Cursor's MCP installer with the Twenty remote server config."
+msgid "Open Cursor's MCP installer with the Arxena remote server config."
 msgstr "Deschideți programul de instalare MCP al Cursor cu configurația serverului Twenty la distanță."
 
 #. js-lingui-id: pZZH4Q
@@ -13418,12 +13418,12 @@ msgstr "Deschide înregistrările în"
 
 #. js-lingui-id: q170S2
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Replit with the Twenty remote server config."
+msgid "Open Replit with the Arxena remote server config."
 msgstr "Deschideți Replit cu configurația serverului Twenty la distanță."
 
 #. js-lingui-id: sBd/cl
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
-msgid "Open Twenty's official ChatGPT integration for your workspace."
+msgid "Open Arxena's ChatGPT integration for your workspace."
 msgstr "Deschideți integrarea oficială Twenty cu ChatGPT pentru spațiul dvs. de lucru."
 
 #. js-lingui-id: OV5wZZ
@@ -13707,7 +13707,7 @@ msgstr "Numele paginii"
 
 #. js-lingui-id: NRvxzv
 #: src/pages/not-found/NotFound.tsx
-msgid "Page Not Found | Twenty"
+msgid "Page Not Found | Arxena"
 msgstr "Pagina nu a fost găsită | Twenty"
 
 #. js-lingui-id: sF+Xp9
@@ -17113,7 +17113,7 @@ msgstr "Subdomeniu"
 
 #. js-lingui-id: Sv4BSp
 #: src/modules/settings/billing/constants/SettingsBillingPlanComparisonRows.ts
-msgid "Subdomain (yourco.twenty.com)"
+msgid "Subdomain (yourco.arxena.com)"
 msgstr "Subdomeniu (yourco.twenty.com)"
 
 #. js-lingui-id: mGO3xy
@@ -17210,7 +17210,7 @@ msgstr "Abonament activat."
 #: src/modules/settings/billing/components/AddPaymentMethodForm.tsx
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
 #: src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts
-msgid "Subscription error. Please retry or contact Twenty team"
+msgid "Subscription error. Please retry or contact Arxena team"
 msgstr "Eroare de abonament. Te rog să încerci din nou sau contactează echipa Twenty"
 
 #. js-lingui-id: FooJUj
@@ -17588,11 +17588,11 @@ msgstr "Regiunea AWS pentru Bedrock"
 #. js-lingui-id: HP7per
 #: src/pages/settings/applications/utils/getStandardApplicationDescription.ts
 msgid ""
-"The base data model every Twenty workspace runs on.\n"
+"The base data model every Arxena workspace runs on.\n"
 "\n"
 "#### What \"foundation\" means\n"
 "\n"
-"Every Twenty workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
+"Every Arxena workspace starts with this set of objects. They define the shape of your CRM, including relationships, activity, and reporting. Everything else, including marketplace apps, AI agents, and custom objects, plugs into them.\n"
 "\n"
 "#### Included objects\n"
 "- **People & Companies**: contact and account records\n"
@@ -17600,11 +17600,11 @@ msgid ""
 "- **Notes & Tasks**: activity and follow-ups\n"
 "- **Workflows & Dashboards**: automation and reporting\n"
 "\n"
-"Remove this app and the rest of Twenty has nothing to hang off.\n"
+"Remove this app and the rest of Arxena has nothing to hang off.\n"
 "\n"
 "#### Build your own app\n"
 "\n"
-"Extend Twenty with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
+"Extend Arxena with your own objects, fields, logic functions, or AI skills. Scaffold a new app in one command:\n"
 "\n"
 "```bash\n"
 "npx create-twenty-app@latest my-twenty-app\n"
@@ -17734,7 +17734,7 @@ msgstr "Pagina la care vor fi redirecționați utilizatorii pentru a se dezabona
 
 #. js-lingui-id: Ya1wb4
 #: src/pages/settings/legal/SettingsLegalDpaNew.tsx
-msgid "The PDF is pre-signed by Twenty and executed with your legal entity and authorized signatory."
+msgid "The PDF is pre-signed by Arxena and executed with your legal entity and authorized signatory."
 msgstr "PDF-ul este pre-semnat de Twenty și executat cu entitatea dvs. juridică și semnatarul autorizat."
 
 #. js-lingui-id: wxyrqd
@@ -18616,7 +18616,7 @@ msgstr "Turcoaz"
 
 #. js-lingui-id: JnaRPe
 #: src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx
-msgid "Twenty fields"
+msgid "Arxena fields"
 msgstr "Câmpuri Twenty"
 
 #. js-lingui-id: YIjS4q
@@ -20108,7 +20108,7 @@ msgstr "Pondere"
 
 #. js-lingui-id: nTuObL
 #: src/pages/auth/SignInUp.tsx
-msgid "Welcome to Twenty"
+msgid "Welcome to Arxena"
 msgstr "Bun venit la Twenty"
 
 #. js-lingui-id: t8ZvkC

@@ -109,6 +109,12 @@ export { isFieldMetadataTextKind } from './fieldMetadata/isFieldMetadataTextKind
 export { pickMorphGroupSurvivorOrThrow } from './fieldMetadata/pick-morph-group-survivor-or-throw';
 export { shouldExcludeFieldFromAgentToolSchema } from './fieldMetadata/shouldExcludeFieldFromAgentToolSchema';
 export { extractFolderPathFilenameAndTypeOrThrow } from './files/extractFolderPathFilenameAndTypeOrThrow.util';
+export type { AttachmentDownloadSource } from './files/getAttachmentDownloadUrl';
+export {
+  ATTACHMENT_FILE_FIELD_UNIVERSAL_IDENTIFIER,
+  getAttachmentTargetFieldIdName,
+  getAttachmentDownloadUrl,
+} from './files/getAttachmentDownloadUrl';
 export { checkIfShouldComputeEmptinessFilter } from './filter/checkIfShouldComputeEmptinessFilter';
 export { computeGqlOperationFilterForEmails } from './filter/compute-record-gql-operation-filter/for-composite-field/computeGqlOperationFilterForEmails';
 export { computeGqlOperationFilterForLinks } from './filter/compute-record-gql-operation-filter/for-composite-field/computeGqlOperationFilterForLinks';

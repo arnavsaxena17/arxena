@@ -1,5 +1,6 @@
 import { GmailDraftShortlistJobData } from 'twenty-shared';
 
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { ResumeReadParseUploadService } from 'src/engine/core-modules/candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
@@ -57,9 +58,14 @@ export class GmailDraftShortlistQueueProcessor {
         documentTemplateService,
       );
 
+      const attachmentProcessing = new AttachmentProcessingService(
+        this.staticGraphQLService,
+      );
+
       const emailDraftService = new EmailDraftService(
         this.workspaceQueryService,
         this.staticGraphQLService,
+        attachmentProcessing,
       );
 
       const gmailDraftService = new GmailDraftShortlistService(

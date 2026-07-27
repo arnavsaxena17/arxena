@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import type { InterviewDataJobTemplate, VideoInterviewResponseViewerProps } from 'twenty-shared/arx';
 import { queryByvideoInterview } from 'twenty-shared/graphql';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -59,6 +60,67 @@ const VideoContainer = styled.div`
   max-width: 800px;
   margin: 10px 0;
 `;
+
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'avi'];
+
+type AttachmentNode = {
+  type?: string | null;
+  fullPath?: string | null;
+  file?: Array<{ url?: string | null; extension?: string | null } | null> | null;
+};
+
+const isVideoAttachmentNode = (node: AttachmentNode | null | undefined) => {
+  if (!node) {
+    return false;
+  }
+
+  if (node.type === 'Video') {
+    return true;
+  }
+
+  const attachmentUrl = getAttachmentDownloadUrl(node);
+
+  if (attachmentUrl) {
+    return VIDEO_EXTENSIONS.some((extension) =>
+      attachmentUrl.toLowerCase().includes(`.${extension}`),
+    );
+  }
+
+  const fileExtension = node.file?.[0]?.extension?.toLowerCase();
+
+  return fileExtension
+    ? VIDEO_EXTENSIONS.includes(fileExtension)
+    : false;
+};
+
+const cleanVideoAttachmentUrl = (attachmentUrl: string) => {
+  if (!attachmentUrl) {
+    return '';
+  }
+
+  try {
+    let urlStr = attachmentUrl;
+    const firstTokenIndex = urlStr.indexOf('?token=');
+
+    if (firstTokenIndex !== -1) {
+      urlStr = urlStr.substring(0, urlStr.indexOf('?', firstTokenIndex + 1));
+    }
+
+    console.log('Cleaned video attachment path:', urlStr);
+    return urlStr;
+  } catch (error) {
+    console.error('Error cleaning video attachment path:', error);
+    return attachmentUrl;
+  }
+};
+
+const cleanVideoAttachmentPath = (videoAttachment: {
+  node: AttachmentNode;
+}) => {
+  const attachmentUrl = getAttachmentDownloadUrl(videoAttachment.node);
+
+  return attachmentUrl ? cleanVideoAttachmentUrl(attachmentUrl) : '';
+};
 
 
 
@@ -205,17 +267,21 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         console.log(`Responses matching for question ID: matchingResponses`, matchingResponses);
         matchingResponses.forEach(({ node: response }) => {
             const videoAttachment = response?.attachments?.edges?.find(
-              edge => edge?.node?.type === 'Video' || 
-              ['mp4', 'webm', 'avi'].some(ext => edge?.node?.fullPath.endsWith(ext))
+              (edge) => isVideoAttachmentNode(edge?.node),
             );
 
-            // Clean up duplicate tokens if found
-            if (videoAttachment?.node?.fullPath) {
-              const url = new URL(videoAttachment.node.fullPath);
+            const attachmentUrl = getAttachmentDownloadUrl(
+              videoAttachment?.node,
+            );
+
+            if (attachmentUrl) {
+              const url = new URL(attachmentUrl);
               const firstToken = url.searchParams.get('token');
               url.search = firstToken ? `?token=${firstToken}` : '';
-              videoAttachment.node.fullPath = url.toString();
-              console.log("videoAttachment.node.fullPath::", videoAttachment.node.fullPath);
+              console.log(
+                'videoAttachment download url::',
+                url.toString(),
+              );
             }
 
             console.log("videoAttachment::", videoAttachment);
@@ -227,24 +293,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     });
   }
 
-
-  const cleanVideoAttachmentPath = (videoAttachment: { node: { fullPath: string } }) => {
-    if (!videoAttachment?.node?.fullPath) return '';
-    
-    try {
-      let urlStr = videoAttachment.node.fullPath;
-      // Remove any additional "?token=" parameters after the first one
-      const firstTokenIndex = urlStr.indexOf('?token=');
-      if (firstTokenIndex !== -1) {
-        urlStr = urlStr.substring(0, urlStr.indexOf('?', firstTokenIndex + 1));
-      }
-      console.log('Cleaned video attachment path:', urlStr);
-      return urlStr;
-    } catch (error) {
-      console.error('Error cleaning video attachment path:', error);
-      return videoAttachment.node.fullPath;
-    }
-  };
 
   return (
     <StyledContainer>
@@ -266,8 +314,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
       
             {matchingResponses.map(({ node: response }) => {
                 const videoAttachment = response.attachments.edges.find(
-                edge => edge.node.type === 'Video' || 
-                ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
+                (edge) => isVideoAttachmentNode(edge.node),
                 );
                 const videoUrl = videoAttachment ? cleanVideoAttachmentPath(videoAttachment) : '';
                 console.log("videoUrl::", videoUrl);

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+    getAttachmentDownloadUrl,
     getResolvedOtherFields,
     graphqlToFetchAllCandidateDataWithFieldValues,
     otherFieldsToFlatRow,
@@ -16,6 +17,8 @@ export type CandidateAttachmentMeta = {
   id?: string;
   name?: string;
   fullPath?: string;
+  downloadUrl?: string | null;
+  file?: Array<{ fileId?: string; label?: string; url?: string | null } | null>;
   fileCategory?: string;
   /** @deprecated Prefer fileCategory */
   type?: string;
@@ -175,11 +178,16 @@ export class CandidateDataService {
     workspaceId: string,
   ): Promise<string | null> {
     const attachment = this.pickResumeAttachment(candidate._attachments || []);
-    if (!attachment?.fullPath) {
+    if (!attachment) {
       return null;
     }
 
-    const normalizedPath = this.normalizeAttachmentPath(attachment.fullPath);
+    const downloadUrl = getAttachmentDownloadUrl(attachment);
+    if (!downloadUrl) {
+      return null;
+    }
+
+    const normalizedPath = this.normalizeAttachmentPath(downloadUrl);
     const fileName =
       attachment.name ||
       normalizedPath.split('/').pop() ||
@@ -229,13 +237,20 @@ export class CandidateDataService {
   private pickResumeAttachment(
     attachments: CandidateAttachmentMeta[],
   ): CandidateAttachmentMeta | null {
-    const withPath = attachments.filter((att) => Boolean(att?.fullPath));
+    const withPath = attachments.filter(
+      (attachment) => Boolean(getAttachmentDownloadUrl(attachment)),
+    );
     if (withPath.length === 0) {
       return null;
     }
 
-    const byExtension = withPath.find((att) => {
-      const name = (att.name || att.fullPath || '').toLowerCase();
+    const byExtension = withPath.find((attachment) => {
+      const name = (
+        attachment.name ||
+        attachment.downloadUrl ||
+        attachment.fullPath ||
+        ''
+      ).toLowerCase();
       return RESUME_EXTENSIONS.some((ext) => name.includes(ext));
     });
 
@@ -288,12 +303,14 @@ export class CandidateDataService {
       )
         .map((edge: any) => edge?.node)
         .filter(Boolean)
-        .map((node: any) => ({
-          id: node.id,
-          name: node.name,
-          fullPath: node.fullPath,
-          fileCategory: node.fileCategory,
-          type: node.fileCategory,
+        .map((node: Record<string, unknown>) => ({
+          id: node.id as string | undefined,
+          name: node.name as string | undefined,
+          fullPath: node.fullPath as string | undefined,
+          downloadUrl: getAttachmentDownloadUrl(node),
+          file: node.file as CandidateAttachmentMeta['file'],
+          fileCategory: node.fileCategory as string | undefined,
+          type: node.fileCategory as string | undefined,
         }));
 
       const baseData: CandidateData = {

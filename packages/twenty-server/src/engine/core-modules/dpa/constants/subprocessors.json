@@ -3,7 +3,7 @@
     {
       "name": "Amazon Web Services",
       "services": [
-        "Amazon Web Services (AWS) provides the cloud infrastructure on which the Twenty CRM runs — compute, managed databases, object storage, and encrypted backups. AWS is Twenty's primary hosting provider."
+        "Amazon Web Services (AWS) provides the cloud infrastructure on which the Arxena CRM runs — compute, managed databases, object storage, and encrypted backups. AWS is Arxena's primary hosting provider."
       ],
       "processingLocations": ["DE"],
       "processesPii": true,
@@ -12,7 +12,7 @@
     {
       "name": "Anthropic",
       "services": [
-        "Anthropic provides large language models that power Twenty's optional AI features, such as drafting, summarization, and data enrichment."
+        "Anthropic provides large language models that power Arxena's optional AI features, such as drafting, summarization, and data enrichment."
       ],
       "processingLocations": ["US"],
       "processesPii": true,
@@ -21,7 +21,7 @@
     {
       "name": "ClickHouse",
       "services": [
-        "ClickHouse provides the analytical database Twenty uses to store audit logs and power in-product analytics and reporting."
+        "ClickHouse provides the analytical database Arxena uses to store audit logs and power in-product analytics and reporting."
       ],
       "processingLocations": ["DE"],
       "processesPii": true,
@@ -30,7 +30,7 @@
     {
       "name": "Cloudflare",
       "services": [
-        "Cloudflare provides Twenty's content delivery network, DNS, and web application firewall, securing and accelerating traffic to the service. It does not retain Customer Personal Data on a long-term basis."
+        "Cloudflare provides Arxena's content delivery network, DNS, and web application firewall, securing and accelerating traffic to the service. It does not retain Customer Personal Data on a long-term basis."
       ],
       "processingLocations": ["US", "EU"],
       "processesPii": false,
@@ -39,7 +39,7 @@
     {
       "name": "Google Cloud Platform",
       "services": [
-        "Google Cloud Platform provides specific Google services that Twenty integrates, such as Maps and Google sign-in."
+        "Google Cloud Platform provides specific Google services that Arxena integrates, such as Maps and Google sign-in."
       ],
       "processingLocations": ["US", "EU"],
       "processesPii": true,
@@ -48,7 +48,7 @@
     {
       "name": "Mistral",
       "services": [
-        "Mistral AI provides large language models that power Twenty's optional AI features. The AI provider used depends on the model configured for the workspace."
+        "Mistral AI provides large language models that power Arxena's optional AI features. The AI provider used depends on the model configured for the workspace."
       ],
       "processingLocations": [],
       "processesPii": false
@@ -56,7 +56,7 @@
     {
       "name": "OpenAI",
       "services": [
-        "OpenAI provides large language models that power Twenty's optional AI features. The AI provider used depends on the model configured for the workspace."
+        "OpenAI provides large language models that power Arxena's optional AI features. The AI provider used depends on the model configured for the workspace."
       ],
       "processingLocations": [],
       "processesPii": false,
@@ -65,7 +65,7 @@
     {
       "name": "Sentry",
       "services": [
-        "Sentry provides application error and performance monitoring, helping Twenty detect, diagnose, and resolve issues in the service."
+        "Sentry provides application error and performance monitoring, helping Arxena detect, diagnose, and resolve issues in the service."
       ],
       "processingLocations": ["US", "EU"],
       "processesPii": true,

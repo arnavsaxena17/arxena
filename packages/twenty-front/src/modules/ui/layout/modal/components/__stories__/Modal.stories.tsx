@@ -65,7 +65,7 @@ export const Default: Story = {
           that I expect you to, anyways. :)
         </ModalContent>
         <ModalFooter>
-          By using Twenty, you're opting for the finest CRM experience you'll
+          By using Arxena, you're opting for the finest CRM experience you'll
           ever encounter.
         </ModalFooter>
       </>

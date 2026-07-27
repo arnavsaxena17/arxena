@@ -6,13 +6,17 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
-import { type BillingEntitlementKey } from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
+import {
+  isFreeBillingEntitlement,
+  type BillingEntitlementKey,
+} from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
 import { BillingProductService } from 'src/engine/core-modules/billing/services/billing-product.service';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { StripeCustomerService } from 'src/engine/core-modules/billing/stripe/services/stripe-customer.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+
 @Injectable()
 export class BillingService {
   protected readonly logger = new Logger(BillingService.name);
@@ -73,6 +77,10 @@ export class BillingService {
     workspaceId: string,
     entitlementKey: BillingEntitlementKey,
   ) {
+    if (isFreeBillingEntitlement(entitlementKey)) {
+      return true;
+    }
+
     const isBillingEnabled = this.isBillingEnabled();
 
     if (!isBillingEnabled) {

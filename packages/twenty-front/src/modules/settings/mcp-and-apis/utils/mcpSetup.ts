@@ -69,7 +69,7 @@ export const buildGooseInstallLink = (mcpServerUrl: string) => {
     timeout: '300',
     id: MCP_SETUP.server.name,
     name: MCP_SETUP.server.displayName,
-    description: 'Access your Twenty workspace through MCP',
+    description: 'Access your Arxena workspace through MCP',
   });
 
   params.append(

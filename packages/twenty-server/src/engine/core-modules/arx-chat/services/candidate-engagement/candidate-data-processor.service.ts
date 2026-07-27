@@ -4,6 +4,8 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
 import {
     findManyAttachmentsQuery,
+    getAttachmentDownloadUrl,
+    getAttachmentTargetFieldIdName,
     getResolvedOtherFields,
     graphQltoUpdateOneCandidate,
     graphqlToFetchAllCandidateDataWithFieldValues,
@@ -40,8 +42,8 @@ export interface ProcessedCandidateData {
 export interface CandidateAttachment {
   id: string;
   name: string;
-  fullPath: string;
-  type: string;
+  downloadUrl: string | null;
+  fileCategory: string;
 }
 
 export interface CandidateMessage {
@@ -305,21 +307,25 @@ export class CandidateDataProcessorService {
     apiToken: string,
   ): Promise<CandidateAttachment[]> {
     try {
+      const targetCandidateFieldIdName =
+        getAttachmentTargetFieldIdName('candidate');
       const response = await this.staticGraphQLService.executeGraphQL(
         findManyAttachmentsQuery,
         {
-          filter: { candidateId: { eq: candidateId } },
+          filter: { [targetCandidateFieldIdName]: { eq: candidateId } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
         },
         apiToken,
       );
 
-      return response?.data?.data?.attachments?.edges?.map((edge: any) => ({
-        id: edge.node.id,
-        name: edge.node.name,
-        fullPath: edge.node.fullPath,
-        type: edge.node.type,
-      })) || [];
+      return (
+        response?.data?.data?.attachments?.edges?.map((edge: { node: Record<string, unknown> }) => ({
+          id: edge.node.id as string,
+          name: edge.node.name as string,
+          downloadUrl: getAttachmentDownloadUrl(edge.node),
+          fileCategory: (edge.node.fileCategory as string) || 'TEXT_DOCUMENT',
+        })) || []
+      );
     } catch (error) {
       console.error(`Error fetching attachments for candidate ${candidateId}:`, error);
       return [];
@@ -459,8 +465,9 @@ export class CandidateDataProcessorService {
     try {
       // First fetch attachments to find audio files
       const attachments = await this.fetchAttachments(candidateId, apiToken);
-      const audioFiles = attachments.filter(attachment => {
-        const extension = attachment.fullPath.split('?')[0].split('.').pop()?.toLowerCase();
+      const audioFiles = attachments.filter((attachment) => {
+        const downloadUrl = attachment.downloadUrl || '';
+        const extension = downloadUrl.split('?')[0].split('.').pop()?.toLowerCase();
         return ['mp3', 'wav', 'mp4', 'm4a'].includes(extension || '');
       });
 
@@ -789,14 +796,14 @@ export class CandidateDataProcessorService {
 
       // Find the first attachment (assuming it's the resume)
       const attachment = attachments[0];
-      if (!attachment.fullPath) {
+      if (!attachment.downloadUrl) {
         console.log(`No valid attachment path for candidate: ${candidateName}`);
         return '';
       }
 
       // Download and process the resume file
       const resumeContent = await this.downloadAndProcessResume(
-        attachment.fullPath,
+        attachment.downloadUrl,
         attachment.name,
         candidateId,
         candidateName,
@@ -811,15 +818,14 @@ export class CandidateDataProcessorService {
   }
 
   private async downloadAndProcessResume(
-    fullPath: string,
+    downloadUrl: string,
     fileName: string,
     candidateId: string,
     candidateName: string,
     apiToken: string,
   ): Promise<string> {
     try {
-      // Download the resume file
-      const response = await fetch(fullPath, {
+      const response = await fetch(downloadUrl, {
         headers: {
           Authorization: `Bearer ${apiToken}`,
           'Content-Type': 'application/json',

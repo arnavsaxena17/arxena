@@ -1,7 +1,8 @@
 import VideoDownloaderPlayer from '@/video-interview/interview-response/VideoDownloaderPlayer';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React from 'react';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
   background-color: white;
@@ -72,14 +73,16 @@ type VideoInterviewTabProps = {
   isLoading: boolean;
 };
 
-// Define types for the video interview data structure
+type AttachmentNode = {
+  id: string;
+  type: string;
+  name: string;
+  fullPath?: string | null;
+  file?: Array<{ url?: string | null; extension?: string | null } | null> | null;
+};
+
 type VideoAttachment = {
-  node: {
-    id: string;
-    type: string;
-    fullPath: string;
-    name: string;
-  };
+  node: AttachmentNode;
 };
 
 type VideoResponse = {
@@ -102,20 +105,47 @@ type QuestionWithResponses = {
   responses: VideoResponse[];
 };
 
-const cleanVideoAttachmentPath = (videoAttachment: { node: { fullPath: string } }) => {
-  if (!videoAttachment?.node?.fullPath) return '';
-  
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'avi'];
+
+const isVideoAttachmentNode = (node: AttachmentNode) => {
+  if (node.type === 'Video') {
+    return true;
+  }
+
+  const attachmentUrl = getAttachmentDownloadUrl(node);
+
+  if (attachmentUrl) {
+    return VIDEO_EXTENSIONS.some((extension) =>
+      attachmentUrl.toLowerCase().includes(`.${extension}`),
+    );
+  }
+
+  const fileExtension = node.file?.[0]?.extension?.toLowerCase();
+
+  return fileExtension
+    ? VIDEO_EXTENSIONS.includes(fileExtension)
+    : false;
+};
+
+const cleanVideoAttachmentPath = (videoAttachment: VideoAttachment) => {
+  const attachmentUrl = getAttachmentDownloadUrl(videoAttachment.node);
+
+  if (!attachmentUrl) {
+    return '';
+  }
+
   try {
-    let urlStr = videoAttachment.node.fullPath;
-    // Remove any additional "?token=" parameters after the first one
+    let urlStr = attachmentUrl;
     const firstTokenIndex = urlStr.indexOf('?token=');
+
     if (firstTokenIndex !== -1) {
       urlStr = urlStr.substring(0, urlStr.indexOf('?', firstTokenIndex + 1));
     }
+
     return urlStr;
   } catch (error) {
     console.error('Error cleaning video attachment path:', error);
-    return videoAttachment.node.fullPath;
+    return attachmentUrl;
   }
 };
 
@@ -126,39 +156,54 @@ const VideoInterviewTab: React.FC<VideoInterviewTabProps> = ({
   if (isLoading) {
     return <EmptyState>Loading video interview data...</EmptyState>;
   }
-  
+
   if (!candidateData) {
     return <EmptyState>No candidate data available</EmptyState>;
   }
-  
+
   const videoInterviewResponses = candidateData.videoInterviewResponse?.edges || [];
   const videoInterview = candidateData.videoInterview?.edges?.[0]?.node;
-  const videoInterviewQuestions = videoInterview?.videoInterviewTemplate?.videoInterviewQuestions?.edges || [];
-  
-  if (videoInterviewResponses.length === 0) {
-    return <EmptyState>No video interview responses available for this candidate</EmptyState>;
-  }
-  
-  // Match responses with questions
-  const questionsWithResponses = videoInterviewQuestions.map((questionEdge: any) => {
-    const question = questionEdge.node;
-    const matchingResponses = videoInterviewResponses.filter(
-      (responseEdge: any) => responseEdge.node.videoInterviewQuestionId === question.id
-    );
-    
-    return {
-      question,
-      responses: matchingResponses.map((responseEdge: any) => responseEdge.node),
-    };
-  });
+  const videoInterviewQuestions =
+    videoInterview?.videoInterviewTemplate?.videoInterviewQuestions?.edges ||
+    [];
 
-  // Check if there are any responses at all after filtering
+  if (videoInterviewResponses.length === 0) {
+    return (
+      <EmptyState>
+        No video interview responses available for this candidate
+      </EmptyState>
+    );
+  }
+
+  const questionsWithResponses = videoInterviewQuestions.map(
+    (questionEdge: any) => {
+      const question = questionEdge.node;
+      const matchingResponses = videoInterviewResponses.filter(
+        (responseEdge: any) =>
+          responseEdge.node.videoInterviewQuestionId === question.id,
+      );
+
+      return {
+        question,
+        responses: matchingResponses.map(
+          (responseEdge: any) => responseEdge.node,
+        ),
+      };
+    },
+  );
+
   const hasAnyResponses = questionsWithResponses.some(
-    (item: QuestionWithResponses) => item.responses && item.responses.length > 0
+    (item: QuestionWithResponses) =>
+      item.responses && item.responses.length > 0,
   );
 
   if (!hasAnyResponses) {
-    return <EmptyState>No matching video responses found for this candidate's interview questions</EmptyState>;
+    return (
+      <EmptyState>
+        No matching video responses found for this candidate&apos;s interview
+        questions
+      </EmptyState>
+    );
   }
 
   return (
@@ -168,36 +213,39 @@ const VideoInterviewTab: React.FC<VideoInterviewTabProps> = ({
         <h3>{candidateData.projects?.name || 'Project'}</h3>
       </CompanyInfo>
 
-      {questionsWithResponses.map(({ question, responses }: QuestionWithResponses, index: number) => (
-        <QuestionContainer key={question?.id || index}>
-          <QuestionText>
-            Question {index + 1}: {question?.questionValue || 'Unknown Question'}
-          </QuestionText>
-          
-          {responses.map((response: VideoResponse) => {
-            const videoAttachment = response.attachments?.edges?.find(
-              (edge: VideoAttachment) => edge.node.type === 'Video' || 
-              ['mp4', 'webm', 'avi'].some(ext => edge.node.fullPath.endsWith(ext))
-            );
-            
-            const videoUrl = videoAttachment ? cleanVideoAttachmentPath(videoAttachment) : '';
-            
-            return videoAttachment ? (
-              <VideoContainer key={response.id}>
-                <VideoDownloaderPlayer videoUrl={videoUrl} />
-                {response.transcript && (
-                  <TranscriptContainer>
-                    <TranscriptHeading>Transcript</TranscriptHeading>
-                    <TranscriptText>{response.transcript}</TranscriptText>
-                  </TranscriptContainer>
-                )}
-              </VideoContainer>
-            ) : null;
-          })}
-        </QuestionContainer>
-      ))}
+      {questionsWithResponses.map(
+        ({ question, responses }: QuestionWithResponses, index: number) => (
+          <QuestionContainer key={question?.id || index}>
+            <QuestionText>
+              Question {index + 1}: {question?.questionValue || 'Unknown Question'}
+            </QuestionText>
+
+            {responses.map((response: VideoResponse) => {
+              const videoAttachment = response.attachments?.edges?.find(
+                (edge: VideoAttachment) => isVideoAttachmentNode(edge.node),
+              );
+
+              const videoUrl = videoAttachment
+                ? cleanVideoAttachmentPath(videoAttachment)
+                : '';
+
+              return videoAttachment ? (
+                <VideoContainer key={response.id}>
+                  <VideoDownloaderPlayer videoUrl={videoUrl} />
+                  {response.transcript && (
+                    <TranscriptContainer>
+                      <TranscriptHeading>Transcript</TranscriptHeading>
+                      <TranscriptText>{response.transcript}</TranscriptText>
+                    </TranscriptContainer>
+                  )}
+                </VideoContainer>
+              ) : null;
+            })}
+          </QuestionContainer>
+        ),
+      )}
     </StyledContainer>
   );
 };
 
-export default VideoInterviewTab; 
+export default VideoInterviewTab;

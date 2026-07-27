@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import * as path from 'path';
 import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
-import { findManyAttachmentsQuery } from 'twenty-shared';
+import { findManyAttachmentsQuery, getAttachmentDownloadUrl, getAttachmentTargetFieldIdName } from 'twenty-shared';
 import { JDParserService } from '../../candidate-sourcing/services/jd-parser.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
@@ -146,10 +146,11 @@ export class JobDescriptionService {
       this.logger.log(`Fetching JD content from job attachments for projectId: ${projectId}`);
 
       // Fetch job attachments
+      const targetProjectFieldIdName = getAttachmentTargetFieldIdName('project');
       const response = await this.staticGraphQLService.executeGraphQL(
         findManyAttachmentsQuery,
         {
-          filter: { projectId: { eq: projectId } },
+          filter: { [targetProjectFieldIdName]: { eq: projectId } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
         },
         apiToken,
@@ -164,14 +165,14 @@ export class JobDescriptionService {
 
       // Get the first attachment (assuming it's the JD file)
       const attachment = attachments[0].node;
-      if (!attachment.fullPath) {
+      const downloadUrl = getAttachmentDownloadUrl(attachment);
+      if (!downloadUrl) {
         this.logger.log(`No valid attachment path for projectId: ${projectId}`);
         return '';
       }
 
-      // Download and process the JD file
       const jdContent = await this.downloadAndProcessJD(
-        attachment.fullPath,
+        downloadUrl,
         attachment.name,
         projectId,
         apiToken,
@@ -188,14 +189,13 @@ export class JobDescriptionService {
    * Download and process JD file from fullPath
    */
   async downloadAndProcessJD(
-    fullPath: string,
+    downloadUrl: string,
     fileName: string,
     projectId: string,
     apiToken: string,
   ): Promise<string> {
     try {
-      // Download the JD file
-      const response = await fetch(fullPath, {
+      const response = await fetch(downloadUrl, {
         headers: {
           Authorization: `Bearer ${apiToken}`,
           'Content-Type': 'application/json',

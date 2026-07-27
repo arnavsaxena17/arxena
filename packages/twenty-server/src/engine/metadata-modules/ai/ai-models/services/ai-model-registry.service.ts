@@ -14,6 +14,7 @@ import {
 import { AiModelPreferencesService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-preferences.service';
 import { ProviderConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/provider-config.service';
 import { SdkProviderFactoryService } from 'src/engine/metadata-modules/ai/ai-models/services/sdk-provider-factory.service';
+import { AiProviderCredentialsService } from 'src/engine/metadata-modules/ai/ai-provider-credentials/services/ai-provider-credentials.service';
 import { type AiModelConfig } from 'src/engine/metadata-modules/ai/ai-models/types/ai-model-config.type';
 import { type AiProviderConfig } from 'src/engine/metadata-modules/ai/ai-models/types/ai-provider-config.type';
 import { type AiProviderModelConfig } from 'src/engine/metadata-modules/ai/ai-models/types/ai-provider-model-config.type';
@@ -42,6 +43,7 @@ export interface RegisteredAiModel {
   supportsReasoning?: boolean;
   providerName?: string;
   modelsDevName?: string;
+  rawProvider: unknown;
 }
 
 @Injectable()
@@ -49,6 +51,7 @@ export class AiModelRegistryService {
   private readonly logger = new Logger(AiModelRegistryService.name);
   private modelRegistry: Map<string, RegisteredAiModel> = new Map();
   private modelConfigCache: Map<string, AiModelConfig> = new Map();
+  private resolvedProvidersCache: AiProvidersConfig | null = null;
   private providerModelDefCache: Map<
     string,
     { providerName: string; modelDef: AiProviderModelConfig }
@@ -60,6 +63,7 @@ export class AiModelRegistryService {
     private readonly sdkProviderFactory: SdkProviderFactoryService,
     private readonly preferencesService: AiModelPreferencesService,
     private readonly configGroupHashService: ConfigGroupHashService,
+    private readonly aiProviderCredentialsService: AiProviderCredentialsService,
   ) {}
 
   // The registry is rebuilt lazily whenever the LLM-group config hash changes,
@@ -85,6 +89,8 @@ export class AiModelRegistryService {
     this.providerModelDefCache.clear();
 
     const providers = this.providerConfigService.getResolvedProviders();
+
+    this.resolvedProvidersCache = providers;
 
     this.registerModelsFromProviders(providers);
   }
@@ -129,6 +135,7 @@ export class AiModelRegistryService {
             supportsReasoning: modelDef.supportsReasoning,
             providerName: providerKey,
             modelsDevName: config.name,
+            rawProvider: sdkInstance.rawProvider,
           });
         }
       }
@@ -421,5 +428,158 @@ export class AiModelRegistryService {
     }
 
     return registeredModel;
+  }
+
+  getProviderNameForModelId(modelId: string): string | undefined {
+    this.ensureFresh();
+    return this.providerModelDefCache.get(modelId)?.providerName;
+  }
+
+  private async resolveAutoSelectModelForWorkspace(
+    requestedModelId: string,
+    workspaceId: string,
+    hasByoForProvider: (providerName: string) => Promise<boolean>,
+  ): Promise<string> {
+    const prefs = this.preferencesService.getPreferences();
+    const preferenceKey =
+      requestedModelId === AUTO_SELECT_FAST_MODEL_ID
+        ? 'defaultFastModels'
+        : 'defaultSmartModels';
+
+    const candidates = prefs[preferenceKey] ?? [];
+
+    for (const candidateModelId of candidates) {
+      const providerName = this.getProviderNameForModelId(candidateModelId);
+
+      if (providerName && (await hasByoForProvider(providerName))) {
+        return candidateModelId;
+      }
+
+      if (this.modelRegistry.has(candidateModelId)) {
+        return candidateModelId;
+      }
+    }
+
+    // If the workspace has BYO keys but the default lists don't match,
+    // fall back to "first BYO provider model in catalog".
+    for (const [candidateModelId, providerDef] of this.providerModelDefCache.entries()) {
+      if (await hasByoForProvider(providerDef.providerName)) {
+        return candidateModelId;
+      }
+    }
+
+    throw new AiException(
+      'No AI models are available for this workspace.',
+      AiExceptionCode.API_KEY_NOT_CONFIGURED,
+    );
+  }
+
+  async resolveModelIdForWorkspace(
+    requestedModelId: string,
+    workspaceId: string,
+  ): Promise<string> {
+    this.ensureFresh();
+
+    const apiKeyByProviderCache = new Map<string, boolean>();
+
+    const hasByoForProvider = async (providerName: string): Promise<boolean> => {
+      if (apiKeyByProviderCache.has(providerName)) {
+        return apiKeyByProviderCache.get(providerName) ?? false;
+      }
+
+      const hasByo = await this.aiProviderCredentialsService.hasApiKeyConfigured(
+        workspaceId,
+        providerName,
+      );
+
+      apiKeyByProviderCache.set(providerName, hasByo);
+      return hasByo;
+    };
+
+    if (!isAutoSelectModelId(requestedModelId)) {
+      return requestedModelId;
+    }
+
+    return this.resolveAutoSelectModelForWorkspace(
+      requestedModelId,
+      workspaceId,
+      hasByoForProvider,
+    );
+  }
+
+  async resolveModelForAgentInWorkspace(
+    agent: { modelId: string } | null,
+    workspaceId: string,
+  ): Promise<RegisteredAiModel> {
+    const requestedModelId = agent?.modelId ?? AUTO_SELECT_SMART_MODEL_ID;
+    this.ensureFresh();
+    const workspaceApiKeyByProviderCache = new Map<string, boolean>();
+
+    const hasByoForProvider = async (providerName: string): Promise<boolean> => {
+      if (workspaceApiKeyByProviderCache.has(providerName)) {
+        return workspaceApiKeyByProviderCache.get(providerName) ?? false;
+      }
+
+      const hasByo = await this.aiProviderCredentialsService.hasApiKeyConfigured(
+        workspaceId,
+        providerName,
+      );
+
+      workspaceApiKeyByProviderCache.set(providerName, hasByo);
+      return hasByo;
+    };
+
+    const effectiveModelId = isAutoSelectModelId(requestedModelId)
+      ? await this.resolveAutoSelectModelForWorkspace(
+          requestedModelId,
+          workspaceId,
+          hasByoForProvider,
+        )
+      : requestedModelId;
+
+    const providerDef = this.providerModelDefCache.get(effectiveModelId);
+
+    if (!providerDef) {
+      throw new AiException(
+        `Model ${effectiveModelId} not found in registry.`,
+        AiExceptionCode.AGENT_EXECUTION_FAILED,
+      );
+    }
+
+    const { providerName, modelDef } = providerDef;
+
+    const resolvedProviders = this.resolvedProvidersCache ?? {};
+    const baseProviderConfig = resolvedProviders[providerName];
+
+    if (!baseProviderConfig) {
+      throw new AiException(
+        `AI provider "${providerName}" not found for model ${effectiveModelId}.`,
+        AiExceptionCode.AGENT_EXECUTION_FAILED,
+      );
+    }
+
+    const workspaceApiKey = await this.aiProviderCredentialsService.getApiKeyForWorkspace(
+      workspaceId,
+      providerName,
+    );
+
+    const providerConfig: AiProviderConfig = workspaceApiKey
+      ? { ...baseProviderConfig, apiKey: workspaceApiKey }
+      : baseProviderConfig;
+
+    const sdkProviderInstance = this.sdkProviderFactory.createProvider(
+      providerName,
+      providerConfig,
+    );
+
+    return {
+      modelId: effectiveModelId,
+      sdkPackage: providerConfig.npm,
+      model: sdkProviderInstance.createModel(modelDef.name),
+      supportsReasoning: modelDef.supportsReasoning,
+      providerName,
+      modelsDevName: providerConfig.name,
+      rawProvider: sdkProviderInstance.rawProvider,
+    };
   }
 }

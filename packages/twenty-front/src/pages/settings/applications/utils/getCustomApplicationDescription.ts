@@ -23,4 +23,4 @@ Scaffold a new app in one command:
 npx create-twenty-app@latest my-twenty-app
 \`\`\`
 
-See the [Getting Started guide](https://twenty.com/developers/extend/apps/getting-started) for the full walkthrough, and [Building Apps](https://twenty.com/developers/extend/apps/building) for the \`defineApplication\` / \`defineEntity\` APIs.`;
+See the [Getting Started guide](https://arxena.com) for the full walkthrough, and [Building Apps](https://arxena.com) for the \`defineApplication\` / \`defineEntity\` APIs.`;

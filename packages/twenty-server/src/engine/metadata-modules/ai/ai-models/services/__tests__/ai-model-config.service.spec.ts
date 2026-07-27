@@ -11,7 +11,6 @@ import {
   AiModelRegistryService,
   type RegisteredAiModel,
 } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
-import { SdkProviderFactoryService } from 'src/engine/metadata-modules/ai/ai-models/services/sdk-provider-factory.service';
 
 const XAI_WEB_TOOL = { __tool: 'xai-web-search' };
 const XAI_X_TOOL = { __tool: 'xai-x-search' };
@@ -20,45 +19,23 @@ const OPENAI_WEB_TOOL = { __tool: 'openai-web-search' };
 
 describe('AiModelConfigService.getNativeModelTools — tool-based native search', () => {
   let service: AiModelConfigService;
-  let sdkProviderFactory: {
-    getRawXaiProvider: jest.Mock;
-    getRawAnthropicProvider: jest.Mock;
-    getRawOpenAIProvider: jest.Mock;
-  };
 
   const xaiModel: RegisteredAiModel = {
     modelId: 'xai/grok-4',
     sdkPackage: AI_SDK_XAI,
     model: {} as RegisteredAiModel['model'],
     providerName: 'xai',
+    rawProvider: {
+      tools: {
+        webSearch: jest.fn().mockReturnValue(XAI_WEB_TOOL),
+        xSearch: jest.fn().mockReturnValue(XAI_X_TOOL),
+      },
+    },
   };
 
   beforeEach(async () => {
-    sdkProviderFactory = {
-      getRawXaiProvider: jest.fn().mockReturnValue({
-        tools: {
-          webSearch: jest.fn().mockReturnValue(XAI_WEB_TOOL),
-          xSearch: jest.fn().mockReturnValue(XAI_X_TOOL),
-        },
-      }),
-      getRawAnthropicProvider: jest.fn().mockReturnValue({
-        tools: {
-          webSearch_20250305: jest.fn().mockReturnValue(ANTHROPIC_WEB_TOOL),
-        },
-      }),
-      getRawOpenAIProvider: jest.fn().mockReturnValue({
-        tools: {
-          webSearch: jest.fn().mockReturnValue(OPENAI_WEB_TOOL),
-        },
-      }),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AiModelConfigService,
-        { provide: AiModelRegistryService, useValue: {} },
-        { provide: SdkProviderFactoryService, useValue: sdkProviderFactory },
-      ],
+      providers: [AiModelConfigService],
     }).compile();
 
     service = module.get<AiModelConfigService>(AiModelConfigService);
@@ -107,31 +84,36 @@ describe('AiModelConfigService.getNativeModelTools — tool-based native search'
     });
   });
 
-  it('binds no tools when the xAI provider cannot be resolved', () => {
-    sdkProviderFactory.getRawXaiProvider.mockReturnValueOnce(undefined);
+  it('binds no tools when the xAI raw provider is missing', () => {
+    const modelWithoutRawProvider: RegisteredAiModel = {
+      modelId: 'xai/grok-4',
+      sdkPackage: AI_SDK_XAI,
+      model: {} as RegisteredAiModel['model'],
+      rawProvider: undefined,
+    };
 
     expect(
-      service.getNativeModelTools(xaiModel, {
+      service.getNativeModelTools(modelWithoutRawProvider, {
         webSearch: true,
         twitterSearch: true,
       }),
     ).toEqual({});
   });
 
-  it('binds no tools when the model has no resolved providerName', () => {
-    const modelWithoutProvider: RegisteredAiModel = {
+  it('binds no tools when the model raw provider is missing', () => {
+    const modelWithoutRawProvider: RegisteredAiModel = {
       modelId: 'xai/grok-4',
       sdkPackage: AI_SDK_XAI,
       model: {} as RegisteredAiModel['model'],
+      rawProvider: undefined,
     };
 
     expect(
-      service.getNativeModelTools(modelWithoutProvider, {
+      service.getNativeModelTools(modelWithoutRawProvider, {
         webSearch: true,
         twitterSearch: true,
       }),
     ).toEqual({});
-    expect(sdkProviderFactory.getRawXaiProvider).not.toHaveBeenCalled();
   });
 
   it('binds the Anthropic web_search tool when webSearch is enabled', () => {
@@ -139,7 +121,11 @@ describe('AiModelConfigService.getNativeModelTools — tool-based native search'
       modelId: 'anthropic/claude-sonnet-4-6',
       sdkPackage: AI_SDK_ANTHROPIC,
       model: {} as RegisteredAiModel['model'],
-      providerName: 'anthropic',
+      rawProvider: {
+        tools: {
+          webSearch_20250305: jest.fn().mockReturnValue(ANTHROPIC_WEB_TOOL),
+        },
+      },
     };
 
     expect(
@@ -152,7 +138,11 @@ describe('AiModelConfigService.getNativeModelTools — tool-based native search'
       modelId: 'openai/gpt-4.1',
       sdkPackage: AI_SDK_OPENAI,
       model: {} as RegisteredAiModel['model'],
-      providerName: 'openai',
+      rawProvider: {
+        tools: {
+          webSearch: jest.fn().mockReturnValue(OPENAI_WEB_TOOL),
+        },
+      },
     };
 
     expect(
@@ -166,11 +156,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AiModelConfigService,
-        { provide: AiModelRegistryService, useValue: {} },
-        { provide: SdkProviderFactoryService, useValue: {} },
-      ],
+      providers: [AiModelConfigService],
     }).compile();
 
     service = module.get<AiModelConfigService>(AiModelConfigService);
@@ -182,6 +168,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
       sdkPackage: AI_SDK_ANTHROPIC,
       model: {} as RegisteredAiModel['model'],
       supportsReasoning: true,
+      rawProvider: {},
     };
 
     expect(service.getReasoningProviderOptions(anthropicModel)).toEqual({
@@ -200,6 +187,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
       sdkPackage: AI_SDK_ANTHROPIC,
       model: {} as RegisteredAiModel['model'],
       supportsReasoning: false,
+      rawProvider: {},
     };
 
     expect(service.getReasoningProviderOptions(anthropicModel)).toEqual({});
@@ -211,6 +199,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
       sdkPackage: AI_SDK_XAI,
       model: {} as RegisteredAiModel['model'],
       supportsReasoning: true,
+      rawProvider: {},
     };
 
     expect(service.getReasoningProviderOptions(xaiModel)).toEqual({});

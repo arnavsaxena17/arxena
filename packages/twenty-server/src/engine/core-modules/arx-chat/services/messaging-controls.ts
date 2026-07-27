@@ -21,8 +21,9 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
+  getAttachmentDownloadUrl,
   Project,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -655,16 +656,19 @@ export class MessagingControls {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
-    if (!attachment?.fullPath) {
+    const downloadUrl = getAttachmentDownloadUrl(attachment);
+    if (!downloadUrl) {
       console.log(
         'There is no attachment attached, cannot proceed with sending the JD to the candidate',
       );
       return;
     }
 
-    const fullPath = attachment.fullPath;
     const name = attachment.name || 'attachment.pdf';
-    const projectIdForPath = attachment.projectId ?? candidateJob.id;
+    const projectIdForPath =
+      (attachment as { targetProjectId?: string | null }).targetProjectId ??
+      attachment.projectId ??
+      candidateJob.id;
     const localFilePath = path.join(
       process.cwd(),
       '.attachments',
@@ -672,17 +676,17 @@ export class MessagingControls {
       `${candidate.id}_${name}`,
     );
 
-    console.log('Full Path::', fullPath);
+    console.log('Attachment download URL::', downloadUrl);
     console.log('This is attachment name:', name);
     console.log('This is localFile Path:', localFilePath);
 
     let fileBuffer: Buffer;
 
     try {
-      console.log('path:', fullPath, 'name:', name, 'fileUrl:', fullPath);
+      console.log('url:', downloadUrl, 'name:', name);
       console.log('localFilePath:', localFilePath);
       const fileData = await axios({
-        url: fullPath,
+        url: downloadUrl,
         method: 'GET',
         responseType: 'arraybuffer',
       });
@@ -726,7 +730,7 @@ export class MessagingControls {
     const attachmentMessageObj: AttachmentMessageObject = {
       phoneNumberTo,
       phoneNumberFrom,
-      fullPath,
+      fullPath: downloadUrl,
       fileData: {
         fileName: name,
         filePath: localFilePath,

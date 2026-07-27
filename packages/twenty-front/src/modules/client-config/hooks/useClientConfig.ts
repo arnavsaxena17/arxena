@@ -7,6 +7,7 @@ import { billingState } from '@/client-config/states/billingState';
 import { calendarBookingPageIdState } from '@/client-config/states/calendarBookingPageIdState';
 import { canManageFeatureFlagsState } from '@/client-config/states/canManageFeatureFlagsState';
 import { captchaState } from '@/client-config/states/captchaState';
+import { chromeExtensionIdState } from '@/client-config/states/chromeExtensionIdState';
 import { isAnalyticsEnabledState } from '@/client-config/states/isAnalyticsEnabledState';
 import { isAttachmentPreviewEnabledState } from '@/client-config/states/isAttachmentPreviewEnabledState';
 import { isConfigVariablesInDbEnabledState } from '@/client-config/states/isConfigVariablesInDbEnabledState';
@@ -70,6 +71,7 @@ export const useClientConfig = (): UseClientConfigResult => {
   );
 
   const setCaptcha = useSetAtomState(captchaState);
+  const setChromeExtensionId = useSetAtomState(chromeExtensionIdState);
 
   const setApiConfig = useSetAtomState(apiConfigState);
   const setOnboardingConfig = useSetAtomState(onboardingConfigState);
@@ -181,6 +183,7 @@ export const useClientConfig = (): UseClientConfigResult => {
         provider: clientConfig?.captcha?.provider,
         siteKey: clientConfig?.captcha?.siteKey,
       });
+      setChromeExtensionId(clientConfig?.chromeExtensionId ?? null);
 
       setApiConfig(clientConfig?.api);
       setOnboardingConfig(clientConfig?.onboarding);
@@ -241,6 +244,7 @@ export const useClientConfig = (): UseClientConfigResult => {
     setCalendarBookingPageId,
     setCanManageFeatureFlags,
     setCaptcha,
+    setChromeExtensionId,
     setClientConfigApiStatus,
     setDomainConfiguration,
     setIsGoogleCalendarEnabled,

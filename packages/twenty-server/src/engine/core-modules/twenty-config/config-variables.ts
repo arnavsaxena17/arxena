@@ -434,7 +434,7 @@ export class ConfigVariables {
     description: 'Name used in the From header for outgoing emails',
     type: ConfigVariableType.STRING,
   })
-  EMAIL_FROM_NAME = 'Felix from Twenty';
+  EMAIL_FROM_NAME = 'Arxena';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.EMAIL_SETTINGS,
@@ -496,7 +496,7 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
     description:
-      'Deployment region that determines the contracting DPA Processor entity, hosting region and governing law. EU (default) = Twenty.com SAS / Frankfurt / France; US = Twenty, Inc. / United States. Must match where Customer Personal Data actually lives.',
+      'Deployment region that determines the contracting DPA Processor entity, hosting region and governing law. EU (default) = Arxena, Inc. / Frankfurt / France; US = Arxena, Inc. / United States. Must match where Customer Personal Data actually lives.',
     type: ConfigVariableType.ENUM,
     options: Object.values(DpaRegion),
     // Deployment-fixed: must mirror where data actually lives. Allowing a
@@ -1993,7 +1993,7 @@ export class ConfigVariables {
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
-  ENTERPRISE_API_URL: string = 'https://twenty.com/api/enterprise';
+  ENTERPRISE_API_URL: string = 'https://arxena.com/api/enterprise';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ADVANCED_SETTINGS,
@@ -2318,6 +2318,15 @@ export class ConfigVariables {
   @CastToPositiveNumber()
   @IsOptional()
   CONTACT_ENRICHMENT_RATE_LIMIT_APOLLO = 60;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Chrome extension ID used by the app iframe sidecar and client-config',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  CHROME_EXTENSION_ID?: string;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

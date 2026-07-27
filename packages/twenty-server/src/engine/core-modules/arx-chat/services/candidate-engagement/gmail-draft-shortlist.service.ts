@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import {
     createCvsentMutation,
     findManyAttachmentsQuery,
+    getAttachmentDownloadUrl,
+    getAttachmentTargetFieldIdName,
     graphqlToFetchAllCandidateData,
 } from 'twenty-shared';
 
@@ -14,8 +16,8 @@ import { ShortlistDocumentService } from './shortlist-document.service';
 interface CandidateAttachment {
   id: string;
   name: string;
-  fullPath: string;
-  type: string;
+  downloadUrl: string | null;
+  fileCategory: string;
 }
 
 interface EmailAttachment {
@@ -193,21 +195,23 @@ export class GmailDraftShortlistService {
 
     for (const candidateId of candidateIds) {
       try {
+        const targetCandidateFieldIdName =
+          getAttachmentTargetFieldIdName('candidate');
         const response = await this.staticGraphQLService.executeGraphQL(
           findManyAttachmentsQuery,
           {
-            filter: { candidateId: { eq: candidateId } },
+            filter: { [targetCandidateFieldIdName]: { eq: candidateId } },
             orderBy: [{ createdAt: 'DescNullsFirst' }],
           },
           apiToken,
         );
 
         const attachments = response?.data?.data?.attachments?.edges || [];
-        const candidateAttachments = attachments.map((edge: any) => ({
-          id: edge.node.id,
-          name: edge.node.name,
-          fullPath: edge.node.fullPath,
-          type: edge.node.type,
+        const candidateAttachments = attachments.map((edge: { node: Record<string, unknown> }) => ({
+          id: edge.node.id as string,
+          name: edge.node.name as string,
+          downloadUrl: getAttachmentDownloadUrl(edge.node),
+          fileCategory: (edge.node.fileCategory as string) || 'TEXT_DOCUMENT',
         }));
 
         if (candidateAttachments.length === 0) {

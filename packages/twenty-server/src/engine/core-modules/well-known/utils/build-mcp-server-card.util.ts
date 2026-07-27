@@ -11,14 +11,15 @@ export const buildMcpServerCard = ({
 }: BuildMcpServerCardArgs) => ({
   $schema:
     'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json',
+  // Protocol id kept stable so existing MCP clients keep resolving this server
   name: 'com.twenty/twenty',
   version,
-  title: 'Twenty CRM',
+  title: 'Arxena CRM',
   description:
-    'Read and write your Twenty CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',
-  websiteUrl: 'https://twenty.com',
+    'Read and write your Arxena CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',
+  websiteUrl: 'https://arxena.com',
   repository: {
-    url: 'https://github.com/twentyhq/twenty',
+    url: 'https://arxena.com',
     source: 'github',
   },
   remotes: [

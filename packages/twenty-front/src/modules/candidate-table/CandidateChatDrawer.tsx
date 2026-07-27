@@ -47,6 +47,16 @@ const TabContent = styled.div`
   flex-direction: column;
 `;
 
+// Module scope: defining styled() inside render remounts AttachmentPanel children
+// every drawer re-render and leaves the PDF viewer blank.
+const StyledInlineAttachmentContainer = styled.div<{ isOpen: boolean }>`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f5f5;
+  overflow-y: auto;
+`;
+
 const ChatView = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -114,7 +124,7 @@ const StatusIcon = styled.span<{ status: string }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   &::before {
     content: '';
     width: 8px;
@@ -205,7 +215,7 @@ const StyledChatInput = styled.input`
   background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
   color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
   cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
-  
+
   &:focus:not(:disabled) {
     border-color: ${props => themeCssVariables.font.color.primary};
   }
@@ -222,7 +232,7 @@ const StyledButton = styled.button`
   white-space: nowrap;
   opacity: ${props => props.disabled ? 0.6 : 1};
   transition: all 0.2s ease;
-  
+
   &:hover:not(:disabled) {
     background-color: ${props => themeCssVariables.color.gray};
     color: black;
@@ -248,7 +258,7 @@ const TemplateSelect = styled.select`
   background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
   color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  
+
   &:focus:not(:disabled) {
     border-color: ${props => themeCssVariables.font.color.primary};
   }
@@ -324,7 +334,7 @@ function isDoNotRespondMessage(content: string | undefined): boolean {
 const formatDate = (date: string) => {
   const messageDate = dayjs(date);
   const today = dayjs();
-  
+
   if (messageDate.isSame(today, 'day')) {
     return 'Today';
   } else if (messageDate.isSame(today.subtract(1, 'day'), 'day')) {
@@ -340,7 +350,7 @@ const formatTime = (date: string) => {
 
 const groupMessagesByDate = (messages: MessageNode[]) => {
   const groups: { [key: string]: MessageNode[] } = {};
-  
+
   messages.forEach(message => {
     const date = formatDate(message.createdAt);
     if (!groups[date]) {
@@ -385,12 +395,12 @@ export const CandidateChatDrawer = React.memo(() => {
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
-  
+
   // Memoize candidateId to prevent unnecessary re-renders
   const candidateId = useAtomStateValue(selectedCandidateIdState);
 
 
-  
+
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -407,14 +417,14 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Use the templates hook
   const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
-  
+
   // Tab handling for main tabs
   const tabListId = 'candidate-chat-drawer-tabs';
   const [activeTabId, setActiveTabId] = useAtomComponentState(
     activeTabIdComponentState,
     tabListId,
   );
-  
+
   // Memoize tabs array to prevent recreation on every render
   const tabs = useMemo(() => [
     {
@@ -448,7 +458,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const personId = useMemo(() => {
     return candidateData?.peopleId || candidateData?.personId || null;
   }, [candidateData?.peopleId, candidateData?.personId]);
-  
+
 
   // Message input tabs
   const [activeMessageTab, setActiveMessageTab] = useState<'direct' | 'template'>('direct');
@@ -497,7 +507,7 @@ export const CandidateChatDrawer = React.memo(() => {
       setIsLoading(false);
       return;
     }
-    
+
     // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
     const rowData = { id: candidateId };
     const permanentId = getPermanentId(rowData, tableState.rawData || []);
@@ -506,15 +516,15 @@ export const CandidateChatDrawer = React.memo(() => {
       setIsLoading(false);
       return;
     }
-    
+
     try {
-      
+
       const response = await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
         { candidateId: permanentId },
         { headers: { Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}` } }
       );
-      
+
       const sortedMessages = response.data.sort(
         (a: any, b: any) => b.position - a.position
       );
@@ -522,7 +532,7 @@ export const CandidateChatDrawer = React.memo(() => {
       // Check if messages have actually changed by comparing with current state
       setMessageHistory(prevMessageHistory => {
         const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(prevMessageHistory);
-        
+
         if (hasMessagesChanged) {
           // Fetch candidate name if available in the messages
           if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
@@ -556,21 +566,21 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!candidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return;
     }
-    
+
     // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
     const rowData = { id: candidateId };
     const permanentId = getPermanentId(rowData, tableState.rawData || []);
     if (!permanentId || !isUUID(permanentId)) {
       console.log(`Skipping fetch candidate data from backend for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
-      
+
       // Try to find candidate in searchResults first (where LinkedIn candidates are), then processedData
       const allCandidates = [...searchResults, ...processedData];
       const candidateFromTable = allCandidates.find((row) => {
-        return row.id === candidateId || 
+        return row.id === candidateId ||
                row.tempId === candidateId ||
                getPermanentId(row, tableState.rawData || []) === candidateId;
       });
-      
+
       if (candidateFromTable) {
         setCandidateData(candidateFromTable as any);
         if (candidateFromTable.name) {
@@ -579,8 +589,8 @@ export const CandidateChatDrawer = React.memo(() => {
         const candidateAny = candidateFromTable as any;
         if (candidateAny.phone || candidateAny.phoneNumber?.primaryPhoneNumber) {
           setPhoneNumber(
-            typeof candidateAny.phone === 'string' 
-              ? candidateAny.phone 
+            typeof candidateAny.phone === 'string'
+              ? candidateAny.phone
               : candidateAny.phoneNumber?.primaryPhoneNumber || ''
           );
         }
@@ -588,7 +598,7 @@ export const CandidateChatDrawer = React.memo(() => {
       }
       return;
     }
-    
+
     try {
       setIsLoading(true);
       const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/graphql`, {
@@ -606,7 +616,7 @@ export const CandidateChatDrawer = React.memo(() => {
           },
         }),
       });
-      
+
       const responseData = await response.json();
       if (responseData?.data?.candidates?.edges?.[0]?.node) {
         const candidate = responseData.data.candidates.edges[0].node;
@@ -642,7 +652,7 @@ export const CandidateChatDrawer = React.memo(() => {
   // Start polling when component mounts and candidateId is available
   useEffect(() => {
     if (!candidateId) return;
-    
+
     // Initial fetch
     fetchMessages();
     fetchCandidateData();
@@ -702,7 +712,7 @@ export const CandidateChatDrawer = React.memo(() => {
       const unreadMessageIds = messageHistory
         ?.filter(msg => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
         ?.map(msg => msg.id) || [];
-      
+
       if (unreadMessageIds.length > 0) {
         // Update messages in the database
         axios.post(
@@ -711,14 +721,14 @@ export const CandidateChatDrawer = React.memo(() => {
           { headers: { Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}` } },
         ).then(() => {
           // Update local message history to mark messages as read
-          setMessageHistory(prev => 
-            prev.map(msg => 
-              unreadMessageIds.includes(msg.id) 
+          setMessageHistory(prev =>
+            prev.map(msg =>
+              unreadMessageIds.includes(msg.id)
                 ? { ...msg, whatsappDeliveryStatus: 'read' }
                 : msg
             )
           );
-          
+
           // Immediately update unread messages count in state to 0 for this candidate
           // Update for both permanentId (UUID) and candidateId (in case it's different, e.g., LinkedIn ID)
           setUnreadMessagesCounts(prev => {
@@ -730,7 +740,7 @@ export const CandidateChatDrawer = React.memo(() => {
             }
             return updated;
           });
-          
+
           // Mark that we've processed this candidate
           hasMarkedAsReadRef.current = candidateId;
         }).catch(error => {
@@ -749,7 +759,7 @@ export const CandidateChatDrawer = React.memo(() => {
         hasMarkedAsReadRef.current = candidateId;
       }
     }
-    
+
     // Reset the ref when candidateId changes
     if (hasMarkedAsReadRef.current !== candidateId) {
       hasMarkedAsReadRef.current = null;
@@ -761,23 +771,23 @@ export const CandidateChatDrawer = React.memo(() => {
       showSnackbar('Phone number not available', 'error');
       return;
     }
-    
+
     setIsSendingMessage(true);
-    
+
     try {
       const response = await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/arx-chat/send-chat`,
-        { 
-          messageToSend: messageText, 
-          phoneNumberTo: phoneNumber 
+        {
+          messageToSend: messageText,
+          phoneNumberTo: phoneNumber
         },
-        { 
-          headers: { 
-            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` 
-          } 
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`
+          }
         },
       );
-      
+
       if (response.data.status === 'failed') {
         const detail =
           typeof response.data.message === 'string'
@@ -787,7 +797,7 @@ export const CandidateChatDrawer = React.memo(() => {
         await fetchMessages();
         return;
       }
-      
+
       const newMessage: MessageNode = {
         recruiterId: '',
         message: messageText,
@@ -804,14 +814,14 @@ export const CandidateChatDrawer = React.memo(() => {
         messageObj: { content: messageText },
         whatsappDeliveryStatus: 'sent',
       };
-      
+
       setMessageHistory(prev => [newMessage, ...prev]);
-      
+
       // Clear input
       if (inputRef.current) {
         inputRef.current.value = '';
       }
-      
+
       showSnackbar('Message sent successfully', 'success');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -836,14 +846,14 @@ export const CandidateChatDrawer = React.memo(() => {
       showSnackbar('Please select a template first', 'error');
       return;
     }
-    
+
     if (!phoneNumber) {
       showSnackbar('Phone number not available', 'error');
       return;
     }
-    
+
     setIsSendingMessage(true);
-    
+
     try {
       await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/send-template-message`,
@@ -853,7 +863,7 @@ export const CandidateChatDrawer = React.memo(() => {
       console.log('Template sent successfully');
       showSnackbar('Template sent successfully', 'success');
       setSelectedTemplate('');
-      
+
       const newMessage: MessageNode = {
         recruiterId: '',
         message: `Template: ${templateName}\n${getTemplatePreview(templateName)}`,
@@ -882,7 +892,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const handleSubmit = () => {
     const messageText = inputRef.current?.value.trim();
     if (!messageText) return;
-    
+
     sendMessage(messageText);
   };
 
@@ -976,39 +986,30 @@ export const CandidateChatDrawer = React.memo(() => {
   );
 
   const renderCVTab = () => (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div style={{ padding: 16 }}>Loading CV...</div>}>
       <AttachmentPanel
         isOpen={true}
         onClose={() => setActiveTabId('chat')}
         candidateId={candidateId || ''}
         candidateName={candidateName}
-        PanelContainer={StyledInlineContainer}
+        PanelContainer={StyledInlineAttachmentContainer}
       />
     </Suspense>
   );
 
   const renderProfileTab = () => (
-    <CandidateProfileTab 
+    <CandidateProfileTab
       candidateData={candidateData}
       isLoading={isLoading}
     />
   );
 
   const renderVideoInterviewTab = () => (
-    <VideoInterviewTab 
+    <VideoInterviewTab
       candidateData={candidateData}
       isLoading={isLoading}
     />
   );
-
-  // Custom styled container for inline usage inside the drawer
-  const StyledInlineContainer = styled.div<{ isOpen: boolean }>`
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background-color: #f5f5f5;
-    overflow-y: auto;
-  `;
 
   const renderMessageInput = () => (
     <MessageInputContainer>
@@ -1018,14 +1019,14 @@ export const CandidateChatDrawer = React.memo(() => {
         </DoNotRespondBanner>
       )}
       <MessageInputTabContainer>
-        <MessageInputTab 
-          isActive={activeMessageTab === 'direct'} 
+        <MessageInputTab
+          isActive={activeMessageTab === 'direct'}
           onClick={() => setActiveMessageTab('direct')}
         >
           Direct Message
         </MessageInputTab>
-        <MessageInputTab 
-          isActive={activeMessageTab === 'template'} 
+        <MessageInputTab
+          isActive={activeMessageTab === 'template'}
           onClick={() => setActiveMessageTab('template')}
         >
           Template Message
@@ -1052,7 +1053,7 @@ export const CandidateChatDrawer = React.memo(() => {
         </InputWrapper>
       ) : (
         <TemplateContainer>
-          <TemplateSelect 
+          <TemplateSelect
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value)}
             disabled={isSendingMessage}
@@ -1063,11 +1064,11 @@ export const CandidateChatDrawer = React.memo(() => {
             ))}
           </TemplateSelect>
           <TemplatePreview>
-            {isLoadingTemplates 
-              ? "Loading templates..." 
+            {isLoadingTemplates
+              ? "Loading templates..."
               : getTemplatePreview(selectedTemplate)}
           </TemplatePreview>
-          <StyledButton 
+          <StyledButton
             onClick={() => handleTemplateSend(selectedTemplate)}
             disabled={!selectedTemplate || isSendingMessage}
           >
@@ -1109,4 +1110,4 @@ export const CandidateChatDrawer = React.memo(() => {
       {candidateId && activeTabId === 'chat' && renderMessageInput()}
     </StyledContainer>
   );
-}); 
+});

@@ -93,7 +93,7 @@ export const SettingsLegalDpaNew = () => {
 
       await downloadFile(
         result.downloadUrl,
-        `Twenty-DPA-${result.agreement.templateVersion}-${safeLegalEntityName}.pdf`,
+        `Arxena-DPA-${result.agreement.templateVersion}-${safeLegalEntityName}.pdf`,
       );
 
       enqueueSuccessSnackBar({
@@ -140,7 +140,7 @@ export const SettingsLegalDpaNew = () => {
         <Section>
           <H2Title
             title={t`Your details`}
-            description={t`The PDF is pre-signed by Twenty and executed with your legal entity and authorized signatory.`}
+            description={t`The PDF is pre-signed by Arxena and executed with your legal entity and authorized signatory.`}
           />
           <SettingsTextInput
             instanceId="dpa-legal-entity-name"

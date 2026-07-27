@@ -14,7 +14,6 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 import { toDisplayCredits } from 'src/engine/core-modules/usage/utils/to-display-credits.util';
 import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -43,6 +42,7 @@ import {
   AiExceptionCode,
 } from 'src/engine/metadata-modules/ai/ai.exception';
 import { AiGraphqlApiExceptionInterceptor } from 'src/engine/metadata-modules/ai/interceptors/ai-graphql-api-exception.interceptor';
+import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 
@@ -55,7 +55,7 @@ export class AgentChatResolver {
     private readonly agentChatStreamingService: AgentChatStreamingService,
     private readonly eventPublisherService: AgentChatEventPublisherService,
     private readonly systemPromptBuilderService: SystemPromptBuilderService,
-    private readonly billingUsageService: BillingUsageService,
+    private readonly aiBillingService: AiBillingService,
     private readonly aiModelRegistryService: AiModelRegistryService,
     private readonly redisClientService: RedisClientService,
     @InjectWorkspaceScopedRepository(AgentChatThreadEntity)
@@ -165,13 +165,6 @@ export class AgentChatResolver {
     @AuthUserWorkspaceId() userWorkspaceId: string,
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<SendChatMessageResultDTO> {
-    if (this.aiModelRegistryService.getAvailableModels().length === 0) {
-      throw new AiException(
-        'No AI models are available. Configure at least one AI provider.',
-        AiExceptionCode.API_KEY_NOT_CONFIGURED,
-      );
-    }
-
     const resolvedModelId = modelId ?? workspace.smartModel;
 
     this.aiModelRegistryService.validateModelAvailability(
@@ -179,7 +172,10 @@ export class AgentChatResolver {
       workspace,
     );
 
-    await this.billingUsageService.hasAvailableCreditsOrThrow(workspace.id);
+    await this.aiBillingService.assertHasAvailableCreditsOrThrow(
+      workspace.id,
+      resolvedModelId,
+    );
 
     const thread = await this.threadRepository.findOne(workspace.id, {
       where: { id: threadId, userWorkspaceId },
@@ -278,19 +274,17 @@ export class AgentChatResolver {
     @AuthUserWorkspaceId() userWorkspaceId: string,
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<SendChatMessageResultDTO> {
-    if (this.aiModelRegistryService.getAvailableModels().length === 0) {
-      throw new AiException(
-        'No AI models are available. Configure at least one AI provider.',
-        AiExceptionCode.API_KEY_NOT_CONFIGURED,
-      );
-    }
+    const resolvedModelId = modelId ?? workspace.smartModel;
 
     this.aiModelRegistryService.validateModelAvailability(
-      modelId ?? workspace.smartModel,
+      resolvedModelId,
       workspace,
     );
 
-    await this.billingUsageService.hasAvailableCreditsOrThrow(workspace.id);
+    await this.aiBillingService.assertHasAvailableCreditsOrThrow(
+      workspace.id,
+      resolvedModelId,
+    );
 
     const result = await this.agentChatStreamingService.retryLastFailedTurn({
       threadId,
@@ -324,13 +318,6 @@ export class AgentChatResolver {
     @AuthUserWorkspaceId() userWorkspaceId: string,
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<SendChatMessageResultDTO> {
-    if (this.aiModelRegistryService.getAvailableModels().length === 0) {
-      throw new AiException(
-        'No AI models are available. Configure at least one AI provider.',
-        AiExceptionCode.API_KEY_NOT_CONFIGURED,
-      );
-    }
-
     const resolvedModelId = modelId ?? workspace.smartModel;
 
     this.aiModelRegistryService.validateModelAvailability(
@@ -338,7 +325,10 @@ export class AgentChatResolver {
       workspace,
     );
 
-    await this.billingUsageService.hasAvailableCreditsOrThrow(workspace.id);
+    await this.aiBillingService.assertHasAvailableCreditsOrThrow(
+      workspace.id,
+      resolvedModelId,
+    );
 
     const thread = await this.threadRepository.findOne(workspace.id, {
       where: { id: threadId, userWorkspaceId },

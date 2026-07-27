@@ -90,7 +90,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const { records: attachments = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
     filter: parsedJD?.id && modalMode === 'edit' ? {
-      projectId: { eq: parsedJD.id }
+      targetProjectId: { eq: parsedJD.id },
     } : undefined,
     skip: !parsedJD?.id || modalMode === 'create',
   });
@@ -277,8 +277,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   const removeExistingAttachments = useCallback(async (projectId: string) => {
     try {
       // Use the existing attachments data
-      const existingAttachments = attachments.filter(attachment =>
-        attachment.projectId === projectId
+      const existingAttachments = attachments.filter(
+        (attachment) => attachment.targetProjectId === projectId,
       );
 
       // Delete all existing attachments

@@ -26,7 +26,10 @@ import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/
 import { BillingEntitlementEntity } from 'src/engine/core-modules/billing/entities/billing-entitlement.entity';
 import { BillingSubscriptionItemEntity } from 'src/engine/core-modules/billing/entities/billing-subscription-item.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
-import { BillingEntitlementKey } from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
+import {
+  BillingEntitlementKey,
+  isFreeBillingEntitlement,
+} from 'src/engine/core-modules/billing/enums/billing-entitlement-key.enum';
 import { WORKSPACE_ACTIVATING_SUBSCRIPTION_STATUSES } from 'src/engine/core-modules/billing/constants/workspace-activating-subscription-statuses.constant';
 import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
 import { BillingPlanService } from 'src/engine/core-modules/billing/services/billing-plan.service';
@@ -234,8 +237,9 @@ export class BillingSubscriptionService {
     return Object.values(BillingEntitlementKey).map((key) => ({
       key,
       value:
-        hasValidEnterprisePlan &&
-        (!isBillingEnabled || (entitlementsByKey[key]?.value ?? false)),
+        isFreeBillingEntitlement(key) ||
+        (hasValidEnterprisePlan &&
+          (!isBillingEnabled || (entitlementsByKey[key]?.value ?? false))),
     }));
   }
 
@@ -243,6 +247,10 @@ export class BillingSubscriptionService {
     workspaceId: string,
     key: BillingEntitlementKey,
   ): Promise<boolean> {
+    if (isFreeBillingEntitlement(key)) {
+      return true;
+    }
+
     const entitlement = await this.billingEntitlementRepository.findOne(
       workspaceId,
       { where: { key, value: true } },

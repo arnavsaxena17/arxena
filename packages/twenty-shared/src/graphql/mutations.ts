@@ -122,7 +122,7 @@ export const graphqlToUpdateOneClientInterview = `mutation UpdateOneClientInterv
       createdAt
     }
     interviewTime
-    updatedAt  
+    updatedAt
     id
     name
     position
@@ -134,10 +134,21 @@ export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttac
   createAttachment(data: $input) {
     __typename
     id
-    fullPath
     name
+    fullPath
+    fileCategory
+    file {
+      fileId
+      label
+      extension
+      url
+    }
+    targetCandidateId
+    targetProjectId
+    targetPersonId
+    targetCompanyId
     cvSentId
-  } 
+  }
 }`;
 
 export const mutationToCreateOnePhoneCall = `mutation CreateOnePhoneCall($input: PhoneCallCreateInput!) {
@@ -278,15 +289,14 @@ export const CreateOneObjectMetadataItem = `
   mutation CreateOneObjectMetadataItem($input: CreateOneObjectInput!) {
     createOneObject(input: $input) {
       id
-      dataSourceId
       nameSingular
       namePlural
       labelSingular
       labelPlural
       description
       icon
-      isCustom
       isActive
+      isSystem
       createdAt
       updatedAt
       labelIdentifierFieldMetadataId
@@ -340,7 +350,7 @@ export const CreateOneVideoInterviewTemplate = `
     }
 `;
 
-export const CreateOneVideoInterviewModel = ` 
+export const CreateOneVideoInterviewModel = `
     mutation CreateOneVideoInterviewModel($input: VideoInterviewModelCreateInput!) {
         createVideoInterviewModel(data: $input) {
             id
@@ -361,8 +371,8 @@ export const CreateOneFieldMetadataItem = `mutation CreateOneFieldMetadataItem($
             label
             description
             icon
-            isCustom
             isActive
+            isSystem
             isNullable
             createdAt
             updatedAt
@@ -398,7 +408,7 @@ export const graphqlMutationToCreateSMS = `
 mutation CreateSMS($input: CreateSMSInput!) {
     createSMS(data: $input) {
         id
-        personId 
+        personId
         phoneNumber
         messageType
         message

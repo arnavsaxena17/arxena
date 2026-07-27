@@ -192,9 +192,10 @@ export class ChatExecutionService {
     );
 
     const registeredModel =
-      await this.aiModelRegistryService.resolveModelForAgent({
-        modelId: resolvedModelId,
-      });
+      await this.aiModelRegistryService.resolveModelForAgentInWorkspace(
+        { modelId: resolvedModelId },
+        workspace.id,
+      );
 
     const modelConfig = this.aiModelRegistryService.getEffectiveModelConfig(
       registeredModel.modelId,
@@ -414,6 +415,7 @@ export class ChatExecutionService {
       void this.aiBillingService.billNativeWebSearchUsage(
         countNativeWebSearchCallsFromSteps(steps),
         workspace.id,
+        registeredModel.modelId,
         userWorkspaceId,
       );
 

@@ -348,7 +348,7 @@ export class IndexMetadataService {
         `Index ${id} is a system index and cannot be deleted`,
         IndexMetadataExceptionCode.CANNOT_DELETE_SYSTEM_INDEX,
         {
-          userFriendlyMessage: msg`System indexes are required for Twenty to work and cannot be deleted.`,
+          userFriendlyMessage: msg`System indexes are required for Arxena to work and cannot be deleted.`,
         },
       );
     }

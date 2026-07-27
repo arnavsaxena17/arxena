@@ -5,4 +5,4 @@ export const DPA_TEMPLATE_VERSION = '2026-06';
 
 export const DPA_LAST_UPDATED_LABEL = 'June 2026';
 
-export const DPA_DOCUMENT_TITLE = 'Twenty Data Processing Agreement (DPA)';
+export const DPA_DOCUMENT_TITLE = 'Arxena Data Processing Agreement (DPA)';

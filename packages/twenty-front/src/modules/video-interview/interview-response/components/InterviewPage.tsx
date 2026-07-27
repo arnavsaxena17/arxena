@@ -22,6 +22,7 @@ import { VideoPlayer } from '../utils/videoPlaybackUtils';
 
 import { IconArrowBackUp, IconCommand } from 'twenty-ui/icon';
 import type { InterviewPageProps } from 'twenty-shared/arx';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { Mixpanel } from '~/mixpanel';
 
 const ffmpeg = createFFmpeg({
@@ -128,10 +129,13 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
   // Function to get video URL for a specific question index
   const getQuestionVideoURL = (index: number) => {
     const attachment = questionsVideoAttachment.find(
-      (attachment) =>
-        attachment?.id === questions[index]?.attachments?.edges[0]?.node?.id,
-    )?.fullPath;
-    return attachment ? `${attachment}` : null;
+      (attachmentItem) =>
+        attachmentItem?.id ===
+        questions[index]?.attachments?.edges[0]?.node?.id,
+    );
+    const attachmentDownloadUrl = getAttachmentDownloadUrl(attachment);
+
+    return attachmentDownloadUrl ?? null;
   };
 
   // Preload next question's video
@@ -461,11 +465,13 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
     'Current question interview questionsVideoAttachment:',
     questionsVideoAttachment,
   );
-  const currentQuestionInterviewAttachment = questionsVideoAttachment.find(
-    (attachment) =>
-      attachment?.id ===
-      questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id,
-  )?.fullPath;
+  const currentQuestionInterviewAttachment = getAttachmentDownloadUrl(
+    questionsVideoAttachment.find(
+      (attachmentItem) =>
+        attachmentItem?.id ===
+        questions[currentQuestionIndex]?.attachments?.edges[0]?.node?.id,
+    ),
+  );
   const currentQuestionVideoURL = getQuestionVideoURL(currentQuestionIndex);
   console.log('This is the currentQuestionVideoURL::', currentQuestionVideoURL);
 

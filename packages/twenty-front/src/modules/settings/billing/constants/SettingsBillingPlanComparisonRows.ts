@@ -174,7 +174,7 @@ export const SETTINGS_BILLING_PLAN_COMPARISON_ROWS = [
     featureLabel: msg`Row-level permissions`,
     plans: {
       [BillingPlanKey.ENTERPRISE]: { kind: 'text', text: msg`Unlimited` },
-      [BillingPlanKey.PRO]: { kind: 'excluded' },
+      [BillingPlanKey.PRO]: { kind: 'text', text: msg`Unlimited` },
     },
     type: 'feature',
   },
@@ -198,7 +198,7 @@ export const SETTINGS_BILLING_PLAN_COMPARISON_ROWS = [
     featureLabel: msg`Audit logs`,
     plans: {
       [BillingPlanKey.ENTERPRISE]: { kind: 'included' },
-      [BillingPlanKey.PRO]: { kind: 'excluded' },
+      [BillingPlanKey.PRO]: { kind: 'included' },
     },
     type: 'feature',
   },
@@ -280,7 +280,7 @@ export const SETTINGS_BILLING_PLAN_COMPARISON_ROWS = [
     type: 'feature',
   },
   {
-    featureLabel: msg`Subdomain (yourco.twenty.com)`,
+    featureLabel: msg`Subdomain (yourco.arxena.com)`,
     plans: {
       [BillingPlanKey.ENTERPRISE]: { kind: 'included' },
       [BillingPlanKey.PRO]: { kind: 'included' },
@@ -291,7 +291,7 @@ export const SETTINGS_BILLING_PLAN_COMPARISON_ROWS = [
     featureLabel: msg`Custom domain (crm.yourco.com)`,
     plans: {
       [BillingPlanKey.ENTERPRISE]: { kind: 'included' },
-      [BillingPlanKey.PRO]: { kind: 'excluded' },
+      [BillingPlanKey.PRO]: { kind: 'included' },
     },
     type: 'feature',
   },

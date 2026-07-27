@@ -88,22 +88,27 @@ export class CallAndSMSProcessingService {
         if (recordingFile) {
           const recordingPath = `${recordingsFolder}/${recordingFile}`;
           console.log(`Uploading recording file: ${recordingPath}`);
-          const uploadResponse = await this.attachmentService.uploadAttachmentToTwenty(recordingPath, apiToken);
-
-          const dataToUploadInAttachmentTable = {
-        input: {
-          name: recordingFile,
-          fullPath: uploadResponse.data.uploadFile,
-          fileCategory: 'AUDIO',
-          personId: person.id
-        }
-          };
-
-          const attachment = await this.attachmentService.createOneAttachmentFromFilePath(
-        dataToUploadInAttachmentTable,
-        apiToken
+          const uploaded = await this.attachmentService.uploadAttachmentFile(
+            recordingPath,
+            apiToken,
+            recordingFile,
           );
-          attachmentId = attachment.id;
+
+          if (uploaded?.fileId) {
+            const attachment =
+              await this.attachmentService.createAttachmentFromUploadedFile(
+                {
+                  input: {
+                    name: recordingFile,
+                    file: [{ fileId: uploaded.fileId, label: recordingFile }],
+                    fileCategory: 'AUDIO',
+                    targetPersonId: person.id,
+                  },
+                },
+                apiToken,
+              );
+            attachmentId = attachment?.data?.data?.createAttachment?.id;
+          }
         }
 
         await this.createOrUpdatePhoneCall({

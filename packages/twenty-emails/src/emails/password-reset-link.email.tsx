@@ -48,7 +48,7 @@ export const PasswordResetLinkEmail = ({
 PasswordResetLinkEmail.PreviewProps = {
   duration: '24 hours',
   hasPassword: true,
-  link: 'https://app.twenty.com/reset-password/123',
+  link: 'https://app.arxena.com/reset-password/123',
   locale: 'en',
 } as PasswordResetLinkEmailProps;
 

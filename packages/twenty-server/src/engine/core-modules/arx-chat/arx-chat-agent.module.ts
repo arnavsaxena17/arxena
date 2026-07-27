@@ -109,6 +109,7 @@ import { WhatsAppMonitoringUnifiedService } from './services/whatsapp-monitoring
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
 import { WhatsappUnipileSyncService } from './services/whatsapp-unipile/whatsapp-unipile-sync.service';
 import { UnipilePoolModule } from './unipile-pool.module';
+import { AttachmentProcessingService } from './utils/attachment-processes';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -176,6 +177,7 @@ const conditionalImports = isWorker
     GoogleSheetsService,
     PersonService,
     CandidateService,
+    AttachmentProcessingService,
     RedisService,
     ResumeReadParseUploadService,
     JDParserService,

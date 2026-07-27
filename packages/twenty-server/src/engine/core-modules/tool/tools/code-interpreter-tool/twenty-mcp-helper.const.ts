@@ -1,5 +1,5 @@
 // Python helper that gets prepended to user code for MCP access
-export const TWENTY_MCP_HELPER = `# Auto-injected Twenty MCP helper - provides access to Twenty tools
+export const TWENTY_MCP_HELPER = `# Auto-injected Arxena MCP helper - provides access to Arxena tools
 import os
 import json
 
@@ -9,8 +9,8 @@ try:
 except ImportError:
     _REQUESTS_AVAILABLE = False
 
-class TwentyMCP:
-    """Helper for calling Twenty tools from sandboxed code.
+class ArxenaMCP:
+    """Helper for calling Arxena tools from sandboxed code.
 
     Two categories of tools exist behind /mcp:
 
@@ -49,7 +49,7 @@ class TwentyMCP:
 
     def call_tool(self, name: str, arguments: dict = None):
         """
-        Call any Twenty tool by name.
+        Call any Arxena tool by name.
 
         Catalog tools (find_many_companies, create_one_person, …) are routed
         through execute_tool. MCP-native tools are called directly.
@@ -64,11 +64,11 @@ class TwentyMCP:
             Tool result as parsed JSON
 
         Example:
-            companies = twenty.call_tool('find_many_companies', {'limit': 5})
+            companies = arxena.call_tool('find_many_companies', {'limit': 5})
             # companies == {'records': [...], 'count': '5'}
         """
         if not self._available:
-            raise RuntimeError('Twenty MCP bridge not available. Missing requests library or credentials.')
+            raise RuntimeError('Arxena MCP bridge not available. Missing requests library or credentials.')
 
         if name in self._MCP_NATIVE_TOOLS:
             return self._raw_mcp_call(name, arguments)
@@ -109,7 +109,7 @@ class TwentyMCP:
               'errors': [ {offset, error}, ... up to 10 ] }
 
         Example:
-            summary = twenty.bulk_upsert('people', people_rows)
+            summary = arxena.bulk_upsert('people', people_rows)
         """
         size = min(max(int(batch_size), 1), 200)
         created, updated, failed, errors = 0, 0, 0, []
@@ -146,7 +146,7 @@ class TwentyMCP:
             dict mapping each found value to its record id. Missing values are absent.
 
         Example:
-            company_ids = twenty.lookup_by('companies', 'name', ['Acme', 'Globex'])
+            company_ids = arxena.lookup_by('companies', 'name', ['Acme', 'Globex'])
             # { 'Acme': 'uuid-1', 'Globex': 'uuid-2' }
         """
         distinct = [value for value in dict.fromkeys(values) if value is not None]
@@ -209,10 +209,10 @@ class TwentyMCP:
         return result.get("result")
 
 # --------------------------------------------------------------------------
-# \`twenty\` is a pre-built instance of the TwentyMCP class above. It is
-# already bound in this module scope — DO NOT \`import twenty\`. There is
+# \`arxena\` is a pre-built instance of the ArxenaMCP class above. It is
+# already bound in this module scope — DO NOT \`import arxena\`. There is
 # no Python package by that name. Just use it directly, e.g.:
-#     companies = twenty.call_tool('find_many_companies', {'limit': 10})
+#     companies = arxena.call_tool('find_many_companies', {'limit': 10})
 # --------------------------------------------------------------------------
-twenty = TwentyMCP()
+arxena = ArxenaMCP()
 `;

@@ -74,6 +74,18 @@ export type CreateWorkflowVersionStepInput = {
   workflowVersionId: Scalars['UUID']['input'];
 };
 
+export type CreateWorkspaceMcpServerInput = {
+  authHeaderName?: InputMaybe<Scalars['String']['input']>;
+  authToken?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  label: Scalars['String']['input'];
+  slug?: InputMaybe<Scalars['String']['input']>;
+  timeoutMs?: InputMaybe<Scalars['Float']['input']>;
+  toolAllowlist?: InputMaybe<Array<Scalars['String']['input']>>;
+  toolMode?: InputMaybe<WorkspaceMcpToolMode>;
+  url: Scalars['String']['input'];
+};
+
 export type DateTimeFilter = {
   eq?: InputMaybe<Scalars['DateTime']['input']>;
   gt?: InputMaybe<Scalars['DateTime']['input']>;
@@ -201,9 +213,11 @@ export type Mutation = {
   createDraftFromWorkflowVersion: WorkflowVersionDto;
   createWorkflowVersionEdge: WorkflowVersionStepChanges;
   createWorkflowVersionStep: WorkflowVersionStepChanges;
+  createWorkspaceMcpServer: WorkspaceMcpServer;
   deactivateWorkflowVersion: Scalars['Boolean']['output'];
   deleteWorkflowVersionEdge: WorkflowVersionStepChanges;
   deleteWorkflowVersionStep: WorkflowVersionStepChanges;
+  deleteWorkspaceMcpServer: Scalars['Boolean']['output'];
   dismissMaintenanceModeBanner: Scalars['Boolean']['output'];
   dismissReconnectAccountBanner: Scalars['Boolean']['output'];
   duplicateWorkflow: WorkflowVersionDto;
@@ -213,10 +227,12 @@ export type Mutation = {
   runWorkflowVersion: RunWorkflowVersion;
   stopWorkflowRun: WorkflowRun;
   submitFormStep: Scalars['Boolean']['output'];
+  syncWorkspaceMcpServerTools: WorkspaceMcpServer;
   testHttpRequest: TestHttpRequest;
   updateWorkflowRunStep: WorkflowAction;
   updateWorkflowVersionPositions: Scalars['Boolean']['output'];
   updateWorkflowVersionStep: WorkflowAction;
+  updateWorkspaceMcpServer: WorkspaceMcpServer;
 };
 
 
@@ -245,6 +261,11 @@ export type MutationCreateWorkflowVersionStepArgs = {
 };
 
 
+export type MutationCreateWorkspaceMcpServerArgs = {
+  input: CreateWorkspaceMcpServerInput;
+};
+
+
 export type MutationDeactivateWorkflowVersionArgs = {
   workflowVersionId: Scalars['UUID']['input'];
 };
@@ -257,6 +278,11 @@ export type MutationDeleteWorkflowVersionEdgeArgs = {
 
 export type MutationDeleteWorkflowVersionStepArgs = {
   input: DeleteWorkflowVersionStepInput;
+};
+
+
+export type MutationDeleteWorkspaceMcpServerArgs = {
+  id: Scalars['UUID']['input'];
 };
 
 
@@ -300,6 +326,11 @@ export type MutationSubmitFormStepArgs = {
 };
 
 
+export type MutationSyncWorkspaceMcpServerToolsArgs = {
+  id: Scalars['UUID']['input'];
+};
+
+
 export type MutationTestHttpRequestArgs = {
   input: TestHttpRequestInput;
 };
@@ -317,6 +348,11 @@ export type MutationUpdateWorkflowVersionPositionsArgs = {
 
 export type MutationUpdateWorkflowVersionStepArgs = {
   input: UpdateWorkflowVersionStepInput;
+};
+
+
+export type MutationUpdateWorkspaceMcpServerArgs = {
+  input: UpdateWorkspaceMcpServerInput;
 };
 
 export type ObjectRecordFilterInput = {
@@ -350,6 +386,7 @@ export type Query = {
   isMaintenanceModeBannerDismissed: Scalars['Boolean']['output'];
   search: SearchResultConnection;
   workflowStepConnectedAccountHandle?: Maybe<ConnectedAccountHandleDto>;
+  workspaceMcpServers: Array<WorkspaceMcpServer>;
 };
 
 
@@ -605,6 +642,19 @@ export type UpdateWorkflowVersionStepInput = {
   workflowVersionId: Scalars['UUID']['input'];
 };
 
+export type UpdateWorkspaceMcpServerInput = {
+  authHeaderName?: InputMaybe<Scalars['String']['input']>;
+  authToken?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['UUID']['input'];
+  label?: InputMaybe<Scalars['String']['input']>;
+  slug?: InputMaybe<Scalars['String']['input']>;
+  timeoutMs?: InputMaybe<Scalars['Float']['input']>;
+  toolAllowlist?: InputMaybe<Array<Scalars['String']['input']>>;
+  toolMode?: InputMaybe<WorkspaceMcpToolMode>;
+  url?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type WorkflowAction = {
   __typename?: 'WorkflowAction';
   id: Scalars['UUID']['output'];
@@ -690,6 +740,31 @@ export type WorkflowVersionStepChanges = {
   stepsDiff?: Maybe<Scalars['JSON']['output']>;
   triggerDiff?: Maybe<Scalars['JSON']['output']>;
 };
+
+export type WorkspaceMcpServer = {
+  __typename?: 'WorkspaceMcpServer';
+  authHeaderName?: Maybe<Scalars['String']['output']>;
+  catalogHash?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  enabled: Scalars['Boolean']['output'];
+  hasAuthToken: Scalars['Boolean']['output'];
+  id: Scalars['UUID']['output'];
+  label: Scalars['String']['output'];
+  lastSyncAt?: Maybe<Scalars['DateTime']['output']>;
+  lastSyncError?: Maybe<Scalars['String']['output']>;
+  slug: Scalars['String']['output'];
+  timeoutMs: Scalars['Float']['output'];
+  toolAllowlist: Array<Scalars['String']['output']>;
+  toolMode: WorkspaceMcpToolMode;
+  transport: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  url: Scalars['String']['output'];
+};
+
+export enum WorkspaceMcpToolMode {
+  ALL = 'ALL',
+  ALLOWLIST = 'ALLOWLIST'
+}
 
 export type TimelineCalendarEventFragmentFragment = { __typename?: 'TimelineCalendarEvent', id: any, title: string, description: string, location: string, startsAt: string, endsAt: string, isFullDay: boolean, visibility: CalendarChannelVisibility, participants: Array<{ __typename?: 'TimelineCalendarEventParticipant', personId?: any | null, workspaceMemberId?: any | null, firstName: string, lastName: string, displayName: string, avatarUrl: string, handle: string }> };
 

@@ -92,6 +92,7 @@ describe('ClientConfigService', () => {
             SENTRY_FRONT_DSN: 'https://sentry.example.com',
             CAPTCHA_DRIVER: CaptchaDriverType.GOOGLE_RECAPTCHA,
             CAPTCHA_SITE_KEY: 'site-key-123',
+            CHROME_EXTENSION_ID: 'test-chrome-extension-id',
             MUTATION_MAXIMUM_AFFECTED_RECORDS: 1000,
             ONBOARDING_IMPORT_CONTACTS_CREDITS_REWARD: 2_000_000,
             ONBOARDING_INVITE_TEAM_CREDITS_REWARD_PER_USER: 3_000_000,
@@ -167,6 +168,7 @@ describe('ClientConfigService', () => {
           provider: 'GOOGLE_RECAPTCHA',
           siteKey: 'site-key-123',
         },
+        chromeExtensionId: 'test-chrome-extension-id',
         api: {
           mutationMaximumAffectedRecords: 1000,
         },
@@ -191,6 +193,7 @@ describe('ClientConfigService', () => {
         calendarBookingPageId: 'team/twenty/talk-to-us',
         isCloudflareIntegrationEnabled: false,
         isClickHouseConfigured: false,
+        isWorkspaceSchemaDDLLocked: undefined,
         enterpriseInstanceType: ENTERPRISE_INSTANCE_TYPE.PRODUCTION,
       });
     });

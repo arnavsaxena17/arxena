@@ -14,6 +14,7 @@ import { RebuildApplicationDefaultDepsCommand } from 'src/database/commands/rebu
 import { RunInstanceCommandsCommand } from 'src/database/commands/run-instance-commands.command';
 import { UpgradeVersionCommandModule } from 'src/database/commands/upgrade-version-command/upgrade-version-command.module';
 import { WorkspaceExportModule } from 'src/database/commands/workspace-export/workspace-export.module';
+import { WorkspaceImportLegacyModule } from 'src/database/commands/workspace-import-legacy/workspace-import-legacy.module';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { GenerateApiKeyCommand } from 'src/engine/core-modules/api-key/commands/generate-api-key.command';
@@ -60,6 +61,7 @@ import { WorkflowCoreConsistencyModule } from 'src/modules/workflow/workflow-cor
     UpgradeVersionCommandModule,
     TypeOrmModule.forFeature([WorkspaceEntity, RoleEntity]),
     WorkspaceExportModule,
+    WorkspaceImportLegacyModule,
     // Cron command dependencies
     MessagingImportManagerModule,
     CalendarEventImportManagerModule,

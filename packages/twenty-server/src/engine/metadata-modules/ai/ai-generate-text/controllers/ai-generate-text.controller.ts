@@ -4,7 +4,6 @@ import { generateText } from 'ai';
 import { PermissionFlagType } from 'twenty-shared/constants';
 
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
-import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import type { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthUserWorkspaceId } from 'src/engine/decorators/auth/auth-user-workspace-id.decorator';
@@ -33,7 +32,6 @@ export class AiGenerateTextController {
   constructor(
     private readonly aiModelRegistryService: AiModelRegistryService,
     private readonly aiBillingService: AiBillingService,
-    private readonly billingUsageService: BillingUsageService,
   ) {}
 
   @Post('generate-text')
@@ -43,15 +41,6 @@ export class AiGenerateTextController {
     @AuthWorkspace() workspace: WorkspaceEntity,
     @AuthUserWorkspaceId() userWorkspaceId: string,
   ) {
-    if (this.aiModelRegistryService.getAvailableModels().length === 0) {
-      throw new AiException(
-        'No AI models are available. Please configure at least one AI provider API key.',
-        AiExceptionCode.API_KEY_NOT_CONFIGURED,
-      );
-    }
-
-    await this.billingUsageService.hasAvailableCreditsOrThrow(workspace.id);
-
     const resolvedModelId = body.modelId ?? workspace.fastModel;
 
     this.aiModelRegistryService.validateModelAvailability(
@@ -59,10 +48,16 @@ export class AiGenerateTextController {
       workspace,
     );
 
+    await this.aiBillingService.assertHasAvailableCreditsOrThrow(
+      workspace.id,
+      resolvedModelId,
+    );
+
     const registeredModel =
-      await this.aiModelRegistryService.resolveModelForAgent({
-        modelId: resolvedModelId,
-      });
+      await this.aiModelRegistryService.resolveModelForAgentInWorkspace(
+        { modelId: resolvedModelId },
+        workspace.id,
+      );
 
     let result: Awaited<ReturnType<typeof generateText>> | undefined;
 
@@ -83,7 +78,7 @@ export class AiGenerateTextController {
     } finally {
       if (result) {
         void this.aiBillingService.calculateAndBillUsage(
-          resolvedModelId,
+          registeredModel.modelId,
           {
             usage: result.usage,
             cacheCreationTokens:

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import crypto from 'crypto';
 
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createAnthropic, type AnthropicProvider } from '@ai-sdk/anthropic';
@@ -43,7 +44,8 @@ export class SdkProviderFactoryService {
     providerName: string,
     config: AiProviderConfig,
   ): AiSdkProviderInstance {
-    const cached = this.providerInstances.get(providerName);
+    const cacheKey = this.getProviderCacheKey(providerName, config);
+    const cached = this.providerInstances.get(cacheKey);
 
     if (cached) {
       return cached;
@@ -51,7 +53,7 @@ export class SdkProviderFactoryService {
 
     const instance = this.buildProviderInstance(config);
 
-    this.providerInstances.set(providerName, instance);
+    this.providerInstances.set(cacheKey, instance);
 
     return instance;
   }
@@ -60,13 +62,16 @@ export class SdkProviderFactoryService {
     providerName: string,
     ...allowedPackages: string[]
   ): T | undefined {
-    const instance = this.providerInstances.get(providerName);
-
-    if (!instance || !allowedPackages.includes(instance.sdkPackage)) {
-      return undefined;
+    for (const [cacheKey, instance] of this.providerInstances.entries()) {
+      if (
+        cacheKey.startsWith(`${providerName}-`) &&
+        allowedPackages.includes(instance.sdkPackage)
+      ) {
+        return instance.rawProvider as T;
+      }
     }
 
-    return instance.rawProvider as T;
+    return undefined;
   }
 
   getRawAnthropicProvider(providerName: string): AnthropicProvider | undefined {
@@ -86,6 +91,31 @@ export class SdkProviderFactoryService {
 
   clearCache(): void {
     this.providerInstances.clear();
+  }
+
+  private getProviderCacheKey(
+    providerName: string,
+    config: AiProviderConfig,
+  ): string {
+    const hash = (value: string | undefined): string =>
+      value
+        ? crypto.createHash('sha256').update(value).digest('hex')
+        : '';
+
+    // Cache by provider + sdk package + endpoint + secret material. This
+    // prevents cross-workspace credential reuse when we support BYO keys.
+    return [
+      providerName,
+      config.npm,
+      config.baseUrl ?? '',
+      config.name ?? '',
+      config.region ?? '',
+      config.authType ?? '',
+      config.accessKeyId ?? '',
+      hash(config.secretAccessKey),
+      config.sessionToken ? hash(config.sessionToken) : '',
+      hash(config.apiKey),
+    ].join('-');
   }
 
   private buildProviderInstance(

@@ -17,7 +17,6 @@ import { type Repository } from 'typeorm';
 
 import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
-import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { TOOL_EXECUTION_DURATION_MS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/tool-execution-duration-ms-bucket-boundaries.constant';
 import { TOOL_OUTPUT_TOKENS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/tool-output-tokens-bucket-boundaries.constant';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
@@ -50,6 +49,7 @@ import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/co
 import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { NativeToolBinderService } from 'src/engine/metadata-modules/ai/ai-models/services/native-tool-binder.service';
+import { type ModelId } from 'src/engine/metadata-modules/ai/ai-models/types/model-id.type';
 import { type NativeModelToolOptions } from 'src/engine/metadata-modules/ai/ai-models/types/native-model-tool-options.type';
 import {
   AiException,
@@ -88,7 +88,6 @@ export class AgentAsyncExecutorService {
     private readonly toolRegistry: ToolRegistryService,
     private readonly nativeToolBinder: NativeToolBinderService,
     private readonly aiBillingService: AiBillingService,
-    private readonly billingUsageService: BillingUsageService,
     private readonly metricsService: MetricsService,
     @InjectWorkspaceScopedRepository(RoleTargetEntity)
     private readonly roleTargetRepository: WorkspaceScopedRepository<RoleTargetEntity>,
@@ -127,8 +126,7 @@ export class AgentAsyncExecutorService {
     userWorkspaceId?: string | null;
     operationType?: UsageOperationType;
   }): Promise<AgentExecutionResult> {
-    await this.billingUsageService.hasAvailableCreditsOrThrow(workspaceId);
-
+    let resolvedModelId: string = agent?.modelId ?? AUTO_SELECT_SMART_MODEL_ID;
     let accumulatedUsage: LanguageModelUsage = EMPTY_USAGE;
     let cacheCreationTokens = 0;
     let nativeWebSearchCallCount = 0;
@@ -149,7 +147,17 @@ export class AgentAsyncExecutorService {
       }
 
       const registeredModel =
-        await this.aiModelRegistryService.resolveModelForAgent(agent);
+        await this.aiModelRegistryService.resolveModelForAgentInWorkspace(
+          agent,
+          workspaceId,
+        );
+
+      resolvedModelId = registeredModel.modelId;
+
+      await this.aiBillingService.assertHasAvailableCreditsOrThrow(
+        workspaceId,
+        registeredModel.modelId as ModelId,
+      );
 
       let tools: ToolSet = {};
       let providerOptions = getCallLevelProviderOptions({
@@ -384,7 +392,6 @@ export class AgentAsyncExecutorService {
         result = structuredResult.output as object;
       }
 
-      const resolvedModelId = registeredModel.modelId;
       const tokenCostInDollars = this.aiBillingService.calculateCost(
         resolvedModelId,
         { usage: accumulatedUsage, cacheCreationTokens },
@@ -416,7 +423,7 @@ export class AgentAsyncExecutorService {
         AiExceptionCode.AGENT_EXECUTION_FAILED,
       );
     } finally {
-      const modelId = agent?.modelId ?? AUTO_SELECT_SMART_MODEL_ID;
+      const modelId = resolvedModelId;
       const costInDollars = this.aiBillingService.calculateCost(modelId, {
         usage: accumulatedUsage,
         cacheCreationTokens,
@@ -442,6 +449,7 @@ export class AgentAsyncExecutorService {
       void this.aiBillingService.billNativeWebSearchUsage(
         nativeWebSearchCallCount,
         workspaceId,
+        modelId,
         userWorkspaceId,
       );
     }

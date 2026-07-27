@@ -104,9 +104,11 @@ export const ArxJDUploadStep = ({
   // Fetch attachments for the current parsedJD
   const { records: attachments } = useFindManyRecords({
     objectNameSingular: 'attachment',
-    filter: parsedJD?.id ? {
-      projectId: { eq: parsedJD.id }
-    } : undefined,
+    filter: parsedJD?.id
+      ? {
+          targetProjectId: { eq: parsedJD.id },
+        }
+      : undefined,
     skip: !parsedJD?.id,
   });
 

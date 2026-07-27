@@ -11,7 +11,9 @@ import {
   collectOtherFieldKeys,
   CreateManyCandidates,
   getGraphqlToFindManyProjectsWithCandidateValues,
+  getAttachmentDownloadUrl,
   graphqlToFetchAllCandidateData,
+  graphQLtoCreateOneAttachmentFromFilePath,
   graphQltoUpdateOneCandidate,
   Project,
   mutationToUpdateOnePerson,
@@ -41,6 +43,7 @@ import { v4 } from 'uuid';
 import axios from 'axios';
 
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
@@ -52,6 +55,13 @@ import { PersonService } from './person.service';
 
 // Forward reference type to avoid circular dependency
 type ProcessCandidatesServiceRef = ProcessCandidatesService;
+
+type CvAttachmentReplicateMeta = {
+  name: string;
+  fileCategory: string;
+  file?: { fileId: string; label: string }[];
+  fullPath?: string;
+};
 
 type UploadExistingCandidateNode = {
   id: string;
@@ -94,6 +104,7 @@ export class CandidateService {
     private readonly otherFieldsService: OtherFieldsService,
     @Inject(forwardRef(() => ProcessCandidatesService))
     private readonly processCandidatesService: ProcessCandidatesServiceRef,
+    private readonly attachmentProcessing: AttachmentProcessingService,
   ) {}
 
   private async getWorkspaceIdFromToken(apiToken: string): Promise<string> {
@@ -3690,7 +3701,7 @@ export class CandidateService {
     );
     const edges = response?.data?.data?.candidates?.edges || [];
 
-    const attachmentByPath = new Map<string, { name: string; fullPath: string; fileCategory: string }>();
+    const attachmentByPath = new Map<string, CvAttachmentReplicateMeta>();
     const existingPathsByCandidate = new Map<string, Set<string>>();
 
     for (const edge of edges) {
@@ -3701,17 +3712,13 @@ export class CandidateService {
       const paths = new Set<string>();
       for (const attEdge of node.attachments?.edges || []) {
         const att = attEdge?.node;
-        if (!att?.fullPath) {
+        const dedupKey = this.getAttachmentDedupKey(att);
+        if (!dedupKey) {
           continue;
         }
-        const normalizedPath = this.normalizeAttachmentPath(att.fullPath);
-        paths.add(normalizedPath);
-        if (!attachmentByPath.has(normalizedPath)) {
-          attachmentByPath.set(normalizedPath, {
-            name: att.name || normalizedPath.split('/').pop() || 'resume.pdf',
-            fullPath: normalizedPath,
-            fileCategory: att.fileCategory || 'TEXT_DOCUMENT',
-          });
+        paths.add(dedupKey);
+        if (!attachmentByPath.has(dedupKey)) {
+          attachmentByPath.set(dedupKey, this.buildCvAttachmentReplicateMeta(att, dedupKey));
         }
       }
       existingPathsByCandidate.set(node.id, paths);
@@ -3725,14 +3732,14 @@ export class CandidateService {
     let attachmentsCreated = 0;
     for (const cid of matchedCandidateIds) {
       const existing = existingPathsByCandidate.get(cid) || new Set<string>();
-      for (const [fullPath, meta] of attachmentByPath) {
-        if (existing.has(fullPath)) {
+      for (const [dedupKey, meta] of attachmentByPath) {
+        if (existing.has(dedupKey)) {
           continue;
         }
         try {
           await this.createAttachmentRecordForCandidate(cid, meta, apiToken);
           attachmentsCreated++;
-          console.log(`replicateCvAttachments: created attachment on candidate ${cid} for ${fullPath}`);
+          console.log(`replicateCvAttachments: created attachment on candidate ${cid} for ${dedupKey}`);
         } catch (error) {
           console.error(`replicateCvAttachments: failed to create attachment on candidate ${cid}`, error);
         }
@@ -3743,14 +3750,74 @@ export class CandidateService {
     return { matchedCandidateIds, attachmentsCreated };
   }
 
+  private getAttachmentDedupKey(
+    att:
+      | {
+          file?: Array<{ fileId?: string | null; url?: string | null } | null> | null;
+          fullPath?: string | null;
+        }
+      | null
+      | undefined,
+  ): string | null {
+    const fileId = att?.file?.[0]?.fileId;
+    if (typeof fileId === 'string' && fileId.length > 0) {
+      return `fileId:${fileId}`;
+    }
+    const downloadUrl = getAttachmentDownloadUrl(att);
+    if (downloadUrl) {
+      return this.normalizeAttachmentPath(downloadUrl);
+    }
+    return null;
+  }
+
+  private buildCvAttachmentReplicateMeta(
+    att: {
+      name?: string | null;
+      fileCategory?: string | null;
+      file?: Array<{ fileId?: string | null; label?: string | null } | null> | null;
+      fullPath?: string | null;
+    },
+    dedupKey: string,
+  ): CvAttachmentReplicateMeta {
+    const fileEntry = att.file?.[0];
+    const downloadUrl = getAttachmentDownloadUrl({
+      file: att.file,
+      fullPath: att.fullPath,
+    });
+    const normalizedPath = downloadUrl
+      ? this.normalizeAttachmentPath(downloadUrl)
+      : dedupKey;
+    const name =
+      att.name || normalizedPath.split('/').pop() || 'resume.pdf';
+
+    if (fileEntry?.fileId) {
+      return {
+        name,
+        fileCategory: att.fileCategory || 'TEXT_DOCUMENT',
+        file: [
+          {
+            fileId: fileEntry.fileId,
+            label: fileEntry.label || name,
+          },
+        ],
+      };
+    }
+
+    return {
+      name,
+      fileCategory: att.fileCategory || 'TEXT_DOCUMENT',
+      fullPath: normalizedPath,
+    };
+  }
+
   /**
-   * Normalize an attachment fullPath into the stable, storable relative form (e.g. `attachment/<uuid>.pdf`).
+   * Normalize an attachment download URL into stable relative form (e.g. `attachment/<uuid>.pdf`).
    *
    * The GraphQL API returns fullPath as a freshly-signed absolute URL
    * (e.g. `https://host/files/attachment/<uuid>.pdf?token=...`). Storing that verbatim is wrong:
    * the embedded token expires and is re-appended on every read, so the value is unstable (breaking
    * dedup) and produces broken, double-tokened download URLs. We strip the query string and the
-   * `.../files/` origin prefix so the value matches what `uploadFile` stores for real uploads.
+   * `.../files/` origin prefix so the value matches legacy storage layout for transitional rows.
    */
   private normalizeAttachmentPath(fullPath: string): string {
     if (!fullPath) {
@@ -3770,31 +3837,38 @@ export class CandidateService {
    */
   private async createAttachmentRecordForCandidate(
     candidateId: string,
-    meta: { name: string; fullPath: string; fileCategory: string },
+    meta: CvAttachmentReplicateMeta,
     apiToken: string,
   ): Promise<void> {
-    const createAttachmentMutation = `
-      mutation CreateOneAttachment($input: AttachmentCreateInput!) {
-        createAttachment(data: $input) {
-          id
-          name
-          fullPath
-          fileCategory
-        }
-      }
-    `;
-    await this.staticGraphQLService.executeGraphQL(
-      createAttachmentMutation,
-      {
-        input: {
-          name: meta.name,
-          fullPath: meta.fullPath,
-          fileCategory: meta.fileCategory,
-          candidateId,
+    if (meta.file?.length) {
+      await this.attachmentProcessing.createAttachmentFromUploadedFile(
+        {
+          input: {
+            name: meta.name,
+            file: meta.file,
+            fileCategory: meta.fileCategory,
+            targetCandidateId: candidateId,
+          },
         },
-      },
-      apiToken,
-    );
+        apiToken,
+      );
+      return;
+    }
+
+    if (meta.fullPath) {
+      await this.staticGraphQLService.executeGraphQL(
+        graphQLtoCreateOneAttachmentFromFilePath,
+        {
+          input: {
+            name: meta.name,
+            fullPath: meta.fullPath,
+            fileCategory: meta.fileCategory,
+            targetCandidateId: candidateId,
+          },
+        },
+        apiToken,
+      );
+    }
   }
 
   /**
@@ -3934,20 +4008,16 @@ export class CandidateService {
     dryRun: boolean,
     apiToken: string,
   ): Promise<number> {
-    const attachmentByPath = new Map<string, { name: string; fullPath: string; fileCategory: string }>();
+    const attachmentByPath = new Map<string, CvAttachmentReplicateMeta>();
     for (const member of members) {
       for (const attEdge of member.attachments?.edges || []) {
         const att = attEdge?.node;
-        if (!att?.fullPath) {
+        const dedupKey = this.getAttachmentDedupKey(att);
+        if (!dedupKey) {
           continue;
         }
-        const normalizedPath = this.normalizeAttachmentPath(att.fullPath);
-        if (!attachmentByPath.has(normalizedPath)) {
-          attachmentByPath.set(normalizedPath, {
-            name: att.name || normalizedPath.split('/').pop() || 'resume.pdf',
-            fullPath: normalizedPath,
-            fileCategory: att.fileCategory || 'TEXT_DOCUMENT',
-          });
+        if (!attachmentByPath.has(dedupKey)) {
+          attachmentByPath.set(dedupKey, this.buildCvAttachmentReplicateMeta(att, dedupKey));
         }
       }
     }
@@ -3963,25 +4033,31 @@ export class CandidateService {
       }
       const existing = new Set<string>(
         (member.attachments?.edges || [])
-          .map((e: any) => e?.node?.fullPath)
-          .filter(Boolean)
-          .map((p: string) => this.normalizeAttachmentPath(p)),
+          .map((edge: { node?: Record<string, unknown> }) =>
+            this.getAttachmentDedupKey(
+              edge?.node as {
+                file?: Array<{ fileId?: string | null; url?: string | null } | null> | null;
+                fullPath?: string | null;
+              },
+            ),
+          )
+          .filter((dedupKey): dedupKey is string => Boolean(dedupKey)),
       );
-      for (const [fullPath, meta] of attachmentByPath) {
-        if (existing.has(fullPath)) {
+      for (const [dedupKey, meta] of attachmentByPath) {
+        if (existing.has(dedupKey)) {
           continue;
         }
         if (dryRun) {
           created++;
-          console.log(`bulkBackfillCvAttachments[dryRun]: would attach ${fullPath} to candidate ${member.id}`);
+          console.log(`bulkBackfillCvAttachments[dryRun]: would attach ${dedupKey} to candidate ${member.id}`);
           continue;
         }
         try {
           await this.createAttachmentRecordForCandidate(member.id, meta, apiToken);
           created++;
-          console.log(`bulkBackfillCvAttachments: attached ${fullPath} to candidate ${member.id}`);
+          console.log(`bulkBackfillCvAttachments: attached ${dedupKey} to candidate ${member.id}`);
         } catch (error) {
-          console.error(`bulkBackfillCvAttachments: failed to attach ${fullPath} to candidate ${member.id}`, error);
+          console.error(`bulkBackfillCvAttachments: failed to attach ${dedupKey} to candidate ${member.id}`, error);
         }
       }
     }
@@ -4178,137 +4254,95 @@ export class CandidateService {
         return;
       }
 
-      // Extract file information
       const fileName = filePath.split('/').pop() || 'resume.pdf';
-      const fileType = this.getFileTypeFromFileName(fileName);
-      const applicationType = this.getApplicationTypeFromFileType(fileType);
-
-      // Step 1: Upload file to Twenty storage
-      const uploadResponse = await this.uploadFileToTwenty(filePath, fileName, applicationType, apiToken);
-
-      if (!uploadResponse?.uploadFilePath) {
-        console.error('Failed to upload file to Twenty storage');
-        return;
-      }
-
-      // Step 2: Create attachment record (createdBy is set from auth context)
-      const createAttachmentMutation = `
-        mutation CreateOneAttachment($input: AttachmentCreateInput!) {
-          createAttachment(data: $input) {
-            id
-            name
-            fullPath
-            fileCategory
-          }
-        }
-      `;
-
-      const attachmentVariables = {
-        input: {
-          name: fileName,
-          fullPath: uploadResponse.uploadFilePath,
-          fileCategory: 'TEXT_DOCUMENT',
-          candidateId: candidateId
-        }
-      };
-
-      const attachmentResponse = await this.staticGraphQLService.executeGraphQL(
-        createAttachmentMutation,
-        attachmentVariables,
-        apiToken
+      const { localPath, cleanup } = await this.resolveCvFileToLocalPath(
+        filePath,
+        fileName,
       );
 
-      console.log('Successfully created CV attachment:', attachmentResponse?.data?.data?.createAttachment);
+      try {
+        const uploaded = await this.attachmentProcessing.uploadAttachmentFile(
+          localPath,
+          apiToken,
+          fileName,
+        );
 
+        if (!uploaded?.fileId) {
+          console.error('Failed to upload CV file to FILES field');
+          return;
+        }
+
+        const attachmentResponse =
+          await this.attachmentProcessing.createAttachmentFromUploadedFile(
+            {
+              input: {
+                name: fileName,
+                file: [{ fileId: uploaded.fileId, label: fileName }],
+                fileCategory: 'TEXT_DOCUMENT',
+                targetCandidateId: candidateId,
+              },
+            },
+            apiToken,
+          );
+
+        console.log(
+          'Successfully created CV attachment:',
+          attachmentResponse?.data?.data?.createAttachment,
+        );
+      } finally {
+        if (cleanup) {
+          try {
+            fs.unlinkSync(localPath);
+            fs.rmdirSync(path.dirname(localPath));
+          } catch {
+            // temp cleanup best-effort
+          }
+        }
+      }
     } catch (error) {
       console.error('Error creating CV attachment:', error);
       throw error;
     }
   }
 
-  private async uploadFileToTwenty(filePath: string, fileName: string, contentType: string, apiToken: string): Promise<{ uploadFilePath: string }> {
-    try {
-      const FormData = require('form-data');
-      const axios = require('axios');
-
-      const lastSlashIndex = filePath.lastIndexOf('/');
-      const folderPath =
-        lastSlashIndex >= 0 ? filePath.substring(0, lastSlashIndex) : '';
-      const storageFileName =
-        lastSlashIndex >= 0 ? filePath.substring(lastSlashIndex + 1) : filePath;
-
-      console.log('Reading CV from storage for Twenty upload:', {
-        folderPath,
-        filename: storageFileName,
-      });
-
-      const fileStream = await this.fileStorageService.read({
-        folderPath,
-        filename: storageFileName,
-      });
-
-      const formData = new FormData();
-      const operations = JSON.stringify({
-        operationName: "uploadFile",
-        variables: { file: null, fileFolder: "Attachment" },
-        query: "mutation uploadFile($file: Upload!, $fileFolder: FileFolder) {\n  uploadFile(file: $file, fileFolder: $fileFolder)\n}"
-      });
-
-      const map = JSON.stringify({ "1": ["variables.file"] });
-
-      formData.append('operations', operations);
-      formData.append('map', map);
-      formData.append('1', fileStream, {
-        filename: fileName,
-        contentType: contentType
-      });
-
-      const response = await axios.post(
-        `${process.env.SERVER_BASE_URL || 'http://localhost:3000'}/graphql`,
-        formData,
-        {
-          headers: {
-            ...formData.getHeaders(),
-            'Authorization': `Bearer ${apiToken}`
-          }
-        }
-      );
-
-      const uploadFilePath = response.data?.data?.uploadFile;
-      if (!uploadFilePath) {
-        throw new Error('Failed to get upload file path from response');
-      }
-
-      // Remove query parameters from the path
-      const cleanPath = uploadFilePath.split('?')[0];
-
-      return { uploadFilePath: cleanPath };
-
-    } catch (error) {
-      console.error('Error uploading file to Twenty:', error);
-      throw error;
+  private async resolveCvFileToLocalPath(
+    filePath: string,
+    fileName: string,
+  ): Promise<{ localPath: string; cleanup: boolean }> {
+    if (fs.existsSync(filePath)) {
+      return { localPath: filePath, cleanup: false };
     }
+
+    const lastSlashIndex = filePath.lastIndexOf('/');
+    const folderPath =
+      lastSlashIndex >= 0 ? filePath.substring(0, lastSlashIndex) : '';
+    const storageFileName =
+      lastSlashIndex >= 0 ? filePath.substring(lastSlashIndex + 1) : filePath;
+
+    console.log('Reading CV from storage for FILES upload:', {
+      folderPath,
+      filename: storageFileName,
+    });
+
+    const fileStream = await this.fileStorageService.read({
+      folderPath,
+      filename: storageFileName,
+    });
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-upload-'));
+    const localPath = path.join(tempDir, fileName);
+    const writeStream = fs.createWriteStream(localPath);
+
+    await new Promise<void>((resolve, reject) => {
+      fileStream.pipe(writeStream);
+      writeStream.on('finish', () => resolve());
+      writeStream.on('error', reject);
+      fileStream.on('error', reject);
+    });
+
+    return { localPath, cleanup: true };
   }
 
-  private getFileTypeFromFileName(fileName: string): string {
-    if (fileName.includes('.docx')) return 'docx';
-    if (fileName.includes('.pdf')) return 'pdf';
-    if (fileName.includes('.doc') && !fileName.includes('.docx')) return 'doc';
-    return 'pdf'; // default
-  }
-
-  private getApplicationTypeFromFileType(fileType: string): string {
-    switch (fileType) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'docx':
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'doc':
-        return 'application/msword';
-      default:
-        return 'application/pdf';
-    }
-  }
 
   async updateTableData(recruiterId: string, apiToken: string): Promise<void> {
     try {

@@ -6,6 +6,7 @@ Companion docs:
 
 - Module port inventory: [`docs/port-workflows-inventory.md`](./port-workflows-inventory.md)
 - Mechanical Recoil→Jotai + UI remaps: [`.cursor/skills/recoil-to-jotai-migration/SKILL.md`](../.cursor/skills/recoil-to-jotai-migration/SKILL.md)
+- Attachment FILES-field + `target*Id` remaps: [`.cursor/skills/attachment-files-field-migration/SKILL.md`](../.cursor/skills/attachment-files-field-migration/SKILL.md)
 - CRM rename script: [`packages/twenty-utils/rename-crm-job-to-project.mjs`](../packages/twenty-utils/rename-crm-job-to-project.mjs)
 
 Update this file whenever a new broken pattern is discovered or fixed.
@@ -25,15 +26,21 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| ARX record actions → command-menu-items | Ported workflows action-menu bulk actions to `EngineComponentKey` + seeded CMIs + headless commands; HotTable bottom bar pins + All Actions → side panel (syncs selection to MAIN). **Existing workspaces need** `upgrade:2-25:add-arxena-record-action-command-menu-items` (CMIs are not auto-synced). | `arxena-standard-command-menu-item.constant.ts`, `command-menu-item/engine-command/record/arx/`, `HotTableActionMenu.tsx`, `2-25-workspace-command-1785600000007-…` |
+| Legacy attachment download 404 | AttachmentPanel was resolving relative `fullPath` (`attachment/<uuid>.pdf`) to `/attachment/...` (missing `/files/`). Fixed `normalizeAttachmentUrl`. **Separate data gap:** arxena workspace has 28 attachment rows all with `file=null`; none of those S3 keys exist under `workspace-{id}/attachment/` (import copied DB rows, not binaries). Re-upload CVs or copy storage; legacy `/files/*` route also removed upstream (only `/file/:folder/:id`). | `AttachmentPanel.tsx`; skill `attachment-files-field-migration`; S3 `arx-server-storage-940813655147` |
+| Legacy DB import (local) | Nest CLI `workspace:import-legacy`; local dump → `arxena_legacy_local` → current `default` (activate + `_job`→`_project` ETL) | `packages/twenty-server/src/database/commands/workspace-import-legacy/` |
+| Legacy morph FK remap | Auto-map `fooId`→`targetFooId` on attachment/noteTarget/taskTarget/timelineActivity; `type`→`fileCategory`, `authorId`→`createdByWorkspaceMemberId`; camelCase enum→`TEXT_DOCUMENT`; re-ETL’d morph tables | `workspace-import-legacy.{constants,service}.ts` |
 | Recoil → Jotai | ARX modules converted to `createAtomState` / `useAtomState*`; no `from 'recoil'` left in listed ARX modules | `.cursor/skills/recoil-to-jotai-migration/` |
 | Emotion → Linaria | `@emotion/styled` + `theme.*` → `@linaria/react` + `themeCssVariables` across ARX UI | skill §5 |
 | SnackBar API | `enqueueSnackBar` → typed enqueue helpers (partial; see §6 leftovers) | skill §6 |
 | Job → Project | CRM object/files/routes renamed; MCP `job-tools` → `project-tools` | §3 below + rename script |
 | twenty-shared barrels | Flat `from 'twenty-shared'` split to `/arx`, `/types`, `/utils`, `/graphql`, `/constants`, `/ai`, … | §2.4 |
-| Apollo clients | Workspace ops must use `useApolloCoreClient` (`/graphql`) | §1 |
+| Attachment FILES-field server migration | `uploadAttachmentFile` + `file[]` + `target*Id`; `getAttachmentDownloadUrl` for reads | §2.10; hub `attachment-processes.ts`; skill `.cursor/skills/attachment-files-field-migration/` |
 | Providers | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect in `WorkspaceAppProviders` | §4 |
+| Chrome extension bridges | Mounted `ChromeExtensionAuthBridgeEffect` + sidecar in providers; restored `CHROME_EXTENSION_ID` → client-config → `chromeExtensionIdState` | §0 / §4 / §6 / §9 |
 | Enrichments + orgchart HMR | Guard non-array `find-many-ai-filters` `data`; orgchart lazy import retries once after Vite HMR abort | `useInitializeEnrichments`, `SampleEnrichments`, `OrgChartRoute`, candidate-sourcing controller |
 | Settings Accounts | WhatsApp Unipile, Facebook SignUp, Baileys, LinkedIn SignUp, Contacts routes | `SettingsRoutes.tsx` |
+| Workspace API keys form | Restored workflows `ApiKeysForm` on Settings → General (grouped: AI / Messaging / LinkedIn / Twilio / Workspace & extension); persists via `/workspace-modifications/workspace-keys` | `ApiKeysForm.tsx`, `SettingsGeneral.tsx` |
 | Auth / codegen | `AuthTokenPair` etc. from `~/generated-metadata/graphql` (not `~/generated/graphql`) | §2.5 |
 | Date picker | `react-date-range` → `react-datepicker` | §2.6 |
 | Server base URL | `process.env.REACT_APP_SERVER_BASE_URL` → `~/config` (`REACT_APP_SERVER_BASE_URL`) across ARX modules | §2.8 |
@@ -57,8 +64,14 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 | Object index ViewBar refresh | Ported workflows refresh onto `RecordIndexViewBar` + `ViewBar`; table reload via `recordIndexTableRefreshFunctionState` → `resetVirtualizationBecauseDataChanged` (not blanket `FindMany*` refetchQueries) | `ViewBar.tsx`, `RecordIndexViewBar.tsx`, `RecordIndexTableRefreshEffect.tsx` |
 | Projects Menu dropdown UI | Header z-20 vs PageBody z-25 hid in-header menu under table. Portaled fixed panel (z-38) anchored to Menu via getBoundingClientRect | `CandidateTableProjectsPageMenuDropdown.tsx`, `CandidateTablePageHeader.tsx` (§2.3) |
 | Linaria + `react-pdf` | wyw-in-js evaluates Linaria modules and chokes on `pdfjs-dist` private fields (`#divider`); lazy-load PDF viewer without Linaria | `AttachmentPanel.tsx` → `AttachmentPdfViewer.tsx` |
+| AttachmentPanel Node `util` | `import { TextDecoder } from 'util'` crashes Vite client (`util.TextDecoder` externalized); use browser global `TextDecoder` | `AttachmentPanel.tsx` |
+| CV drawer blank PDF preview | `styled()` for AttachmentPanel container was inside `CandidateChatDrawer` render → new component type every re-render remounted PDF viewer; also signed `/file/...?token=` fetch used Bearer (CORS preflight) and content-type fell back to URL path segment instead of `.pdf` name | `CandidateChatDrawer.tsx`, `AttachmentPanel.tsx`, `AttachmentPdfViewer.tsx` |
+| CV drawer `InvalidPDFException` | Preview used `blob:` URLs; React Strict Mode cleanup `revokeObjectURL` mid-load. Pass `ArrayBuffer` to react-pdf; validate `%PDF-` magic; rewrite `localhost` file hosts to `REACT_APP_SERVER_BASE_URL` | `AttachmentPanel.tsx`, `AttachmentPdfViewer.tsx` |
 | Website testimonial photos | Paths `/img/testimonials/{aaron-lintz,craig-rajpal,john-calvani}.jpg` were never backed by files on workflows or current — only `mannan-pacha.webp` exists. Legacy `lintz.jpg`/`rajpal.jpg`/`calvani.jpg` gitignored in arxena-site and missing on prod. Cleared broken paths → ui-avatars | `twenty-website` `homepage-content.ts` |
 | AuthTokenPair field rename | `tokenPair.accessToken` → `accessOrWorkspaceAgnosticToken` (LinkedIn signup crash + Baileys `hasToken: false`) | §2.5; LinkedIn/WhatsApp Unipile/Baileys settings |
+| Metadata `isCustom` dropped | `CreateOneField`/`CreateOneObject` + object metadata queries still selected `isCustom` (and `dataSourceId` / `relationDefinition`); schema only has `isSystem` after 2.12 drop | §2.10; `twenty-shared/src/graphql/{mutations,queries}.ts` — rebuild + restart nest |
+| CMI REST `/objects/undefined/…` | Newly ported ARX command-menu + object-record hooks used `process.env.REACT_APP_SERVER_BASE_URL` (undefined under Vite) → relative `undefined/contacts/…` under `/objects/candidates`. Remapped all 18 hits to `~/config` | §2.8; `ArxAddToGoogleContactsCommand`, sibling ARX CMIs + `useStartChats` / video / chat / contact hooks |
+| Profile account IDs | Restored workflows Profile “IDs” section (member/user/workspace id + schema + names) via `SettingsTableCard` + Jotai/Linaria | `pages/settings/profile/SettingsProfile.tsx` |
 
 ---
 
@@ -139,6 +152,9 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `@emotion/styled` + `theme.*` | `@linaria/react` + `themeCssVariables` from `twenty-ui/theme-constants` |
 | `styled(IconX)` from `@tabler/icons-react` in `twenty-orgchart` | styled wrapper + `<IconX size={…} />` (Linaria resolves package under package-local `node_modules`, missing under Yarn hoist) |
 | Static `react-pdf` / `pdfjs-dist` import in a Linaria module | Lazy-load a non-Linaria viewer (`AttachmentPdfViewer`); wyw-in-js cannot parse pdfjs private fields |
+| `import { TextDecoder } from 'util'` in front modules | Browser global `TextDecoder` (Vite externalizes Node `util`) |
+| `styled()` for drawer AttachmentPanel container inside render | Module-scope styled component (`StyledInlineAttachmentContainer`) — in-render styled remounts PDF viewer every parent update |
+| axios + `Authorization` on signed `/file/...?token=` URLs | Fetch without Bearer (token in query); infer PDF from filename when content-type is weak/octet-stream |
 | `theme.spacing(n)` | `themeCssVariables.spacing[n]` |
 | `enqueueSnackBar` | `enqueueSuccessSnackBar` / `enqueueErrorSnackBar` / `enqueueInfoSnackBar` / `enqueueWarningSnackBar` |
 | `useRightDrawer` / `RightDrawerPages` | side-panel APIs (`useSidePanelMenu`, `SidePanelPages` from `twenty-shared/types`) |
@@ -222,8 +238,9 @@ Fixed: `LinkedinSignup`, `ConnectedLinkedinAccounts`, `WhatsappUnipileQrCode`,
 ### 2.8 Server base URL (Vite / runtime env)
 
 Vite does **not** inject CRA-style `process.env.REACT_APP_*`. Using
-`process.env.REACT_APP_SERVER_BASE_URL` produces URLs like
-`/undefined/candidate-sourcing/...`.
+`process.env.REACT_APP_SERVER_BASE_URL` produces the string `"undefined"`, so
+axios resolves `` `undefined/contacts/…` `` relative to the current path
+(e.g. `/objects/candidates` → `/objects/undefined/contacts/…` → 404).
 
 | Broken | Correct |
 | --- | --- |
@@ -233,8 +250,12 @@ Vite does **not** inject CRA-style `process.env.REACT_APP_*`. Using
 `~/config` resolves `window._env_?.REACT_APP_SERVER_BASE_URL` or defaults to
 `http://{hostname}:3000` on localhost / same-origin elsewhere.
 
+Re-sweep after any workflows→CMI / REST hook port — those often copy the
+CRA `process.env` pattern.
+
 ```bash
-rg "process\.env\.REACT_APP_SERVER_BASE_URL" packages/twenty-front/src/modules
+# Must be empty under src/modules (codegen/scripts OK)
+rg "process\.env\.REACT_APP_SERVER_BASE_URL" packages/twenty-front/src
 ```
 
 ### 2.9 Apollo Client React hooks (v4)
@@ -267,9 +288,15 @@ Fixed: `billing/components/CreditHistoryModal.tsx` (sibling sweep: only hit).
 | create enrichment input `fields` | `filterFields` |
 | `Attachment.authorId` | `createdBy { workspaceMemberId name source }` (auto on create) |
 | `Attachment.type` | `fileCategory` (`TEXT_DOCUMENT`, `VIDEO`, `AUDIO`, `OTHER`, …) |
+| `uploadFile` + `FileFolder.Attachment` + create with `fullPath` | FILES upload (`useUploadAttachmentFile` / `uploadAttachmentFile`) + create with `file: [{ fileId, label }]` |
+| Attachment morph FKs `candidateId` / `projectId` / `personId` / `companyId` | `targetCandidateId` / `targetProjectId` / `targetPersonId` / `targetCompanyId` |
+| Download via `attachment.fullPath` | `getAttachmentDownloadUrl` → `file[0].url` (fullPath fallback for legacy rows) |
 | `candidateService.getCandidateFieldsByJobId` | `getCandidateFieldsByProjectId` |
 | `$objectRecordId: ID!` / `$idToUpdate: ID!` / `$idToDelete: ID!` / `$id: ID!` | `UUID!` (workspace + metadata id args) |
 | `response.data.data.job` after `FindOneProject` | `response.data.data.project` (optional `?? job` fallback) |
+| Metadata `Field`/`Object`.`isCustom` | removed — use `isSystem` (or omit); also drop `Object.dataSourceId` + `Field.relationDefinition` → `relation` in metadata SDL strings |
+
+Skill: [`.cursor/skills/attachment-files-field-migration/SKILL.md`](../.cursor/skills/attachment-files-field-migration/SKILL.md)
 
 ```bash
 rg -n "authorId|\\btype\\b" packages/twenty-shared/src/graphql/queries.ts | rg -i attachment
@@ -277,11 +304,31 @@ rg -n "fields$" packages/twenty-shared/src/graphql/queries.ts | rg -i enrich
 rg -n "getCandidateFieldsByJobId|authorId:|type: 'TextDocument'" packages/twenty-{server,front}/src
 rg -n '\$objectRecordId: ID!|\$idToUpdate: ID!' packages/twenty-shared/src/graphql
 rg -n 'data\?\.data\?\.job\b' packages/twenty-server/src/engine/core-modules
+rg -n 'isCustom|dataSourceId|relationDefinition' packages/twenty-shared/src/graphql
+rg -n 'uploadFile|FileFolder\.Attachment|fileFolder:\s*"Attachment"' packages/twenty-{front,server}/src
+rg -n 'filter:\s*\{\s*(candidateId|projectId)\s*:' packages/twenty-front/src/modules/{candidate-table,arx-jd-upload,candidate-search}
+rg -n 'attachment\.fullPath|getAttachmentDownloadUrl' packages/twenty-{front,server}/src
 ```
 
 **Symptom log (GraphQLExecutionService):** `Cannot query field "fields" on CandidateEnrichment`, `authorId`/`type` on `Attachment`, `Variable "$objectRecordId" of type "ID!" used in position expecting type "UUID"` — fix shared queries, rebuild `twenty-shared`, **restart nest** (module cache).
 
----
+**Legacy dump ETL (`workspace:import-legacy`):** morph FKs on `attachment` / `noteTarget` / `taskTarget` / `timelineActivity` auto-map `fooId`→`targetFooId` (plus `jobId`→`targetProjectId`, `type`→`fileCategory`, `authorId`→`createdByWorkspaceMemberId`). Without this, attachment rows copy but `targetCandidateId` stays null. Enum labels also accept camelCase (`TextDocument`→`TEXT_DOCUMENT`).
+
+### 2.11 Record actions (workflows action-menu → command-menu-items)
+
+| Broken (workflows) | Correct (current) |
+| --- | --- |
+| `action-menu` Recoil registry + `getActionConfig` | Metadata `command-menu-item` + `EngineComponentKey` headless commands |
+| `CandidateActionsConfig` / `TableCandidateActionsConfig` / `JobActionsConfig` / `PeopleActionsConfig` | `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*` |
+| `HotTableActionMenu` bottom bar via `actionMenuEntries` | `HotTableActionMenu` via `CommandMenuContextProvider` + pinned CMIs + All Actions |
+| `RightDrawerPages.CandidateActions` | `SidePanelPages.CommandMenuDisplay` (HotTable syncs selection to MAIN first) |
+| Job-scoped actions | `project` via `objectMetadataItem.nameSingular == "project"` |
+
+```bash
+rg -n 'ARX_START_CHAT|ARX_CLONE_MULTIPLE|arxena-standard-command-menu' packages/twenty-{server,front}/src
+rg -n 'HotTableActionMenu|HotTableContextStoreEffect' packages/twenty-front/src/modules/candidate-table
+rg -n 'CandidateActions' packages/twenty-front/src/modules/ui/layout/right-drawer
+```
 
 ## 3. Job → Project rename map
 
@@ -337,6 +384,7 @@ Front calls **project** paths; server keeps **job** aliases for site/CRX.
 | Front / preferred | Legacy alias | Notes |
 | --- | --- | --- |
 | `POST …/get-all-projects` | `get-all-jobs` | Response `{ projects }` (+ `jobs` alias) |
+| `POST …/arx-chat/move-candidates-to-project` | `move-candidates-to-job` | Body `projectId` (+ legacy `jobId` accepted) |
 | `POST …/get-project-by-id` | `get-job-by-id` | Body `projectId` (or `jobId`); response `{ project }` (+ `job`) |
 | `POST …/get-candidates-by-project-id` | `get-candidates-by-job-id` | Body `projectId`; filter `projectsId` |
 | `POST …/get-candidate-fields-by-project` | `get-candidate-fields-by-job` | Body `projectId` |
@@ -375,6 +423,9 @@ rg -n "objectNameSingular[=:]\\s*['\"]job['\"]|useArxJDUpload\\(['\"]job['\"]\\)
 | Wrap workspace tree with `UnipileProvider` + `BaileysProvider` | `app/components/WorkspaceAppProviders.tsx` |
 | Mount `WebSocketProvider` then `NotificationProvider` under `SnackBarProvider` | same — fixes `useNotification must be used within a NotificationProvider` in `DataTable` |
 | Mount `WorkspaceMemberProfileUnipileSyncEffect` | same (must use Apollo **core** client — see §5) |
+| Mount `ChromeExtensionAuthBridgeEffect` (JWT → extension `set_auth_token`) | `WorkspaceAppProviders.tsx` + `RootAppProviders.tsx` |
+| Mount chrome-extension sidecar (iframe `tokens` / `navigate`) | `SharedAppProviders.tsx` |
+| `CHROME_EXTENSION_ID` → `/client-config` → `chromeExtensionIdState` | server `config-variables` + `ClientConfigService`; front `useClientConfig` |
 | Settings: Contacts, WhatsApp Unipile, Facebook SignUp, Baileys, LinkedIn SignUp | `app/components/SettingsRoutes.tsx` + `SettingsPath.*` |
 | Nav: projects + org charts drawer items | `navigation/components/ProjectsNavigationDrawerItems.tsx`, `OrgChartsNavigationDrawerItems.tsx` |
 
@@ -413,15 +464,18 @@ Tracked from current tree greps — fix then tick §7.
 
 | Issue | Locations (as of 2026-07-25) |
 | --- | --- |
-| `process.env.REACT_APP_SERVER_BASE_URL` (→ `/undefined/…`) | **done** — ARX modules use `REACT_APP_SERVER_BASE_URL` from `~/config` (§2.8) |
+| `process.env.REACT_APP_SERVER_BASE_URL` (→ `/undefined/…`) | **done** — re-swept 2026-07-26 after CMI port; `rg` in `src/modules` clean (§2.8). Codegen/scripts may still use `process.env` (Node). |
 | `enqueueSnackBar` still used | `orgchart/hooks/useOrgChartSnackBar.ts`, `useOrgChartActions.ts`, several `OrgChart*Modal*.tsx`, `ArxJDUploadDropzone.tsx` |
-| `useRightDrawer` still used | **partial** — `useRightDrawer` now opens `SidePanelPages.CandidateChat`; call sites still go through shim (`DataTable`/`HotHooks`/`useOpenCandidateChatDrawer`). `CandidateActions` still a no-op |
+| `useRightDrawer` still used | **partial** — `useRightDrawer` opens `SidePanelPages.CandidateChat` and `CommandMenuDisplay` (was CandidateActions); call sites still go through shim (`DataTable`/`HotHooks`/`useOpenCandidateChatDrawer`). HotTable All Actions uses `openSidePanelMenu` after syncing selection to MAIN |
 | `Button` from `twenty-ui` root (prefer `twenty-ui/input`) | e.g. `OrgChartResultsAddToProjectPanel.tsx` |
 | Recoil→Jotai | **done** for ARX module set listed in §7 (no `from 'recoil'`) |
 | Emotion leftovers in ARX modules | **done** (no `@emotion/styled` in those paths) |
 | Apollo React hooks from `@apollo/client` (v4) | **done** — only `CreditHistoryModal` had `useQuery` from `@apollo/client`; remapped to `@apollo/client/react` (§2.9) |
 | Attachment `authorId`/`type` + enrichment `fields` | **done** for shared queries + ARX create/read paths (§2.10); SQL index builders in `object-apis-creation.ts` still reference legacy `authorId`/`type` columns |
+| Attachment FILES upload + morph FKs + URL reads | **done** — front UploadCV/AttachmentPanel/JD/AI/video + server hub + CV/WhatsApp/video/email paths; skill `attachment-files-field-migration`. Rebuild `twenty-shared` + restart nest. Transitional replicate may still write deprecated `fullPath` when legacy rows lack `file[]` |
+| Legacy attachment binaries + `/files/*` route | **open** — arxena: 28 rows `file=null` + `fullPath=attachment/<uuid>.*`; S3 keys missing under `workspace-635976bf…` and `workspace-fe44a968…`. Upstream removed path `/files/*` (only `/file/:folder/:id`). Front URL prefix fixed in AttachmentPanel; still need storage copy or re-upload + optional legacy route restore |
 | Workspace GraphQL `ID!` vs `UUID!` | **done** in `twenty-shared` queries/mutations (§2.10); rebuild + restart nest |
+| Metadata `isCustom` / `dataSourceId` / `relationDefinition` | **done** — removed from `CreateOneField`/`CreateOneObject` + object metadata queries (§2.10); rebuild + restart nest |
 | `FindOneProject` → `data.job` | **done** — `other-fields.service` + `filter-candidates` read `project` (§2.10) |
 | `findActivitiesOperationSignatureFactory` `authorId` | upstream activities signature — verify separately vs Attachment remap |
 | `NotificationProvider` / `WebSocketProvider` missing | **done** — mounted in `WorkspaceAppProviders` (§4) |
@@ -432,7 +486,15 @@ Tracked from current tree greps — fix then tick §7.
 | OrgChart Linaria `styled(Icon*)` ENOENT | **done** — wrapper + size props in `twenty-orgchart` (§0 / §2.2) |
 | Billing Linaria invalid spacing keys | **done** — `spacing[220]` → `880px`, `spacing[2.5]` → `10px` in `SettingsBillingPricing.tsx` |
 | Linaria + `react-pdf` / pdfjs `#divider` | **done** — lazy `AttachmentPdfViewer` (no Linaria) from `AttachmentPanel` (§0 / §2.2) |
+| AttachmentPanel `util.TextDecoder` | **done** — dropped Node `util` import; use browser global (§0 / §2.2) |
+| CV drawer blank PDF (`#cv`) | **done** — hoist `StyledInlineAttachmentContainer`; signed-URL fetch without Bearer; content-type from filename; PDF loading indicator (§0) |
+| CV drawer `InvalidPDFException` | **done** — pass `ArrayBuffer` to react-pdf (no `blob:` revoke race); `%PDF-` / ZIP magic checks; normalize localhost file hosts (§0) |
 | Website testimonial JPGs 404 | **partial** — broken paths cleared (ui-avatars). Drop real photos into `public/img/testimonials/` and restore `photo` in `homepage-content.ts` when assets are recovered |
+| Chrome extension AuthBridge / Sidecar unwired | **done** — AuthBridge + Sidecar mounted; `CHROME_EXTENSION_ID` in client-config |
+| ExtensionInstall onboarding path | **deferred** — workflows `ExtensionInstallOnboarding` + `AppPath.ExtensionInstallOnboarding` + `OnboardingStatus.EXTENSION_INSTALL`; current onboarding enum has no `EXTENSION_INSTALL` |
+| Hardcoded OAuth `clientId=chrome` + `….chromiumapp.org` | **deferred** — workflows used env `CHROME_EXTENSION_ID` in `auth.service`; HEAD uses `ApplicationRegistration` redirect URIs (register chrome app there) |
+| `InformationBannerLinkedinUnipileAutoConnect` | **deferred** — workflows-only banner; Unipile recovery still via org-chart banner / consent setting |
+| Job-boards → Naukri queue action | **deferred** — `useUpdateSnapshotProfilesFromJobBoards*` not ported; `naukriQueueExtensionBridge` itself is present |
 
 ```bash
 rg -n "enqueueSnackBar\\b" packages/twenty-front/src/modules/{orgchart,arx-jd-upload}
@@ -451,7 +513,7 @@ Mark as you clear each wave.
 
 | Module | Recoil→Jotai | UI/Linaria | SnackBar API | Apollo `/graphql` | Job→Project | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `candidate-table` | [x] | [x] | [~] | [x] | [x] | CandidateChat via side panel; `useRightDrawer` shim remains; `objectNameSingular` → project |
+| `candidate-table` | [x] | [x] | [~] | [x] | [x] | CandidateChat via side panel; ARX record actions via CMI/HotTable (§2.11); `useRightDrawer` shim remains; `objectNameSingular` → project |
 | `arx-jd-upload` | [x] | [x] | [~] | [x] | [x] | dropzone snackbar; upload target → project |
 | `orgchart` | [x] | [x] | [ ] | [x] | [x] | snackbar helpers still old API; route via `OrgChartRoute` |
 | `unipile` | [x] | [x] | [x]? | [x] | n/a | providers wired |
@@ -461,7 +523,7 @@ Mark as you clear each wave.
 | `arx-ai-filtering` | [x] | [x] | [x]? | [ ] | n/a | |
 | `linkedin-unipile` | [x] | [ ] | [ ] | [ ] | n/a | |
 | `whatsapp-unipile` | [x] | [ ] | [ ] | [ ] | n/a | |
-| `chrome-extension*` | [x] | [ ] | [ ] | [ ] | n/a | |
+| `chrome-extension*` | [x] | [x] | [x]? | [x] | n/a | AuthBridge + Sidecar + client-config ID wired |
 | `websocket-context` | [x] | [ ] | [ ] | [ ] | n/a | |
 | `baileys` | [x] | [ ] | [ ] | n/a | n/a | provider wired |
 
@@ -568,8 +630,15 @@ Edit these carefully on rebase — product integration points.
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-front/src/modules/app/components/WorkspaceAppProviders.tsx` | working · intent | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect |
+| `packages/twenty-front/src/modules/app/components/WorkspaceAppProviders.tsx` | working · intent | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect, `ChromeExtensionAuthBridgeEffect` |
+| `packages/twenty-front/src/modules/app/components/RootAppProviders.tsx` | working · intent | `ChromeExtensionAuthBridgeEffect` for root/auth shell |
+| `packages/twenty-front/src/modules/app/components/SharedAppProviders.tsx` | working · intent | Chrome extension sidecar effect + provider |
+| `packages/twenty-front/src/modules/client-config/hooks/useClientConfig.ts` | working · intent | Set `chromeExtensionIdState` from `/client-config` |
+| `packages/twenty-server/src/engine/core-modules/client-config/services/client-config.service.ts` | working · intent | Expose `chromeExtensionId` from `CHROME_EXTENSION_ID` |
+| `packages/twenty-server/src/engine/core-modules/client-config/client-config.entity.ts` | working · intent | `chromeExtensionId` field |
+| `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID` (ARXENA group) |
 | `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn routes |
+| `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Mount `ApiKeysProvider` + grouped workspace integration keys form |
 | `packages/twenty-front/src/modules/navigation/components/MainNavigationDrawerScrollableItems.tsx` | working · intent | Mount `ProjectsNavigationDrawerItems` + `OrgChartsNavigationDrawerItems` |
 | `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts |
 | `packages/twenty-front/src/modules/settings/admin-panel/constants/SettingsAdminTabs.ts` | working · intent | Admin tabs: credits, org-chart IPs, published charts, LinkedIn cache, WhatsApp monitoring, users |
@@ -626,6 +695,7 @@ Not in `diff-filter=M`, but live next to core and matter for rebases:
 | `settings/admin-panel/graphql/**` | New admin queries/mutations |
 | `settings/admin-panel/components/SettingsAdmin*.tsx` | Credits, org charts, LinkedIn cache, WhatsApp, users |
 | `pages/settings/{accounts,linkedin,whatsapp}/**` | Account connection UIs |
+| `pages/settings/ApiKeysForm.tsx` | Workspace integration keys on Settings → General |
 | `navigation/components/{Projects,OrgCharts}NavigationDrawerItems.tsx` | Nav mounts used by §9.2 |
 | `auth/utils/arxenaSiteUrl.ts` | Site URL helper |
 | `twenty-shared/src/{arx,graphql,utils/orgchart,…}` | New shared barrels (paired with §9.1 index edits) |

@@ -3,7 +3,7 @@
 
 export const WORKFLOW_SYSTEM_PROMPTS = {
   // Core workflow execution behavior
-  BASE: `You are executing as part of a workflow automation in Twenty CRM.
+  BASE: `You are executing as part of a workflow automation in Arxena.
 
 Tool usage strategy:
 - Chain multiple tools to solve complex tasks

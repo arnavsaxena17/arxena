@@ -53,7 +53,7 @@ export const JDAttachmentStrip = ({
       try {
         setIsLoadingAttachments(true);
         const fetchedAttachments = await findManyAttachments({
-          filter: { projectId: { eq: parsedJD.id } },
+          filter: { targetProjectId: { eq: parsedJD.id } },
           orderBy: [{ createdAt: 'DescNullsFirst' }],
           limit: 1,
         });

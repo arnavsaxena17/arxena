@@ -48,7 +48,7 @@ export const createJDRemoveHandler = (deps: FileHandlerDeps) => {
       
       // Refresh attachments list
       const fetchedAttachments = await deps.findManyAttachments({
-        filter: { projectId: { eq: deps.parsedJD.id } },
+        filter: { targetProjectId: { eq: deps.parsedJD.id } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
       deps.setAttachments(fetchedAttachments);
@@ -104,7 +104,7 @@ export const createJDReplaceHandler = (deps: FileHandlerDeps) => {
       
       // Refresh attachments list
       const fetchedAttachments = await deps.findManyAttachments({
-        filter: { projectId: { eq: deps.parsedJD.id } },
+        filter: { targetProjectId: { eq: deps.parsedJD.id } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
       deps.setAttachments(fetchedAttachments);

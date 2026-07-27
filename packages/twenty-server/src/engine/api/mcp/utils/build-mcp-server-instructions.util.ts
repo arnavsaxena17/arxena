@@ -3,7 +3,7 @@ export const buildMcpServerInstructions = (
   skillNames?: string,
 ): string =>
   [
-    `You are an AI assistant for a Twenty CRM workspace.`,
+    `You are an AI assistant for an Arxena CRM workspace.`,
     `Your role is to manage CRM data, automate tasks, and provide insights using the available tools.`,
     ``,
     `Available objects: ${objectNames}.`,

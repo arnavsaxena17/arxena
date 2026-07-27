@@ -1,17 +1,148 @@
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useFindManyAttachments } from '@/candidate-search/hooks/useFindManyAttachments';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import mammoth from 'mammoth';
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-// import { extractRawText } from 'docx2html';
-import { TextDecoder } from 'util';
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 import { UploadCV } from './UploadCV';
+
+type AttachmentListItem = {
+  id: string;
+  name: string;
+  fullPath?: string | null;
+  file?: Array<{ url?: string | null } | null> | null;
+};
+
+type DocHandlerResult = {
+  value: string;
+};
+
+const getContentTypeFromExtension = (extension?: string): string => {
+  switch (extension) {
+    case 'pdf':
+      return 'application/pdf';
+    case 'doc':
+    case 'docx':
+      return 'application/msword';
+    case 'xls':
+    case 'xlsx':
+      return 'application/vnd.ms-excel';
+    case 'ppt':
+    case 'pptx':
+      return 'application/vnd.ms-powerpoint';
+    case 'txt':
+      return 'text/plain';
+    case 'xml':
+      return 'application/xml';
+    case 'json':
+      return 'application/json';
+    default:
+      return 'application/octet-stream';
+  }
+};
+
+const handleDocFile = async (
+  arrayBuffer: ArrayBuffer,
+): Promise<DocHandlerResult> => {
+  try {
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let text = '';
+    for (let i = 0; i < uint8Array.length; i++) {
+      const char = String.fromCharCode(uint8Array[i]);
+      if (char.match(/[\x20-\x7E]/)) {
+        text += char;
+      }
+    }
+    return { value: `<pre>${text}</pre>` };
+  } catch (error) {
+    console.error('Error processing .doc file:', error);
+    return {
+      value:
+        '<p>Unable to read .doc file content. The file may be corrupt or use unsupported features.</p>',
+    };
+  }
+};
+
+const isPdfArrayBuffer = (buffer: ArrayBuffer): boolean => {
+  if (buffer.byteLength < 5) {
+    return false;
+  }
+
+  const header = new TextDecoder('ascii').decode(buffer.slice(0, 5));
+
+  return header === '%PDF-';
+};
+
+const isZipArrayBuffer = (buffer: ArrayBuffer): boolean => {
+  if (buffer.byteLength < 4) {
+    return false;
+  }
+
+  const bytes = new Uint8Array(buffer);
+
+  // DOCX is a ZIP (PK..)
+  return bytes[0] === 0x50 && bytes[1] === 0x4b;
+};
+
+// Legacy fullPath is storage-relative (e.g. attachment/<uuid>.pdf).
+// Signed FILES-field URLs are already absolute (/file/files-field/...).
+// Server may sign with localhost while the app runs on arxena.localhost.
+const normalizeAttachmentUrl = (url: string): string => {
+  try {
+    const lowerCaseUrl = url.toLowerCase();
+    const isAbsoluteUri =
+      ['http:', 'https:', 'data:', 'blob:'].some((scheme) =>
+        lowerCaseUrl.startsWith(scheme),
+      ) || url.startsWith('//');
+
+    let resolvedUrl = url;
+
+    if (!isAbsoluteUri) {
+      const isFileByIdPath =
+        url.startsWith('/file/') || url.startsWith('file/');
+      const isLegacyFilesPath =
+        url.startsWith('/files/') || url.startsWith('files/');
+
+      if (!isFileByIdPath && !isLegacyFilesPath) {
+        const relativePath = url.replace(/^\//, '');
+        resolvedUrl = `/files/${relativePath}`;
+      } else if (!url.startsWith('/')) {
+        resolvedUrl = `/${url}`;
+      }
+    }
+
+    const parsedUrl = new URL(resolvedUrl, REACT_APP_SERVER_BASE_URL);
+    const serverBaseUrl = new URL(REACT_APP_SERVER_BASE_URL);
+
+    if (
+      parsedUrl.hostname === 'localhost' ||
+      parsedUrl.hostname === '127.0.0.1'
+    ) {
+      parsedUrl.protocol = serverBaseUrl.protocol;
+      parsedUrl.hostname = serverBaseUrl.hostname;
+      parsedUrl.port = serverBaseUrl.port;
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    return url;
+  }
+};
 
 // Lazy: keep react-pdf/pdfjs-dist out of wyw-in-js evaluation of this Linaria module
 const AttachmentPdfViewer = lazy(() =>
@@ -19,11 +150,6 @@ const AttachmentPdfViewer = lazy(() =>
     default: module.AttachmentPdfViewer,
   })),
 );
-
-// Add a type declaration for the handleDocFile function
-type DocHandlerResult = {
-  value: string;
-};
 
 // const PanelContainer = styled.div<{ isOpen: boolean }>`
 //   position: fixed;
@@ -367,9 +493,7 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
   const Container = PanelContainer || DefaultPanelContainer;
   const isInline = PanelContainer !== DefaultPanelContainer;
 
-  const [attachments, setAttachments] = useState<
-    Array<{ id: string; name: string; fullPath: string }>
-  >([]);
+  const [attachments, setAttachments] = useState<AttachmentListItem[]>([]);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
   const [fileContent, setFileContent] = useState<string | ArrayBuffer | null>(
     null,
@@ -399,11 +523,11 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
       setError(null);
 
       const fetchedAttachments = await findManyAttachments({
-        filter: { candidateId: { eq: candidateId } },
+        filter: { targetCandidateId: { eq: candidateId } },
         orderBy: [{ createdAt: 'DescNullsFirst' }],
       });
 
-      setAttachments(fetchedAttachments);
+      setAttachments(fetchedAttachments as AttachmentListItem[]);
       setCurrentAttachmentIndex(0);
       console.log('Total Attachments: ', fetchedAttachments?.length || 0);
       setIsLoading(false);
@@ -426,79 +550,116 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
 
   useEffect(() => {
     return () => {
-      if (
-        fileContent &&
-        typeof fileContent === 'string' &&
-        fileContent.startsWith('blob:')
-      ) {
-        URL.revokeObjectURL(fileContent);
+      if (downloadUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(downloadUrl);
       }
     };
-  }, [fileContent]);
+  }, [downloadUrl]);
 
   const fetchFileContent = useCallback(
-    async (attachment: { id: string; name: string; fullPath: string }) => {
-      try {
-        if (!attachment || fileContent) return;
+    async (attachment: AttachmentListItem) => {
+      if (!attachment) {
+        return;
+      }
 
+      try {
         setIsLoading(true);
         setError(null);
         setFileContent(null);
         setDownloadUrl(null);
 
-        const response = await axios.get(`${attachment.fullPath}`, {
-          headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
+        const rawAttachmentUrl = getAttachmentDownloadUrl(attachment);
+
+        if (!rawAttachmentUrl) {
+          setError('Attachment not found or could not be loaded.');
+          setIsLoading(false);
+
+          return;
+        }
+
+        const attachmentUrl = normalizeAttachmentUrl(rawAttachmentUrl);
+        const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
+        const extensionContentType = getContentTypeFromExtension(fileExtension);
+        const isPdfByName =
+          fileExtension === 'pdf' || extensionContentType.includes('pdf');
+        const isDocByName =
+          fileExtension === 'doc' || fileExtension === 'docx';
+
+        // Signed FILES-field URLs already carry ?token= — do not send Bearer
+        // (Authorization forces a CORS preflight that often fails cross-origin).
+        const isSignedFileUrl =
+          attachmentUrl.includes('token=') ||
+          Boolean(attachment.file?.[0]?.url);
+
+        const response = await axios.get(attachmentUrl, {
+          headers: isSignedFileUrl
+            ? undefined
+            : {
+                Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+              },
           responseType: 'arraybuffer',
         });
 
-        let contentType =
-          response.headers['content-type'] ||
-          attachment?.fullPath
-            ?.split('?')[0]
-            ?.split('.')
-            .pop()
-            ?.toLowerCase() ||
-          'application/octet-stream';
-        contentType = contentType.split(';')[0];
+        const responseBuffer = response.data as ArrayBuffer;
+        let contentType = (
+          response.headers['content-type'] || ''
+        ).split(';')[0];
 
-        if (!contentType) {
-          const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
-          contentType = getContentTypeFromExtension(fileExtension);
+        // /file/filesField/<uuid> has no extension — prefer filename when header is weak
+        if (
+          !contentType ||
+          contentType === 'application/octet-stream' ||
+          !contentType.includes('/')
+        ) {
+          contentType = extensionContentType;
         }
 
-        const blob = new Blob([response.data], {
-          type: contentType || 'application/octet-stream',
-        });
+        if (contentType.includes('pdf') || isPdfByName) {
+          if (!isPdfArrayBuffer(responseBuffer)) {
+            setError(
+              'Downloaded file is not a valid PDF. The storage URL may be expired or incorrect.',
+            );
+            setIsLoading(false);
 
-        if (contentType && contentType.includes('pdf')) {
-          const url = URL.createObjectURL(blob);
-          setFileContent(url);
+            return;
+          }
+
+          // Pass bytes directly — blob: URLs get revoked by Strict Mode cleanup
+          setFileContent(responseBuffer);
         } else if (
-          contentType &&
-          (contentType.includes('word') ||
-            contentType.includes('doc') ||
-            contentType.includes('docx') ||
-            contentType.includes('msword') ||
-            contentType.includes(
-              'openxmlformats-officedocument.wordprocessingml.document',
-            ))
+          contentType.includes('word') ||
+          contentType.includes('doc') ||
+          contentType.includes('docx') ||
+          contentType.includes('msword') ||
+          contentType.includes(
+            'openxmlformats-officedocument.wordprocessingml.document',
+          ) ||
+          isDocByName
         ) {
           try {
-            const arrayBuffer = await blob.arrayBuffer();
             let result: DocHandlerResult;
 
-            if (contentType.includes('doc') && !contentType.includes('docx')) {
-              result = await handleDocFile(arrayBuffer);
+            if (
+              (contentType.includes('doc') && !contentType.includes('docx')) ||
+              fileExtension === 'doc'
+            ) {
+              result = await handleDocFile(responseBuffer);
             } else {
-              // Basic mammoth conversion
+              if (!isZipArrayBuffer(responseBuffer)) {
+                throw new Error('Response is not a DOCX/ZIP archive');
+              }
+
               result = await mammoth.convertToHtml({
-                arrayBuffer: arrayBuffer
+                arrayBuffer: responseBuffer,
               });
             }
 
             setFileContent(result.value);
           } catch (conversionError) {
             console.error('Document conversion failed:', conversionError);
+            const blob = new Blob([responseBuffer], {
+              type: contentType || 'application/octet-stream',
+            });
             const url = URL.createObjectURL(blob);
             setDownloadUrl(url);
             setFileContent(
@@ -506,15 +667,17 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             );
           }
         } else if (
-          contentType &&
-          (contentType.includes('text') ||
-            contentType.includes('xml') ||
-            contentType.includes('json'))
+          contentType.includes('text') ||
+          contentType.includes('xml') ||
+          contentType.includes('json')
         ) {
           const decoder = new TextDecoder('utf-8');
-          const text = decoder.decode(response.data);
+          const text = decoder.decode(responseBuffer);
           setFileContent(text);
         } else {
+          const blob = new Blob([responseBuffer], {
+            type: contentType || 'application/octet-stream',
+          });
           const url = URL.createObjectURL(blob);
           setDownloadUrl(url);
           setFileContent(
@@ -523,62 +686,19 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
         }
       } catch (error) {
         console.error('Error fetching file content:', error);
+        const isLegacyFullPathOnly =
+          !attachment.file?.[0]?.url && Boolean(attachment.fullPath);
+
         setError(
-          `Attachment not found or could not be loaded.`,
+          isLegacyFullPathOnly
+            ? 'Legacy attachment file is missing from storage. Re-upload the CV.'
+            : 'Attachment not found or could not be loaded.',
         );
       }
       setIsLoading(false);
     },
     [tokenPair],
   );
-
-  const handleDocFile = async (
-    arrayBuffer: ArrayBuffer,
-  ): Promise<DocHandlerResult> => {
-    try {
-      // Attempt to extract text using a simple method
-      const uint8Array = new Uint8Array(arrayBuffer);
-      let text = '';
-      for (let i = 0; i < uint8Array.length; i++) {
-        const char = String.fromCharCode(uint8Array[i]);
-        if (char.match(/[\x20-\x7E]/)) {
-          // Only include printable ASCII characters
-          text += char;
-        }
-      }
-      return { value: `<pre>${text}</pre>` };
-    } catch (error) {
-      console.error('Error processing .doc file:', error);
-      return {
-        value:
-          '<p>Unable to read .doc file content. The file may be corrupt or use unsupported features.</p>',
-      };
-    }
-  };
-
-  const getContentTypeFromExtension = (extension?: string): string => {
-    switch (extension) {
-      case 'pdf':
-        return 'application/pdf';
-      case 'doc':
-      case 'docx':
-        return 'application/msword';
-      case 'xls':
-      case 'xlsx':
-        return 'application/vnd.ms-excel';
-      case 'ppt':
-      case 'pptx':
-        return 'application/vnd.ms-powerpoint';
-      case 'txt':
-        return 'text/plain';
-      case 'xml':
-        return 'application/xml';
-      case 'json':
-        return 'application/json';
-      default:
-        return 'application/octet-stream';
-    }
-  };
 
   const DocxViewer: React.FC<{ content: string }> = ({ content }) => {
     // Sanitize the HTML content
@@ -621,19 +741,36 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
     if (!currentAttachment) return;
 
     try {
-      const response = await axios.get(currentAttachment.fullPath, {
-        headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
-        responseType: 'blob'
+      const rawAttachmentUrl = getAttachmentDownloadUrl(currentAttachment);
+
+      if (!rawAttachmentUrl) {
+        setError('Failed to download file. Please try again.');
+
+        return;
+      }
+
+      const attachmentUrl = normalizeAttachmentUrl(rawAttachmentUrl);
+      const isSignedFileUrl =
+        attachmentUrl.includes('token=') ||
+        Boolean(currentAttachment.file?.[0]?.url);
+
+      const response = await axios.get(attachmentUrl, {
+        headers: isSignedFileUrl
+          ? undefined
+          : {
+              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+            },
+        responseType: 'blob',
       });
 
       const blob = new Blob([response.data]);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = currentAttachment.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = currentAttachment.name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -709,12 +846,12 @@ const AttachmentPanel: React.FC<AttachmentPanelProps> = ({
             </UploadContainer>
           </>
         ) : fileContent ? (
-          typeof fileContent === 'string' &&
-          fileContent.startsWith('blob:') ? (
+          fileContent instanceof ArrayBuffer ? (
             <PDFContainer>
               <Suspense fallback={<div>Loading PDF...</div>}>
                 <AttachmentPdfViewer
-                  fileUrl={fileContent}
+                  key={currentAttachment?.id}
+                  fileData={fileContent}
                   onRetry={handleRetry}
                 />
               </Suspense>
