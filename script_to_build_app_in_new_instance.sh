@@ -57,6 +57,32 @@ fi
 git checkout "${BUILD_BRANCH}"
 # Branch set by build_app_in_new_instance.sh via BUILD_BRANCH env
 yarn
+# Nest SWC builder requires @swc/core's platform native binding. Repo yarnrc sets
+# enableScripts:false, so @swc/core postinstall is skipped and nest build can fail on
+# linux-arm64 builders with "Failed to load @swc/cli and/or @swc/core".
+ensure_swc_native_binding() {
+  if node -e "require('@swc/core'); require('@swc/cli/lib/swc/dir')" >/dev/null 2>&1; then
+    echo "SWC native binding OK"
+    return 0
+  fi
+
+  echo "Repairing @swc/core native binding for nest build..."
+  if ! YARN_ENABLE_SCRIPTS=true yarn rebuild @swc/core; then
+    echo "yarn rebuild @swc/core failed; trying explicit linux-arm64 package"
+    local swc_core_version
+    swc_core_version="$(node -p "require('@swc/core/package.json').version")"
+    yarn add -D -W "@swc/core-linux-arm64-gnu@npm:${swc_core_version}" || true
+  fi
+
+  if ! node -e "require('@swc/core'); require('@swc/cli/lib/swc/dir'); console.log('SWC native binding repaired')"; then
+    echo "SWC native binding still broken after repair; nest build will fail" >&2
+    return 1
+  fi
+}
+if ! ensure_swc_native_binding; then
+  echo "BUILD_TWENTY_SERVER=failed" >> "$BUILD_STATUS_FILE"
+  exit 1
+fi
 node scripts/patch-gojs.cjs
 rm -rf node_modules/.vite/packages/twenty-front/deps
 

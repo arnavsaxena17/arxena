@@ -26,6 +26,26 @@ EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
 EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
 EC2_VOLUME_SIZE="${EC2_VOLUME_SIZE:-40}"
 
+# 0. Sync production server repo with build branch (ensures package.json has new deps before yarn install).
+# Must finish (and re-exec) before bash reads further lines: a mid-run git pull that rewrites
+# this file causes "syntax error near unexpected token '('" when the line offsets shift.
+if [ "${SKIP_REPO_SYNC:-0}" != "1" ] && [ -d "$REPO_DIR/.git" ]; then
+  echo "Syncing repo with build branch ($BUILD_BRANCH)..."
+  cd "$REPO_DIR"
+  git fetch origin
+  git checkout "$BUILD_BRANCH"
+  git pull origin "$BUILD_BRANCH" || true
+  # Keep local arxmukti/private-IP build script overrides when present
+  for f in build_app_in_new_instance.sh build_chatwoot_in_new_instance.sh script_to_build_app_in_new_instance.sh script_to_build_chatwoot_in_new_instance.sh; do
+    if [ -f "/tmp/build-script-keep/$f" ]; then
+      cp "/tmp/build-script-keep/$f" "$REPO_DIR/$f"
+    fi
+  done
+  cd "$SCRIPT_DIR"
+  echo "Re-executing build script after repo sync..."
+  exec env SKIP_REPO_SYNC=1 "$REPO_DIR/build_app_in_new_instance.sh" "$@"
+fi
+
 # Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {
     if [ -n "$STAGING_ROOT" ] && [ -d "$STAGING_ROOT" ]; then
@@ -49,22 +69,6 @@ trap cleanup EXIT INT
 set -e
 
 start_time=$(date +%s)
-
-# 0. Sync production server repo with build branch (ensures package.json has new deps before yarn install)
-if [ -d "$REPO_DIR/.git" ]; then
-  echo "Syncing repo with build branch ($BUILD_BRANCH)..."
-  cd "$REPO_DIR"
-  git fetch origin
-  git checkout "$BUILD_BRANCH"
-  git pull origin "$BUILD_BRANCH" || true
-  # Keep local arxmukti/private-IP build script overrides when present
-  for f in build_app_in_new_instance.sh build_chatwoot_in_new_instance.sh script_to_build_app_in_new_instance.sh script_to_build_chatwoot_in_new_instance.sh; do
-    if [ -f "/tmp/build-script-keep/$f" ]; then
-      cp "/tmp/build-script-keep/$f" "$REPO_DIR/$f"
-    fi
-  done
-  cd "$SCRIPT_DIR"
-fi
 
 # 1. Create temporary EC2 instance (arm64 builder on arxmukti)
 TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances --image-id "$EC2_IMAGE_ID" --instance-type "$EC2_INSTANCE_TYPE" --key-name "$EC2_KEY_NAME" --security-group-ids "$EC2_SECURITY_GROUP_ID" --subnet-id "$EC2_SUBNET_ID" --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$EC2_VOLUME_SIZE,\"VolumeType\":\"gp3\"}}]" --query 'Instances[0].InstanceId' --output text)
