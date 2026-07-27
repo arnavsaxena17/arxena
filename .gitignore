@@ -80,7 +80,8 @@ packages/twenty-server/.attachments/
 packages/twenty-server/unipile-attachments/
 packages/twenty-server/working_naukri_candidates/
 tools/chatwoot-source
-tools/chatwoot-local/
+# Runtime secrets/data only; compose + branding stay tracked (see tools/chatwoot-local/.gitignore)
+# tools/chatwoot-local/
 backups/
 *.dump
 scripts/aws/.arm64-builder-ami-id

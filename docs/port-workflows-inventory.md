@@ -127,6 +127,27 @@ Ignore Twenty leftovers: `favorites`, `prefetch`, `serverless-functions`, `datab
 
 ## Build gate results (port/arxena-modules)
 
+### Ops / EC2 build scripts (ported from workflows)
+
+Root deploy helpers restored onto this branch and adapted for current packages:
+
+| Script | Role | Holds on new instances? |
+|---|---|---|
+| `build_app_in_new_instance.sh` + `script_to_build_app_in_new_instance.sh` | Spin arm64 builder, build packages, stage into prod | Yes — after adaptations below |
+| `build_chatwoot_in_new_instance.sh` + `script_to_build_chatwoot_in_new_instance.sh` | Build Chatwoot Docker image on EC2 | Yes — independent of Twenty package graph |
+| `scripts/deploy-chatwoot-*.sh` + `tools/chatwoot-local/*` + `docs/chatwoot-production-deploy.md` | Compose / systemd Chatwoot deploy | Yes — paths still match prod layout |
+| `run_e2e_tests_on_ec2.sh` + `script_to_run_e2e_on_instance.sh` | Ephemeral Playwright runner | Yes — default branch updated |
+| `git_pull_all.sh`, `commit_to_github*.sh`, `pm2_start_*.sh` | Prod pull/restart helpers | Yes — already present / identical |
+
+Adaptations vs workflows originals:
+
+- Default `BUILD_BRANCH` / `TEST_BRANCH` → `port/arxena-modules` (`build.config`)
+- Build + deploy `twenty-client-sdk` (server `nx build` copies it into `dist/assets`)
+- Prefer `npx nx build twenty-server` over bare `nest build`
+- Drop stale `twenty-worker` from package.json sync list
+
+Caveats before first prod run: branch must exist on `origin`; AMI / SG / subnet defaults still arxmukti; builder needs Node 22 + nest + yarn + docker (Chatwoot). App/Chatwoot/e2e all default to baked AMI `ami-0cb194b5ec6f48d24` (from `scripts/aws/bake-arm64-builder-ami.sh` / `.arm64-builder-ami-id`); bake input base is stock Ubuntu `ami-02c4144237becae44`.
+
 - `npx nx build twenty-shared` — pass
 - `npx nx build twenty-orgchart` — pass
 - `npx nest build` (twenty-server / SWC) — pass (7630 files)
