@@ -9,7 +9,7 @@ import {
   isDefined,
   isNonEmptyArray,
 } from 'twenty-shared/utils';
-import { Not, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 
 import type Stripe from 'stripe';
 
@@ -18,7 +18,9 @@ import {
   BillingExceptionCode,
 } from 'src/engine/core-modules/billing/billing.exception';
 import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
+import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
+import { RAZORPAY_BASE_PRODUCT_ID } from 'src/engine/core-modules/billing/constants/razorpay-base-product.constant';
 import { BillingProductKey } from 'src/engine/core-modules/billing/enums/billing-product-key.enum';
 import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
@@ -50,6 +52,8 @@ export class BillingPortalWorkspaceService {
     private readonly billingSubscriptionRepository: WorkspaceScopedRepository<BillingSubscriptionEntity>,
     @InjectWorkspaceScopedRepository(BillingCustomerEntity)
     private readonly billingCustomerRepository: WorkspaceScopedRepository<BillingCustomerEntity>,
+    @InjectRepository(BillingPriceEntity)
+    private readonly billingPriceRepository: Repository<BillingPriceEntity>,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
   ) {}
@@ -65,11 +69,12 @@ export class BillingPortalWorkspaceService {
     keyId: string;
     callbackUrl: string;
   }> {
-    const planId =
-      params.razorpayPlanId ??
-      this.environmentService.get('BILLING_RAZORPAY_BASE_PLAN_ID');
+    const planId = await this.resolveRazorpayPlanId(params.razorpayPlanId);
 
-    assert(planId, 'razorpayPlanId or BILLING_RAZORPAY_BASE_PLAN_ID is required');
+    assert(
+      planId,
+      'razorpayPlanId, BILLING_RAZORPAY_BASE_PLAN_ID, or an active synced Razorpay price is required',
+    );
 
     const keyId = this.environmentService.get('BILLING_RAZORPAY_KEY_ID');
 
@@ -98,6 +103,49 @@ export class BillingPortalWorkspaceService {
     const callbackUrl = `${base}?${search.toString()}`;
 
     return { subscriptionId, keyId, callbackUrl };
+  }
+
+  // Prefer explicit arg, then env only if it matches a synced price, else latest
+  // active razorpay_base price. Avoids stale BILLING_RAZORPAY_BASE_PLAN_ID.
+  private async resolveRazorpayPlanId(
+    explicitPlanId?: string,
+  ): Promise<string | undefined> {
+    if (isDefined(explicitPlanId) && explicitPlanId.length > 0) {
+      return explicitPlanId;
+    }
+
+    const envPlanId = this.environmentService.get(
+      'BILLING_RAZORPAY_BASE_PLAN_ID',
+    );
+
+    if (isDefined(envPlanId) && envPlanId.length > 0) {
+      const matchingEnvPrice = await this.billingPriceRepository.findOne({
+        where: {
+          active: true,
+          razorpayPlanId: envPlanId,
+          stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
+        },
+      });
+
+      if (isDefined(matchingEnvPrice)) {
+        return envPlanId;
+      }
+
+      this.logger.warn(
+        `BILLING_RAZORPAY_BASE_PLAN_ID=${envPlanId} is not an active synced Razorpay price; falling back to catalog`,
+      );
+    }
+
+    const syncedPrice = await this.billingPriceRepository.findOne({
+      where: {
+        active: true,
+        stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
+        razorpayPlanId: Not(IsNull()),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return syncedPrice?.razorpayPlanId ?? envPlanId ?? undefined;
   }
 
   async computeCheckoutSessionURL({

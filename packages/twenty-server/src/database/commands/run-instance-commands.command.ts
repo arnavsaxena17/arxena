@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { Command, CommandRunner, Option } from 'nest-commander';
 import { DataSource } from 'typeorm';
 
+import { BillingEnsureRazorpayCatalogCommand } from 'src/engine/core-modules/billing/commands/billing-ensure-razorpay-catalog.command';
 import { TWENTY_PREVIOUS_VERSIONS } from 'src/engine/core-modules/upgrade/constants/twenty-previous-versions.constant';
 import { InstanceCommandRunnerService } from 'src/engine/core-modules/upgrade/services/instance-command-runner.service';
 import { UpgradeCommandRegistryService } from 'src/engine/core-modules/upgrade/services/upgrade-command-registry.service';
@@ -36,6 +37,7 @@ export class RunInstanceCommandsCommand extends CommandRunner {
     private readonly instanceUpgradeService: InstanceCommandRunnerService,
     private readonly upgradeMigrationService: UpgradeMigrationService,
     private readonly upgradeStatusService: UpgradeStatusService,
+    private readonly billingEnsureRazorpayCatalogCommand: BillingEnsureRazorpayCatalogCommand,
   ) {
     super();
   }
@@ -99,6 +101,10 @@ export class RunInstanceCommandsCommand extends CommandRunner {
       }
 
       this.logger.log(chalk.green('Instance commands completed'));
+
+      // Razorpay catalogs live in the payment provider; sync after schema/data
+      // commands so migrate:prod leaves BASE_PRODUCT metadata + live plan IDs.
+      await this.billingEnsureRazorpayCatalogCommand.run([], {});
     } catch (error) {
       this.logger.error(
         chalk.red(`Instance commands failed: ${error.message}`),

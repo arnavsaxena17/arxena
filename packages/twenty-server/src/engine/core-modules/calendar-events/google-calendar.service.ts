@@ -133,11 +133,13 @@ export class GoogleCalendarService {
           },
         };
       }
+      // Default guests to needsAction so only explicitly accepted senders
+      // show as confirmed when the invite is created
       const attendees = (calendarEventDataObj.attendees ?? [])
         .filter((attendee) => Boolean(attendee?.email?.trim()))
         .map((attendee) => ({
           ...attendee,
-          responseStatus: attendee.responseStatus ?? 'accepted',
+          responseStatus: attendee.responseStatus ?? 'needsAction',
         }));
       calendarEventDataObj = {
         ...calendarEventDataObj,
@@ -165,10 +167,10 @@ export class GoogleCalendarService {
     if (!auth?.credentials?.refresh_token) {
       throw new Error("No access token found");
     }
-  
+
     try {
       const calendar = google.calendar({ version: "v3", auth: auth });
-      
+
       const response = await calendar.events.list({
         calendarId: 'primary',
         timeMin: timeMin || new Date().toISOString(),
@@ -177,11 +179,11 @@ export class GoogleCalendarService {
         orderBy: 'startTime',
         maxResults: 100,
       });
-  
+
       if (response.status !== 200) {
         throw new Error(`Failed to fetch events. Status: ${response.status}`);
       }
-  
+
       return response.data.items;
     } catch (error) {
       console.error('Error listing calendar events:', error);

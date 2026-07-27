@@ -370,7 +370,7 @@ export class ToolCallingAgents {
       attendees: [
         {
           email: candidate?.email?.primaryEmail || '',
-          responseStatus: 'accepted',
+          responseStatus: 'needsAction',
         },
       ].filter((attendee) => Boolean(attendee.email?.trim())),
       reminders: {
@@ -445,7 +445,7 @@ export class ToolCallingAgents {
     const scheduledJobService = new ScheduledJobService(
       new SchedulerRegistry(),
       this.workspaceQueryService,
-      this.staticGraphQLService, 
+      this.staticGraphQLService,
     );
     const meetingStartTime = new Date(meetingStartDateTime);
 

@@ -59,10 +59,10 @@ export class GoogleControllers {
     if (url.includes('/home/ubuntu/')) {
       return url; // Return as is for local file paths
     }
-    
+
     // Fix double slashes in URL (but preserve protocol://)
     url = url.replace(/([^:])\/+/g, '$1/');
-    
+
     // Remove duplicate token parameters
     if (url.includes('?token=')) {
       const baseUrl = url.split('?token=')[0];
@@ -209,7 +209,7 @@ export class GoogleControllers {
   @UseGuards(JwtAuthGuard)
   async sendEmailWithAttachment(@Req() request: any): Promise<object> {
     const apiToken = request.headers.authorization.split(' ')[1];
-    
+
     const person: PersonNode | undefined = await new FilterCandidates(
     this.workspaceQueryService,
     this.staticGraphQLService,
@@ -290,7 +290,7 @@ export class GoogleControllers {
     };
 
     console.log('This si the email data to save drafts:', emailData);
-    
+
     // const response =
     //   await new SendEmailFunctionality().saveDraftEmailWithAttachmentsFunction(
     //     emailData,
@@ -309,7 +309,7 @@ export class GoogleControllers {
     const attachments = await Promise.all((emailData.attachments || []).map(async attachment => {
       const fixedPath = this.fixAttachmentUrl(attachment.path);
       const content = await this.getAttachmentContent(fixedPath);
-      
+
       return {
         filename: attachment.filename,
         path: content ? undefined : fixedPath, // Use path only if content is not available
@@ -337,7 +337,7 @@ export class GoogleControllers {
           details: error.message
         };
       }
-      return { 
+      return {
         status: 'error',
         error: error.message,
         details: 'Failed to send notification email'
@@ -462,8 +462,15 @@ export class GoogleControllers {
         timeZone: timeZone,
       },
       attendees: [
-        { email: person.emails.primaryEmail, responseStatus: 'accepted' },
-        { email: recruiterProfile.email, responseStatus: 'accepted' },
+        // Guest must RSVP; only the sender/organizer starts as accepted
+        {
+          email: person.emails.primaryEmail,
+          responseStatus: 'needsAction',
+        },
+        {
+          email: recruiterProfile.email,
+          responseStatus: 'accepted',
+        },
       ].filter((attendee) => Boolean(attendee.email?.trim())),
       reminders: {
         useDefault: false,

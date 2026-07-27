@@ -8,6 +8,7 @@ import { WorkspaceIteratorModule } from 'src/database/commands/command-runners/w
 import { CoreEntityCacheModule } from 'src/engine/core-entity-cache/core-entity-cache.module';
 import { BillingGaugeService } from 'src/engine/core-modules/billing/billing-gauge.service';
 import { BillingResolver } from 'src/engine/core-modules/billing/billing.resolver';
+import { BillingEnsureRazorpayCatalogCommand } from 'src/engine/core-modules/billing/commands/billing-ensure-razorpay-catalog.command';
 import { BillingEnsureStripeCatalogCommand } from 'src/engine/core-modules/billing/commands/billing-ensure-stripe-catalog.command';
 import { BillingSyncCustomerDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-customer-data.command';
 import { BillingSyncPlansDataCommand } from 'src/engine/core-modules/billing/commands/billing-sync-plans-data.command';
@@ -109,6 +110,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     BillingSyncCustomerDataCommand,
     BillingUpdateSubscriptionPriceCommand,
     BillingEnsureStripeCatalogCommand,
+    BillingEnsureRazorpayCatalogCommand,
     BillingSyncPlansDataCommand,
     BillingUsageService,
     BillingUsageCacheService,
@@ -137,6 +139,8 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     BillingUsageService,
     BillingUsageCacheService,
     BillingUsageCapService,
+    BillingEnsureRazorpayCatalogCommand,
+    BillingSyncPlansDataCommand,
     BillingCreditRolloverService,
     BillingCreditService,
     ResourceCreditService,

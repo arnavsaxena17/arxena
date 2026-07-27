@@ -17,8 +17,14 @@ import { BillingProductEntity } from 'src/engine/core-modules/billing/entities/b
 import { BillingPriceBillingScheme } from 'src/engine/core-modules/billing/enums/billing-price-billing-scheme.enum';
 import { BillingPriceTaxBehavior } from 'src/engine/core-modules/billing/enums/billing-price-tax-behavior.enum';
 import { BillingPriceType } from 'src/engine/core-modules/billing/enums/billing-price-type.enum';
+import { BillingPlanKey } from 'src/engine/core-modules/billing/enums/billing-plan-key.enum';
+import { BillingProductKey } from 'src/engine/core-modules/billing/enums/billing-product-key.enum';
 import { SubscriptionInterval } from 'src/engine/core-modules/billing/enums/billing-subscription-interval.enum';
 import { BillingUsageType } from 'src/engine/core-modules/billing/enums/billing-usage-type.enum';
+import {
+  RAZORPAY_BASE_PRODUCT_ID,
+  RAZORPAY_BASE_PRODUCT_METADATA,
+} from 'src/engine/core-modules/billing/constants/razorpay-base-product.constant';
 import {
   type RazorpayPlan,
   RazorpayPlanService,
@@ -32,8 +38,6 @@ import { transformStripeMeterToDatabaseMeter } from 'src/engine/core-modules/bil
 import { transformStripePriceToDatabasePrice } from 'src/engine/core-modules/billing/utils/transform-stripe-price-to-database-price.util';
 import { transformStripeProductToDatabaseProduct } from 'src/engine/core-modules/billing/utils/transform-stripe-product-to-database-product.util';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-
-const RAZORPAY_BASE_PRODUCT_ID = 'razorpay_base';
 
 @Command({
   name: 'billing:sync-plans-data',
@@ -211,17 +215,31 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
       where: { stripeProductId: RAZORPAY_BASE_PRODUCT_ID },
     });
 
-    if (!productExists && !options.dryRun) {
-      await this.billingProductRepository.insert({
-        stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
-        name: 'Razorpay Base',
-        active: true,
-        description: '',
-        images: [],
-        marketingFeatures: [],
-        metadata: {},
-      });
-      this.logger.log(`Created BillingProduct ${RAZORPAY_BASE_PRODUCT_ID}`);
+    if (!options.dryRun) {
+      if (!productExists) {
+        await this.billingProductRepository.insert({
+          stripeProductId: RAZORPAY_BASE_PRODUCT_ID,
+          name: 'Razorpay Base',
+          active: true,
+          description: '',
+          images: [],
+          marketingFeatures: [],
+          metadata: RAZORPAY_BASE_PRODUCT_METADATA,
+        });
+        this.logger.log(`Created BillingProduct ${RAZORPAY_BASE_PRODUCT_ID}`);
+      } else if (
+        productExists.metadata?.productKey !== BillingProductKey.BASE_PRODUCT ||
+        productExists.metadata?.planKey !== BillingPlanKey.PRO
+      ) {
+        // Plan UI filters by metadata.productKey === BASE_PRODUCT
+        await this.billingProductRepository.update(
+          { stripeProductId: RAZORPAY_BASE_PRODUCT_ID },
+          { metadata: RAZORPAY_BASE_PRODUCT_METADATA },
+        );
+        this.logger.log(
+          `Backfilled metadata on BillingProduct ${RAZORPAY_BASE_PRODUCT_ID}`,
+        );
+      }
     }
 
     for (const plan of plans) {
