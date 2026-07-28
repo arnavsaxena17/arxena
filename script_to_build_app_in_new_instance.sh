@@ -124,6 +124,10 @@ if ! build_step TWENTY_SERVER npx nx build twenty-server; then
   cd ~/twenty/
 fi
 echo "Server built, going to front build"
+# yarn build runs vite directly (skips nx dependsOn ^build), so build the
+# workspace dep that FrontComponentRenderer imports first
+cd ~/twenty/
+build_step TWENTY_FRONT_COMPONENT_RENDERER npx nx build twenty-front-component-renderer
 cd ~/twenty/packages/twenty-front/
 mkdir -p src/locales/generated
 # Run extraction with verbose output
