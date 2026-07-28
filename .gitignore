@@ -86,3 +86,4 @@ backups/
 *.dump
 scripts/aws/.arm64-builder-ami-id
 Arxena.code-workspace
+tmp/fireflies-anil/
