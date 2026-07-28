@@ -178,11 +178,17 @@ export class BillingSubscriptionService {
       workspaceId,
     });
 
-    if (isDefined(subscription)) {
-      await this.stripeSubscriptionService.cancelSubscription(
-        subscription.stripeSubscriptionId,
+    if (!isDefined(subscription?.stripeSubscriptionId)) {
+      this.logger.log(
+        `Skipping Stripe subscription cancellation for workspace ${workspaceId} because no Stripe subscription id is stored`,
       );
+
+      return;
     }
+
+    await this.stripeSubscriptionService.cancelSubscription(
+      subscription.stripeSubscriptionId,
+    );
   }
 
   async assertSubscriptionCanceledOrNone(workspaceId: string): Promise<void> {
