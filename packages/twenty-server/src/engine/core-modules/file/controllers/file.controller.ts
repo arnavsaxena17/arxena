@@ -17,9 +17,8 @@ import { Request, Response } from 'express';
 import { lookup as mimeLookup } from 'mime-types';
 import { FileFolder, ServerFileFolder } from 'twenty-shared/types';
 
-import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
-import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { FileStorageDriverFactory } from 'src/engine/core-modules/file-storage/file-storage-driver.factory';
+import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import {
   FileStorageException,
   FileStorageExceptionCode,
@@ -38,7 +37,6 @@ import {
 } from 'src/engine/core-modules/file/guards/file-by-id.guard';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { setFileResponseHeaders } from 'src/engine/core-modules/file/utils/set-file-response-headers.utils';
-import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 
@@ -50,6 +48,7 @@ export class FileController {
   constructor(
     private readonly fileService: FileService,
     private readonly fileStorageDriverFactory: FileStorageDriverFactory,
+    private readonly jwtWrapperService: JwtWrapperService,
     private readonly serverFileStorageService: ServerFileStorageService,
   ) {}
 
@@ -193,26 +192,46 @@ export class FileController {
   // `attachment/<uuid>.pdf`. Serve those directly from workspace storage until
   // they are backfilled to FILES-field records.
   @Get('files/*path')
-  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  @UseGuards(NoPermissionGuard)
   async getLegacyWorkspaceFile(
     @Res() res: Response,
     @Req() req: Request,
-    @AuthWorkspace() workspace: WorkspaceEntity,
   ) {
     const filepath = join(...req.params.path);
+    const authHeader = req.headers.authorization ?? '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
     if (
+      token.length === 0 ||
       filepath.length === 0 ||
       filepath.includes('..') ||
       filepath.startsWith('/')
     ) {
       throw new FileException(
-        'File not found',
-        FileExceptionCode.FILE_NOT_FOUND,
+        'Authentication is required',
+        FileExceptionCode.UNAUTHENTICATED,
       );
     }
 
-    const onStorageFilePath = join(`workspace-${workspace.id}`, filepath);
+    let workspaceId: string | undefined;
+
+    try {
+      const payload = await this.jwtWrapperService.verifyJwtToken(token);
+
+      workspaceId =
+        typeof payload.workspaceId === 'string' ? payload.workspaceId : undefined;
+    } catch {
+      workspaceId = undefined;
+    }
+
+    if (workspaceId === undefined) {
+      throw new FileException(
+        'Authentication is required',
+        FileExceptionCode.UNAUTHENTICATED,
+      );
+    }
+
+    const onStorageFilePath = join(`workspace-${workspaceId}`, filepath);
     const driver = this.fileStorageDriverFactory.getCurrentDriver();
     const mimeType = mimeLookup(filepath) || 'application/octet-stream';
 
@@ -237,7 +256,7 @@ export class FileController {
       this.logger.error('Legacy workspace file read failed unexpectedly', {
         error,
         filepath,
-        workspaceId: workspace.id,
+        workspaceId,
       });
 
       throw new FileException(
@@ -254,7 +273,7 @@ export class FileController {
       this.logger.error('Legacy workspace file stream failed mid-transfer', {
         error,
         filepath,
-        workspaceId: workspace.id,
+        workspaceId,
       });
 
       if (!res.headersSent) {

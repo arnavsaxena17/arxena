@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
+import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-storage.module';
 import { FileAiChatModule } from 'src/engine/core-modules/file/file-ai-chat/file-ai-chat.module';
 import { FileDeletionJob } from 'src/engine/core-modules/file/jobs/file-deletion.job';
@@ -9,8 +10,10 @@ import { FileWorkspaceFolderDeletionJob } from 'src/engine/core-modules/file/job
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
 import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/provide-workspace-scoped-repository';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { FileController } from './controllers/file.controller';
 import { FileEntity } from './entities/file.entity';
 import { FileCorePictureModule } from './file-core-picture/file-core-picture.module';
@@ -25,6 +28,7 @@ import { FileService } from './services/file.service';
 @Module({
   imports: [
     JwtModule,
+    TokenModule,
     TypeOrmModule.forFeature([FileEntity, WorkspaceEntity, ApplicationEntity]),
     PermissionsModule,
     FileStorageModule,
@@ -36,10 +40,12 @@ import { FileService } from './services/file.service';
     FileEmailAttachmentModule,
     FileUploadModule,
     SecureHttpClientModule,
+    WorkspaceCacheStorageModule,
   ],
   providers: [
     FileService,
     FileByIdGuard,
+    JwtAuthGuard,
     FileWorkspaceFolderDeletionJob,
     FileDeletionJob,
     provideWorkspaceScopedRepository(FileEntity),
