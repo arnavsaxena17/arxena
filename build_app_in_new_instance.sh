@@ -252,6 +252,32 @@ if deploy_component TWENTY_FRONT "twenty-front build" "$REPO_DIR/packages/twenty
   set_deploy_status TWENTY_FRONT updated
 fi
 
+# App nginx serves twenty-front/build as the SPA root, so /img/* must exist there.
+# Vite includes public/img when present; also copy from website public as a fallback.
+ensure_front_orgchart_img_assets() {
+  local dest="$REPO_DIR/packages/twenty-front/build/img"
+  local src=""
+
+  for candidate in \
+    "$REPO_DIR/packages/twenty-front/public/img" \
+    "$REPO_DIR/packages/twenty-website/public/img"
+  do
+    if [ -d "$candidate" ] && [ -f "$candidate/lock.png" ]; then
+      src="$candidate"
+      break
+    fi
+  done
+
+  if [ -z "$src" ]; then
+    echo "WARNING: org-chart /img assets not found; skipping copy into twenty-front/build/img"
+    return 1
+  fi
+
+  mkdir -p "$dest"
+  cp -a "$src"/. "$dest"/
+  echo "Copied org-chart icons from $src into $dest"
+}
+
 if deploy_component TWENTY_SHARED "twenty-shared dist" "$REPO_DIR/packages/twenty-shared/dist" \
   /home/ubuntu/twenty/packages/twenty-shared/dist \
   /home/ubuntu/twenty/dist/packages/twenty-shared \
@@ -315,6 +341,10 @@ if deploy_component TWENTY_WEBSITE "twenty-website .next" "$REPO_DIR/packages/tw
 fi
 
 if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
+  # Ensure /img/* icons exist under the SPA root even when an older front
+  # build artifact omitted public/img (nginx falls back to index.html otherwise).
+  ensure_front_orgchart_img_assets || true
+
   # Copy package.json and yarn.lock so production has same deps as build (avoids missing new packages like apify-client)
   scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
   scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"

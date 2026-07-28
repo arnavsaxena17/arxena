@@ -156,6 +156,27 @@ yarn cache clean
 npx nx reset
 build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=8192" yarn build
 
+# Nginx serves packages/twenty-front/build as the SPA root for app.* hosts.
+# Org-chart UI loads /img/lock.png etc from that root — ensure they are present.
+FRONT_IMG_DEST="$HOME/twenty/packages/twenty-front/build/img"
+FRONT_IMG_SRC=""
+for candidate in \
+  "$HOME/twenty/packages/twenty-front/public/img" \
+  "$HOME/twenty/packages/twenty-website/public/img"
+do
+  if [ -d "$candidate" ] && [ -f "$candidate/lock.png" ]; then
+    FRONT_IMG_SRC="$candidate"
+    break
+  fi
+done
+if [ -n "$FRONT_IMG_SRC" ]; then
+  mkdir -p "$FRONT_IMG_DEST"
+  cp -a "$FRONT_IMG_SRC"/. "$FRONT_IMG_DEST"/
+  echo "Copied org-chart icons from $FRONT_IMG_SRC into $FRONT_IMG_DEST"
+else
+  echo "WARNING: org-chart /img assets not found after twenty-front build"
+fi
+
 echo "Building twenty-website package"
 cd ~/twenty/packages/twenty-website/
 build_step TWENTY_WEBSITE yarn build:ci
