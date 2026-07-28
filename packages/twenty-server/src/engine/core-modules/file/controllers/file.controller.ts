@@ -14,8 +14,12 @@ import { join } from 'path';
 import { type Readable } from 'stream';
 
 import { Request, Response } from 'express';
+import { lookup as mimeLookup } from 'mime-types';
 import { FileFolder, ServerFileFolder } from 'twenty-shared/types';
 
+import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { FileStorageDriverFactory } from 'src/engine/core-modules/file-storage/file-storage-driver.factory';
 import {
   FileStorageException,
   FileStorageExceptionCode,
@@ -36,6 +40,7 @@ import { FileService } from 'src/engine/core-modules/file/services/file.service'
 import { setFileResponseHeaders } from 'src/engine/core-modules/file/utils/set-file-response-headers.utils';
 import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
+import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 
 @Controller()
 @UseFilters(FileApiExceptionFilter)
@@ -44,6 +49,7 @@ export class FileController {
 
   constructor(
     private readonly fileService: FileService,
+    private readonly fileStorageDriverFactory: FileStorageDriverFactory,
     private readonly serverFileStorageService: ServerFileStorageService,
   ) {}
 
@@ -171,6 +177,85 @@ export class FileController {
       await pipeline(fileResponse.stream, res);
     } catch (error) {
       this.logger.error('Public asset stream failed mid-transfer', { error });
+
+      if (!res.headersSent) {
+        throw new FileException(
+          'Error streaming file from storage',
+          FileExceptionCode.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      res.destroy();
+    }
+  }
+
+  // Legacy imported attachments still store only `fullPath` values such as
+  // `attachment/<uuid>.pdf`. Serve those directly from workspace storage until
+  // they are backfilled to FILES-field records.
+  @Get('files/*path')
+  @UseGuards(WorkspaceAuthGuard, NoPermissionGuard)
+  async getLegacyWorkspaceFile(
+    @Res() res: Response,
+    @Req() req: Request,
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ) {
+    const filepath = join(...req.params.path);
+
+    if (
+      filepath.length === 0 ||
+      filepath.includes('..') ||
+      filepath.startsWith('/')
+    ) {
+      throw new FileException(
+        'File not found',
+        FileExceptionCode.FILE_NOT_FOUND,
+      );
+    }
+
+    const onStorageFilePath = join(`workspace-${workspace.id}`, filepath);
+    const driver = this.fileStorageDriverFactory.getCurrentDriver();
+    const mimeType = mimeLookup(filepath) || 'application/octet-stream';
+
+    let stream: Readable;
+
+    try {
+      stream = await driver.readFile({
+        filePath: onStorageFilePath,
+      });
+    } catch (error) {
+      if (
+        error instanceof FileStorageException &&
+        (error.code === FileStorageExceptionCode.FILE_NOT_FOUND ||
+          error.code === FileStorageExceptionCode.ACCESS_DENIED)
+      ) {
+        throw new FileException(
+          'File not found',
+          FileExceptionCode.FILE_NOT_FOUND,
+        );
+      }
+
+      this.logger.error('Legacy workspace file read failed unexpectedly', {
+        error,
+        filepath,
+        workspaceId: workspace.id,
+      });
+
+      throw new FileException(
+        'Error retrieving file',
+        FileExceptionCode.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    setFileResponseHeaders(res, mimeType);
+
+    try {
+      await pipeline(stream, res);
+    } catch (error) {
+      this.logger.error('Legacy workspace file stream failed mid-transfer', {
+        error,
+        filepath,
+        workspaceId: workspace.id,
+      });
 
       if (!res.headersSent) {
         throw new FileException(

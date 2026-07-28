@@ -46,9 +46,9 @@ export class GoogleCalendarController {
         resolvedTimeMin,
         resolvedTimeMax,
       );
-      return { 
+      return {
         status: "success",
-        data: events 
+        data: events
       };
     } catch (error) {
       console.error("Error fetching events: ", error);

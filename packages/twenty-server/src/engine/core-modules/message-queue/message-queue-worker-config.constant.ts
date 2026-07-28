@@ -177,4 +177,148 @@ export const MESSAGE_QUEUE_WORKER_CONFIG: Record<
       boundedShutdownDrain: true,
     },
   },
+  [MessageQueue.candidateQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.aiFilteringQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.extSockWhatsappQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.googleContactsQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.candidateEngagementQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.engagedCandidateProcessingQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.gmailDraftShortlistQueue]: {
+    priority: 2,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.resumeUploadQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.contactEnrichmentQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.metadataStructureQueue]: {
+    priority: 5,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.autonomousRecruiterQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.theOrgQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.googleSearchPeopleResultsQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.orgchartApifyQueue]: {
+    priority: 4,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.linkedinUnipileTeardownQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
+  [MessageQueue.unipileWebhookQueue]: {
+    priority: 3,
+    workerOptions: {
+      concurrency: 1,
+      lockDuration: 30_000,
+      maxStalledCount: 1,
+      boundedShutdownDrain: false,
+    },
+  },
 };
