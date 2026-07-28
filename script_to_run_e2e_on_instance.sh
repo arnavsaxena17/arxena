@@ -29,8 +29,8 @@ sudo apt-get install -y -qq build-essential libsqlite3-dev curl git
 echo ""
 echo "[2/6] Setting up Node.js..."
 source ~/.nvm/nvm.sh 2>/dev/null || true
-nvm install 22 --silent
-nvm use 22
+nvm install 24.5.0 --silent
+nvm use 24.5.0
 echo "  Node $(node -v) / npm $(npm -v)"
 
 # ── 3. Clone repo ─────────────────────────────────────────────────────────────

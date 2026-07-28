@@ -36,8 +36,10 @@ echo "Vite version: $(npx vite --version 2>/dev/null || echo 'not yet installed'
 echo "Build environment setup complete!"
 export NODE_OPTIONS="--max-old-space-size=4096"
 source ~/.nvm/nvm.sh
-nvm install 22
-nvm use 22
+# Must match package.json engines.node (^24.5.0) and root .nvmrc — yarn.config.cjs fails install otherwise
+NODE_VERSION="${NODE_VERSION:-24.5.0}"
+nvm install "$NODE_VERSION"
+nvm use "$NODE_VERSION"
 
 echo "Node version: $(node -v)"
 echo "npm version: $(npm -v)"
@@ -55,8 +57,16 @@ else
 fi
 
 git checkout "${BUILD_BRANCH}"
+# Prefer repo .nvmrc if present (keeps builder aligned with engines.node)
+if [ -f .nvmrc ]; then
+  nvm install
+  nvm use
+fi
 # Branch set by build_app_in_new_instance.sh via BUILD_BRANCH env
-yarn
+if ! yarn; then
+  echo "yarn install failed (check Node version / peer constraints)" >&2
+  exit 1
+fi
 # Nest SWC builder requires @swc/core's platform native binding. Repo yarnrc sets
 # enableScripts:false, so @swc/core postinstall is skipped and nest build can fail on
 # linux-arm64 builders with "Failed to load @swc/cli and/or @swc/core".

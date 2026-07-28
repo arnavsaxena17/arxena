@@ -23,7 +23,7 @@ SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
 VOLUME_SIZE="${VOLUME_SIZE:-30}"
 AMI_NAME="${AMI_NAME:-base-instance-twenty-building-image-arm64-$(date +%Y%m%d%H%M)}"
 NVM_VERSION="${NVM_VERSION:-v0.40.1}"
-NODE_VERSION="${NODE_VERSION:-22}"
+NODE_VERSION="${NODE_VERSION:-24.5.0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_FILE="${SCRIPT_DIR}/.arm64-builder-ami-id"
@@ -103,7 +103,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \\
 sudo systemctl enable --now docker
 sudo usermod -aG docker ubuntu
 
-# System Node 22 (fallback) + global yarn/nest like the x86 AMI (/usr/bin/{yarn,nest})
+# System Node (fallback) + global yarn/nest like the x86 AMI (/usr/bin/{yarn,nest})
 curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
 sudo npm install -g yarn@1.22.22 @nestjs/cli@10

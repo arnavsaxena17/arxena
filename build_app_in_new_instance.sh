@@ -19,7 +19,7 @@ if [ -n "${AWS_PROFILE:-}" ]; then
   AWS_CLI_PROFILE_ARGS=(--profile "$AWS_PROFILE")
 fi
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
-EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps (nvm+node22, yarn, nest, docker)
+EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps (nvm; build script installs Node 24.5.0, yarn, nest, docker)
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t4g.xlarge}"
 EC2_KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
 EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
