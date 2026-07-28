@@ -143,6 +143,24 @@ export class BillingResolver {
     });
 
     if (this.environmentService.get('BILLING_PROVIDER') === 'razorpay') {
+      // Mirror Stripe: no-card trial creates a local trialing subscription and
+      // returns a success URL. Paid checkout still opens Razorpay Checkout.
+      if (!requirePaymentMethod) {
+        const successUrl =
+          await this.billingPortalWorkspaceService.createDirectRazorpayTrialSubscription(
+            {
+              workspace,
+              successUrlPath,
+              plan: plan ?? BillingPlanKey.PRO,
+              interval: recurringInterval,
+            },
+          );
+
+        return {
+          url: successUrl,
+        };
+      }
+
       const { subscriptionId, keyId, callbackUrl } =
         await this.billingPortalWorkspaceService.computeRazorpayCheckoutSession(
           {

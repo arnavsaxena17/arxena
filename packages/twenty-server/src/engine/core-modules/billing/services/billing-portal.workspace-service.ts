@@ -21,9 +21,12 @@ import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/
 import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { RAZORPAY_BASE_PRODUCT_ID } from 'src/engine/core-modules/billing/constants/razorpay-base-product.constant';
+import { BillingPlanKey } from 'src/engine/core-modules/billing/enums/billing-plan-key.enum';
 import { BillingProductKey } from 'src/engine/core-modules/billing/enums/billing-product-key.enum';
+import { SubscriptionInterval } from 'src/engine/core-modules/billing/enums/billing-subscription-interval.enum';
 import { SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { StripeBillingPortalService } from 'src/engine/core-modules/billing/stripe/services/stripe-billing-portal.service';
 import { StripeCheckoutService } from 'src/engine/core-modules/billing/stripe/services/stripe-checkout.service';
 import { StripeCustomerService } from 'src/engine/core-modules/billing/stripe/services/stripe-customer.service';
@@ -36,6 +39,7 @@ import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user
 import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { assert } from 'src/utils/assert';
 @Injectable()
 export class BillingPortalWorkspaceService {
@@ -48,6 +52,8 @@ export class BillingPortalWorkspaceService {
     private readonly billingSubscriptionService: BillingSubscriptionService,
     private readonly environmentService: EnvironmentService,
     private readonly razorpayCheckoutService: RazorpayCheckoutService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
+    private readonly workspaceCacheService: WorkspaceCacheService,
     @InjectWorkspaceScopedRepository(BillingSubscriptionEntity)
     private readonly billingSubscriptionRepository: WorkspaceScopedRepository<BillingSubscriptionEntity>,
     @InjectWorkspaceScopedRepository(BillingCustomerEntity)
@@ -103,6 +109,95 @@ export class BillingPortalWorkspaceService {
     const callbackUrl = `${base}?${search.toString()}`;
 
     return { subscriptionId, keyId, callbackUrl };
+  }
+
+  // Local no-card trial for Razorpay provider (Stripe uses createDirectSubscription).
+  // Skips Razorpay Checkout so plan-required "Basic without credit card" works.
+  async createDirectRazorpayTrialSubscription({
+    workspace,
+    successUrlPath,
+    plan = BillingPlanKey.PRO,
+    interval = SubscriptionInterval.Month,
+  }: {
+    workspace: WorkspaceEntity;
+    successUrlPath?: string;
+    plan?: BillingPlanKey;
+    interval?: SubscriptionInterval;
+  }): Promise<string> {
+    const frontBaseUrl = this.workspaceDomainsService.buildWorkspaceURL({
+      workspace,
+    });
+
+    if (successUrlPath) {
+      frontBaseUrl.pathname = successUrlPath;
+    }
+
+    const successUrl = frontBaseUrl.toString();
+    const existingSubscriptions = await this.billingSubscriptionRepository.find(
+      workspace.id,
+      {
+        where: { status: Not(SubscriptionStatus.Canceled) },
+      },
+    );
+
+    if (isNonEmptyArray(existingSubscriptions)) {
+      throw new BillingException(
+        'Customer already has a non-canceled billing subscription',
+        BillingExceptionCode.BILLING_SUBSCRIPTION_INVALID,
+      );
+    }
+
+    const trialDurationDays = this.environmentService.get(
+      'BILLING_FREE_TRIAL_WITHOUT_CREDIT_CARD_DURATION_IN_DAYS',
+    );
+    const trialStart = new Date();
+    const trialEnd = new Date(
+      trialStart.getTime() + trialDurationDays * 24 * 60 * 60 * 1000,
+    );
+
+    await this.billingCustomerRepository.upsert(
+      workspace.id,
+      {
+        workspaceId: workspace.id,
+        paymentProvider: 'razorpay',
+        stripeCustomerId: null,
+        hasPaymentMethod: false,
+      },
+      {
+        conflictPaths: ['workspaceId'],
+        skipUpdateIfNoValuesChanged: true,
+      },
+    );
+
+    await this.billingSubscriptionRepository.insert(workspace.id, {
+      workspaceId: workspace.id,
+      status: SubscriptionStatus.Trialing,
+      interval,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      razorpaySubscriptionId: null,
+      currentPeriodStart: trialStart,
+      currentPeriodEnd: trialEnd,
+      trialStart,
+      trialEnd,
+      metadata: {
+        workspaceId: workspace.id,
+        plan,
+        provider: 'razorpay',
+        trialType: 'without_credit_card',
+      },
+    });
+
+    await this.workspaceCreditsService.getOrCreate(workspace.id);
+    await this.workspaceCacheService.invalidateAndRecompute(workspace.id, [
+      'currentBillingSubscription',
+    ]);
+
+    this.logger.log(
+      `Created Razorpay no-card trial for workspace ${workspace.id} (${trialDurationDays} days)`,
+    );
+
+    return successUrl;
   }
 
   // Prefer explicit arg, then env only if it matches a synced price, else latest
