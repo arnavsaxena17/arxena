@@ -193,6 +193,49 @@ export class FileStorageService {
     };
   }
 
+  private validateLegacyFolderPathOrThrow({
+    folderPath,
+  }: {
+    folderPath: string;
+  }): string {
+    const validationResult = validateFolderPath({ folderPath });
+
+    if (!validationResult.isValid) {
+      throw new FileStorageException(
+        validationResult.error,
+        FileStorageExceptionCode.ACCESS_DENIED,
+      );
+    }
+
+    return folderPath.replace(/\/+/g, '/').replace(/\/$/, '');
+  }
+
+  private validateLegacyFilePathOrThrow({
+    folderPath,
+    filename,
+  }: {
+    folderPath: string;
+    filename: string;
+  }): string {
+    const validatedFolderPath = this.validateLegacyFolderPathOrThrow({
+      folderPath,
+    });
+    const resourcePath = join(validatedFolderPath, filename).replace(/\/+/g, '/');
+    const validationResult = validateFilePath({
+      resourcePath,
+      fileFolder: FileFolder.PublicAsset,
+    });
+
+    if (!validationResult.isValid) {
+      throw new FileStorageException(
+        validationResult.error,
+        FileStorageExceptionCode.ACCESS_DENIED,
+      );
+    }
+
+    return resourcePath;
+  }
+
   async writeFile({
     sourceFile,
     fileFolder,
@@ -373,6 +416,46 @@ export class FileStorageService {
     });
   }
 
+  async write({
+    file,
+    name,
+    folder,
+    mimeType,
+  }: {
+    file: string | Buffer | Uint8Array;
+    name: string;
+    folder: string;
+    mimeType: string;
+  }): Promise<void> {
+    const driver = this.fileStorageDriverFactory.getCurrentDriver();
+    const filePath = this.validateLegacyFilePathOrThrow({
+      folderPath: folder,
+      filename: name,
+    });
+
+    await driver.writeFile({
+      filePath,
+      mimeType,
+      sourceFile: file,
+    });
+  }
+
+  read({
+    folderPath,
+    filename,
+  }: {
+    folderPath: string;
+    filename: string;
+  }): Promise<Readable> {
+    const driver = this.fileStorageDriverFactory.getCurrentDriver();
+    const filePath = this.validateLegacyFilePathOrThrow({
+      folderPath,
+      filename,
+    });
+
+    return driver.readFile({ filePath });
+  }
+
   readFile(params: ResourceIdentifier): Promise<Readable> {
     const driver = this.fileStorageDriverFactory.getCurrentDriver();
 
@@ -409,6 +492,36 @@ export class FileStorageService {
       : this.fileRepository;
 
     await fileRepository.delete(workspaceId, { applicationId });
+  }
+
+  async delete({
+    folderPath,
+    filename,
+  }: {
+    folderPath: string;
+    filename?: string;
+  }): Promise<void> {
+    const driver = this.fileStorageDriverFactory.getCurrentDriver();
+
+    if (isDefined(filename)) {
+      const validatedFilePath = this.validateLegacyFilePathOrThrow({
+        folderPath,
+        filename,
+      });
+
+      await driver.delete({
+        folderPath: dirname(validatedFilePath),
+        filename: basename(validatedFilePath),
+      });
+
+      return;
+    }
+
+    const validatedFolderPath = this.validateLegacyFolderPathOrThrow({
+      folderPath,
+    });
+
+    await driver.delete({ folderPath: validatedFolderPath });
   }
 
   async deleteApplicationFilesFromStorage({

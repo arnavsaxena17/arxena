@@ -117,6 +117,59 @@ describe('FileStorageService', () => {
       });
     });
 
+    describe('legacy raw storage helpers', () => {
+      it('should write a file to a raw storage path', async () => {
+        await service.write({
+          file: Buffer.from('hello'),
+          name: 'orgchart.json',
+          folder: 'org-charts/ngk',
+          mimeType: 'application/json',
+        });
+
+        expect(mockDriver.writeFile).toHaveBeenCalledWith({
+          filePath: 'org-charts/ngk/orgchart.json',
+          mimeType: 'application/json',
+          sourceFile: Buffer.from('hello'),
+        });
+      });
+
+      it('should read a file from a raw storage path', async () => {
+        mockDriver.readFile.mockResolvedValue('stream');
+
+        const result = await service.read({
+          folderPath: 'linkedin-profiles/companies/ngk',
+          filename: 'profile.json',
+        });
+
+        expect(result).toBe('stream');
+        expect(mockDriver.readFile).toHaveBeenCalledWith({
+          filePath: 'linkedin-profiles/companies/ngk/profile.json',
+        });
+      });
+
+      it('should delete a raw storage file path', async () => {
+        await service.delete({
+          folderPath: 'org-charts/ngk',
+          filename: 'candidates.json',
+        });
+
+        expect(mockDriver.delete).toHaveBeenCalledWith({
+          folderPath: 'org-charts/ngk',
+          filename: 'candidates.json',
+        });
+      });
+
+      it('should delete a raw storage folder path', async () => {
+        await service.delete({
+          folderPath: 'org-charts/ngk/theorg-enriched',
+        });
+
+        expect(mockDriver.delete).toHaveBeenCalledWith({
+          folderPath: 'org-charts/ngk/theorg-enriched',
+        });
+      });
+    });
+
     describe('getPresignedUrl', () => {
       it('should delegate to the driver and return the URL', async () => {
         mockDriver.getPresignedUrl.mockResolvedValue(
