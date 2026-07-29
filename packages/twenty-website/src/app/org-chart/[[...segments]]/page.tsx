@@ -530,73 +530,12 @@ export default async function OrgChartPage({
       ? resolvedSearchParams.website
       : undefined;
 
-  const rawData = await fetchOrgChart(companyId, {
-    companyName,
-    website: websiteFromQuery,
-    country: normalizedCountry?.toLowerCase(),
-    functionRoot: normalizedFunctionRoot?.toLowerCase(),
-    forwardedUserAgent,
-  });
-
-  const orgData = extractOrgData(rawData);
-  const baseUrl = await getBaseUrl();
-  const apiBase = `${baseUrl}/api/org-chart`;
-  const rawNodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
-  const nodeDataArray = rawNodeDataArray.map((node) => {
-    const out = { ...node } as OrgChartNodeData;
-    for (let i = 0; i < 4; i++) {
-      const key = `image_${i}` as keyof OrgChartNodeData;
-      const val = out[key];
-      if (typeof val === 'string' && val) {
-        (out as Record<string, string>)[key] = getProxiedImageUrl(val, apiBase);
-      }
-    }
-    return out;
-  });
-
-  const {
-    profileCount,
-    locationName: locationNameRaw,
-    industry: industryRaw,
-    website: websiteFromPayload,
-    linkedinUrl,
-  } = extractOrgChartCompanyMetadataFromPayload(rawData);
-  const displayCompanyName = toTitleCase(
+  const slugDisplayCompanyName = toTitleCase(
     companyName ??
-      (typeof rawData?.job_company_name === 'string'
-        ? rawData.job_company_name
-        : undefined) ??
-      (typeof companyId === 'string' ? companyId : 'Company'),
+      (typeof companyId === 'string'
+        ? formatCompanyNameForDisplay(companyId)
+        : 'Company'),
   );
-  const locationName = locationNameRaw
-    ? toTitleCase(locationNameRaw)
-    : undefined;
-  const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
-  const website =
-    normalizeOptionalCompanyField(websiteFromQuery) ?? websiteFromPayload;
-
-  const breadcrumbItems = [
-    { name: 'Home', url: '/' },
-    {
-      name: `${displayCompanyName} Org Chart`,
-      url: `/org-chart/${encodeURIComponent(companyId)}`,
-    },
-  ];
-  if (normalizedCountry) {
-    breadcrumbItems.push({
-      name: normalizedCountry,
-      url: `/org-chart/${encodeURIComponent(companyId)}/${toSlug(normalizedCountry)}`,
-    });
-  }
-  if (normalizedFunctionRoot) {
-    const fnPath = normalizedCountry
-      ? `/${toSlug(normalizedFunctionRoot)}`
-      : `/global/${toSlug(normalizedFunctionRoot)}`;
-    breadcrumbItems.push({
-      name: normalizedFunctionRoot,
-      url: `/org-chart/${encodeURIComponent(companyId)}${normalizedCountry ? `/${toSlug(normalizedCountry)}` : ''}${fnPath}`,
-    });
-  }
 
   const pageShellStyle = {
     flex: 1,
@@ -606,7 +545,84 @@ export default async function OrgChartPage({
     width: '100%',
   };
 
+  const buildBreadcrumbItems = (displayCompanyName: string) => {
+    const items = [
+      { name: 'Home', url: '/' },
+      {
+        name: `${displayCompanyName} Org Chart`,
+        url: `/org-chart/${encodeURIComponent(companyId)}`,
+      },
+    ];
+    if (normalizedCountry) {
+      items.push({
+        name: normalizedCountry,
+        url: `/org-chart/${encodeURIComponent(companyId)}/${toSlug(normalizedCountry)}`,
+      });
+    }
+    if (normalizedFunctionRoot) {
+      const fnPath = normalizedCountry
+        ? `/${toSlug(normalizedFunctionRoot)}`
+        : `/global/${toSlug(normalizedFunctionRoot)}`;
+      items.push({
+        name: normalizedFunctionRoot,
+        url: `/org-chart/${encodeURIComponent(companyId)}${normalizedCountry ? `/${toSlug(normalizedCountry)}` : ''}${fnPath}`,
+      });
+    }
+    return items;
+  };
+
+  // Bots/scrapers still get full SSR HTML. Browsers get a light shell and
+  // fetch the org chart client-side so navigation is not blocked on a 2MB RSC payload.
   if (staticOnly) {
+    const rawData = await fetchOrgChart(companyId, {
+      companyName,
+      website: websiteFromQuery,
+      country: normalizedCountry?.toLowerCase(),
+      functionRoot: normalizedFunctionRoot?.toLowerCase(),
+      forwardedUserAgent,
+    });
+
+    const orgData = extractOrgData(rawData);
+    const baseUrl = await getBaseUrl();
+    const apiBase = `${baseUrl}/api/org-chart`;
+    const rawNodeDataArray = orgData ? processOrgChartToNodeData(orgData) : [];
+    const nodeDataArray = rawNodeDataArray.map((node) => {
+      const out = { ...node } as OrgChartNodeData;
+      for (let i = 0; i < 4; i++) {
+        const key = `image_${i}` as keyof OrgChartNodeData;
+        const val = out[key];
+        if (typeof val === 'string' && val) {
+          (out as Record<string, string>)[key] = getProxiedImageUrl(
+            val,
+            apiBase,
+          );
+        }
+      }
+      return out;
+    });
+
+    const {
+      profileCount,
+      locationName: locationNameRaw,
+      industry: industryRaw,
+      website: websiteFromPayload,
+      linkedinUrl,
+    } = extractOrgChartCompanyMetadataFromPayload(rawData);
+    const displayCompanyName = toTitleCase(
+      companyName ??
+        (typeof rawData?.job_company_name === 'string'
+          ? rawData.job_company_name
+          : undefined) ??
+        (typeof companyId === 'string' ? companyId : 'Company'),
+    );
+    const locationName = locationNameRaw
+      ? toTitleCase(locationNameRaw)
+      : undefined;
+    const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
+    const website =
+      normalizeOptionalCompanyField(websiteFromQuery) ?? websiteFromPayload;
+    const breadcrumbItems = buildBreadcrumbItems(displayCompanyName);
+
     return (
       <div style={pageShellStyle}>
         <BreadcrumbListSchema items={breadcrumbItems} baseUrl={baseUrl} />
@@ -626,34 +642,25 @@ export default async function OrgChartPage({
     );
   }
 
+  const baseUrl = await getBaseUrl();
+  const breadcrumbItems = buildBreadcrumbItems(slugDisplayCompanyName);
+
   return (
     <div style={pageShellStyle}>
       <BreadcrumbListSchema items={breadcrumbItems} baseUrl={baseUrl} />
       <OrgChartPageClient
         companyId={companyId}
-        companyName={displayCompanyName}
-        website={website}
-        locationName={locationName}
-        industry={industry}
-        profileCount={profileCount}
-        linkedinUrl={linkedinUrl}
-        nodeDataArray={nodeDataArray}
-        orgData={rawData}
+        companyName={slugDisplayCompanyName}
+        website={normalizeOptionalCompanyField(websiteFromQuery)}
+        nodeDataArray={[]}
+        orgData={null}
+        loadChartFromApi={true}
         initialCountry={normalizedCountry}
         initialFunctionRoot={normalizedFunctionRoot}
         signUpUrl={getSignUpUrl()}
         breadcrumb={<BreadcrumbNav items={breadcrumbItems} />}
         diagramLoader={<OrgChartDiagramLoader />}
-      >
-        <OrgChartStructureSSR
-          nodeDataArray={nodeDataArray}
-          companyName={displayCompanyName}
-          locationName={locationName}
-          industry={industry}
-          country={normalizedCountry}
-          functionRoot={normalizedFunctionRoot}
-        />
-      </OrgChartPageClient>
+      />
     </div>
   );
 }

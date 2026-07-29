@@ -19,6 +19,7 @@ import { companySearchLightTheme } from '@/lib/company-search';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
+  extractOrgChartCompanyMetadataFromPayload,
   mergeOrgChartCompanyField,
   needsOrgChartCompanyInfoLookup,
   normalizeOptionalCompanyField,
@@ -44,6 +45,7 @@ import {
   navigateToOrgChartSignup,
   OrgChartNodeData,
   toSlug,
+  toTitleCase,
   type OrgChartGradeTier,
   type OrgChartGradeVisibility,
 } from 'twenty-shared/utils';
@@ -65,6 +67,8 @@ type OrgChartPageClientProps = {
   linkedinUrl?: string;
   nodeDataArray: OrgChartNodeData[];
   orgData: Record<string, unknown> | null;
+  // When true, skip SSR payload and fetch /api/org-chart on the client
+  loadChartFromApi?: boolean;
   initialCountry?: string;
   initialFunctionRoot?: string;
   signUpUrl: string;
@@ -74,6 +78,11 @@ type OrgChartPageClientProps = {
   publishSlug?: string;
   initialAsOfMonth?: string;
 };
+
+const buildOrgChartApiPath = (companyId: string): string =>
+  companyId.toLowerCase() === 'yuga_labs'
+    ? `manual/${encodeURIComponent(companyId)}`
+    : encodeURIComponent(companyId);
 
 const monthKeyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -346,14 +355,15 @@ export const OrgChartPageClient = ({
   children,
   diagramLoader,
   companyId,
-  companyName,
-  website,
-  locationName,
-  industry,
-  profileCount,
-  linkedinUrl,
+  companyName: initialCompanyName,
+  website: initialWebsite,
+  locationName: initialLocationName,
+  industry: initialIndustry,
+  profileCount: initialProfileCount,
+  linkedinUrl: initialLinkedinUrl,
   nodeDataArray,
   orgData,
+  loadChartFromApi = false,
   initialCountry,
   initialFunctionRoot,
   signUpUrl,
@@ -379,6 +389,12 @@ export const OrgChartPageClient = ({
   );
 
   const [isDiagramVisible, setIsDiagramVisible] = useState(false);
+  const [companyName, setCompanyName] = useState(initialCompanyName);
+  const [website, setWebsite] = useState(initialWebsite);
+  const [locationName, setLocationName] = useState(initialLocationName);
+  const [industry, setIndustry] = useState(initialIndustry);
+  const [profileCount, setProfileCount] = useState(initialProfileCount);
+  const [linkedinUrl, setLinkedinUrl] = useState(initialLinkedinUrl);
 
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(
     initialCountry,
@@ -397,6 +413,12 @@ export const OrgChartPageClient = ({
   const [exactEmployeeCount, setExactEmployeeCount] = useState<number | null>(
     null,
   );
+  const [clientNodeDataArray, setClientNodeDataArray] =
+    useState(nodeDataArray);
+  const [clientOrgData, setClientOrgData] = useState(orgData);
+  const [isChartDataLoading, setIsChartDataLoading] =
+    useState(loadChartFromApi);
+  const [chartDataError, setChartDataError] = useState<string | null>(null);
   const [publishedNodeDataArray, setPublishedNodeDataArray] =
     useState(nodeDataArray);
   const [publishedOrgData, setPublishedOrgData] = useState(orgData);
@@ -436,10 +458,150 @@ export const OrgChartPageClient = ({
 
   const activeAsOfMonth = timelineEnabled ? committedAsOfMonth : '';
 
+  useEffect(() => {
+    setSelectedCountry(initialCountry);
+    setSelectedFunctionRoot(initialFunctionRoot);
+  }, [initialCountry, initialFunctionRoot]);
+
+  useEffect(() => {
+    if (loadChartFromApi) {
+      return;
+    }
+    setClientNodeDataArray(nodeDataArray);
+    setClientOrgData(orgData);
+    setCompanyName(initialCompanyName);
+    setWebsite(initialWebsite);
+    setLocationName(initialLocationName);
+    setIndustry(initialIndustry);
+    setProfileCount(initialProfileCount);
+    setLinkedinUrl(initialLinkedinUrl);
+    setIsChartDataLoading(false);
+    setChartDataError(null);
+  }, [
+    loadChartFromApi,
+    nodeDataArray,
+    orgData,
+    initialCompanyName,
+    initialWebsite,
+    initialLocationName,
+    initialIndustry,
+    initialProfileCount,
+    initialLinkedinUrl,
+  ]);
+
+  const companyNameFromQuery = searchParams.get('companyName');
+  const websiteFromQuery = searchParams.get('website');
+
+  useEffect(() => {
+    if (!loadChartFromApi) {
+      return;
+    }
+
+    let cancelled = false;
+    const fetchChart = async () => {
+      setIsChartDataLoading(true);
+      setChartDataError(null);
+      setIsDiagramVisible(false);
+      try {
+        const params = new URLSearchParams();
+        if (companyNameFromQuery) {
+          params.set('companyName', companyNameFromQuery);
+        }
+        if (websiteFromQuery) {
+          params.set('website', websiteFromQuery);
+        }
+        if (initialCountry) {
+          params.set('country', initialCountry.toLowerCase());
+        }
+        if (initialFunctionRoot) {
+          params.set('functionRoot', initialFunctionRoot.toLowerCase());
+        }
+        const query = params.toString();
+        const res = await fetch(
+          `/api/org-chart/${buildOrgChartApiPath(companyId)}${query ? `?${query}` : ''}`,
+        );
+        const json = (await res.json()) as {
+          status?: string;
+          result?: Record<string, unknown>;
+          message?: string;
+        };
+        if (cancelled) {
+          return;
+        }
+        if (!res.ok || json.status !== 'ok' || !json.result) {
+          setClientNodeDataArray([]);
+          setClientOrgData(null);
+          setChartDataError(
+            json.message ?? 'Org chart could not be loaded. Please try again.',
+          );
+          return;
+        }
+
+        const processed = processPublishedOrgChartPayload(
+          json.result,
+          '/api/org-chart',
+        );
+        // Filter dropdowns read countries/functions from the raw API payload
+        setClientNodeDataArray(processed.nodeDataArray);
+        setClientOrgData(json.result);
+
+        const metadata = extractOrgChartCompanyMetadataFromPayload(
+          json.result,
+        );
+        const payloadCompanyName =
+          typeof json.result.job_company_name === 'string'
+            ? json.result.job_company_name
+            : undefined;
+        if (payloadCompanyName) {
+          setCompanyName(toTitleCase(payloadCompanyName));
+        }
+        if (metadata.website) {
+          setWebsite(metadata.website);
+        }
+        if (metadata.locationName) {
+          setLocationName(toTitleCase(metadata.locationName));
+        }
+        if (metadata.industry) {
+          setIndustry(toTitleCase(metadata.industry));
+        }
+        if (typeof metadata.profileCount === 'number') {
+          setProfileCount(metadata.profileCount);
+        }
+        if (metadata.linkedinUrl) {
+          setLinkedinUrl(metadata.linkedinUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setClientNodeDataArray([]);
+          setClientOrgData(null);
+          setChartDataError(
+            'Org chart could not be loaded. Please try again.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsChartDataLoading(false);
+        }
+      }
+    };
+
+    void fetchChart();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    loadChartFromApi,
+    companyId,
+    initialCountry,
+    initialFunctionRoot,
+    companyNameFromQuery,
+    websiteFromQuery,
+  ]);
+
   const chartNodeDataArray = timelineEnabled
     ? publishedNodeDataArray
-    : nodeDataArray;
-  const chartOrgData = timelineEnabled ? publishedOrgData : orgData;
+    : clientNodeDataArray;
+  const chartOrgData = timelineEnabled ? publishedOrgData : clientOrgData;
 
   const {
     availableCountries,
@@ -909,14 +1071,14 @@ export const OrgChartPageClient = ({
       companyName,
       country: initialCountry,
       functionRoot: initialFunctionRoot,
-      nodeCount: nodeDataArray.length,
+      nodeCount: chartNodeDataArray.length,
     });
   }, [
     companyId,
     companyName,
     initialCountry,
     initialFunctionRoot,
-    nodeDataArray.length,
+    chartNodeDataArray.length,
   ]);
 
   const filtersProps = {
@@ -959,7 +1121,17 @@ export const OrgChartPageClient = ({
     filterInPlace &&
     chartNodeDataArray.length > 0 &&
     displayedNodeDataArray.length === 0 &&
-    !isTimelineChartLoading;
+    !isTimelineChartLoading &&
+    !isChartDataLoading;
+
+  const showChartLoadError =
+    !isChartDataLoading && !!chartDataError && chartNodeDataArray.length === 0;
+
+  const showChartEmptyState =
+    !isChartDataLoading &&
+    !chartDataError &&
+    chartNodeDataArray.length === 0 &&
+    loadChartFromApi;
 
   const showPreviewPersistentBanner =
     hasPreviewOrgChartNodes && displayedNodeDataArray.length > 0;
@@ -967,8 +1139,12 @@ export const OrgChartPageClient = ({
   const showNodeCapabilitiesHoverHint =
     process.env.NEXT_PUBLIC_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
 
+  const showDiagramLoader =
+    isChartDataLoading ||
+    (!isDiagramVisible && displayedNodeDataArray.length > 0);
+
   useEffect(() => {
-    if (isTimelineChartLoading) {
+    if (isTimelineChartLoading || isChartDataLoading) {
       return;
     }
 
@@ -978,6 +1154,7 @@ export const OrgChartPageClient = ({
   }, [
     displayedNodeDataArray.length,
     isTimelineChartLoading,
+    isChartDataLoading,
     markInteractiveOrgChartAbsent,
   ]);
 
@@ -1045,9 +1222,39 @@ export const OrgChartPageClient = ({
             )}
             <StyledDiagramBody>
               {diagramLoader && (
-                <StyledDiagramLoaderOverlay $visible={!isDiagramVisible}>
+                <StyledDiagramLoaderOverlay $visible={showDiagramLoader}>
                   {diagramLoader}
                 </StyledDiagramLoaderOverlay>
+              )}
+              {showChartLoadError && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    padding: 24,
+                    textAlign: 'center',
+                    color: '#666',
+                  }}
+                >
+                  {chartDataError}
+                </div>
+              )}
+              {showChartEmptyState && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    padding: 24,
+                    textAlign: 'center',
+                    color: '#666',
+                  }}
+                >
+                  No org chart data found for this company.
+                </div>
               )}
               {showFilteredEmptyState && (
                 <div

@@ -172,6 +172,9 @@ done
 if [ -n "$FRONT_IMG_SRC" ]; then
   mkdir -p "$FRONT_IMG_DEST"
   cp -a "$FRONT_IMG_SRC"/. "$FRONT_IMG_DEST"/
+  # Front code also requests short names (/img/linkedin.svg, /img/download.svg)
+  [ -f "$FRONT_IMG_DEST/linkedin.svg" ] || cp -f "$FRONT_IMG_DEST/linkedin-icon.svg" "$FRONT_IMG_DEST/linkedin.svg" 2>/dev/null || true
+  [ -f "$FRONT_IMG_DEST/download.svg" ] || cp -f "$FRONT_IMG_DEST/download-icon.svg" "$FRONT_IMG_DEST/download.svg" 2>/dev/null || true
   echo "Copied org-chart icons from $FRONT_IMG_SRC into $FRONT_IMG_DEST"
 else
   echo "WARNING: org-chart /img assets not found after twenty-front build"

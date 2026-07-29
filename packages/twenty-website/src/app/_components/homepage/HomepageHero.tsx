@@ -424,7 +424,6 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
                   <StyledExampleCard
                     key={key}
                     href={`/org-chart/${encodeURIComponent(companyId)}`}
-                    prefetch={false}
                     isSelected={selectedExampleCompanyKey === key}
                     onPointerDown={() => {
                       setIsExampleStripPaused(true);

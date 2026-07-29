@@ -275,6 +275,9 @@ ensure_front_orgchart_img_assets() {
 
   mkdir -p "$dest"
   cp -a "$src"/. "$dest"/
+  # Front code also requests short names (/img/linkedin.svg, /img/download.svg)
+  [ -f "$dest/linkedin.svg" ] || cp -f "$dest/linkedin-icon.svg" "$dest/linkedin.svg" 2>/dev/null || true
+  [ -f "$dest/download.svg" ] || cp -f "$dest/download-icon.svg" "$dest/download.svg" 2>/dev/null || true
   echo "Copied org-chart icons from $src into $dest"
 }
 
