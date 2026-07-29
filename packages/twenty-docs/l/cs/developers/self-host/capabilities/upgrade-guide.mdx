@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Pokud používáte Docker Compose, postupujte takto:
 
-1. Zastavte Twenty: `docker compose down`
+1. Zastavte Arxena: `docker compose down`
 2. Změňte hodnotu `TAG` v souboru `.env` vedle `docker-compose.yml`
-3. Spusťte Twenty: `docker compose up -d`
+3. Spusťte Arxena: `docker compose up -d`
 
 Server při startu automaticky spustí všechny požadované migrační kroky upgradu. Není potřeba žádný ruční příkaz.
 
 ## Upgrade napříč verzemi (v1.22+)
 
-Počínaje **v1.22** podporuje Twenty upgrade napříč verzemi. Můžete přejít přímo z jakékoli podporované verze na nejnovější vydání, aniž byste museli procházet každou meziverzí.
+Počínaje **v1.22** podporuje Arxena upgrade napříč verzemi. Můžete přejít přímo z jakékoli podporované verze na nejnovější vydání, aniž byste museli procházet každou meziverzí.
 
 Například přechod z v1.22 přímo na v2.0 je plně podporován.
 
 ## Aktualizace na v2.5+ — obálka pro šifrování dat v klidu
 
-Od **v2.5** ukládá Twenty tajné údaje v klidu (OAuth tokeny, aplikační proměnné, privátní klíče pro podepisování, citlivé konfigurační hodnoty, TOTP tajemství) do verzované obálky `enc:v2:`, která je šifrovaná pomocí `ENCRYPTION_KEY` (nebo `APP_SECRET`, pokud není `ENCRYPTION_KEY` nastavený).
+Od **v2.5** ukládá Arxena tajné údaje v klidu (OAuth tokeny, aplikační proměnné, privátní klíče pro podepisování, citlivé konfigurační hodnoty, TOTP tajemství) do verzované obálky `enc:v2:`, která je šifrovaná pomocí `ENCRYPTION_KEY` (nebo `APP_SECRET`, pokud není `ENCRYPTION_KEY` nastavený).
 
 Při prvním startu na v2.5 se spustí pomalé aktualizační příkazy, které **zpětně doplní** stávající řádky do nové obálky. Jsou idempotentní — při přerušení a opětovném spuštění server pokračuje tam, kde skončil — ale u velkých databází to může chvíli trvat. Postup můžete sledovat pomocí `upgrade:status`.
 

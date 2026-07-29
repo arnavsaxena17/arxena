@@ -27,7 +27,7 @@ description: Häufige Workflow-Probleme und wie Sie sie beheben.
 
 **Symptome**: Beim manuellen Erstellen eines Datensatzes in der UI wird Ihr Workflow ausgelöst, bevor Sie alle Felder ausfüllen konnten. Der Workflow läuft mit überwiegend leeren Feldwerten.
 
-**Warum das passiert**: Twenty speichert alles in Echtzeit — es gibt keinen separaten "edit"- vs. "read"-Modus. Wenn Sie einen Datensatz erstellen, wird er sofort gespeichert und löst das Ereignis "Record is created" aus, bevor Sie weitere Felder ausfüllen können.
+**Warum das passiert**: Arxena speichert alles in Echtzeit — es gibt keinen separaten "edit"- vs. "read"-Modus. Wenn Sie einen Datensatz erstellen, wird er sofort gespeichert und löst das Ereignis "Record is created" aus, bevor Sie weitere Felder ausfüllen können.
 
 **Wann "Record is created" gut funktioniert**:
 
@@ -79,7 +79,7 @@ Wenn der Workflow nur einmal pro Datensatz ausgeführt werden soll, fügen Sie e
 
 * Überprüfen Sie die API-Endpunkt-URL
 * Überprüfen Sie die Authentifizierungs-Header
-* Testen Sie den API-Aufruf zunächst außerhalb von Twenty
+* Testen Sie den API-Aufruf zunächst außerhalb von Arxena
 * Fügen Sie Fehlerbehandlung in Code-Aktionen hinzu
 
 ### Fehler in Code-Aktionen

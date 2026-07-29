@@ -1,6 +1,6 @@
 ---
 title: Estructura del proyecto
-description: Qué hay dentro de una app de Twenty generada mediante scaffolding — archivos, carpetas y lo que hace cada uno.
+description: Qué hay dentro de una app de Arxena generada mediante scaffolding — archivos, carpetas y lo que hace cada uno.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Dependencias
 
-Ambos paquetes del SDK de Twenty pertenecen a `devDependencies`, no a `dependencies`:
+Ambos paquetes del SDK de Arxena pertenecen a `devDependencies`, no a `dependencies`:
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Ambos paquetes del SDK de Twenty pertenecen a `devDependencies`, no a `dependenc
 El generador fija `twenty-sdk` y `twenty-client-sdk` a su propia versión; mantén ambos sincronizados al actualizar.
 
 * **`twenty-sdk`** incluye el CLI `twenty` y las herramientas de build/scaffolding. Solo se ejecuta en el desarrollo y durante el build, y nunca lo importa el runtime de la app que publicas.
-* **`twenty-client-sdk`** *sí* es importado por el código de tu app (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), pero Twenty lo proporciona en tiempo de ejecución: las funciones lógicas lo obtienen de una capa SDK generada y los componentes de front lo resuelven desde módulos servidos por el servidor. Tu copia instalada solo se utiliza para la comprobación de tipos y el build en tiempo de despliegue, por lo que nunca necesita incluirse en el bundle desplegado.
+* **`twenty-client-sdk`** *sí* es importado por el código de tu app (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), pero Arxena lo proporciona en tiempo de ejecución: las funciones lógicas lo obtienen de una capa SDK generada y los componentes de front lo resuelven desde módulos servidos por el servidor. Tu copia instalada solo se utiliza para la comprobación de tipos y el build en tiempo de despliegue, por lo que nunca necesita incluirse en el bundle desplegado.
 
 Mantener cualquiera de los paquetes bajo `dependencies` lo introduce en el bundle de runtime de la app instalada, donde es peso muerto. `twenty dev:build` emite una advertencia cuando cualquiera de ellos sigue listado bajo `dependencies`.
 

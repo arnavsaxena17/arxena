@@ -51,14 +51,14 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 ## 暗号鍵
 
-Twenty は、環境変数でのみ設定可能な暗号鍵を 2 つ使用します:
+Arxena は、環境変数でのみ設定可能な暗号鍵を 2 つ使用します:
 
 | 変数                        | 目的                                                                                  | 必須                                                                |
 | ------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `ENCRYPTION_KEY`          | 保存時の秘密情報（OAuth トークン、アプリケーション変数、署名鍵の秘密鍵、TOTP シークレット、機密性の高い構成値）を暗号化するために使用されるプライマリキー。 | 新規インストールでは必須（レガシーインストールでは代わりに `APP_SECRET` に依存している場合があります — 下記参照） |
 | `FALLBACK_ENCRYPTION_KEY` | 検証専用のキー。 ローテーション時に、既存の行を復号可能なままにするため、*以前の* `ENCRYPTION_KEY` を設定します。                 | ローテーション中のみ                                                        |
 
-後方互換性のため、`ENCRYPTION_KEY` が未設定の場合、Twenty は保存時の暗号化に `APP_SECRET` をフォールバックとして使用します。これは、旧来のデプロイメントにおける従来の動作と一致します。 新規インストールでは、必ず専用の `ENCRYPTION_KEY` を設定してください。
+後方互換性のため、`ENCRYPTION_KEY` が未設定の場合、Arxena は保存時の暗号化に `APP_SECRET` をフォールバックとして使用します。これは、旧来のデプロイメントにおける従来の動作と一致します。 新規インストールでは、必ず専用の `ENCRYPTION_KEY` を設定してください。
 
 `openssl rand -base64 32` で値を生成し、シークレットマネージャーやシールドされた構成など、安全な場所に保管してください。 `ENCRYPTION_KEY` を失うことは、データベースに保存されているすべての秘密情報へのアクセスを失うことを意味します。
 
@@ -79,7 +79,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 
 ## マルチワークスペースモード
 
-デフォルトでは、Twenty は**シングルワークスペースモード**で動作します—組織向けに 1 つの CRM インスタンスが必要な多くのセルフホスト型デプロイメントに最適です。
+デフォルトでは、Arxena は**シングルワークスペースモード**で動作します—組織向けに 1 つの CRM インスタンスが必要な多くのセルフホスト型デプロイメントに最適です。
 
 ### シングルワークスペースモード（デフォルト）
 
@@ -87,7 +87,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 IS_MULTIWORKSPACE_ENABLED=false  # default
 ```
 
-* Twenty の各インスタンスにつき 1 つのワークスペース
+* Arxena の各インスタンスにつき 1 つのワークスペース
 * 最初のユーザーは自動的にフル権限の管理者になります（`canImpersonate` と `canAccessFullAdminPanel`）
 * 最初のワークスペース作成後は新規サインアップが無効になります
 * シンプルな URL 構造: `https://your-domain.com`
@@ -99,7 +99,7 @@ IS_MULTIWORKSPACE_ENABLED=true
 DEFAULT_SUBDOMAIN=app  # default value
 ```
 
-同一の Twenty インスタンス上で複数の独立したチームがそれぞれのワークスペースを必要とする、SaaS のようなデプロイメント向けにマルチワークスペースモードを有効にします。
+同一の Arxena インスタンス上で複数の独立したチームがそれぞれのワークスペースを必要とする、SaaS のようなデプロイメント向けにマルチワークスペースモードを有効にします。
 
 **シングルワークスペースモードとの主な違い:**
 
@@ -185,7 +185,7 @@ IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS=true
 ## Microsoft 365 統合
 
 <Warning>
-カレンダーおよびメッセージングAPIを使用するためには、[Microsoft 365 ライセンス](https://admin.microsoft.com/Adminportal/Home)が必要です。 They will not be able to sync their account on Twenty without one. それがない場合、Twenty でアカウントを同期できません。
+カレンダーおよびメッセージングAPIを使用するためには、[Microsoft 365 ライセンス](https://admin.microsoft.com/Adminportal/Home)が必要です。 They will not be able to sync their account on Arxena without one. それがない場合、Arxena でアカウントを同期できません。
 </Warning>
 
 ### Microsoft Azureでプロジェクトを作成
@@ -317,16 +317,16 @@ yarn command:prod cron:workflow:automated-cron-trigger
 ## S3 ストレージ
 
 <Warning>
-デフォルトでは、Twenty はアップロードされたファイルをローカルのファイルシステムに保存します。 本番環境へのデプロイでは、S3 または S3 互換のサービス（MinIO、DigitalOcean Spaces など）を使用してください。 コンテナの再起動をまたいでファイルを永続化し、複数のサーバーインスタンスにまたがってスケールできるようにするため。
+デフォルトでは、Arxena はアップロードされたファイルをローカルのファイルシステムに保存します。 本番環境へのデプロイでは、S3 または S3 互換のサービス（MinIO、DigitalOcean Spaces など）を使用してください。 コンテナの再起動をまたいでファイルを永続化し、複数のサーバーインスタンスにまたがってスケールできるようにするため。
 </Warning>
 
 `STORAGE_TYPE=S_3` を設定し、管理パネルまたは `.env` から `STORAGE_S3_*` 変数を設定してください。 S3 変数の全一覧については、[config-variables.ts リファレンス](https://github.com/twentyhq/twenty/blob/main/packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts) を参照してください。
 
-CORS に依存する機能（例: ブラウザ内でのファイルダウンロード）で S3 を使用する場合は、バケットの CORS 設定で Twenty フロントエンドのオリジンが許可されていることを確認してください。
+CORS に依存する機能（例: ブラウザ内でのファイルダウンロード）で S3 を使用する場合は、バケットの CORS 設定で Arxena フロントエンドのオリジンが許可されていることを確認してください。
 
 ## ロジック関数とコードインタープリター
 
-Twenty は、ワークフロー向けのロジック関数と、AI データ分析用のコードインタープリターをサポートします。 どちらもユーザー提供のコードを実行し、セキュリティのために明示的な設定が必要です。
+Arxena は、ワークフロー向けのロジック関数と、AI データ分析用のコードインタープリターをサポートします。 どちらもユーザー提供のコードを実行し、セキュリティのために明示的な設定が必要です。
 
 ### セキュリティのデフォルト
 
@@ -379,5 +379,5 @@ LOGIC_FUNCTION_TYPE=DISABLED  # default when NODE_ENV=production
 | E2B   | `CODE_INTERPRETER_TYPE=E_2_B`    | サンドボックス実行の本番環境 | 高（分離されたサンドボックス） |
 
 <Note>
-`LOGIC_FUNCTION_TYPE=DISABLED` または `CODE_INTERPRETER_TYPE=DISABLED` を使用している場合、実行しようとするとエラーが返されます。 これは、これらの機能なしで Twenty を実行したい場合に便利です。
+`LOGIC_FUNCTION_TYPE=DISABLED` または `CODE_INTERPRETER_TYPE=DISABLED` を使用している場合、実行しようとするとエラーが返されます。 これは、これらの機能なしで Arxena を実行したい場合に便利です。
 </Note>

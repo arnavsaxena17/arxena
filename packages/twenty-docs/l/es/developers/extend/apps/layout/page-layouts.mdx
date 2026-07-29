@@ -4,7 +4,7 @@ description: Personaliza las páginas de detalle de los registros — pestañas,
 icon: table-columns
 ---
 
-Un **page layout** controla cómo se organiza la página de detalle de un registro: qué pestañas aparecen y qué widgets contienen. Usa `definePageLayout()` para declarar un layout para un objeto que posees, o `definePageLayoutTab()` para agregar una sola pestaña a un layout que ya existe (tuyo o uno estándar de Twenty).
+Un **page layout** controla cómo se organiza la página de detalle de un registro: qué pestañas aparecen y qué widgets contienen. Usa `definePageLayout()` para declarar un layout para un objeto que posees, o `definePageLayoutTab()` para agregar una sola pestaña a un layout que ya existe (tuyo o uno estándar de Arxena).
 
 | Caso de uso                                                                | Entidad               |
 | -------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Puntos clave
 
-* `pageLayoutUniversalIdentifier` es **obligatorio** y debe apuntar a un page layout que ya exista en el momento de la instalación, ya sea un layout estándar de Twenty o uno definido por tu propia app. Las referencias entre apps a layouts que pertenecen a otra app instalada no son compatibles hoy en día. Cuando falta el layout padre, la instalación falla con un error de validación claro.
+* `pageLayoutUniversalIdentifier` es **obligatorio** y debe apuntar a un page layout que ya exista en el momento de la instalación, ya sea un layout estándar de Arxena o uno definido por tu propia app. Las referencias entre apps a layouts que pertenecen a otra app instalada no son compatibles hoy en día. Cuando falta el layout padre, la instalación falla con un error de validación claro.
 
-* Para los diseños estándar de Twenty, importa los identificadores desde `twenty-sdk/define`:
+* Para los diseños estándar de Arxena, importa los identificadores desde `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

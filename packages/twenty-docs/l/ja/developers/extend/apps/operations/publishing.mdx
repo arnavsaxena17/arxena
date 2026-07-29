@@ -1,15 +1,15 @@
 ---
 title: 公開
 icon: upload
-description: Twenty アプリをマーケットプレイスに公開するか、社内向けにデプロイします。
+description: Arxena アプリをマーケットプレイスに公開するか、社内向けにデプロイします。
 ---
 
 ## 概要
 
 [ローカルでビルドとテストが完了](/l/ja/developers/extend/apps/getting-started/concepts)したら、配布方法は次の2通りです:
 
-* **tarball をデプロイ** — 内部またはプライベート用途のために、特定の Twenty サーバーにアプリを直接アップロードします。
-* **npm に公開** — Twenty マーケットプレイスにアプリを掲載し、任意のワークスペースが見つけてインストールできるようにします。
+* **tarball をデプロイ** — 内部またはプライベート用途のために、特定の Arxena サーバーにアプリを直接アップロードします。
+* **npm に公開** — Arxena マーケットプレイスにアプリを掲載し、任意のワークスペースが見つけてインストールできるようにします。
 
 どちらの方法も同じ**ビルド**手順から始まります。
 
@@ -25,7 +25,7 @@ yarn twenty dev:build
 
 ## サーバーへのデプロイ（tarball）
 
-一般公開したくないアプリ（プロプライエタリなツール、エンタープライズ専用の連携、実験的ビルドなど）の場合は、tarball を Twenty サーバーに直接デプロイできます。
+一般公開したくないアプリ（プロプライエタリなツール、エンタープライズ専用の連携、実験的ビルドなど）の場合は、tarball を Arxena サーバーに直接デプロイできます。
 
 ### 前提条件
 
@@ -79,7 +79,7 @@ tarball アプリは公開マーケットプレイスには掲載されないた
 
 ### サーバーバージョンの互換性
 
-特定の Twenty サーバーバージョンで導入された機能（例: v2.3.0 で追加された OAuth プロバイダー）をアプリで使用している場合、`package.json` の `engines.twenty` フィールドを使用して、アプリが必要とする最小サーバーバージョンを宣言してください:
+特定の Arxena サーバーバージョンで導入された機能（例: v2.3.0 で追加された OAuth プロバイダー）をアプリで使用している場合、`package.json` の `engines.twenty` フィールドを使用して、アプリが必要とする最小サーバーバージョンを宣言してください:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ tarball アプリは公開マーケットプレイスには掲載されないた
 **機能:**
 
 1. アプリのソースをチェックアウトします。
-2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` 複合アクションを使って、分離された Twenty のテスト用インスタンスを起動します（`yarn twenty docker:start --test` の CI 版）。
+2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` 複合アクションを使って、分離された Arxena のテスト用インスタンスを起動します（`yarn twenty docker:start --test` の CI 版）。
 3. Corepack を有効化し、`.nvmrc` に基づいて Node.js をセットアップし、`yarn install --immutable` で依存関係をインストールします。
 4. `yarn test` を実行し、起動したインスタンスから `TWENTY_API_URL` と `TWENTY_API_KEY` を渡すことで、テストが実サーバーと通信できるようにします。
 
 **設定項目:**
 
-* `TWENTY_VERSION`（env、デフォルトは `latest`）— `ci.yml` でこれを編集して、CI で使用する Twenty サーバーのバージョンを固定します。
+* `TWENTY_VERSION`（env、デフォルトは `latest`）— `ci.yml` でこれを編集して、CI で使用する Arxena サーバーのバージョンを固定します。
 * 同時実行は `github.ref` 単位でグループ化され、新しいプッシュ時に進行中の実行をキャンセルします。
 
 シークレットは不要です。テスト用インスタンスは一時的で、ジョブの実行中のみ存続します。
 
 ### CD — `cd.yml`
 
-`main` へのプッシュのたびに、設定済みの Twenty サーバーへアプリをデプロイします。また、`deploy` ラベルが付与されたプルリクエストからのデプロイにも対応します（任意）。
+`main` へのプッシュのたびに、設定済みの Arxena サーバーへアプリをデプロイします。また、`deploy` ラベルが付与されたプルリクエストからのデプロイにも対応します（任意）。
 
 **機能:**
 
@@ -146,7 +146,7 @@ tarball アプリは公開マーケットプレイスには掲載されないた
 
 | 設定                      | 場所                                                           | 目的                                                 |
 | ----------------------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| `TWENTY_DEPLOY_URL`     | `cd.yml` の `env`（デフォルトは `http://localhost:3000`）             | デプロイ先の Twenty サーバー。 初回利用前に、実際のサーバーの URL に変更してください。 |
+| `TWENTY_DEPLOY_URL`     | `cd.yml` の `env`（デフォルトは `http://localhost:3000`）             | デプロイ先の Arxena サーバー。 初回利用前に、実際のサーバーの URL に変更してください。 |
 | `TWENTY_DEPLOY_API_KEY` | GitHub リポジトリの **Settings → Secrets and variables → Actions** | 対象サーバーでデプロイ権限を持つ API キー。                           |
 
 <Note>
@@ -168,7 +168,7 @@ tarball アプリは公開マーケットプレイスには掲載されないた
 
 **一度きりのセットアップ:**
 
-npmjs.com で自分のパッケージを開き、**Settings → Trusted Publisher** から、このリポジトリを `publish.yml` ワークフローで登録します（詳しくは [npm trusted publishing docs](https://docs.npmjs.com/trusted-publishers) を参照してください）。 provenance 付きで公開すると、どの GitHub リポジトリがそのパッケージをビルドしたかが証明されます。これは、Twenty マーケットプレイスでアプリの所有権を主張する方法にもなります。
+npmjs.com で自分のパッケージを開き、**Settings → Trusted Publisher** から、このリポジトリを `publish.yml` ワークフローで登録します（詳しくは [npm trusted publishing docs](https://docs.npmjs.com/trusted-publishers) を参照してください）。 provenance 付きで公開すると、どの GitHub リポジトリがそのパッケージをビルドしたかが証明されます。これは、Arxena マーケットプレイスでアプリの所有権を主張する方法にもなります。
 
 <Note>
 npm は **public** なソースリポジトリからの provenance しか受け付けません。 private リポジトリから publish しようとすると、npm は OIDC provenance バンドルを `E422 ...` エラーで拒否します。 「Unsupported GitHub Actions source repository visibility: "private"」というエラー。 private リポジトリから publish するには、publish ステップの `env` で `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'` を設定して provenance を無効化します（コメントアウトされたヒントが scaffold された `publish.yml` に含まれています）。
@@ -187,7 +187,7 @@ npm は **public** なソースリポジトリからの provenance しか受け�
 
 ## npm への公開
 
-npm に公開すると、Twenty マーケットプレイスでアプリが見つけられるようになります。 任意の Twenty ワークスペースは、UI からマーケットプレイスのアプリを参照、インストール、およびアップグレードできます。
+npm に公開すると、Arxena マーケットプレイスでアプリが見つけられるようになります。 任意の Arxena ワークスペースは、UI からマーケットプレイスのアプリを参照、インストール、およびアップグレードできます。
 
 ### 要件
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### マーケットプレイスの検出の仕組み
 
-Twenty サーバーは、npm レジストリからマーケットプレイスのカタログを**毎時**同期します。
+Arxena サーバーは、npm レジストリからマーケットプレイスのカタログを**毎時**同期します。
 
 待たずにすぐに同期をトリガーできます:
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 マーケットプレイスに表示されるメタデータは、`defineApplication()` 設定から取得されます。上記の [Marketplace metadata](#marketplace-metadata) を参照してください。
 
 <Note>
-アプリで`defineApplication()`内に`aboutDescription`が定義されていない場合、マーケットプレイスはnpm上のパッケージの`README.md`を概要ページのコンテンツとして自動的に使用します。 つまり、npm と Twenty のマーケットプレイスの両方に対して、1 つの README を維持できます。 マーケットプレイスで異なる説明文を使用したい場合は、`aboutDescription` を明示的に設定してください。
+アプリで`defineApplication()`内に`aboutDescription`が定義されていない場合、マーケットプレイスはnpm上のパッケージの`README.md`を概要ページのコンテンツとして自動的に使用します。 つまり、npm と Arxena のマーケットプレイスの両方に対して、1 つの README を維持できます。 マーケットプレイスで異なる説明文を使用したい場合は、`aboutDescription` を明示的に設定してください。
 </Note>
 
 ### CI での公開
@@ -270,14 +270,14 @@ yarn twenty dev:catalog-sync
 その他の CI システム（GitLab CI、CircleCI など）の場合は、`yarn install` を実行してから `yarn twenty app:publish` を実行します。 環境が OIDC トークンを発行できる場合は provenance が生成され、それ以外の場合は自動的にスキップされます。
 
 <Note>
-**npm provenance** により npm のリスティングにトラストバッジが追加され、公開 CI パイプライン上の特定のコミットからビルドされたパッケージであることをユーザーが検証できるようになります。 また、これにより Twenty マーケットプレイスでアプリの所有権を主張できるようになります。 詳細は [npm provenance のドキュメント](https://docs.npmjs.com/generating-provenance-statements)を参照してください。
+**npm provenance** により npm のリスティングにトラストバッジが追加され、公開 CI パイプライン上の特定のコミットからビルドされたパッケージであることをユーザーが検証できるようになります。 また、これにより Arxena マーケットプレイスでアプリの所有権を主張できるようになります。 詳細は [npm provenance のドキュメント](https://docs.npmjs.com/generating-provenance-statements)を参照してください。
 </Note>
 
 ## アプリのインストール
 
 アプリが公開（npm）またはデプロイ（tarball）されると、ワークスペースは UI からインストールできます。
 
-Twenty の **設定 > アプリケーション** ページに移動すると、マーケットプレイスと tarball でデプロイされたアプリの両方を参照してインストールできます。
+Arxena の **設定 > アプリケーション** ページに移動すると、マーケットプレイスと tarball でデプロイされたアプリの両方を参照してインストールできます。
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

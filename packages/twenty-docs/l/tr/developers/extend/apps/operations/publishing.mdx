@@ -1,15 +1,15 @@
 ---
 title: Yayımlama
 icon: upload
-description: Twenty uygulamanızı pazaryerine sunun ya da dahili olarak dağıtın.
+description: Arxena uygulamanızı pazaryerine sunun ya da dahili olarak dağıtın.
 ---
 
 ## Genel Bakış
 
 Uygulamanız [yerelde derlenip test edildikten sonra](/l/tr/developers/extend/apps/getting-started/concepts), dağıtım için iki yolunuz vardır:
 
-* **Bir tar arşivi dağıtın** — uygulamanızı dahili veya özel kullanım için doğrudan belirli bir Twenty sunucusuna yükleyin.
-* **npm’ye yayımlama** — uygulamanızı Twenty pazaryerinde listeleyin; böylece herhangi bir çalışma alanı keşfedip yükleyebilir.
+* **Bir tar arşivi dağıtın** — uygulamanızı dahili veya özel kullanım için doğrudan belirli bir Arxena sunucusuna yükleyin.
+* **npm’ye yayımlama** — uygulamanızı Arxena pazaryerinde listeleyin; böylece herhangi bir çalışma alanı keşfedip yükleyebilir.
 
 Her iki yol da aynı **build** adımından başlar.
 
@@ -25,7 +25,7 @@ Bu işlem TypeScript kaynaklarını derler, mantık işlevlerini ve ön uç bile
 
 ## Sunucuya dağıtım (tarball)
 
-Genel kullanıma açık olmasını istemediğiniz uygulamalar — sahipli araçlar, yalnızca kurumsal entegrasyonlar veya deneysel derlemeler — için bir tarball’ı doğrudan bir Twenty sunucusuna dağıtabilirsiniz.
+Genel kullanıma açık olmasını istemediğiniz uygulamalar — sahipli araçlar, yalnızca kurumsal entegrasyonlar veya deneysel derlemeler — için bir tarball’ı doğrudan bir Arxena sunucusuna dağıtabilirsiniz.
 
 ### Ön Gereksinimler
 
@@ -79,7 +79,7 @@ Bir güncelleme yayımlamak için:
 
 ### Sunucu sürümü uyumluluğu
 
-Uygulamanız belirli bir Twenty sunucu sürümünde sunulan bir özelliği kullanıyorsa (örneğin, v2.3.0'da eklenen OAuth sağlayıcıları), uygulamanızın gerektirdiği en düşük sunucu sürümünü `package.json` içindeki `engines.twenty` alanını kullanarak belirtmelisiniz:
+Uygulamanız belirli bir Arxena sunucu sürümünde sunulan bir özelliği kullanıyorsa (örneğin, v2.3.0'da eklenen OAuth sağlayıcıları), uygulamanızın gerektirdiği en düşük sunucu sürümünü `package.json` içindeki `engines.twenty` alanını kullanarak belirtmelisiniz:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ Entegrasyon testlerini `main` dalına yapılan her itmede ve her çekme isteğin
 **Ne yapar:**
 
 1. Uygulamanızın kaynak kodunu alır.
-2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` bileşik eylemini kullanarak yalıtılmış bir Twenty test örneği başlatır (CI'daki `yarn twenty docker:start --test` eşdeğeridir).
+2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` bileşik eylemini kullanarak yalıtılmış bir Arxena test örneği başlatır (CI'daki `yarn twenty docker:start --test` eşdeğeridir).
 3. Corepack’i etkinleştirir, `.nvmrc` dosyanızdan Node.js'i kurar ve bağımlılıkları `yarn install --immutable` ile yükler.
 4. Oluşturulan örnekten `TWENTY_API_URL` ve `TWENTY_API_KEY` değerlerini aktararak `yarn test`i çalıştırır; böylece testleriniz gerçek bir sunucuyla haberleşebilir.
 
 **Yapılandırma seçenekleri:**
 
-* `TWENTY_VERSION` (ortam, varsayılanı `latest`) — CI’da kullanılan Twenty sunucu sürümünü `ci.yml` içinde bunu düzenleyerek sabitleyin.
+* `TWENTY_VERSION` (ortam, varsayılanı `latest`) — CI’da kullanılan Arxena sunucu sürümünü `ci.yml` içinde bunu düzenleyerek sabitleyin.
 * Eşzamanlılık `github.ref` bazında gruplanır ve yeni itmelerde devam eden çalışmaları iptal eder.
 
 Gizli anahtar gerekmez — test örneği geçicidir ve yalnızca iş süresi boyunca çalışır.
 
 ### CD — `cd.yml`
 
-`main` dalına yapılan her itmede uygulamanızı yapılandırılmış bir Twenty sunucusuna dağıtır ve isteğe bağlı olarak `deploy` etiketi uygulandığında bir çekme isteğinden de dağıtım yapar.
+`main` dalına yapılan her itmede uygulamanızı yapılandırılmış bir Arxena sunucusuna dağıtır ve isteğe bağlı olarak `deploy` etiketi uygulandığında bir çekme isteğinden de dağıtım yapar.
 
 **Ne yapar:**
 
@@ -146,7 +146,7 @@ Gizli anahtar gerekmez — test örneği geçicidir ve yalnızca iş süresi boy
 
 | Ayar                    | Nerede                                                       | Amaç                                                                                                |
 | ----------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `TWENTY_DEPLOY_URL`     | `cd.yml` içinde `env` (varsayılan: `http://localhost:3000`)  | Dağıtımın yapılacağı Twenty sunucusu. İlk kullanımdan önce bunu gerçek sunucu URL'nizle değiştirin. |
+| `TWENTY_DEPLOY_URL`     | `cd.yml` içinde `env` (varsayılan: `http://localhost:3000`)  | Dağıtımın yapılacağı Arxena sunucusu. İlk kullanımdan önce bunu gerçek sunucu URL'nizle değiştirin. |
 | `TWENTY_DEPLOY_API_KEY` | GitHub deposu **Settings → Secrets and variables → Actions** | Hedef sunucuda dağıtım iznine sahip API anahtarı.                                                   |
 
 <Note>
@@ -168,7 +168,7 @@ Bir sürüm etiketi (örn. `v1.0.0`) gönderdiğinizde veya Actions sekmesinden 
 
 **Tek seferlik kurulum:**
 
-npmjs.com’da paketinizin sayfasını açın > **Settings → Trusted Publisher** bölümüne gidin ve bu depoyu `publish.yml` iş akışıyla kaydedin ([npm trusted publishing belgelerine](https://docs.npmjs.com/trusted-publishers) bakın). Provenance ile yayımlama, paketi hangi GitHub deposunun oluşturduğunu doğrular; ayrıca Twenty pazaryerinde uygulamanızın sahipliğini bu şekilde talep edersiniz.
+npmjs.com’da paketinizin sayfasını açın > **Settings → Trusted Publisher** bölümüne gidin ve bu depoyu `publish.yml` iş akışıyla kaydedin ([npm trusted publishing belgelerine](https://docs.npmjs.com/trusted-publishers) bakın). Provenance ile yayımlama, paketi hangi GitHub deposunun oluşturduğunu doğrular; ayrıca Arxena pazaryerinde uygulamanızın sahipliğini bu şekilde talep edersiniz.
 
 <Note>
 npm yalnızca **herkese açık** kaynak depolarından gelen provenansı kabul eder. Özel bir depodan yayınlarsanız, npm OIDC provenans paketini `E422 ... Desteklenmeyen GitHub Actions kaynak deposu görünürlüğü: "private"` hatası. Özel bir depodan yayınlamak için, yayın adımının `env` bölümünde `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'` ayarını yaparak provenansı devre dışı bırakın (hazırlanmış `publish.yml` içinde yorum satırı olarak eklenmiş bir ipucu bulunur):
@@ -187,7 +187,7 @@ npm yalnızca **herkese açık** kaynak depolarından gelen provenansı kabul ed
 
 ## npm’ye yayımlama
 
-npm’ye yayımlamak, uygulamanızın Twenty pazaryerinde keşfedilebilir olmasını sağlar. Herhangi bir Twenty çalışma alanı, pazaryeri uygulamalarına doğrudan arayüzden göz atabilir, yükleyebilir ve güncelleyebilir.
+npm’ye yayımlamak, uygulamanızın Arxena pazaryerinde keşfedilebilir olmasını sağlar. Herhangi bir Arxena çalışma alanı, pazaryeri uygulamalarına doğrudan arayüzden göz atabilir, yükleyebilir ve güncelleyebilir.
 
 ### Gereksinimler
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### Pazar yerinde keşif nasıl çalışır
 
-Twenty sunucusu pazar yeri kataloğunu npm kayıt defterinden **her saat** eşitler.
+Arxena sunucusu pazar yeri kataloğunu npm kayıt defterinden **her saat** eşitler.
 
 Beklemek yerine eşitlemeyi hemen tetikleyebilirsiniz:
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 Pazaryerinde gösterilen meta veriler, `defineApplication()` yapılandırmanızdan gelir — yukarıdaki [Pazaryeri meta verileri](#marketplace-metadata) bölümüne bakın.
 
 <Note>
-Uygulamanız `defineApplication()` içinde bir `aboutDescription` tanımlamıyorsa, pazaryeri, hakkında sayfasının içeriği olarak paketinizin npm'deki `README.md` dosyasını otomatik olarak kullanır. Bu, hem npm hem de Twenty pazaryeri için tek bir README dosyası kullanabileceğiniz anlamına gelir. Pazaryerinde farklı bir açıklama istiyorsanız, `aboutDescription` değerini açıkça ayarlayın.
+Uygulamanız `defineApplication()` içinde bir `aboutDescription` tanımlamıyorsa, pazaryeri, hakkında sayfasının içeriği olarak paketinizin npm'deki `README.md` dosyasını otomatik olarak kullanır. Bu, hem npm hem de Arxena pazaryeri için tek bir README dosyası kullanabileceğiniz anlamına gelir. Pazaryerinde farklı bir açıklama istiyorsanız, `aboutDescription` değerini açıkça ayarlayın.
 </Note>
 
 ### CI üzerinden yayımlama
@@ -270,14 +270,14 @@ Yukarıda açıklanan, şablon olarak sağlanan `publish.yml` iş akışı sür�
 Diğer CI sistemleri (GitLab CI, CircleCI vb.) için önce `yarn install`, ardından `yarn twenty app:publish` komutunu çalıştırın. Ortam bir OIDC jetonu oluşturabildiğinde provenance üretilir, aksi durumda ise otomatik olarak atlanır.
 
 <Note>
-**npm provenance**, npm listenize bir güven rozeti ekler ve kullanıcıların paketin herkese açık bir CI ardışık düzenindeki belirli bir commit’ten oluşturulduğunu doğrulamasını sağlar. Ayrıca Twenty pazaryerinde uygulamanızın sahipliğini talep etmenizi de sağlar. Ayrıntılar için [npm provenance belgelerine](https://docs.npmjs.com/generating-provenance-statements) bakın.
+**npm provenance**, npm listenize bir güven rozeti ekler ve kullanıcıların paketin herkese açık bir CI ardışık düzenindeki belirli bir commit’ten oluşturulduğunu doğrulamasını sağlar. Ayrıca Arxena pazaryerinde uygulamanızın sahipliğini talep etmenizi de sağlar. Ayrıntılar için [npm provenance belgelerine](https://docs.npmjs.com/generating-provenance-statements) bakın.
 </Note>
 
 ## Uygulamaları yükleme
 
 Bir uygulama yayımlandığında (npm) veya dağıtıldığında (tarball), çalışma alanları onu kullanıcı arayüzü (UI) üzerinden yükleyebilir.
 
-Twenty içinde **Ayarlar > Uygulamalar** sayfasına gidin; burada hem pazar yerindeki hem de tarball ile dağıtılmış uygulamalar görüntülenip yüklenebilir.
+Arxena içinde **Ayarlar > Uygulamalar** sayfasına gidin; burada hem pazar yerindeki hem de tarball ile dağıtılmış uygulamalar görüntülenip yüklenebilir.
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

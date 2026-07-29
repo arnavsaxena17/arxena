@@ -1,5 +1,5 @@
 ---
-title: Generate a Quote or Invoice from Twenty
+title: Generate a Quote or Invoice from Arxena
 description: Automatically create invoices in external tools when deals close.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Related
 
-- [Generate a PDF from Twenty](/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — attach generated PDFs to records
+- [Generate a PDF from Arxena](/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — attach generated PDFs to records
 - [Workflow Triggers](/user-guide/workflows/capabilities/workflow-triggers)
 - [Workflow Actions](/user-guide/workflows/capabilities/workflow-actions)
 - [Closed Won Automations](/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

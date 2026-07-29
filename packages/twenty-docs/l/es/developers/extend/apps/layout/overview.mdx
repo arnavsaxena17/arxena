@@ -1,10 +1,10 @@
 ---
 title: Resumen
-description: Coloca tu aplicación dentro de la interfaz de usuario de Twenty — entradas de la barra lateral, vistas guardadas, pestañas de la página de registro y componentes React aislados.
+description: Coloca tu aplicación dentro de la interfaz de usuario de Arxena — entradas de la barra lateral, vistas guardadas, pestañas de la página de registro y componentes React aislados.
 icon: table-columns
 ---
 
-La **capa de diseño** de una aplicación de Twenty es todo lo que el usuario ve: dónde aparece la aplicación en la barra lateral, qué vistas de lista incluye, cómo se organizan sus páginas de detalles de registro y qué componentes React personalizados se renderizan dentro de esas páginas.
+La **capa de diseño** de una aplicación de Arxena es todo lo que el usuario ve: dónde aparece la aplicación en la barra lateral, qué vistas de lista incluye, cómo se organizan sus páginas de detalles de registro y qué componentes React personalizados se renderizan dentro de esas páginas.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ La **capa de diseño** de una aplicación de Twenty es todo lo que el usuario ve
     `definePageLayout` y `definePageLayoutTab` — pestañas y widgets en la página de detalles de un registro.
   </Card>
   <Card title="Componentes de frontend" icon="window-maximize" href="/l/es/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — componentes React aislados que se renderizan dentro de Twenty.
+    `defineFrontComponent` — componentes React aislados que se renderizan dentro de Arxena.
   </Card>
   <Card title="Elementos del menú de comandos" icon="terminal" href="/l/es/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — registra componentes de frontend como entradas Cmd+K y acciones rápidas.
@@ -54,4 +54,4 @@ La **capa de diseño** de una aplicación de Twenty es todo lo que el usuario ve
 | **Configuración de la app**                | Una sección de configuración personalizada dentro de la pestaña Configuración de la app, en lugar de la interfaz predeterminada de variables. | `defineSettingsFrontComponent`            |
 | **Menú de comandos (Cmd+K)**               | Una acción rápida fijada o un comando oculto                                                                                                  | `defineCommandMenuItem`                   |
 
-Los componentes de frontend se ejecutan dentro de un Web Worker aislado usando Remote DOM — se renderizan de forma nativa en la página (no dentro de un iframe), pero no pueden acceder directamente a la página o al DOM del host. La comunicación con Twenty ocurre a través de una API de host de paso de mensajes.
+Los componentes de frontend se ejecutan dentro de un Web Worker aislado usando Remote DOM — se renderizan de forma nativa en la página (no dentro de un iframe), pero no pueden acceder directamente a la página o al DOM del host. La comunicación con Arxena ocurre a través de una API de host de paso de mensajes.

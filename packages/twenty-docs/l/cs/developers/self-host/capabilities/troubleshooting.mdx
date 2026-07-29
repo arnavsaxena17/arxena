@@ -13,9 +13,9 @@ zde jsou některá řešení běžných problémů.
 #### První instalace skončí chybou `password authentication failed for user "postgres"`
 
 🚨 **DŮLEŽITÉ: Toto řešení je POUZE pro nové instalace** 🚨
-Pokud máte existující instanci Twenty s produkčními daty, **NEPROVÁDĚJTE** tyto kroky, protože trvale smažou vaši databázi!
+Pokud máte existující instanci Arxena s produkčními daty, **NEPROVÁDĚJTE** tyto kroky, protože trvale smažou vaši databázi!
 
-Při první instalaci Twenty můžete chtít změnit výchozí heslo pro databázi.
+Při první instalaci Arxena můžete chtít změnit výchozí heslo pro databázi.
 Heslo, které nastavíte během první instalace, se stane trvale uloženým v objemu databáze. Pokud se později pokusíte toto heslo změnit v konfiguraci, aniž byste odstranili starý objem, dojde k chybám autentizace, protože databáze stále používá původní heslo.
 
 ⚠️ VAROVÁNÍ: Následující kroky trvale SMAŽÍ veškerá data z databáze! ⚠️
@@ -41,7 +41,7 @@ Pak smažte úložiště a naklonujte jej znovu.
 
 #### Chybí schéma metadat
 
-Během instalace Twenty musíte nastavit svou postgres databázi s správnými schématy, rozšířeními a uživateli.
+Během instalace Arxena musíte nastavit svou postgres databázi s správnými schématy, rozšířeními a uživateli.
 Pokud se vám podaří spustit toto nastavování, měli byste mít ve své databázi schémata `default` a `metadata`.
 Pokud ne, ujistěte se, že na vašem počítači neběží více než jedna instance postgres.
 
@@ -82,7 +82,7 @@ Příznak --max-old-space-size=8192 nastavuje horní limit 8 GB pro hromadu v No
 Odkaz: https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Pokud to nefunguje:**
-Analyzujte, které procesy vám zabírají většinu paměti na stroji. V Twenty jsme si všimli, že některá rozšíření VScode zabírala hodně paměti RAM, takže jsme je dočasně deaktivovali.
+Analyzujte, které procesy vám zabírají většinu paměti na stroji. V Arxena jsme si všimli, že některá rozšíření VScode zabírala hodně paměti RAM, takže jsme je dočasně deaktivovali.
 
 **Pokud to nefunguje:**
 Restartování počítače pomůže vyčistit zombie procesy.
@@ -121,9 +121,9 @@ To je očekávané, protože uživatel je neautorizovaný, když je odhlášen, 
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Test webhooku" />
 </div>
 
-* Otevřete svou Twenty aplikaci, přejděte na `/settings` a na levé dolní části obrazovky aktivujte přepínač **Pokročilé**.
+* Otevřete svou Arxena aplikaci, přejděte na `/settings` a na levé dolní části obrazovky aktivujte přepínač **Pokročilé**.
 * Vytvořte nový webhook.
-* Vložte **Svou unikátní webhook URL** do pole **Endpoint Url** ve Twenty. Nastavte **Filtry** na `Companies` a `Created`.
+* Vložte **Svou unikátní webhook URL** do pole **Endpoint Url** ve Arxena. Nastavte **Filtry** na `Companies` a `Created`.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Nastavení webhooku" />
@@ -193,7 +193,7 @@ Poznámka: příkaz database:reset kompletně smaže vaši databázi a vytvoří
 
 #### Problémy s připojením za reverzní proxy
 
-Pokud provozujete Twenty za reverzní proxy a máte problémy s připojením:
+Pokud provozujete Arxena za reverzní proxy a máte problémy s připojením:
 
 1. **Ověřte SERVER_URL:**
 
@@ -201,12 +201,12 @@ Pokud provozujete Twenty za reverzní proxy a máte problémy s připojením:
 
 2. **Zkontrolujte nastavení reverzní proxy:**
 
-   * Potvrďte, že vaše reverzní proxy správně směruje požadavky na server Twenty.
+   * Potvrďte, že vaše reverzní proxy správně směruje požadavky na server Arxena.
    * Ujistěte se, že záhlaví jako `X-Forwarded-For` a `X-Forwarded-Proto` jsou správně nastaveny.
 
 3. **Restartujte služby:**
 
-   Po provedení změn restartujte jak reverzní proxy, tak kontejnery Twenty.
+   Po provedení změn restartujte jak reverzní proxy, tak kontejnery Arxena.
 
 #### Chyba při nahrávání obrázku - přístup odepřen
 
@@ -226,4 +226,4 @@ Pokud se setkáte s problémy, které tento průvodce nepokrývá:
 
 * Podpora komunity:
 
-  Obraťte se na [komunitu Twenty](https://github.com/twentyhq/twenty/issues) nebo [podpůrné kanály](https://discord.gg/cx5n4Jzs57) pro pomoc.
+  Obraťte se na [komunitu Arxena](https://github.com/twentyhq/twenty/issues) nebo [podpůrné kanály](https://discord.gg/cx5n4Jzs57) pro pomoc.

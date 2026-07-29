@@ -1,21 +1,21 @@
 ---
 title: Schnellstart
 icon: rocket
-description: Erstellen Sie in wenigen Minuten Ihre erste Twenty-App.
+description: Erstellen Sie in wenigen Minuten Ihre erste Arxena-App.
 ---
 
 ## Voraussetzungen
 
 * **Node.js 24.5+** — [Hier herunterladen](https://nodejs.org/)
 * **Yarn 4** — Wird mit Node.js über Corepack mitgeliefert. Aktivieren Sie es: `corepack enable`
-* **Docker** — [Hier herunterladen](https://www.docker.com/products/docker-desktop/). Erforderlich, um einen lokalen Twenty-Server auszuführen. Überspringen Sie dies, wenn Twenty bereits anderswo läuft.
+* **Docker** — [Hier herunterladen](https://www.docker.com/products/docker-desktop/). Erforderlich, um einen lokalen Arxena-Server auszuführen. Überspringen Sie dies, wenn Arxena bereits anderswo läuft.
 
-Das Erstellen einer Twenty-App umfasst drei Phasen. Das Scaffolding-Tool fasst sie zu einem einzigen Happy-Path-Befehl zusammen, aber jede Phase ist ein eigenes Konzept — wenn etwas fehlschlägt, hilft Ihnen das Wissen, in welcher Phase Sie sich befinden, zu erkennen, was zu beheben ist.
+Das Erstellen einer Arxena-App umfasst drei Phasen. Das Scaffolding-Tool fasst sie zu einem einzigen Happy-Path-Befehl zusammen, aber jede Phase ist ein eigenes Konzept — wenn etwas fehlschlägt, hilft Ihnen das Wissen, in welcher Phase Sie sich befinden, zu erkennen, was zu beheben ist.
 
 | Phase                   | Was Sie tun                                             | Tool                                | Ergebnis                                             |
 | ----------------------- | ------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------- |
 | **1. Gerüst erstellen** | Den Quellcode der App erzeugen                          | `npx create-twenty-app`             | Ein TypeScript-Projekt auf der Festplatte            |
-| **2. Server starten**   | Einen Twenty-Server starten, in den synchronisiert wird | Docker + `yarn twenty docker:start` | Eine laufende Twenty-Instanz                         |
+| **2. Server starten**   | Einen Arxena-Server starten, in den synchronisiert wird | Docker + `yarn twenty docker:start` | Eine laufende Arxena-Instanz                         |
 | **3. Synchronisieren**  | Ihren Code live mit dem Server synchronisieren          | `yarn twenty dev`                   | Ihre Änderungen erscheinen in der Benutzeroberfläche |
 
 ---
@@ -34,20 +34,20 @@ Das Scaffolding-Tool ist nicht interaktiv: Der Verzeichnisname wird zum App-Name
 
 ---
 
-## Phase 2 — Einen lokalen Twenty-Server starten
+## Phase 2 — Einen lokalen Arxena-Server starten
 
-Ihre App benötigt einen Twenty-Server, in den sie synchronisieren kann. Der Server ist eine vollständige Twenty-Instanz — UI, GraphQL-API, PostgreSQL — die lokal in Docker läuft. Ihr lokaler Code lädt seine Definitionen auf diesen Server hoch, wodurch sie in der Benutzeroberfläche erscheinen.
+Ihre App benötigt einen Arxena-Server, in den sie synchronisieren kann. Der Server ist eine vollständige Arxena-Instanz — UI, GraphQL-API, PostgreSQL — die lokal in Docker läuft. Ihr lokaler Code lädt seine Definitionen auf diesen Server hoch, wodurch sie in der Benutzeroberfläche erscheinen.
 
 Der Scaffolder startet eine Instanz für Sie: Bei laufendem Docker zieht er das `twentycrm/twenty-app-dev`-Image, startet es auf Port `2020` und authentifiziert die CLI für den vorbefüllten Demo-Workspace (`tim@apple.dev`) – keine Anmeldung erforderlich.
 
-Um stattdessen eine Verbindung zu einem bestehenden Twenty-Server herzustellen, übergeben Sie `--url \<your-server-url>`. Remote-Server authentifizieren sich mit OAuth: Ein Browser öffnet sich, damit Sie sich anmelden und auf **Authorize** klicken können, wodurch die CLI Zugriff auf Ihren Workspace erhält. (Sie können lokal auch OAuth aktivieren mit `--authentication-method oauth` – melden Sie sich mit `tim@apple.dev` / `tim@apple.dev` an.)
+Um stattdessen eine Verbindung zu einem bestehenden Arxena-Server herzustellen, übergeben Sie `--url \<your-server-url>`. Remote-Server authentifizieren sich mit OAuth: Ein Browser öffnet sich, damit Sie sich anmelden und auf **Authorize** klicken können, wodurch die CLI Zugriff auf Ihren Workspace erhält. (Sie können lokal auch OAuth aktivieren mit `--authentication-method oauth` – melden Sie sich mit `tim@apple.dev` / `tim@apple.dev` an.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Twenty-Anmeldebildschirm" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Arxena-Anmeldebildschirm" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Twenty-CLI-Autorisierungsbildschirm" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Arxena-CLI-Autorisierungsbildschirm" />
 </div>
 
 Ihr Terminal bestätigt, dass alles eingerichtet ist.
@@ -56,7 +56,7 @@ Ihr Terminal bestätigt, dass alles eingerichtet ist.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="App-Gerüst erfolgreich erstellt" />
 </div>
 
-**Nach dieser Phase:** Sie haben einen laufenden Twenty-Server unter [http://localhost:2020](http://localhost:2020), und Ihre CLI ist autorisiert, mit ihm zu synchronisieren.
+**Nach dieser Phase:** Sie haben einen laufenden Arxena-Server unter [http://localhost:2020](http://localhost:2020), und Ihre CLI ist autorisiert, mit ihm zu synchronisieren.
 
 <Note>
 Wenn Docker nicht installiert ist oder nicht läuft, zeigt das Scaffolding-Tool den richtigen Startbefehl für Ihr Betriebssystem an. Sobald Docker läuft, können Sie mit `yarn twenty docker:start` fortfahren — ein erneutes Scaffolding ist nicht nötig.
@@ -138,7 +138,7 @@ Apps bestehen aus **Entitäten** — jede ist als TypeScript-Datei mit einem ein
 | -------------------------- | ------------------------------------------------------------------------------------------------- |
 | **Objekte & Felder**       | Benutzerdefinierte Datenmodelle (Postkarte, Rechnung usw.) mit typisierten Feldern                |
 | **Logikfunktionen**        | Serverseitiges TypeScript, ausgelöst durch HTTP-Routen, Cron-Zeitpläne oder Datenbankereignisse   |
-| **Frontend-Komponenten**   | React-Komponenten, die in der UI von Twenty gerendert werden (Seitenleiste, Widgets, Befehlsmenü) |
+| **Frontend-Komponenten**   | React-Komponenten, die in der UI von Arxena gerendert werden (Seitenleiste, Widgets, Befehlsmenü) |
 | **Fähigkeiten & Agenten**  | KI-Funktionen — wiederverwendbare Anweisungen und autonome Assistenten                            |
 | **Ansichten & Navigation** | Vorkonfigurierte Listenansichten und Seitenleisteneinträge                                        |
 | **Seitenlayouts**          | Benutzerdefinierte Datensatz-Detailseiten mit Tabs und Widgets                                    |

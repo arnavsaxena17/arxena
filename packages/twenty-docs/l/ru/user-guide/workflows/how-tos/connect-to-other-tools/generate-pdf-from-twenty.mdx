@@ -1,16 +1,16 @@
 ---
-title: Создание PDF в Twenty
+title: Создание PDF в Arxena
 description: Создайте рабочий процесс для создания и прикрепления PDF (например, коммерческого предложения) к записи.
 ---
 
-Автоматически создавайте или получайте PDF и прикрепляйте его к записи в Twenty. Это часто используют для создания коммерческих предложений, счетов или отчетов, связанных с компаниями, сделками или другими объектами.
+Автоматически создавайте или получайте PDF и прикрепляйте его к записи в Arxena. Это часто используют для создания коммерческих предложений, счетов или отчетов, связанных с компаниями, сделками или другими объектами.
 
 ## Обзор
 
 В этом рабочем процессе используется **Ручной триггер**, чтобы пользователи могли по запросу создавать PDF для любой выбранной записи. За обработку отвечает **Логическая функция**:
 
 1. Загрузка PDF по URL (из сервиса генерации PDF)
-2. Загрузка файла в Twenty
+2. Загрузка файла в Arxena
 3. Создание вложения, связанного с записью
 
 ## Требования
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ export const main = async (
 
 * [Триггеры рабочего процесса](/l/ru/user-guide/workflows/capabilities/workflow-triggers)
 * [Логические функции](/l/ru/user-guide/workflows/capabilities/workflow-actions#code)
-* [Создание коммерческого предложения или счета в Twenty](/l/ru/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Создание коммерческого предложения или счета в Arxena](/l/ru/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

@@ -28,6 +28,7 @@ build_step() {
 sudo apt update
 sudo apt install -y build-essential
 sudo apt install -y libsqlite3-dev
+sudo apt install -y unzip
 yarn cache clean
 echo "Node version: $(node -v)"
 echo "npm version: $(npm -v)"
@@ -197,6 +198,12 @@ if ! build_step TWENTY_MCP_SERVER npx nx run twenty-mcp-server:build; then
   build_step TWENTY_MCP_SERVER yarn build
 fi
 
+echo "Building twenty-docs package"
+cd ~/twenty/
+build_step TWENTY_DOCS_GENERATE yarn docs:generate
+cd ~/twenty/packages/twenty-docs/
+build_step TWENTY_DOCS yarn export:brands
+
 required_builds=(
   TWENTY_SERVER
   TWENTY_FRONT
@@ -206,6 +213,7 @@ required_builds=(
   TWENTY_CLIENT_SDK
   TWENTY_WEBSITE
   TWENTY_MCP_SERVER
+  TWENTY_DOCS
 )
 
 echo "Build summary:"
@@ -220,9 +228,9 @@ for build_name in "${required_builds[@]}"; do
 done
 
 if [ "$all_required_success" = true ]; then
-  echo "Required build check passed: twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-client-sdk, twenty-website, and twenty-mcp-server all built successfully."
+  echo "Required build check passed: twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-client-sdk, twenty-website, twenty-mcp-server, and twenty-docs all built successfully."
   exit 0
 fi
 
-echo "Required build check failed: one or more of twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-client-sdk, twenty-website, or twenty-mcp-server did not build successfully."
+echo "Required build check failed: one or more of twenty-server, twenty-front, twenty-orgchart, twenty-shared, twenty-client-sdk, twenty-website, twenty-mcp-server, or twenty-docs did not build successfully."
 exit 1

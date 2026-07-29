@@ -1,10 +1,10 @@
 ---
 title: App
 icon: cube
-description: Estendi Twenty con il codice — oggetti personalizzati, logica lato server, componenti UI e agenti IA, tutti come pacchetti TypeScript.
+description: Estendi Arxena con il codice — oggetti personalizzati, logica lato server, componenti UI e agenti IA, tutti come pacchetti TypeScript.
 ---
 
-La maggior parte dei CRM ti offre un pannello di configurazione. Twenty ti offre una piattaforma. Le app sono il modo in cui gli sviluppatori estendono Twenty oltre ciò che offre la UI — definendo modelli di dati, logica lato server, componenti UI e funzionalità di IA come codice, quindi distribuendoli a uno o più workspace.
+La maggior parte dei CRM ti offre un pannello di configurazione. Arxena ti offre una piattaforma. Le app sono il modo in cui gli sviluppatori estendono Arxena oltre ciò che offre la UI — definendo modelli di dati, logica lato server, componenti UI e funzionalità di IA come codice, quindi distribuendoli a uno o più workspace.
 
 ## Perché esistono le app
 
@@ -20,7 +20,7 @@ Un’app è un pacchetto TypeScript che dichiara **entità** utilizzando `twenty
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | **Oggetti e campi**      | Nuove tabelle di dati e campi su oggetti esistenti — stesso trattamento di quelli integrati                                 |
 | **Funzioni logiche**     | TypeScript lato server attivato da route HTTP, pianificazioni cron o eventi del database                                    |
-| **Componenti front-end** | Componenti React sandboxed che vengono renderizzati all'interno dell'UI di Twenty (pannello laterale, widget, menu comandi) |
+| **Componenti front-end** | Componenti React sandboxed che vengono renderizzati all'interno dell'UI di Arxena (pannello laterale, widget, menu comandi) |
 | **Skill e agenti**       | Funzionalità di IA — istruzioni riutilizzabili e assistenti autonomi                                                        |
 | **Viste e navigazione**  | Viste elenco preconfigurate e voci di menu della barra laterale                                                             |
 
@@ -34,7 +34,7 @@ Tutto viene rilevato tramite analisi AST in fase di build — nessun file di con
 
 ## L'esperienza di sviluppo
 
-Scrivi la tua app come un progetto TypeScript sulla tua macchina. La CLI osserva i file sorgente e li sincronizza in tempo reale con un server Twenty in esecuzione — modifica un file e vedi il cambiamento nell'UI entro un secondo. Il client API tipizzato viene rigenerato automaticamente quando lo schema cambia. Quando sei pronto, `yarn twenty app:publish --private` esegue il push su un server di produzione, oppure `yarn twenty app:publish` elenca la tua app su npm e sul marketplace di Twenty.
+Scrivi la tua app come un progetto TypeScript sulla tua macchina. La CLI osserva i file sorgente e li sincronizza in tempo reale con un server Arxena in esecuzione — modifica un file e vedi il cambiamento nell'UI entro un secondo. Il client API tipizzato viene rigenerato automaticamente quando lo schema cambia. Quando sei pronto, `yarn twenty app:publish --private` esegue il push su un server di produzione, oppure `yarn twenty app:publish` elenca la tua app su npm e sul marketplace di Arxena.
 
 <Card title="Crea la tua prima app" icon="arrow-right" href="/l/it/developers/extend/apps/getting-started">
   Procedura guidata in tre fasi — crea lo scaffold, esegui un server locale, sincronizza le tue modifiche.

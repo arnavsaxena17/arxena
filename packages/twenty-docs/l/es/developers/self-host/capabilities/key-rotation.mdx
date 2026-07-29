@@ -3,7 +3,7 @@ title: Rotación de claves
 icon: rotate
 ---
 
-Twenty tiene dos familias de claves independientes:
+Arxena tiene dos familias de claves independientes:
 
 * **Claves de firma JWT** — pares de claves asimétricas ES256 (etiquetados con `kid`) almacenados en `core."signingKey"`, utilizados para firmar y verificar tokens de acceso/renovación.
 * **Clave de cifrado en reposo** — `ENCRYPTION_KEY`, se usa para cifrar tokens OAuth, variables de la aplicación, claves privadas de las claves de firma, valores de configuración confidenciales y secretos TOTP dentro de un sobre `enc:v2:`.

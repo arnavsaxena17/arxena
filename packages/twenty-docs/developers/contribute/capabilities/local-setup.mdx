@@ -1,7 +1,7 @@
 ---
 title: Local Setup
 icon: "laptop-code"
-description: "The guide for contributors (or curious developers) who want to run Twenty locally."
+description: "The guide for contributors (or curious developers) who want to run Arxena locally."
 ---
 
 
@@ -10,7 +10,7 @@ description: "The guide for contributors (or curious developers) who want to run
 <Tabs>
 <Tab title="Linux and macOS">
 
-Before you can install and use Twenty, make sure you install the following on your computer:
+Before you can install and use Arxena, make sure you install the following on your computer:
 - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - [Node v24.5.0](https://nodejs.org/en/download)
 - [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -196,7 +196,7 @@ You can now access the database at `localhost:5432`.
 If you used the Docker option above, the default credentials are user `postgres` and password `postgres`. For native PostgreSQL installations, use the credentials and roles configured on your machine.
 
 ## Step 4: Set up a Redis Database (cache)
-Twenty requires a Redis cache to provide the best performance.
+Arxena requires a Redis cache to provide the best performance.
 
 <Tabs>
   <Tab title="Linux">
@@ -247,11 +247,11 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**Multi-Workspace Mode:** By default, Twenty runs in single-workspace mode where only one workspace can be created. To enable multi-workspace support (useful for testing subdomain-based features), set `IS_MULTIWORKSPACE_ENABLED=true` in your server `.env` file. See [Multi-Workspace Mode](/developers/self-host/capabilities/setup#multi-workspace-mode) for details.
+**Multi-Workspace Mode:** By default, Arxena runs in single-workspace mode where only one workspace can be created. To enable multi-workspace support (useful for testing subdomain-based features), set `IS_MULTIWORKSPACE_ENABLED=true` in your server `.env` file. See [Multi-Workspace Mode](/developers/self-host/capabilities/setup#multi-workspace-mode) for details.
 </Info>
 
 ## Step 6: Installing dependencies
-To build Twenty server and seed some data into your database, run the following command:
+To build Arxena server and seed some data into your database, run the following command:
 ```bash
 yarn
 ```
@@ -294,16 +294,16 @@ Alternatively, you can start all services at once:
 npx nx start
 ```
 
-## Step 8: Use Twenty
+## Step 8: Use Arxena
 
 **Frontend**
 
-Twenty's frontend will be running at [http://localhost:3001](http://localhost:3001).
+Arxena's frontend will be running at [http://localhost:3001](http://localhost:3001).
 You can log in using the default demo account: `tim@apple.dev` (password: `tim@apple.dev`)
 
 **Backend**
 
-- Twenty's server will be up and running at [http://localhost:3000](http://localhost:3000)
+- Arxena's server will be up and running at [http://localhost:3000](http://localhost:3000)
 - The GraphQL API can be accessed at [http://localhost:3000/graphql](http://localhost:3000/graphql)
 - The REST API can be reached at [http://localhost:3000/rest](http://localhost:3000/rest)
 

@@ -1,10 +1,10 @@
 ---
 title: Prezentare generală
-description: Integrează-ți aplicația în interfața Twenty — intrări în bara laterală, vizualizări salvate, file în pagina de detalii a înregistrărilor și componente React izolate.
+description: Integrează-ți aplicația în interfața Arxena — intrări în bara laterală, vizualizări salvate, file în pagina de detalii a înregistrărilor și componente React izolate.
 icon: table-columns
 ---
 
-**Stratul de layout** al unei aplicații Twenty reprezintă tot ceea ce vede utilizatorul: unde apare aplicația în bara laterală, ce vizualizări de listă oferă, cum sunt aranjate paginile de detalii ale înregistrărilor și ce componente React personalizate sunt afișate în interiorul acelor pagini.
+**Stratul de layout** al unei aplicații Arxena reprezintă tot ceea ce vede utilizatorul: unde apare aplicația în bara laterală, ce vizualizări de listă oferă, cum sunt aranjate paginile de detalii ale înregistrărilor și ce componente React personalizate sunt afișate în interiorul acelor pagini.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ icon: table-columns
     `definePageLayout` și `definePageLayoutTab` — file și widgeturi pe pagina de detalii a unei înregistrări.
   </Card>
   <Card title="Componente front-end" icon="window-maximize" href="/l/ro/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — componente React izolate care rulează în interiorul Twenty.
+    `defineFrontComponent` — componente React izolate care rulează în interiorul Arxena.
   </Card>
   <Card title="Elemente din meniul de comenzi" icon="terminal" href="/l/ro/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — înregistrează componente front-end ca intrări Cmd+K și acțiuni rapide.
@@ -54,4 +54,4 @@ icon: table-columns
 | **Setări ale aplicației**                          | O secțiune de configurare personalizată din fila Setări a aplicației, în locul interfeței implicite pentru variabile | `defineSettingsFrontComponent`            |
 | **Meniul de comenzi (Cmd+K)**                      | O acțiune rapidă fixată sau o comandă ascunsă                                                                        | `defineCommandMenuItem`                   |
 
-Componentele front rulează în interiorul unui Web Worker izolat folosind Remote DOM — acestea sunt redate *nativ* în pagină (nu într-un iframe), dar nu pot accesa direct pagina gazdă sau DOM-ul. Comunicarea cu Twenty se face printr-un API al gazdei bazat pe transmiterea de mesaje.
+Componentele front rulează în interiorul unui Web Worker izolat folosind Remote DOM — acestea sunt redate *nativ* în pagină (nu într-un iframe), dar nu pot accesa direct pagina gazdă sau DOM-ul. Comunicarea cu Arxena se face printr-un API al gazdei bazat pe transmiterea de mesaje.

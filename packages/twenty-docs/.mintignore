@@ -1,0 +1,14 @@
+# Top-level Getting Started section (not built / published)
+getting-started/
+l/*/getting-started/
+
+# User Guide section (not built / published)
+user-guide/
+l/*/user-guide/
+
+# Developers section (not built / published)
+developers/
+l/*/developers/
+
+# Internal IP / contributor notes (not published)
+TAXONOMY-IP.md

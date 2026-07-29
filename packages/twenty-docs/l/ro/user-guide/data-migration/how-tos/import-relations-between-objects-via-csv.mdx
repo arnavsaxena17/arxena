@@ -21,7 +21,7 @@ Acest ghid vă arată cum să importați relațiile dintre obiecte — de exempl
 
 Partea "unu" este **părintele**. Partea "mulți" este **copilul**.
 
-### Relații obișnuite în Twenty
+### Relații obișnuite în Arxena
 
 | Relație                 | Partea "unu" (părinte) | Partea "mulți" (copil) |
 | ----------------------- | ---------------------- | ---------------------- |
@@ -41,7 +41,7 @@ Partea "unu" este **părintele**. Partea "mulți" este **copilul**.
 
 ## Pasul 2: Importați mai întâi înregistrările părinte
 
-Înregistrarea părinte (partea „unu”) trebuie să existe în Twenty înainte de a o putea referi.
+Înregistrarea părinte (partea „unu”) trebuie să existe în Arxena înainte de a o putea referi.
 
 **Ordinea importului:**
 
@@ -73,7 +73,7 @@ Trebuie să faceți referire la înregistrarea părinte folosind un **identifica
 
 Dacă aveți nevoie de `id`:
 
-1. Exportați înregistrările părinte din Twenty
+1. Exportați înregistrările părinte din Arxena
 2. Exportul include coloana `id`
 3. Folosiți aceste ID-uri în fișierul cu înregistrări copil
 
@@ -119,7 +119,7 @@ Coloana `companyDomain` face referire la domeniul companiei.
 <Warning>
 **Formatul domeniului contează!**
 
-Folosiți `https://domain.com` (nu doar `domain.com`). Acest lucru corespunde modului în care Twenty stochează domeniile companiilor și previne erorile de potrivire.
+Folosiți `https://domain.com` (nu doar `domain.com`). Acest lucru corespunde modului în care Arxena stochează domeniile companiilor și previne erorile de potrivire.
 </Warning>
 
 ### Reguli importante
@@ -139,7 +139,7 @@ Folosiți `https://domain.com` (nu doar `domain.com`). Acest lucru corespunde mo
 5. Finalizați maparea rămasă
 6. Revizuiți erorile și confirmați
 
-Twenty va lega automat fiecare înregistrare copil de părintele corespunzător.
+Arxena va lega automat fiecare înregistrare copil de părintele corespunzător.
 
 ## Pasul 7: Verificați importul
 
@@ -157,8 +157,8 @@ După import:
 | **Format de domeniu greșit**           | Folosirea `acme.com` în loc de `https://acme.com`    | Folosiți formatul URL complet cu `https://`                                    |
 | **Câmpuri unice multiple**             | Maparea atât a `companyId`, cât și a `companyDomain` | Mapați un singur identificator unic                                            |
 | **Câmp de relație lipsă**              | Câmpul de relație nu există în modelul de date       | Creați-l în **Setări → Model de date** înainte de import                       |
-| **Înregistrări inexistente**           | Înregistrarea părinte nu există în Twenty            | Importați mai întâi înregistrările părinte sau verificați greșelile de tastare |
-| **Nepotrivire de majuscule/minuscule** | `Acme.com` în fișier, dar `acme.com` în Twenty       | Asigurați potrivirea exactă a majusculelor/minusculelor                        |
+| **Înregistrări inexistente**           | Înregistrarea părinte nu există în Arxena            | Importați mai întâi înregistrările părinte sau verificați greșelile de tastare |
+| **Nepotrivire de majuscule/minuscule** | `Acme.com` în fișier, dar `acme.com` în Arxena       | Asigurați potrivirea exactă a majusculelor/minusculelor                        |
 
 ## Legarea la membrii spațiului de lucru
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Ce se întâmplă dacă înregistrarea mea părinte nu are un domeniu sau un email?">
     Aveți două opțiuni:
-    1. Folosiți `id`-ul Twenty (exportați înregistrările părinte pentru a obține ID-urile lor)
+    1. Folosiți `id`-ul Arxena (exportați înregistrările părinte pentru a obține ID-urile lor)
     2. Creați un câmp unic personalizat în modelul dvs. de date pentru a stoca un ID extern din sistemul anterior
   </Accordion>
 

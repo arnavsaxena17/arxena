@@ -39,7 +39,7 @@ Každá položka má rozsah, který se předává jako volba při každém volá
 * **`WORKSPACE`** (výchozí) — položka je soukromá pro aktuální instalaci vaší aplikace v pracovním prostoru. Každý pracovní prostor, který aplikaci nainstaluje, získá vlastní nezávislou sadu klíčů. To je to, co chcete pro keše, kurzory a stav na úrovni pracovního prostoru.
 * **`SERVER`** — položka je sdílena napříč **všemi instalacemi** vaší aplikace na serveru. Serverové položky se chovají jako **nároky (claims)**: uloženou hodnotou je vždy workspaceId, které klíč nárokuje (vynechte `value` při `set`, abyste klíč nárokovali pro aktuální pracovní prostor) a pouze tento pracovní prostor ji může přepsat nebo smazat. Každá instalace může položku číst.
 
-Serverové nároky existují pro směrování napříč pracovními prostory. [Server-route resolver](/l/cs/developers/extend/apps/logic/logic-functions#server-route-trigger) běží v pracovním prostoru vlastníka registrace aplikace, ale příchozí webhook obvykle nese pouze externí id účtu — nikoli Twenty workspaceId. Nechte každý pracovní prostor, aby si při připojení nárokoval své externí id, a poté ho v routě rozřešte:
+Serverové nároky existují pro směrování napříč pracovními prostory. [Server-route resolver](/l/cs/developers/extend/apps/logic/logic-functions#server-route-trigger) běží v pracovním prostoru vlastníka registrace aplikace, ale příchozí webhook obvykle nese pouze externí id účtu — nikoli Arxena workspaceId. Nechte každý pracovní prostor, aby si při připojení nárokoval své externí id, a poté ho v routě rozřešte:
 
 ```ts
 // In the connected workspace, when the external account is linked:

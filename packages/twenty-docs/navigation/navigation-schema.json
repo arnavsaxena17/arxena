@@ -6,7 +6,7 @@
       "groups": [
         {
           "key": "discoverTwenty",
-          "label": "Discover Twenty",
+          "label": "Discover Arxena",
           "icon": "rocket",
           "pages": [
             "user-guide/introduction",
@@ -404,7 +404,7 @@
                     "developers/contribute/capabilities/frontend-development/storybook",
                     {
                       "key": "twentyUi",
-                      "label": "Twenty UI",
+                      "label": "Arxena UI",
                       "pages": [
                         "twenty-ui/introduction",
                         {

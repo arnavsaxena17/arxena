@@ -1,3 +1,11 @@
+/* Navbar / sidebar brand mark — Windows-tile rounded plate (~14%) */
+header img[src*='logo'],
+nav img[src*='logo'],
+.sidebar img[src*='logo'],
+a[href='/'] img {
+  border-radius: 15%;
+}
+
 /* CTA button — solid dark pill in light mode, inverted in dark mode */
 #topbar-cta-button a {
   background-color: #141414 !important;
@@ -45,4 +53,256 @@ div:has(> .sidebar-group a[href='/user-guide/introduction']) {
 div:has(> .sidebar-group a[href='/developers/introduction']) + div,
 div:has(> .sidebar-group a[href='/user-guide/introduction']) + div {
   margin-top: 0 !important;
+}
+
+/* --- Taxonomy diagrams (Claude-artifact style, in-page HTML) --- */
+
+.tx-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.25rem 0 1.5rem;
+  max-width: 42rem;
+}
+
+.tx-panel {
+  border-radius: 1rem;
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+.tx-panel--grade {
+  background: #ebe6f8;
+}
+
+.tx-panel--function {
+  background: #f6e7d6;
+}
+
+.tx-panel__title {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.tx-panel--grade .tx-panel__title {
+  color: #2f2a6b;
+}
+
+.tx-panel--function .tx-panel__title {
+  color: #5c3a1a;
+}
+
+.tx-panel__title span {
+  font-weight: 500;
+  font-size: 0.92rem;
+  opacity: 0.72;
+}
+
+.tx-panel__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.tx-chip {
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid transparent;
+}
+
+.tx-panel--grade .tx-chip {
+  background: #e7f6ea;
+  border-color: #c8e6cf;
+}
+
+.tx-panel--function .tx-chip {
+  background: #f8e4e4;
+  border-color: #efcccc;
+}
+
+.tx-chip__name {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+
+.tx-panel--grade .tx-chip__name {
+  color: #1f5c32;
+}
+
+.tx-panel--function .tx-chip__name {
+  color: #7a2e2e;
+}
+
+.tx-chip__desc {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.tx-panel--grade .tx-chip__desc {
+  color: #2f6b40;
+}
+
+.tx-panel--function .tx-chip__desc {
+  color: #8a4545;
+}
+
+.tx-flow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin: 1.25rem 0 1.5rem;
+  max-width: 22rem;
+}
+
+.tx-flow__step {
+  border-radius: 0.85rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid #e5e5e5;
+  background: #ffffff;
+  text-align: left;
+}
+
+.tx-flow__step--resolve {
+  background: #ece7f8;
+  border-color: #d7d0ef;
+}
+
+.tx-flow__step--result {
+  background: #e8f5ea;
+  border-color: #cfe8d4;
+}
+
+.tx-flow__label {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #141414;
+}
+
+.tx-flow__step--resolve .tx-flow__label {
+  color: #3d2f7a;
+}
+
+.tx-flow__step--result .tx-flow__label {
+  color: #1f5c32;
+}
+
+.tx-flow__sub {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #666666;
+}
+
+.tx-flow__step--resolve .tx-flow__sub {
+  color: #5a4d8c;
+}
+
+.tx-flow__step--result .tx-flow__sub {
+  color: #3d7349;
+}
+
+.tx-flow__arrow {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0;
+  color: #9a9a9a;
+  font-size: 1.1rem;
+  line-height: 1;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .tx-panel__row {
+    grid-template-columns: 1fr;
+  }
+
+  .tx-flow {
+    max-width: 100%;
+  }
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--grade {
+  background: #2a2545;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--function {
+  background: #3a2c20;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--grade .tx-panel__title {
+  color: #d4cff0;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--function .tx-panel__title {
+  color: #f0d8c0;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--grade .tx-chip {
+  background: #1e3a28;
+  border-color: #2f5a3d;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--function .tx-chip {
+  background: #3a2222;
+  border-color: #5a3333;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--grade .tx-chip__name,
+:is(.dark, [data-theme='dark']) .tx-panel--grade .tx-chip__desc {
+  color: #b8e0c4;
+}
+
+:is(.dark, [data-theme='dark']) .tx-panel--function .tx-chip__name,
+:is(.dark, [data-theme='dark']) .tx-panel--function .tx-chip__desc {
+  color: #e8b8b8;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step {
+  background: #1a1a1a;
+  border-color: #333333;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--resolve {
+  background: #2a2545;
+  border-color: #3d3670;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--result {
+  background: #1e3a28;
+  border-color: #2f5a3d;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__label {
+  color: #f0f0f0;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--resolve .tx-flow__label {
+  color: #d4cff0;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--result .tx-flow__label {
+  color: #b8e0c4;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__sub {
+  color: #a0a0a0;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--resolve .tx-flow__sub {
+  color: #a89fd4;
+}
+
+:is(.dark, [data-theme='dark']) .tx-flow__step--result .tx-flow__sub {
+  color: #8fbf9c;
 }

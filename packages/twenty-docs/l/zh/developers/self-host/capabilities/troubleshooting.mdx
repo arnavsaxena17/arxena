@@ -12,9 +12,9 @@ icon: wrench
 #### 首次安装时出现“密码认证失败，用户为"postgres"”
 
 🚨 **重要：此解决方案仅适用于全新安装** 🚨
-如果您有一个现有的 Twenty 实例和生产数据，请**不要**按照这些步骤操作，因为这些步骤会永久删除您的数据库！
+如果您有一个现有的 Arxena 实例和生产数据，请**不要**按照这些步骤操作，因为这些步骤会永久删除您的数据库！
 
-在首次安装 Twenty 时，您可能想更改默认的数据库密码。
+在首次安装 Arxena 时，您可能想更改默认的数据库密码。
 您在首次安装时设置的密码会永久存储在数据库卷中。 如果以后尝试在配置中更改此密码而不移除旧卷，则会出现身份验证错误，因为数据库仍在使用原密码。
 
 ⚠️ 警告：以下步骤将永久删除所有数据库数据！ ⚠️
@@ -40,7 +40,7 @@ git config --global core.autocrlf false
 
 #### 缺少元数据架构
 
-在安装 Twenty 时，您需要为您的 postgres 数据库提供正确的模式、扩展和用户。
+在安装 Arxena 时，您需要为您的 postgres 数据库提供正确的模式、扩展和用户。
 如果您成功进行了此配置，数据库中应有 `default` 和 `metadata` 模式。
 如果没有，请确保您的计算机上没有运行多个 postgres 实例。
 
@@ -81,7 +81,7 @@ git config --global core.autocrlf false
 参考：https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **如果不起作用：**
-调查哪些进程消耗了您机器的大部分内存。 在 Twenty，我们注意到一些 VScode 扩展占用了大量的内存，因此我们暂时禁用了它们。
+调查哪些进程消耗了您机器的大部分内存。 在 Arxena，我们注意到一些 VScode 扩展占用了大量的内存，因此我们暂时禁用了它们。
 
 **如果不起作用：**
 重启机器有助于清除幽灵进程。
@@ -120,9 +120,9 @@ npx nx worker twenty-server
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Webhook 测试" />
 </div>
 
-* 打开您的 Twenty 应用，导航到 `/settings`，并在屏幕左下角启用 **高级** 切换。
+* 打开您的 Arxena 应用，导航到 `/settings`，并在屏幕左下角启用 **高级** 切换。
 * 创建一个新的 webhook。
-* 把 **您的唯一 Webhook URL** 粘贴在 Twenty 的 **Endpoint Url** 字段中。 将 **筛选器** 设置为 `Companies` 和 `Created`。
+* 把 **您的唯一 Webhook URL** 粘贴在 Arxena 的 **Endpoint Url** 字段中。 将 **筛选器** 设置为 `Companies` 和 `Created`。
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Webhook 设置" />
@@ -192,7 +192,7 @@ plugins: [
 
 #### 反向代理后面的连接问题
 
-如果您在反向代理之后运行 Twenty 并遇到连接问题：
+如果您在反向代理之后运行 Arxena 并遇到连接问题：
 
 1. **验证 SERVER_URL：**
 
@@ -200,12 +200,12 @@ plugins: [
 
 2. **检查反向代理设置：**
 
-   * 确认您的反向代理正确地将请求转发到 Twenty 服务器。
+   * 确认您的反向代理正确地将请求转发到 Arxena 服务器。
    * 确保正确设置了像 `X-Forwarded-For` 和 `X-Forwarded-Proto` 这样的标头。
 
 3. **重启服务：**
 
-   在进行更改后，重启反向代理和 Twenty 容器。
+   在进行更改后，重启反向代理和 Arxena 容器。
 
 #### 上传图像时出错 - 权限被拒绝
 
@@ -225,4 +225,4 @@ plugins: [
 
 * 社区支持：
 
-  联系 [Twenty 社区](https://github.com/twentyhq/twenty/issues) 或 [支持渠道](https://discord.gg/cx5n4Jzs57) 以获得帮助。
+  联系 [Arxena 社区](https://github.com/twentyhq/twenty/issues) 或 [支持渠道](https://discord.gg/cx5n4Jzs57) 以获得帮助。

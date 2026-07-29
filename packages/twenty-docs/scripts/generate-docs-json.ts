@@ -12,6 +12,7 @@ type BaseGroup = {
   key: string;
   label: string;
   icon?: string;
+  openapi?: string;
   pages: BasePage[];
 };
 
@@ -55,8 +56,12 @@ type GeneratedLanguage = {
 type GeneratedGroup = {
   group: string;
   icon?: string;
+  openapi?: string;
   pages: Array<string | GeneratedGroup>;
 };
+
+const OPENAPI_ENDPOINT_PAGE_PATTERN =
+  /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+\//i;
 
 const baseStructurePath = path.resolve(
   __dirname,
@@ -70,6 +75,9 @@ const baseStructure: BaseStructure = JSON.parse(
 );
 
 const docsConfig = JSON.parse(fs.readFileSync(docsPath, 'utf8'));
+
+const isOpenApiEndpointPage = (slug: string): boolean =>
+  OPENAPI_ENDPOINT_PAGE_PATTERN.test(slug);
 
 const collectTranslations = (file: TranslationFile | null): TranslationMaps => {
   const tabLabels = new Map<string, string>();
@@ -142,18 +150,26 @@ const buildGroup = (
     )
     .filter((page): page is string | GeneratedGroup => page !== null);
 
-  if (pages.length === 0) {
+  const includeOpenApi =
+    language === DEFAULT_LANGUAGE && typeof group.openapi === 'string';
+
+  if (pages.length === 0 && !includeOpenApi) {
     return null;
   }
 
   return {
     group: translations.groupLabels.get(group.key) ?? group.label,
     ...(group.icon ? { icon: group.icon } : {}),
+    ...(includeOpenApi ? { openapi: group.openapi } : {}),
     pages,
   };
 };
 
 const formatPageSlug = (slug: string, language: string): string | null => {
+  if (isOpenApiEndpointPage(slug)) {
+    return language === DEFAULT_LANGUAGE ? slug : null;
+  }
+
   if (language === DEFAULT_LANGUAGE) {
     return slug;
   }

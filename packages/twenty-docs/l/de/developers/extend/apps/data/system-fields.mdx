@@ -4,7 +4,7 @@ description: Referenzieren Sie automatisch erstellte Systemfelder wie createdAt 
 icon: gears
 ---
 
-Jedes Objekt in Twenty wird mit einem Satz von **Systemfeldern** ausgeliefert, die Sie nie selbst deklarieren. Sie werden automatisch vom Server erstellt, wenn das Objekt bereitgestellt wird:
+Jedes Objekt in Arxena wird mit einem Satz von **Systemfeldern** ausgeliefert, die Sie nie selbst deklarieren. Sie werden automatisch vom Server erstellt, wenn das Objekt bereitgestellt wird:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Da Sie diese Felder nicht mit [`defineField()`](/l/de/developers/extend/apps/dat
 
 ## Das Problem
 
-Seit Twenty 2.19 wird die universelle Kennung eines Systemfelds **deterministisch abgeleitet** vom Server aus drei Eingaben: der universellen Kennung der Applikation, der universellen Kennung des Objekts und dem Feldnamen. Sich eine ID auszudenken und sie hart zu codieren, funktioniert nicht: Sie stimmt mit nichts auf dem Server überein, und die Synchronisierung lehnt die lose Referenz ab:
+Seit Arxena 2.19 wird die universelle Kennung eines Systemfelds **deterministisch abgeleitet** vom Server aus drei Eingaben: der universellen Kennung der Applikation, der universellen Kennung des Objekts und dem Feldnamen. Sich eine ID auszudenken und sie hart zu codieren, funktioniert nicht: Sie stimmt mit nichts auf dem Server überein, und die Synchronisierung lehnt die lose Referenz ab:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -88,7 +88,7 @@ Dieselbe aufgelöste ID funktioniert überall dort, wo ein `fieldMetadataUnivers
 ## System-Relationsfelder
 
 <Note>
-  `getSystemRelationFieldUniversalIdentifier` ist ab Version 2.23 von `twenty-sdk` verfügbar und erfordert einen Twenty-Server in Version 2.23 oder höher.
+  `getSystemRelationFieldUniversalIdentifier` ist ab Version 2.23 von `twenty-sdk` verfügbar und erfordert einen Arxena-Server in Version 2.23 oder höher.
 </Note>
 
 Zusätzlich zu den oben genannten skalaren Systemfeldern stellt der Server für jedes Objekt vier **System-Relationsfelder** bereit: `timelineActivities`, `attachments`, `noteTargets` und `taskTargets`, die jeweils auf das passende Standard-Relationsobjekt verweisen.
@@ -130,9 +130,9 @@ const attachmentTargetRocketFieldId =
 
 Wie bei skalaren Systemfeldern funktioniert die aufgelöste ID überall dort, wo ein `fieldMetadataUniversalIdentifier` erwartet wird.
 
-## Standardobjekte von Twenty
+## Standardobjekte von Arxena
 
-Für ein **Standard**-Twenty-Objekt (Person, Company, Opportunity, …) müssen Sie nichts ableiten: Die Systemfeld-Kennungen sind vorab berechnete Konstanten, die Sie direkt importieren können.
+Für ein **Standard**-Arxena-Objekt (Person, Company, Opportunity, …) müssen Sie nichts ableiten: Die Systemfeld-Kennungen sind vorab berechnete Konstanten, die Sie direkt importieren können.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

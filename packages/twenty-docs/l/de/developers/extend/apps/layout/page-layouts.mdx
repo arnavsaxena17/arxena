@@ -4,7 +4,7 @@ description: Passen Sie Detailseiten von Datensätzen an – Tabs, Widgets und d
 icon: table-columns
 ---
 
-Ein **Seitenlayout** steuert, wie die Detailseite eines Datensatzes angeordnet ist: welche Tabs angezeigt werden und welche Widgets sie enthalten. Verwenden Sie `definePageLayout()`, um ein Layout für ein Objekt zu deklarieren, das Sie besitzen, oder `definePageLayoutTab()`, um einen einzelnen Tab zu einem Layout hinzuzufügen, das bereits existiert (Ihr eigenes oder ein standardmäßiges Twenty-Layout).
+Ein **Seitenlayout** steuert, wie die Detailseite eines Datensatzes angeordnet ist: welche Tabs angezeigt werden und welche Widgets sie enthalten. Verwenden Sie `definePageLayout()`, um ein Layout für ein Objekt zu deklarieren, das Sie besitzen, oder `definePageLayoutTab()`, um einen einzelnen Tab zu einem Layout hinzuzufügen, das bereits existiert (Ihr eigenes oder ein standardmäßiges Arxena-Layout).
 
 | Anwendungsfall                                                                                  | Entität               |
 | ----------------------------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Hauptpunkte
 
-* `pageLayoutUniversalIdentifier` ist **erforderlich** und muss auf ein Seitenlayout verweisen, das zum Installationszeitpunkt bereits existiert – entweder ein standardmäßiges Twenty-Layout oder eines, das von Ihrer eigenen App definiert wurde. App-übergreifende Verweise auf Layouts, die einer anderen installierten App gehören, werden derzeit nicht unterstützt. Wenn das übergeordnete Layout fehlt, schlägt die Installation mit einem eindeutigen Validierungsfehler fehl.
+* `pageLayoutUniversalIdentifier` ist **erforderlich** und muss auf ein Seitenlayout verweisen, das zum Installationszeitpunkt bereits existiert – entweder ein standardmäßiges Arxena-Layout oder eines, das von Ihrer eigenen App definiert wurde. App-übergreifende Verweise auf Layouts, die einer anderen installierten App gehören, werden derzeit nicht unterstützt. Wenn das übergeordnete Layout fehlt, schlägt die Installation mit einem eindeutigen Validierungsfehler fehl.
 
-* Für Standard-Twenty-Layouts importieren Sie die Bezeichner aus `twenty-sdk/define`:
+* Für Standard-Arxena-Layouts importieren Sie die Bezeichner aus `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

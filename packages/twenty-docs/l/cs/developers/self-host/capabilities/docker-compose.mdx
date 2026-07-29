@@ -9,7 +9,7 @@ Docker kontejnery jsou určeny pro produkční provoz nebo vlastní hostování.
 
 ## Přehled
 
-Tato příručka poskytuje podrobný návod k instalaci a konfiguraci aplikace Twenty pomocí Docker Compose. Cílem je zjednodušit proces a zabránit běžným úskalím, která by mohla narušit vaše nastavení.
+Tato příručka poskytuje podrobný návod k instalaci a konfiguraci aplikace Arxena pomocí Docker Compose. Cílem je zjednodušit proces a zabránit běžným úskalím, která by mohla narušit vaše nastavení.
 
 **Důležité:** Měňte pouze nastavení výslovně uvedená v tomto průvodci. Změna jiných konfigurací může vést k problémům.
 
@@ -22,7 +22,7 @@ Viz [Nastavení proměnných prostředí](/l/cs/developers/self-host/capabilitie
 
 ## Možnost 1: Jednořádkový skript
 
-Nainstalujte nejnovější stabilní verzi Twenty jedním příkazem:
+Nainstalujte nejnovější stabilní verzi Arxena jedním příkazem:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/scripts/install.sh)
@@ -107,9 +107,9 @@ curl http://localhost:3000
 
 ## Konfigurace
 
-### Otevření Twenty pro Externí Přístup
+### Otevření Arxena pro Externí Přístup
 
-Ve výchozím nastavení běží Twenty na `localhost` na portu `3000`. Pro přístup přes externí doménu nebo IP adresu musíte nakonfigurovat `SERVER_URL` ve vašem `.env` souboru.
+Ve výchozím nastavení běží Arxena na `localhost` na portu `3000`. Pro přístup přes externí doménu nebo IP adresu musíte nakonfigurovat `SERVER_URL` ve vašem `.env` souboru.
 
 #### Porozumění `SERVER_URL`
 
@@ -121,11 +121,11 @@ Ve výchozím nastavení běží Twenty na `localhost` na portu `3000`. Pro př�
 
 ### Požadavky na SSL
 
-SSL (HTTPS) je potřebné pro správné fungování některých funkcí prohlížeče. I když tyto funkce mohou fungovat během místního vývoje (protože prohlížeče zacházejí s localhost jinak), správná konfigurace SSL je nutná při hostování Twenty na běžné doméně.
+SSL (HTTPS) je potřebné pro správné fungování některých funkcí prohlížeče. I když tyto funkce mohou fungovat během místního vývoje (protože prohlížeče zacházejí s localhost jinak), správná konfigurace SSL je nutná při hostování Arxena na běžné doméně.
 
 Například rozhraní schránky může vyžadovat zabezpečený kontext - některé funkce jako tlačítka kopírování v aplikaci nemusí fungovat bez povoleného HTTPS.
 
-Důrazně doporučujeme nastavit Twenty za reverzní proxy se SSL ukončením pro optimální bezpečnost a funkčnost.
+Důrazně doporučujeme nastavit Arxena za reverzní proxy se SSL ukončením pro optimální bezpečnost a funkčnost.
 
 #### Konfigurace `SERVER_URL`
 
@@ -258,5 +258,5 @@ Pokud narazíte na jakýkoli problém, zkontrolujte sekci [Řešení potíží](
 ## Spravovaný hosting
 
 <Tip>
-  Nechcete Twenty provozovat a spravovat sami? [Najděte si certifikovaného hostingového partnera Twenty](https://twenty.com/partners/list?categories=HOSTING\&ref=docs-docker-compose), který pro vás zajistí nasazení, hosting a kompletní správu vaší instance od začátku do konce. *(Nebo kontaktujte náš tým: [contact@twenty.com](mailto:contact@twenty.com).)*
+  Nechcete Arxena provozovat a spravovat sami? [Najděte si certifikovaného hostingového partnera Arxena](https://arxena.com/partners/list?categories=HOSTING\&ref=docs-docker-compose), který pro vás zajistí nasazení, hosting a kompletní správu vaší instance od začátku do konce. *(Nebo kontaktujte náš tým: [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>

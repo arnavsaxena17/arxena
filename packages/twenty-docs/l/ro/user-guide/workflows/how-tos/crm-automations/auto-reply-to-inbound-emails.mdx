@@ -9,7 +9,7 @@ Răspunde la e-mailurile primite în câteva secunde — nu în ore. Acest flux 
 
 Fiecare e-mail are un antet ascuns `Message-ID` — o amprentă unică atribuită de serverul de e-mail al expeditorului. Când răspundeți la un e-mail, clientul dvs. de e-mail setează un antet `In-Reply-To` care face referire la acea amprentă. Astfel, Gmail, Outlook și orice alt client grupează mesajele în fire de discuție.
 
-În Twenty, acea amprentă este stocată ca `headerMessageId` pe obiectul Message. Fluxul dvs. de lucru o preia și o transmite în câmpul In-Reply-To al acțiunii Send Email.
+În Arxena, acea amprentă este stocată ca `headerMessageId` pe obiectul Message. Fluxul dvs. de lucru o preia și o transmite în câmpul In-Reply-To al acțiunii Send Email.
 
 ## Construirea fluxului de lucru
 
@@ -21,7 +21,7 @@ Accesați **Settings -> Workflows** și faceți clic pe **+ New Workflow**.
 
 Alegeți **When a Record is Created** și selectați **Messages**.
 
-De fiecare dată când un e-mail ajunge în Twenty, aceasta se declanșează.
+De fiecare dată când un e-mail ajunge în Arxena, aceasta se declanșează.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Activați când sunteți mulțumit(ă) de rezultat.
 
 ## Idei pe care să le dezvoltați
 
-* **Răspundeți doar VIP-urilor** — adăugați o ramură care verifică domeniul expeditorului sau dacă acesta există ca Contact în Twenty
+* **Răspundeți doar VIP-urilor** — adăugați o ramură care verifică domeniul expeditorului sau dacă acesta există ca Contact în Arxena
 * **Dirijați în funcție de intenție** — folosiți prompturi AI Agent separate pentru a trata diferit solicitările de vânzări față de cererile de asistență
 * **Îmbogățiți înainte de a răspunde** — adăugați un pas Search Records pentru a include compania expeditorului sau istoricul tranzacțiilor în promptul AI, pentru răspunsuri mai personalizate

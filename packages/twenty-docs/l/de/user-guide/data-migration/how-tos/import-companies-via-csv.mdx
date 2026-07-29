@@ -1,11 +1,11 @@
 ---
 title: Unternehmen über CSV importieren
-description: Vollständige Schritt-für-Schritt-Anleitung zum Importieren von Unternehmen in Twenty.
+description: Vollständige Schritt-für-Schritt-Anleitung zum Importieren von Unternehmen in Arxena.
 ---
 
 ## Übersicht
 
-Diese Anleitung führt Sie durch den Import Ihrer Unternehmen in Twenty. **Unternehmen sollten zuerst importiert werden**, da Personen und Verkaufschancen mit Unternehmen verknüpft werden.
+Diese Anleitung führt Sie durch den Import Ihrer Unternehmen in Arxena. **Unternehmen sollten zuerst importiert werden**, da Personen und Verkaufschancen mit Unternehmen verknüpft werden.
 
 ## Bevor Sie beginnen
 
@@ -74,7 +74,7 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 ```
 
 <Note>
-**Profi-Tipp:** Klicken Sie während des Imports auf **Beispieldatei herunterladen**, um die genauen Spaltennamen zu sehen, die Twenty erwartet.
+**Profi-Tipp:** Klicken Sie während des Imports auf **Beispieldatei herunterladen**, um die genauen Spaltennamen zu sehen, die Arxena erwartet.
 </Note>
 
 ## Schritt 2: Zugriff auf die Importfunktion
@@ -96,11 +96,11 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 
 1. Klicken Sie auf **Datei auswählen**
 2. Wählen Sie Ihre CSV-, XLSX- oder XLS-Datei aus
-3. Warten Sie, bis Twenty Ihre Datei analysiert
+3. Warten Sie, bis Arxena Ihre Datei analysiert
 
 ## Schritt 4: Ordnen Sie Ihre Spalten zu
 
-Twenty versucht automatisch, Ihre Spalten den Feldern zuzuordnen. Prüfen und anpassen:
+Arxena versucht automatisch, Ihre Spalten den Feldern zuzuordnen. Prüfen und anpassen:
 
 1. **Automatische Zuordnungen prüfen** — vergewissern Sie sich, dass sie korrekt sind
 2. **Falsche Zuordnungen korrigieren** — klicken Sie auf das Dropdown, um das richtige Feld auszuwählen
@@ -118,8 +118,8 @@ Twenty versucht automatisch, Ihre Spalten den Feldern zuzuordnen. Prüfen und an
 
 Wenn Sie Auswahl- oder Mehrfachauswahlfelder haben:
 
-1. Twenty zeigt Ihre Werte neben den vorhandenen Optionen an
-2. Ordnen Sie jeden Wert in Ihrer Datei einer Twenty-Option zu
+1. Arxena zeigt Ihre Werte neben den vorhandenen Optionen an
+2. Ordnen Sie jeden Wert in Ihrer Datei einer Arxena-Option zu
 3. Oder erstellen Sie bei Bedarf neue Optionen
 
 <Note>
@@ -128,7 +128,7 @@ Auswahloptionen verwenden **API-Namen**, nicht Anzeigenamen. Prüfen Sie **Einst
 
 ## Schritt 6: Fehler prüfen und beheben
 
-Bevor der Import abgeschlossen wird, validiert Twenty Ihre Daten:
+Bevor der Import abgeschlossen wird, validiert Arxena Ihre Daten:
 
 1. Klicken Sie auf **Nächste Schritte**
 2. Zeilen mit Fehlern sind **gelb** hervorgehoben
@@ -139,7 +139,7 @@ Bevor der Import abgeschlossen wird, validiert Twenty Ihre Daten:
 
 | Fehler                        | Ursache                            | Lösung                                                       |
 | ----------------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| **Doppelte Domain**           | Domain existiert bereits in Twenty | Aus Datei entfernen oder bestehenden Datensatz aktualisieren |
+| **Doppelte Domain**           | Domain existiert bereits in Arxena | Aus Datei entfernen oder bestehenden Datensatz aktualisieren |
 | **Ungültiges Domain-Format**  | Falsches Format                    | Verwenden Sie `https://domain.com`                           |
 | **Erforderliches Feld fehlt** | Erforderliches Feld ist leer       | Wert ausfüllen oder Zeile entfernen                          |
 
@@ -163,7 +163,7 @@ Jetzt können Sie Datensätze importieren, die mit Unternehmen verknüpft sind:
 So aktualisieren Sie Unternehmen, statt neue zu erstellen:
 
 1. Fügen Sie die Spalte `domain` oder `id` in Ihrer Datei hinzu
-2. Twenty gleicht Datensätze anhand dieses eindeutigen Bezeichners ab
+2. Arxena gleicht Datensätze anhand dieses eindeutigen Bezeichners ab
 3. Vorhandene Unternehmen werden aktualisiert; neue werden erstellt
 
 Details finden Sie unter [So aktualisieren Sie vorhandene Datensätze](/l/de/user-guide/data-migration/how-tos/update-existing-records-via-import).
@@ -172,7 +172,7 @@ Details finden Sie unter [So aktualisieren Sie vorhandene Datensätze](/l/de/use
 
 <AccordionGroup>
   <Accordion title="Warum können zwei Unternehmen nicht dieselbe Domain haben?">
-    Die Domain ist ein eindeutiger Bezeichner in Twenty. Das verhindert doppelte Unternehmen und stellt sicher, dass die E-Mail-Synchronisierung E-Mails dem richtigen Unternehmen korrekt zuordnet.
+    Die Domain ist ein eindeutiger Bezeichner in Arxena. Das verhindert doppelte Unternehmen und stellt sicher, dass die E-Mail-Synchronisierung E-Mails dem richtigen Unternehmen korrekt zuordnet.
   </Accordion>
 
   <Accordion title="Was ist, wenn ich Unternehmen ohne Domain habe?">
@@ -184,7 +184,7 @@ Details finden Sie unter [So aktualisieren Sie vorhandene Datensätze](/l/de/use
   </Accordion>
 
   <Accordion title="Was passiert, wenn ich eine bereits vorhandene Domain importiere?">
-    Wenn Sie einen eindeutigen Bezeichner (Domain oder id) angeben, der mit einem vorhandenen Unternehmen übereinstimmt, aktualisiert Twenty dieses Unternehmen, statt ein Duplikat zu erstellen.
+    Wenn Sie einen eindeutigen Bezeichner (Domain oder id) angeben, der mit einem vorhandenen Unternehmen übereinstimmt, aktualisiert Arxena dieses Unternehmen, statt ein Duplikat zu erstellen.
   </Accordion>
 
   <Accordion title="Wie behebe ich Fehler vom Typ 'doppelte Domain'?">

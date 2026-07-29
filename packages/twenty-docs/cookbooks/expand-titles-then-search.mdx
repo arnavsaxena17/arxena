@@ -1,0 +1,18 @@
+---
+title: Expand titles then search
+description: Advanced debug — classify a title separately, then search.
+---
+
+Prefer the one-shot [search-by-title](/cookbooks/nl-to-people-at-company) path. Use expand only when debugging what a phrase resolves to.
+
+```bash
+curl -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  'https://app.arxena.com/people-api/titles/expand?job_title=Head%20of%20Engineering&company_name=Stripe'
+```
+
+Then search with the returned codes, or call search-by-title instead.
+
+## Related
+
+- [Natural language to people at a company](/cookbooks/nl-to-people-at-company)
+- [Authentication](/api-reference/authentication)

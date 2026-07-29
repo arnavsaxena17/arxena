@@ -4,7 +4,7 @@ description: Sunucu tarafı TypeScript işlevlerini HTTP, cron ve veritabanı ol
 icon: bolt
 ---
 
-Mantık işlevleri, Twenty platformunda çalışan sunucu tarafı TypeScript işlevleridir. HTTP istekleri, cron zamanlamaları veya veritabanı olayları tarafından tetiklenebilirler — ve ayrıca yapay zekâ ajanları için araçlar olarak sunulabilirler.
+Mantık işlevleri, Arxena platformunda çalışan sunucu tarafı TypeScript işlevleridir. HTTP istekleri, cron zamanlamaları veya veritabanı olayları tarafından tetiklenebilirler — ve ayrıca yapay zekâ ajanları için araçlar olarak sunulabilirler.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="Mantık işlevlerini ve tetikleyicilerini tanımlayın">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 Mantık işlevleri, her birinin kendi tetikleyicisi olacak şekilde iki yerde kullanılabilir hâle getirilebilir:
 
-* **`toolTriggerSettings`** — işlevi Twenty'nin yapay zekâ özellikleri (sohbet, MCP, işlev çağırma) tarafından bulunabilir hâle getirir. Standart JSON Şeması'nı kullanır; LLM'lerin doğal olarak anladığı biçimdir.
-* **`workflowActionTriggerSettings`** — işlevin görsel iş akışı oluşturucusunda bir adım olarak görünmesini sağlar. Oluşturucunun uygun alan düzenleyicilerini, değişken seçicilerini ve etiketleri oluşturabilmesi için Twenty'nin zengin `InputSchema`'sını kullanır.
+* **`toolTriggerSettings`** — işlevi Arxena'nin yapay zekâ özellikleri (sohbet, MCP, işlev çağırma) tarafından bulunabilir hâle getirir. Standart JSON Şeması'nı kullanır; LLM'lerin doğal olarak anladığı biçimdir.
+* **`workflowActionTriggerSettings`** — işlevin görsel iş akışı oluşturucusunda bir adım olarak görünmesini sağlar. Oluşturucunun uygun alan düzenleyicilerini, değişken seçicilerini ve etiketleri oluşturabilmesi için Arxena'nin zengin `InputSchema`'sını kullanır.
 
 Bir işlev bunlardan birini, diğerini veya her ikisini de tercih edebilir. Bunlar, `cronTriggerSettings`, `databaseEventTriggerSettings` ve `httpRouteTriggerSettings` ile birlikte yer alır — aynı desen, aynı biçim.
 
 <Note>
-**İş akışındaki Code eylemiyle ilişkisi.** İş akışı oluşturucusundaki yerleşik **Code** eylemi başlı başına bir mantık fonksiyonudur — Twenty, her Code adımı için bir tane oluşturur ve düzenleyicisini satır içi olarak sunar. `workflowActionTriggerSettings`, bu tek seferlik, satır içi kodu **yeniden kullanılabilir** bir eyleme dönüştürmenin yoludur: fonksiyonu uygulamanızda bir kez tanımlarsınız ve her Code adımına kopyalanıp yapıştırılmak yerine, herhangi bir iş akışı içinde seçilebilir hale gelir. Son kullanıcı görünümü için kullanıcı rehberindeki [Code eylemine](/l/tr/user-guide/workflows/capabilities/workflow-actions#code) bakın.
+**İş akışındaki Code eylemiyle ilişkisi.** İş akışı oluşturucusundaki yerleşik **Code** eylemi başlı başına bir mantık fonksiyonudur — Arxena, her Code adımı için bir tane oluşturur ve düzenleyicisini satır içi olarak sunar. `workflowActionTriggerSettings`, bu tek seferlik, satır içi kodu **yeniden kullanılabilir** bir eyleme dönüştürmenin yoludur: fonksiyonu uygulamanızda bir kez tanımlarsınız ve her Code adımına kopyalanıp yapıştırılmak yerine, herhangi bir iş akışı içinde seçilebilir hale gelir. Son kullanıcı görünümü için kullanıcı rehberindeki [Code eylemine](/l/tr/user-guide/workflows/capabilities/workflow-actions#code) bakın.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 Önemli noktalar:
 
 * Bir işlev yüzeyleri karıştırabilir — onu sohbette VE iş akışı oluşturucusunda kullanıma sunmak için hem `toolTriggerSettings` hem de `workflowActionTriggerSettings` bildirin.
-* `toolTriggerSettings.inputSchema` ve `workflowActionTriggerSettings.inputSchema` ikisi de isteğe bağlıdır. Atlandığında, manifest oluşturucu bunları işleyici kaynak kodundan çıkarır (yapay zekâ aracı için JSON Şeması, iş akışı eylemi için Twenty'nin `InputSchema`'sı). Daha zengin tipleme istediğinizde birini açıkça belirtin — örneğin, iş akışı oluşturucu için `FieldMetadataType`'ı bilen `CURRENCY` veya `RELATION` gibi alanlarla ya da yapay zekâ aracısının okuyabileceği `description` alanlarıyla:
+* `toolTriggerSettings.inputSchema` ve `workflowActionTriggerSettings.inputSchema` ikisi de isteğe bağlıdır. Atlandığında, manifest oluşturucu bunları işleyici kaynak kodundan çıkarır (yapay zekâ aracı için JSON Şeması, iş akışı eylemi için Arxena'nin `InputSchema`'sı). Daha zengin tipleme istediğinizde birini açıkça belirtin — örneğin, iş akışı oluşturucu için `FieldMetadataType`'ı bilen `CURRENCY` veya `RELATION` gibi alanlarla ya da yapay zekâ aracısının okuyabileceği `description` alanlarıyla:
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-Parametrelerinizi **bir kez** tanımlayıp her iki yüzeyde de kullanmak için tek bir JSON Şeması (`InputJsonSchema`) oluşturun ve bunu iş akışı eylemi için `twenty-sdk/logic-function` içindeki `jsonSchemaToInputSchema` ile dönüştürün. `toolTriggerSettings.inputSchema`, JSON Şemasını doğrudan alırken `workflowActionTriggerSettings.inputSchema`, Twenty'nin `InputSchema` tipini bekler:
+Parametrelerinizi **bir kez** tanımlayıp her iki yüzeyde de kullanmak için tek bir JSON Şeması (`InputJsonSchema`) oluşturun ve bunu iş akışı eylemi için `twenty-sdk/logic-function` içindeki `jsonSchemaToInputSchema` ile dönüştürün. `toolTriggerSettings.inputSchema`, JSON Şemasını doğrudan alırken `workflowActionTriggerSettings.inputSchema`, Arxena'nin `InputSchema` tipini bekler:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `label`        | İş akışı oluşturucusunun adım seçicisinde eylem için gösterilen ad. Varsayılan olarak fonksiyon `name` değerini kullanır.                                                                           |
 | `icon`         | Eylemin yanında gösterilen simge (`tabler-icons` adı, örn. `IconBuilding`).                                                                                                                         |
-| `inputSchema`  | Twenty'nin gelişmiş `InputSchema`'sı — oluşturucunun yapılandırılabilir alanlar (değişken seçicilerle birlikte) olarak render ettiği şey. İsteğe bağlıdır; belirtilmediğinde handler'dan çıkarılır. |
+| `inputSchema`  | Arxena'nin gelişmiş `InputSchema`'sı — oluşturucunun yapılandırılabilir alanlar (değişken seçicilerle birlikte) olarak render ettiği şey. İsteğe bağlıdır; belirtilmediğinde handler'dan çıkarılır. |
 | `outputSchema` | Handler'ın döndürdüğü yapıyı tanımlar, böylece **sonraki adımlar çıktı alanlarına eşleme yapabilir**. İsteğe bağlıdır; olmadan, çıktı tek bir opak değer olarak sunulur.                            |
 
 Tümünü bir araya getirme — bir iş akışı eylemi olarak sunulan bir fonksiyon; daha sonraki adımların `taskId` değerine referans verebilmesi için tanımlanmış bir çıktıyla birlikte:
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## Tipli API istemcileri (twenty-client-sdk)
 
-`twenty-client-sdk` paketi, mantık fonksiyonlarınızdan ve ön uç bileşenlerinizden Twenty API ile etkileşim kurmak için tip tanımlı iki GraphQL istemcisi sağlar.
+`twenty-client-sdk` paketi, mantık fonksiyonlarınızdan ve ön uç bileşenlerinizden Arxena API ile etkileşim kurmak için tip tanımlı iki GraphQL istemcisi sağlar.
 
 | İstemci             | İçe Aktar                    | Uç nokta                                                      | Oluşturuldu mu?                         |
 | ------------------- | ---------------------------- | ------------------------------------------------------------- | --------------------------------------- |
@@ -762,9 +762,9 @@ console.log(uploadedFile);
 </AccordionGroup>
 
 <Note>
-  Kodunuz Twenty üzerinde çalıştığında (mantık işlevleri veya ön uç bileşenleri), platform kimlik bilgilerini ortam değişkenleri olarak enjekte eder:
+  Kodunuz Arxena üzerinde çalıştığında (mantık işlevleri veya ön uç bileşenleri), platform kimlik bilgilerini ortam değişkenleri olarak enjekte eder:
 
-  * `TWENTY_API_URL` — Twenty API'nin temel URL'si
+  * `TWENTY_API_URL` — Arxena API'nin temel URL'si
   * `TWENTY_APP_ACCESS_TOKEN` — Uygulamanızın varsayılan işlev rolü kapsamında kısa ömürlü bir anahtar
 
   Bunları istemcilere iletmeniz gerekmez — otomatik olarak `process.env`'den okurlar. API anahtarının izinleri, `defineApplicationRole()` ile bildirilen role (veya `application-config.ts` içindeki `defaultRoleUniversalIdentifier` üzerinden referans verilen role) göre belirlenir.

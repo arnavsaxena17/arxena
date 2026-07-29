@@ -1,7 +1,7 @@
 ---
 title: Configuración Local
 icon: laptop-code
-description: La guía para los colaboradores (o desarrolladores curiosos) que quieren ejecutar Twenty localmente.
+description: La guía para los colaboradores (o desarrolladores curiosos) que quieren ejecutar Arxena localmente.
 ---
 
 ## Prerrequisitos
@@ -9,7 +9,7 @@ description: La guía para los colaboradores (o desarrolladores curiosos) que qu
 <Tabs>
 <Tab title="Linux y macOS">
 
-Antes de que puedas instalar y usar Twenty, asegúrate de instalar lo siguiente en tu computadora:
+Antes de que puedas instalar y usar Arxena, asegúrate de instalar lo siguiente en tu computadora:
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [Node v24.5.0](https://nodejs.org/en/download)
 * [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -196,7 +196,7 @@ Si utilizaste la opción de Docker anterior, las credenciales predeterminadas so
 
 ## Paso 4: Configurar una Base de Datos Redis (cache)
 
-Twenty requiere un caché de Redis para proporcionar el mejor rendimiento.
+Arxena requiere un caché de Redis para proporcionar el mejor rendimiento.
 
 <Tabs>
   <Tab title="Linux">
@@ -248,12 +248,12 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**Modo de múltiples espacios de trabajo:** De forma predeterminada, Twenty se ejecuta en modo de un solo espacio de trabajo, donde solo se puede crear un espacio de trabajo. Para habilitar la compatibilidad con múltiples espacios de trabajo (útil para probar funciones basadas en subdominios), establece `IS_MULTIWORKSPACE_ENABLED=true` en el archivo `.env` de tu servidor. Consulta [Modo de múltiples espacios de trabajo](/l/es/developers/self-host/capabilities/setup#multi-workspace-mode) para más detalles.
+**Modo de múltiples espacios de trabajo:** De forma predeterminada, Arxena se ejecuta en modo de un solo espacio de trabajo, donde solo se puede crear un espacio de trabajo. Para habilitar la compatibilidad con múltiples espacios de trabajo (útil para probar funciones basadas en subdominios), establece `IS_MULTIWORKSPACE_ENABLED=true` en el archivo `.env` de tu servidor. Consulta [Modo de múltiples espacios de trabajo](/l/es/developers/self-host/capabilities/setup#multi-workspace-mode) para más detalles.
 </Info>
 
 ## Paso 6: Instalación de dependencias
 
-Para compilar el servidor de Twenty e ingresar algunos datos en tu base de datos, ejecuta el siguiente comando:
+Para compilar el servidor de Arxena e ingresar algunos datos en tu base de datos, ejecuta el siguiente comando:
 
 ```bash
 yarn
@@ -300,16 +300,16 @@ Alternativamente, puede iniciar todos los servicios a la vez:
 npx nx start
 ```
 
-## Paso 8: Use Twenty
+## Paso 8: Use Arxena
 
 **Frontend**
 
-El frontend de Twenty estará ejecutándose en [http://localhost:3001](http://localhost:3001).
+El frontend de Arxena estará ejecutándose en [http://localhost:3001](http://localhost:3001).
 Puede iniciar sesión usando la cuenta demo por defecto: `tim@apple.dev` (contraseña: `tim@apple.dev`)
 
 **Backend**
 
-* El servidor de Twenty estará operativo en [http://localhost:3000](http://localhost:3000)
+* El servidor de Arxena estará operativo en [http://localhost:3000](http://localhost:3000)
 * La API GraphQL puede ser accedida en [http://localhost:3000/graphql](http://localhost:3000/graphql)
 * La API REST puede ser alcanzada en [http://localhost:3000/rest](http://localhost:3000/rest)
 

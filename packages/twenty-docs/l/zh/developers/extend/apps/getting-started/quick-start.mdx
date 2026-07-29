@@ -1,21 +1,21 @@
 ---
 title: 快速开始
 icon: rocket
-description: 几分钟内创建你的第一个 Twenty 应用。
+description: 几分钟内创建你的第一个 Arxena 应用。
 ---
 
 ## 先决条件
 
 * **Node.js 24.5+** — [在此下载](https://nodejs.org/)
 * **Yarn 4** — 通过 Corepack 随 Node.js 提供。 启用它：`corepack enable`
-* **Docker** — [在此下载](https://www.docker.com/products/docker-desktop/)。 运行本地 Twenty 服务器所需。 如果你已经在其他地方运行了 Twenty，请跳过。
+* **Docker** — [在此下载](https://www.docker.com/products/docker-desktop/)。 运行本地 Arxena 服务器所需。 如果你已经在其他地方运行了 Arxena，请跳过。
 
-构建一个 Twenty 应用包含三个阶段。 脚手架工具将它们合并为一个理想路径的命令，但每个阶段都是独立的概念——当出现问题时，知道自己处于哪个阶段可以指明需要修复什么。
+构建一个 Arxena 应用包含三个阶段。 脚手架工具将它们合并为一个理想路径的命令，但每个阶段都是独立的概念——当出现问题时，知道自己处于哪个阶段可以指明需要修复什么。
 
 | 阶段           | 你要做什么                | 工具                                  | 结果                   |
 | ------------ | -------------------- | ----------------------------------- | -------------------- |
 | **1. 脚手架**   | 生成应用的源代码             | `npx create-twenty-app`             | 磁盘上的一个 TypeScript 项目 |
-| **2. 运行服务器** | 启动一个 Twenty 服务器以进行同步 | Docker + `yarn twenty docker:start` | 一个正在运行的 Twenty 实例    |
+| **2. 运行服务器** | 启动一个 Arxena 服务器以进行同步 | Docker + `yarn twenty docker:start` | 一个正在运行的 Arxena 实例    |
 | **3. 同步**    | 将你的代码实时同步到服务器        | `yarn twenty dev`                   | 你的更改会出现在 UI 中        |
 
 ---
@@ -34,20 +34,20 @@ npx create-twenty-app@latest my-twenty-app
 
 ---
 
-## 阶段 2 — 运行本地 Twenty 服务器
+## 阶段 2 — 运行本地 Arxena 服务器
 
-你的应用需要一个 Twenty 服务器来进行同步。 该服务器是一个完整的 Twenty 实例——包含 UI、GraphQL API、PostgreSQL——在本地的 Docker 中运行。 你的本地代码会将其定义上传到该服务器，从而使其显示在 UI 中。
+你的应用需要一个 Arxena 服务器来进行同步。 该服务器是一个完整的 Arxena 实例——包含 UI、GraphQL API、PostgreSQL——在本地的 Docker 中运行。 你的本地代码会将其定义上传到该服务器，从而使其显示在 UI 中。
 
 脚手架会为你启动一个：在 Docker 正在运行的情况下，它会拉取 `twentycrm/twenty-app-dev` 镜像，在端口 `2020` 上启动，并将 CLI 认证到预置的演示工作区（`tim@apple.dev`）——无需登录。
 
-若要改为连接到现有的 Twenty 服务器，请传入 `--url \<your-server-url>`。 远程服务器通过 OAuth 进行身份验证：会打开一个浏览器窗口，你可以登录并点击 **Authorize**，从而授予 CLI 访问你工作区的权限。 （你也可以在本地选择使用 OAuth，方式是添加 `--authentication-method oauth` —— 使用 `tim@apple.dev` / `tim@apple.dev` 登录。）
+若要改为连接到现有的 Arxena 服务器，请传入 `--url \<your-server-url>`。 远程服务器通过 OAuth 进行身份验证：会打开一个浏览器窗口，你可以登录并点击 **Authorize**，从而授予 CLI 访问你工作区的权限。 （你也可以在本地选择使用 OAuth，方式是添加 `--authentication-method oauth` —— 使用 `tim@apple.dev` / `tim@apple.dev` 登录。）
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Twenty 登录界面" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Arxena 登录界面" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Twenty CLI 授权界面" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Arxena CLI 授权界面" />
 </div>
 
 你的终端会确认一切已就绪。
@@ -56,7 +56,7 @@ npx create-twenty-app@latest my-twenty-app
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="应用脚手架创建成功" />
 </div>
 
-**完成此阶段后：** 你在 [http://localhost:2020](http://localhost:2020) 上拥有一个正在运行的 Twenty 服务器，且你的 CLI 已获授权可与其同步。
+**完成此阶段后：** 你在 [http://localhost:2020](http://localhost:2020) 上拥有一个正在运行的 Arxena 服务器，且你的 CLI 已获授权可与其同步。
 
 <Note>
 如果未安装或未运行 Docker，脚手架工具会告诉你在所用操作系统上正确的启动命令。 Docker 启动后，你可以通过 `yarn twenty docker:start` 继续——无需重新生成脚手架。
@@ -138,7 +138,7 @@ yarn twenty apply  # show the plan, then apply it
 | ---------- | ------------------------------------------ |
 | **对象与字段**  | 自定义数据模型（明信片、发票等） 带有类型化字段                   |
 | **逻辑函数**   | 由 HTTP 路由、cron 调度或数据库事件触发的服务端 TypeScript   |
-| **前端组件**   | 在 Twenty 的 UI 内渲染的 React 组件（侧边面板、小部件、命令菜单） |
+| **前端组件**   | 在 Arxena 的 UI 内渲染的 React 组件（侧边面板、小部件、命令菜单） |
 | **技能与智能体** | AI 能力——可复用的指令和自主助手                         |
 | **视图与导航**  | 预配置的列表视图和侧边栏菜单项                            |
 | **页面布局**   | 带有选项卡和小部件的自定义记录详情页                         |

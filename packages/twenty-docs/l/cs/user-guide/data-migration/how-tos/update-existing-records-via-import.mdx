@@ -16,9 +16,9 @@ Potřebujete aktualizovat mnoho záznamů najednou? Místo ruční úpravy jedno
 
 ## Jak to funguje
 
-Když naimportujete soubor obsahující **jedinečný identifikátor**, který odpovídá existujícímu záznamu, Twenty tento záznam aktualizuje místo vytvoření duplicitního.
+Když naimportujete soubor obsahující **jedinečný identifikátor**, který odpovídá existujícímu záznamu, Arxena tento záznam aktualizuje místo vytvoření duplicitního.
 
-| Pokud jedinečný identifikátor... | Twenty provede...                                       |
+| Pokud jedinečný identifikátor... | Arxena provede...                                       |
 | -------------------------------- | ------------------------------------------------------- |
 | Odpovídá existujícímu záznamu    | **Aktualizovat** existující záznam                      |
 | Neodpovídá žádnému záznamu       | **Vytvořit** nový záznam                                |
@@ -57,7 +57,7 @@ Otevřete exportovaný soubor v tabulkovém editoru (Excel, Google Sheets apod.)
 1. **Nechte sloupec s jedinečným identifikátorem** — nemažte `id`, `email` ani `domain`
 2. **Aktualizujte hodnoty** ve sloupcích, které chcete změnit
 3. **Odstraňte sloupce, které není třeba aktualizovat** (volitelné, ale přehlednější)
-4. **Neměňte hodnoty jedinečných identifikátorů** — jinak Twenty vytvoří nové záznamy
+4. **Neměňte hodnoty jedinečných identifikátorů** — jinak Arxena vytvoří nové záznamy
 
 ### Příklad: Aktualizace pracovních pozic
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Neměňte hodnoty jedinečných identifikátorů.**
 
-Pokud změníte `john@acme.com` na `john.smith@acme.com`, Twenty vytvoří nový záznam místo aktualizace stávajícího.
+Pokud změníte `john@acme.com` na `john.smith@acme.com`, Arxena vytvoří nový záznam místo aktualizace stávajícího.
 </Warning>
 
 ## Krok 3: Importujte aktualizovaný soubor
@@ -95,7 +95,7 @@ Pokud změníte `john@acme.com` na `john.smith@acme.com`, Twenty vytvoří nový
 6. Zkontrolujte chyby
 7. Klikněte na **Confirm**
 
-Twenty porovnává záznamy podle jedinečného identifikátoru a aktualizuje je novými hodnotami.
+Arxena porovnává záznamy podle jedinečného identifikátoru a aktualizuje je novými hodnotami.
 
 ## Výběr správného jedinečného identifikátoru
 
@@ -113,7 +113,7 @@ Pokud máte vlastní pole označené jako jedinečné (například externí ID z
 
 1. Zahrňte toto pole do exportu i importu
 2. Namapujte jej během importu
-3. Twenty bude párovat podle tohoto pole
+3. Arxena bude párovat podle tohoto pole
 
 ## Krok 4: Ověřte aktualizace
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Změna jedinečného identifikátoru** | Změněno z `john@acme.com` na `john.smith@acme.com`            | Vytvoří nový záznam místo aktualizace | Nechte jedinečné identifikátory beze změny         |
 | **Více jedinečných polí**            | Mapování jak `email`, tak `id`                                | Potenciální konflikty při párování    | Mapujte pouze JEDEN jedinečný identifikátor        |
 | **Žádný jedinečný identifikátor**    | Soubor obsahuje pouze `firstName`, `lastName`, `jobTitle`     | Všechny řádky vytvoří nové záznamy    | Vždy zahrňte `email`, `domain` nebo `id`           |
-| **Rozdílná velikost písmen**         | V souboru je `John@acme.com`, ale v Twenty je `john@acme.com` | Vytvoří nový záznam                   | Exportujte z Twenty, abyste získali přesné hodnoty |
+| **Rozdílná velikost písmen**         | V souboru je `John@acme.com`, ale v Arxena je `john@acme.com` | Vytvoří nový záznam                   | Exportujte z Arxena, abyste získali přesné hodnoty |
 
 ## Časté dotazy
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Jak poznám, které záznamy se aktualizují a které se vytvoří?">
-    Během kroku kontroly importu vám Twenty zobrazí, kolik záznamů bude aktualizováno a kolik vytvořeno na základě shody jedinečných identifikátorů.
+    Během kroku kontroly importu vám Arxena zobrazí, kolik záznamů bude aktualizováno a kolik vytvořeno na základě shody jedinečných identifikátorů.
   </Accordion>
 
   <Accordion title="Lze vrátit hromadnou aktualizaci zpět?">

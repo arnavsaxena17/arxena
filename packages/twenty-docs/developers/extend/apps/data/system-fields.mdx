@@ -4,7 +4,7 @@ description: Reference auto-created system fields like createdAt or updatedAt fr
 icon: "gears"
 ---
 
-Every object in Twenty ships with a set of **system fields** that you never declare yourself. They are created automatically by the server when the object is provisioned:
+Every object in Arxena ships with a set of **system fields** that you never declare yourself. They are created automatically by the server when the object is provisioned:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Because you don't declare these fields with [`defineField()`](/developers/extend
 
 ## The problem
 
-Since Twenty 2.19, a system field's universal identifier is **derived deterministically** by the server from three inputs: the application universal identifier, the object universal identifier, and the field name. Inventing an id and hardcoding it won't work: it matches nothing on the server, and the sync rejects the dangling reference:
+Since Arxena 2.19, a system field's universal identifier is **derived deterministically** by the server from three inputs: the application universal identifier, the object universal identifier, and the field name. Inventing an id and hardcoding it won't work: it matches nothing on the server, and the sync rejects the dangling reference:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -90,7 +90,7 @@ The same resolved id works anywhere a `fieldMetadataUniversalIdentifier` is expe
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier` is available from `twenty-sdk`
-  2.23 onward and requires a Twenty server on 2.23 or later.
+  2.23 onward and requires an Arxena server on 2.23 or later.
 </Note>
 
 Besides the scalar system fields above, the server also provisions four **system relation fields** on every object: `timelineActivities`, `attachments`, `noteTargets` and `taskTargets`, each pointing at the matching standard relation object.
@@ -132,9 +132,9 @@ const attachmentTargetRocketFieldId =
 
 As with scalar system fields, the resolved id works anywhere a `fieldMetadataUniversalIdentifier` is expected.
 
-## Standard Twenty objects
+## Standard Arxena objects
 
-For a **standard** Twenty object (Person, Company, Opportunity, …), you don't need to derive anything: the system field identifiers are pre-computed constants you can import directly.
+For a **standard** Arxena object (Person, Company, Opportunity, …), you don't need to derive anything: the system field identifiers are pre-computed constants you can import directly.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

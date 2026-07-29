@@ -20,7 +20,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'search_people_by_job_title',
       title: 'Search people by job title',
       description:
-        'Classify a sample job title into std_function and std_grade, then search people at a company. Use for queries like "marketing heads at Salesforce" by passing jobTitle="Head of Marketing" (or "VP Marketing", "CMO") with companyName or companyId.',
+        'PRIMARY people tool: pass a natural-language jobTitle (e.g. "CHRO", "Head of HR", "HR leadership") plus companyName/companyId/website. Taxonomy resolution is server-side; response includes resolved fields for sanity-check. Prefer this over code-based search.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(
         SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR,
@@ -60,7 +60,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'search_people_api',
       title: 'Search people (People API)',
       description:
-        'Search people via the People API using std_function, std_grade, company, and other filters. Prefer search_people_by_job_title when you have a natural-language job title to resolve.',
+        'Advanced: search with explicit stdFunction/stdGrade when already known. Prefer search_people_by_job_title for natural-language role queries so the model does not invent taxonomy codes.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(SEARCH_PEOPLE_API_INPUT_DESCRIPTOR),
     },
@@ -131,10 +131,27 @@ export const peopleApiTools: McpTool[] = [
   },
   {
     definition: {
+      name: 'list_taxonomy_constants',
+      title: 'List taxonomy constants',
+      description:
+        'Public flat vocabulary nouns (grade levels, grade categories, function roots). Use to understand what the system knows — not to invent filters. Prefer search_people_by_job_title for queries.',
+      annotations: { readOnlyHint: true },
+      inputSchema: { type: 'object', properties: {} },
+    },
+    handler: async (_args, config) =>
+      callRestAPIGet(
+        config.baseUrl,
+        config.apiToken,
+        'people-api',
+        'taxonomy/constants',
+      ),
+  },
+  {
+    definition: {
       name: 'list_taxonomy_function_roots',
       title: 'List std function roots',
       description:
-        'List std_function_root taxonomy values. Pass title to classify a job title into a function root.',
+        'Advanced auth-gated list/classify. Prefer list_taxonomy_constants for nouns and search_people_by_job_title for queries.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(LIST_TAXONOMY_INPUT_DESCRIPTOR),
     },
@@ -154,7 +171,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_taxonomy_functions',
       title: 'List std functions',
       description:
-        'List std_function taxonomy values, optionally filtered by function_root. Pass title to classify a job title.',
+        'Advanced auth-gated function labels. Prefer search_people_by_job_title so agents do not chain raw taxonomy codes.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema([
         ...LIST_TAXONOMY_INPUT_DESCRIPTOR,
@@ -189,7 +206,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_taxonomy_grades',
       title: 'List std grades',
       description:
-        'List std_grade taxonomy values. Pass title to classify a job title into a grade, or grade_level to filter (entry, mid, leadership).',
+        'Advanced auth-gated grades. Prefer list_taxonomy_constants for public grade-level nouns.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema([
         ...LIST_TAXONOMY_INPUT_DESCRIPTOR,

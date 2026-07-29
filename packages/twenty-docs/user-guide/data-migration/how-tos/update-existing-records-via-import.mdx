@@ -15,9 +15,9 @@ Need to update many records at once? Instead of editing them one by one, use the
 
 ## How It Works
 
-When you import a file containing a **unique identifier** that matches an existing record, Twenty updates that record instead of creating a duplicate.
+When you import a file containing a **unique identifier** that matches an existing record, Arxena updates that record instead of creating a duplicate.
 
-| If unique identifier... | Twenty will... |
+| If unique identifier... | Arxena will... |
 |-------------------------|----------------|
 | Matches an existing record | **Update** the existing record |
 | Doesn't match any record | **Create** a new record |
@@ -58,7 +58,7 @@ Open the exported file in your spreadsheet application (Excel, Google Sheets, et
 1. **Keep the unique identifier column** — don't delete `id`, `email`, or `domain`
 2. **Update the values** in the columns you want to change
 3. **Remove columns you don't need to update** (optional, but cleaner)
-4. **Don't change unique identifier values** — or Twenty will create new records
+4. **Don't change unique identifier values** — or Arxena will create new records
 
 ### Example: Updating Job Titles
 
@@ -81,7 +81,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Don't change the unique identifier values.**
 
-If you change `john@acme.com` to `john.smith@acme.com`, Twenty will create a new record instead of updating the existing one.
+If you change `john@acme.com` to `john.smith@acme.com`, Arxena will create a new record instead of updating the existing one.
 </Warning>
 
 ## Step 3: Import the Updated File
@@ -94,7 +94,7 @@ If you change `john@acme.com` to `john.smith@acme.com`, Twenty will create a new
 6. Check for errors
 7. Click **Confirm**
 
-Twenty matches records by the unique identifier and updates them with new values.
+Arxena matches records by the unique identifier and updates them with new values.
 
 ## Choosing the Right Unique Identifier
 
@@ -111,7 +111,7 @@ Twenty matches records by the unique identifier and updates them with new values
 If you have a custom field marked as unique (like an external ID from another system):
 1. Include that field in your export and import
 2. Map it during import
-3. Twenty will match on that field
+3. Arxena will match on that field
 
 ## Step 4: Verify the Updates
 
@@ -149,7 +149,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Changing unique identifier** | Changed `john@acme.com` to `john.smith@acme.com` | Creates new record instead of updating | Keep unique identifiers unchanged |
 | **Multiple unique fields** | Mapping both `email` AND `id` | Potential matching conflicts | Map only ONE unique identifier |
 | **No unique identifier** | File only has `firstName`, `lastName`, `jobTitle` | All rows create new records | Always include `email`, `domain`, or `id` |
-| **Case mismatch** | File has `John@acme.com` but Twenty has `john@acme.com` | Creates new record | Export from Twenty to get exact values |
+| **Case mismatch** | File has `John@acme.com` but Arxena has `john@acme.com` | Creates new record | Export from Arxena to get exact values |
 
 ## FAQ
 
@@ -171,7 +171,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="How do I know which records will be updated vs. created?">
-    During the import review step, Twenty shows you how many records will be updated vs. created based on unique identifier matches.
+    During the import review step, Arxena shows you how many records will be updated vs. created based on unique identifier matches.
   </Accordion>
 
   <Accordion title="Can I undo a bulk update?">

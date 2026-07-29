@@ -5,7 +5,7 @@ description: 어떤 CRM에서든 데이터를 Twenty로 마이그레이션하는
 
 ## 개요
 
-이 가이드는 어떤 CRM에서든 데이터를 Twenty로 마이그레이션하는 과정을 단계별로 안내합니다. 이 과정에는 데이터 감사, Twenty 워크스페이스 준비, 현재 시스템에서의 내보내기, Twenty로의 가져오기가 포함됩니다.
+이 가이드는 어떤 CRM에서든 데이터를 Twenty로 마이그레이션하는 과정을 단계별로 안내합니다. 이 과정에는 데이터 감사, Arxena 워크스페이스 준비, 현재 시스템에서의 내보내기, Twenty로의 가져오기가 포함됩니다.
 
 <Note>마이그레이션 후에는 뷰, 워크플로우, 권한을 수동으로 다시 만들어야 합니다. 이 구성 작업에 필요한 시간을 계획하세요.</Note>
 
@@ -29,9 +29,9 @@ description: 어떤 CRM에서든 데이터를 Twenty로 마이그레이션하는
 
 ## 2단계: 데이터 모델 매핑
 
-현재 CRM과 Twenty 간의 매핑 문서를 만드세요:
+현재 CRM과 Arxena 간의 매핑 문서를 만드세요:
 
-| 현재 CRM    | Twenty           |
+| 현재 CRM    | Arxena           |
 | --------- | ---------------- |
 | 계정 / 조직   | **회사**           |
 | 연락처 / 개인  | **사람들**          |
@@ -42,14 +42,14 @@ description: 어떤 CRM에서든 데이터를 Twenty로 마이그레이션하는
 **각 필드에 대해 다음을 문서화합니다:**
 
 * 원본 필드 이름
-* 대상 Twenty 필드
+* 대상 Arxena 필드
 * 필요한 형식 변환(날짜, 전화번호 등)
 
 <Note>가져오기 중에 이 매핑 문서를 가까이 두세요—열을 매핑할 때 참고하게 됩니다.</Note>
 
-## 3단계: Twenty 워크스페이스 설정
+## 3단계: Arxena 워크스페이스 설정
 
-데이터를 가져오기 전에 Twenty 워크스페이스를 준비하세요:
+데이터를 가져오기 전에 Arxena 워크스페이스를 준비하세요:
 
 ### 사용자 지정 개체 및 필드 만들기
 
@@ -142,7 +142,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 데이터에 사용자 할당(소유자, 담당자)이 포함된 경우:
 
 1. **사용자의 이메일**이 포함된 열을 추가하세요(이전 시스템의 ID만이 아니라)
-2. 사용자가 Twenty 워크스페이스에 참여할 때 사용한 것과 동일한 이메일 주소를 사용하세요
+2. 사용자가 Arxena 워크스페이스에 참여할 때 사용한 것과 동일한 이메일 주소를 사용하세요
 
 전체 형식 가이드는 [CSV 파일 준비 방법](/l/ko/user-guide/data-migration/how-tos/prepare-your-csv-files)을 참조하세요.
 
@@ -287,6 +287,6 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 <Tip>
   마이그레이션에 도움이 필요하신가요?
 
-  * **대행 서비스:** 데이터를 비롯해 파이프라인과 사용자까지 엔드 투 엔드로 이전해 줄 [공인 Twenty 파트너를 찾아보세요](https://twenty.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm).
-  * **온보딩 패키지:** Twenty 팀과 함께하는 4시간 가이드형 설정 — [contact@twenty.com](mailto:contact@twenty.com).
+  * **대행 서비스:** 데이터를 비롯해 파이프라인과 사용자까지 엔드 투 엔드로 이전해 줄 [공인 Arxena 파트너를 찾아보세요](https://arxena.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm).
+  * **온보딩 패키지:** Arxena 팀과 함께하는 4시간 가이드형 설정 — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

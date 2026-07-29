@@ -1,13 +1,13 @@
 ---
 title: Omezení jedinečnosti
-description: Jak Twenty prosazuje jedinečnost dat při importu.
+description: Jak Arxena prosazuje jedinečnost dat při importu.
 ---
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Přehled
 
-Twenty vynucuje jedinečnost u vybraných polí, aby se předešlo duplicitním záznamům a zajistila integrita dat. Porozumění těmto omezením je zásadní pro úspěšné importy.
+Arxena vynucuje jedinečnost u vybraných polí, aby se předešlo duplicitním záznamům a zajistila integrita dat. Porozumění těmto omezením je zásadní pro úspěšné importy.
 
 ## Výchozí jedinečná pole
 
@@ -17,7 +17,7 @@ Twenty vynucuje jedinečnost u vybraných polí, aby se předešlo duplicitním 
 | **Společnosti**     | `id`, `domain`                     |
 | **Vlastní objekty** | pouze `id` (ve výchozím nastavení) |
 
-<Note>Pole `id` je interní identifikátor Twenty, automaticky generovaný pro každý záznam. Používá formát UUID (např. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>Pole `id` je interní identifikátor Arxena, automaticky generovaný pro každý záznam. Používá formát UUID (např. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Vlastní jedinečná pole
 
@@ -34,7 +34,7 @@ Další jedinečná pole můžete definovat v **Nastavení → Datový model**:
 * **Obchodní identifikátory**: osobní čísla zaměstnanců, zákaznické kódy
 * **Alternativní kontaktní údaje**: profil na LinkedInu, telefonní číslo
 
-<Note>Název pole `id` je vyhrazen pro interní ID Twenty. Pro externí identifikátory použijte jiný název, například `externalId` nebo `legacyId`.</Note>
+<Note>Název pole `id` je vyhrazen pro interní ID Arxena. Pro externí identifikátory použijte jiný název, například `externalId` nebo `legacyId`.</Note>
 
 ## Chování importu
 
@@ -67,6 +67,6 @@ Během fáze validace:
 ## Osvědčené postupy
 
 1. **Odstraňte duplikáty** ze souboru před importem
-2. Před importem **zkontrolujte existující záznamy** v Twenty
+2. Před importem **zkontrolujte existující záznamy** v Arxena
 3. **Používejte externí ID** při migraci z jiných systémů
 4. **Zahrňte jedinečná pole**, pokud chcete aktualizovat stávající záznamy

@@ -156,7 +156,7 @@ export default defineRole({
 备注：
 
 * 为每个谓词和组分配一个稳定的 `universalIdentifier`（任意 uuid）——它在各次升级中作为实体的键，谓词通过它来引用组。
-* 谓词可以引用由你的应用拥有的对象和字段，或由 Twenty 的标准对象拥有的对象和字段。
+* 谓词可以引用由你的应用拥有的对象和字段，或由 Arxena 的标准对象拥有的对象和字段。
 * 行级安全会在包含该功能的套餐中的工作区上强制执行；在其他套餐中谓词仍会同步，只是不会被强制执行。
 
 ## 默认函数角色
@@ -172,7 +172,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

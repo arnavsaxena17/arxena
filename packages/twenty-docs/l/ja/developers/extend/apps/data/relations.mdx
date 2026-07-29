@@ -4,7 +4,7 @@ description: 双方向の MANY_TO_ONE / ONE_TO_MANY リレーションでオブ�
 icon: diagram-project
 ---
 
-リレーションは 2 つのオブジェクト同士を関連付けます。 Twenty におけるリレーションは常に **双方向** です — すべてのリレーションには 2 つの側面があり、それぞれが相手を参照するフィールドとして宣言されます。
+リレーションは 2 つのオブジェクト同士を関連付けます。 Arxena におけるリレーションは常に **双方向** です — すべてのリレーションには 2 つの側面があり、それぞれが相手を参照するフィールドとして宣言されます。
 
 | リレーションタイプ     | 説明                                | 外部キーあり？              |
 | ------------- | --------------------------------- | -------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## 標準オブジェクトとのリレーション
 
-組み込みの Twenty オブジェクト（Person、Company など）とリレーションを作成するには、`STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` を使用します:
+組み込みの Arxena オブジェクト（Person、Company など）とリレーションを作成するには、`STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` を使用します:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

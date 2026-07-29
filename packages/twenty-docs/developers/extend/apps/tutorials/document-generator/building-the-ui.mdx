@@ -62,7 +62,7 @@ Add the same pair for templates. Both now show in the sidebar:
 ## A front component
 
 A [front component](/developers/extend/apps/layout/front-components) is a React
-component sandboxed inside Twenty. Ours reads the selected record, loads the
+component sandboxed inside Arxena. Ours reads the selected record, loads the
 person templates via `CoreApiClient`, and POSTs to the route from the last
 chapter.
 
@@ -260,7 +260,7 @@ shareable web page and the PDF:
 ## Edit a template with the rich-text editor
 
 Templates don't need a custom component at all. Because the `body` is a
-`RICH_TEXT` field, Twenty already provides a full rich-text editor for it — the
+`RICH_TEXT` field, Arxena already provides a full rich-text editor for it — the
 same one the standard Note and Task objects use. We just surface it on the
 template record page.
 
@@ -294,7 +294,7 @@ see the full
 [`template-record.page-layout.ts`](https://github.com/twentyhq/twenty/blob/main/packages/twenty-apps/examples/document-generator/src/page-layouts/template-record.page-layout.ts).
 Now editors write templates in a proper rich-text editor:
 
-<Frame caption="The Template tab: Twenty's native rich-text editor bound to the body field.">
+<Frame caption="The Template tab: Arxena's native rich-text editor bound to the body field.">
   <img src="/images/docs/developers/extends/apps/document-generator/10-template-editor.png" alt="Template record with the native rich-text editor tab" />
 </Frame>
 

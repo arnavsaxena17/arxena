@@ -1,10 +1,10 @@
 ---
 title: 概要
-description: Twenty の UI 内にアプリを配置します — サイドバー項目、保存済みビュー、レコードページのタブ、およびサンドボックス化された React コンポーネント。
+description: Arxena の UI 内にアプリを配置します — サイドバー項目、保存済みビュー、レコードページのタブ、およびサンドボックス化された React コンポーネント。
 icon: table-columns
 ---
 
-Twenty アプリの **レイアウトレイヤー** とは、ユーザーに見えるすべての要素を指します。アプリがサイドバーのどこに表示されるか、どのリストビューを提供するか、レコード詳細ページがどのように構成されるか、そしてそれらのページ内でどのカスタム React コンポーネントがレンダリングされるかなどです。
+Arxena アプリの **レイアウトレイヤー** とは、ユーザーに見えるすべての要素を指します。アプリがサイドバーのどこに表示されるか、どのリストビューを提供するか、レコード詳細ページがどのように構成されるか、そしてそれらのページ内でどのカスタム React コンポーネントがレンダリングされるかなどです。
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ Twenty アプリの **レイアウトレイヤー** とは、ユーザーに見�
     `definePageLayout` および `definePageLayoutTab` — レコード詳細ページ上のタブとウィジェット。
   </Card>
   <Card title="フロントコンポーネント" icon="window-maximize" href="/l/ja/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — Twenty 内でレンダリングされる、サンドボックス化された React コンポーネント。
+    `defineFrontComponent` — Arxena 内でレンダリングされる、サンドボックス化された React コンポーネント。
   </Card>
   <Card title="コマンドメニュー項目" icon="terminal" href="/l/ja/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — フロントコンポーネントを Cmd+K の項目およびクイックアクションとして登録します。
@@ -54,4 +54,4 @@ Twenty アプリの **レイアウトレイヤー** とは、ユーザーに見�
 | **アプリ設定**            | アプリの「設定」タブ内にある、デフォルトの変数 UI に代わるカスタム設定セクション       | `defineSettingsFrontComponent`            |
 | **コマンドメニュー (Cmd+K)** | ピン留めされたクイックアクションまたは非表示コマンド                       | `defineCommandMenuItem`                   |
 
-フロントコンポーネントは Remote DOM を使用して、分離された Web Worker 内で実行されます。ページ内に *ネイティブに*（iframe 内ではなく）レンダリングされますが、ホストページや DOM へ直接アクセスすることはできません。 Twenty との通信は、メッセージパッシング型のホスト API を通じて行われます。
+フロントコンポーネントは Remote DOM を使用して、分離された Web Worker 内で実行されます。ページ内に *ネイティブに*（iframe 内ではなく）レンダリングされますが、ホストページや DOM へ直接アクセスすることはできません。 Arxena との通信は、メッセージパッシング型のホスト API を通じて行われます。

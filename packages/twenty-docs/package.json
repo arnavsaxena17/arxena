@@ -1,12 +1,14 @@
 {
   "name": "twenty-docs",
-  "description": "Twenty documentation site powered by Mintlify",
+  "description": "Arxena documentation site powered by Mintlify",
   "author": "",
   "private": true,
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "mintlify dev",
     "validate": "mintlify validate",
+    "export": "mintlify export --output .mintlify/export.zip",
+    "export:brands": "node scripts/export-static-sites.mjs",
     "fix-links": "bash scripts/fix-translated-links.sh",
     "lint": "npx oxlint -c .oxlintrc.json ."
   },

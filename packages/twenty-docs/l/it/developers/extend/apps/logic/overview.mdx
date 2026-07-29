@@ -1,10 +1,10 @@
 ---
 title: Panoramica
-description: TypeScript lato server che viene eseguito all'interno di Twenty — attivato da route HTTP, pianificazioni cron, eventi del database, strumenti di AI o azioni di workflow.
+description: TypeScript lato server che viene eseguito all'interno di Arxena — attivato da route HTTP, pianificazioni cron, eventi del database, strumenti di AI o azioni di workflow.
 icon: bolt
 ---
 
-Il **livello logico** di un'app Twenty è il codice che *viene eseguito* — handler TypeScript lato server che reagiscono a richieste HTTP, pianificazioni cron e modifiche ai record; skill e agenti di AI che vivono all'interno dello spazio di lavoro; e connessioni OAuth che permettono alle tue funzioni di agire per conto dell'utente in servizi di terze parti.
+Il **livello logico** di un'app Arxena è il codice che *viene eseguito* — handler TypeScript lato server che reagiscono a richieste HTTP, pianificazioni cron e modifiche ai record; skill e agenti di AI che vivono all'interno dello spazio di lavoro; e connessioni OAuth che permettono alle tue funzioni di agire per conto dell'utente in servizi di terze parti.
 
 ```text
             ┌─ HTTP route      ──┐
@@ -16,7 +16,7 @@ Il **livello logico** di un'app Twenty è il codice che *viene eseguito* — han
             └────────────────────┘                │
                                                   ▼
                                   ┌────────────────────────────┐
-                                  │ Twenty API (records)       │
+                                  │ Arxena API (records)       │
                                   │ Third-party API            │
                                   │   (via Connection token)   │
                                   └────────────────────────────┘
@@ -48,7 +48,7 @@ Una funzione logica sceglie uno o più trigger — ogni voce qui sotto è un cam
 | **Route HTTP**          | Una richiesta raggiunge il tuo endpoint `/s/\<path>` | `httpRouteTriggerSettings`      |
 | **Cron**                | Viene soddisfatta un'espressione CRON                                 | `cronTriggerSettings`           |
 | **Evento database**     | Un record dello spazio di lavoro viene creato, aggiornato o eliminato | `databaseEventTriggerSettings`  |
-| **Strumento AI**        | Una funzionalità AI di Twenty decide di chiamare la tua funzione      | `toolTriggerSettings`           |
+| **Strumento AI**        | Una funzionalità AI di Arxena decide di chiamare la tua funzione      | `toolTriggerSettings`           |
 | **Azione del workflow** | Uno step di workflow richiama la tua funzione                         | `workflowActionTriggerSettings` |
 
 Le funzioni vengono eseguite in sandbox in processi Node.js isolati e accedono allo spazio di lavoro tramite un client API tipizzato, limitato al ruolo dichiarato su [`defineApplication()`](/l/it/developers/extend/apps/config/application).

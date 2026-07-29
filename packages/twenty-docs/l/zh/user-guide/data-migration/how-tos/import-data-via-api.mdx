@@ -1,11 +1,11 @@
 ---
 title: 通过 API 导入数据
-description: 何时以及如何使用 Twenty 的 API 进行大规模数据导入。
+description: 何时以及如何使用 Arxena 的 API 进行大规模数据导入。
 ---
 
 ## 概览
 
-Twenty 提供 **GraphQL** 和 **REST API**，用于以编程方式导入数据。 当 CSV 导入不适合您的数据量，或您需要自动化、定期的导入时，请使用 API。
+Arxena 提供 **GraphQL** 和 **REST API**，用于以编程方式导入数据。 当 CSV 导入不适合您的数据量，或您需要自动化、定期的导入时，请使用 API。
 
 ## 何时使用 API 导入
 
@@ -23,7 +23,7 @@ Twenty 提供 **GraphQL** 和 **REST API**，用于以编程方式导入数据�
 
 ## API 速率限制
 
-Twenty 实施速率限制以确保系统稳定性：
+Arxena 实施速率限制以确保系统稳定性：
 
 | 限制             | 值             |
 | -------------- | ------------- |
@@ -55,7 +55,7 @@ Twenty 实施速率限制以确保系统稳定性：
 
 ### 步骤 2：选择您的 API
 
-Twenty 支持两种 API 类型：
+Arxena 支持两种 API 类型：
 
 | 接口          | 最适合                     | 文档                               |
 | ----------- | ----------------------- | -------------------------------- |
@@ -97,7 +97,7 @@ Twenty 支持两种 API 类型：
 
 * 在导入前清洗并验证数据
 * 检查必填字段是否已填写
-* 验证格式是否符合 Twenty 的要求 (参见 [字段映射](/l/zh/user-guide/data-migration/capabilities/field-mapping))
+* 验证格式是否符合 Arxena 的要求 (参见 [字段映射](/l/zh/user-guide/data-migration/capabilities/field-mapping))
 
 ### 记录一切
 
@@ -108,7 +108,7 @@ Twenty 支持两种 API 类型：
 ### 先进行测试
 
 * 使用小批量进行测试（10-20 条记录）
-* 验证数据在 Twenty 中显示是否正确
+* 验证数据在 Arxena 中显示是否正确
 * 然后执行完整导入
 
 ### 使用合并插入避免重复
@@ -143,7 +143,7 @@ GraphQL API 支持**批量合并插入** — 若记录已存在则更新，不�
 * 紧迫的时间安排
 * 缺乏开发人员资源的团队
 
-请通过 [contact@twenty.com](mailto:contact@twenty.com) 与我们联系，或查看我们的 [实施服务](/l/zh/user-guide/getting-started/capabilities/implementation-services)。
+请通过 [contact@arxena.com](mailto:contact@arxena.com) 与我们联系，或查看我们的 [实施服务](/l/zh/user-guide/getting-started/capabilities/implementation-services)。
 
 ## 常见问题
 

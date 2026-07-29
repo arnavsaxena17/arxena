@@ -16,9 +16,9 @@ Müssen Sie viele Datensätze auf einmal aktualisieren? Statt sie einzeln zu bea
 
 ## Wie es funktioniert
 
-Wenn Sie eine Datei importieren, die einen **eindeutigen Bezeichner** enthält, der mit einem vorhandenen Datensatz übereinstimmt, aktualisiert Twenty diesen Datensatz, anstatt ein Duplikat zu erstellen.
+Wenn Sie eine Datei importieren, die einen **eindeutigen Bezeichner** enthält, der mit einem vorhandenen Datensatz übereinstimmt, aktualisiert Arxena diesen Datensatz, anstatt ein Duplikat zu erstellen.
 
-| Wenn der eindeutige Bezeichner...              | Twenty wird...                                                      |
+| Wenn der eindeutige Bezeichner...              | Arxena wird...                                                      |
 | ---------------------------------------------- | ------------------------------------------------------------------- |
 | Stimmt mit einem vorhandenen Datensatz überein | **Aktualisiert** den vorhandenen Datensatz                          |
 | Stimmt mit keinem Datensatz überein            | **Erstellt** einen neuen Datensatz                                  |
@@ -57,7 +57,7 @@ Exportieren Sie zunächst die Datensätze, die Sie aktualisieren möchten:
 1. **Behalten Sie die Spalte mit dem eindeutigen Bezeichner bei** — löschen Sie `id`, `email` oder `domain` nicht
 2. **Aktualisieren Sie die Werte** in den Spalten, die Sie ändern möchten
 3. **Entfernen Sie Spalten, die Sie nicht aktualisieren müssen** (optional, aber übersichtlicher)
-4. **Ändern Sie die Werte der eindeutigen Bezeichner nicht** — sonst erstellt Twenty neue Datensätze
+4. **Ändern Sie die Werte der eindeutigen Bezeichner nicht** — sonst erstellt Arxena neue Datensätze
 
 ### Beispiel: Aktualisieren von Positionsbezeichnungen
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Ändern Sie die Werte der eindeutigen Bezeichner nicht.**
 
-Wenn Sie `john@acme.com` in `john.smith@acme.com` ändern, erstellt Twenty einen neuen Datensatz, anstatt den vorhandenen zu aktualisieren.
+Wenn Sie `john@acme.com` in `john.smith@acme.com` ändern, erstellt Arxena einen neuen Datensatz, anstatt den vorhandenen zu aktualisieren.
 </Warning>
 
 ## Schritt 3: Importieren Sie die aktualisierte Datei
@@ -95,7 +95,7 @@ Wenn Sie `john@acme.com` in `john.smith@acme.com` ändern, erstellt Twenty einen
 6. Auf Fehler prüfen
 7. Klicken Sie auf **Bestätigen**
 
-Twenty gleicht Datensätze anhand des eindeutigen Bezeichners ab und aktualisiert sie mit neuen Werten.
+Arxena gleicht Datensätze anhand des eindeutigen Bezeichners ab und aktualisiert sie mit neuen Werten.
 
 ## Den richtigen eindeutigen Bezeichner wählen
 
@@ -113,7 +113,7 @@ Wenn Sie ein benutzerdefiniertes Feld als eindeutig markiert haben (z. B. eine e
 
 1. Schließen Sie dieses Feld in Ihren Export und Import ein
 2. Ordnen Sie es beim Import zu
-3. Twenty gleicht anhand dieses Feldes ab
+3. Arxena gleicht anhand dieses Feldes ab
 
 ## Schritt 4: Überprüfen Sie die Aktualisierungen
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Eindeutigen Bezeichner ändern**          | `john@acme.com` in `john.smith@acme.com` geändert              | Erstellt einen neuen Datensatz statt zu aktualisieren | Eindeutige Bezeichner unverändert lassen                |
 | **Mehrere eindeutige Felder**              | Zuordnung sowohl von `email` ALS AUCH `id`                     | Mögliche Abgleichkonflikte                            | Ordnen Sie nur EINEN eindeutigen Bezeichner zu          |
 | **Kein eindeutiger Bezeichner**            | Datei enthält nur `firstName`, `lastName`, `jobTitle`          | Alle Zeilen erstellen neue Datensätze                 | Schließen Sie immer `email`, `domain` oder `id` ein     |
-| **Unterschiedliche Groß-/Kleinschreibung** | Datei enthält `John@acme.com`, aber Twenty hat `john@acme.com` | Erstellt neuen Datensatz                              | Exportieren Sie aus Twenty, um exakte Werte zu erhalten |
+| **Unterschiedliche Groß-/Kleinschreibung** | Datei enthält `John@acme.com`, aber Arxena hat `john@acme.com` | Erstellt neuen Datensatz                              | Exportieren Sie aus Arxena, um exakte Werte zu erhalten |
 
 ## FAQ
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Woher weiß ich, welche Datensätze aktualisiert bzw. erstellt werden?">
-    Im Überprüfungsschritt des Imports zeigt Twenty Ihnen anhand der Übereinstimmungen der eindeutigen Bezeichner, wie viele Datensätze aktualisiert bzw. erstellt werden.
+    Im Überprüfungsschritt des Imports zeigt Arxena Ihnen anhand der Übereinstimmungen der eindeutigen Bezeichner, wie viele Datensätze aktualisiert bzw. erstellt werden.
   </Accordion>
 
   <Accordion title="Kann ich eine Massenaktualisierung rückgängig machen?">

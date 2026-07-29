@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 如果您使用 Docker Compose，请按照以下步骤操作：
 
-1. 停止 Twenty：`docker compose down`
+1. 停止 Arxena：`docker compose down`
 2. 在与 `docker-compose.yml` 同目录的 `.env` 文件中更改 `TAG` 值
-3. 启动 Twenty：`docker compose up -d`
+3. 启动 Arxena：`docker compose up -d`
 
 服务器在启动时会自动运行所有所需的升级迁移。 无需手动执行任何命令。
 
 ## 跨版本升级（v1.22+）
 
-自 **v1.22** 起，Twenty 支持跨版本升级。 您可以从任意受支持的版本直接跳到最新版本，而无需逐一经过每个中间版本。
+自 **v1.22** 起，Arxena 支持跨版本升级。 您可以从任意受支持的版本直接跳到最新版本，而无需逐一经过每个中间版本。
 
 例如，从 v1.22 直接升级到 v2.0 完全受支持。
 
 ## 升级到 v2.5+ — 静态数据加密信封
 
-从 **v2.5** 开始，Twenty 会将静态存储的机密（OAuth 令牌、应用程序变量、签名密钥的私钥、敏感配置值、TOTP 机密）存储在带版本的 `enc:v2:` 加密信封中，并使用 `ENCRYPTION_KEY`（如果未设置 `ENCRYPTION_KEY`，则使用 `APP_SECRET`）进行加密。
+从 **v2.5** 开始，Arxena 会将静态存储的机密（OAuth 令牌、应用程序变量、签名密钥的私钥、敏感配置值、TOTP 机密）存储在带版本的 `enc:v2:` 加密信封中，并使用 `ENCRYPTION_KEY`（如果未设置 `ENCRYPTION_KEY`，则使用 `APP_SECRET`）进行加密。
 
 在 v2.5 的首次启动时会运行较慢的升级命令，将现有行**回填**到新的加密信封中。 这些命令是幂等的——中断并重新启动服务器后会从上次停止的位置恢复——但在大型数据库上可能需要一段时间才能完成。 你可以使用 `upgrade:status` 来监控进度。
 

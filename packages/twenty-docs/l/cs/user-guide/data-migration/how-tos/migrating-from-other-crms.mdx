@@ -1,11 +1,11 @@
 ---
 title: Migrace z jiných CRM
-description: Podrobný průvodce krok za krokem pro migraci vašich dat z libovolného CRM do Twenty.
+description: Podrobný průvodce krok za krokem pro migraci vašich dat z libovolného CRM do Arxena.
 ---
 
 ## Přehled
 
-Tento průvodce vás provede migrací vašich dat z libovolného CRM do Twenty. Proces zahrnuje audit vašich dat, přípravu vašeho pracovního prostoru Twenty, export z vašeho současného systému a import do Twenty.
+Tento průvodce vás provede migrací vašich dat z libovolného CRM do Arxena. Proces zahrnuje audit vašich dat, přípravu vašeho pracovního prostoru Arxena, export z vašeho současného systému a import do Arxena.
 
 <Note>Zobrazení, pracovní postupy a oprávnění je po migraci nutné vytvořit ručně. Naplánujte si čas na tuto konfigurační práci.</Note>
 
@@ -29,9 +29,9 @@ Migrace je příležitostí k novému začátku. Nepřenášejte balast.
 
 ## Krok 2: Zmapujte svůj datový model
 
-Vytvořte mapovací dokument mezi vaším současným CRM a Twenty:
+Vytvořte mapovací dokument mezi vaším současným CRM an Arxena:
 
-| Vaše CRM             | Twenty                     |
+| Vaše CRM             | Arxena                     |
 | -------------------- | -------------------------- |
 | Účet / organizace    | **Společnost**             |
 | Kontakt / osoba      | **Lidé**                   |
@@ -42,14 +42,14 @@ Vytvořte mapovací dokument mezi vaším současným CRM a Twenty:
 **Pro každé pole zdokumentujte:**
 
 * Název zdrojového pole
-* Cílové pole v Twenty
+* Cílové pole v Arxena
 * Jakékoli potřebné úpravy formátu (datumy, telefonní čísla apod.)
 
 <Note>Mějte tento mapovací dokument po ruce během importu — budete na něj odkazovat při mapování sloupců.</Note>
 
-## Krok 3: Nastavte svůj pracovní prostor Twenty
+## Krok 3: Nastavte svůj pracovní prostor Arxena
 
-Před importem dat připravte svůj pracovní prostor Twenty:
+Před importem dat připravte svůj pracovní prostor Arxena:
 
 ### Vytvořte vlastní objekty a pole
 
@@ -69,7 +69,7 @@ Import CSV vytváří záznamy, nikoli pole. Vytvořte všechna vlastní pole v 
 <Warning>
 **Pozvěte uživatele PŘED importem dat.**
 
-Pokud vaše data obsahují odkazy na uživatele (vlastník účtu, přiřazený uživatel apod.), tito uživatelé musí v Twenty existovat před importem. Jinak tyto relace nelze namapovat.
+Pokud vaše data obsahují odkazy na uživatele (vlastník účtu, přiřazený uživatel apod.), tito uživatelé musí v Arxena existovat před importem. Jinak tyto relace nelze namapovat.
 </Warning>
 
 1. Přejděte na **Nastavení → Členové**
@@ -96,13 +96,13 @@ Exportujte svá data ze svého stávajícího CRM:
 
 ## Krok 5: Vyčistěte a naformátujte svá data
 
-Otevřete každý exportovaný soubor CSV v tabulkovém editoru a připravte jej pro Twenty.
+Otevřete každý exportovaný soubor CSV v tabulkovém editoru a připravte jej pro Arxena.
 
 ### Odstraňte duplicity
 
 1. Seřaďte podle jedinečného pole (e-mail u lidí, doména u společností)
 2. Odstraňte nebo sloučte duplicitní řádky
-3. Ověřte, že v Twenty již neexistují žádné duplicity
+3. Ověřte, že v Arxena již neexistují žádné duplicity
 
 ### Správně naformátujte pole
 
@@ -118,7 +118,7 @@ Otevřete každý exportovaný soubor CSV v tabulkovém editoru a připravte jej
 <Warning>
 **Formát domény je zásadní.**
 
-Použijte `https://domain.com` (ne `domain.com` ani `www.domain.com`). To odpovídá formátu Twenty a předchází duplicitám, když připojíte synchronizaci e-mailu/kalendáře.
+Použijte `https://domain.com` (ne `domain.com` ani `www.domain.com`). To odpovídá formátu Arxena a předchází duplicitám, když připojíte synchronizaci e-mailu/kalendáře.
 </Warning>
 
 Úplné požadavky na formátování pro všechny typy polí viz [Jak připravit soubory CSV](/l/cs/user-guide/data-migration/how-tos/prepare-your-csv-files).
@@ -142,11 +142,11 @@ Podrobné pokyny k propojení záznamů viz [Jak importovat relace](/l/cs/user-g
 Pokud vaše data obsahují přiřazení uživatele (vlastník, přiřazený uživatel):
 
 1. Přidejte sloupec s **e-mailem uživatele** (nejen jeho ID ze starého systému)
-2. Použijte stejné e-mailové adresy, které uživatelé použili při připojení do vašeho pracovního prostoru Twenty
+2. Použijte stejné e-mailové adresy, které uživatelé použili při připojení do vašeho pracovního prostoru Arxena
 
 Kompletní průvodce formátováním viz [Jak připravit soubory CSV](/l/cs/user-guide/data-migration/how-tos/prepare-your-csv-files).
 
-## Krok 6: Import do Twenty
+## Krok 6: Import do Arxena
 
 <Warning>
 **Na pořadí importu záleží!**
@@ -165,7 +165,7 @@ Nadřazený záznam musí existovat dříve, než na něj můžete odkazovat.
 
 Pro každý soubor CSV, v daném pořadí:
 
-1. Přejděte k objektu v Twenty
+1. Přejděte k objektu v Arxena
 2. Klikněte na **⋮ → Import records**
 3. Nahrajte soubor CSV
 4. Namapujte sloupce na pole:
@@ -220,7 +220,7 @@ Po importu dat dokončete konfiguraci pracovního prostoru:
 ### Propojte e-mail a kalendář
 
 * Každý uživatel si připojí svůj účet v **Nastavení → Účty**
-* Twenty začne synchronizovat e-maily k záznamům kontaktů
+* Arxena začne synchronizovat e-maily k záznamům kontaktů
 * Viz [E-mail a kalendář](/l/cs/user-guide/calendar-emails/overview)
 
 ### Vyškolte svůj tým
@@ -266,7 +266,7 @@ Podrobné kroky pro řešení problémů viz [Jak opravit chyby importu](/l/cs/u
 
 <AccordionGroup>
   <Accordion title="Mohu migrovat pracovní postupy automaticky?">
-    V tuto chvíli ne. Pracovní postupy je nutné v Twenty znovu vytvořit ručně.
+    V tuto chvíli ne. Pracovní postupy je nutné v Arxena znovu vytvořit ručně.
   </Accordion>
 
   <Accordion title="A co souborové přílohy?">
@@ -287,6 +287,6 @@ Podrobné kroky pro řešení problémů viz [Jak opravit chyby importu](/l/cs/u
 <Tip>
   Chcete pomoc s migrací?
 
-  * **Hotovo za vás:** [najděte certifikovaného partnera Twenty](https://twenty.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm), který zajistí kompletní přesun vašich dat, pipeline a uživatelů od začátku do konce.
-  * **Onboardingový balíček:** čtyřhodinové asistované nastavení s naším týmem — [contact@twenty.com](mailto:contact@twenty.com).
+  * **Hotovo za vás:** [najděte certifikovaného partnera Arxena](https://arxena.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm), který zajistí kompletní přesun vašich dat, pipeline a uživatelů od začátku do konce.
+  * **Onboardingový balíček:** čtyřhodinové asistované nastavení s naším týmem — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

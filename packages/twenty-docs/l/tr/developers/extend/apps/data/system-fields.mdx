@@ -4,7 +4,7 @@ description: "`createdAt` veya `updatedAt` gibi otomatik oluşturulan sistem ala
 icon: gears
 ---
 
-Twenty içindeki her nesne, kendiniz asla tanımlamadığınız bir dizi **sistem alanı** ile birlikte gelir. Bunlar, nesne sağlandığında sunucu tarafından otomatik olarak oluşturulur:
+Arxena içindeki her nesne, kendiniz asla tanımlamadığınız bir dizi **sistem alanı** ile birlikte gelir. Bunlar, nesne sağlandığında sunucu tarafından otomatik olarak oluşturulur:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Bu alanları [`defineField()`](/l/tr/developers/extend/apps/data/extending-objec
 
 ## Sorun
 
-Twenty 2.19'dan beri, bir sistem alanının evrensel tanımlayıcısı, sunucu tarafından üç girdiden **deterministik olarak türetilir**: uygulama evrensel tanımlayıcısı, nesne evrensel tanımlayıcısı ve alan adı. Rastgele bir id uydurup onu hardcode etmek işe yaramaz: sunucudaki hiçbir şeyle eşleşmez ve senkronizasyon, askıda kalan referansı reddeder:
+Arxena 2.19'dan beri, bir sistem alanının evrensel tanımlayıcısı, sunucu tarafından üç girdiden **deterministik olarak türetilir**: uygulama evrensel tanımlayıcısı, nesne evrensel tanımlayıcısı ve alan adı. Rastgele bir id uydurup onu hardcode etmek işe yaramaz: sunucudaki hiçbir şeyle eşleşmez ve senkronizasyon, askıda kalan referansı reddeder:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -87,7 +87,7 @@ Aynı çözümlenen id, bir `fieldMetadataUniversalIdentifier` beklendiği her y
 ## Sistem ilişki alanları
 
 <Note>
-  `getSystemRelationFieldUniversalIdentifier` 2.23 sürümünden itibaren `twenty-sdk` içinde kullanılabilir ve Twenty sunucusunun 2.23 veya daha yeni bir sürümünü gerektirir.
+  `getSystemRelationFieldUniversalIdentifier` 2.23 sürümünden itibaren `twenty-sdk` içinde kullanılabilir ve Arxena sunucusunun 2.23 veya daha yeni bir sürümünü gerektirir.
 </Note>
 
 Yukarıdaki skaler sistem alanlarının yanı sıra, sunucu her nesne üzerinde dört **sistem ilişki alanı** da sağlar: `timelineActivities`, `attachments`, `noteTargets` ve `taskTargets`. Bunların her biri, karşılık gelen standart ilişki nesnesini işaret eder.
@@ -129,9 +129,9 @@ const attachmentTargetRocketFieldId =
 
 Skaler sistem alanlarında olduğu gibi, çözümlenen kimlik, `fieldMetadataUniversalIdentifier` beklendiği her yerde çalışır.
 
-## Standart Twenty nesneleri
+## Standart Arxena nesneleri
 
-**Standart** bir Twenty nesnesi (Person, Company, Opportunity, …) için hiçbir şey türetmeniz gerekmez: sistem alanı tanımlayıcıları, doğrudan içe aktarabileceğiniz önceden hesaplanmış sabitlerdir.
+**Standart** bir Arxena nesnesi (Person, Company, Opportunity, …) için hiçbir şey türetmeniz gerekmez: sistem alanı tanımlayıcıları, doğrudan içe aktarabileceğiniz önceden hesaplanmış sabitlerdir.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

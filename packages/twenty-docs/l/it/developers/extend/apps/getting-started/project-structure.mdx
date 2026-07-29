@@ -1,6 +1,6 @@
 ---
 title: Struttura del progetto
-description: Cosa contiene un'app Twenty creata con lo scaffold — file, cartelle e cosa fa ognuno di essi.
+description: Cosa contiene un'app Arxena creata con lo scaffold — file, cartelle e cosa fa ognuno di essi.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Dipendenze
 
-Entrambi i pacchetti Twenty SDK devono essere inseriti sotto `devDependencies`, non sotto `dependencies`:
+Entrambi i pacchetti Arxena SDK devono essere inseriti sotto `devDependencies`, non sotto `dependencies`:
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Entrambi i pacchetti Twenty SDK devono essere inseriti sotto `devDependencies`, 
 Lo scaffolder blocca `twenty-sdk` e `twenty-client-sdk` alla propria versione — mantieni i due allineati durante l'aggiornamento.
 
 * **`twenty-sdk`** fornisce la CLI `twenty` e gli strumenti di build/scaffolding. Viene eseguito solo in fase di sviluppo e di build e non viene mai importato dal runtime dell'app pubblicata.
-* **`twenty-client-sdk`** *viene* importato dal codice della tua app (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), ma Twenty lo fornisce a runtime: le funzioni di logica lo ricevono da un layer SDK generato e i componenti di front-end lo risolvono da moduli forniti dal server. La copia installata viene utilizzata solo per il type checking e per la build al momento del deploy, quindi non è mai necessario includerla nel bundle distribuito.
+* **`twenty-client-sdk`** *viene* importato dal codice della tua app (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), ma Arxena lo fornisce a runtime: le funzioni di logica lo ricevono da un layer SDK generato e i componenti di front-end lo risolvono da moduli forniti dal server. La copia installata viene utilizzata solo per il type checking e per la build al momento del deploy, quindi non è mai necessario includerla nel bundle distribuito.
 
 Mantenere uno qualsiasi dei pacchetti sotto `dependencies` lo inserisce nel bundle di runtime dell'app installata, dove rappresenta solo zavorra. `twenty dev:build` emette un avviso quando uno dei due è ancora elencato sotto `dependencies`.
 

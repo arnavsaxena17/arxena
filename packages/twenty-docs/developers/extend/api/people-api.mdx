@@ -1,0 +1,53 @@
+---
+title: People API
+icon: 'users'
+description: Search people, inspect data source availability, and resolve taxonomy with workspace-scoped API keys.
+---
+
+The People API gives each workspace a programmatic way to inspect configured people data sources, resolve Arxena taxonomy values, and search people with a workspace-scoped Bearer token.
+
+For full endpoint docs and an interactive playground, use the **API Reference**:
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/api-reference/introduction">
+    Introduction, auth, and all People endpoints with Try it
+  </Card>
+  <Card title="Authentication" icon="lock" href="/api-reference/authentication">
+    Create a workspace API key and authenticate requests
+  </Card>
+</CardGroup>
+
+## Quick start
+
+1. Create an API key under **Settings → APIs & Webhooks**
+2. Open any endpoint in the [API Reference](/api-reference/introduction)
+3. Paste `Authorization: Bearer YOUR_API_KEY_TOKEN` in the playground and click **Send**
+
+Base URL: `https://{your-domain}` (examples use `https://app.arxena.com`).
+
+## Data source aliases
+
+The API exposes provider aliases instead of vendor-specific routing logic:
+
+| Alias | Typical use |
+|------|-------------|
+| `index` | Search Arxena's internal people index with taxonomy filters |
+| `apollo` | Search via Apollo when configured |
+| `contactout` | Search via ContactOut when configured |
+| `harvest` | Search via Harvest when configured |
+| `pdl` | Reserved alias; not currently exposed by the public search endpoint |
+
+If a provider is not enabled, the API returns `503 Service Unavailable`. If an alias is recognized but not yet supported for that endpoint, it returns `501 Not Implemented`.
+
+## Recipes
+
+- [Search people by taxonomy](/cookbooks/search-people-by-taxonomy)
+- [Expand titles then search](/cookbooks/expand-titles-then-search)
+
+## OpenAPI
+
+Raw OpenAPI document (public):
+
+```bash
+curl https://app.arxena.com/people-api/openapi.json
+```

@@ -70,7 +70,7 @@ export const main = async (params: {
   const formattedTasks = tasksDue
     .map(
       t =>
-        `${t.title}\nhttps://yourSubDomain.twenty.com/object/task/${t.id}`
+        `${t.title}\nhttps://yourSubDomain.arxena.com/object/task/${t.id}`
     )
     .join("\n\n");
 
@@ -79,7 +79,7 @@ export const main = async (params: {
 ```
 
 <Note>
-Nahraďte `yourSubDomain` skutečnou subdoménou vašeho pracovního prostoru Twenty.
+Nahraďte `yourSubDomain` skutečnou subdoménou vašeho pracovního prostoru Arxena.
 </Note>
 
 ### Krok 6: Odešlete e-mail (uvnitř iterátoru)

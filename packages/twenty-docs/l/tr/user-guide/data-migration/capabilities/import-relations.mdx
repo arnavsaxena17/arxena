@@ -5,15 +5,15 @@ description: Kayıtlar arasındaki ilişkileri CSV ile içe aktarın.
 
 ## Genel Bakış
 
-Twenty, CSV içe aktarma sırasında nesneler arasındaki ilişkilerin içe aktarılmasını destekler. Bu, veri geçişinizin bir parçası olarak kayıtları birbirine bağlamanıza olanak tanır (ör. Kişileri Şirketlere iliştirme).
+Arxena, CSV içe aktarma sırasında nesneler arasındaki ilişkilerin içe aktarılmasını destekler. Bu, veri geçişinizin bir parçası olarak kayıtları birbirine bağlamanıza olanak tanır (ör. Kişileri Şirketlere iliştirme).
 
 <Note>**Şu anda içe aktarma için desteklenenler**: Her iki tarafta da tek bir nesne türüne işaret eden bire-çok ilişkiler (ör. Kişiler → Şirketler). Birden fazla nesne türüne işaret eden ilişkiler henüz içe/dışa aktarma için desteklenmiyor.</Note>
 
-## Twenty'de İlişkiler Nasıl Çalışır
+## Arxena'de İlişkiler Nasıl Çalışır
 
 ### Bire-Çok / Çoktan-Bire
 
-Twenty, bir kaydın birden çok başka kayda bağlandığı standart ilişkileri destekler:
+Arxena, bir kaydın birden çok başka kayda bağlandığı standart ilişkileri destekler:
 
 * **Bir Şirket → Birçok Kişi**: Bir şirketin birden fazla çalışanı olabilir, ancak her kişi bir şirkete aittir
 * **Bir Şirket → Birçok Fırsat**: Bir şirketin birden fazla fırsatı olabilir, ancak her fırsat bir şirkete aittir
@@ -75,11 +75,11 @@ Bu özellik yol haritamızda.
 
 ### Adım 2: "Bir" Tarafındaki Kayıtların Mevcut Olduğundan Emin Olun
 
-"Çok" tarafını içe aktarmadan önce, "bir" tarafındaki kayıtlar Twenty'de zaten mevcut olmalıdır.
+"Çok" tarafını içe aktarmadan önce, "bir" tarafındaki kayıtlar Arxena'de zaten mevcut olmalıdır.
 
 * Önce "bir" tarafındaki kayıtları içe aktarın veya oluşturun (ör. Şirketler)
 * Benzersiz tanımlayıcılarını doğrulayın. Bu şu olabilir:
-  * `id` (Twenty'nin UUID'si)
+  * `id` (Arxena'nin UUID'si)
   * Benzersiz olarak ayarlanmış bir alan (ör. Şirketler için `domain` veya önceki sisteminizden bir dış kimlik)
 
 <Warning>Var olmayan bir kayda referans verilirse içe aktarma başarısız olur.</Warning>
@@ -117,7 +117,7 @@ Eğer mevcut değilse:
 1. CSV dosyanızı içe aktarma arayüzü üzerinden yükleyin
 2. Alan eşleme adımında, ilişki sütununuzu bulun (ör. `companyDomain`)
 3. Bunu ilişki alanına eşleyin (ör. Şirket)
-4. Twenty, her kaydı otomatik olarak eşleşen ana kayda bağlar
+4. Arxena, her kaydı otomatik olarak eşleşen ana kayda bağlar
 
 ### İlişkiler İçin Kullanılabilir Benzersiz Alanlar
 
@@ -128,7 +128,7 @@ Eğer mevcut değilse:
 | **İş Alanı Üyeleri**                | `id`, `email` (isim değil)                            |
 | **Diğer standart ve özel nesneler** | `id`, benzersiz olarak işaretlenmiş herhangi bir alan |
 
-<Note>**Çalışma Alanı Üyelerine Bağlama**: İlişki Çalışma Alanı Üyelerini işaret ediyorsa (Twenty'ye giriş yapan ekibiniz), onlara adlarıyla değil, **e-posta adresleriyle** referans verin.</Note>
+<Note>**Çalışma Alanı Üyelerine Bağlama**: İlişki Çalışma Alanı Üyelerini işaret ediyorsa (Arxena'ye giriş yapan ekibiniz), onlara adlarıyla değil, **e-posta adresleriyle** referans verin.</Note>
 
 <Note>Tablolarda okunabilir ve bakımı kolay olduğundan, Şirketler için `domain` ve Kişiler için `email` kullanmanızı öneririz.</Note>
 

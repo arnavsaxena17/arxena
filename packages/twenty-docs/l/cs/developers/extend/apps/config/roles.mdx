@@ -154,7 +154,7 @@ export default defineRole({
 Poznámky:
 
 * Každému predikátu a skupině dejte stabilní `universalIdentifier` (libovolný uuid) — podle něj se entita identifikuje při aktualizacích a predikáty podle něj odkazují na skupiny.
-* Predikáty mohou odkazovat na objekty a pole vlastněné vaší aplikací nebo na standardní objekty Twenty.
+* Predikáty mohou odkazovat na objekty a pole vlastněné vaší aplikací nebo na standardní objekty Arxena.
 * Zabezpečení na úrovni řádků je vynucováno pro pracovní prostory v tarifech, které ho zahrnují; predikáty se i na ostatních tarifech stále synchronizují, pouze nejsou vynucovány.
 
 ## Výchozí role funkce
@@ -170,7 +170,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

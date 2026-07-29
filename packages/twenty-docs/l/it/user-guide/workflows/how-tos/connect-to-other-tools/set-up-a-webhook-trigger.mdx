@@ -11,7 +11,7 @@ I trigger webhook consentono ai servizi esterni di avviare i tuoi flussi di lavo
 | ------------------------------- | -------------------------------------------- |
 | **Moduli web**                  | Gli invii del modulo di contatto creano lead |
 | **App di terze parti**          | Pagamento Stripe → crea un record cliente    |
-| **Integrazioni personalizzate** | La tua app → automazione Twenty              |
+| **Integrazioni personalizzate** | La tua app → automazione Arxena              |
 | **Strumenti no-code**           | Connessioni Zapier, Make, n8n                |
 
 ## Configurazione passo-passo
@@ -28,7 +28,7 @@ I trigger webhook consentono ai servizi esterni di avviare i tuoi flussi di lavo
 2. Seleziona **Webhook**
 3. Riceverai un URL webhook univoco come:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Copia questo URL—ti servirà per il tuo servizio esterno
 
@@ -75,7 +75,7 @@ Prima di attivare, testa il tuo webhook:
 **Utilizzando cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

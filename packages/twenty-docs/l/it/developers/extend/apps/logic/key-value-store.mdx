@@ -39,7 +39,7 @@ Ogni voce ha un ambito, passato come opzione a ogni chiamata. L'impostazione pre
 * **`WORKSPACE`** (predefinito) — la voce è privata per l'installazione corrente della tua app nel workspace. Ogni workspace che installa l'app ottiene il proprio set indipendente di chiavi. Questo è ciò che ti serve per cache, cursori e stato per workspace.
 * **`SERVER`** — la voce è condivisa tra **ogni installazione** della tua app sul server. Le voci del server si comportano come **claim**: il valore memorizzato corrisponde sempre al workspaceId che ha richiesto la chiave (ometti `value` su `set` per richiedere la chiave per il workspace corrente) e solo quel workspace può sovrascriverla o eliminarla. Qualsiasi installazione può leggere la voce.
 
-I claim del server esistono per l'instradamento tra workspace. Un [server-route resolver](/l/it/developers/extend/apps/logic/logic-functions#server-route-trigger) viene eseguito nel workspace del proprietario della registrazione dell'applicazione, ma un webhook in ingresso di solito contiene solo un id account esterno — non un Twenty workspaceId. Fai in modo che ogni workspace richieda il proprio id esterno al momento della connessione, quindi risolvilo nella route:
+I claim del server esistono per l'instradamento tra workspace. Un [server-route resolver](/l/it/developers/extend/apps/logic/logic-functions#server-route-trigger) viene eseguito nel workspace del proprietario della registrazione dell'applicazione, ma un webhook in ingresso di solito contiene solo un id account esterno — non un Arxena workspaceId. Fai in modo che ogni workspace richieda il proprio id esterno al momento della connessione, quindi risolvilo nella route:
 
 ```ts
 // In the connected workspace, when the external account is linked:

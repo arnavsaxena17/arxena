@@ -4,7 +4,7 @@ description: Definește funcții TypeScript pe partea de server cu declanșatoar
 icon: bolt
 ---
 
-Funcțiile de logică sunt funcții TypeScript pe partea de server care rulează pe platforma Twenty. Acestea pot fi declanșate de solicitări HTTP, programări cron sau evenimente din baza de date — și pot fi, de asemenea, expuse ca instrumente pentru agenți AI.
+Funcțiile de logică sunt funcții TypeScript pe partea de server care rulează pe platforma Arxena. Acestea pot fi declanșate de solicitări HTTP, programări cron sau evenimente din baza de date — și pot fi, de asemenea, expuse ca instrumente pentru agenți AI.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="Definiți funcții logice și declanșatoarele acestora">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 Funcțiile logice pot fi expuse în două locuri, fiecare cu propriul declanșator:
 
-* **`toolTriggerSettings`** — face funcția descoperibilă de către funcționalitățile AI ale Twenty (chat, MCP, apelarea de funcții). Folosește JSON Schema standard, formatul pe care LLM-urile îl înțeleg nativ.
-* **`workflowActionTriggerSettings`** — determină ca funcția să apară ca un pas în constructorul vizual de fluxuri de lucru. Folosește `InputSchema` bogat al Twenty, astfel încât constructorul să poată afișa editori de câmp adecvați, selectoare de variabile și etichete.
+* **`toolTriggerSettings`** — face funcția descoperibilă de către funcționalitățile AI ale Arxena (chat, MCP, apelarea de funcții). Folosește JSON Schema standard, formatul pe care LLM-urile îl înțeleg nativ.
+* **`workflowActionTriggerSettings`** — determină ca funcția să apară ca un pas în constructorul vizual de fluxuri de lucru. Folosește `InputSchema` bogat al Arxena, astfel încât constructorul să poată afișa editori de câmp adecvați, selectoare de variabile și etichete.
 
 O funcție poate opta pentru una, cealaltă sau ambele. Acestea stau alături de `cronTriggerSettings`, `databaseEventTriggerSettings` și `httpRouteTriggerSettings` — același tipar, aceeași formă.
 
 <Note>
-**Relația cu acțiunea Code din fluxul de lucru.** Acțiunea integrată **Code** din constructorul de fluxuri de lucru este ea însăși o funcție logică — Twenty creează câte una pentru fiecare pas Code și afișează editorul inline. `workflowActionTriggerSettings` este modul în care transformi acel cod inline, de unică folosință, într-o acțiune **reutilizabilă**: definești funcția o singură dată în aplicația ta și devine selectabilă în orice flux de lucru, în loc să fie copiată și lipită în fiecare pas Code. Vezi [acțiunea Code](/l/ro/user-guide/workflows/capabilities/workflow-actions#code) în ghidul utilizatorului pentru vizualizarea din perspectiva utilizatorului final.
+**Relația cu acțiunea Code din fluxul de lucru.** Acțiunea integrată **Code** din constructorul de fluxuri de lucru este ea însăși o funcție logică — Arxena creează câte una pentru fiecare pas Code și afișează editorul inline. `workflowActionTriggerSettings` este modul în care transformi acel cod inline, de unică folosință, într-o acțiune **reutilizabilă**: definești funcția o singură dată în aplicația ta și devine selectabilă în orice flux de lucru, în loc să fie copiată și lipită în fiecare pas Code. Vezi [acțiunea Code](/l/ro/user-guide/workflows/capabilities/workflow-actions#code) în ghidul utilizatorului pentru vizualizarea din perspectiva utilizatorului final.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 Puncte cheie:
 
 * O funcție poate combina suprafețele — declară atât `toolTriggerSettings`, cât și `workflowActionTriggerSettings` pentru a o expune atât în chat, cât și în constructorul de fluxuri de lucru.
-* `toolTriggerSettings.inputSchema` și `workflowActionTriggerSettings.inputSchema` sunt ambele opționale. Când sunt omise, generatorul de manifest le deduce din codul sursă al handlerului (JSON Schema pentru instrumentul AI, `InputSchema` al Twenty pentru acțiunea de flux de lucru). Furnizează unul în mod explicit atunci când dorești o tipizare mai bogată — de exemplu, cu câmpuri compatibile cu `FieldMetadataType`, precum `CURRENCY` sau `RELATION` pentru constructorul de fluxuri de lucru, sau cu câmpuri `description` pe care agentul AI le poate citi:
+* `toolTriggerSettings.inputSchema` și `workflowActionTriggerSettings.inputSchema` sunt ambele opționale. Când sunt omise, generatorul de manifest le deduce din codul sursă al handlerului (JSON Schema pentru instrumentul AI, `InputSchema` al Arxena pentru acțiunea de flux de lucru). Furnizează unul în mod explicit atunci când dorești o tipizare mai bogată — de exemplu, cu câmpuri compatibile cu `FieldMetadataType`, precum `CURRENCY` sau `RELATION` pentru constructorul de fluxuri de lucru, sau cu câmpuri `description` pe care agentul AI le poate citi:
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-Pentru a declara parametrii **o singură dată** și a deservi ambele suprafețe, definește o singură schemă JSON (`InputJsonSchema`) și convertește-o pentru acțiunea din fluxul de lucru cu `jsonSchemaToInputSchema` din `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` primește direct schema JSON, în timp ce `workflowActionTriggerSettings.inputSchema` necesită `InputSchema` al Twenty:
+Pentru a declara parametrii **o singură dată** și a deservi ambele suprafețe, definește o singură schemă JSON (`InputJsonSchema`) și convertește-o pentru acțiunea din fluxul de lucru cu `jsonSchemaToInputSchema` din `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` primește direct schema JSON, în timp ce `workflowActionTriggerSettings.inputSchema` necesită `InputSchema` al Arxena:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `label`        | Numele afișat pentru acțiune în selectorul de pași al constructorului de fluxuri de lucru. Implicit, este `name` al funcției.                                                                     |
 | `icon`         | Pictograma afișată lângă acțiune (un nume `tabler-icons`, de ex. `IconBuilding`).                                                                                                                 |
-| `inputSchema`  | `InputSchema` avansat al Twenty — ceea ce constructorul afișează ca câmpuri configurabile (cu selectoare de variabile). Opțional; dedus din handler atunci când este omis.                        |
+| `inputSchema`  | `InputSchema` avansat al Arxena — ceea ce constructorul afișează ca câmpuri configurabile (cu selectoare de variabile). Opțional; dedus din handler atunci când este omis.                        |
 | `outputSchema` | Declară structura returnată de handler, astfel încât **pașii următori să poată mapa la câmpurile de ieșire ale acesteia**. Opțional; fără acesta, ieșirea este expusă ca o singură valoare opacă. |
 
 Reunind totul — o funcție expusă ca o acțiune de flux de lucru, cu o ieșire declarată astfel încât pașii următori să poată face referire la `taskId`:
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## Clienți API tipizați (twenty-client-sdk)
 
-Pachetul `twenty-client-sdk` oferă doi clienți GraphQL tipați pentru a interacționa cu API-ul Twenty din funcțiile de logică și componentele Front.
+Pachetul `twenty-client-sdk` oferă doi clienți GraphQL tipați pentru a interacționa cu API-ul Arxena din funcțiile de logică și componentele Front.
 
 | Client              | Importați                    | Endpoint                                                            | Generat?                     |
 | ------------------- | ---------------------------- | ------------------------------------------------------------------- | ---------------------------- |
@@ -762,9 +762,9 @@ Puncte cheie:
 </AccordionGroup>
 
 <Note>
-  Când codul dvs. rulează pe Twenty (funcții de logică sau componente Front), platforma injectează acreditările ca variabile de mediu:
+  Când codul dvs. rulează pe Arxena (funcții de logică sau componente Front), platforma injectează acreditările ca variabile de mediu:
 
-  * `TWENTY_API_URL` — URL-ul de bază al API-ului Twenty
+  * `TWENTY_API_URL` — URL-ul de bază al API-ului Arxena
   * `TWENTY_APP_ACCESS_TOKEN` — Cheie cu durată scurtă, limitată la rolul implicit de funcție al aplicației
 
   Nu trebuie să le transmiteți clienților — aceștia citesc automat din `process.env`. Permisiunile cheii API sunt determinate de rolul declarat cu `defineApplicationRole()` (sau referențiat prin `defaultRoleUniversalIdentifier` în `application-config.ts`).

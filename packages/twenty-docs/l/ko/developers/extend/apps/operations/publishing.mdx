@@ -1,15 +1,15 @@
 ---
 title: 게시
 icon: upload
-description: Twenty 앱을 마켓플레이스에 배포하거나 내부에 배포하세요.
+description: Arxena 앱을 마켓플레이스에 배포하거나 내부에 배포하세요.
 ---
 
 ## 개요
 
 앱을 [로컬에서 빌드하고 테스트](/l/ko/developers/extend/apps/getting-started/concepts)하면, 배포 경로는 두 가지입니다:
 
-* **타르볼 배포** — 내부 또는 비공개 사용을 위해 특정 Twenty 서버에 앱을 직접 업로드합니다.
-* **npm에 게시** — 모든 워크스페이스가 검색하고 설치할 수 있도록 Twenty 마켓플레이스에 앱을 등재합니다.
+* **타르볼 배포** — 내부 또는 비공개 사용을 위해 특정 Arxena 서버에 앱을 직접 업로드합니다.
+* **npm에 게시** — 모든 워크스페이스가 검색하고 설치할 수 있도록 Arxena 마켓플레이스에 앱을 등재합니다.
 
 두 경로는 동일한 **build** 단계에서 시작합니다.
 
@@ -25,7 +25,7 @@ yarn twenty dev:build
 
 ## 서버에 배포(타르볼)
 
-공개하고 싶지 않은 앱 — 독점 도구, 엔터프라이즈 전용 통합 또는 실험적 빌드 — 의 경우, 타르볼을 Twenty 서버에 직접 배포할 수 있습니다.
+공개하고 싶지 않은 앱 — 독점 도구, 엔터프라이즈 전용 통합 또는 실험적 빌드 — 의 경우, 타르볼을 Arxena 서버에 직접 배포할 수 있습니다.
 
 ### 사전 준비
 
@@ -79,7 +79,7 @@ yarn twenty app:publish --private
 
 ### 서버 버전 호환성
 
-앱이 특정 Twenty 서버 버전에서 도입된 기능(예: v2.3.0에 추가된 OAuth 공급자)을 사용한다면, `package.json`의 `engines.twenty` 필드를 사용하여 앱에 필요한 최소 서버 버전을 선언해야 합니다:
+앱이 특정 Arxena 서버 버전에서 도입된 기능(예: v2.3.0에 추가된 OAuth 공급자)을 사용한다면, `package.json`의 `engines.twenty` 필드를 사용하여 앱에 필요한 최소 서버 버전을 선언해야 합니다:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ yarn twenty app:publish --private
 **하는 일:**
 
 1. 앱의 소스 코드를 체크아웃합니다.
-2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` 컴포지트 액션을 사용해 격리된 Twenty 테스트 인스턴스를 생성합니다(CI에서 `yarn twenty docker:start --test`와 동등합니다).
+2. `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` 컴포지트 액션을 사용해 격리된 Arxena 테스트 인스턴스를 생성합니다(CI에서 `yarn twenty docker:start --test`와 동등합니다).
 3. Corepack을 활성화하고, `.nvmrc`에 따라 Node.js를 설정하며, `yarn install --immutable`로 의존성을 설치합니다.
 4. 생성된 인스턴스에서 `TWENTY_API_URL`과 `TWENTY_API_KEY`를 전달하여 실제 서버와 통신할 수 있도록 `yarn test`를 실행합니다.
 
 **구성 옵션:**
 
-* `TWENTY_VERSION`(환경 변수, 기본값 `latest`) — `ci.yml`에서 이 값을 수정하여 CI에서 사용하는 Twenty 서버 버전을 고정합니다.
+* `TWENTY_VERSION`(환경 변수, 기본값 `latest`) — `ci.yml`에서 이 값을 수정하여 CI에서 사용하는 Arxena 서버 버전을 고정합니다.
 * 동시 실행은 `github.ref`로 그룹화되며, 새 푸시가 발생하면 진행 중인 실행을 취소합니다.
 
 시크릿이 필요하지 않습니다 — 테스트 인스턴스는 일시적이며 작업이 진행되는 동안에만 존재합니다.
 
 ### CD — `cd.yml`
 
-매번 `main`으로 푸시될 때 구성된 Twenty 서버에 앱을 배포하며, `deploy` 라벨이 적용된 경우 풀 리퀘스트에서도 선택적으로 배포합니다.
+매번 `main`으로 푸시될 때 구성된 Arxena 서버에 앱을 배포하며, `deploy` 라벨이 적용된 경우 풀 리퀘스트에서도 선택적으로 배포합니다.
 
 **하는 일:**
 
@@ -146,7 +146,7 @@ yarn twenty app:publish --private
 
 | 설정                      | 위치                                                        | 목적                                               |
 | ----------------------- | --------------------------------------------------------- | ------------------------------------------------ |
-| `TWENTY_DEPLOY_URL`     | `cd.yml`의 `env`(기본값 `http://localhost:3000`)              | 배포 대상 Twenty 서버입니다. 처음 사용하기 전에 실제 서버 URL로 변경하세요. |
+| `TWENTY_DEPLOY_URL`     | `cd.yml`의 `env`(기본값 `http://localhost:3000`)              | 배포 대상 Arxena 서버입니다. 처음 사용하기 전에 실제 서버 URL로 변경하세요. |
 | `TWENTY_DEPLOY_API_KEY` | GitHub 저장소 **Settings → Secrets and variables → Actions** | 대상 서버에서 배포 권한이 있는 API 키입니다.                      |
 
 <Note>
@@ -168,7 +168,7 @@ yarn twenty app:publish --private
 
 **한 번만 설정:**
 
-npmjs.com에서 패키지를 연 다음 **Settings → Trusted Publisher**로 이동하여 이 저장소를 `publish.yml` 워크플로에 등록하세요([npm trusted publishing 문서](https://docs.npmjs.com/trusted-publishers)를 참고하세요). provenance와 함께 게시하면 어떤 GitHub 저장소가 패키지를 빌드했는지 증명되며, 이는 Twenty 마켓플레이스에서 앱 소유권을 주장하는 방법이기도 합니다.
+npmjs.com에서 패키지를 연 다음 **Settings → Trusted Publisher**로 이동하여 이 저장소를 `publish.yml` 워크플로에 등록하세요([npm trusted publishing 문서](https://docs.npmjs.com/trusted-publishers)를 참고하세요). provenance와 함께 게시하면 어떤 GitHub 저장소가 패키지를 빌드했는지 증명되며, 이는 Arxena 마켓플레이스에서 앱 소유권을 주장하는 방법이기도 합니다.
 
 <Note>
 npm은 **공개(public)** 소스 저장소의 provenance만 허용합니다. 비공개 저장소에서 publish를 수행하면, npm은 OIDC provenance 번들을 `E422 ...` 오류와 함께 거부합니다. 지원되지 않는 GitHub Actions 소스 저장소 가시성: "private"`오류입니다. 비공개 저장소에서 publish하려면, publish 단계의`env`에서 `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'`를 설정하여 provenance를 사용하지 않도록(opt out) 해야 합니다(스캐폴딩된 `publish.yml\`에 주석으로 된 힌트가 포함되어 있습니다):
@@ -187,7 +187,7 @@ npm은 **공개(public)** 소스 저장소의 provenance만 허용합니다. 비
 
 ## npm에 게시
 
-npm에 게시하면 Twenty 마켓플레이스에서 앱을 찾을 수 있게 됩니다. 모든 Twenty 워크스페이스는 UI에서 바로 마켓플레이스 앱을 탐색, 설치 및 업그레이드할 수 있습니다.
+npm에 게시하면 Arxena 마켓플레이스에서 앱을 찾을 수 있게 됩니다. 모든 Arxena 워크스페이스는 UI에서 바로 마켓플레이스 앱을 탐색, 설치 및 업그레이드할 수 있습니다.
 
 ### 요구 사항
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### 마켓플레이스 검색 방식
 
-Twenty 서버는 npm 레지스트리에서 마켓플레이스 카탈로그를 **매시간** 동기화합니다.
+Arxena 서버는 npm 레지스트리에서 마켓플레이스 카탈로그를 **매시간** 동기화합니다.
 
 기다리지 않고 즉시 동기화를 트리거할 수 있습니다:
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 마켓플레이스에 표시되는 메타데이터는 `defineApplication()` 구성에서 가져옵니다. 위의 [Marketplace metadata](#marketplace-metadata)를 참고하세요.
 
 <Note>
-앱에서 `defineApplication()`에 `aboutDescription`을 정의하지 않으면, 마켓플레이스는 소개 페이지 콘텐츠로 npm에 게시된 패키지의 `README.md`를 자동으로 사용합니다. 즉, npm과 Twenty 마켓플레이스 모두에서 하나의 README만 관리하면 됩니다. 마켓플레이스에서 다른 설명을 사용하려면 `aboutDescription`을 명시적으로 설정하세요.
+앱에서 `defineApplication()`에 `aboutDescription`을 정의하지 않으면, 마켓플레이스는 소개 페이지 콘텐츠로 npm에 게시된 패키지의 `README.md`를 자동으로 사용합니다. 즉, npm과 Arxena 마켓플레이스 모두에서 하나의 README만 관리하면 됩니다. 마켓플레이스에서 다른 설명을 사용하려면 `aboutDescription`을 명시적으로 설정하세요.
 </Note>
 
 ### CI 게시
@@ -270,14 +270,14 @@ yarn twenty dev:catalog-sync
 다른 CI 시스템(GitLab CI, CircleCI 등)에서는 `yarn install`을 실행한 다음 `yarn twenty app:publish`를 실행하세요. 환경에서 OIDC 토큰을 생성할 수 있을 때는 provenance가 생성되고, 그렇지 않은 경우에는 자동으로 건너뜁니다.
 
 <Note>
-**npm provenance**는 npm 목록에 신뢰 배지를 추가하여, 사용자가 공개 CI 파이프라인의 특정 커밋에서 패키지가 빌드되었는지 검증할 수 있게 해줍니다. 또한 Twenty 마켓플레이스에서 앱 소유권을 주장할 수 있게 해 주는 요소이기도 합니다. 자세한 내용은 [npm provenance 문서](https://docs.npmjs.com/generating-provenance-statements)를 참고하세요.
+**npm provenance**는 npm 목록에 신뢰 배지를 추가하여, 사용자가 공개 CI 파이프라인의 특정 커밋에서 패키지가 빌드되었는지 검증할 수 있게 해줍니다. 또한 Arxena 마켓플레이스에서 앱 소유권을 주장할 수 있게 해 주는 요소이기도 합니다. 자세한 내용은 [npm provenance 문서](https://docs.npmjs.com/generating-provenance-statements)를 참고하세요.
 </Note>
 
 ## 앱 설치
 
 앱이 게시(npm)되었거나 배포(타르볼)되면, 워크스페이스는 UI를 통해 이를 설치할 수 있습니다.
 
-Twenty UI의 **설정 > 애플리케이션** 페이지로 이동하면 마켓플레이스 앱과 타르볼로 배포된 앱을 모두 탐색하고 설치할 수 있습니다.
+Arxena UI의 **설정 > 애플리케이션** 페이지로 이동하면 마켓플레이스 앱과 타르볼로 배포된 앱을 모두 탐색하고 설치할 수 있습니다.
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

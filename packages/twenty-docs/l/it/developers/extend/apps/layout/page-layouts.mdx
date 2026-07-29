@@ -4,7 +4,7 @@ description: Personalizza le pagine di dettaglio dei record — schede, widget e
 icon: table-columns
 ---
 
-Un **layout di pagina** controlla come è organizzata la pagina di dettaglio di un record: quali schede compaiono e quali widget contengono. Usa `definePageLayout()` per dichiarare un layout per un oggetto di tua proprietà, oppure `definePageLayoutTab()` per aggiungere una singola scheda a un layout già esistente (tuo o standard di Twenty).
+Un **layout di pagina** controlla come è organizzata la pagina di dettaglio di un record: quali schede compaiono e quali widget contengono. Usa `definePageLayout()` per dichiarare un layout per un oggetto di tua proprietà, oppure `definePageLayoutTab()` per aggiungere una singola scheda a un layout già esistente (tuo o standard di Arxena).
 
 | Caso d'uso                                                                         | Entità                |
 | ---------------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Punti chiave
 
-* `pageLayoutUniversalIdentifier` è **obbligatorio** e deve puntare a un layout di pagina che esiste già al momento dell’installazione — oppure un layout standard di Twenty o uno definito dalla tua app. I riferimenti tra app a layout di proprietà di un’altra app installata non sono attualmente supportati. Quando il layout di pagina padre manca, l’installazione non va a buon fine e restituisce un chiaro errore di validazione.
+* `pageLayoutUniversalIdentifier` è **obbligatorio** e deve puntare a un layout di pagina che esiste già al momento dell’installazione — oppure un layout standard di Arxena o uno definito dalla tua app. I riferimenti tra app a layout di proprietà di un’altra app installata non sono attualmente supportati. Quando il layout di pagina padre manca, l’installazione non va a buon fine e restituisce un chiaro errore di validazione.
 
-* Per i layout standard di Twenty, importa gli identificatori da `twenty-sdk/define`:
+* Per i layout standard di Arxena, importa gli identificatori da `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

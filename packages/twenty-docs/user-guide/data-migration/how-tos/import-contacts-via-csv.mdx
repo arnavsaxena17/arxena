@@ -1,11 +1,11 @@
 ---
 title: Import Contacts via CSV
-description: Complete step-by-step guide to importing people/contacts into Twenty.
+description: Complete step-by-step guide to importing people/contacts into Arxena.
 ---
 
 ## Overview
 
-This guide walks you through importing your contacts (People) into Twenty. **Import Companies first** if you want to link People to Companies.
+This guide walks you through importing your contacts (People) into Arxena. **Import Companies first** if you want to link People to Companies.
 
 ## Before You Start
 
@@ -49,10 +49,10 @@ If you want to link People to Companies, import Companies first. The Company mus
 ### Email Format
 
 - Must be valid email format: `name@domain.com`
-- **Must be unique** — no duplicates in your file or in Twenty
+- **Must be unique** — no duplicates in your file or in Arxena
 - For additional emails, use the **Emails / Additional Emails** column:
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Phone Format
@@ -75,7 +75,7 @@ Add a column with the Company's unique identifier:
 | `companyId` | UUID | `c776ee49-f608-4a77-8cc8-6fe96ae1e43f` |
 
 <Note>
-**Use Domain URL format** (`https://acme.com`), not the label. This matches how Companies are stored in Twenty.
+**Use Domain URL format** (`https://acme.com`), not the label. This matches how Companies are stored in Arxena.
 </Note>
 
 ### Sample CSV Structure
@@ -87,7 +87,7 @@ Jane,Doe,jane@widgets.co,CTO,https://widgets.co,2125551234,US
 ```
 
 <Note>
-**Pro tip:** Click **Download sample file** during import or export a few existing People to see the exact column names Twenty expects.
+**Pro tip:** Click **Download sample file** during import or export a few existing People to see the exact column names Arxena expects.
 </Note>
 
 ## Step 2: Access the Import Feature
@@ -107,11 +107,11 @@ Jane,Doe,jane@widgets.co,CTO,https://widgets.co,2125551234,US
 
 1. Click **Select file**
 2. Choose your CSV, XLSX, or XLS file
-3. Wait for Twenty to analyze your file
+3. Wait for Arxena to analyze your file
 
 ## Step 4: Map Your Columns
 
-Twenty automatically tries to match your columns to fields. Review and adjust:
+Arxena automatically tries to match your columns to fields. Review and adjust:
 
 1. **Check automatic mappings** — verify they're correct
 2. **Fix incorrect mappings** — click the dropdown to select the right field
@@ -133,7 +133,7 @@ Twenty automatically tries to match your columns to fields. Review and adjust:
 When mapping the company column:
 1. Find your company reference column (e.g., `companyDomain`)
 2. Map it to the **Company** relation field
-3. Twenty will link each Person to the matching Company
+3. Arxena will link each Person to the matching Company
 
 <Warning>
 **Map only ONE unique identifier for relations.**
@@ -145,8 +145,8 @@ Don't map both `companyId` AND `companyDomain`. Choose one—preferably domain s
 
 If you have Select or Multi-Select fields (like Lead Source):
 
-1. Twenty shows your values alongside existing options
-2. Match each value in your file to a Twenty option
+1. Arxena shows your values alongside existing options
+2. Match each value in your file to an Arxena option
 3. Or create new options if needed
 
 <Note>
@@ -155,7 +155,7 @@ Select options use **API names**, not display labels. Check **Settings → Data 
 
 ## Step 6: Review and Fix Errors
 
-Before completing the import, Twenty validates your data:
+Before completing the import, Arxena validates your data:
 
 1. Click **Next Steps**
 2. Rows with errors are highlighted in **yellow**
@@ -166,7 +166,7 @@ Before completing the import, Twenty validates your data:
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| **Duplicate email** | Email already exists in Twenty or file | Remove duplicate or update existing record |
+| **Duplicate email** | Email already exists in Arxena or file | Remove duplicate or update existing record |
 | **Invalid email format** | Email format incorrect | Fix to `name@domain.com` |
 | **Relation not found** | Company doesn't exist | Import Companies first or fix the reference |
 | **Missing required field** | Required field is empty | Fill in the value or remove the row |
@@ -180,7 +180,7 @@ Before completing the import, Twenty validates your data:
 
 ## After Importing Contacts
 
-Your contacts are now in Twenty! Next steps:
+Your contacts are now in Arxena! Next steps:
 
 1. **Verify Company links** — open a few People records to confirm they're linked to the right Company
 2. **Import Opportunities** — if needed, link them to People and Companies
@@ -191,7 +191,7 @@ Your contacts are now in Twenty! Next steps:
 To update contacts instead of creating new ones:
 
 1. Include the `email` or `id` column in your file
-2. Twenty matches records by this unique identifier
+2. Arxena matches records by this unique identifier
 3. Existing contacts are updated; new ones are created
 
 See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-existing-records-via-import) for details.
@@ -200,7 +200,7 @@ See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-e
 
 <AccordionGroup>
   <Accordion title="Why can't two People have the same email?">
-    Email is a unique identifier in Twenty. This prevents duplicate contacts and ensures email sync correctly links emails to the right person.
+    Email is a unique identifier in Arxena. This prevents duplicate contacts and ensures email sync correctly links emails to the right person.
   </Accordion>
 
   <Accordion title="What if I have people without an email?">
@@ -216,7 +216,7 @@ See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-e
   </Accordion>
 
   <Accordion title="Can I import the ID from my previous CRM?">
-    Yes! Create a custom field marked as "unique" in your data model to store the external ID. Note: the field name `id` is reserved for Twenty's internal ID.
+    Yes! Create a custom field marked as "unique" in your data model to store the external ID. Note: the field name `id` is reserved for Arxena's internal ID.
   </Accordion>
 
   <Accordion title="How do I fix 'relation not found' errors?">

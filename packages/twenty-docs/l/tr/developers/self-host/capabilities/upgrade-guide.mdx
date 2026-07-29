@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Docker Compose kullanıyorsanız, aşağıdaki adımları izleyin:
 
-1. Twenty'yi durdurun: `docker compose down`
+1. Arxena'yi durdurun: `docker compose down`
 2. `docker-compose.yml` dosyanızın yanındaki `.env` dosyasında `TAG` değerini değiştirin
-3. Twenty'yi başlatın: `docker compose up -d`
+3. Arxena'yi başlatın: `docker compose up -d`
 
 Sunucu, başlatma sırasında gerekli tüm yükseltme migrasyonlarını otomatik olarak çalıştırır. Manuel bir komut gerekmez.
 
 ## Sürümler arası yükseltmeler (v1.22+)
 
-Twenty, **v1.22** sürümünden itibaren sürümler arası yükseltmeleri destekler. Desteklenen herhangi bir sürümden, ara sürümlerin her birine tek tek geçmeden doğrudan en son sürüme atlayabilirsiniz.
+Arxena, **v1.22** sürümünden itibaren sürümler arası yükseltmeleri destekler. Desteklenen herhangi bir sürümden, ara sürümlerin her birine tek tek geçmeden doğrudan en son sürüme atlayabilirsiniz.
 
 Örneğin, v1.22'den doğrudan v2.0'a yükseltme tamamen desteklenir.
 
 ## v2.5+ sürümüne yükseltme — bekleme hâlindeki şifreleme zarfı
 
-**v2.5** ile birlikte, Twenty beklemede olan gizli verileri (OAuth belirteçleri, uygulama değişkenleri, imzalama için kullanılan özel anahtarlar, hassas yapılandırma değerleri, TOTP sırları) sürümlendirilmiş ve `ENCRYPTION_KEY` (veya `ENCRYPTION_KEY` ayarlı değilse `APP_SECRET`) ile şifrelenmiş bir `enc:v2:` zarfının içinde saklar.
+**v2.5** ile birlikte, Arxena beklemede olan gizli verileri (OAuth belirteçleri, uygulama değişkenleri, imzalama için kullanılan özel anahtarlar, hassas yapılandırma değerleri, TOTP sırları) sürümlendirilmiş ve `ENCRYPTION_KEY` (veya `ENCRYPTION_KEY` ayarlı değilse `APP_SECRET`) ile şifrelenmiş bir `enc:v2:` zarfının içinde saklar.
 
 v2.5 sürümündeki ilk açılış, mevcut satırları yeni zarfa **geri dolduran** yavaş yükseltme komutlarını çalıştırır. Bunlar idempotandır — sunucuyu durdurup yeniden başlattığınızda kaldığı yerden devam eder — ancak büyük veritabanlarında biraz zaman alabilirler. İlerlemeyi `upgrade:status` ile izleyebilirsiniz.
 

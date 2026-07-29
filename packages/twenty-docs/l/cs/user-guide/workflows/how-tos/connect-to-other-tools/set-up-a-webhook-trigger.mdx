@@ -11,7 +11,7 @@ Spouštěče webhooků umožňují externím službám spustit vaše pracovní p
 | -------------------------- | -------------------------------------------- |
 | **Webové formuláře**       | Odeslání kontaktního formuláře vytváří leady |
 | **Aplikace třetích stran** | Platba ve Stripe → vytvořit záznam zákazníka |
-| **Vlastní integrace**      | Vaše aplikace → automatizace v Twenty        |
+| **Vlastní integrace**      | Vaše aplikace → automatizace v Arxena        |
 | **Nástroje bez kódu**      | Připojení Zapier, Make, n8n                  |
 
 ## Nastavení krok za krokem
@@ -28,7 +28,7 @@ Spouštěče webhooků umožňují externím službám spustit vaše pracovní p
 2. Vyberte **Webhook**
 3. Obdržíte jedinečnou adresu URL webhooku, například:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Zkopírujte tuto adresu URL — budete ji potřebovat pro svou externí službu
 
@@ -75,7 +75,7 @@ Před aktivací otestujte svůj webhook:
 **Pomocí cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

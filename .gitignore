@@ -38,6 +38,10 @@ storybook-static
 .nyc_output
 test-results/
 dump.rdb
+
+# Mintlify static export artifacts (zip + unzipped site)
+packages/twenty-docs/.mintlify/
+packages/twenty-docs/.deploy/
 .tinyb
 
 .notes

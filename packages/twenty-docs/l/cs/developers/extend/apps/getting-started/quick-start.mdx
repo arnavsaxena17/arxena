@@ -1,21 +1,21 @@
 ---
 title: Rychlý start
 icon: rocket
-description: Vytvořte svou první aplikaci Twenty během několika minut.
+description: Vytvořte svou první aplikaci Arxena během několika minut.
 ---
 
 ## Předpoklady
 
 * **Node.js 24.5+** — [Stáhnout](https://nodejs.org/)
 * **Yarn 4** — je součástí Node.js prostřednictvím Corepacku. Povolte jej: `corepack enable`
-* **Docker** — [Stáhnout](https://www.docker.com/products/docker-desktop/). Nutné pro spuštění lokálního serveru Twenty. Přeskočte, pokud už máte Twenty spuštěné jinde.
+* **Docker** — [Stáhnout](https://www.docker.com/products/docker-desktop/). Nutné pro spuštění lokálního serveru Arxena. Přeskočte, pokud už máte Arxena spuštěné jinde.
 
-Vytváření aplikace Twenty má tři fáze. Generátor kostry je spojuje do jediného příkazu pro ideální scénář, ale každá fáze je samostatný koncept — když se něco nepovede, znalost aktuální fáze napoví, co opravit.
+Vytváření aplikace Arxena má tři fáze. Generátor kostry je spojuje do jediného příkazu pro ideální scénář, ale každá fáze je samostatný koncept — když se něco nepovede, znalost aktuální fáze napoví, co opravit.
 
 | Fáze                   | Co děláte                                                | Nástroj                             | Výsledek                                     |
 | ---------------------- | -------------------------------------------------------- | ----------------------------------- | -------------------------------------------- |
 | **1. Vytvořit kostru** | Vygenerovat zdrojový kód aplikace                        | `npx create-twenty-app`             | Projekt v TypeScriptu na disku               |
-| **2. Spustit server**  | Spustit server Twenty, do kterého se bude synchronizovat | Docker + `yarn twenty docker:start` | Běžící instance Twenty                       |
+| **2. Spustit server**  | Spustit server Arxena, do kterého se bude synchronizovat | Docker + `yarn twenty docker:start` | Běžící instance Arxena                       |
 | **3. Synchronizovat**  | Živě synchronizovat kód na server                        | `yarn twenty dev`                   | Vaše změny se objeví v uživatelském rozhraní |
 
 ---
@@ -34,20 +34,20 @@ Generátor kostry je neinteraktivní: název adresáře se stane názvem aplikac
 
 ---
 
-## Fáze 2 — Spusťte lokální server Twenty
+## Fáze 2 — Spusťte lokální server Arxena
 
-Vaše aplikace potřebuje server Twenty, do kterého se bude synchronizovat. Server je plnohodnotná instance Twenty — UI, GraphQL API, PostgreSQL — běžící lokálně v Dockeru. Váš lokální kód nahrává své definice na tento server, díky čemuž se objeví v UI.
+Vaše aplikace potřebuje server Arxena, do kterého se bude synchronizovat. Server je plnohodnotná instance Arxena — UI, GraphQL API, PostgreSQL — běžící lokálně v Dockeru. Váš lokální kód nahrává své definice na tento server, díky čemuž se objeví v UI.
 
 Nástroj pro vytváření projektů to spustí za vás: při spuštěném Dockeru stáhne image `twentycrm/twenty-app-dev`, spustí ji na portu `2020` a autentizuje CLI vůči předpřipravenému demo workspace (`tim@apple.dev`) — není vyžadováno žádné přihlášení.
 
-Chcete-li se místo toho připojit k existujícímu serveru Twenty, předejte `--url \<your-server-url>`. Vzdálené servery se ověřují pomocí OAuth: otevře se prohlížeč, abyste se mohli přihlásit a kliknout na **Authorize**, čímž udělíte nástroji CLI přístup k vašemu pracovnímu prostoru. (Můžete se také rozhodnout pro OAuth lokálně pomocí `--authentication-method oauth` — přihlaste se pomocí `tim@apple.dev` / `tim@apple.dev`.)
+Chcete-li se místo toho připojit k existujícímu serveru Arxena, předejte `--url \<your-server-url>`. Vzdálené servery se ověřují pomocí OAuth: otevře se prohlížeč, abyste se mohli přihlásit a kliknout na **Authorize**, čímž udělíte nástroji CLI přístup k vašemu pracovnímu prostoru. (Můžete se také rozhodnout pro OAuth lokálně pomocí `--authentication-method oauth` — přihlaste se pomocí `tim@apple.dev` / `tim@apple.dev`.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Přihlašovací obrazovka Twenty" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Přihlašovací obrazovka Arxena" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Autorizační obrazovka Twenty CLI" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Autorizační obrazovka Arxena CLI" />
 </div>
 
 Váš terminál potvrdí, že je vše nastaveno.
@@ -56,7 +56,7 @@ Váš terminál potvrdí, že je vše nastaveno.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="Aplikace byla úspěšně vygenerována" />
 </div>
 
-**Po této fázi:** máte spuštěný server Twenty na [http://localhost:2020](http://localhost:2020) a vaše CLI má oprávnění se k němu synchronizovat.
+**Po této fázi:** máte spuštěný server Arxena na [http://localhost:2020](http://localhost:2020) a vaše CLI má oprávnění se k němu synchronizovat.
 
 <Note>
 Pokud Docker není nainstalovaný nebo neběží, generátor kostry vám sdělí správný příkaz pro spuštění ve vašem operačním systému. Jakmile Docker poběží, můžete pokračovat pomocí `yarn twenty docker:start` — není potřeba znovu vytvářet kostru.
@@ -138,7 +138,7 @@ Aplikace se skládají z **entit** — každá je definována jako soubor TypeSc
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **Objekty a pole**         | Vlastní datové modely (pohlednice, faktura apod.) s typovanými poli                                                 |
 | **Logické funkce**         | Serverový TypeScript spouštěný HTTP trasami, plánovačem cron nebo událostmi databáze                                |
-| **Frontendové komponenty** | Komponenty Reactu, které se vykreslují v uživatelském rozhraní Twenty (postranní panel, widgety, příkazová nabídka) |
+| **Frontendové komponenty** | Komponenty Reactu, které se vykreslují v uživatelském rozhraní Arxena (postranní panel, widgety, příkazová nabídka) |
 | **Dovednosti a agenti**    | Schopnosti AI — opakovaně použitelné pokyny a autonomní asistenti                                                   |
 | **Pohledy a navigace**     | Předkonfigurované seznamové pohledy a položky postranní nabídky                                                     |
 | **Rozvržení stránek**      | Vlastní stránky detailu záznamu s kartami a widgety                                                                 |

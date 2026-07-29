@@ -19,7 +19,7 @@ The `yarn twenty` CLI is your interface to everything app-related. Full command 
 | `dev:translations-extract` | Extract translatable strings into `locales/` catalogs | [Translations](/developers/extend/apps/translations/overview) |
 | `dev:catalog-sync` | Trigger a marketplace catalog sync | [Publishing](/developers/extend/apps/operations/publishing#how-marketplace-discovery-works) |
 | `app:publish` / `app:install` / `app:uninstall` | Release lifecycle | [Publishing](/developers/extend/apps/operations/publishing) and this page |
-| `docker:*` | Manage the local Twenty server container | [Local Server](/developers/extend/apps/getting-started/local-server) |
+| `docker:*` | Manage the local Arxena server container | [Local Server](/developers/extend/apps/getting-started/local-server) |
 | `remote:*` | Manage server connections | this page |
 
 Every command accepts `-r, --remote <name>` to target a specific remote instead of the default one.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-This is different from `yarn twenty docker:logs`, which shows the Docker container logs. `yarn twenty dev:function:logs` shows your app's function execution logs from the Twenty server.
+This is different from `yarn twenty docker:logs`, which shows the Docker container logs. `yarn twenty dev:function:logs` shows your app's function execution logs from the Arxena server.
 </Note>
 
 ## Generating the typed client (`yarn twenty dev:generate-client`)
 
-Regenerate the typed API client (`twenty-client-sdk`) from the active remote's schema, without building or syncing an app. Use it to get a typed client in any project — like a backend service living in a separate repository — that talks to your Twenty instance:
+Regenerate the typed API client (`twenty-client-sdk`) from the active remote's schema, without building or syncing an app. Use it to get a typed client in any project — like a backend service living in a separate repository — that talks to your Arxena instance:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## Managing remotes
 
-A **remote** is a Twenty server that your app connects to. During setup, the scaffolder creates one for you automatically. You can add more remotes or switch between them at any time.
+A **remote** is an Arxena server that your app connects to. During setup, the scaffolder creates one for you automatically. You can add more remotes or switch between them at any time.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

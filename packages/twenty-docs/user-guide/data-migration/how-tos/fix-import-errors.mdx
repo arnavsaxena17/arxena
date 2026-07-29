@@ -9,9 +9,9 @@ Import not working? This guide helps you identify and fix common import errors s
 
 ## How Import Validation Works
 
-After uploading your file and mapping columns, Twenty validates your data:
+After uploading your file and mapping columns, Arxena validates your data:
 
-1. **Validation runs** — Twenty checks each row for errors
+1. **Validation runs** — Arxena checks each row for errors
 2. **Errors are highlighted** — problematic rows appear in **yellow**
 3. **You can fix in-place** — edit cells directly in the import UI
 4. **Or remove rows** — skip problematic records entirely
@@ -26,7 +26,7 @@ Click on a highlighted row to see the specific error message. Common error types
 
 | Error Message | What It Means |
 |---------------|---------------|
-| Duplicate values highlighted in yellow | Value already exists in Twenty or appears twice in your file |
+| Duplicate values highlighted in yellow | Value already exists in Arxena or appears twice in your file |
 | `{field} is not a valid {type}` (hover on yellow cell) | Data doesn't match expected format |
 | Required field highlighted | A required field is empty |
 | `Can't connect to {object}. No unique record found...` (import fails) | Referenced record doesn't exist |
@@ -45,7 +45,7 @@ Rows with duplicate values are **highlighted in yellow** in the import UI before
 
 ### What It Means
 A unique field (email, domain) either:
-- Already exists in Twenty
+- Already exists in Arxena
 - Appears twice in your file
 
 ### How to Fix
@@ -59,10 +59,10 @@ A unique field (email, domain) either:
 1. Click the X next to the row
 2. The row will be skipped during import
 
-**Option 3: Let Twenty update the existing record**
+**Option 3: Let Arxena update the existing record**
 1. Ensure your file includes a unique identifier (`email`, `domain`, or `id`)
 2. Map the unique identifier field
-3. Twenty will update the existing record instead of creating a duplicate
+3. Arxena will update the existing record instead of creating a duplicate
 
 <Note>
 **You can update unique fields too.**
@@ -70,7 +70,7 @@ A unique field (email, domain) either:
 - If you keep the `id` but change the `email` → the email will be updated
 - If you keep the `email` but change the `id` → the id will be updated
 
-As long as one unique identifier matches, Twenty updates the record.
+As long as one unique identifier matches, Arxena updates the record.
 </Note>
 
 ### How to Prevent This Error
@@ -78,7 +78,7 @@ As long as one unique identifier matches, Twenty updates the record.
 Before importing:
 1. Sort your spreadsheet by the unique field
 2. Remove duplicate rows
-3. Check if records already exist in Twenty
+3. Check if records already exist in Arxena
 
 <Warning>
 **Soft-deleted records count toward uniqueness.**
@@ -230,12 +230,12 @@ This error appears **after the import starts** — the import fails with a messa
 Can't connect to company. No unique record found with condition: id = 7776ee49-f608-4a77-8cc8-6fe96ae1e43f
 ```
 
-This means there is no Company in Twenty with that specific identifier.
+This means there is no Company in Arxena with that specific identifier.
 
 <Note>Unlike other errors, this one is not caught during the data review step. The import will start and then fail when it encounters the missing relation.</Note>
 
 ### What It Means
-You're trying to link to a record that doesn't exist in Twenty.
+You're trying to link to a record that doesn't exist in Arxena.
 
 ### How to Fix
 
@@ -304,7 +304,7 @@ See: [How to Import Data via API](/user-guide/data-migration/how-tos/import-data
 ## Error: Field Not Recognized
 
 ### What It Means
-A column in your file can't be mapped because the field doesn't exist in Twenty.
+A column in your file can't be mapped because the field doesn't exist in Arxena.
 
 ### How to Fix
 
@@ -325,15 +325,15 @@ You're trying to assign a record to a user (Owner, Assignee) but the relation is
 
 ### Common Causes
 
-1. **User hasn't accepted their invitation** — the user doesn't exist in Twenty yet
-2. **Using user ID from old system** — Twenty can't match IDs from another system
-3. **Wrong email format** — the email doesn't match the user's Twenty account
+1. **User hasn't accepted their invitation** — the user doesn't exist in Arxena yet
+2. **Using user ID from old system** — Arxena can't match IDs from another system
+3. **Wrong email format** — the email doesn't match the user's Arxena account
 
 ### How to Fix
 
-1. Ensure all users have **accepted their invitation** to your Twenty workspace
+1. Ensure all users have **accepted their invitation** to your Arxena workspace
 2. Use the user's **email address** (not their name or old system ID)
-3. Use the same email they used to join Twenty
+3. Use the same email they used to join Arxena
 
 <Warning>
 **Users must accept invitations before importing.**
@@ -367,7 +367,7 @@ Avoid errors by checking these before importing:
 ### Relations
 <Check>Parent records imported before child records</Check>
 <Check>Relation columns reference existing records</Check>
-<Check>Domain format matches Twenty's format exactly</Check>
+<Check>Domain format matches Arxena's format exactly</Check>
 
 ### Data Model
 <Check>All custom fields exist in Settings → Data Model</Check>
@@ -379,7 +379,7 @@ Avoid errors by checking these before importing:
 
 If you've tried the above solutions:
 
-1. **Download the sample file** — see the exact format Twenty expects
+1. **Download the sample file** — see the exact format Arxena expects
 2. **Export existing records** — compare your file to working data
 3. **Test with a small batch** — try 5-10 rows first
 4. **Check the reference articles:**

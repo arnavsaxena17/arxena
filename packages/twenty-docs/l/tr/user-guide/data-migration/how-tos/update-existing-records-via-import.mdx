@@ -16,9 +16,9 @@ Birçok kaydı aynı anda güncellemeniz mi gerekiyor? Tek tek düzenlemek yerin
 
 ## Nasıl Çalışır
 
-Var olan bir kayıtla eşleşen bir **benzersiz tanımlayıcı** içeren bir dosyayı içe aktardığınızda, Twenty yinelenen bir kayıt oluşturmak yerine o kaydı günceller.
+Var olan bir kayıtla eşleşen bir **benzersiz tanımlayıcı** içeren bir dosyayı içe aktardığınızda, Arxena yinelenen bir kayıt oluşturmak yerine o kaydı günceller.
 
-| Eğer benzersiz tanımlayıcı... | Twenty şunu yapar...                                     |
+| Eğer benzersiz tanımlayıcı... | Arxena şunu yapar...                                     |
 | ----------------------------- | -------------------------------------------------------- |
 | Mevcut bir kayıtla eşleşir    | Mevcut kaydı **güncelle**                                |
 | Herhangi bir kayıtla eşleşmez | Yeni bir kayıt **oluştur**                               |
@@ -57,7 +57,7 @@ Dışa aktarılan dosyayı hesap tablosu uygulamanızda açın (Excel, Google Sh
 1. **Benzersiz tanımlayıcı sütununu koruyun** — `id`, `email` veya `domain` alanlarını silmeyin
 2. Değiştirmek istediğiniz sütunlardaki değerleri **güncelleyin**
 3. **Güncellemeniz gerekmeyen sütunları kaldırın** (isteğe bağlı, ancak daha temizdir)
-4. **Benzersiz tanımlayıcı değerlerini değiştirmeyin** — aksi halde Twenty yeni kayıtlar oluşturur
+4. **Benzersiz tanımlayıcı değerlerini değiştirmeyin** — aksi halde Arxena yeni kayıtlar oluşturur
 
 ### Örnek: İş Unvanlarını Güncelleme
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Benzersiz tanımlayıcı değerlerini değiştirmeyin.**
 
-`john@acme.com` adresini `john.smith@acme.com` olarak değiştirirseniz, Twenty mevcut kaydı güncellemek yerine yeni bir kayıt oluşturur.
+`john@acme.com` adresini `john.smith@acme.com` olarak değiştirirseniz, Arxena mevcut kaydı güncellemek yerine yeni bir kayıt oluşturur.
 </Warning>
 
 ## Adım 3: Güncellenen Dosyayı İçe Aktarın
@@ -95,7 +95,7 @@ id,email,firstName,lastName,jobTitle
 6. Hataları kontrol edin
 7. **Onayla**'ya tıklayın
 
-Twenty, kayıtları benzersiz tanımlayıcıya göre eşleştirir ve yeni değerlerle günceller.
+Arxena, kayıtları benzersiz tanımlayıcıya göre eşleştirir ve yeni değerlerle günceller.
 
 ## Doğru Benzersiz Tanımlayıcıyı Seçme
 
@@ -113,7 +113,7 @@ Benzersiz olarak işaretlenmiş özel bir alanınız varsa (başka bir sistemden
 
 1. Bu alanı dışa aktarma ve içe aktarma işlemlerinize dahil edin
 2. İçe aktarma sırasında onu eşleyin
-3. Twenty, o alana göre eşleştirme yapar
+3. Arxena, o alana göre eşleştirme yapar
 
 ## Adım 4: Güncellemeleri Doğrulayın
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Benzersiz tanımlayıcıyı değiştirmek** | `john@acme.com` `john.smith@acme.com` olarak değiştirildi             | Güncellemek yerine yeni kayıt oluşturur | Benzersiz tanımlayıcıları değiştirmeden bırakın       |
 | **Birden fazla benzersiz alan**         | Hem `email` HEM DE `id` alanlarını eşleme                             | Olası eşleştirme çakışmaları            | Yalnızca TEK bir benzersiz tanımlayıcıyı eşleyin      |
 | **Benzersiz tanımlayıcı yok**           | Dosyada yalnızca `firstName`, `lastName`, `jobTitle` var              | Tüm satırlar yeni kayıtlar oluşturur    | Her zaman `email`, `domain` veya `id` öğesini ekleyin |
-| **Büyük/küçük harf uyumsuzluğu**        | Dosyada `John@acme.com` var ancak Twenty'de `john@acme.com` bulunuyor | Yeni kayıt oluşturur                    | Tam değerleri almak için Twenty'den dışa aktarın      |
+| **Büyük/küçük harf uyumsuzluğu**        | Dosyada `John@acme.com` var ancak Arxena'de `john@acme.com` bulunuyor | Yeni kayıt oluşturur                    | Tam değerleri almak için Arxena'den dışa aktarın      |
 
 ## SSS
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Hangi kayıtların güncelleneceğini ve hangilerinin oluşturulacağını nasıl anlarım?">
-    İçe aktarmayı gözden geçirme adımında, Twenty benzersiz tanımlayıcı eşleşmelerine göre kaç kaydın güncelleneceğini ve kaçının oluşturulacağını gösterir.
+    İçe aktarmayı gözden geçirme adımında, Arxena benzersiz tanımlayıcı eşleşmelerine göre kaç kaydın güncelleneceğini ve kaçının oluşturulacağını gösterir.
   </Accordion>
 
   <Accordion title="Toplu bir güncellemeyi geri alabilir miyim?">

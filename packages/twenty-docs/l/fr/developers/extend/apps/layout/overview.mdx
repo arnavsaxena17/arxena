@@ -1,10 +1,10 @@
 ---
 title: Vue d'ensemble
-description: Placez votre application à l’intérieur de l’interface de Twenty — entrées de barre latérale, vues enregistrées, onglets de page d’enregistrement et composants React isolés.
+description: Placez votre application à l’intérieur de l’interface de Arxena — entrées de barre latérale, vues enregistrées, onglets de page d’enregistrement et composants React isolés.
 icon: table-columns
 ---
 
-La **couche de mise en page** d’une application Twenty est tout ce que l’utilisateur voit : où l’application apparaît dans la barre latérale, quelles vues de liste elle fournit, comment ses pages de détails d’enregistrement sont organisées et quels composants React personnalisés sont rendus à l’intérieur de ces pages.
+La **couche de mise en page** d’une application Arxena est tout ce que l’utilisateur voit : où l’application apparaît dans la barre latérale, quelles vues de liste elle fournit, comment ses pages de détails d’enregistrement sont organisées et quels composants React personnalisés sont rendus à l’intérieur de ces pages.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ La **couche de mise en page** d’une application Twenty est tout ce que l’uti
     `definePageLayout` et `definePageLayoutTab` — onglets et widgets sur la page de détails d’un enregistrement.
   </Card>
   <Card title="Composants frontaux" icon="window-maximize" href="/l/fr/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — composants React isolés rendus à l’intérieur de Twenty.
+    `defineFrontComponent` — composants React isolés rendus à l’intérieur de Arxena.
   </Card>
   <Card title="Éléments du menu de commande" icon="terminal" href="/l/fr/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — enregistre des composants frontaux comme entrées Cmd+K et actions rapides.
@@ -54,4 +54,4 @@ La **couche de mise en page** d’une application Twenty est tout ce que l’uti
 | **Paramètres de l’application**                              | Une section de configuration personnalisée dans l’onglet Paramètres de l’application, au lieu de l’interface utilisateur par défaut des variables | `defineSettingsFrontComponent`            |
 | **Menu de commande (Cmd+K)**                                 | Une action rapide épinglée ou une commande masquée                                                                                                | `defineCommandMenuItem`                   |
 
-Les composants frontaux s’exécutent à l’intérieur d’un Web Worker isolé en utilisant Remote DOM — ils sont rendus *nativement* dans la page (et non dans une iframe), mais ne peuvent pas accéder directement à la page hôte ou au DOM. La communication avec Twenty se fait via une API hôte de passage de messages.
+Les composants frontaux s’exécutent à l’intérieur d’un Web Worker isolé en utilisant Remote DOM — ils sont rendus *nativement* dans la page (et non dans une iframe), mais ne peuvent pas accéder directement à la page hôte ou au DOM. La communication avec Arxena se fait via une API hôte de passage de messages.

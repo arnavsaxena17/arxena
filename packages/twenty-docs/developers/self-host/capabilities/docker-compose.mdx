@@ -10,7 +10,7 @@ Docker containers are for production hosting or self-hosting. For contributing, 
 
 ## Overview
 
-This guide provides step-by-step instructions to install and configure the Twenty application using Docker Compose. The aim is to make the process straightforward and prevent common pitfalls that could break your setup.
+This guide provides step-by-step instructions to install and configure the Arxena application using Docker Compose. The aim is to make the process straightforward and prevent common pitfalls that could break your setup.
 
 **Important:** Only modify settings explicitly mentioned in this guide. Altering other configurations may lead to issues.
 
@@ -23,7 +23,7 @@ See [Setup Environment Variables](/developers/self-host/capabilities/setup) for 
 
 ## Option 1: One-line script
 
-Install the latest stable version of Twenty with a single command:
+Install the latest stable version of Arxena with a single command:
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/scripts/install.sh)
 ```
@@ -100,9 +100,9 @@ curl http://localhost:3000
 
 ## Configuration
 
-### Expose Twenty to External Access
+### Expose Arxena to External Access
 
-By default, Twenty runs on `localhost` at port `3000`. To access it via an external domain or IP address, you need to configure the `SERVER_URL` in your `.env` file.
+By default, Arxena runs on `localhost` at port `3000`. To access it via an external domain or IP address, you need to configure the `SERVER_URL` in your `.env` file.
 
 #### Understanding `SERVER_URL`
 
@@ -114,11 +114,11 @@ By default, Twenty runs on `localhost` at port `3000`. To access it via an exter
 
 ### SSL Requirements
 
-SSL (HTTPS) is required for certain browser features to work properly. While these features might work during local development (as browsers treat localhost differently), a proper SSL setup is needed when hosting Twenty on a regular domain.
+SSL (HTTPS) is required for certain browser features to work properly. While these features might work during local development (as browsers treat localhost differently), a proper SSL setup is needed when hosting Arxena on a regular domain.
 
 For example, the clipboard API might require a secure context - some features like copy buttons throughout the application might not work without HTTPS enabled.
 
-We strongly recommend setting up Twenty behind a reverse proxy with SSL termination for optimal security and functionality.
+We strongly recommend setting up Arxena behind a reverse proxy with SSL termination for optimal security and functionality.
 
 #### Configuring `SERVER_URL`
 
@@ -244,6 +244,6 @@ If you encounter any problem, check [Troubleshooting](/developers/self-host/capa
 ## Managed Hosting
 
 <Tip>
-  Prefer not to run and maintain Twenty yourself? [Find a certified Twenty hosting partner](https://twenty.com/partners/list?categories=HOSTING&ref=docs-docker-compose) to deploy, host, and manage your instance end-to-end. *(Or reach our team: [contact@twenty.com](mailto:contact@twenty.com).)*
+  Prefer not to run and maintain Arxena yourself? [Find a certified Arxena hosting partner](https://arxena.com/partners/list?categories=HOSTING&ref=docs-docker-compose) to deploy, host, and manage your instance end-to-end. *(Or reach our team: [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>
 

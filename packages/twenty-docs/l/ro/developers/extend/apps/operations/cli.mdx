@@ -19,7 +19,7 @@ Interfața CLI `yarn twenty` este punctul tău de acces pentru tot ce ține de a
 | `dev:translations-extract`                      | Extrage șirurile traducibile în cataloagele din `locales/`                                | [Traduceri](/l/ro/developers/extend/apps/translations/overview)                                                 |
 | `dev:catalog-sync`                              | Declanșează o sincronizare a catalogului marketplace-ului                                 | [Publicare](/l/ro/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)                 |
 | `app:publish` / `app:install` / `app:uninstall` | Ciclul de viață al lansărilor                                                             | [Publicare](/l/ro/developers/extend/apps/operations/publishing) și această pagină                               |
-| `docker:*`                                      | Administrează containerul serverului Twenty local                                         | [Server local](/l/ro/developers/extend/apps/getting-started/local-server)                                       |
+| `docker:*`                                      | Administrează containerul serverului Arxena local                                         | [Server local](/l/ro/developers/extend/apps/getting-started/local-server)                                       |
 | `remote:*`                                      | Administrează conexiunile la server                                                       | această pagină                                                                                             |
 
 Fiecare comandă acceptă `-r, --remote \<name>` pentru a viza un anumit server la distanță în locul celui implicit.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-Acest lucru este diferit de `yarn twenty docker:logs`, care afișează jurnalele containerului Docker. `yarn twenty dev:function:logs` afișează jurnalele de execuție ale funcțiilor aplicației de pe serverul Twenty.
+Acest lucru este diferit de `yarn twenty docker:logs`, care afișează jurnalele containerului Docker. `yarn twenty dev:function:logs` afișează jurnalele de execuție ale funcțiilor aplicației de pe serverul Arxena.
 </Note>
 
 ## Generarea clientului tipizat (`yarn twenty dev:generate-client`)
 
-Regenerați clientul tipizat al API-ului (`twenty-client-sdk`) din schema remote-ului activ, fără a construi sau sincroniza o aplicație. Folosiți-l pentru a obține un client tipizat în orice proiect — cum ar fi un serviciu backend aflat într-un repository separat — care comunică cu instanța dvs. Twenty:
+Regenerați clientul tipizat al API-ului (`twenty-client-sdk`) din schema remote-ului activ, fără a construi sau sincroniza o aplicație. Folosiți-l pentru a obține un client tipizat în orice proiect — cum ar fi un serviciu backend aflat într-un repository separat — care comunică cu instanța dvs. Arxena:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## Gestionarea remote-urilor
 
-Un „remote” este un server Twenty la care se conectează aplicația. În timpul configurării, Scaffolderul creează automat unul pentru dvs. Puteți adăuga mai multe remote-uri sau comuta între ele oricând.
+Un „remote” este un server Arxena la care se conectează aplicația. În timpul configurării, Scaffolderul creează automat unul pentru dvs. Puteți adăuga mai multe remote-uri sau comuta între ele oricând.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

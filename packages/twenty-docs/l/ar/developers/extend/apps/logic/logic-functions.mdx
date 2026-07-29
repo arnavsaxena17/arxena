@@ -4,7 +4,7 @@ description: عرّف دوال TypeScript على جانب الخادم مع HTTP
 icon: bolt
 ---
 
-دوال المنطق هي دوال TypeScript على جانب الخادم تعمل على منصة Twenty. يمكن تشغيلها بواسطة طلبات HTTP أو جداول cron أو أحداث قاعدة البيانات — كما يمكن إتاحتها كأدوات لوكلاء الذكاء الاصطناعي.
+دوال المنطق هي دوال TypeScript على جانب الخادم تعمل على منصة Arxena. يمكن تشغيلها بواسطة طلبات HTTP أو جداول cron أو أحداث قاعدة البيانات — كما يمكن إتاحتها كأدوات لوكلاء الذكاء الاصطناعي.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="عرّف الدوال المنطقية ومشغّلاتها">
@@ -425,13 +425,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 يمكن إتاحة دوال المنطق على واجهتين، ولكلٍ منهما مشغِّل خاص به:
 
-* **`toolTriggerSettings`** — يجعل الدالة قابلة للاكتشاف عبر ميزات الذكاء الاصطناعي الخاصة بـ Twenty (الدردشة، MCP، استدعاء الدوال). يستخدم JSON Schema القياسي، وهو التنسيق الذي تفهمه LLMs أصلاً.
-* **`workflowActionTriggerSettings`** — يجعل الدالة تظهر كخطوة في منشئ سير العمل المرئي. يستخدم `InputSchema` الغني الخاص بـ Twenty لكي يتمكن المُنشئ من عرض محرّرات الحقول المناسبة، وأدوات انتقاء المتغيّرات، والتسميات.
+* **`toolTriggerSettings`** — يجعل الدالة قابلة للاكتشاف عبر ميزات الذكاء الاصطناعي الخاصة بـ Arxena (الدردشة، MCP، استدعاء الدوال). يستخدم JSON Schema القياسي، وهو التنسيق الذي تفهمه LLMs أصلاً.
+* **`workflowActionTriggerSettings`** — يجعل الدالة تظهر كخطوة في منشئ سير العمل المرئي. يستخدم `InputSchema` الغني الخاص بـ Arxena لكي يتمكن المُنشئ من عرض محرّرات الحقول المناسبة، وأدوات انتقاء المتغيّرات، والتسميات.
 
 يمكن للدالة اختيار أحدهما، أو الآخر، أو كليهما. توجد جنبًا إلى جنب مع `cronTriggerSettings` و`databaseEventTriggerSettings` و`httpRouteTriggerSettings` — النمط نفسه، والشكل نفسه.
 
 <Note>
-**العلاقة بإجراء Code الخاص بسير العمل.** يُعَد إجراء **Code** المضمَّن في منشئ سير العمل دالة منطقية بحد ذاته — حيث ينشئ Twenty واحدًا لكل خطوة Code ويعرض محرره مضمّنًا. تُستخدَم `workflowActionTriggerSettings` لتحويل هذا الكود المضمَّن لمرة واحدة إلى إجراء **قابل لإعادة الاستخدام**: عرِّف الدالة مرة واحدة في تطبيقك وستصبح قابلة للاختيار في أي سير عمل، بدلاً من نسخها ولصقها في كل خطوة Code. راجع [إجراء Code](/l/ar/user-guide/workflows/capabilities/workflow-actions#code) في دليل المستخدم لعرض منظور المستخدم النهائي.
+**العلاقة بإجراء Code الخاص بسير العمل.** يُعَد إجراء **Code** المضمَّن في منشئ سير العمل دالة منطقية بحد ذاته — حيث ينشئ Arxena واحدًا لكل خطوة Code ويعرض محرره مضمّنًا. تُستخدَم `workflowActionTriggerSettings` لتحويل هذا الكود المضمَّن لمرة واحدة إلى إجراء **قابل لإعادة الاستخدام**: عرِّف الدالة مرة واحدة في تطبيقك وستصبح قابلة للاختيار في أي سير عمل، بدلاً من نسخها ولصقها في كل خطوة Code. راجع [إجراء Code](/l/ar/user-guide/workflows/capabilities/workflow-actions#code) في دليل المستخدم لعرض منظور المستخدم النهائي.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -469,7 +469,7 @@ export default defineLogicFunction({
 النقاط الرئيسية:
 
 * يمكن للدالة مزج الواجهات — صرِّح بكلٍ من `toolTriggerSettings` و`workflowActionTriggerSettings` لإتاحتها في الدردشة وفي منشئ سير العمل.
-* `toolTriggerSettings.inputSchema` و`workflowActionTriggerSettings.inputSchema` كلاهما اختياري. عند الإغفال، يستنتج مُنشئ البيان هذه المخططات من الشيفرة المصدرية للمعالج (JSON Schema لأداة الذكاء الاصطناعي، و`InputSchema` الخاصة بـ Twenty لإجراء سير العمل). قدّم واحدًا صراحةً عندما ترغب في أنواع أكثر ثراءً — على سبيل المثال، مع حقول واعية بـ `FieldMetadataType` مثل `CURRENCY` أو `RELATION` لمنشئ سير العمل، أو مع حقول `description` التي يمكن لوكيل الذكاء الاصطناعي قراءتها:
+* `toolTriggerSettings.inputSchema` و`workflowActionTriggerSettings.inputSchema` كلاهما اختياري. عند الإغفال، يستنتج مُنشئ البيان هذه المخططات من الشيفرة المصدرية للمعالج (JSON Schema لأداة الذكاء الاصطناعي، و`InputSchema` الخاصة بـ Arxena لإجراء سير العمل). قدّم واحدًا صراحةً عندما ترغب في أنواع أكثر ثراءً — على سبيل المثال، مع حقول واعية بـ `FieldMetadataType` مثل `CURRENCY` أو `RELATION` لمنشئ سير العمل، أو مع حقول `description` التي يمكن لوكيل الذكاء الاصطناعي قراءتها:
 
 ```ts
 export default defineLogicFunction({
@@ -493,7 +493,7 @@ export default defineLogicFunction({
 });
 ```
 
-للتصريح بمعاملاتك **مرة واحدة** وخدمة كلتا الواجهتين، عرّف مخطط JSON واحد (`InputJsonSchema`) وحوِّله لاستخدامه في إجراء سير العمل باستخدام `jsonSchemaToInputSchema` من `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` يستخدم مخطط JSON مباشرة، بينما `workflowActionTriggerSettings.inputSchema` يتوقّع `InputSchema` الخاص بـ Twenty:
+للتصريح بمعاملاتك **مرة واحدة** وخدمة كلتا الواجهتين، عرّف مخطط JSON واحد (`InputJsonSchema`) وحوِّله لاستخدامه في إجراء سير العمل باستخدام `jsonSchemaToInputSchema` من `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` يستخدم مخطط JSON مباشرة، بينما `workflowActionTriggerSettings.inputSchema` يتوقّع `InputSchema` الخاص بـ Arxena:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -527,7 +527,7 @@ export default defineLogicFunction({
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `label`        | الاسم المعروض للإجراء في منتقّي الخطوات في منشئ سير العمل. الإعداد الافتراضي هو `name` الخاص بالدالة.                                                     |
 | `icon`         | أيقونة تُعرَض بجانب الإجراء (اسم من `tabler-icons`، مثلًا `IconBuilding`).                                                                                |
-| `inputSchema`  | مخطط الإدخال الغني الخاص بـ Twenty — ما يعرضه المُنشئ كحقول قابلة للضبط (مع منتقّي المتغيرات). اختياري؛ يستنتج من المعالج عند حذفه.                       |
+| `inputSchema`  | مخطط الإدخال الغني الخاص بـ Arxena — ما يعرضه المُنشئ كحقول قابلة للضبط (مع منتقّي المتغيرات). اختياري؛ يستنتج من المعالج عند حذفه.                       |
 | `outputSchema` | يصرِّح بالشكل الذي يعيده المعالج، بحيث **يمكن للخطوات اللاحقة أن تطابق حقول المخرجات الخاصة به**. اختياري؛ من دونه يتم كشف المخرَج كقيمة واحدة غير شفافة. |
 
 تجميع ذلك معًا — دالّة معروضة كإجراء سير عمل، مع مخرَج مُعلَن بحيث يمكن للخطوات اللاحقة الرجوع إلى `taskId`:
@@ -617,7 +617,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## عملاء واجهة برمجة تطبيقات مضبوطة الأنواع (`twenty-client-sdk`)
 
-توفر حزمة `twenty-client-sdk` عميلين لـ GraphQL ذوي أنواع ثابتة للتفاعل مع واجهة Twenty البرمجية من وظائفك المنطقية ومكوّنات الواجهة الأمامية.
+توفر حزمة `twenty-client-sdk` عميلين لـ GraphQL ذوي أنواع ثابتة للتفاعل مع واجهة Arxena البرمجية من وظائفك المنطقية ومكوّنات الواجهة الأمامية.
 
 | العميل              | استيراد                      | نقطة النهاية                                        | مُولَّد؟                   |
 | ------------------- | ---------------------------- | --------------------------------------------------- | -------------------------- |
@@ -761,9 +761,9 @@ console.log(uploadedFile);
 </AccordionGroup>
 
 <Note>
-  عند تشغيل كودك على Twenty (وظائف منطقية أو مكوّنات أمامية)، يقوم النظام الأساسي بحقن بيانات الاعتماد كمتغيرات بيئية:
+  عند تشغيل كودك على Arxena (وظائف منطقية أو مكوّنات أمامية)، يقوم النظام الأساسي بحقن بيانات الاعتماد كمتغيرات بيئية:
 
-  * `TWENTY_API_URL` — عنوان URL الأساسي لواجهة Twenty البرمجية
+  * `TWENTY_API_URL` — عنوان URL الأساسي لواجهة Arxena البرمجية
   * `TWENTY_APP_ACCESS_TOKEN` — مفتاح قصير العمر ذو نطاق يقتصر على الدور الافتراضي لوظيفة تطبيقك
 
   لست **بحاجة** إلى تمرير هذه القيم إلى العملاء — فهي تُقرأ تلقائيًا من `process.env`. تُحدَّد أذونات مفتاح واجهة برمجة التطبيقات بواسطة الدور المُعلن باستخدام `defineApplicationRole()` (أو المشار إليه عبر `defaultRoleUniversalIdentifier` في `application-config.ts`).

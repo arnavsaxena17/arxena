@@ -1,6 +1,6 @@
 ---
 title: Připravte své soubory CSV
-description: Kompletní návod krok za krokem, jak naformátovat data pro import do Twenty.
+description: Kompletní návod krok za krokem, jak naformátovat data pro import do Arxena.
 ---
 
 ## Přehled
@@ -22,7 +22,7 @@ Než začnete, ujistěte se, že váš soubor splňuje tyto požadavky:
 
 ## Krok 2: Stáhněte si ukázkový soubor
 
-**Toto je nejdůležitější krok.** Ukázkový soubor ukazuje přesné názvy sloupců a formát, který Twenty očekává.
+**Toto je nejdůležitější krok.** Ukázkový soubor ukazuje přesné názvy sloupců a formát, který Arxena očekává.
 
 1. Přejděte do zobrazení objektu (Osoby, Společnosti atd.)
 2. Klikněte na **⋮** → **Importovat záznamy**
@@ -33,7 +33,7 @@ Než začnete, ujistěte se, že váš soubor splňuje tyto požadavky:
 
 ## Krok 3: Odstraňte duplicitní hodnoty
 
-Twenty vynucuje jedinečnost u některých polí. Duplicity způsobí chyby při importu.
+Arxena vynucuje jedinečnost u některých polí. Duplicity způsobí chyby při importu.
 
 | Objekt              | Jedinečná pole                                               |
 | ------------------- | ------------------------------------------------------------ |
@@ -45,7 +45,7 @@ Twenty vynucuje jedinečnost u některých polí. Duplicity způsobí chyby při
 
 1. Seřaďte tabulku podle jedinečného pole (e‑mailu nebo domény)
 2. Odstraňte nebo sloučte duplicitní řádky
-3. Zkontrolujte duplicity, které už v Twenty existují
+3. Zkontrolujte duplicity, které už v Arxena existují
 
 <Warning>**Dočasně smazané záznamy se započítávají do jedinečnosti.** Záznamy v Command Menu → See deleted records způsobí chyby kvůli duplicitám. Trvale je smažte, nebo je obnovte a aktualizujte.</Warning>
 
@@ -61,11 +61,11 @@ Různé typy polí vyžadují specifické formáty. Zde je úplný přehled:
 ### E‑mailová pole
 
 * Musí být ve validním formátu e‑mailu: `name@domain.com`
-* Musí být jedinečné (žádné duplicity v souboru ani v Twenty)
+* Musí být jedinečné (žádné duplicity v souboru ani v Arxena)
 * Pro další e‑maily použijte tento formát ve sloupci **E‑maily / Další e‑maily**:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Doménová pole
@@ -75,7 +75,7 @@ Různé typy polí vyžadují specifické formáty. Zde je úplný přehled:
 * Vyplňte oba sloupce:
   * **Doména / Štítek domény**: `domain.com`
   * **Doména / URL domény**: `https://domain.com`
-* Musí být jedinečné v rámci vašeho souboru i v Twenty
+* Musí být jedinečné v rámci vašeho souboru i v Arxena
 
 ### Telefonní pole
 
@@ -163,13 +163,13 @@ Použijte formát: `RATING_1`, `RATING_2`, `RATING_3`, `RATING_4` nebo `RATING_5
 
 Vyplňte oba sloupce:
 
-* **Odkazy / Štítek odkazu**: `Twenty`
-* **Odkazy / URL odkazu**: `https://twenty.com`
+* **Odkazy / Štítek odkazu**: `Arxena`
+* **Odkazy / URL odkazu**: `https://arxena.com`
 
 Pro sekundární odkazy použijte sloupec **Odkazy / Sekundární odkazy**:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON pole
@@ -182,7 +182,7 @@ Použijte platný formát JSON:
 
 ### ID pole
 
-* **Volitelné**: Twenty automaticky generuje ID, pokud nejsou zadána
+* **Volitelné**: Arxena automaticky generuje ID, pokud nejsou zadána
 * **Formát**: UUID (např. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 * **Využití**: Zahrňte ID pro aktualizaci existujících záznamů místo vytváření nových
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **Důležitá pravidla pro relace:**
 
-* Nadřazený záznam musí v Twenty již existovat
+* Nadřazený záznam musí v Arxena již existovat
 * Použijte formát **Domain URL** (`https://domain.com`), nikoli štítek
 * Mapujte pouze JEDEN jedinečný identifikátor (nezahrnujte zároveň `companyId` i `companyDomain`)
 * U členů pracovního prostoru použijte jejich **e-mail** (ne jméno)
@@ -220,7 +220,7 @@ Nadřazený záznam musí existovat dříve, než na něj můžete odkazovat.
 
 Podrobné pokyny najdete v [Jak importovat relace](/l/cs/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv).
 
-## Krok 6: Ujistěte se, že pole v Twenty existují
+## Krok 6: Ujistěte se, že pole v Arxena existují
 
 Import vytváří záznamy, nikoli pole. Všechna pole, která chcete importovat, musí již existovat ve vašem datovém modelu.
 

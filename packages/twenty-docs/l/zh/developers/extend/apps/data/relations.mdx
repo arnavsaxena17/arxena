@@ -4,7 +4,7 @@ description: 使用双向 MANY_TO_ONE / ONE_TO_MANY 关系将对象连接在一�
 icon: diagram-project
 ---
 
-关系用于将两个对象连接在一起。 在 Twenty 中，关系始终是 **双向的**——每个关系都有两侧，每一侧都作为一个字段声明，并引用另一侧。
+关系用于将两个对象连接在一起。 在 Arxena 中，关系始终是 **双向的**——每个关系都有两侧，每一侧都作为一个字段声明，并引用另一侧。
 
 | 关系类型          | 描述                  | 是否有外键？              |
 | ------------- | ------------------- | ------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## 与标准对象建立关系
 
-要与内置的 Twenty 对象（Person、Company 等）建立关系，请使用 `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`：
+要与内置的 Arxena 对象（Person、Company 等）建立关系，请使用 `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`：
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

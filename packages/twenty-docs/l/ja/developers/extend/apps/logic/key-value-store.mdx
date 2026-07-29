@@ -39,7 +39,7 @@ await kv.delete('sync-cursor:linear');
 * **`WORKSPACE`**（デフォルト） — エントリは、アプリの現在のワークスペース インストールに対してのみプライベートです。 アプリをインストールした各ワークスペースは、独立したキーセットをそれぞれ取得します。 これは、キャッシュやカーソル、ワークスペース単位の状態に適したスコープです。
 * **`SERVER`** — エントリは、サーバー上の**すべてのインストール**間で共有されます。 サーバーエントリは **クレーム** のように動作します。保存される値は常にキーをクレームした workspaceId であり（現在のワークスペースでキーをクレームするには、`set` 時に `value` を省略します）、そのワークスペースだけが上書きや削除を行えます。 どのインストールからでも、そのエントリを読み取ることができます。
 
-サーバークレームは、ワークスペース間ルーティングのために存在します。 [server-route resolver](/l/ja/developers/extend/apps/logic/logic-functions#server-route-trigger) はアプリケーション登録オーナーのワークスペース内で実行されますが、受信 Webhook は通常、外部アカウント ID のみを保持しており、Twenty の workspaceId は持っていません。 各ワークスペースが接続時に自分の外部 ID をクレームし、その後ルート内で解決します。
+サーバークレームは、ワークスペース間ルーティングのために存在します。 [server-route resolver](/l/ja/developers/extend/apps/logic/logic-functions#server-route-trigger) はアプリケーション登録オーナーのワークスペース内で実行されますが、受信 Webhook は通常、外部アカウント ID のみを保持しており、Arxena の workspaceId は持っていません。 各ワークスペースが接続時に自分の外部 ID をクレームし、その後ルート内で解決します。
 
 ```ts
 // In the connected workspace, when the external account is linked:

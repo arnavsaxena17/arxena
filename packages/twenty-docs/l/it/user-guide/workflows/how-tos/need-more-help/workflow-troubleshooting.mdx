@@ -27,7 +27,7 @@ description: Problemi comuni dei flussi di lavoro e come risolverli.
 
 **Sintomi**: Quando crei manualmente un record nell'interfaccia utente, il flusso di lavoro si attiva prima che tu abbia il tempo di compilare tutti i campi. Il flusso di lavoro viene eseguito con valori di campo per la maggior parte vuoti.
 
-**Perché accade**: Twenty salva tutto in tempo reale — non esiste una modalità separata "modifica" vs "lettura". Quando crei un record, questo viene salvato immediatamente, attivando l'evento "Record is created" prima che tu possa compilare i campi aggiuntivi.
+**Perché accade**: Arxena salva tutto in tempo reale — non esiste una modalità separata "modifica" vs "lettura". Quando crei un record, questo viene salvato immediatamente, attivando l'evento "Record is created" prima che tu possa compilare i campi aggiuntivi.
 
 **Quando "Record is created" funziona bene**:
 
@@ -79,7 +79,7 @@ Se desideri che il flusso di lavoro venga eseguito solo una volta per record, ag
 
 * Verifica l'URL dell'endpoint API
 * Controlla le intestazioni di autenticazione
-* Esegui prima il test della chiamata API al di fuori di Twenty
+* Esegui prima il test della chiamata API al di fuori di Arxena
 * Aggiungi la gestione degli errori nelle azioni di Codice
 
 ### Errori delle azioni di Codice

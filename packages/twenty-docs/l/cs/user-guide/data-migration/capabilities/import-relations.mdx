@@ -5,15 +5,15 @@ description: Import relací mezi záznamy pomocí CSV.
 
 ## Přehled
 
-Twenty podporuje import relací mezi objekty během importu CSV. To vám umožní propojit záznamy (např. přiřadit Lidi ke Společnostem) jako součást migrace dat.
+Arxena podporuje import relací mezi objekty během importu CSV. To vám umožní propojit záznamy (např. přiřadit Lidi ke Společnostem) jako součást migrace dat.
 
 <Note>**V současnosti podporováno pro import**: Relace jedna ku mnoha směřující na jeden typ objektu na každé straně (např. Lidé → Společnosti). Relace směřující k více typům objektů zatím nejsou pro import/export podporovány.</Note>
 
-## Jak relace fungují v Twenty
+## Jak relace fungují v Arxena
 
 ### Jedna ku mnoha / Mnoho ku jedné
 
-Twenty podporuje standardní relace, kde se jeden záznam propojuje s mnoha dalšími:
+Arxena podporuje standardní relace, kde se jeden záznam propojuje s mnoha dalšími:
 
 * **Jedna Společnost → Mnoho Lidí**: Společnost může mít více zaměstnanců, ale každá osoba patří do jedné společnosti
 * **Jedna Společnost → Mnoho Příležitostí**: Společnost může mít více obchodů, ale každá příležitost patří k jedné společnosti
@@ -75,11 +75,11 @@ Nejprve určete, který objekt je na straně „jedna“ a který je na straně 
 
 ### Krok 2: Ujistěte se, že záznamy na straně „jedna“ existují
 
-Před importem strany „mnoho“ musí záznamy na straně „jedna“ již v Twenty existovat.
+Před importem strany „mnoho“ musí záznamy na straně „jedna“ již v Arxena existovat.
 
 * Nejprve importujte nebo vytvořte záznamy strany „jedna“ (např. Společnosti)
 * Ověřte jejich jedinečný identifikátor. Může to být:
-  * Pole `id` (UUID v Twenty)
+  * Pole `id` (UUID v Arxena)
   * Pole nastavené jako jedinečné (např. `domain` u Společností nebo externí ID z vašeho předchozího systému)
 
 <Warning>Import selže, pokud je odkazováno na záznam, který neexistuje.</Warning>
@@ -117,7 +117,7 @@ Pokud neexistuje:
 1. Nahrajte svůj soubor CSV prostřednictvím rozhraní pro import
 2. V kroku mapování polí najděte svůj relační sloupec (např. `companyDomain`)
 3. Namapujte jej na relační pole (např. Společnost)
-4. Twenty automaticky propojí každý záznam s odpovídajícím nadřazeným objektem
+4. Arxena automaticky propojí každý záznam s odpovídajícím nadřazeným objektem
 
 ### Dostupná jedinečná pole pro relace
 
@@ -128,7 +128,7 @@ Pokud neexistuje:
 | **Členové pracovního prostoru**        | `id`, `email` (ne jméno)                        |
 | **Další standardní a vlastní objekty** | `id`, jakékoli pole označené jako jedinečné     |
 
-<Note>**Propojení na členy pracovního prostoru**: Pokud relace směřuje na členy pracovního prostoru (váš tým přihlašující se do Twenty), odkazujte je pomocí jejich **e-mailové adresy**, nikoli jména.</Note>
+<Note>**Propojení na členy pracovního prostoru**: Pokud relace směřuje na členy pracovního prostoru (váš tým přihlašující se do Arxena), odkazujte je pomocí jejich **e-mailové adresy**, nikoli jména.</Note>
 
 <Note>Doporučujeme používat `domain` pro Společnosti a `email` pro Lidi, protože jsou srozumitelné pro člověka a snadno se udržují v tabulkách.</Note>
 

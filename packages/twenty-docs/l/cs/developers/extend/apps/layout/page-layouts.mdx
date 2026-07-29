@@ -4,7 +4,7 @@ description: Přizpůsobte stránky s detailem záznamu – karty, widgety a mí
 icon: table-columns
 ---
 
-**Rozvržení stránky** určuje, jak je uspořádána stránka s detailem záznamu: které karty se zobrazí a jaké widgety obsahují. Použijte `definePageLayout()` k deklaraci rozvržení pro objekt, který vlastníte, nebo `definePageLayoutTab()` k přidání jedné karty do rozvržení, které již existuje (vašeho nebo standardního rozvržení Twenty).
+**Rozvržení stránky** určuje, jak je uspořádána stránka s detailem záznamu: které karty se zobrazí a jaké widgety obsahují. Použijte `definePageLayout()` k deklaraci rozvržení pro objekt, který vlastníte, nebo `definePageLayoutTab()` k přidání jedné karty do rozvržení, které již existuje (vašeho nebo standardního rozvržení Arxena).
 
 | Případ použití                                                                                              | Entita                |
 | ----------------------------------------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Hlavní body
 
-* `pageLayoutUniversalIdentifier` je **povinný** a musí odkazovat na rozvržení stránky, které již existuje v době instalace – buď na standardní rozvržení Twenty, nebo na rozvržení definované vaší vlastní aplikací. Meziaplikační odkazy na rozvržení ve vlastnictví jiné nainstalované aplikace nejsou v současnosti podporovány. Když nadřazené rozvržení chybí, instalace selže s jasnou validační chybou.
+* `pageLayoutUniversalIdentifier` je **povinný** a musí odkazovat na rozvržení stránky, které již existuje v době instalace – buď na standardní rozvržení Arxena, nebo na rozvržení definované vaší vlastní aplikací. Meziaplikační odkazy na rozvržení ve vlastnictví jiné nainstalované aplikace nejsou v současnosti podporovány. Když nadřazené rozvržení chybí, instalace selže s jasnou validační chybou.
 
-* Pro standardní rozvržení Twenty importujte identifikátory z `twenty-sdk/define`:
+* Pro standardní rozvržení Arxena importujte identifikátory z `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

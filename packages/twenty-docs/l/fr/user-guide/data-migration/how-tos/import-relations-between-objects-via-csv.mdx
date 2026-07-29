@@ -21,7 +21,7 @@ Dans une relation un-à-plusieurs :
 
 Le côté "un" est le **parent**. Le côté "plusieurs" est l'**enfant**.
 
-### Relations courantes dans Twenty
+### Relations courantes dans Arxena
 
 | Relation                   | Côté "un" (Parent) | Côté "plusieurs" (Enfant) |
 | -------------------------- | ------------------ | ------------------------- |
@@ -41,7 +41,7 @@ Avant l'importation, déterminez quel objet est le parent et lequel est l'enfant
 
 ## Étape 2 : Importer d'abord les enregistrements parents
 
-Le parent (côté "un") doit exister dans Twenty avant que vous ne puissiez y faire référence.
+Le parent (côté "un") doit exister dans Arxena avant que vous ne puissiez y faire référence.
 
 **Ordre d'import :**
 
@@ -73,7 +73,7 @@ Vous devez référencer l'enregistrement parent à l'aide d'un **identifiant uni
 
 Si vous avez besoin de l'`id` :
 
-1. Exportez les enregistrements parents depuis Twenty
+1. Exportez les enregistrements parents depuis Arxena
 2. L'export comprend la colonne `id`
 3. Utilisez ces identifiants dans votre fichier d'enregistrements enfants
 
@@ -119,7 +119,7 @@ La colonne `companyDomain` référence le domaine de l'Entreprise.
 <Warning>
 **Le format du domaine est important !**
 
-Utilisez `https://domain.com` (et non simplement `domain.com`). Cela correspond à la manière dont Twenty stocke les domaines des Entreprises et évite les erreurs d'association.
+Utilisez `https://domain.com` (et non simplement `domain.com`). Cela correspond à la manière dont Arxena stocke les domaines des Entreprises et évite les erreurs d'association.
 </Warning>
 
 ### Règles importantes
@@ -139,7 +139,7 @@ Utilisez `https://domain.com` (et non simplement `domain.com`). Cela correspond 
 5. Complétez les correspondances restantes
 6. Passez en revue les erreurs et confirmez
 
-Twenty liera automatiquement chaque enregistrement enfant au parent correspondant.
+Arxena liera automatiquement chaque enregistrement enfant au parent correspondant.
 
 ## Étape 7 : Vérifier l'importation
 
@@ -157,8 +157,8 @@ Après l'importation :
 | **Mauvais format de domaine**   | Utiliser `acme.com` au lieu de `https://acme.com`           | Utilisez le format d'URL complet avec `https://`                               |
 | **Plusieurs champs uniques**    | Associer à la fois `companyId` ET `companyDomain`           | N'associez qu'UN SEUL identifiant unique                                       |
 | **Champ de relation manquant**  | Le champ de relation n'existe pas dans le modèle de données | Créez-le dans **Paramètres → Modèle de données** avant l'importation           |
-| **Enregistrements inexistants** | L'enregistrement parent n'existe pas dans Twenty            | Importez d'abord les enregistrements parents, ou vérifiez les fautes de frappe |
-| **Incohérence de casse**        | `Acme.com` dans le fichier mais `acme.com` dans Twenty      | Assurez une correspondance exacte de la casse                                  |
+| **Enregistrements inexistants** | L'enregistrement parent n'existe pas dans Arxena            | Importez d'abord les enregistrements parents, ou vérifiez les fautes de frappe |
+| **Incohérence de casse**        | `Acme.com` dans le fichier mais `acme.com` dans Arxena      | Assurez une correspondance exacte de la casse                                  |
 
 ## Liaison aux membres de l'espace de travail
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Que faire si mon enregistrement parent n'a pas de domaine ni d'e-mail ?">
     Vous avez deux options :
-    1. Utilisez l'`id` Twenty (exportez les enregistrements parents pour obtenir leurs identifiants)
+    1. Utilisez l'`id` Arxena (exportez les enregistrements parents pour obtenir leurs identifiants)
     2. Créez un champ unique personnalisé dans votre modèle de données pour stocker un identifiant externe provenant de votre système précédent
   </Accordion>
 

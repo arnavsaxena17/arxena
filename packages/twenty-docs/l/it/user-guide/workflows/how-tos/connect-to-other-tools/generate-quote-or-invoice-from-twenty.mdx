@@ -1,5 +1,5 @@
 ---
-title: Genera un preventivo o una fattura da Twenty
+title: Genera un preventivo o una fattura da Arxena
 description: Crea automaticamente fatture negli strumenti esterni quando le opportunità vengono chiuse.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Correlati
 
-* [Generare un PDF da Twenty](/l/it/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — allegare i PDF generati ai record
+* [Generare un PDF da Arxena](/l/it/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — allegare i PDF generati ai record
 * [Trigger dei flussi di lavoro](/l/it/user-guide/workflows/capabilities/workflow-triggers)
 * [Azioni dei flussi di lavoro](/l/it/user-guide/workflows/capabilities/workflow-actions)
 * [Automazioni Closed Won](/l/it/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

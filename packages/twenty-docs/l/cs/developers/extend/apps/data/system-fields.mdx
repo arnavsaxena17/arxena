@@ -4,7 +4,7 @@ description: Odkazujte na automaticky vytvářená systémová pole, jako jsou c
 icon: gears
 ---
 
-Každý objekt v Twenty je dodáván se sadou **systémových polí**, která sami nikdy nedefinujete. Tato pole jsou automaticky vytvářena serverem při zřízení objektu:
+Každý objekt v Arxena je dodáván se sadou **systémových polí**, která sami nikdy nedefinujete. Tato pole jsou automaticky vytvářena serverem při zřízení objektu:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Protože tato pole nedefinujete pomocí [`defineField()`](/l/cs/developers/exten
 
 ## Problém
 
-Od Twenty 2.19 je univerzální identifikátor systémového pole **deterministicky odvozován** serverem ze tří vstupů: univerzálního identifikátoru aplikace, univerzálního identifikátoru objektu a názvu pole. Vymyslet si id a natvrdo ho zapsat nebude fungovat: neshoduje se s ničím na serveru a synchronizace zamítne osiřelý odkaz:
+Od Arxena 2.19 je univerzální identifikátor systémového pole **deterministicky odvozován** serverem ze tří vstupů: univerzálního identifikátoru aplikace, univerzálního identifikátoru objektu a názvu pole. Vymyslet si id a natvrdo ho zapsat nebude fungovat: neshoduje se s ničím na serveru a synchronizace zamítne osiřelý odkaz:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -90,7 +90,7 @@ Tentýž odvozený identifikátor funguje všude tam, kde se očekává `fieldMe
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier` je k dispozici od verze `twenty-sdk`
-  2.23 a vyžaduje server Twenty ve verzi 2.23 nebo novější.
+  2.23 a vyžaduje server Arxena ve verzi 2.23 nebo novější.
 </Note>
 
 Kromě výše uvedených skalárních systémových polí server také na každém objektu poskytuje čtyři **systémová relační pole**: `timelineActivities`, `attachments`, `noteTargets` a `taskTargets`, z nichž každé ukazuje na odpovídající standardní relační objekt.
@@ -132,9 +132,9 @@ const attachmentTargetRocketFieldId =
 
 Stejně jako u skalárních systémových polí funguje vyřešené ID všude tam, kde je očekáváno `fieldMetadataUniversalIdentifier`.
 
-## Standardní objekty Twenty
+## Standardní objekty Arxena
 
-U **standardního** objektu Twenty (Person, Company, Opportunity, …) nemusíte nic odvozovat: identifikátory systémových polí jsou předpočítané konstanty, které můžete přímo importovat.
+U **standardního** objektu Arxena (Person, Company, Opportunity, …) nemusíte nic odvozovat: identifikátory systémových polí jsou předpočítané konstanty, které můžete přímo importovat.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

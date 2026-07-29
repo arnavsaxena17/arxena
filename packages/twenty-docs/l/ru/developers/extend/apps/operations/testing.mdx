@@ -1,10 +1,10 @@
 ---
 title: Тестирование
-description: Настройка Vitest, интеграционные тесты с использованием реального сервера Twenty, проверка типов и CI с GitHub Actions.
+description: Настройка Vitest, интеграционные тесты с использованием реального сервера Arxena, проверка типов и CI с GitHub Actions.
 icon: flask
 ---
 
-SDK предоставляет программные API, которые позволяют собирать, разворачивать, устанавливать и удалять ваше приложение из тестового кода. В сочетании с [Vitest](https://vitest.dev/) и типизированными клиентами API вы можете писать интеграционные тесты, которые проверяют, что ваше приложение работает сквозным образом на реальном сервере Twenty.
+SDK предоставляет программные API, которые позволяют собирать, разворачивать, устанавливать и удалять ваше приложение из тестового кода. В сочетании с [Vitest](https://vitest.dev/) и типизированными клиентами API вы можете писать интеграционные тесты, которые проверяют, что ваше приложение работает сквозным образом на реальном сервере Arxena.
 
 ## Использование пакетов npm
 
@@ -115,7 +115,7 @@ beforeAll(async () => {
 
   if (!response.ok) {
     throw new Error(
-      `Twenty server is not reachable at ${TWENTY_API_URL}. ` +
+      `Arxena server is not reachable at ${TWENTY_API_URL}. ` +
         'Start the server before running integration tests.',
     );
   }
@@ -218,7 +218,7 @@ describe('App installation', () => {
 
 ## Запуск тестов
 
-Убедитесь, что ваш локальный сервер Twenty запущен, затем:
+Убедитесь, что ваш локальный сервер Arxena запущен, затем:
 
 ```bash filename="Terminal"
 yarn test
@@ -247,7 +247,7 @@ yarn twenty dev:typecheck
 Рабочий процесс:
 
 1. Извлекает ваш код
-2. Поднимает временный сервер Twenty с помощью экшена `twentyhq/twenty/.github/actions/spawn-twenty-docker-image`
+2. Поднимает временный сервер Arxena с помощью экшена `twentyhq/twenty/.github/actions/spawn-twenty-docker-image`
 3. Устанавливает зависимости с помощью `yarn install --immutable`
 4. Запускает `yarn test` с `TWENTY_API_URL` и `TWENTY_API_KEY`, переданными из выходных данных экшена
 
@@ -270,7 +270,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Spawn Twenty instance
+      - name: Spawn Arxena instance
         id: twenty
         uses: twentyhq/twenty/.github/actions/spawn-twenty-docker-image@main
         with:
@@ -296,6 +296,6 @@ jobs:
           TWENTY_API_KEY: ${{ steps.twenty.outputs.access-token }}
 ```
 
-Вам не нужно настраивать секреты — экшен `spawn-twenty-docker-image` запускает эфемерный сервер Twenty прямо в раннере и выводит данные для подключения. Секрет `GITHUB_TOKEN` предоставляется GitHub автоматически.
+Вам не нужно настраивать секреты — экшен `spawn-twenty-docker-image` запускает эфемерный сервер Arxena прямо в раннере и выводит данные для подключения. Секрет `GITHUB_TOKEN` предоставляется GitHub автоматически.
 
-Чтобы закрепить конкретную версию Twenty вместо `latest`, измените переменную окружения `TWENTY_VERSION` в начале рабочего процесса.
+Чтобы закрепить конкретную версию Arxena вместо `latest`, измените переменную окружения `TWENTY_VERSION` в начале рабочего процесса.

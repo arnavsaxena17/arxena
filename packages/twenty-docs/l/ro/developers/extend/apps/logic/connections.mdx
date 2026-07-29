@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ Puncte cheie:
 * `name` este șirul identificator unic folosit în `listConnections({ providerName })` (kebab-case, trebuie să corespundă `^[a-z][a-z0-9-]*$`).
 * `displayName` apare în fila de setări a aplicației și în lista de instrumente AI.
 * `clientIdVariable` / `clientSecretVariable` sunt **nume**, nu valori — trebuie să se potrivească cheilor declarate în `defineApplication.serverVariables`. Valorile reale `client_id` și `client_secret` sunt introduse de administratorul serverului prin interfața de înregistrare a aplicației și nu sunt niciodată comise în repo-ul tău.
-* Folosește `serverVariables` (nu `applicationVariables`) — acreditările OAuth sunt la nivel de server și există o singură aplicație OAuth pentru fiecare server Twenty.
+* Folosește `serverVariables` (nu `applicationVariables`) — acreditările OAuth sunt la nivel de server și există o singură aplicație OAuth pentru fiecare server Arxena.
 * Până când ambele `serverVariables` sunt completate, fila de setări a aplicației afișează un indiciu "necesită administrator de server" și butonul "Adaugă conexiune" este dezactivat.
 * `type: 'oauth'` este singura valoare acceptată în prezent. Discriminatorul este compatibil cu versiuni viitoare: tipurile viitoare (`'pat'`, `'api-key'`, ...) vor adăuga blocuri noi de sub-configurație alături de `oauth`.
 
@@ -221,7 +221,7 @@ Pentru fiecare furnizor de conexiune, administratorul serverului trebuie mai în
 1. Mergi la setările pentru dezvoltatori ale furnizorului (de ex. https://linear.app/settings/api/applications/new).
 2. Setează **Redirect URI** la `\<SERVER_URL>/auth/apps/callback`.
 3. Copiază **Client ID** și **Client Secret** generate.
-4. Deschide aplicația instalată în Twenty ca administrator de server → setează valorile pe `serverVariables` corespunzătoare.
+4. Deschide aplicația instalată în Arxena ca administrator de server → setează valorile pe `serverVariables` corespunzătoare.
 5. Membrii spațiului de lucru pot apoi să adauge conexiuni din secțiunea **Conexiuni** a fiecărei aplicații.
 
 </Accordion>

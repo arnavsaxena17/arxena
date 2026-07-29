@@ -1,10 +1,10 @@
 ---
 title: Overview
-description: Place your app inside Twenty's UI — sidebar entries, saved views, record page tabs, and sandboxed React components.
+description: Place your app inside Arxena's UI — sidebar entries, saved views, record page tabs, and sandboxed React components.
 icon: "table-columns"
 ---
 
-A Twenty app's **layout layer** is everything the user sees: where the app surfaces in the sidebar, which list views it ships, how its record detail pages are arranged, and which custom React components render inside those pages.
+An Arxena app's **layout layer** is everything the user sees: where the app surfaces in the sidebar, which list views it ships, how its record detail pages are arranged, and which custom React components render inside those pages.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ A Twenty app's **layout layer** is everything the user sees: where the app surfa
     `definePageLayout` and `definePageLayoutTab` — tabs and widgets on a record's detail page.
   </Card>
   <Card title="Front Components" icon="window-maximize" href="/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — sandboxed React components that render inside Twenty.
+    `defineFrontComponent` — sandboxed React components that render inside Arxena.
   </Card>
   <Card title="Command Menu Items" icon="terminal" href="/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — register front components as Cmd+K entries and quick actions.
@@ -54,4 +54,4 @@ A Twenty app's **layout layer** is everything the user sees: where the app surfa
 | **App settings** | A custom configuration section inside the app's Settings tab, in place of the default variables UI | `defineSettingsFrontComponent` |
 | **Command menu (Cmd+K)** | A pinned quick action or hidden command | `defineCommandMenuItem` |
 
-Front components run inside an isolated Web Worker using Remote DOM — they render *natively* in the page (not inside an iframe), but cannot reach the host page or DOM directly. Communication with Twenty happens through a message-passing host API.
+Front components run inside an isolated Web Worker using Remote DOM — they render *natively* in the page (not inside an iframe), but cannot reach the host page or DOM directly. Communication with Arxena happens through a message-passing host API.

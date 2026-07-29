@@ -5,14 +5,14 @@ description: Configure Single Sign-On for secure enterprise authentication.
 
 ## About SSO
 
-Single Sign-On (SSO) allows your team members to log into Twenty using your organization's identity provider. This provides:
+Single Sign-On (SSO) allows your team members to log into Arxena using your organization's identity provider. This provides:
 - **Centralized access control**: Manage access from one place
 - **Enhanced security**: Leverage your existing security policies
 - **Better user experience**: One set of credentials for all tools
 
 ## Supported Providers
 
-Twenty supports SSO with:
+Arxena supports SSO with:
 - **SAML 2.0**: Works with most enterprise identity providers
 - **Google Workspace**: For organizations using Google
 - **Microsoft Entra ID**: (formerly Azure AD) For Microsoft environments
@@ -22,10 +22,10 @@ Twenty supports SSO with:
 ### Prerequisites
 - Organization plan (cloud and self-hosted workspaces)
 - Admin access to your identity provider
-- Admin access to Twenty workspace
+- Admin access to Arxena workspace
 
 <Note>
-**For self-hosting users willing to set up SSO**, reach out to contact@twenty.com
+**For self-hosting users willing to set up SSO**, reach out to contact@arxena.com
 </Note>
 
 ### Configuration Steps
@@ -40,11 +40,11 @@ Select your identity provider from the list or choose "Custom SAML" for other pr
 
 #### 3. Configure Your Identity Provider
 You'll need to configure your identity provider with:
-- **Entity ID**: Provided by Twenty
+- **Entity ID**: Provided by Arxena
 - **ACS URL**: The callback URL for authentication
 - **Certificate**: For secure communication
 
-#### 4. Enter Provider Details in Twenty
+#### 4. Enter Provider Details in Arxena
 - **SSO URL**: Login URL from your provider
 - **Entity ID**: Your provider's identifier
 - **Certificate**: X.509 certificate from your provider
@@ -77,7 +77,7 @@ SSO users can be assigned roles like regular users:
 ### Access Revocation
 To remove access for SSO users:
 - Remove them from your identity provider, or
-- Remove them from the Twenty workspace
+- Remove them from the Arxena workspace
 
 ## Best Practices
 
@@ -88,8 +88,8 @@ To remove access for SSO users:
 
 ### User Management
 - **Clear naming**: Use consistent naming from your directory
-- **Group mapping**: Map IdP groups to Twenty roles (if available)
-- **Offboarding process**: Include Twenty in your deprovisioning workflow
+- **Group mapping**: Map IdP groups to Arxena roles (if available)
+- **Offboarding process**: Include Arxena in your deprovisioning workflow
 
 ## Troubleshooting
 
@@ -105,5 +105,5 @@ If you encounter issues, contact support with:
 - Configuration details (without sensitive data)
 
 <Tip>
-  Need SSO configured for your organization? [Find a certified Twenty partner](https://twenty.com/partners/list?categories=SOLUTIONING&ref=docs-sso) who specializes in SSO and identity setup. *(Prefer to loop in Twenty directly? [contact@twenty.com](mailto:contact@twenty.com).)*
+  Need SSO configured for your organization? [Find a certified Arxena partner](https://arxena.com/partners/list?categories=SOLUTIONING&ref=docs-sso) who specializes in SSO and identity setup. *(Prefer to loop in Arxena directly? [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>

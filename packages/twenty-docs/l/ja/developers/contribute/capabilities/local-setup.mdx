@@ -202,7 +202,7 @@ cd twenty
 
 ## ステップ4：Redisデータベース（キャッシュ）をセットアップ
 
-Twenty は、最高のパフォーマンスを提供するために Redis キャッシュを必要とします。
+Arxena は、最高のパフォーマンスを提供するために Redis キャッシュを必要とします。
 
 <Tabs>
   <Tab title="Linux">
@@ -244,7 +244,7 @@ Twenty は、最高のパフォーマンスを提供するために Redis キャ
 
 ## ステップ5：環境変数をセットアップします
 
-環境変数や`.env`ファイルを使ってプロジェクトを設定します。 詳細は[こちら](https://docs.twenty.com/l/ja/developers/self-hosting/setup)。 詳細は[こちら](/l/ja/developers/self-host/capabilities/setup)。
+環境変数や`.env`ファイルを使ってプロジェクトを設定します。 詳細は[こちら](https://docs.arxena.com/l/ja/developers/self-hosting/setup)。 詳細は[こちら](/l/ja/developers/self-host/capabilities/setup)。
 
 `/front`と`/server`内の`.env.example`ファイルをコピーします：
 
@@ -254,7 +254,7 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**マルチワークスペースモード:** デフォルトでは、Twenty は単一ワークスペースモードで動作し、ワークスペースは 1 つだけ作成できます。 マルチワークスペース対応を有効にするには（サブドメインベースの機能のテストに有用）、サーバーの `.env` ファイルで `IS_MULTIWORKSPACE_ENABLED=true` を設定してください。 詳細は[マルチワークスペースモード](/l/ja/developers/self-host/capabilities/setup#multi-workspace-mode)を参照してください。
+**マルチワークスペースモード:** デフォルトでは、Arxena は単一ワークスペースモードで動作し、ワークスペースは 1 つだけ作成できます。 マルチワークスペース対応を有効にするには（サブドメインベースの機能のテストに有用）、サーバーの `.env` ファイルで `IS_MULTIWORKSPACE_ENABLED=true` を設定してください。 詳細は[マルチワークスペースモード](/l/ja/developers/self-host/capabilities/setup#multi-workspace-mode)を参照してください。
 </Info>
 
 ## ステップ6：依存関係をインストールします

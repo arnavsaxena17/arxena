@@ -3,7 +3,7 @@ title: Key rotation
 icon: "rotate"
 ---
 
-Twenty has two independent key families:
+Arxena has two independent key families:
 
 - **JWT signing keys** — asymmetric ES256 keypairs (`kid`-tagged) stored in `core."signingKey"`, used to sign and verify access / refresh tokens.
 - **At-rest encryption key** — `ENCRYPTION_KEY`, used to encrypt OAuth tokens, application variables, signing-key private keys, sensitive config values and TOTP secrets inside an `enc:v2:` envelope.

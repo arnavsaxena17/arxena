@@ -1,10 +1,10 @@
 ---
 title: Расширение объектов
-description: Добавляйте поля к стандартным объектам Twenty (Person, Company, …) или к объектам из других приложений с помощью `defineField`.
+description: Добавляйте поля к стандартным объектам Arxena (Person, Company, …) или к объектам из других приложений с помощью `defineField`.
 icon: wand-magic-sparkles
 ---
 
-Используйте `defineField()` для добавления поля к объекту, которым вы не владеете — стандартному объекту Twenty, такому как Person или Company, или объекту, поставляемому другим установленным приложением. В отличие от встроенных полей, объявленных внутри [`defineObject`](/l/ru/developers/extend/apps/data/objects), отдельные поля требуют `objectUniversalIdentifier`, чтобы указать, какой объект они расширяют.
+Используйте `defineField()` для добавления поля к объекту, которым вы не владеете — стандартному объекту Arxena, такому как Person или Company, или объекту, поставляемому другим установленным приложением. В отличие от встроенных полей, объявленных внутри [`defineObject`](/l/ru/developers/extend/apps/data/objects), отдельные поля требуют `objectUniversalIdentifier`, чтобы указать, какой объект они расширяют.
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## Основные моменты
 
-* `objectUniversalIdentifier` определяет целевой объект. Для стандартных объектов Twenty импортируйте константу из `twenty-sdk`:
+* `objectUniversalIdentifier` определяет целевой объект. Для стандартных объектов Arxena импортируйте константу из `twenty-sdk`:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

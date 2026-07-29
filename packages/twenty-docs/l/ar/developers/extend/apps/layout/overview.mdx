@@ -1,10 +1,10 @@
 ---
 title: نظرة عامة
-description: ضع تطبيقك داخل واجهة مستخدم Twenty — إدخالات الشريط الجانبي، العروض المحفوظة، علامات تبويب صفحة السجل، ومكوّنات React المعزولة (sandboxed).
+description: ضع تطبيقك داخل واجهة مستخدم Arxena — إدخالات الشريط الجانبي، العروض المحفوظة، علامات تبويب صفحة السجل، ومكوّنات React المعزولة (sandboxed).
 icon: table-columns
 ---
 
-تمثّل **طبقة التخطيط** في تطبيق Twenty كل ما يراه المستخدم: مكان ظهور التطبيق في الشريط الجانبي، العروض القائِمية التي يوفّرها، كيفية ترتيب صفحات تفاصيل السجل، وأي مكوّنات React مخصّصة يتم عرضها داخل تلك الصفحات.
+تمثّل **طبقة التخطيط** في تطبيق Arxena كل ما يراه المستخدم: مكان ظهور التطبيق في الشريط الجانبي، العروض القائِمية التي يوفّرها، كيفية ترتيب صفحات تفاصيل السجل، وأي مكوّنات React مخصّصة يتم عرضها داخل تلك الصفحات.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ icon: table-columns
     `definePageLayout` و`definePageLayoutTab` — علامات التبويب والويدجتات في صفحة تفاصيل السجل.
   </Card>
   <Card title="المكوّنات الأمامية" icon="window-maximize" href="/l/ar/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — مكوّنات React معزولة (sandboxed) يتم عرضها داخل Twenty.
+    `defineFrontComponent` — مكوّنات React معزولة (sandboxed) يتم عرضها داخل Arxena.
   </Card>
   <Card title="عناصر قائمة الأوامر" icon="terminal" href="/l/ar/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — تسجيل مكوّنات الواجهة الأمامية كإدخالات Cmd+K وإجراءات سريعة.
@@ -54,4 +54,4 @@ icon: table-columns
 | **إعدادات التطبيق**       | قسم تهيئة مخصص داخل علامة تبويب الإعدادات في التطبيق، بدلاً من واجهة المستخدم الافتراضية للمتغيرات | `defineSettingsFrontComponent`            |
 | **قائمة الأوامر (Cmd+K)** | إجراء سريع مُثبّت أو أمر مخفي                                                                      | `defineCommandMenuItem`                   |
 
-تعمل مكوّنات الواجهة الأمامية داخل Web Worker معزول باستخدام Remote DOM — يتم عرضها بشكل أصيل داخل الصفحة (وليس داخل iframe)، لكنها لا تستطيع الوصول مباشرةً إلى صفحة المضيف أو إلى DOM. يحدث التواصل مع Twenty من خلال واجهة API للمضيف تعتمد تمرير الرسائل.
+تعمل مكوّنات الواجهة الأمامية داخل Web Worker معزول باستخدام Remote DOM — يتم عرضها بشكل أصيل داخل الصفحة (وليس داخل iframe)، لكنها لا تستطيع الوصول مباشرةً إلى صفحة المضيف أو إلى DOM. يحدث التواصل مع Arxena من خلال واجهة API للمضيف تعتمد تمرير الرسائل.

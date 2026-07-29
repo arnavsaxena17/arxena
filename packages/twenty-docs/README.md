@@ -1,17 +1,17 @@
-# Twenty Documentation
+# Arxena Documentation
 
-Official documentation for Twenty CRM, powered by [Mintlify](https://mintlify.com).
+Official documentation for Arxena CRM, powered by [Mintlify](https://mintlify.com).
 
 ## 🌐 Live Site
 
-Visit the documentation at [docs.twenty.com](https://docs.twenty.com)
+Visit the documentation at [docs.arxena.com](https://docs.arxena.com)
 
 ## 📚 Content
 
 This repository contains:
-- **User Guide** (46 pages) - Complete guide for Twenty users
+- **User Guide** (46 pages) - Complete guide for Arxena users
 - **Developers** (24 pages) - Technical documentation for developers
-- **Twenty UI** (25 pages) - UI component library documentation
+- **Arxena UI** (25 pages) - UI component library documentation
 
 ## 🚀 Local Development
 
@@ -81,7 +81,7 @@ npx nx run twenty-docs:validate
 
 ## 🔗 Links
 
-- [Twenty Website](https://twenty.com)
+- [Arxena Website](https://arxena.com)
 - [GitHub Repository](https://github.com/twentyhq/twenty)
 - [Mintlify Documentation](https://mintlify.com/docs)
 
@@ -96,4 +96,4 @@ To contribute to the documentation:
 
 ## 📄 License
 
-This documentation is part of the Twenty project and is licensed under [AGPL-3.0](../../LICENSE).
+This documentation is part of the Arxena project and is licensed under [AGPL-3.0](../../LICENSE).

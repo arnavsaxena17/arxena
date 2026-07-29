@@ -21,7 +21,7 @@ V relaci jeden ku mnoha:
 
 Strana „jedna“ je **nadřazená**. Strana „mnoho“ je **podřízená**.
 
-### Běžné relace v Twenty
+### Běžné relace v Arxena
 
 | Vztah                      | Strana „jedna“ (nadřazený) | Strana „mnoho“ (podřízený) |
 | -------------------------- | -------------------------- | -------------------------- |
@@ -41,7 +41,7 @@ Před importem určete, který objekt je nadřazený a který podřízený.
 
 ## Krok 2: Nejprve importujte nadřazené záznamy
 
-Nadřazený („jedna“ strana) musí v Twenty existovat, než na něj budete moci odkazovat.
+Nadřazený („jedna“ strana) musí v Arxena existovat, než na něj budete moci odkazovat.
 
 **Pořadí importu:**
 
@@ -73,7 +73,7 @@ Na nadřazený záznam musíte odkazovat pomocí **jedinečného identifikátoru
 
 Pokud potřebujete `id`:
 
-1. Exportujte nadřazené záznamy z Twenty
+1. Exportujte nadřazené záznamy z Arxena
 2. Export obsahuje sloupec `id`
 3. Použijte tato ID v souboru s podřízenými záznamy
 
@@ -119,7 +119,7 @@ Sloupec `companyDomain` odkazuje na doménu společnosti.
 <Warning>
 **Na formátu domény záleží!**
 
-Použijte `https://domain.com` (ne pouze `domain.com`). To odpovídá způsobu, jak Twenty ukládá domény společností, a předchází chybám při párování.
+Použijte `https://domain.com` (ne pouze `domain.com`). To odpovídá způsobu, jak Arxena ukládá domény společností, a předchází chybám při párování.
 </Warning>
 
 ### Důležitá pravidla
@@ -139,7 +139,7 @@ Použijte `https://domain.com` (ne pouze `domain.com`). To odpovídá způsobu, 
 5. Dokončete zbývající mapování
 6. Zkontrolujte chyby a potvrďte
 
-Twenty automaticky propojí každý podřízený záznam s odpovídajícím nadřazeným.
+Arxena automaticky propojí každý podřízený záznam s odpovídajícím nadřazeným.
 
 ## Krok 7: Ověřte import
 
@@ -157,8 +157,8 @@ Po importu:
 | **Chybný formát domény**     | Použití `acme.com` místo `https://acme.com`     | Použijte plný formát URL s `https://`                           |
 | **Více jedinečných polí**    | Mapujete současně `companyId` A `companyDomain` | Mapujte pouze JEDEN jedinečný identifikátor                     |
 | **Chybí relační pole**       | Relační pole v datovém modelu neexistuje        | Vytvořte jej v **Nastavení → Datový model** před importem       |
-| **Neexistující záznamy**     | Nadřazený záznam v Twenty neexistuje            | Nejprve importujte nadřazené záznamy nebo zkontrolujte překlepy |
-| **Rozdílná velikost písmen** | `Acme.com` v souboru, ale v Twenty `acme.com`   | Zajistěte přesnou shodu velikosti písmen                        |
+| **Neexistující záznamy**     | Nadřazený záznam v Arxena neexistuje            | Nejprve importujte nadřazené záznamy nebo zkontrolujte překlepy |
+| **Rozdílná velikost písmen** | `Acme.com` v souboru, ale v Arxena `acme.com`   | Zajistěte přesnou shodu velikosti písmen                        |
 
 ## Propojování s členy pracovního prostoru
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Co když můj nadřazený záznam nemá doménu ani e-mail?">
     Máte dvě možnosti:
-    1. Použijte Twenty `id` (exportujte nadřazené záznamy, abyste získali jejich ID)
+    1. Použijte Arxena `id` (exportujte nadřazené záznamy, abyste získali jejich ID)
     2. Vytvořte ve svém datovém modelu vlastní jedinečné pole pro uložení externího ID z vašeho předchozího systému
   </Accordion>
 

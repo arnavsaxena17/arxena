@@ -16,9 +16,9 @@ Precisa de atualizar muitos registos de uma só vez? Em vez de os editar um a um
 
 ## Como Funciona
 
-Quando importar um ficheiro que contenha um **identificador único** que corresponde a um registo existente, a Twenty atualiza esse registo em vez de criar um duplicado.
+Quando importar um ficheiro que contenha um **identificador único** que corresponde a um registo existente, an Arxena atualiza esse registo em vez de criar um duplicado.
 
-| Se o identificador único...        | A Twenty irá...                                           |
+| Se o identificador único...        | An Arxena irá...                                           |
 | ---------------------------------- | --------------------------------------------------------- |
 | Corresponde a um registo existente | **Atualizar** o registo existente                         |
 | Não corresponde a nenhum registo   | **Criar** um novo registo                                 |
@@ -57,7 +57,7 @@ Abra o ficheiro exportado na sua aplicação de folha de cálculo (Excel, Google
 1. **Mantenha a coluna do identificador único** — não elimine `id`, `email` ou `domain`
 2. **Atualize os valores** nas colunas que quer alterar
 3. **Remova as colunas que não precisa de atualizar** (opcional, mas mais limpo)
-4. **Não altere os valores do identificador único** — caso contrário a Twenty criará novos registos
+4. **Não altere os valores do identificador único** — caso contrário an Arxena criará novos registos
 
 ### Exemplo: Atualizar Cargos
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Não altere os valores do identificador único.**
 
-Se alterar `john@acme.com` para `john.smith@acme.com`, a Twenty criará um novo registo em vez de atualizar o existente.
+Se alterar `john@acme.com` para `john.smith@acme.com`, an Arxena criará um novo registo em vez de atualizar o existente.
 </Warning>
 
 ## Passo 3: Importar o Ficheiro Atualizado
@@ -95,7 +95,7 @@ Se alterar `john@acme.com` para `john.smith@acme.com`, a Twenty criará um novo 
 6. Verifique se há erros
 7. Clique em **Confirm**
 
-A Twenty faz a correspondência dos registos pelo identificador único e atualiza-os com novos valores.
+An Arxena faz a correspondência dos registos pelo identificador único e atualiza-os com novos valores.
 
 ## Escolher o Identificador Único Correto
 
@@ -113,7 +113,7 @@ Se tiver um campo personalizado marcado como único (como um ID externo de outro
 
 1. Inclua esse campo na exportação e importação
 2. Mapeie-o durante a importação
-3. A Twenty fará a correspondência com base nesse campo
+3. An Arxena fará a correspondência com base nesse campo
 
 ## Passo 4: Verificar as Atualizações
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Alterar o identificador único**              | Alterado de `john@acme.com` para `john.smith@acme.com`           | Cria um novo registo em vez de atualizar | Mantenha os identificadores únicos inalterados |
 | **Vários campos únicos**                       | Mapear `email` E `id`                                            | Potenciais conflitos de correspondência  | Mapeie apenas UM identificador único           |
 | **Sem identificador único**                    | O ficheiro tem apenas `firstName`, `lastName`, `jobTitle`        | Todas as linhas criam novos registos     | Inclua sempre `email`, `domain` ou `id`        |
-| **Incompatibilidade de maiúsculas/minúsculas** | O ficheiro tem `John@acme.com`, mas a Twenty tem `john@acme.com` | Cria novo registo                        | Exporte da Twenty para obter os valores exatos |
+| **Incompatibilidade de maiúsculas/minúsculas** | O ficheiro tem `John@acme.com`, mas an Arxena tem `john@acme.com` | Cria novo registo                        | Exporte da Arxena para obter os valores exatos |
 
 ## Perguntas Frequentes
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Como sei quais os registos que serão atualizados vs. criados?">
-    Durante a etapa de revisão da importação, a Twenty mostra quantos registos serão atualizados vs. criados com base nas correspondências do identificador único.
+    Durante a etapa de revisão da importação, an Arxena mostra quantos registos serão atualizados vs. criados com base nas correspondências do identificador único.
   </Accordion>
 
   <Accordion title="Posso desfazer uma atualização em massa?">

@@ -4,7 +4,7 @@ description: 在视图和其他实体中，使用 getFieldUniversalIdentifier �
 icon: gears
 ---
 
-Twenty 中的每个对象都带有一组你无需自行声明的**系统字段**。 这些字段在对象初始化时由服务器自动创建：
+Arxena 中的每个对象都带有一组你无需自行声明的**系统字段**。 这些字段在对象初始化时由服务器自动创建：
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Twenty 中的每个对象都带有一组你无需自行声明的**系统字段**
 
 ## 问题
 
-从 Twenty 2.19 起，系统字段的通用标识符由服务器根据三个输入**确定性派生**：应用通用标识符、对象通用标识符以及字段名称。 自行构造一个 id 并将其硬编码是行不通的：它在服务器上不会匹配任何内容，同步时会拒绝这个悬空引用：
+从 Arxena 2.19 起，系统字段的通用标识符由服务器根据三个输入**确定性派生**：应用通用标识符、对象通用标识符以及字段名称。 自行构造一个 id 并将其硬编码是行不通的：它在服务器上不会匹配任何内容，同步时会拒绝这个悬空引用：
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -88,7 +88,7 @@ export default defineView({
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier` 可在 `twenty-sdk`
-  2.23 及更高版本中使用，并且需要 Twenty 服务器版本为 2.23 或更高。
+  2.23 及更高版本中使用，并且需要 Arxena 服务器版本为 2.23 或更高。
 </Note>
 
 除了上面的标量系统字段之外，服务器还会在每个对象上预置四个**系统关系字段**：`timelineActivities`、`attachments`、`noteTargets` 和 `taskTargets`，它们各自指向相应的标准关系对象。
@@ -130,9 +130,9 @@ const attachmentTargetRocketFieldId =
 
 与标量系统字段一样，解析得到的 id 可在任何需要 `fieldMetadataUniversalIdentifier` 的地方使用。
 
-## 标准 Twenty 对象
+## 标准 Arxena 对象
 
-对于**标准** Twenty 对象（Person、Company、Opportunity 等），你不需要进行任何派生：系统字段标识符是预先计算好的常量，你可以直接导入。
+对于**标准** Arxena 对象（Person、Company、Opportunity 等），你不需要进行任何派生：系统字段标识符是预先计算好的常量，你可以直接导入。
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

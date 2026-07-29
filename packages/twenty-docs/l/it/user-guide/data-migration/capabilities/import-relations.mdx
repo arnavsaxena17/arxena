@@ -5,15 +5,15 @@ description: Importare le relazioni tra record tramite CSV.
 
 ## Panoramica
 
-Twenty supporta l'importazione delle relazioni tra oggetti durante l'importazione CSV. Ciò consente di collegare i record (ad es., associare Persone ad Aziende) come parte della migrazione dei dati.
+Arxena supporta l'importazione delle relazioni tra oggetti durante l'importazione CSV. Ciò consente di collegare i record (ad es., associare Persone ad Aziende) come parte della migrazione dei dati.
 
 <Note>**Attualmente supportate per l'importazione**: Relazioni uno a molti che puntano a un singolo tipo di oggetto su ciascun lato (ad es., Persone → Aziende). Le relazioni che puntano a più tipi di oggetto non sono ancora supportate per importazione/esportazione.</Note>
 
-## Come funzionano le relazioni in Twenty
+## Come funzionano le relazioni in Arxena
 
 ### Uno a molti / Molti a uno
 
-Twenty supporta relazioni standard in cui un record è collegato a molti altri:
+Arxena supporta relazioni standard in cui un record è collegato a molti altri:
 
 * **Un'Azienda → Molte Persone**: Un'azienda può avere più dipendenti, ma ogni persona appartiene a un'unica azienda
 * **Un'Azienda → Molte Opportunità**: Un'azienda può avere più trattative, ma ogni opportunità appartiene a un'unica azienda
@@ -75,11 +75,11 @@ Per prima cosa, determina quale oggetto è sul lato "uno" e quale è sul lato "m
 
 ### Passaggio 2: Assicurati che i record del lato "uno" esistano
 
-Prima di importare il lato "molti", i record del lato "uno" devono già esistere in Twenty.
+Prima di importare il lato "molti", i record del lato "uno" devono già esistere in Arxena.
 
 * Importa o crea prima i record del lato "uno" (ad es., Aziende)
 * Verifica il loro identificatore univoco. Può essere:
-  * L'`id` (UUID di Twenty)
+  * L'`id` (UUID di Arxena)
   * Un campo impostato come univoco (ad es., `domain` per le Aziende o un ID esterno dal tuo sistema precedente)
 
 <Warning>L'importazione non riuscirà se viene fatto riferimento a un record inesistente.</Warning>
@@ -117,7 +117,7 @@ Se non esiste:
 1. Carica il file CSV tramite l'interfaccia di importazione
 2. Nel passaggio di mappatura dei campi, trova la colonna di relazione (ad es., `companyDomain`)
 3. Mappala al campo di relazione (ad es., Azienda)
-4. Twenty collegherà automaticamente ogni record al genitore corrispondente
+4. Arxena collegherà automaticamente ogni record al genitore corrispondente
 
 ### Campi univoci disponibili per le relazioni
 
@@ -128,7 +128,7 @@ Se non esiste:
 | **Membri del Workspace**                    | `id`, `email` (non il nome)                            |
 | **Altri oggetti standard e personalizzati** | `id`, qualsiasi campo contrassegnato come univoco      |
 
-<Note>**Collegamento ai membri dello Spazio di lavoro**: quando la relazione punta ai Membri dello Spazio di lavoro (il tuo team che accede a Twenty), fai riferimento al loro **indirizzo email**, non al nome.</Note>
+<Note>**Collegamento ai membri dello Spazio di lavoro**: quando la relazione punta ai Membri dello Spazio di lavoro (il tuo team che accede an Arxena), fai riferimento al loro **indirizzo email**, non al nome.</Note>
 
 <Note>Consigliamo di usare `domain` per le Aziende ed `email` per le Persone, poiché sono leggibili e facili da mantenere nei fogli di calcolo.</Note>
 

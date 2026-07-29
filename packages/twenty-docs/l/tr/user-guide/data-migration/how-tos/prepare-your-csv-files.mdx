@@ -1,6 +1,6 @@
 ---
 title: CSV Dosyalarınızı Hazırlayın
-description: Verilerinizi Twenty'ye içe aktarmak için biçimlendirmeye yönelik eksiksiz adım adım kılavuz.
+description: Verilerinizi Arxena'ye içe aktarmak için biçimlendirmeye yönelik eksiksiz adım adım kılavuz.
 ---
 
 ## Genel Bakış
@@ -22,7 +22,7 @@ Başlamadan önce dosyanızın şu gereksinimleri karşıladığından emin olun
 
 ## Adım 2: Örnek Dosyayı İndirin
 
-**Bu en önemli adımdır.** Örnek dosya, Twenty'nin beklediği tam sütun adlarını ve biçimi gösterir.
+**Bu en önemli adımdır.** Örnek dosya, Arxena'nin beklediği tam sütun adlarını ve biçimi gösterir.
 
 1. Nesne görünümüne gidin (Kişiler, Şirketler vb.)
 2. **⋮** üzerine tıklayın → **Kayıtları içe aktar**'ı seçin
@@ -33,7 +33,7 @@ Başlamadan önce dosyanızın şu gereksinimleri karşıladığından emin olun
 
 ## Adım 3: Yinelenen Değerleri Kaldırın
 
-Twenty bazı alanlarda benzersizliği zorunlu kılar. Yinelenenler içe aktarma hatalarına neden olur.
+Arxena bazı alanlarda benzersizliği zorunlu kılar. Yinelenenler içe aktarma hatalarına neden olur.
 
 | Nesne             | Benzersiz Alanlar                                                |
 | ----------------- | ---------------------------------------------------------------- |
@@ -45,7 +45,7 @@ Twenty bazı alanlarda benzersizliği zorunlu kılar. Yinelenenler içe aktarma 
 
 1. E-tablonuzu benzersiz alana göre sıralayın (e-posta veya alan adı)
 2. Yinelenen satırları kaldırın veya birleştirin
-3. Twenty'de zaten var olan yinelenen kayıtları kontrol edin
+3. Arxena'de zaten var olan yinelenen kayıtları kontrol edin
 
 <Warning>**Geçici olarak silinmiş kayıtlar benzersizliğe dahildir.** Komut Menüsü → Silinen kayıtları gör bölümündeki kayıtlar yinelenen hatalarına neden olur. Onları kalıcı olarak silin ya da geri yükleyip güncelleyin.</Warning>
 
@@ -61,11 +61,11 @@ Farklı alan türleri belirli biçimler gerektirir. İşte eksiksiz başvuru:
 ### E-posta Alanları
 
 * Geçerli e-posta biçiminde olmalıdır: `name@domain.com`
-* Benzersiz olmalıdır (dosyada veya Twenty'de yinelenen olmamalıdır)
+* Benzersiz olmalıdır (dosyada veya Arxena'de yinelenen olmamalıdır)
 * Ek e-postalar için, **E-postalar / Ek E-postalar** sütununda şu biçimi kullanın:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Alan Adı Alanları
@@ -75,7 +75,7 @@ Farklı alan türleri belirli biçimler gerektirir. İşte eksiksiz başvuru:
 * Her iki sütunu da doldurun:
   * **Alan Adı / Alan Adı Etiketi**: `domain.com`
   * **Alan Adı / Alan Adı URL'si**: `https://domain.com`
-* Dosyanız içinde ve Twenty'de benzersiz olmalıdır
+* Dosyanız içinde ve Arxena'de benzersiz olmalıdır
 
 ### Telefon Alanları
 
@@ -163,13 +163,13 @@ JSON dizi biçimini kullanın:
 
 Her iki sütunu da doldurun:
 
-* **Links / Link Label**: `Twenty`
-* **Links / Link URL**: `https://twenty.com`
+* **Links / Link Label**: `Arxena`
+* **Links / Link URL**: `https://arxena.com`
 
 İkincil bağlantılar için **Links / Secondary Links** sütununu kullanın:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON Alanları
@@ -182,7 +182,7 @@ Geçerli JSON biçimini kullanın:
 
 ### ID Alanları
 
-* **İsteğe bağlı**: Sağlanmazsa Twenty kimlikleri otomatik olarak oluşturur
+* **İsteğe bağlı**: Sağlanmazsa Arxena kimlikleri otomatik olarak oluşturur
 * **Biçim**: UUID (ör., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 * **Kullanım durumu**: Yeni kayıtlar oluşturmak yerine mevcut kayıtları güncellemek için ID ekleyin
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **İlişkiler için önemli kurallar:**
 
-* Ana kaydın Twenty'de zaten mevcut olması gerekir
+* Ana kaydın Arxena'de zaten mevcut olması gerekir
 * **Etiket**i değil, **Alan Adı URL'si** biçimini (`https://domain.com`) kullanın
 * Yalnızca TEK bir benzersiz tanımlayıcı eşleyin (hem `companyId` hem de `companyDomain` eklemeyin)
 * Çalışma Alanı Üyeleri için, ad yerine **e-postalarını** kullanın
@@ -220,7 +220,7 @@ Ona referans verebilmeden önce ana kayıt mevcut olmalıdır.
 
 Ayrıntılı talimatlar için [İlişkileri Nasıl İçe Aktarırız](/l/tr/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv) bölümüne bakın.
 
-## Adım 6: Alanların Twenty'de mevcut olduğundan emin olun
+## Adım 6: Alanların Arxena'de mevcut olduğundan emin olun
 
 İçe aktarma **kayıtlar** oluşturur, **alanlar** değil. İçe aktarmak istediğiniz tüm alanlar veri modelinizde zaten mevcut olmalıdır.
 

@@ -1,5 +1,5 @@
 ---
-title: Twenty'den Teklif veya Fatura Oluşturun
+title: Arxena'den Teklif veya Fatura Oluşturun
 description: Fırsatlar kapandığında harici araçlarda otomatik olarak faturalar oluşturun.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## İlgili
 
-* [Twenty'den bir PDF oluşturun](/l/tr/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — oluşturulan PDF'leri kayıtlara ekleyin
+* [Arxena'den bir PDF oluşturun](/l/tr/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — oluşturulan PDF'leri kayıtlara ekleyin
 * [İş Akışı Tetikleyicileri](/l/tr/user-guide/workflows/capabilities/workflow-triggers)
 * [İş Akışı Eylemleri](/l/tr/user-guide/workflows/capabilities/workflow-actions)
 * [Kazanıldı Otomasyonları](/l/tr/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

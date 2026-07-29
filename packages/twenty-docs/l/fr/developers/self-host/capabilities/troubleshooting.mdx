@@ -12,9 +12,9 @@ Si vous rencontrez un problème lors de la configuration de l'environnement pour
 #### La première installation entraîne l'erreur `l'authentification du mot de passe a échoué pour l'utilisateur "postgres"`
 
 🚨 **IMPORTANT : Cette solution est UNIQUEMENT pour les nouvelles installations** 🚨
-Si vous avez une instance Twenty existante avec des données de production, **NE SUIVEZ PAS** ces étapes, car elles supprimeront définitivement votre base de données !
+Si vous avez une instance Arxena existante avec des données de production, **NE SUIVEZ PAS** ces étapes, car elles supprimeront définitivement votre base de données !
 
-Lors de l'installation de Twenty pour la première fois, vous pouvez vouloir changer le mot de passe par défaut de la base de données.
+Lors de l'installation de Arxena pour la première fois, vous pouvez vouloir changer le mot de passe par défaut de la base de données.
 Le mot de passe que vous définissez lors de la première installation est stocké de façon permanente dans le volume de la base de données. Si vous essayez ensuite de changer ce mot de passe dans votre configuration sans supprimer l'ancien volume, vous obtiendrez des erreurs d'authentification car la base de données utilise toujours le mot de passe original.
 
 ⚠️ AVERTISSEMENT : Les étapes suivantes SUPPRIMERONT DÉFINITIVEMENT toutes les données de la base de données ! ⚠️
@@ -40,7 +40,7 @@ Ensuite, supprimez le dépôt et clonez-le de nouveau.
 
 #### Schéma de métadonnées manquant
 
-Pendant l'installation de Twenty, vous devez approvisionner votre base de données postgres avec les bons schémas, extensions et utilisateurs.
+Pendant l'installation de Arxena, vous devez approvisionner votre base de données postgres avec les bons schémas, extensions et utilisateurs.
 Si vous réussissez cet approvisionnement, vous devriez avoir des schémas `default` et `metadata` dans votre base de données.
 Sinon, assurez-vous de ne pas avoir plus d'une instance postgres fonctionnant sur votre ordinateur.
 
@@ -81,7 +81,7 @@ L'option --max-old-space-size=8192 fixe une limite supérieure de 8 Go pour le t
 Référence : https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Si cela ne fonctionne pas :**
-Examinez quels processus consomment le plus de RAM sur votre machine. Chez Twenty, nous avons remarqué que certaines extensions de VScode consommaient beaucoup de RAM, nous les désactivons donc temporairement.
+Examinez quels processus consomment le plus de RAM sur votre machine. Chez Arxena, nous avons remarqué que certaines extensions de VScode consommaient beaucoup de RAM, nous les désactivons donc temporairement.
 
 **Si cela ne fonctionne pas :**
 Le redémarrage de votre machine aide à nettoyer les processus fantômes.
@@ -120,9 +120,9 @@ C'est attendu car l'utilisateur est non autorisé lorsqu'il est déconnecté pui
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Test de Webhook" />
 </div>
 
-* Ouvrez votre application Twenty, naviguez jusqu'à `/settings`, et activez le bouton **Avancé** en bas à gauche de l'écran.
+* Ouvrez votre application Arxena, naviguez jusqu'à `/settings`, et activez le bouton **Avancé** en bas à gauche de l'écran.
 * Créez un nouveau webhook.
-* Collez **Votre URL Webhook Unique** dans le champ **URL de l'Endpoint** de Twenty. Réglez les **Filtres** sur `Sociétés` et `Créé`.
+* Collez **Votre URL Webhook Unique** dans le champ **URL de l'Endpoint** de Arxena. Réglez les **Filtres** sur `Sociétés` et `Créé`.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Paramètres du Webhook" />
@@ -192,7 +192,7 @@ Notez que la commande database:reset effacera complètement votre base de donné
 
 #### Problèmes de connexion derrière un proxy inverse
 
-Si vous exécutez Twenty derrière un proxy inverse et rencontrez des problèmes de connexion :
+Si vous exécutez Arxena derrière un proxy inverse et rencontrez des problèmes de connexion :
 
 1. **Vérifiez SERVER_URL :**
 
@@ -200,12 +200,12 @@ Si vous exécutez Twenty derrière un proxy inverse et rencontrez des problèmes
 
 2. **Vérifiez les paramètres du proxy inverse :**
 
-   * Confirmez que votre proxy inverse transfère correctement les requêtes au serveur Twenty.
+   * Confirmez que votre proxy inverse transfère correctement les requêtes au serveur Arxena.
    * Assurez-vous que les en-têtes comme `X-Forwarded-For` et `X-Forwarded-Proto` sont correctement configurés.
 
 3. **Redémarrez les services :**
 
-   Après avoir apporté des modifications, redémarrez à la fois le proxy inverse et les conteneurs Twenty.
+   Après avoir apporté des modifications, redémarrez à la fois le proxy inverse et les conteneurs Arxena.
 
 #### Erreur lors du téléchargement d'une image - permission refusée
 
@@ -225,4 +225,4 @@ Si vous rencontrez des problèmes non couverts par ce guide :
 
 * Support communautaire :
 
-  Contactez la [communauté Twenty](https://github.com/twentyhq/twenty/issues) ou les [canaux de support](https://discord.gg/cx5n4Jzs57) pour obtenir de l'aide.
+  Contactez la [communauté Arxena](https://github.com/twentyhq/twenty/issues) ou les [canaux de support](https://discord.gg/cx5n4Jzs57) pour obtenir de l'aide.

@@ -1,15 +1,15 @@
 ---
 title: Publicare
 icon: upload
-description: Distribuie aplicația ta Twenty în marketplace sau implementeaz-o intern.
+description: Distribuie aplicația ta Arxena în marketplace sau implementeaz-o intern.
 ---
 
 ## Prezentare generală
 
 După ce aplicația ta este [construită și testată local](/l/ro/developers/extend/apps/getting-started/concepts), ai două căi pentru distribuire:
 
-* **Implementează un tarball** — încarcă aplicația direct pe un server Twenty anume pentru uz intern sau privat.
-* **Publică pe npm** — listează aplicația ta în marketplace-ul Twenty pentru ca orice spațiu de lucru să o poată descoperi și instala.
+* **Implementează un tarball** — încarcă aplicația direct pe un server Arxena anume pentru uz intern sau privat.
+* **Publică pe npm** — listează aplicația ta în marketplace-ul Arxena pentru ca orice spațiu de lucru să o poată descoperi și instala.
 
 Ambele căi pornesc din aceeași etapă de **build**.
 
@@ -25,7 +25,7 @@ Aceasta compilează sursele TypeScript, transpilează funcțiile de logică și 
 
 ## Implementare pe un server (tarball)
 
-Pentru aplicațiile pe care nu le dorești disponibile public — instrumente proprietare, integrări doar pentru enterprise sau build-uri experimentale — poți implementa un tarball direct pe un server Twenty.
+Pentru aplicațiile pe care nu le dorești disponibile public — instrumente proprietare, integrări doar pentru enterprise sau build-uri experimentale — poți implementa un tarball direct pe un server Arxena.
 
 ### Cerințe
 
@@ -79,7 +79,7 @@ Etichetele de pre-lansare funcționează conform așteptărilor: incrementarea d
 
 ### Compatibilitatea versiunii serverului
 
-Dacă aplicația ta folosește o funcționalitate introdusă într-o anumită versiune de server Twenty (de exemplu, furnizori OAuth adăugați în v2.3.0), ar trebui să declari versiunea minimă de server necesară aplicației folosind câmpul `engines.twenty` din `package.json`:
+Dacă aplicația ta folosește o funcționalitate introdusă într-o anumită versiune de server Arxena (de exemplu, furnizori OAuth adăugați în v2.3.0), ar trebui să declari versiunea minimă de server necesară aplicației folosind câmpul `engines.twenty` din `package.json`:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ Rulează testele de integrare la fiecare push pe `main` și la fiecare pull requ
 **Ce face:**
 
 1. Preia codul sursă al aplicației.
-2. Pornește o instanță de test Twenty izolată folosind acțiunea compozită `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (echivalentul din CI al `yarn twenty docker:start --test`).
+2. Pornește o instanță de test Arxena izolată folosind acțiunea compozită `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (echivalentul din CI al `yarn twenty docker:start --test`).
 3. Activează Corepack, configurează Node.js pe baza fișierului `.nvmrc` și instalează dependențele cu `yarn install --immutable`.
 4. Rulează `yarn test`, transmitând `TWENTY_API_URL` și `TWENTY_API_KEY` din instanța pornită, astfel încât testele să poată comunica cu un server real.
 
 **Opțiuni de configurare:**
 
-* `TWENTY_VERSION` (variabilă de mediu, implicit `latest`) — fixează versiunea serverului Twenty folosită în CI editând acest parametru în `ci.yml`.
+* `TWENTY_VERSION` (variabilă de mediu, implicit `latest`) — fixează versiunea serverului Arxena folosită în CI editând acest parametru în `ci.yml`.
 * Concurența este grupată după `github.ref` și anulează execuțiile în desfășurare la noile push-uri.
 
 Nu sunt necesare secrete — instanța de test este efemeră și există doar pe durata jobului.
 
 ### CD — `cd.yml`
 
-Implementează aplicația pe un server Twenty configurat la fiecare push pe `main` și, opțional, dintr-un pull request când se aplică eticheta `deploy`.
+Implementează aplicația pe un server Arxena configurat la fiecare push pe `main` și, opțional, dintr-un pull request când se aplică eticheta `deploy`.
 
 **Ce face:**
 
@@ -146,7 +146,7 @@ Implementează aplicația pe un server Twenty configurat la fiecare push pe `mai
 
 | Setare                  | Unde                                                       | Scop                                                                                                               |
 | ----------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `TWENTY_DEPLOY_URL`     | `env` în `cd.yml` (implicit `http://localhost:3000`)       | Serverul Twenty la care se face implementarea. Modifică-l la URL-ul real al serverului înainte de prima utilizare. |
+| `TWENTY_DEPLOY_URL`     | `env` în `cd.yml` (implicit `http://localhost:3000`)       | Serverul Arxena la care se face implementarea. Modifică-l la URL-ul real al serverului înainte de prima utilizare. |
 | `TWENTY_DEPLOY_API_KEY` | GitHub repo **Settings → Secrets and variables → Actions** | Cheie API cu permisiune de implementare pe serverul țintă.                                                         |
 
 <Note>
@@ -168,7 +168,7 @@ Publică aplicația pe npm, cu proveniență, când împingi un tag de versiune 
 
 **Configurare unică:**
 
-Pe npmjs.com deschide pachetul tău > **Settings → Trusted Publisher** și înregistrează acest repozitoriu cu fluxul de lucru `publish.yml` (vezi [documentația npm trusted publishing](https://docs.npmjs.com/trusted-publishers)). Publicarea cu provenance certifică ce repozitoriu GitHub a construit pachetul, ceea ce este, de asemenea, modul în care îți revendici proprietatea asupra aplicației tale într-un marketplace Twenty.
+Pe npmjs.com deschide pachetul tău > **Settings → Trusted Publisher** și înregistrează acest repozitoriu cu fluxul de lucru `publish.yml` (vezi [documentația npm trusted publishing](https://docs.npmjs.com/trusted-publishers)). Publicarea cu provenance certifică ce repozitoriu GitHub a construit pachetul, ceea ce este, de asemenea, modul în care îți revendici proprietatea asupra aplicației tale într-un marketplace Arxena.
 
 <Note>
 npm acceptă doar proveniență din depozite sursă **publice**. Dacă publici dintr-un depozit privat, npm respinge pachetul de proveniență OIDC cu un `E422 ... Eroare „Unsupported GitHub Actions source repository visibility: "private"`.” Pentru a publica dintr-un depozit privat, renunță la proveniență setând `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'` în `env` al etapei de publicare (un indiciu comentat este inclus în fișierul generat `publish.yml`):
@@ -187,7 +187,7 @@ Fluxurile de lucru `ci.yml` și `cd.yml` fac referire la acțiuni reutilizabile 
 
 ## Publicarea pe npm
 
-Publicarea pe npm face ca aplicația ta să poată fi descoperită în marketplace-ul Twenty. Orice spațiu de lucru Twenty poate răsfoi, instala și actualiza aplicațiile din marketplace direct din interfață.
+Publicarea pe npm face ca aplicația ta să poată fi descoperită în marketplace-ul Arxena. Orice spațiu de lucru Arxena poate răsfoi, instala și actualiza aplicațiile din marketplace direct din interfață.
 
 ### Cerințe
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### Cum funcționează descoperirea în marketplace
 
-Serverul Twenty sincronizează catalogul marketplace-ului din registrul npm **la fiecare oră**.
+Serverul Arxena sincronizează catalogul marketplace-ului din registrul npm **la fiecare oră**.
 
 Poți declanșa sincronizarea imediat, în loc să aștepți:
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 Metadatele afișate în marketplace provin din configurația `defineApplication()` — vezi secțiunea [Metadate pentru marketplace](#marketplace-metadata) de mai sus.
 
 <Note>
-Dacă aplicația ta nu definește un `aboutDescription` în `defineApplication()`, piața va folosi automat fișierul `README.md` al pachetului tău de pe npm drept conținut pentru pagina Despre. Acest lucru înseamnă că poți menține un singur README atât pentru npm, cât și pentru piața Twenty. Dacă vrei o descriere diferită în piață, setează explicit `aboutDescription`.
+Dacă aplicația ta nu definește un `aboutDescription` în `defineApplication()`, piața va folosi automat fișierul `README.md` al pachetului tău de pe npm drept conținut pentru pagina Despre. Acest lucru înseamnă că poți menține un singur README atât pentru npm, cât și pentru piața Arxena. Dacă vrei o descriere diferită în piață, setează explicit `aboutDescription`.
 </Note>
 
 ### Publicare CI
@@ -270,14 +270,14 @@ Fluxul de lucru generat `publish.yml` descris mai sus publică automat pe npm la
 Pentru alte sisteme CI (GitLab CI, CircleCI etc.), rulează `yarn install` apoi `yarn twenty app:publish`. Provenance este emisă atunci când mediul poate genera un token OIDC și este omisă automat în caz contrar.
 
 <Note>
-**npm provenance** adaugă un badge de încredere la listarea ta în npm, permițând utilizatorilor să verifice că pachetul a fost construit dintr-un commit specific într-un pipeline CI public. Este, de asemenea, ceea ce îți permite să revendici proprietatea asupra aplicației tale într-un marketplace Twenty. Vezi [documentația npm provenance](https://docs.npmjs.com/generating-provenance-statements) pentru detalii.
+**npm provenance** adaugă un badge de încredere la listarea ta în npm, permițând utilizatorilor să verifice că pachetul a fost construit dintr-un commit specific într-un pipeline CI public. Este, de asemenea, ceea ce îți permite să revendici proprietatea asupra aplicației tale într-un marketplace Arxena. Vezi [documentația npm provenance](https://docs.npmjs.com/generating-provenance-statements) pentru detalii.
 </Note>
 
 ## Instalarea aplicațiilor
 
 După ce o aplicație este publicată (npm) sau implementată (tarball), spațiile de lucru o pot instala prin interfața utilizatorului (UI).
 
-Mergi la pagina **Setări > Aplicații** din Twenty, unde pot fi parcurse și instalate atât aplicațiile din marketplace, cât și cele implementate prin tarball.
+Mergi la pagina **Setări > Aplicații** din Arxena, unde pot fi parcurse și instalate atât aplicațiile din marketplace, cât și cele implementate prin tarball.
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

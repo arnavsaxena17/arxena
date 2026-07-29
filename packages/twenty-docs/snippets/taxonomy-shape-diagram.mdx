@@ -1,0 +1,42 @@
+export const TaxonomyShapeDiagram = () => (
+  <div className="tx-diagram">
+    <div className="tx-panel tx-panel--grade">
+      <p className="tx-panel__title">
+        Grade category <span>e.g. executive leadership</span>
+      </p>
+      <div className="tx-panel__row">
+        <div className="tx-chip">
+          <span className="tx-chip__name">C-suite</span>
+          <span className="tx-chip__desc">CEO, CFO, CHRO</span>
+        </div>
+        <div className="tx-chip">
+          <span className="tx-chip__name">SVP / EVP</span>
+          <span className="tx-chip__desc">Senior leadership</span>
+        </div>
+        <div className="tx-chip">
+          <span className="tx-chip__name">VP</span>
+          <span className="tx-chip__desc">Functional VPs</span>
+        </div>
+      </div>
+    </div>
+    <div className="tx-panel tx-panel--function">
+      <p className="tx-panel__title">
+        Function root <span>e.g. human resources</span>
+      </p>
+      <div className="tx-panel__row">
+        <div className="tx-chip">
+          <span className="tx-chip__name">Recruiting</span>
+          <span className="tx-chip__desc">Sourcing and hiring</span>
+        </div>
+        <div className="tx-chip">
+          <span className="tx-chip__name">People ops</span>
+          <span className="tx-chip__desc">HR generalists</span>
+        </div>
+        <div className="tx-chip">
+          <span className="tx-chip__name">Total rewards</span>
+          <span className="tx-chip__desc">Comp and benefits</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);

@@ -9,7 +9,7 @@ Antworten Sie auf eingehende E-Mails in Sekunden — nicht in Stunden. Dieser Wo
 
 Jede E-Mail enthält einen verborgenen `Message-ID`-Header — einen eindeutigen Fingerabdruck, der vom Mailserver des Absenders zugewiesen wird. Wenn Sie auf eine E-Mail antworten, setzt Ihr E-Mail-Client einen `In-Reply-To`-Header, der auf diesen Fingerabdruck verweist. So gruppieren Gmail, Outlook und alle anderen Clients Nachrichten in Threads.
 
-In Twenty wird dieser Fingerabdruck als `headerMessageId` am Message-Objekt gespeichert. Ihr Workflow greift ihn auf und übergibt ihn an das Feld In-Reply-To der Aktion Send Email.
+In Arxena wird dieser Fingerabdruck als `headerMessageId` am Message-Objekt gespeichert. Ihr Workflow greift ihn auf und übergibt ihn an das Feld In-Reply-To der Aktion Send Email.
 
 ## Den Workflow erstellen
 
@@ -21,7 +21,7 @@ Gehen Sie zu **Settings -> Workflows** und klicken Sie auf **+ New Workflow**.
 
 Wählen Sie **When a Record is Created** und dann **Messages**.
 
-Jedes Mal, wenn eine E-Mail in Twenty eingeht, wird dies ausgelöst.
+Jedes Mal, wenn eine E-Mail in Arxena eingeht, wird dies ausgelöst.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Aktivieren Sie ihn, wenn Sie zufrieden sind.
 
 ## Ideen zum Ausbau
 
-* **Nur an VIPs antworten** — fügen Sie einen Zweig hinzu, der die Domain des Absenders prüft oder ob er in Twenty als Kontakt existiert
+* **Nur an VIPs antworten** — fügen Sie einen Zweig hinzu, der die Domain des Absenders prüft oder ob er in Arxena als Kontakt existiert
 * **Nach Absicht routen** — verwenden Sie separate AI Agent-Prompts, um Vertriebsanfragen anders zu bearbeiten als Supportanfragen
 * **Vor der Antwort anreichern** — fügen Sie einen Schritt Search Records hinzu, um das Unternehmen oder die Deal-Historie des Absenders in den AI-Prompt zu übernehmen, für persönlichere Antworten

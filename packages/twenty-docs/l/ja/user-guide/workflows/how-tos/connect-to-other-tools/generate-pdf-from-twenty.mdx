@@ -1,16 +1,16 @@
 ---
-title: Twenty から PDF を生成する
+title: Arxena から PDF を生成する
 description: PDF（見積書など）を生成してレコードに添付するワークフローを作成します。
 ---
 
-Twenty で PDF を自動生成または取得し、レコードに添付します。 これは、会社、商談、またはその他のオブジェクトに関連付けられた見積書、請求書、レポートを作成する用途で一般的に使用されます。
+Arxena で PDF を自動生成または取得し、レコードに添付します。 これは、会社、商談、またはその他のオブジェクトに関連付けられた見積書、請求書、レポートを作成する用途で一般的に使用されます。
 
 ## 概要
 
 このワークフローでは **手動トリガー** を使用し、選択した任意のレコードに対してオンデマンドで PDF を生成できるようにします。 次を **ロジック関数** が処理します:
 
 1. URL（PDF 生成サービスから）から PDF をダウンロードする
-2. ファイルを Twenty にアップロードする
+2. ファイルを Arxena にアップロードする
 3. レコードに関連付けられた添付ファイルを作成する
 
 ## 前提条件
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ export const main = async (
 
 * [ワークフローのトリガー](/l/ja/user-guide/workflows/capabilities/workflow-triggers)
 * [ロジック関数](/l/ja/user-guide/workflows/capabilities/workflow-actions#code)
-* [Twenty から見積書または請求書を生成する](/l/ja/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Arxena から見積書または請求書を生成する](/l/ja/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

@@ -6,10 +6,10 @@ icon: gear
 # Konfigürasyon Yönetimi
 
 <Warning>
-**İlk kez mi kuruyorsunuz?** Twenty'yi çalıştırmak için [Docker Compose kurulum kılavuzunu](/l/tr/developers/self-host/capabilities/docker-compose) izleyin, ardından yapılandırma için buraya dönün.
+**İlk kez mi kuruyorsunuz?** Arxena'yi çalıştırmak için [Docker Compose kurulum kılavuzunu](/l/tr/developers/self-host/capabilities/docker-compose) izleyin, ardından yapılandırma için buraya dönün.
 </Warning>
 
-Twenty, farklı dağıtım ihtiyaçlarına uygun **iki yapılandırma modu** sunar:
+Arxena, farklı dağıtım ihtiyaçlarına uygun **iki yapılandırma modu** sunar:
 
 **Yönetici paneli erişimi:** Yalnızca yönetici ayrıcalıklarına sahip kullanıcılar (`canAccessFullAdminPanel: true`) konfigürasyon arayüzüne erişebilir.
 
@@ -21,7 +21,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 **Çoğu konfigürasyon, kurulumdan sonra arayüz üzerinden gerçekleştirilir**:
 
-1. Twenty örneğinize erişin (genellikle `http://localhost:3000`)
+1. Arxena örneğinize erişin (genellikle `http://localhost:3000`)
 2. **Ayarlar / Yönetici Paneli / Konfigürasyon Değişkenleri** yoluna gidin
 3. Entegrasyonları, e-postayı, depolamayı ve daha fazlasını yapılandırın
 4. Değişiklikler hemen yürürlüğe girer (çok konteynerli dağıtımlarda 15 saniye içinde)
@@ -50,14 +50,14 @@ Veritabanı bağlantıları (`PG_DATABASE_URL`), sunucu URL'leri (`SERVER_URL`) 
 
 ## Şifreleme anahtarları
 
-Twenty yalnızca ortam değişkenleriyle yapılandırılan iki şifreleme anahtarı kullanır:
+Arxena yalnızca ortam değişkenleriyle yapılandırılan iki şifreleme anahtarı kullanır:
 
 | Değişken                  | Amaç                                                                                                                                                                                                              | Zorunlu                                                                                                             |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `ENCRYPTION_KEY`          | Dinlenik durumdaki gizli verileri şifrelemek için kullanılan birincil anahtar (OAuth belirteçleri, uygulama değişkenleri, imzalama anahtarlarının özel anahtarları, TOTP sırları, hassas yapılandırma değerleri). | Yeni kurulumlar için evet (eski kurulumlar bunun yerine aşağıda açıklandığı gibi `APP_SECRET`'e dayanıyor olabilir) |
 | `FALLBACK_ENCRYPTION_KEY` | Yalnızca doğrulama için kullanılan anahtar. Döndürme sırasında, mevcut satırların şifresinin çözülebilir kalması için *önceki* `ENCRYPTION_KEY` değerine ayarlanır.                                               | Yalnızca döndürme sırasında                                                                                         |
 
-Geriye dönük uyumluluk için, `ENCRYPTION_KEY` ayarlanmadıysa, Twenty dinlenik durumdaki şifreleme için `APP_SECRET`'e geri döner — bu, daha eski dağıtımlardaki eski davranışla eşleşir. Yeni kurulumlarda her zaman özel bir `ENCRYPTION_KEY` ayarlanmalıdır.
+Geriye dönük uyumluluk için, `ENCRYPTION_KEY` ayarlanmadıysa, Arxena dinlenik durumdaki şifreleme için `APP_SECRET`'e geri döner — bu, daha eski dağıtımlardaki eski davranışla eşleşir. Yeni kurulumlarda her zaman özel bir `ENCRYPTION_KEY` ayarlanmalıdır.
 
 Değerleri `openssl rand -base64 32` ile oluşturun ve onları güvenli bir yerde saklayın (bir gizli yönetim sistemi, mühürlü yapılandırma vb.). `ENCRYPTION_KEY`'in kaybedilmesi, veritabanında saklanan tüm gizli bilgilere erişimin kaybedilmesi anlamına gelir.
 
@@ -78,7 +78,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 
 ## Çoklu Çalışma Alanı Modu
 
-Varsayılan olarak, Twenty **tek çalışma alanı modunda** çalışır — kuruluşunuz için tek bir CRM örneğine ihtiyaç duyulan çoğu kendi barındırmalı dağıtım için idealdir.
+Varsayılan olarak, Arxena **tek çalışma alanı modunda** çalışır — kuruluşunuz için tek bir CRM örneğine ihtiyaç duyulan çoğu kendi barındırmalı dağıtım için idealdir.
 
 ### Tek Çalışma Alanı Modu (Varsayılan)
 
@@ -86,7 +86,7 @@ Varsayılan olarak, Twenty **tek çalışma alanı modunda** çalışır — kur
 IS_MULTIWORKSPACE_ENABLED=false  # default
 ```
 
-* Her Twenty örneği başına bir çalışma alanı
+* Her Arxena örneği başına bir çalışma alanı
 * İlk kullanıcı otomatik olarak tam ayrıcalıklara sahip yönetici olur (`canImpersonate` ve `canAccessFullAdminPanel`)
 * İlk çalışma alanı oluşturulduktan sonra yeni kayıtlar devre dışı bırakılır
 * Basit URL yapısı: `https://your-domain.com`
@@ -98,7 +98,7 @@ IS_MULTIWORKSPACE_ENABLED=true
 DEFAULT_SUBDOMAIN=app  # default value
 ```
 
-Aynı Twenty örneği üzerinde birden fazla bağımsız ekibin kendi çalışma alanlarına ihtiyaç duyduğu SaaS benzeri dağıtımlar için çoklu çalışma alanı modunu etkinleştirin.
+Aynı Arxena örneği üzerinde birden fazla bağımsız ekibin kendi çalışma alanlarına ihtiyaç duyduğu SaaS benzeri dağıtımlar için çoklu çalışma alanı modunu etkinleştirin.
 
 **Tek çalışma alanı modundan temel farklar:**
 
@@ -152,7 +152,7 @@ Etkinleştirildiğinde, yalnızca `canAccessFullAdminPanel` yetkisine sahip kull
    * `https://{your-domain}/auth/google/redirect` (SSO için)
    * `https://{your-domain}/auth/google-apis/get-access-token` (entegrasyonlar için)
 
-### Twenty'de Yapılandır
+### Arxena'de Yapılandır
 
 1. **Ayarlar → Yönetici Paneli → Konfigürasyon Değişkenleri** bölümüne gidin
 2. **Google Auth** bölümünü bulun
@@ -184,7 +184,7 @@ Uygulamanız test modunda ise, projenize test kullanıcıları eklemeniz gerekec
 ## Microsoft 365 Entegrasyonu
 
 <Warning>
-Kullanıcıların Takvim ve Mesajlaşma API'sini kullanabilmesi için bir [Microsoft 365 Lisansı](https://admin.microsoft.com/Adminportal/Home) olması gerekir. Biri olmadan hesaplarını Twenty'de eşitleyemeyecekler.
+Kullanıcıların Takvim ve Mesajlaşma API'sini kullanabilmesi için bir [Microsoft 365 Lisansı](https://admin.microsoft.com/Adminportal/Home) olması gerekir. Biri olmadan hesaplarını Arxena'de eşitleyemeyecekler.
 </Warning>
 
 ### Microsoft Azure'da bir proje oluştur
@@ -213,7 +213,7 @@ Projenize aşağıdaki yönlendirme URI'lerini eklemeniz gerekir:
 * `https://{your-domain}/auth/microsoft/redirect` Microsoft SSO kullanmak istiyorsanız
 * `https://{your-domain}/auth/microsoft-apis/get-access-token`
 
-### Twenty'de Yapılandır
+### Arxena'de Yapılandır
 
 1. **Ayarlar → Yönetici Paneli → Konfigürasyon Değişkenleri** bölümüne gidin
 2. **Microsoft Auth** bölümünü bulun
@@ -316,16 +316,16 @@ yarn command:prod cron:workflow:automated-cron-trigger
 ## S3 Depolama
 
 <Warning>
-Varsayılan olarak, Twenty yüklenen dosyaları yerel dosya sisteminde depolar. Üretim dağıtımları için S3 veya S3 uyumlu bir hizmet (MinIO, DigitalOcean Spaces vb.) kullanın. dosyaların kapsayıcı yeniden başlatmaları arasında kalıcı olmasını ve birden çok sunucu örneği arasında ölçeklenmesini sağlamak için.
+Varsayılan olarak, Arxena yüklenen dosyaları yerel dosya sisteminde depolar. Üretim dağıtımları için S3 veya S3 uyumlu bir hizmet (MinIO, DigitalOcean Spaces vb.) kullanın. dosyaların kapsayıcı yeniden başlatmaları arasında kalıcı olmasını ve birden çok sunucu örneği arasında ölçeklenmesini sağlamak için.
 </Warning>
 
 `STORAGE_TYPE=S_3` değerini ayarlayın ve `STORAGE_S3_*` değişkenlerini yönetici paneli veya `.env` üzerinden yapılandırın. S3 değişkenlerinin tam listesi için [config-variables.ts referansına](https://github.com/twentyhq/twenty/blob/main/packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts) bakın.
 
-S3'ü CORS'a bağlı özelliklerle kullanırken (örn. tarayıcı içi dosya indirmeleri), bucket'ınızın CORS yapılandırmasında Twenty frontend origin'inize izin verdiğinden emin olun.
+S3'ü CORS'a bağlı özelliklerle kullanırken (örn. tarayıcı içi dosya indirmeleri), bucket'ınızın CORS yapılandırmasında Arxena frontend origin'inize izin verdiğinden emin olun.
 
 ## Mantıksal İşlevler ve Kod Yorumlayıcısı
 
-Twenty, iş akışları için mantıksal işlevleri ve yapay zekâ veri analizi için kod yorumlayıcısını destekler. Her ikisi de kullanıcı tarafından sağlanan kodu çalıştırır ve güvenlik için açık bir yapılandırma gerektirir.
+Arxena, iş akışları için mantıksal işlevleri ve yapay zekâ veri analizi için kod yorumlayıcısını destekler. Her ikisi de kullanıcı tarafından sağlanan kodu çalıştırır ve güvenlik için açık bir yapılandırma gerektirir.
 
 ### Güvenlik Varsayılanları
 
@@ -378,5 +378,5 @@ LOGIC_FUNCTION_TYPE=DISABLED  # default when NODE_ENV=production
 | E2B        | `CODE_INTERPRETER_TYPE=E_2_B`    | Korumalı alanlı yürütmeyle üretim             | Yüksek (yalıtılmış korumalı alan) |
 
 <Note>
-`LOGIC_FUNCTION_TYPE=DISABLED` veya `CODE_INTERPRETER_TYPE=DISABLED` kullanıldığında, herhangi bir yürütme girişimi bir hata döndürür. Bu, Twenty'yi bu yetenekler olmadan çalıştırmak istiyorsanız kullanışlıdır.
+`LOGIC_FUNCTION_TYPE=DISABLED` veya `CODE_INTERPRETER_TYPE=DISABLED` kullanıldığında, herhangi bir yürütme girişimi bir hata döndürür. Bu, Arxena'yi bu yetenekler olmadan çalıştırmak istiyorsanız kullanışlıdır.
 </Note>

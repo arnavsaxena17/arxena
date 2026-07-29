@@ -44,7 +44,7 @@ icon: wrench
 * 구성은 트리거 설정을 제외한 `defineLogicFunction` 구성에 `shouldRunOnVersionUpgrade`가 추가된 형태입니다.
 * **실행 시점**: 기본적으로 신규 설치에서만 실행됩니다. 업그레이드 시에도 실행하려면 `shouldRunOnVersionUpgrade: true`를 설정합니다. 업그레이드 경로에 따라 분기하기 위해 `previousVersion` / `newVersion`을 사용합니다.
 * **멱등성이 중요합니다**: 비동기 post-install은 재시도될 수 있고, `shouldRunOnVersionUpgrade`가 켜져 있으면 두 훅 모두 업그레이드 시 다시 실행됩니다.
-* 일반적인 로직 함수 환경(`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`)이 주입되므로, 앱의 토큰으로 Twenty API를 호출할 수 있습니다.
+* 일반적인 로직 함수 환경(`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`)이 주입되므로, 앱의 토큰으로 Arxena API를 호출할 수 있습니다.
 * 훅은 빌드 시 애플리케이션 매니페스트에 자동으로 연결됩니다(`preInstallLogicFunction` / `postInstallLogicFunction`) — [`defineApplication()`](/l/ko/developers/extend/apps/config/application)에서 참조할 것은 없습니다.
 * 기본 `timeoutSeconds`는 데이터 시딩과 같은 더 긴 설정 작업을 허용하기 위해 300으로 설정되어 있습니다.
 * **dev 모드에서는 실행되지 않음**: `yarn twenty dev`는 설치 플로우를 건너뛰고 파일을 직접 동기화하므로, 해당 환경에서는 훅이 전혀 실행되지 않습니다. 대신 수동으로 트리거하세요:

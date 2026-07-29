@@ -44,7 +44,7 @@ Her uygulama, her bir kanca türünden (kurulum öncesi, kurulum sonrası, kald�
 * Yapılandırma, tetikleyici ayarları çıkarılmış bir `defineLogicFunction` yapılandırmasıdır ve buna ek olarak `shouldRunOnVersionUpgrade` içerir.
 * **Ne zaman çalışır**: varsayılan olarak yalnızca ilk kurulumlarda. Yükseltmelerde de çalışması için `shouldRunOnVersionUpgrade: true` olarak ayarlayın. Yükseltme yoluna göre dallanmak için `previousVersion` / `newVersion` kullanın.
 * **İdempotans önemlidir**: asenkron post-install yeniden denenebilir ve `shouldRunOnVersionUpgrade` açıkken her iki kanca da yükseltmelerde yeniden çalıştırılır.
-* Alışıldık mantık işlevi ortamı (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) enjekte edilir, böylece Twenty API'sini uygulamanızın jetonuyla çağırabilirsiniz.
+* Alışıldık mantık işlevi ortamı (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) enjekte edilir, böylece Arxena API'sini uygulamanızın jetonuyla çağırabilirsiniz.
 * Kanca, derleme zamanında otomatik olarak uygulama manifestine (`preInstallLogicFunction` / `postInstallLogicFunction`) eklenir — [`defineApplication()`](/l/tr/developers/extend/apps/config/application) içinde referans verilecek bir şey yoktur.
 * Varsayılan `timeoutSeconds`, veri tohumlama gibi daha uzun kurulum görevlerine izin vermek için 300 olarak ayarlanmıştır.
 * **Geliştirme modunda yürütülmez**: `yarn twenty dev` kurulum akışını atlar ve dosyaları doğrudan senkronize eder, bu nedenle kancalar burada asla çalışmaz. Bunları bunun yerine manuel olarak tetikleyin:

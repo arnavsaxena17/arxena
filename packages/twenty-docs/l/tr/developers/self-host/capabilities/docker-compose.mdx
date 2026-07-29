@@ -9,7 +9,7 @@ Docker kapsayıcıları, üretim ortamında barındırma veya kendi kendine bar�
 
 ## Genel Bakış
 
-Bu kılavuz, Docker Compose kullanarak Twenty uygulamasını kurmak ve yapılandırmak için adım adım yönergeler sunar. Amaç, süreci sadeleştirmek ve kurulumunuzu bozabilecek yaygın sorunları önlemektir.
+Bu kılavuz, Docker Compose kullanarak Arxena uygulamasını kurmak ve yapılandırmak için adım adım yönergeler sunar. Amaç, süreci sadeleştirmek ve kurulumunuzu bozabilecek yaygın sorunları önlemektir.
 
 **Önemli:** Yalnızca bu kılavuzda açıkça belirtilen ayarları değiştirin. Diğer yapılandırmaları değiştirmek sorunlara yol açabilir.
 
@@ -22,7 +22,7 @@ Bu kılavuz, Docker Compose kullanarak Twenty uygulamasını kurmak ve yapıland
 
 ## Seçenek 1: Tek satırlık komut dosyası
 
-Tek bir komutla en son kararlı Twenty sürümünü yükleyin:
+Tek bir komutla en son kararlı Arxena sürümünü yükleyin:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/scripts/install.sh)
@@ -107,9 +107,9 @@ curl http://localhost:3000
 
 ## Yapılandırma
 
-### Twenty'yi Dış Erişime Açma
+### Arxena'yi Dış Erişime Açma
 
-Varsayılan olarak, Twenty `localhost` üzerinde `3000` portunda çalışır. Harici bir alan adı veya IP adresi aracılığıyla erişim sağlamak için `.env` dosyanızda `SERVER_URL`'i yapılandırmanız gerekir.
+Varsayılan olarak, Arxena `localhost` üzerinde `3000` portunda çalışır. Harici bir alan adı veya IP adresi aracılığıyla erişim sağlamak için `.env` dosyanızda `SERVER_URL`'i yapılandırmanız gerekir.
 
 #### `SERVER_URL`'a Genel Bakış
 
@@ -121,11 +121,11 @@ Varsayılan olarak, Twenty `localhost` üzerinde `3000` portunda çalışır. Ha
 
 ### SSL Gereksinimleri
 
-Belirli tarayıcı özelliklerinin düzgün çalışabilmesi için SSL (HTTPS) gereklidir. Bu özellikler yerel geliştirme sırasında çalışabilirken (tarayıcılar localhost'u farklı şekilde ele alır), Twenty'yi düzenli bir alanda barındırırken uygun bir SSL kurulumu gereklidir.
+Belirli tarayıcı özelliklerinin düzgün çalışabilmesi için SSL (HTTPS) gereklidir. Bu özellikler yerel geliştirme sırasında çalışabilirken (tarayıcılar localhost'u farklı şekilde ele alır), Arxena'yi düzenli bir alanda barındırırken uygun bir SSL kurulumu gereklidir.
 
 Örneğin, panoya kopyalama API'si güvenli bir bağlam gerektirebilir - uygulama boyunca kopyalama düğmeleri gibi bazı özellikler HTTPS etkinleştirilmediğinde çalışmayabilir.
 
-Optimum güvenlik ve işlevsellik için Twenty'nin SSL sonlandırma ile bir ters proxy arkasında ayarlanmasını şiddetle öneririz.
+Optimum güvenlik ve işlevsellik için Arxena'nin SSL sonlandırma ile bir ters proxy arkasında ayarlanmasını şiddetle öneririz.
 
 #### `SERVER_URL`'ı Yapılandırma
 
@@ -258,5 +258,5 @@ Herhangi bir sorunla karşılaşırsanız, çözümler için [Sorun Giderme](/l/
 ## Yönetilen Barındırma
 
 <Tip>
-  Twenty'yi kendiniz çalıştırıp bakımını yapmak istemiyor musunuz? [Sertifikalı bir Twenty barındırma iş ortağı bulun](https://twenty.com/partners/list?categories=HOSTING\&ref=docs-docker-compose); kurulumunuzun dağıtımını yapması, barındırması ve uçtan uca yönetmesi için. *(Veya ekibimize ulaşın: [contact@twenty.com](mailto:contact@twenty.com).)*
+  Arxena'yi kendiniz çalıştırıp bakımını yapmak istemiyor musunuz? [Sertifikalı bir Arxena barındırma iş ortağı bulun](https://arxena.com/partners/list?categories=HOSTING\&ref=docs-docker-compose); kurulumunuzun dağıtımını yapması, barındırması ve uçtan uca yönetmesi için. *(Veya ekibimize ulaşın: [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>

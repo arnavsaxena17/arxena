@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';

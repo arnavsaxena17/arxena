@@ -13,7 +13,7 @@ export const buildPeopleApiOpenApiDocument = (
   info: {
     title: 'Arxena People API',
     description:
-      'Search people by standardized function and grade, browse the std taxonomy, and query configured data source categories by alias.',
+      'People search and natural-language title resolution. Public taxonomy constants are short flat label lists (Apollo-style). Classify, Boolean builders, and people search require auth. Do not scrape taxonomy endpoints to rebuild a competing ontology.',
     version: '1.0.0',
     contact: {
       email: 'felix@arxena.com',
@@ -27,7 +27,7 @@ export const buildPeopleApiOpenApiDocument = (
   ],
   tags: [
     { name: 'Data sources', description: 'Configured people data source aliases' },
-    { name: 'Taxonomy', description: 'std_function_root, std_function, std_grade' },
+    { name: 'Taxonomy', description: 'Public constants and auth-gated label lists' },
     { name: 'People', description: 'People search' },
   ],
   components: {
@@ -43,15 +43,23 @@ export const buildPeopleApiOpenApiDocument = (
       TaxonomyItem: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
-          label: { type: 'string' },
-          name: { type: 'string' },
-          parent_id: { type: ['string', 'null'] },
+          id: { type: 'string', example: 'engineering' },
+          label: { type: 'string', example: 'Engineering' },
+          name: { type: 'string', example: 'engineering' },
+          parent_id: { type: ['string', 'null'], example: null },
           level: {
             oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }],
+            example: 1,
           },
         },
         required: ['id', 'label', 'name'],
+        example: {
+          id: 'engineering',
+          label: 'Engineering',
+          name: 'engineering',
+          parent_id: null,
+          level: 1,
+        },
       },
       PeopleSearchRequest: {
         type: 'object',
@@ -62,25 +70,48 @@ export const buildPeopleApiOpenApiDocument = (
             default: 'index',
             description:
               'Data source category alias. Use `index` for std_function and std_grade filters.',
+            example: 'index',
           },
-          companyId: { type: 'string' },
-          companyName: { type: 'string' },
-          website: { type: 'string' },
+          companyId: { type: 'string', example: 'comp_123' },
+          companyName: { type: 'string', example: 'Stripe' },
+          website: { type: 'string', example: 'stripe.com' },
           stdFunction: {
             type: 'string',
             description: 'Standardized function (e.g. engineering, sales).',
+            example: 'engineering',
           },
           stdGrade: {
             type: 'string',
             description: 'Standardized grade (e.g. leadership, mid, entry).',
+            example: 'leadership',
           },
-          country: { type: 'string' },
+          country: { type: 'string', example: 'United States' },
           query: { type: 'string' },
           personName: { type: 'string' },
-          jobTitle: { type: 'string' },
+          jobTitle: { type: 'string', example: 'Head of Engineering' },
           linkedinUrl: { type: 'string' },
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
-          offset: { type: 'integer', minimum: 0, default: 0 },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 20,
+            example: 20,
+          },
+          offset: {
+            type: 'integer',
+            minimum: 0,
+            default: 0,
+            example: 0,
+          },
+        },
+        example: {
+          dataSource: 'index',
+          companyName: 'Stripe',
+          stdFunction: 'engineering',
+          stdGrade: 'leadership',
+          country: 'United States',
+          limit: 20,
+          offset: 0,
         },
       },
       PeopleSearchResponse: {
@@ -94,6 +125,19 @@ export const buildPeopleApiOpenApiDocument = (
             items: { type: 'object', additionalProperties: true },
           },
         },
+        example: {
+          status: 'ok',
+          dataSource: 'index',
+          total: 2,
+          items: [
+            {
+              fullName: 'Alex Rivera',
+              jobTitle: 'VP Engineering',
+              companyName: 'Stripe',
+              linkedinUrl: 'https://www.linkedin.com/in/example',
+            },
+          ],
+        },
       },
       TitleFromJobSearchRequest: {
         type: 'object',
@@ -103,18 +147,32 @@ export const buildPeopleApiOpenApiDocument = (
             type: 'string',
             description:
               'Sample job title to classify into std_function and std_grade before searching.',
+            example: 'Head of Engineering',
           },
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
             default: 'index',
+            example: 'index',
           },
           companyId: { type: 'string' },
-          companyName: { type: 'string' },
+          companyName: { type: 'string', example: 'Stripe' },
           website: { type: 'string' },
-          country: { type: 'string' },
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
-          offset: { type: 'integer', minimum: 0, default: 0 },
+          country: { type: 'string', example: 'United States' },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 20,
+            example: 10,
+          },
+          offset: { type: 'integer', minimum: 0, default: 0, example: 0 },
+        },
+        example: {
+          jobTitle: 'Head of Engineering',
+          companyName: 'Stripe',
+          dataSource: 'index',
+          limit: 10,
         },
       },
       PeopleSearchByTitleResponse: {
@@ -137,6 +195,26 @@ export const buildPeopleApiOpenApiDocument = (
             },
           },
         ],
+        example: {
+          status: 'ok',
+          dataSource: 'index',
+          total: 1,
+          resolved: {
+            jobTitle: 'Head of Engineering',
+            normalizedTitle: 'head of engineering',
+            stdFunction: 'engineering',
+            stdFunctionRoot: 'engineering',
+            stdGrade: 'leadership',
+            confidence: 0.92,
+          },
+          items: [
+            {
+              fullName: 'Alex Rivera',
+              jobTitle: 'Head of Engineering',
+              companyName: 'Stripe',
+            },
+          ],
+        },
       },
       DataSourcesResponse: {
         type: 'object',
@@ -156,6 +234,180 @@ export const buildPeopleApiOpenApiDocument = (
               },
             },
           },
+        },
+        example: {
+          status: 'ok',
+          sources: [
+            {
+              alias: 'index',
+              label: 'Index',
+              description:
+                'Search the standardized people index with std_function and std_grade filters.',
+              supportsStdFunctionFilter: true,
+              supportsStdGradeFilter: true,
+              configured: true,
+            },
+          ],
+        },
+      },
+      TaxonomyConstantsResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          gradeLevels: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyConstantItem' },
+          },
+          gradeCategories: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyConstantItem' },
+          },
+          functionRoots: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyConstantItem' },
+          },
+        },
+        required: ['status', 'gradeLevels', 'gradeCategories', 'functionRoots'],
+        example: {
+          status: 'ok',
+          gradeLevels: [
+            {
+              id: 'leadership',
+              label: 'Leadership',
+              description: 'Senior leaders and heads of function.',
+            },
+          ],
+          gradeCategories: [
+            {
+              id: 'senior',
+              label: 'Senior',
+              description: 'Senior / leadership band within a function root.',
+            },
+          ],
+          functionRoots: [
+            {
+              id: 'human resources',
+              label: 'Human Resources',
+              description: 'Department family: human resources.',
+            },
+          ],
+        },
+      },
+      TaxonomyConstantItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'leadership' },
+          label: { type: 'string', example: 'Leadership' },
+          description: {
+            type: 'string',
+            example: 'Senior leaders and heads of function.',
+          },
+        },
+        required: ['id', 'label', 'description'],
+      },
+      TaxonomyBooleanStringsResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          query: { type: 'string' },
+          booleanQuery: { type: ['string', 'null'] },
+          keywordGroups: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                terms: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                clause: { type: 'string' },
+              },
+              additionalProperties: true,
+            },
+          },
+        },
+        example: {
+          status: 'ok',
+          query: 'engineering leadership Stripe',
+          booleanQuery:
+            '("EXAMPLE_FUNCTION" OR "example role") AND ("VP" OR "Head of") AND "ExampleCo"',
+          keywordGroups: [
+            {
+              type: 'function',
+              terms: ['EXAMPLE_FUNCTION', 'example role'],
+              clause: '("EXAMPLE_FUNCTION" OR "example role")',
+            },
+          ],
+        },
+      },
+      ExpandJobTitlesResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          jobTitle: { type: 'string' },
+          normalizedTitle: { type: ['string', 'null'] },
+          stdFunction: { type: ['string', 'null'] },
+          stdFunctionRoot: { type: ['string', 'null'] },
+          stdGrade: { type: ['string', 'null'] },
+          confidence: { type: 'number' },
+          booleanQuery: { type: ['string', 'null'] },
+          keywordGroups: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                terms: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                clause: { type: 'string' },
+              },
+              additionalProperties: true,
+            },
+          },
+        },
+        example: {
+          status: 'ok',
+          jobTitle: 'Head of Product',
+          normalizedTitle: 'head of product',
+          stdFunction: 'product',
+          stdFunctionRoot: 'product',
+          stdGrade: 'leadership',
+          confidence: 0.91,
+          booleanQuery:
+            '("EXAMPLE_FUNCTION" OR "example role") AND ("Head of" OR "VP")',
+          keywordGroups: [
+            {
+              type: 'function',
+              terms: ['EXAMPLE_FUNCTION', 'example role'],
+              clause: '("EXAMPLE_FUNCTION" OR "example role")',
+            },
+          ],
+        },
+      },
+      TaxonomyListResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyItem' },
+          },
+          item: { $ref: '#/components/schemas/TaxonomyItem' },
+        },
+        example: {
+          status: 'ok',
+          items: [
+            {
+              id: 'engineering',
+              label: 'Engineering',
+              name: 'engineering',
+              parent_id: null,
+              level: 1,
+            },
+          ],
         },
       },
     },
@@ -193,6 +445,47 @@ export const buildPeopleApiOpenApiDocument = (
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/DataSourcesResponse' },
+                examples: {
+                  configured: {
+                    summary: 'Configured sources',
+                    value: {
+                      status: 'ok',
+                      sources: [
+                        {
+                          alias: 'index',
+                          label: 'Index',
+                          description:
+                            'Search the standardized people index with std_function and std_grade filters.',
+                          supportsStdFunctionFilter: true,
+                          supportsStdGradeFilter: true,
+                          configured: true,
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/people-api/taxonomy/constants': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'List taxonomy constants',
+        description:
+          'Public, ungated flat label lists (grade levels, grade categories, function roots). No classification, no full function tree, no Booleans.',
+        operationId: 'listTaxonomyConstants',
+        security: [],
+        responses: {
+          '200': {
+            description: 'Flat taxonomy constants',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/TaxonomyConstantsResponse',
+                },
               },
             },
           },
@@ -204,14 +497,14 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'List std function roots',
         description:
-          'Returns all std_function_root values. Pass `title` to classify a job title into a function root.',
+          'Auth-gated. Prefer GET /people-api/taxonomy/constants for the public noun list. Optional `title` classifies a job title (assignment engine — not for bulk ontology harvest).',
         operationId: 'listFunctionRoots',
         parameters: [
           {
             name: 'title',
             in: 'query',
             required: false,
-            schema: { type: 'string' },
+            schema: { type: 'string', example: 'VP Engineering' },
             description: 'Optional job title to classify',
           },
         ],
@@ -221,15 +514,7 @@ export const buildPeopleApiOpenApiDocument = (
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    status: { type: 'string' },
-                    items: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/TaxonomyItem' },
-                    },
-                    item: { $ref: '#/components/schemas/TaxonomyItem' },
-                  },
+                  $ref: '#/components/schemas/TaxonomyListResponse',
                 },
               },
             },
@@ -242,20 +527,20 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'List std functions',
         description:
-          'Returns std_function values, optionally filtered by function_root. Pass `title` to classify a job title.',
+          'Auth-gated advanced list. Prefer natural-language search-by-title for products and agents. Optional filters classify or narrow labels — not a public ontology dump.',
         operationId: 'listFunctions',
         parameters: [
           {
             name: 'function_root',
             in: 'query',
             required: false,
-            schema: { type: 'string' },
+            schema: { type: 'string', example: 'engineering' },
           },
           {
             name: 'title',
             in: 'query',
             required: false,
-            schema: { type: 'string' },
+            schema: { type: 'string', example: 'Software Engineer' },
           },
         ],
         responses: {
@@ -264,15 +549,7 @@ export const buildPeopleApiOpenApiDocument = (
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    status: { type: 'string' },
-                    items: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/TaxonomyItem' },
-                    },
-                    item: { $ref: '#/components/schemas/TaxonomyItem' },
-                  },
+                  $ref: '#/components/schemas/TaxonomyListResponse',
                 },
               },
             },
@@ -285,20 +562,20 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'List std grades',
         description:
-          'Returns std_grade values. Optionally filter by grade_level (entry, mid, leadership).',
+          'Auth-gated. Prefer GET /people-api/taxonomy/constants for public grade-level nouns. Optional `title` classifies (not for bulk harvest).',
         operationId: 'listGrades',
         parameters: [
           {
             name: 'grade_level',
             in: 'query',
             required: false,
-            schema: { type: 'string' },
+            schema: { type: 'string', example: 'leadership' },
           },
           {
             name: 'title',
             in: 'query',
             required: false,
-            schema: { type: 'string' },
+            schema: { type: 'string', example: 'VP Engineering' },
             description: 'Optional job title to classify into a std grade',
           },
         ],
@@ -308,18 +585,99 @@ export const buildPeopleApiOpenApiDocument = (
             content: {
               'application/json': {
                 schema: {
-                  type: 'object',
-                  properties: {
-                    status: { type: 'string' },
-                    items: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/TaxonomyItem' },
-                    },
-                  },
+                  $ref: '#/components/schemas/TaxonomyListResponse',
                 },
               },
             },
           },
+        },
+      },
+    },
+    '/people-api/taxonomy/boolean-strings': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'Build Boolean strings from taxonomy',
+        description:
+          'Advanced auth-gated helper for external keyword tools. OpenAPI examples are illustrative placeholders only — not a dump of production Boolean engines. Prefer people search-by-title for recruiting workflows.',
+        operationId: 'getTaxonomyBooleanStrings',
+        parameters: [
+          {
+            name: 'std_function',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'engineering' },
+          },
+          {
+            name: 'std_grade',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'leadership' },
+          },
+          {
+            name: 'std_function_root',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'engineering' },
+          },
+          {
+            name: 'company_name',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'Stripe' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Boolean query generated successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/TaxonomyBooleanStringsResponse',
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid request' },
+          '401': { description: 'Unauthorized' },
+          '503': { description: 'Title taxonomy service unavailable' },
+        },
+      },
+    },
+    '/people-api/titles/expand': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'Expand and normalize a job title',
+        description:
+          'Advanced debug: classify a title into std fields. Prefer POST /people-api/people/search-by-title when you also need people. Boolean fields in the response are illustrative capability — not for reconstructing the keyword engine.',
+        operationId: 'expandJobTitles',
+        parameters: [
+          {
+            name: 'job_title',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'Head of Product' },
+          },
+          {
+            name: 'company_name',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'Stripe' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Expanded job title result',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ExpandJobTitlesResponse',
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid request' },
+          '401': { description: 'Unauthorized' },
+          '503': { description: 'Title taxonomy service unavailable' },
         },
       },
     },
@@ -335,6 +693,17 @@ export const buildPeopleApiOpenApiDocument = (
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/TitleFromJobSearchRequest' },
+              examples: {
+                byTitle: {
+                  summary: 'Search from a job title',
+                  value: {
+                    jobTitle: 'Head of Engineering',
+                    companyName: 'Stripe',
+                    dataSource: 'index',
+                    limit: 10,
+                  },
+                },
+              },
             },
           },
         },
@@ -369,6 +738,20 @@ export const buildPeopleApiOpenApiDocument = (
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/PeopleSearchRequest' },
+              examples: {
+                byTaxonomy: {
+                  summary: 'Search by taxonomy filters',
+                  value: {
+                    dataSource: 'index',
+                    companyName: 'Stripe',
+                    stdFunction: 'engineering',
+                    stdGrade: 'leadership',
+                    country: 'United States',
+                    limit: 20,
+                    offset: 0,
+                  },
+                },
+              },
             },
           },
         },

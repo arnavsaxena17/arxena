@@ -9,7 +9,7 @@ Gelen e-postalara saatler değil, saniyeler içinde yanıt verin. Bu iş akış�
 
 Her e-posta, göndericinin posta sunucusu tarafından atanan benzersiz bir parmak izi olan gizli bir `Message-ID` üstbilgisi taşır. Bir e-postayı yanıtladığınızda, posta istemciniz o parmak izine referans veren bir `In-Reply-To` başlığı ayarlar. Gmail, Outlook ve diğer tüm istemciler iletileri bu şekilde ileti dizilerine gruplandırır.
 
-Twenty’de, bu parmak izi Message nesnesinde `headerMessageId` olarak saklanır. İş akışınız bunu alır ve E-posta Gönder eyleminin In-Reply-To alanına aktarır.
+Arxena’de, bu parmak izi Message nesnesinde `headerMessageId` olarak saklanır. İş akışınız bunu alır ve E-posta Gönder eyleminin In-Reply-To alanına aktarır.
 
 ## İş akışını oluşturma
 
@@ -21,7 +21,7 @@ Twenty’de, bu parmak izi Message nesnesinde `headerMessageId` olarak saklanır
 
 **When a Record is Created** seçeneğini seçin ve **Messages**'ı seçin.
 
-Her e-posta Twenty'ye ulaştığında bu tetiklenir.
+Her e-posta Arxena'ye ulaştığında bu tetiklenir.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Gmail, iletileri diziler halinde gruplamak için konu satırını kullanır. Gma
 
 ## Geliştirmek için fikirler
 
-* **Yalnızca VIP'lere yanıt verin** — gönderenin alan adını veya Twenty’de bir Contact olarak bulunup bulunmadığını kontrol eden bir dal ekleyin
+* **Yalnızca VIP'lere yanıt verin** — gönderenin alan adını veya Arxena’de bir Contact olarak bulunup bulunmadığını kontrol eden bir dal ekleyin
 * **Niyete göre yönlendirin** — satış sorgularını destek taleplerinden farklı şekilde ele almak için ayrı AI Agent istemleri kullanın
 * **Yanıtlamadan önce zenginleştirin** — daha kişiselleştirilmiş yanıtlar için gönderenin şirketini veya anlaşma geçmişini AI istemine çekmek üzere bir Search Records adımı ekleyin

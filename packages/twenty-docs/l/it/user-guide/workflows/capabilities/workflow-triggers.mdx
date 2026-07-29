@@ -27,7 +27,7 @@ Avvia il flusso di lavoro quando viene creato un nuovo record in un oggetto sele
 
 <Note>
 * Questo attivatore è ottimo per i record creati tramite csv, sincronizzazione della casella di posta e del calendario, API.
-* **Non è consigliato per i record creati manualmente**: con questo attivatore, i flussi di lavoro iniziano non appena il record viene creato. Poiché Twenty UI offre il salvataggio automatico al volo (non esiste una modalità di modifica e poi una validazione per salvare i record), il flusso di lavoro verrà attivato prima che l'utente inserisca tutti i campi.
+* **Non è consigliato per i record creati manualmente**: con questo attivatore, i flussi di lavoro iniziano non appena il record viene creato. Poiché Arxena UI offre il salvataggio automatico al volo (non esiste una modalità di modifica e poi una validazione per salvare i record), il flusso di lavoro verrà attivato prima che l'utente inserisca tutti i campi.
   Per attivare questo flusso di lavoro sui record creati manualmente, si consiglia invece di usare l'attivatore `Record is created or updated`.
 </Note>
 
@@ -119,7 +119,7 @@ Avvia il flusso di lavoro quando viene ricevuta una richiesta GET o POST da un s
 **Configurazione**:
 
 * Il flusso di lavoro fornisce un URL webhook univoco: copialo e aggiungilo al tuo sistema esterno come endpoint da chiamare.
-* Per le richieste POST, definisci la struttura del body prevista in modo che Twenty sappia quali dati aspettarsi. Aggiungi qui i campi che riceverai e che saranno necessari più avanti nel tuo flusso di lavoro.
+* Per le richieste POST, definisci la struttura del body prevista in modo che Arxena sappia quali dati aspettarsi. Aggiungi qui i campi che riceverai e che saranno necessari più avanti nel tuo flusso di lavoro.
 * Configura l'autenticazione (presto disponibile).
 
 ## Scegliere l'attivatore giusto

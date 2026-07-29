@@ -4,7 +4,7 @@ icon: key
 description: Fluxo de código de autorização com PKCE e credenciais de cliente para acesso servidor a servidor.
 ---
 
-A Twenty implementa OAuth 2.0 com código de autorização + PKCE para aplicações voltadas ao utilizador e credenciais de cliente para acesso servidor a servidor. Os clientes são registados dinamicamente via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — sem configuração manual num painel.
+An Arxena implementa OAuth 2.0 com código de autorização + PKCE para aplicações voltadas ao utilizador e credenciais de cliente para acesso servidor a servidor. Os clientes são registados dinamicamente via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — sem configuração manual num painel.
 
 ## Quando usar OAuth
 
@@ -13,11 +13,11 @@ A Twenty implementa OAuth 2.0 com código de autorização + PKCE para aplicaç�
 | Scripts internos, automatização                    | [Chave de API](/l/pt/developers/extend/api#authentication)                                   |
 | Aplicação externa atuando em nome de um utilizador | **OAuth — Código de Autorização**                                                       |
 | Servidor a servidor, sem contexto de utilizador    | **OAuth — Credenciais do Cliente**                                                      |
-| Aplicação Twenty com extensões de UI               | [Aplicações](/l/pt/developers/extend/apps/getting-started) (OAuth é tratado automaticamente) |
+| Aplicação Arxena com extensões de UI               | [Aplicações](/l/pt/developers/extend/apps/getting-started) (OAuth é tratado automaticamente) |
 
 ## Registar um cliente
 
-A Twenty suporta **registo dinâmico de clientes** conforme [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Sem necessidade de configuração manual — registe programaticamente:
+An Arxena suporta **registo dinâmico de clientes** conforme [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Sem necessidade de configuração manual — registe programaticamente:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Solicite escopos como uma cadeia separada por espaços: `scope=api profile`
 
 ## Fluxo de Código de Autorização
 
-Use este fluxo quando a sua aplicação atuar em nome de um utilizador da Twenty.
+Use este fluxo quando a sua aplicação atuar em nome de um utilizador da Arxena.
 
 ### 1. Redirecione o utilizador para autorizar
 
@@ -86,7 +86,7 @@ O utilizador vê um ecrã de consentimento e aprova ou nega o acesso.
 
 ### 2. Trate o callback
 
-Após a autorização, a Twenty redireciona de volta para o seu `redirect_uri`:
+Após a autorização, an Arxena redireciona de volta para o seu `redirect_uri`:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ O token retornado tem acesso ao nível do espaço de trabalho, não vinculado a 
 
 ## Descoberta do servidor
 
-A Twenty publica a sua configuração OAuth num endpoint padrão de descoberta:
+An Arxena publica a sua configuração OAuth num endpoint padrão de descoberta:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ Isto retorna todos os endpoints, tipos de concessão suportados, escopos e capac
 
 | Ambiente           | URL base                 |
 | ------------------ | ------------------------ |
-| **Nuvem**          | `https://api.twenty.com` |
+| **Nuvem**          | `https://api.arxena.com` |
 | **Auto-hospedado** | `https://{your-domain}`  |
 
 ## OAuth vs Chaves de API

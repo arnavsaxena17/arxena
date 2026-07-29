@@ -1,16 +1,16 @@
 ---
-title: Vygenerovat PDF z Twenty
+title: Vygenerovat PDF z Arxena
 description: Vytvořte pracovní postup pro generování a připojení PDF (například nabídky) k záznamu.
 ---
 
-Automaticky vygenerujte nebo získejte PDF a připojte ho k záznamu v Twenty. To se běžně používá k vytváření nabídek, faktur nebo reportů, které jsou propojené se společnostmi, příležitostmi nebo jinými objekty.
+Automaticky vygenerujte nebo získejte PDF a připojte ho k záznamu v Arxena. To se běžně používá k vytváření nabídek, faktur nebo reportů, které jsou propojené se společnostmi, příležitostmi nebo jinými objekty.
 
 ## Přehled
 
 Tento pracovní postup používá **Ruční spouštěč**, takže uživatelé mohou na požádání vygenerovat PDF pro libovolný vybraný záznam. O zpracování se stará **logická funkce**:
 
 1. Stažení PDF z adresy URL (ze služby pro generování PDF)
-2. Nahrání souboru do Twenty
+2. Nahrání souboru do Arxena
 3. Vytvoření přílohy propojené se záznamem
 
 ## Předpoklady
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ Každá služba poskytuje API, které vrací adresu URL PDF, kterou pak můžete
 
 * [Spouštěče pracovních postupů](/l/cs/user-guide/workflows/capabilities/workflow-triggers)
 * [Logické funkce](/l/cs/user-guide/workflows/capabilities/workflow-actions#code)
-* [Vygenerujte nabídku nebo fakturu z Twenty](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Vygenerujte nabídku nebo fakturu z Arxena](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

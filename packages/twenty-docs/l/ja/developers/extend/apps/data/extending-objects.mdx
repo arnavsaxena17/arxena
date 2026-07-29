@@ -1,10 +1,10 @@
 ---
 title: オブジェクトの拡張
-description: 標準の Twenty オブジェクト（Person、Company など）にフィールドを追加します。 または、`defineField` を使用して他のアプリのオブジェクトにフィールドを追加します。
+description: 標準の Arxena オブジェクト（Person、Company など）にフィールドを追加します。 または、`defineField` を使用して他のアプリのオブジェクトにフィールドを追加します。
 icon: wand-magic-sparkles
 ---
 
-`defineField()` を使用すると、あなたが所有していないオブジェクト ― Person や Company のような標準の Twenty オブジェクトや、他のインストール済みアプリから提供されるオブジェクト ― にフィールドを追加できます。 [`defineObject`](/l/ja/developers/extend/apps/data/objects) 内で宣言されるインラインフィールドと異なり、スタンドアロンフィールドでは、どのオブジェクトを拡張するかを指定するために `objectUniversalIdentifier` が必要です。
+`defineField()` を使用すると、あなたが所有していないオブジェクト ― Person や Company のような標準の Arxena オブジェクトや、他のインストール済みアプリから提供されるオブジェクト ― にフィールドを追加できます。 [`defineObject`](/l/ja/developers/extend/apps/data/objects) 内で宣言されるインラインフィールドと異なり、スタンドアロンフィールドでは、どのオブジェクトを拡張するかを指定するために `objectUniversalIdentifier` が必要です。
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## 主なポイント
 
-* `objectUniversalIdentifier` は対象オブジェクトを識別します。 標準の Twenty オブジェクトの場合は、`twenty-sdk` から定数を import します:
+* `objectUniversalIdentifier` は対象オブジェクトを識別します。 標準の Arxena オブジェクトの場合は、`twenty-sdk` から定数を import します:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

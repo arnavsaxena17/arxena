@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ Puntos clave:
 * `name` es la cadena de identificador única utilizada en `listConnections({ providerName })` (kebab-case, debe coincidir con `^[a-z][a-z0-9-]*$`).
 * `displayName` se muestra en la pestaña de configuración por aplicación y en la lista de herramientas de IA.
 * `clientIdVariable` / `clientSecretVariable` son **nombres**, no valores — deben coincidir con las claves declaradas en `defineApplication.serverVariables`. Los `client_id` y `client_secret` reales los introduce el administrador del servidor a través de la interfaz de registro de la aplicación; nunca se incluyen en tu repositorio.
-* Usa `serverVariables` (no `applicationVariables`) — las credenciales de OAuth son a nivel de servidor y hay una aplicación OAuth por servidor de Twenty.
+* Usa `serverVariables` (no `applicationVariables`) — las credenciales de OAuth son a nivel de servidor y hay una aplicación OAuth por servidor de Arxena.
 * Hasta que ambos `serverVariables` estén completos, la pestaña de configuración por aplicación muestra un aviso de "requiere administrador del servidor" y el botón "Agregar conexión" está deshabilitado.
 * `type: 'oauth'` es el único valor admitido actualmente. El discriminador es compatible hacia adelante: tipos futuros (`'pat'`, `'api-key'`, ...) agregarán nuevos bloques de subconfiguración junto a `oauth`.
 
@@ -221,7 +221,7 @@ Para cada proveedor de conexión, el administrador del servidor debe registrar p
 1. Ve a la configuración de desarrollador del proveedor (p. ej., https://linear.app/settings/api/applications/new).
 2. Configura el **URI de redirección** en `\<SERVER_URL>/auth/apps/callback`.
 3. Copia el **Client ID** y el **Client Secret** generados.
-4. Abre la aplicación instalada en Twenty como administrador del servidor → establece los valores en los `serverVariables` correspondientes.
+4. Abre la aplicación instalada en Arxena como administrador del servidor → establece los valores en los `serverVariables` correspondientes.
 5. Luego, los miembros del espacio de trabajo pueden agregar conexiones desde la sección **Conexiones** por aplicación.
 
 </Accordion>

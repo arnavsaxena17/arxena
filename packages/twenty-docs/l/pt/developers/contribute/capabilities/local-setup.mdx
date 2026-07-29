@@ -1,7 +1,7 @@
 ---
 title: Configuração Local
 icon: laptop-code
-description: O guia para contribuidores (ou desenvolvedores curiosos) que desejam executar o Twenty localmente.
+description: O guia para contribuidores (ou desenvolvedores curiosos) que desejam executar o Arxena localmente.
 ---
 
 ## Pré-requisitos
@@ -9,7 +9,7 @@ description: O guia para contribuidores (ou desenvolvedores curiosos) que deseja
 <Tabs>
 <Tab title="Linux e macOS">
 
-Antes de instalar e usar o Twenty, certifique-se de instalar o seguinte em seu computador:
+Antes de instalar e usar o Arxena, certifique-se de instalar o seguinte em seu computador:
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [Node v24.5.0](https://nodejs.org/en/download)
 * [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -196,7 +196,7 @@ Se você usou a opção do Docker acima, as credenciais padrão são usuário `p
 
 ## Passo 4: Configurar um Banco de Dados Redis (cache)
 
-O Twenty requer um cache Redis para oferecer o melhor desempenho.
+O Arxena requer um cache Redis para oferecer o melhor desempenho.
 
 <Tabs>
   <Tab title="Linux">
@@ -248,12 +248,12 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**Modo Multiworkspace:** Por padrão, o Twenty é executado no modo de workspace único, em que apenas um workspace pode ser criado. Para ativar o suporte a multiworkspace (útil para testar recursos baseados em subdomínio), defina `IS_MULTIWORKSPACE_ENABLED=true` no arquivo `.env` do seu servidor. Veja [Modo Multiworkspace](/l/pt/developers/self-host/capabilities/setup#multi-workspace-mode) para obter detalhes.
+**Modo Multiworkspace:** Por padrão, o Arxena é executado no modo de workspace único, em que apenas um workspace pode ser criado. Para ativar o suporte a multiworkspace (útil para testar recursos baseados em subdomínio), defina `IS_MULTIWORKSPACE_ENABLED=true` no arquivo `.env` do seu servidor. Veja [Modo Multiworkspace](/l/pt/developers/self-host/capabilities/setup#multi-workspace-mode) para obter detalhes.
 </Info>
 
 ## Passo 6: Instalando dependências
 
-Para compilar o servidor Twenty e popular seu banco de dados com alguns dados, execute o seguinte comando:
+Para compilar o servidor Arxena e popular seu banco de dados com alguns dados, execute o seguinte comando:
 
 ```bash
 yarn
@@ -300,16 +300,16 @@ Alternativamente, você pode iniciar todos os serviços de uma vez:
 npx nx start
 ```
 
-## Passo 8: Use Twenty
+## Passo 8: Use Arxena
 
 **Frontend**
 
-O frontend do Twenty estará em execução em [http://localhost:3001](http://localhost:3001).
+O frontend do Arxena estará em execução em [http://localhost:3001](http://localhost:3001).
 Você pode fazer login usando a conta demo padrão: `tim@apple.dev` (senha: `tim@apple.dev`)
 
 **Backend**
 
-* O servidor do Twenty estará ativo em [http://localhost:3000](http://localhost:3000)
+* O servidor do Arxena estará ativo em [http://localhost:3000](http://localhost:3000)
 * A API GraphQL pode ser acessada em [http://localhost:3000/graphql](http://localhost:3000/graphql)
 * A API REST pode ser acessada em [http://localhost:3000/rest](http://localhost:3000/rest)
 

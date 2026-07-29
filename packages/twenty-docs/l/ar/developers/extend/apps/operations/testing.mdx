@@ -1,10 +1,10 @@
 ---
 title: الاختبار
-description: إعداد Vitest، واختبارات تكامل مقابل خادم Twenty حقيقي، والتحقق من الأنواع، والتكامل المستمر (CI) باستخدام GitHub Actions.
+description: إعداد Vitest، واختبارات تكامل مقابل خادم Arxena حقيقي، والتحقق من الأنواع، والتكامل المستمر (CI) باستخدام GitHub Actions.
 icon: flask
 ---
 
-يوفّر SDK واجهات برمجة قابلة للتنفيذ برمجيًا تمكّنك من بناء تطبيقك ونشره وتثبيته وإلغاء تثبيته من شيفرة الاختبار. بالاقتران مع [Vitest](https://vitest.dev/) وعملاء واجهة البرمجة مضبوطي الأنواع، يمكنك كتابة اختبارات تكامل تتحقّق من أن تطبيقك يعمل من البداية إلى النهاية مقابل خادم Twenty حقيقي.
+يوفّر SDK واجهات برمجة قابلة للتنفيذ برمجيًا تمكّنك من بناء تطبيقك ونشره وتثبيته وإلغاء تثبيته من شيفرة الاختبار. بالاقتران مع [Vitest](https://vitest.dev/) وعملاء واجهة البرمجة مضبوطي الأنواع، يمكنك كتابة اختبارات تكامل تتحقّق من أن تطبيقك يعمل من البداية إلى النهاية مقابل خادم Arxena حقيقي.
 
 ## استخدام حِزَم npm
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## تشغيل الاختبارات
 
-تأكّد من تشغيل خادم Twenty المحلي لديك، ثم:
+تأكّد من تشغيل خادم Arxena المحلي لديك، ثم:
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ yarn twenty dev:typecheck
 
 ## التكامل المستمر (CI) باستخدام GitHub Actions
 
-تولّد أداة إنشاء الهيكل سير عمل جاهزًا للاستخدام في `.github/workflows/ci.yml`. عند كل دفع إلى الفرع `main` وكل طلب سحب، تُنشئ الأداة خادم Twenty مؤقتًا في بيئة التشغيل (عبر الإجراء `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`)، ثم تشغِّل الأوامر `yarn lint` و`yarn typecheck` و`yarn test:unit` و`yarn test` مع ضبط المتغيرين `TWENTY_API_URL` و`TWENTY_API_KEY` للإشارة إلى ذلك الخادم. لا تُطلَب أي أسرار، ويمكنك تثبيت إصدار الخادم عبر متغير البيئة `TWENTY_VERSION` في أعلى سير العمل.
+تولّد أداة إنشاء الهيكل سير عمل جاهزًا للاستخدام في `.github/workflows/ci.yml`. عند كل دفع إلى الفرع `main` وكل طلب سحب، تُنشئ الأداة خادم Arxena مؤقتًا في بيئة التشغيل (عبر الإجراء `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`)، ثم تشغِّل الأوامر `yarn lint` و`yarn typecheck` و`yarn test:unit` و`yarn test` مع ضبط المتغيرين `TWENTY_API_URL` و`TWENTY_API_KEY` للإشارة إلى ذلك الخادم. لا تُطلَب أي أسرار، ويمكنك تثبيت إصدار الخادم عبر متغير البيئة `TWENTY_VERSION` في أعلى سير العمل.
 
 راجع قسم [النشر → التكامل/التسليم المستمران الآليان](/l/ar/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows) للاطلاع على شرح كامل لثلاثة مسارات العمل التي تم إنشاؤها تلقائياً (`ci.yml`، وخط أنابيب النشر `cd.yml`، و`publish.yml` للنشر على npm).

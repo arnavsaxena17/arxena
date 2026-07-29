@@ -27,7 +27,7 @@ Démarre le flux de travail lorsqu'un nouvel enregistrement est créé dans un o
 
 <Note>
 * Ce déclencheur est idéal pour les enregistrements créés via csv, la synchronisation de la boîte aux lettres et du calendrier, ou l'API.
-* **Il n'est pas recommandé pour les enregistrements créés manuellement** : avec ce déclencheur, les flux de travail démarrent dès que l'enregistrement est créé. Comme l'interface Twenty propose l'enregistrement automatique à la volée (il n'y a pas de mode édition suivi d'une validation pour enregistrer les enregistrements), le flux de travail sera déclenché avant que l'utilisateur ne renseigne tous les champs.
+* **Il n'est pas recommandé pour les enregistrements créés manuellement** : avec ce déclencheur, les flux de travail démarrent dès que l'enregistrement est créé. Comme l'interface Arxena propose l'enregistrement automatique à la volée (il n'y a pas de mode édition suivi d'une validation pour enregistrer les enregistrements), le flux de travail sera déclenché avant que l'utilisateur ne renseigne tous les champs.
   Pour déclencher ce flux de travail sur des enregistrements créés manuellement, il est recommandé d'utiliser plutôt le déclencheur `Record is created or updated`.
 </Note>
 
@@ -119,7 +119,7 @@ Démarre le flux de travail lorsqu'une requête GET ou POST est reçue d'un serv
 **Configuration**:
 
 * Le flux de travail fournit une URL de webhook unique — copiez-la et ajoutez-la à votre système externe comme point de terminaison à appeler.
-* Pour les requêtes POST, définissez la structure attendue du corps afin que Twenty sache quelles données attendre. Ajoutez ici les champs que vous recevrez et qui seront nécessaires plus bas dans votre flux de travail.
+* Pour les requêtes POST, définissez la structure attendue du corps afin que Arxena sache quelles données attendre. Ajoutez ici les champs que vous recevrez et qui seront nécessaires plus bas dans votre flux de travail.
 * Configurez l'authentification (bientôt disponible).
 
 ## Choisir le bon déclencheur

@@ -9,9 +9,9 @@ Import funktioniert nicht? Diese Anleitung hilft Ihnen, häufige Importfehler Sc
 
 ## Wie die Importvalidierung funktioniert
 
-Nachdem Sie Ihre Datei hochgeladen und die Spalten zugeordnet haben, validiert Twenty Ihre Daten:
+Nachdem Sie Ihre Datei hochgeladen und die Spalten zugeordnet haben, validiert Arxena Ihre Daten:
 
-1. **Validierung läuft** — Twenty prüft jede Zeile auf Fehler
+1. **Validierung läuft** — Arxena prüft jede Zeile auf Fehler
 2. **Fehler werden hervorgehoben** — problematische Zeilen erscheinen in **gelb**
 3. **Sie können direkt korrigieren** — bearbeiten Sie Zellen direkt in der Import-UI
 4. **Oder Zeilen entfernen** — problematische Datensätze vollständig überspringen
@@ -26,7 +26,7 @@ Klicken Sie auf eine hervorgehobene Zeile, um die spezifische Fehlermeldung anzu
 
 | Fehlermeldung                                                                  | Was es bedeutet                                                        |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Doppelte Werte, gelb hervorgehoben                                             | Wert existiert bereits in Twenty oder kommt in Ihrer Datei doppelt vor |
+| Doppelte Werte, gelb hervorgehoben                                             | Wert existiert bereits in Arxena oder kommt in Ihrer Datei doppelt vor |
 | `{field} is not a valid {type}` (fahren Sie mit der Maus über die gelbe Zelle) | Daten entsprechen nicht dem erwarteten Format                          |
 | Erforderliches Feld hervorgehoben                                              | Erforderliches Feld ist leer                                           |
 | `Can't connect to {object}. No unique record found...` (Import schlägt fehl)   | Referenzierter Datensatz existiert nicht                               |
@@ -48,7 +48,7 @@ Zeilen mit doppelten Werten werden in der Import-UI **gelb hervorgehoben**, bevo
 
 Ein eindeutiges Feld (E-Mail, Domain) entweder:
 
-* Existiert bereits in Twenty
+* Existiert bereits in Arxena
 * Kommt in Ihrer Datei doppelt vor
 
 ### So beheben Sie den Fehler
@@ -64,11 +64,11 @@ Ein eindeutiges Feld (E-Mail, Domain) entweder:
 1. Klicken Sie auf das X neben der Zeile
 2. Die Zeile wird während des Imports übersprungen
 
-**Option 3: Twenty den vorhandenen Datensatz aktualisieren lassen**
+**Option 3: Arxena den vorhandenen Datensatz aktualisieren lassen**
 
 1. Stellen Sie sicher, dass Ihre Datei einen eindeutigen Bezeichner enthält (`email`, `domain` oder `id`)
 2. Ordnen Sie das Feld mit dem eindeutigen Bezeichner zu
-3. Twenty aktualisiert den vorhandenen Datensatz, statt ein Duplikat zu erstellen
+3. Arxena aktualisiert den vorhandenen Datensatz, statt ein Duplikat zu erstellen
 
 <Note>
 **Sie können eindeutige Felder ebenfalls aktualisieren.**
@@ -76,7 +76,7 @@ Ein eindeutiges Feld (E-Mail, Domain) entweder:
 * Wenn Sie die `id` beibehalten, aber die `email` ändern → die E-Mail wird aktualisiert
 * Wenn Sie die `email` beibehalten, aber die `id` ändern → die ID wird aktualisiert
 
-Solange ein eindeutiger Bezeichner übereinstimmt, aktualisiert Twenty den Datensatz.
+Solange ein eindeutiger Bezeichner übereinstimmt, aktualisiert Arxena den Datensatz.
 </Note>
 
 ### So vermeiden Sie diesen Fehler
@@ -85,7 +85,7 @@ Vor dem Import:
 
 1. Sortieren Sie Ihre Tabellenkalkulation nach dem eindeutigen Feld
 2. Entfernen Sie doppelte Zeilen
-3. Prüfen Sie, ob Datensätze bereits in Twenty existieren
+3. Prüfen Sie, ob Datensätze bereits in Arxena existieren
 
 <Warning>
 **Soft-gelöschte Datensätze zählen für die Eindeutigkeit.**
@@ -256,13 +256,13 @@ Dieser Fehler tritt **nach Beginn des Imports** auf — der Import schlägt mit 
 Can't connect to company. No unique record found with condition: id = 7776ee49-f608-4a77-8cc8-6fe96ae1e43f
 ```
 
-Das bedeutet, dass es in Twenty kein Unternehmen mit diesem spezifischen Bezeichner gibt.
+Das bedeutet, dass es in Arxena kein Unternehmen mit diesem spezifischen Bezeichner gibt.
 
 <Note>Im Gegensatz zu anderen Fehlern wird dieser im Schritt der Datenüberprüfung nicht erkannt. Der Import startet und schlägt dann fehl, wenn die fehlende Relation auftritt.</Note>
 
 ### Was es bedeutet
 
-Sie versuchen, auf einen Datensatz zu verweisen, der in Twenty nicht existiert.
+Sie versuchen, auf einen Datensatz zu verweisen, der in Arxena nicht existiert.
 
 ### So beheben Sie den Fehler
 
@@ -339,7 +339,7 @@ Siehe: [So importieren Sie Daten über die API](/l/de/user-guide/data-migration/
 
 ### Was es bedeutet
 
-Eine Spalte in Ihrer Datei kann nicht zugeordnet werden, weil das Feld in Twenty nicht existiert.
+Eine Spalte in Ihrer Datei kann nicht zugeordnet werden, weil das Feld in Arxena nicht existiert.
 
 ### So beheben Sie den Fehler
 
@@ -361,15 +361,15 @@ Sie versuchen, einen Datensatz einem Benutzer zuzuweisen (Owner, Assignee), aber
 
 ### Häufige Ursachen
 
-1. **Benutzer hat seine Einladung nicht angenommen** — der Benutzer existiert noch nicht in Twenty
-2. **Benutzer-ID aus altem System verwendet** — Twenty kann IDs aus einem anderen System nicht zuordnen
-3. **Falsches E-Mail-Format** — die E-Mail entspricht nicht dem Twenty-Konto des Benutzers
+1. **Benutzer hat seine Einladung nicht angenommen** — der Benutzer existiert noch nicht in Arxena
+2. **Benutzer-ID aus altem System verwendet** — Arxena kann IDs aus einem anderen System nicht zuordnen
+3. **Falsches E-Mail-Format** — die E-Mail entspricht nicht dem Arxena-Konto des Benutzers
 
 ### So beheben Sie den Fehler
 
-1. Stellen Sie sicher, dass alle Benutzer **ihre Einladung** zu Ihrem Twenty-Arbeitsbereich **angenommen haben**
+1. Stellen Sie sicher, dass alle Benutzer **ihre Einladung** zu Ihrem Arxena-Arbeitsbereich **angenommen haben**
 2. Verwenden Sie die **E-Mail-Adresse** des Benutzers (nicht seinen Namen oder die alte System-ID)
-3. Verwenden Sie dieselbe E-Mail, mit der sie Twenty beigetreten sind
+3. Verwenden Sie dieselbe E-Mail, mit der sie Arxena beigetreten sind
 
 <Warning>
 **Benutzer müssen Einladungen vor dem Import annehmen.**
@@ -407,7 +407,7 @@ Vermeiden Sie Fehler, indem Sie vor dem Import Folgendes prüfen:
 
 <Check>Übergeordnete Datensätze vor untergeordneten Datensätzen importiert</Check>
 <Check>Relationsspalten verweisen auf vorhandene Datensätze</Check>
-<Check>Domain-Format entspricht exakt dem Format von Twenty</Check>
+<Check>Domain-Format entspricht exakt dem Format von Arxena</Check>
 
 ### Datenmodell
 
@@ -420,7 +420,7 @@ Vermeiden Sie Fehler, indem Sie vor dem Import Folgendes prüfen:
 
 Wenn Sie die obigen Lösungen ausprobiert haben:
 
-1. **Beispieldatei herunterladen** — sehen Sie das genaue Format, das Twenty erwartet
+1. **Beispieldatei herunterladen** — sehen Sie das genaue Format, das Arxena erwartet
 2. **Bestehende Datensätze exportieren** — vergleichen Sie Ihre Datei mit funktionierenden Daten
 3. **Testen Sie mit einer kleinen Stichprobe** — probieren Sie zuerst 5-10 Zeilen
 4. **Prüfen Sie die Referenzartikel:**

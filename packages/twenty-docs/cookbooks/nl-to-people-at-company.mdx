@@ -1,0 +1,52 @@
+---
+title: Natural language to people at a company
+description: Ask for CHRO / HR leadership at Apple — resolve server-side, get people + resolved_as.
+---
+
+import { TaxonomyQueryFlow } from '/snippets/taxonomy-query-flow.mdx';
+
+Utterances like these should Just Work:
+
+- “Get me the HR leadership at Apple”
+- “Give me CHRO-type people at Apple”
+- “Head of HR at Apple”
+
+You send **role language + company**. Arxena resolves synonyms and seniority **server-side**, then returns people plus a small `resolved` object to sanity-check — without exposing how the match was made.
+
+<TaxonomyQueryFlow />
+
+## One call
+
+```bash
+curl -X POST \
+  -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  -H 'Content-Type: application/json' \
+  https://app.arxena.com/people-api/people/search-by-title \
+  -d '{
+    "jobTitle": "CHRO",
+    "companyName": "Apple",
+    "dataSource": "index",
+    "limit": 10
+  }'
+```
+
+Same pattern for `"HR leadership"` or `"Head of HR"`.
+
+## What you see back
+
+- **`resolved`** — what the phrase became (function root × grade + confidence)
+- **`items`** — filtered people at that company
+
+Show those resolution chips in product UI (or let Claude surface them via MCP).
+
+Playground: [Resolve job title and search people](/api-reference/people/resolve-job-title-and-search-people).
+
+## Org chart
+
+In the product org chart, use **Title query** with the same phrase. Same vocabulary, filter/highlight — no second ontology.
+
+## Related
+
+- [Standardized taxonomy](/concepts/standardized-taxonomy)
+- [MCP: people and org charts](/cookbooks/mcp-people-and-org-charts)
+- [Authentication](/api-reference/authentication)

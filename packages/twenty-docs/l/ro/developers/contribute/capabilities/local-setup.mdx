@@ -1,7 +1,7 @@
 ---
 title: Configurare locală
 icon: laptop-code
-description: Ghidul pentru contribuitori (sau dezvoltatori curioși) care doresc să ruleze Twenty local.
+description: Ghidul pentru contribuitori (sau dezvoltatori curioși) care doresc să ruleze Arxena local.
 ---
 
 ## Cerințe
@@ -9,7 +9,7 @@ description: Ghidul pentru contribuitori (sau dezvoltatori curioși) care doresc
 <Tabs>
 <Tab title="Linux și macOS">
 
-Înainte de a instala și utiliza Twenty, asigurați-vă că instalați următoarele pe computerul dvs.:
+Înainte de a instala și utiliza Arxena, asigurați-vă că instalați următoarele pe computerul dvs.:
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [Node v24.5.0](https://nodejs.org/en/download)
 * [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -196,7 +196,7 @@ Dacă ați folosit opțiunea Docker de mai sus, datele implicite de autentificar
 
 ## Pasul 4: Configurați o bază de date Redis (cache)
 
-Twenty necesită un cache Redis pentru a oferi cea mai bună performanță.
+Arxena necesită un cache Redis pentru a oferi cea mai bună performanță.
 
 <Tabs>
   <Tab title="Linux">
@@ -248,12 +248,12 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**Modul Multi-Workspace:** În mod implicit, Twenty rulează în modul cu un singur spațiu de lucru, în care poate fi creat un singur spațiu de lucru. Pentru a activa suportul multi-spațiu de lucru (util pentru testarea funcționalităților bazate pe subdomenii), setați `IS_MULTIWORKSPACE_ENABLED=true` în fișierul `.env` al serverului. Consultați [Modul Multi-Workspace](/l/ro/developers/self-host/capabilities/setup#multi-workspace-mode) pentru detalii.
+**Modul Multi-Workspace:** În mod implicit, Arxena rulează în modul cu un singur spațiu de lucru, în care poate fi creat un singur spațiu de lucru. Pentru a activa suportul multi-spațiu de lucru (util pentru testarea funcționalităților bazate pe subdomenii), setați `IS_MULTIWORKSPACE_ENABLED=true` în fișierul `.env` al serverului. Consultați [Modul Multi-Workspace](/l/ro/developers/self-host/capabilities/setup#multi-workspace-mode) pentru detalii.
 </Info>
 
 ## Pasul 6: Instalarea dependențelor
 
-Pentru a construi serverul Twenty și a adăuga date în baza dvs. de date, rulați următoarea comandă:
+Pentru a construi serverul Arxena și a adăuga date în baza dvs. de date, rulați următoarea comandă:
 
 ```bash
 yarn
@@ -300,16 +300,16 @@ Alternativ, puteți porni toate serviciile odată:
 npx nx start
 ```
 
-## Pasul 8: Utilizați Twenty
+## Pasul 8: Utilizați Arxena
 
 **Front-end**
 
-Frontend-ul Twenty va rula la [http://localhost:3001](http://localhost:3001).
+Frontend-ul Arxena va rula la [http://localhost:3001](http://localhost:3001).
 Vă puteți loga folosind contul demo implicit: `tim@apple.dev` (parolă: `tim@apple.dev`)
 
 **Back-end**
 
-* Serverul Twenty va fi operativ la [http://localhost:3000](http://localhost:3000)
+* Serverul Arxena va fi operativ la [http://localhost:3000](http://localhost:3000)
 * API-ul GraphQL poate fi accesat la [http://localhost:3000/graphql](http://localhost:3000/graphql)
 * API-ul REST poate fi accesat la [http://localhost:3000/rest](http://localhost:3000/rest)
 

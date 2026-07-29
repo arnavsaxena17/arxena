@@ -1,10 +1,10 @@
 ---
 title: Přehled
-description: Umístěte svou aplikaci do uživatelského rozhraní Twenty – položky v postranním panelu, uložená zobrazení, karty na stránce záznamu a sandboxované komponenty Reactu.
+description: Umístěte svou aplikaci do uživatelského rozhraní Arxena – položky v postranním panelu, uložená zobrazení, karty na stránce záznamu a sandboxované komponenty Reactu.
 icon: table-columns
 ---
 
-**Vrstva rozvržení** aplikace Twenty zahrnuje vše, co uživatel vidí: kde se aplikace zobrazuje v postranním panelu, jaká seznamová zobrazení obsahuje, jak jsou uspořádány její stránky s podrobnostmi záznamů a které vlastní komponenty Reactu se na těchto stránkách vykreslují.
+**Vrstva rozvržení** aplikace Arxena zahrnuje vše, co uživatel vidí: kde se aplikace zobrazuje v postranním panelu, jaká seznamová zobrazení obsahuje, jak jsou uspořádány její stránky s podrobnostmi záznamů a které vlastní komponenty Reactu se na těchto stránkách vykreslují.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ icon: table-columns
     `definePageLayout` a `definePageLayoutTab` — karty a widgety na stránce s podrobnostmi záznamu.
   </Card>
   <Card title="Frontendové komponenty" icon="window-maximize" href="/l/cs/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — sandboxované komponenty Reactu, které se vykreslují uvnitř Twenty.
+    `defineFrontComponent` — sandboxované komponenty Reactu, které se vykreslují uvnitř Arxena.
   </Card>
   <Card title="Položky příkazové nabídky" icon="terminal" href="/l/cs/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — zaregistruje frontendové komponenty jako položky Cmd+K a rychlé akce.
@@ -54,4 +54,4 @@ icon: table-columns
 | **Nastavení aplikace**                  | Vlastní konfigurační sekce na kartě Nastavení aplikace, která nahrazuje výchozí uživatelské rozhraní proměnných | `defineSettingsFrontComponent`            |
 | **Příkazová nabídka (Cmd+K)**           | Připnutá rychlá akce nebo skrytý příkaz                                                                         | `defineCommandMenuItem`                   |
 
-Frontendové komponenty běží uvnitř izolovaného Web Workeru pomocí Remote DOM — vykreslují se na stránce nativně (ne uvnitř iframe), ale nemají přímý přístup k hostitelské stránce ani DOM. Komunikace s Twenty probíhá prostřednictvím hostitelského API pro předávání zpráv.
+Frontendové komponenty běží uvnitř izolovaného Web Workeru pomocí Remote DOM — vykreslují se na stránce nativně (ne uvnitř iframe), ale nemají přímý přístup k hostitelské stránce ani DOM. Komunikace s Arxena probíhá prostřednictvím hostitelského API pro předávání zpráv.

@@ -4,7 +4,7 @@ description: Defina funciones de TypeScript del lado del servidor con activadore
 icon: bolt
 ---
 
-Las funciones lógicas son funciones de TypeScript del lado del servidor que se ejecutan en la plataforma Twenty. Pueden activarse mediante solicitudes HTTP, programaciones de cron o eventos de base de datos — y también pueden exponerse como herramientas para agentes de IA.
+Las funciones lógicas son funciones de TypeScript del lado del servidor que se ejecutan en la plataforma Arxena. Pueden activarse mediante solicitudes HTTP, programaciones de cron o eventos de base de datos — y también pueden exponerse como herramientas para agentes de IA.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="Define funciones de lógica y sus desencadenadores">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 Las funciones lógicas pueden exponerse en dos ámbitos, cada uno con su propio disparador:
 
-* **`toolTriggerSettings`** — hace que la función sea descubrible por las funciones de IA de Twenty (chat, MCP, llamadas a funciones). Usa el JSON Schema estándar, el formato que los LLM entienden de forma nativa.
-* **`workflowActionTriggerSettings`** — hace que la función aparezca como un paso en el constructor visual de flujos de trabajo. Usa el `InputSchema` completo de Twenty para que el constructor pueda renderizar editores de campos adecuados, selectores de variables y etiquetas.
+* **`toolTriggerSettings`** — hace que la función sea descubrible por las funciones de IA de Arxena (chat, MCP, llamadas a funciones). Usa el JSON Schema estándar, el formato que los LLM entienden de forma nativa.
+* **`workflowActionTriggerSettings`** — hace que la función aparezca como un paso en el constructor visual de flujos de trabajo. Usa el `InputSchema` completo de Arxena para que el constructor pueda renderizar editores de campos adecuados, selectores de variables y etiquetas.
 
 Una función puede optar por una, por la otra o por ambas. Se ubican junto a `cronTriggerSettings`, `databaseEventTriggerSettings` y `httpRouteTriggerSettings` — mismo patrón, misma estructura.
 
 <Note>
-**Relación con la acción Code del flujo de trabajo.** La acción integrada **Code** en el generador de flujos de trabajo es en sí misma una función lógica: Twenty crea una por cada paso de Code y expone su editor en línea. `workflowActionTriggerSettings` es la forma de convertir ese código puntual en línea en una acción **reutilizable**: defines la función una vez en tu aplicación y se vuelve seleccionable en cualquier flujo de trabajo, en lugar de copiarla y pegarla en cada paso de Code. Consulta la [acción Code](/l/es/user-guide/workflows/capabilities/workflow-actions#code) en la guía del usuario para ver la perspectiva del usuario final.
+**Relación con la acción Code del flujo de trabajo.** La acción integrada **Code** en el generador de flujos de trabajo es en sí misma una función lógica: Arxena crea una por cada paso de Code y expone su editor en línea. `workflowActionTriggerSettings` es la forma de convertir ese código puntual en línea en una acción **reutilizable**: defines la función una vez en tu aplicación y se vuelve seleccionable en cualquier flujo de trabajo, en lugar de copiarla y pegarla en cada paso de Code. Consulta la [acción Code](/l/es/user-guide/workflows/capabilities/workflow-actions#code) en la guía del usuario para ver la perspectiva del usuario final.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 Puntos clave:
 
 * Una función puede mezclar superficies — declara tanto `toolTriggerSettings` como `workflowActionTriggerSettings` para exponerla en el chat Y en el constructor de flujos de trabajo.
-* Ambos, `toolTriggerSettings.inputSchema` y `workflowActionTriggerSettings.inputSchema`, son opcionales. Cuando se omiten, el generador del manifiesto los infiere a partir del código fuente del controlador (JSON Schema para la herramienta de IA, `InputSchema` de Twenty para la acción de flujo de trabajo). Proporciona uno explícitamente cuando quieras un tipado más rico — por ejemplo, con campos compatibles con `FieldMetadataType` como `CURRENCY` o `RELATION` para el constructor de flujos de trabajo, o con campos `description` que el agente de IA pueda leer:
+* Ambos, `toolTriggerSettings.inputSchema` y `workflowActionTriggerSettings.inputSchema`, son opcionales. Cuando se omiten, el generador del manifiesto los infiere a partir del código fuente del controlador (JSON Schema para la herramienta de IA, `InputSchema` de Arxena para la acción de flujo de trabajo). Proporciona uno explícitamente cuando quieras un tipado más rico — por ejemplo, con campos compatibles con `FieldMetadataType` como `CURRENCY` o `RELATION` para el constructor de flujos de trabajo, o con campos `description` que el agente de IA pueda leer:
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-Para declarar tus parámetros **una sola vez** y atender ambas superficies, define un único JSON Schema (`InputJsonSchema`) y conviértelo para la acción de flujo de trabajo con `jsonSchemaToInputSchema` de `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` usa directamente el JSON Schema, mientras que `workflowActionTriggerSettings.inputSchema` espera el `InputSchema` de Twenty:
+Para declarar tus parámetros **una sola vez** y atender ambas superficies, define un único JSON Schema (`InputJsonSchema`) y conviértelo para la acción de flujo de trabajo con `jsonSchemaToInputSchema` de `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` usa directamente el JSON Schema, mientras que `workflowActionTriggerSettings.inputSchema` espera el `InputSchema` de Arxena:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `label`        | Nombre que se muestra para la acción en el selector de pasos del generador de flujos de trabajo. De manera predeterminada, usa el `name` de la función.                                     |
 | `icon`         | Icono que se muestra junto a la acción (un nombre de `tabler-icons`, por ejemplo `IconBuilding`).                                                                                           |
-| `inputSchema`  | El completo `InputSchema` de Twenty: lo que el generador representa como campos configurables (con selectores de variables). Opcional; se infiere a partir del controlador cuando se omite. |
+| `inputSchema`  | El completo `InputSchema` de Arxena: lo que el generador representa como campos configurables (con selectores de variables). Opcional; se infiere a partir del controlador cuando se omite. |
 | `outputSchema` | Declara la forma que devuelve el controlador, para que **los pasos posteriores puedan asignar campos a su salida**. Opcional; sin él, la salida se expone como un único valor opaco.        |
 
 Uniéndolo todo: una función expuesta como una acción de flujo de trabajo, con una salida declarada para que los pasos posteriores puedan hacer referencia a `taskId`:
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## Clientes de API tipados (twenty-client-sdk)
 
-El paquete `twenty-client-sdk` proporciona dos clientes GraphQL tipados para interactuar con la API de Twenty desde tus funciones de lógica y componentes de frontend.
+El paquete `twenty-client-sdk` proporciona dos clientes GraphQL tipados para interactuar con la API de Arxena desde tus funciones de lógica y componentes de frontend.
 
 | Cliente             | Importar                     | Endpoint                                                               | ¿Generado?                              |
 | ------------------- | ---------------------------- | ---------------------------------------------------------------------- | --------------------------------------- |
@@ -762,9 +762,9 @@ Puntos clave:
 </AccordionGroup>
 
 <Note>
-  Cuando tu código se ejecuta en Twenty (funciones de lógica o componentes de frontend), la plataforma inyecta credenciales como variables de entorno:
+  Cuando tu código se ejecuta en Arxena (funciones de lógica o componentes de frontend), la plataforma inyecta credenciales como variables de entorno:
 
-  * `TWENTY_API_URL` — URL base de la API de Twenty
+  * `TWENTY_API_URL` — URL base de la API de Arxena
   * `TWENTY_APP_ACCESS_TOKEN` — Token de corta duración con alcance al rol de función predeterminado de tu aplicación
 
   No necesitas pasar estas credenciales a los clientes — leen de `process.env` automáticamente. Los permisos de la clave de API están determinados por el rol declarado con `defineApplicationRole()` (o referenciado mediante `defaultRoleUniversalIdentifier` en `application-config.ts`).

@@ -9,7 +9,7 @@ Responde a los correos entrantes en segundos — no en horas. Este flujo de trab
 
 Cada correo electrónico lleva un encabezado oculto `Message-ID` — un identificador único asignado por el servidor de correo del remitente. Cuando respondes a un correo electrónico, tu cliente de correo establece un encabezado `In-Reply-To` que hace referencia a esa huella. Así es como Gmail, Outlook y cualquier otro cliente agrupan los mensajes en hilos.
 
-En Twenty, esa huella se almacena como `headerMessageId` en el objeto Message. Tu flujo de trabajo la toma y la pasa al campo In-Reply-To de la acción Send Email.
+En Arxena, esa huella se almacena como `headerMessageId` en el objeto Message. Tu flujo de trabajo la toma y la pasa al campo In-Reply-To de la acción Send Email.
 
 ## Crear el flujo de trabajo
 
@@ -21,7 +21,7 @@ Ve a **Settings -> Workflows** y haz clic en **+ New Workflow**.
 
 Selecciona **When a Record is Created** y elige **Messages**.
 
-Cada vez que un correo electrónico llega a Twenty, esto se activa.
+Cada vez que un correo electrónico llega an Arxena, esto se activa.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Actívalo cuando estés satisfecho con el resultado.
 
 ## Ideas para ampliar
 
-* **Responder solo a VIPs** — añade una rama que compruebe el dominio del remitente o si existe como Contact en Twenty
+* **Responder solo a VIPs** — añade una rama que compruebe el dominio del remitente o si existe como Contact en Arxena
 * **Enrutar por intención** — usa prompts de AI Agent separados para tratar las consultas de ventas de forma diferente a las solicitudes de soporte
 * **Enriquecer antes de responder** — añade un paso Search Records para incorporar la empresa del remitente o el historial de oportunidades al prompt de IA para respuestas más personalizadas

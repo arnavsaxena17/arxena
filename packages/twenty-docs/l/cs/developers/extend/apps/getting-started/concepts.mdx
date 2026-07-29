@@ -1,10 +1,10 @@
 ---
 title: Pojmy
-description: Jak aplikace Twenty fungují — model entit, sandboxing a životní cyklus instalace.
+description: Jak aplikace Arxena fungují — model entit, sandboxing a životní cyklus instalace.
 icon: sitemap
 ---
 
-Aplikace Twenty jsou balíčky TypeScriptu, které rozšiřují váš pracovní prostor o vlastní objekty, logiku, komponenty UI a funkce AI. Běží na platformě Twenty s plnou izolací (sandboxingem) a řízením oprávnění.
+Aplikace Arxena jsou balíčky TypeScriptu, které rozšiřují váš pracovní prostor o vlastní objekty, logiku, komponenty UI a funkce AI. Běží na platformě Arxena s plnou izolací (sandboxingem) a řízením oprávnění.
 
 ## Jak aplikace fungují
 
@@ -48,13 +48,13 @@ your-app/
 | **Zobrazení**                 | Předkonfigurovaná zobrazení seznamu záznamů                     | [Views](/l/cs/developers/extend/apps/layout/views)                                 |
 | **Položka navigační nabídky** | Vlastní položky postranního panelu                              | [Navigation Menu Items](/l/cs/developers/extend/apps/layout/navigation-menu-items) |
 | **Rozvržení stránky**         | Karty a widgety na stránce s podrobnostmi záznamu               | [Page Layouts](/l/cs/developers/extend/apps/layout/page-layouts)                   |
-| **Frontendová komponenta**    | Izolované React UI uvnitř Twenty                                | [Frontendové komponenty](/l/cs/developers/extend/apps/layout/front-components)     |
+| **Frontendová komponenta**    | Izolované React UI uvnitř Arxena                                | [Frontendové komponenty](/l/cs/developers/extend/apps/layout/front-components)     |
 | **Položka příkazové nabídky** | Rychlé akce a položky Cmd+K                                     | [Command Menu Items](/l/cs/developers/extend/apps/layout/command-menu-items)       |
 
 ## Izolace (sandboxing)
 
 * **Logické funkce** běží v izolovaných procesech Node.js na serveru. K datům přistupují pouze prostřednictvím typovaného klienta API, a to v rozsahu oprávnění role aplikace.
-* **Frontendové komponenty** běží ve Web Workerech s využitím Remote DOM — jsou oddělené od hlavní stránky, ale vykreslují nativní prvky DOM (nikoli iframy). Komunikují s Twenty prostřednictvím hostitelského API pro předávání zpráv.
+* **Frontendové komponenty** běží ve Web Workerech s využitím Remote DOM — jsou oddělené od hlavní stránky, ale vykreslují nativní prvky DOM (nikoli iframy). Komunikují s Arxena prostřednictvím hostitelského API pro předávání zpráv.
 * **Oprávnění** jsou vynucována na úrovni API. Běhový token (`TWENTY_APP_ACCESS_TOKEN`) je odvozen z role definované v `defineApplication()`.
 
 ## Životní cyklus aplikace
@@ -72,11 +72,11 @@ your-app/
 │   generate SDK → [post-install] → … → [uninstall]       │
 ├─────────────────────────────────────────────────────────┤
 │ Publish                                                 │
-│   npm publish → appears in Twenty marketplace           │
+│   npm publish → appears in Arxena marketplace           │
 └─────────────────────────────────────────────────────────┘
 ```
 
-* **`yarn twenty dev`** — sleduje vaše zdrojové soubory a průběžně synchronizuje změny s připojeným serverem Twenty. Typovaný klient API se při změně schématu automaticky znovu vygeneruje.
+* **`yarn twenty dev`** — sleduje vaše zdrojové soubory a průběžně synchronizuje změny s připojeným serverem Arxena. Typovaný klient API se při změně schématu automaticky znovu vygeneruje.
 * **`yarn twenty dev:build`** — zkompiluje TypeScript, zabalí logické funkce a frontendové komponenty pomocí esbuild a vytvoří manifest.
 * **Pre/post-install a odinstalační hooky** — volitelné funkce, které běží během instalace nebo těsně před odinstalací. Podrobnosti viz [Install Hooks](/l/cs/developers/extend/apps/config/install-hooks).
 

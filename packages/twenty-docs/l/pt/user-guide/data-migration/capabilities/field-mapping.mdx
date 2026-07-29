@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Como funciona o mapeamento de campos
 
-Ao fazer upload de um arquivo, a Twenty analisa as suas colunas e tenta associá-las aos campos existentes.
+Ao fazer upload de um arquivo, an Arxena analisa as suas colunas e tenta associá-las aos campos existentes.
 
 ### Mapeamento automático
 
-A Twenty tenta associar as colunas com base em:
+An Arxena tenta associar as colunas com base em:
 
 * Nomes dos cabeçalhos das colunas (correspondências exatas ou semelhantes)
 * Detecção de tipo de dados (datas, números, e-mails)
 * Padrões comuns de campos
 
-<Note>**Dica rápida:** Exporte algumas linhas do objeto que você deseja importar. O arquivo exportado terá exatamente os nomes de coluna que a Twenty espera, facilitando o mapeamento automático durante a importação.</Note>
+<Note>**Dica rápida:** Exporte algumas linhas do objeto que você deseja importar. O arquivo exportado terá exatamente os nomes de coluna que an Arxena espera, facilitando o mapeamento automático durante a importação.</Note>
 
 ### Opções de mapeamento manual
 
 Para cada coluna, você pode:
 
-* **Mapear para um campo**: selecione o campo correspondente da Twenty em um menu suspenso
+* **Mapear para um campo**: selecione o campo correspondente da Arxena em um menu suspenso
 * **Não mapear**: ignore a coluna completamente (os dados não serão importados)
 
 <Note>**Os campos devem existir antes da importação.** A importação cria registros, não campos. Crie campos personalizados em **Configurações → Modelo de Dados** antes de importar.</Note>
@@ -94,12 +94,12 @@ Formatos suportados:
 * Para e-mails adicionais: use **E-mails / E-mail principal** para o e-mail principal e **E-mails / E-mails adicionais** com este formato:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Campos de ID
 
-Especificar um `id` durante a importação é opcional. A Twenty gera um automaticamente se não for fornecido.
+Especificar um `id` durante a importação é opcional. An Arxena gera um automaticamente se não for fornecido.
 
 Casos de uso para mapear uma coluna `id`:
 
@@ -125,7 +125,7 @@ Semelhante aos campos de Domínio:
 * Para links secundários, use a coluna **Links / Links Secundários** com este formato:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Campos de Seleção Múltipla

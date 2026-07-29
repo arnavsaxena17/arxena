@@ -10,6 +10,7 @@ import {
 
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+import { buildPeopleApiOpenApiDocument } from 'src/engine/core-modules/api-docs/people-api.openapi';
 import { baseSchema } from 'src/engine/core-modules/open-api/utils/base-schema.utils';
 import {
   computeMetadataSchemaComponents,
@@ -94,18 +95,50 @@ export class OpenApiService {
     };
   }
 
+  private mergePeopleApiSchema(
+    schema: OpenAPIV3_1.Document,
+    peopleApiDocument: OpenAPIV3_1.Document,
+  ): OpenAPIV3_1.Document {
+    const peopleApiPaths = Object.fromEntries(
+      Object.entries(peopleApiDocument.paths ?? {}).map(([path, pathItem]) => [
+        path,
+        {
+          ...pathItem,
+          servers: peopleApiDocument.servers,
+        },
+      ]),
+    );
+
+    return {
+      ...schema,
+      paths: {
+        ...schema.paths,
+        ...peopleApiPaths,
+      },
+      components: {
+        ...schema.components,
+        schemas: {
+          ...schema.components?.schemas,
+          ...peopleApiDocument.components?.schemas,
+        },
+      },
+      tags: [...(schema.tags ?? []), ...(peopleApiDocument.tags ?? [])],
+    };
+  }
+
   async generateCoreSchema(request: Request): Promise<OpenAPIV3_1.Document> {
     const baseUrl = getServerUrl({
       serverUrlEnv: this.twentyConfigService.get('SERVER_URL'),
       serverUrlFallback: `${request.protocol}://${request.get('host')}`,
     });
+    const peopleApiDocument = buildPeopleApiOpenApiDocument(baseUrl);
 
     const schema = baseSchema('core', baseUrl);
 
     const workspace = await this.getWorkspaceFromRequest(request);
 
     if (!isDefined(workspace)) {
-      return schema;
+      return this.mergePeopleApiSchema(schema, peopleApiDocument);
     }
 
     const {
@@ -115,7 +148,7 @@ export class OpenApiService {
     } = await this.getFlatObjectMetadataArray(workspace.id);
 
     if (!flatObjectMetadataArray.length) {
-      return schema;
+      return this.mergePeopleApiSchema(schema, peopleApiDocument);
     }
 
     schema.paths = flatObjectMetadataArray.reduce((paths, item) => {
@@ -245,9 +278,11 @@ export class OpenApiService {
       },
     };
 
-    schema.tags = computeSchemaTags(flatObjectMetadataArray);
+    schema.tags = [
+      ...computeSchemaTags(flatObjectMetadataArray),
+    ];
 
-    return schema;
+    return this.mergePeopleApiSchema(schema, peopleApiDocument);
   }
 
   async generateMetaDataSchema(

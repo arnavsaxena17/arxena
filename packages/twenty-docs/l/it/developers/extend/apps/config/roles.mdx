@@ -160,7 +160,7 @@ export default defineRole({
 Note:
 
 * Assegna a ogni predicato e gruppo un `universalIdentifier` stabile (qualsiasi uuid) — identifica l'entità attraverso gli aggiornamenti e i predicati fanno riferimento ai gruppi tramite esso.
-* I predicati possono fare riferimento a oggetti e campi di proprietà della tua app o degli oggetti standard di Twenty.
+* I predicati possono fare riferimento a oggetti e campi di proprietà della tua app o degli oggetti standard di Arxena.
 * La sicurezza a livello di riga è applicata per gli spazi di lavoro sui piani che la includono; i predicati vengono comunque sincronizzati sugli altri piani, semplicemente non vengono applicati.
 
 ## Ruolo funzione predefinito
@@ -176,7 +176,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

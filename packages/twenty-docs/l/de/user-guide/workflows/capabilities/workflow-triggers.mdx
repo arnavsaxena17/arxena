@@ -27,7 +27,7 @@ Startet den Workflow, wenn ein neuer Datensatz in einem ausgewählten Objekt (Pe
 
 <Note>
 * Dieser Auslöser eignet sich hervorragend für Datensätze, die durch CSV-, Postfach- und Kalender-Synchronisierung oder per API erstellt wurden.
-* **Für manuell erstellte Datensätze nicht empfohlen**: Mit diesem Auslöser starten Workflows, sobald der Datensatz erstellt wird. Da Twenty UI ein automatisches Speichern in Echtzeit bietet (es gibt keinen Bearbeitungsmodus und anschließend eine Validierung zum Speichern von Datensätzen), wird der Workflow ausgelöst, bevor der Benutzer alle Felder eingibt.
+* **Für manuell erstellte Datensätze nicht empfohlen**: Mit diesem Auslöser starten Workflows, sobald der Datensatz erstellt wird. Da Arxena UI ein automatisches Speichern in Echtzeit bietet (es gibt keinen Bearbeitungsmodus und anschließend eine Validierung zum Speichern von Datensätzen), wird der Workflow ausgelöst, bevor der Benutzer alle Felder eingibt.
   Um diesen Workflow bei manuell erstellten Datensätzen auszulösen, wird empfohlen, stattdessen den Auslöser `Record is created or updated` zu verwenden.
 </Note>
 
@@ -118,7 +118,7 @@ Startet den Workflow, wenn eine GET- oder POST-Anfrage von einem externen Dienst
 **Konfiguration**:
 
 * Der Workflow stellt eine eindeutige Webhook-URL bereit—kopieren Sie diese und fügen Sie sie in Ihrem externen System als aufzurufenden Endpunkt hinzu.
-* Für POST-Anfragen definieren Sie die erwartete Body-Struktur, damit Twenty weiß, welche Daten zu erwarten sind. Fügen Sie hier die Felder hinzu, die Sie erhalten und die weiter unten in Ihrem Workflow benötigt werden.
+* Für POST-Anfragen definieren Sie die erwartete Body-Struktur, damit Arxena weiß, welche Daten zu erwarten sind. Fügen Sie hier die Felder hinzu, die Sie erhalten und die weiter unten in Ihrem Workflow benötigt werden.
 * Konfigurieren Sie die Authentifizierung (bald verfügbar).
 
 ## Den richtigen Auslöser wählen

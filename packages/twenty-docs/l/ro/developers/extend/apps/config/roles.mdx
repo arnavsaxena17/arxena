@@ -164,7 +164,7 @@ Notițe:
 
 * Oferă fiecărui predicat și fiecărui grup un `universalIdentifier` stabil (orice uuid) — acesta este cheia entității
   de-a lungul actualizărilor, iar predicatele fac referire la grupuri prin el.
-* Predicatele pot face referire la obiecte și câmpuri deținute de aplicația ta sau de obiectele standard ale Twenty.
+* Predicatele pot face referire la obiecte și câmpuri deținute de aplicația ta sau de obiectele standard ale Arxena.
 * Securitatea la nivel de rând este aplicată pentru spațiile de lucru din planurile care o includ; predicatele se sincronizează în continuare
   pe alte planuri, doar că nu sunt aplicate.
 
@@ -181,7 +181,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

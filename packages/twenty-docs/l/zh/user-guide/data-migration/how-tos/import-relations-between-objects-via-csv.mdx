@@ -21,7 +21,7 @@ description: 在 CSV 导入过程中关联记录的完整分步指南。
 
 “一”侧为**父级**。 “多”侧为**子级**。
 
-### Twenty 中的常见关系
+### Arxena 中的常见关系
 
 | 关系      | “一”侧（父级） | “多”侧（子级） |
 | ------- | -------- | -------- |
@@ -41,7 +41,7 @@ description: 在 CSV 导入过程中关联记录的完整分步指南。
 
 ## 步骤 2：先导入父级记录
 
-在引用之前，父级（“一”侧）必须已存在于 Twenty 中。
+在引用之前，父级（“一”侧）必须已存在于 Arxena 中。
 
 **导入顺序：**
 
@@ -73,7 +73,7 @@ description: 在 CSV 导入过程中关联记录的完整分步指南。
 
 如果您需要 `id`：
 
-1. 从 Twenty 导出父级记录
+1. 从 Arxena 导出父级记录
 2. 导出结果包含 `id` 列
 3. 在子级记录文件中使用这些 ID
 
@@ -119,7 +119,7 @@ Bob,Johnson,bob@techstart.io,Developer,https://techstart.io
 <Warning>
 **域名格式很重要！**
 
-请使用 `https://domain.com`（而不是仅 `domain.com`）。 这与 Twenty 存储公司域名的方式一致，并可避免匹配错误。
+请使用 `https://domain.com`（而不是仅 `domain.com`）。 这与 Arxena 存储公司域名的方式一致，并可避免匹配错误。
 </Warning>
 
 ### 重要规则
@@ -139,7 +139,7 @@ Bob,Johnson,bob@techstart.io,Developer,https://techstart.io
 5. 完成其余映射
 6. 检查错误并确认
 
-Twenty 将自动把每条子级记录关联到匹配的父级。
+Arxena 将自动把每条子级记录关联到匹配的父级。
 
 ## 步骤 7：验证导入结果
 
@@ -157,8 +157,8 @@ Twenty 将自动把每条子级记录关联到匹配的父级。
 | **域名格式错误** | 使用 `acme.com` 而非 `https://acme.com`    | 使用带有 `https://` 的完整 URL 格式 |
 | **多个唯一字段** | 同时映射 `companyId` 和 `companyDomain`     | 仅映射一个唯一标识符                 |
 | **缺少关系字段** | 数据模型中不存在该关系字段                          | 请在导入前于 **设置 → 数据模型** 中创建   |
-| **记录不存在**  | 父级记录在 Twenty 中不存在                      | 先导入父级记录，或检查是否有拼写错误         |
-| **大小写不匹配** | 文件中为 `Acme.com`，但 Twenty 中为 `acme.com` | 确保大小写完全一致                  |
+| **记录不存在**  | 父级记录在 Arxena 中不存在                      | 先导入父级记录，或检查是否有拼写错误         |
+| **大小写不匹配** | 文件中为 `Acme.com`，但 Arxena 中为 `acme.com` | 确保大小写完全一致                  |
 
 ## 关联到工作区成员
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="如果我的父级记录没有域名或邮箱怎么办？">
     您有两个选项：
-    1. 使用 Twenty 的 `id`（导出父级记录以获取其 ID）
+    1. 使用 Arxena 的 `id`（导出父级记录以获取其 ID）
     2. 在数据模型中创建自定义唯一字段，用于存储来自旧系统的外部 ID
   </Accordion>
 

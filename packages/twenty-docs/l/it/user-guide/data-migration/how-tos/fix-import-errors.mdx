@@ -9,9 +9,9 @@ L'importazione non funziona? Questa guida ti aiuta a identificare e correggere, 
 
 ## Come funziona la convalida dell'importazione
 
-Dopo aver caricato il file e mappato le colonne, Twenty convalida i tuoi dati:
+Dopo aver caricato il file e mappato le colonne, Arxena convalida i tuoi dati:
 
-1. **Esecuzione della convalida** — Twenty controlla ogni riga per individuare errori
+1. **Esecuzione della convalida** — Arxena controlla ogni riga per individuare errori
 2. **Gli errori sono evidenziati** — le righe problematiche appaiono in **giallo**
 3. **Puoi correggere direttamente** — modifica le celle direttamente nell'interfaccia di importazione
 4. **Oppure rimuovi le righe** — salta completamente i record problematici
@@ -26,7 +26,7 @@ Fai clic su una riga evidenziata per vedere il messaggio di errore specifico. Ti
 
 | Messaggio di errore                                                                | Cosa significa                                                  |
 | ---------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Valori duplicati evidenziati in giallo                                             | Il valore esiste già in Twenty o compare due volte nel tuo file |
+| Valori duplicati evidenziati in giallo                                             | Il valore esiste già in Arxena o compare due volte nel tuo file |
 | `{field} is not a valid {type}` (passa il mouse sulla cella gialla)                | I dati non corrispondono al formato previsto                    |
 | Campo obbligatorio evidenziato                                                     | Un campo obbligatorio è vuoto                                   |
 | `Can't connect to {object}. No unique record found...` (importazione non riuscita) | Il record di riferimento non esiste                             |
@@ -48,7 +48,7 @@ Le righe con valori duplicati vengono **evidenziate in giallo** nell'interfaccia
 
 Un campo univoco (email, dominio) può:
 
-* Esistere già in Twenty
+* Esistere già in Arxena
 * Comparire due volte nel tuo file
 
 ### Come risolvere
@@ -64,11 +64,11 @@ Un campo univoco (email, dominio) può:
 1. Fai clic sulla X accanto alla riga
 2. La riga verrà saltata durante l'importazione
 
-**Opzione 3: Consenti a Twenty di aggiornare il record esistente**
+**Opzione 3: Consenti an Arxena di aggiornare il record esistente**
 
 1. Assicurati che il tuo file includa un identificatore univoco (`email`, `domain` o `id`)
 2. Mappa il campo identificatore univoco
-3. Twenty aggiornerà il record esistente invece di creare un duplicato
+3. Arxena aggiornerà il record esistente invece di creare un duplicato
 
 <Note>
 **Puoi aggiornare anche i campi univoci.**
@@ -76,7 +76,7 @@ Un campo univoco (email, dominio) può:
 * Se mantieni l'`id` ma cambi l'`email` → l'email verrà aggiornata
 * Se mantieni l'`email` ma cambi l'`id` → l'id verrà aggiornato
 
-Finché almeno un identificatore univoco corrisponde, Twenty aggiorna il record.
+Finché almeno un identificatore univoco corrisponde, Arxena aggiorna il record.
 </Note>
 
 ### Come prevenire questo errore
@@ -85,7 +85,7 @@ Prima di importare:
 
 1. Ordina il foglio di calcolo per il campo univoco
 2. Rimuovi le righe duplicate
-3. Verifica se i record esistono già in Twenty
+3. Verifica se i record esistono già in Arxena
 
 <Warning>
 **I record eliminati in modo non definitivo contano ai fini dell'unicità.**
@@ -256,13 +256,13 @@ Questo errore compare **dopo l'avvio dell'importazione** — l'importazione non 
 Can't connect to company. No unique record found with condition: id = 7776ee49-f608-4a77-8cc8-6fe96ae1e43f
 ```
 
-Ciò significa che non esiste alcuna Azienda in Twenty con quello specifico identificatore.
+Ciò significa che non esiste alcuna Azienda in Arxena con quello specifico identificatore.
 
 <Note>A differenza di altri errori, questo non viene intercettato durante la fase di revisione dei dati. L'importazione inizierà e poi non riuscirà quando incontrerà la relazione mancante.</Note>
 
 ### Cosa significa
 
-Stai tentando di collegarti a un record che non esiste in Twenty.
+Stai tentando di collegarti a un record che non esiste in Arxena.
 
 ### Come risolvere
 
@@ -339,7 +339,7 @@ Vedi: [Come importare i dati tramite API](/l/it/user-guide/data-migration/how-to
 
 ### Cosa significa
 
-Una colonna del tuo file non può essere mappata perché il campo non esiste in Twenty.
+Una colonna del tuo file non può essere mappata perché il campo non esiste in Arxena.
 
 ### Come risolvere
 
@@ -361,15 +361,15 @@ Stai tentando di assegnare un record a un utente (Proprietario, Assegnatario) ma
 
 ### Cause comuni
 
-1. **L'utente non ha accettato l'invito** — l'utente non esiste ancora in Twenty
-2. **Uso dell'ID utente dal vecchio sistema** — Twenty non può abbinare gli ID di un altro sistema
-3. **Formato email errato** — l'email non corrisponde all'account Twenty dell'utente
+1. **L'utente non ha accettato l'invito** — l'utente non esiste ancora in Arxena
+2. **Uso dell'ID utente dal vecchio sistema** — Arxena non può abbinare gli ID di un altro sistema
+3. **Formato email errato** — l'email non corrisponde all'account Arxena dell'utente
 
 ### Come risolvere
 
-1. Assicurati che tutti gli utenti abbiano **accettato il loro invito** al tuo spazio di lavoro Twenty
+1. Assicurati che tutti gli utenti abbiano **accettato il loro invito** al tuo spazio di lavoro Arxena
 2. Usa l'**indirizzo email** dell'utente (non il nome o l'ID del vecchio sistema)
-3. Usa la stessa email che hanno utilizzato per aderire a Twenty
+3. Usa la stessa email che hanno utilizzato per aderire an Arxena
 
 <Warning>
 **Gli utenti devono accettare gli inviti prima di importare.**
@@ -407,7 +407,7 @@ Evita errori verificando questi elementi prima di importare:
 
 <Check>I record genitore sono importati prima dei record figlio</Check>
 <Check>Le colonne di relazione fanno riferimento a record esistenti</Check>
-<Check>Il formato del dominio corrisponde esattamente al formato di Twenty</Check>
+<Check>Il formato del dominio corrisponde esattamente al formato di Arxena</Check>
 
 ### Modello dati
 
@@ -420,7 +420,7 @@ Evita errori verificando questi elementi prima di importare:
 
 Se hai provato le soluzioni sopra:
 
-1. **Scarica il file di esempio** — vedi il formato esatto che Twenty si aspetta
+1. **Scarica il file di esempio** — vedi il formato esatto che Arxena si aspetta
 2. **Esporta i record esistenti** — confronta il tuo file con i dati funzionanti
 3. **Esegui un test con un piccolo lotto** — prova prima con 5-10 righe
 4. **Consulta gli articoli di riferimento:**

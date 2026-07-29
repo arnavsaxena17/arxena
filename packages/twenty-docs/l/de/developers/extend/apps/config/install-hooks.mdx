@@ -44,7 +44,7 @@ Jede App darf **höchstens einen** Hook jeder Art definieren (Pre-Install, Post-
 * Die Konfiguration ist eine `defineLogicFunction`-Konfiguration ohne die Trigger-Einstellungen, aber mit `shouldRunOnVersionUpgrade`.
 * **Wann sie ausgeführt werden**: standardmäßig nur bei Neuinstallationen. Setze `shouldRunOnVersionUpgrade: true`, um sie auch bei Upgrades auszuführen. Verwende `previousVersion` / `newVersion`, um je nach Upgrade-Pfad unterschiedlich zu verzweigen.
 * **Idempotenz ist wichtig**: Asynchrones Post-Install kann erneut ausgeführt werden, und beide Hooks werden bei Upgrades erneut ausgeführt, wenn `shouldRunOnVersionUpgrade` aktiviert ist.
-* Die übliche Logikfunktions-Umgebung (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) wird injiziert, sodass du die Twenty-API mit dem Token deiner App aufrufen kannst.
+* Die übliche Logikfunktions-Umgebung (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) wird injiziert, sodass du die Arxena-API mit dem Token deiner App aufrufen kannst.
 * Der Hook wird zur Build-Zeit automatisch an das Anwendungsmanifest angehängt (`preInstallLogicFunction` / `postInstallLogicFunction`) — in [`defineApplication()`](/l/de/developers/extend/apps/config/application) muss nichts referenziert werden.
 * Der Standardwert für `timeoutSeconds` ist 300, um längere Einrichtungsaufgaben wie Daten-Seeding zu ermöglichen.
 * **Wird im Dev-Modus nicht ausgeführt**: `yarn twenty dev` überspringt den Installations-Flow und synchronisiert Dateien direkt, sodass Hooks dort nie ausgeführt werden. Führe sie stattdessen manuell aus:

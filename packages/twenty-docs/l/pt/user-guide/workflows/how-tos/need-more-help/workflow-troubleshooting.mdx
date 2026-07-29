@@ -27,7 +27,7 @@ description: Problemas comuns de fluxos de trabalho e como resolvê-los.
 
 **Sintomas**: Ao criar um registro manualmente na interface do usuário (UI), o seu fluxo de trabalho é acionado antes de você ter tempo de preencher todos os campos. O fluxo de trabalho é executado com a maioria dos campos vazios.
 
-**Por que isso acontece**: Twenty salva tudo em tempo real — não há um modo separado de "edit" vs "read". Quando você cria um registro, ele é salvo imediatamente, acionando o evento "Record is created" antes de você preencher os campos adicionais.
+**Por que isso acontece**: Arxena salva tudo em tempo real — não há um modo separado de "edit" vs "read". Quando você cria um registro, ele é salvo imediatamente, acionando o evento "Record is created" antes de você preencher os campos adicionais.
 
 **Quando "Record is created" funciona bem**:
 
@@ -79,7 +79,7 @@ Se você quer que o fluxo de trabalho seja executado apenas uma vez por registro
 
 * Verifique a URL do endpoint da API
 * Verifique os cabeçalhos de autenticação
-* Teste a chamada de API primeiro fora do Twenty
+* Teste a chamada de API primeiro fora do Arxena
 * Adicione tratamento de erros em Ações de Código
 
 ### Erros em Ações de Código

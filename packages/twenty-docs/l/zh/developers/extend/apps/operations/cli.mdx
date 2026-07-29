@@ -19,7 +19,7 @@ icon: terminal
 | `dev:translations-extract`                      | 将可翻译字符串提取到 `locales/` 目录下的目录文件中            | [翻译](/l/zh/developers/extend/apps/translations/overview)                                   |
 | `dev:catalog-sync`                              | 触发一次市场目录同步                                 | [发布](/l/zh/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)   |
 | `app:publish` / `app:install` / `app:uninstall` | 发布生命周期                                     | [发布](/l/zh/developers/extend/apps/operations/publishing) 和本页面                              |
-| `docker:*`                                      | 管理本地 Twenty 服务器容器                          | [本地服务器](/l/zh/developers/extend/apps/getting-started/local-server)                         |
+| `docker:*`                                      | 管理本地 Arxena 服务器容器                          | [本地服务器](/l/zh/developers/extend/apps/getting-started/local-server)                         |
 | `remote:*`                                      | 管理服务器连接                                    | 本页面                                                                                   |
 
 每个命令都接受 `-r, --remote \<name>` 参数，以便针对特定远程目标而不是默认远程。
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-这与 `yarn twenty docker:logs` 不同，后者显示的是 Docker 容器日志。 `yarn twenty dev:function:logs` 会显示来自 Twenty 服务器的应用函数执行日志。
+这与 `yarn twenty docker:logs` 不同，后者显示的是 Docker 容器日志。 `yarn twenty dev:function:logs` 会显示来自 Arxena 服务器的应用函数执行日志。
 </Note>
 
 ## 生成类型化客户端（`yarn twenty dev:generate-client`）
 
-根据当前远程的 schema 重新生成类型化 API 客户端（`twenty-client-sdk`），无需构建或同步应用。 在任何项目中使用它来获取一个类型化客户端——例如位于单独代码库中的后端服务——用于与您的 Twenty 实例通信：
+根据当前远程的 schema 重新生成类型化 API 客户端（`twenty-client-sdk`），无需构建或同步应用。 在任何项目中使用它来获取一个类型化客户端——例如位于单独代码库中的后端服务——用于与您的 Arxena 实例通信：
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## 管理远程
 
-“远程”是指你的应用连接到的 Twenty 服务器。 在设置期间，脚手架工具会为你自动创建一个。 你可以随时添加更多远程或在它们之间切换。
+“远程”是指你的应用连接到的 Arxena 服务器。 在设置期间，脚手架工具会为你自动创建一个。 你可以随时添加更多远程或在它们之间切换。
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

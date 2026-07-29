@@ -25,7 +25,7 @@ Use many-to-many when both sides of a relationship can have multiple connections
 
 ## How It Works
 
-Twenty uses a **junction object** pattern for many-to-many relations. A junction object sits between two objects and holds the connections:
+Arxena uses a **junction object** pattern for many-to-many relations. A junction object sits between two objects and holds the connections:
 
 ```
 People ←→ Project Assignments ←→ Projects
@@ -35,7 +35,7 @@ The **Project Assignments** object (junction) has:
 - A relation to People (many-to-one)
 - A relation to Projects (many-to-one)
 
-When you enable the junction relation toggle, Twenty displays linked records directly instead of showing the intermediate junction records.
+When you enable the junction relation toggle, Arxena displays linked records directly instead of showing the intermediate junction records.
 
 ## Prerequisites
 

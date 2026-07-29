@@ -1,11 +1,11 @@
 ---
 title: Migração de Outros CRMs
-description: Guia passo a passo para migrar os seus dados de qualquer CRM para o Twenty.
+description: Guia passo a passo para migrar os seus dados de qualquer CRM para o Arxena.
 ---
 
 ## Visão Geral
 
-Este guia explica como migrar os seus dados de qualquer CRM para o Twenty. O processo envolve auditar os seus dados, preparar o seu espaço de trabalho no Twenty, exportar do seu sistema atual e importar para o Twenty.
+Este guia explica como migrar os seus dados de qualquer CRM para o Arxena. O processo envolve auditar os seus dados, preparar o seu espaço de trabalho no Arxena, exportar do seu sistema atual e importar para o Arxena.
 
 <Note>Vistas, fluxos de trabalho e permissões devem ser recriados manualmente após a migração. Reserve tempo para este trabalho de configuração.</Note>
 
@@ -29,9 +29,9 @@ A migração é uma oportunidade para um novo começo. Não traga dados desneces
 
 ## Passo 2: Mapear o seu modelo de dados
 
-Crie um documento de mapeamento entre o seu CRM atual e o Twenty:
+Crie um documento de mapeamento entre o seu CRM atual e o Arxena:
 
-| O seu CRM              | Twenty                   |
+| O seu CRM              | Arxena                   |
 | ---------------------- | ------------------------ |
 | Conta / Organização    | **Empresa**              |
 | Contacto / Pessoa      | **Pessoas**              |
@@ -42,14 +42,14 @@ Crie um documento de mapeamento entre o seu CRM atual e o Twenty:
 **Para cada campo, documente:**
 
 * O nome do campo de origem
-* O campo de destino no Twenty
+* O campo de destino no Arxena
 * Quaisquer transformações de formato necessárias (datas, números de telefone, etc.)
 
 <Note>Mantenha este documento de mapeamento à mão durante a importação — irá referenciá-lo ao mapear as colunas.</Note>
 
-## Passo 3: Configure o seu espaço de trabalho no Twenty
+## Passo 3: Configure o seu espaço de trabalho no Arxena
 
-Antes de importar dados, prepare o seu espaço de trabalho no Twenty:
+Antes de importar dados, prepare o seu espaço de trabalho no Arxena:
 
 ### Crie objetos e campos personalizados
 
@@ -69,7 +69,7 @@ A importação de CSV cria registos, não campos. Crie todos os campos personali
 <Warning>
 **Convide os utilizadores ANTES de importar dados.**
 
-Se os seus dados incluírem referências a utilizadores (Proprietário da conta, Responsável, etc.), esses utilizadores devem existir no Twenty antes da importação. Caso contrário, essas relações não podem ser mapeadas.
+Se os seus dados incluírem referências a utilizadores (Proprietário da conta, Responsável, etc.), esses utilizadores devem existir no Arxena antes da importação. Caso contrário, essas relações não podem ser mapeadas.
 </Warning>
 
 1. Vá para **Configurações → Membros**
@@ -96,13 +96,13 @@ Exporte os seus dados do seu CRM atual:
 
 ## Passo 5: Limpe e formate os seus dados
 
-Abra cada CSV exportado numa aplicação de folha de cálculo e prepare-o para o Twenty.
+Abra cada CSV exportado numa aplicação de folha de cálculo e prepare-o para o Arxena.
 
 ### Remova duplicados
 
 1. Ordene pelo campo único (e-mail para Pessoas, domínio para Empresas)
 2. Remova ou una linhas duplicadas
-3. Verifique se não existem já duplicados no Twenty
+3. Verifique se não existem já duplicados no Arxena
 
 ### Formate os campos corretamente
 
@@ -118,7 +118,7 @@ Abra cada CSV exportado numa aplicação de folha de cálculo e prepare-o para o
 <Warning>
 **O formato do domínio é crítico.**
 
-Use `https://domain.com` (não `domain.com` nem `www.domain.com`). Isto corresponde ao formato do Twenty e evita duplicados quando ligar a sincronização de e-mail/calendário.
+Use `https://domain.com` (não `domain.com` nem `www.domain.com`). Isto corresponde ao formato do Arxena e evita duplicados quando ligar a sincronização de e-mail/calendário.
 </Warning>
 
 Veja [Como preparar os seus ficheiros CSV](/l/pt/user-guide/data-migration/how-tos/prepare-your-csv-files) para requisitos completos de formatação para todos os tipos de campo.
@@ -142,11 +142,11 @@ Veja [Como importar relações](/l/pt/user-guide/data-migration/how-tos/import-r
 Se os seus dados incluírem atribuições de utilizador (Proprietário, Responsável):
 
 1. Adicione uma coluna com o **e-mail do utilizador** (não apenas o ID dele do sistema antigo)
-2. Use os mesmos endereços de e-mail que os utilizadores usaram para aderir ao seu espaço de trabalho no Twenty
+2. Use os mesmos endereços de e-mail que os utilizadores usaram para aderir ao seu espaço de trabalho no Arxena
 
 Veja [Como preparar os seus ficheiros CSV](/l/pt/user-guide/data-migration/how-tos/prepare-your-csv-files) para o guia completo de formatação.
 
-## Passo 6: Importe para o Twenty
+## Passo 6: Importe para o Arxena
 
 <Warning>
 **A ordem de importação é importante!**
@@ -165,7 +165,7 @@ O registo pai deve existir antes de o poder referenciar.
 
 Para cada ficheiro CSV, por ordem:
 
-1. Navegue até ao objeto no Twenty
+1. Navegue até ao objeto no Arxena
 2. Clique em **⋮ → Importar registos**
 3. Carregue o ficheiro CSV
 4. Mapeie as colunas para os campos:
@@ -220,7 +220,7 @@ Após importar os dados, complete a configuração do seu espaço de trabalho:
 ### Ligue o e-mail e o calendário
 
 * Cada utilizador liga a sua própria conta em **Definições → Contas**
-* O Twenty começará a sincronizar e-mails com os registos de contactos
+* O Arxena começará a sincronizar e-mails com os registos de contactos
 * Consulte [E-mail e Calendário](/l/pt/user-guide/calendar-emails/overview)
 
 ### Forme a sua equipa
@@ -266,7 +266,7 @@ Consulte [Como Corrigir Erros de Importação](/l/pt/user-guide/data-migration/h
 
 <AccordionGroup>
   <Accordion title="Posso migrar fluxos de trabalho automaticamente?">
-    De momento, não. Os fluxos de trabalho devem ser recriados manualmente no Twenty.
+    De momento, não. Os fluxos de trabalho devem ser recriados manualmente no Arxena.
   </Accordion>
 
   <Accordion title="E quanto aos anexos de ficheiros?">
@@ -287,6 +287,6 @@ Consulte [Como Corrigir Erros de Importação](/l/pt/user-guide/data-migration/h
 <Tip>
   Quer ajuda com a sua migração?
 
-  * **Feito para você:** [encontre um parceiro Twenty certificado](https://twenty.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm) para mover seus dados, funis e usuários de ponta a ponta.
-  * **Pacote de onboarding:** uma configuração guiada de 4 horas com a nossa equipe — [contact@twenty.com](mailto:contact@twenty.com).
+  * **Feito para você:** [encontre um parceiro Arxena certificado](https://arxena.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm) para mover seus dados, funis e usuários de ponta a ponta.
+  * **Pacote de onboarding:** uma configuração guiada de 4 horas com a nossa equipe — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

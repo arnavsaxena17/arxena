@@ -5,15 +5,15 @@ description: Import relationships between records via CSV.
 
 ## Overview
 
-Twenty supports importing relationships between objects during CSV import. This allows you to link records (e.g., attach People to Companies) as part of your data migration.
+Arxena supports importing relationships between objects during CSV import. This allows you to link records (e.g., attach People to Companies) as part of your data migration.
 
 <Note>**Currently supported for import**: One-to-many relations pointing to a single object type on each side (e.g., People → Companies). Relations pointing to multiple object types are not yet supported in import/export.</Note>
 
-## How Relations Work in Twenty
+## How Relations Work in Arxena
 
 ### One to Many / Many to One
 
-Twenty supports standard relations where one record links to many others:
+Arxena supports standard relations where one record links to many others:
 
 - **One Company → Many People**: A company can have multiple employees, but each person belongs to one company
 - **One Company → Many Opportunities**: A company can have multiple deals, but each opportunity belongs to one company
@@ -71,11 +71,11 @@ First, determine which object is on the "one" side and which is on the "many" si
 
 ### Step 2: Ensure the "One" Side Records Exist
 
-Before importing the "many" side, the "one" side records must already exist in Twenty.
+Before importing the "many" side, the "one" side records must already exist in Arxena.
 
 - Import or create the "one" side records first (e.g., Companies)
 - Validate their unique identifier. This can be:
-  - The `id` (Twenty's UUID)
+  - The `id` (Arxena's UUID)
   - A field set as unique (e.g., `domain` for Companies, or an external ID from your previous system)
 
 <Warning>The import will fail if a reference is made to a record that does not exist.</Warning>
@@ -110,7 +110,7 @@ If it doesn't exist:
 1. Upload your CSV file via the import UI
 2. In the field mapping step, find your relation column (e.g., `companyDomain`)
 3. Map it to the relation field (e.g., Company)
-4. Twenty will automatically link each record to the matching parent
+4. Arxena will automatically link each record to the matching parent
 
 ### Available Unique Fields for Relations
 
@@ -121,7 +121,7 @@ If it doesn't exist:
 | **Workspace Members** | `id`, `email` (not name) |
 | **Other standard and custom objects** | `id`, any field marked as unique |
 
-<Note>**Linking to Workspace Members**: When the relation points to Workspace Members (your team logging into Twenty), reference them by their **email address**, not their name.</Note>
+<Note>**Linking to Workspace Members**: When the relation points to Workspace Members (your team logging into Arxena), reference them by their **email address**, not their name.</Note>
 
 <Note>We recommend using `domain` for Companies and `email` for People, as these are human-readable and easy to maintain in spreadsheets.</Note>
 

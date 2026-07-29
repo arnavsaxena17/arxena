@@ -12,7 +12,7 @@ Twenty의 모든 객체에는 여러분이 직접 선언하지 않아도 되는 
 
 ## 문제
 
-Twenty 2.19부터 시스템 필드의 유니버설 식별자는 애플리케이션 유니버설 식별자, 객체 유니버설 식별자, 필드 이름이라는 세 가지 입력값으로부터 서버에서 결정론적으로 도출됩니다. id를 임의로 만들고 하드코딩해도 동작하지 않습니다. 서버에서 어떤 것과도 일치하지 않으며, 동기화에서 이러한 끊어진 참조를 거부합니다:
+Arxena 2.19부터 시스템 필드의 유니버설 식별자는 애플리케이션 유니버설 식별자, 객체 유니버설 식별자, 필드 이름이라는 세 가지 입력값으로부터 서버에서 결정론적으로 도출됩니다. id를 임의로 만들고 하드코딩해도 동작하지 않습니다. 서버에서 어떤 것과도 일치하지 않으며, 동기화에서 이러한 끊어진 참조를 거부합니다:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -88,7 +88,7 @@ export default defineView({
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier`는 `twenty-sdk`
-  2.23부터 사용 가능하며, Twenty 서버 버전 2.23 이상이 필요합니다.
+  2.23부터 사용 가능하며, Arxena 서버 버전 2.23 이상이 필요합니다.
 </Note>
 
 위에 언급된 스칼라 시스템 필드 외에도 서버는 모든 객체에 `timelineActivities`, `attachments`, `noteTargets`, `taskTargets`라는 네 개의 **시스템 관계 필드**를 제공하며, 각각은 해당하는 표준 관계 객체를 가리킵니다.
@@ -130,9 +130,9 @@ const attachmentTargetRocketFieldId =
 
 스칼라 시스템 필드와 마찬가지로, 해결된 ID는 `fieldMetadataUniversalIdentifier`가 필요한 곳이면 어디서든 사용할 수 있습니다.
 
-## 표준 Twenty 객체
+## 표준 Arxena 객체
 
-**표준** Twenty 객체(Person, Company, Opportunity 등)의 경우 어떤 것도 도출할 필요가 없습니다. 시스템 필드 식별자는 미리 계산된 상수이므로 바로 import해서 사용할 수 있습니다.
+**표준** Arxena 객체(Person, Company, Opportunity 등)의 경우 어떤 것도 도출할 필요가 없습니다. 시스템 필드 식별자는 미리 계산된 상수이므로 바로 import해서 사용할 수 있습니다.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

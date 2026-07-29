@@ -4,7 +4,7 @@ description: "`definePageLayout` 및 `definePageLayoutTab`을 사용하여 레�
 icon: table-columns
 ---
 
-**페이지 레이아웃**은 레코드의 상세 페이지가 어떻게 구성되는지를 제어합니다. 어떤 탭이 표시되고, 그 탭 안에 어떤 위젯이 포함되는지를 결정합니다. 소유한 객체에 대한 레이아웃을 선언하려면 `definePageLayout()`을 사용하고, 이미 존재하는 레이아웃(사용자 소유 또는 표준 Twenty 레이아웃)에 단일 탭을 추가하려면 `definePageLayoutTab()`을 사용합니다.
+**페이지 레이아웃**은 레코드의 상세 페이지가 어떻게 구성되는지를 제어합니다. 어떤 탭이 표시되고, 그 탭 안에 어떤 위젯이 포함되는지를 결정합니다. 소유한 객체에 대한 레이아웃을 선언하려면 `definePageLayout()`을 사용하고, 이미 존재하는 레이아웃(사용자 소유 또는 표준 Arxena 레이아웃)에 단일 탭을 추가하려면 `definePageLayoutTab()`을 사용합니다.
 
 | 사용 사례                                                | 엔터티                   |
 | ---------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### 핵심 요점
 
-* `pageLayoutUniversalIdentifier`는 **필수**이며, 설치 시점에 이미 존재하는 페이지 레이아웃을 가리켜야 합니다. 이는 표준 Twenty 레이아웃이거나, 사용자의 앱에서 정의한 레이아웃일 수 있습니다. 현재는 설치된 다른 앱이 소유한 레이아웃에 대한 크로스 앱 참조는 지원되지 않습니다. 상위 레이아웃이 없으면, 명확한 유효성 검사 오류와 함께 설치가 실패합니다.
+* `pageLayoutUniversalIdentifier`는 **필수**이며, 설치 시점에 이미 존재하는 페이지 레이아웃을 가리켜야 합니다. 이는 표준 Arxena 레이아웃이거나, 사용자의 앱에서 정의한 레이아웃일 수 있습니다. 현재는 설치된 다른 앱이 소유한 레이아웃에 대한 크로스 앱 참조는 지원되지 않습니다. 상위 레이아웃이 없으면, 명확한 유효성 검사 오류와 함께 설치가 실패합니다.
 
-* 표준 Twenty 레이아웃의 경우 `twenty-sdk/define`에서 식별자를 가져옵니다:
+* 표준 Arxena 레이아웃의 경우 `twenty-sdk/define`에서 식별자를 가져옵니다:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

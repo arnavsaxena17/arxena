@@ -11,7 +11,7 @@ Declanșatoarele webhook permit serviciilor externe să pornească fluxurile dvs
 | --------------------------- | ---------------------------------------------------------------- |
 | **Formulare web**           | Trimiterile din formularul de contact creează potențiali clienți |
 | **Aplicații terțe**         | Plată Stripe → creează o înregistrare de client                  |
-| **Integrări personalizate** | Aplicația dvs. → automatizare în Twenty                          |
+| **Integrări personalizate** | Aplicația dvs. → automatizare în Arxena                          |
 | **Instrumente no-code**     | Conexiuni Zapier, Make, n8n                                      |
 
 ## Configurare pas cu pas
@@ -28,7 +28,7 @@ Declanșatoarele webhook permit serviciilor externe să pornească fluxurile dvs
 2. Selectați **Webhook**
 3. Veți primi un URL de webhook unic, de exemplu:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Copiați acest URL — veți avea nevoie de el pentru serviciul dvs. extern
 
@@ -75,7 +75,7 @@ Acum adăugați acțiuni care folosesc datele webhook-ului:
 **Folosind cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

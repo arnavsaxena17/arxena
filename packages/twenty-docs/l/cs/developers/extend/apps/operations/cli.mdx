@@ -19,7 +19,7 @@ CLI `yarn twenty` je vaše rozhraní ke všemu, co souvisí s aplikací. Úplný
 | `dev:translations-extract`                      | Extrahovat přeložitelné řetězce do katalogů v `locales/`                            | [Překlady](/l/cs/developers/extend/apps/translations/overview)                                                |
 | `dev:catalog-sync`                              | Spustit synchronizaci katalogu tržiště                                              | [Publikování](/l/cs/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)             |
 | `app:publish` / `app:install` / `app:uninstall` | Životní cyklus vydání                                                               | [Publikování](/l/cs/developers/extend/apps/operations/publishing) a tato stránka                              |
-| `docker:*`                                      | Spravovat kontejner lokálního serveru Twenty                                        | [Lokální server](/l/cs/developers/extend/apps/getting-started/local-server)                                   |
+| `docker:*`                                      | Spravovat kontejner lokálního serveru Arxena                                        | [Lokální server](/l/cs/developers/extend/apps/getting-started/local-server)                                   |
 | `remote:*`                                      | Spravovat připojení k serveru                                                       | tato stránka                                                                                             |
 
 Každý příkaz přijímá `-r, --remote \<name>` pro zacílení na konkrétní vzdálené připojení místo výchozího.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-To se liší od `yarn twenty docker:logs`, který zobrazuje logy kontejneru Docker. `yarn twenty dev:function:logs` zobrazuje logy běhu funkcí vaší aplikace ze serveru Twenty.
+To se liší od `yarn twenty docker:logs`, který zobrazuje logy kontejneru Docker. `yarn twenty dev:function:logs` zobrazuje logy běhu funkcí vaší aplikace ze serveru Arxena.
 </Note>
 
 ## Generování typovaného klienta (`yarn twenty dev:generate-client`)
 
-Znovu vygenerujte typovaného klienta API (`twenty-client-sdk`) ze schématu aktivního vzdáleného serveru, bez sestavování nebo synchronizace aplikace. Použijte jej k získání typovaného klienta v libovolném projektu – například backendové služby v samostatném repozitáři – který komunikuje s vaší instancí Twenty:
+Znovu vygenerujte typovaného klienta API (`twenty-client-sdk`) ze schématu aktivního vzdáleného serveru, bez sestavování nebo synchronizace aplikace. Použijte jej k získání typovaného klienta v libovolném projektu – například backendové služby v samostatném repozitáři – který komunikuje s vaší instancí Arxena:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## Správa vzdálených serverů
 
-**Remote** je server Twenty, ke kterému se vaše aplikace připojuje. Během nastavení jej generátor kostry automaticky vytvoří. Můžete kdykoli přidat další vzdálené servery nebo mezi nimi přepínat.
+**Remote** je server Arxena, ke kterému se vaše aplikace připojuje. Během nastavení jej generátor kostry automaticky vytvoří. Můžete kdykoli přidat další vzdálené servery nebo mezi nimi přepínat.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

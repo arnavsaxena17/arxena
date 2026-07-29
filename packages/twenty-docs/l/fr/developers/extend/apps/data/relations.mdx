@@ -4,7 +4,7 @@ description: Reliez des objets entre eux avec des relations MANY_TO_ONE / ONE_TO
 icon: diagram-project
 ---
 
-Les relations relient deux objets entre eux. Dans Twenty, les relations sont toujours **bidirectionnelles** — chaque relation a deux côtés, et chaque côté est déclaré comme un champ qui référence l'autre.
+Les relations relient deux objets entre eux. Dans Arxena, les relations sont toujours **bidirectionnelles** — chaque relation a deux côtés, et chaque côté est déclaré comme un champ qui référence l'autre.
 
 | Type de relation | Description                                                                          | Possède une clé étrangère ? |
 | ---------------- | ------------------------------------------------------------------------------------ | --------------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Relation avec des objets standard
 
-Pour créer une relation avec un objet Twenty intégré (Person, Company, etc.), utilisez `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` :
+Pour créer une relation avec un objet Arxena intégré (Person, Company, etc.), utilisez `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` :
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

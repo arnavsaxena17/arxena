@@ -9,7 +9,7 @@ Responda a e-mails de entrada em segundos — não em horas. Este fluxo de traba
 
 Cada e-mail contém um cabeçalho oculto `Message-ID` — uma impressão digital única atribuída pelo servidor de e-mail do remetente. Quando você responde a um e-mail, seu cliente de e-mail define um cabeçalho `In-Reply-To` que faz referência a essa impressão digital. É assim que o Gmail, o Outlook e todos os outros clientes agrupam as mensagens em conversas.
 
-No Twenty, essa impressão digital é armazenada como `headerMessageId` no objeto Message. Seu fluxo de trabalho obtém isso e o passa para o campo In-Reply-To da ação Enviar e-mail.
+No Arxena, essa impressão digital é armazenada como `headerMessageId` no objeto Message. Seu fluxo de trabalho obtém isso e o passa para o campo In-Reply-To da ação Enviar e-mail.
 
 ## Criando o fluxo de trabalho
 
@@ -21,7 +21,7 @@ Vá para **Configurações -> Fluxos de trabalho** e clique em **+ Novo fluxo de
 
 Escolha **When a Record is Created** e selecione **Messages**.
 
-Sempre que um e-mail chega ao Twenty, isto é acionado.
+Sempre que um e-mail chega ao Arxena, isto é acionado.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Ative quando estiver satisfeito com isso.
 
 ## Ideias para desenvolver
 
-* **Responder apenas a VIPs** — adicione um ramo que verifique o domínio do remetente ou se ele existe como um Contato no Twenty
+* **Responder apenas a VIPs** — adicione um ramo que verifique o domínio do remetente ou se ele existe como um Contato no Arxena
 * **Roteie por intenção** — use prompts separados do Agente de IA para lidar com consultas de vendas de forma diferente de solicitações de suporte
 * **Enriquecer antes de responder** — adicione uma etapa Pesquisar Registros para trazer a empresa do remetente ou o histórico de negócios para o prompt de IA, obtendo respostas mais personalizadas

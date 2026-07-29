@@ -1,16 +1,16 @@
 ---
-title: إنشاء ملف PDF من Twenty
+title: إنشاء ملف PDF من Arxena
 description: أنشئ سير عمل لإنشاء ملف PDF (مثل عرض سعر) وإرفاقه بسجل.
 ---
 
-أنشئ أو اجلب ملف PDF تلقائيًا وأرفقه بسجل في Twenty. يُستخدم هذا عادةً لإنشاء عروض أسعار أو فواتير أو تقارير مرتبطة بالشركات أو الفرص أو كائنات أخرى.
+أنشئ أو اجلب ملف PDF تلقائيًا وأرفقه بسجل في Arxena. يُستخدم هذا عادةً لإنشاء عروض أسعار أو فواتير أو تقارير مرتبطة بالشركات أو الفرص أو كائنات أخرى.
 
 ## نظرة عامة
 
 يستخدم سير العمل هذا **المحفز اليدوي** بحيث يتمكن المستخدمون من إنشاء ملف PDF عند الطلب لأي سجل محدد. تتولى **الوظيفة المنطقية** ما يلي:
 
 1. تنزيل ملف PDF من عنوان URL (من خدمة إنشاء PDF)
-2. رفع الملف إلى Twenty
+2. رفع الملف إلى Arxena
 3. إنشاء مرفق مرتبط بالسجل
 
 ## المتطلبات الأساسية
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ export const main = async (
 
 * [مشغلات سير العمل](/l/ar/user-guide/workflows/capabilities/workflow-triggers)
 * [الوظائف المنطقية](/l/ar/user-guide/workflows/capabilities/workflow-actions#code)
-* [إنشاء عرض سعر أو فاتورة من Twenty](/l/ar/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [إنشاء عرض سعر أو فاتورة من Arxena](/l/ar/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

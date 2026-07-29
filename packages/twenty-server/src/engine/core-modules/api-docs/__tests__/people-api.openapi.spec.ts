@@ -8,9 +8,12 @@ describe('buildPeopleApiOpenApiDocument', () => {
     expect(paths).toEqual(
       expect.arrayContaining([
         '/people-api/data-sources',
+        '/people-api/taxonomy/constants',
         '/people-api/taxonomy/function-roots',
         '/people-api/taxonomy/functions',
         '/people-api/taxonomy/grades',
+        '/people-api/taxonomy/boolean-strings',
+        '/people-api/titles/expand',
         '/people-api/people/search-by-title',
         '/people-api/people/search',
       ]),

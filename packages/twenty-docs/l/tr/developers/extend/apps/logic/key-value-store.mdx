@@ -39,7 +39,7 @@ Her girişin, her çağrıda bir seçenek olarak iletilen bir kapsamı vardır. 
 * **`WORKSPACE`** (varsayılan) — giriş, uygulamanızın geçerli çalışma alanı kurulumuna özeldir. Uygulamayı kuran her çalışma alanı kendi bağımsız anahtar setini alır. Önbellekler, imleçler ve çalışma alanı başına durum için istediğiniz budur.
 * **`SERVER`** — giriş, sunucudaki uygulamanızın **her kurulumuyla** paylaşılır. Sunucu girişleri **claim** gibi davranır: saklanan değer, anahtarı talep eden çalışma alanı kimliği (geçerli çalışma alanı için anahtarı talep etmek üzere `set` çağrısında `value` belirtmeyin) olur ve yalnızca o çalışma alanı bu değeri üzerine yazabilir veya silebilir. Her kurulum girişi okuyabilir.
 
-Sunucu claim'leri, çalışma alanları arası yönlendirme için vardır. [server-route resolver](/l/tr/developers/extend/apps/logic/logic-functions#server-route-trigger), uygulama kaydı sahibinin çalışma alanında çalışır, ancak gelen bir web kancası genellikle yalnızca harici bir hesap kimliği taşır — bir Twenty çalışma alanı kimliği taşımaz. Her çalışma alanının, bağlanma anında kendi harici kimliğini talep etmesini sağlayın, ardından bunu rotada çözümleyin:
+Sunucu claim'leri, çalışma alanları arası yönlendirme için vardır. [server-route resolver](/l/tr/developers/extend/apps/logic/logic-functions#server-route-trigger), uygulama kaydı sahibinin çalışma alanında çalışır, ancak gelen bir web kancası genellikle yalnızca harici bir hesap kimliği taşır — bir Arxena çalışma alanı kimliği taşımaz. Her çalışma alanının, bağlanma anında kendi harici kimliğini talep etmesini sağlayın, ardından bunu rotada çözümleyin:
 
 ```ts
 // In the connected workspace, when the external account is linked:

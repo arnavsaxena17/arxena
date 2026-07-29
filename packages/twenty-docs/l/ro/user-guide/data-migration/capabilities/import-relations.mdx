@@ -5,15 +5,15 @@ description: Importați relațiile dintre înregistrări prin CSV.
 
 ## Prezentare generală
 
-Twenty acceptă importul relațiilor dintre obiecte în timpul importului CSV. Acest lucru vă permite să conectați înregistrări (de ex., să atașați Persoane la Companii) ca parte a migrării datelor.
+Arxena acceptă importul relațiilor dintre obiecte în timpul importului CSV. Acest lucru vă permite să conectați înregistrări (de ex., să atașați Persoane la Companii) ca parte a migrării datelor.
 
 <Note>**În prezent acceptat pentru import**: Relații de tip unu-la-mulți care indică spre un singur tip de obiect pe fiecare parte (de ex., Persoane → Companii). Relațiile care indică către mai multe tipuri de obiecte nu sunt încă acceptate pentru import/export.</Note>
 
-## Cum funcționează relațiile în Twenty
+## Cum funcționează relațiile în Arxena
 
 ### Unu la mulți / Mulți la unu
 
-Twenty acceptă relații standard în care o înregistrare se leagă de multe altele:
+Arxena acceptă relații standard în care o înregistrare se leagă de multe altele:
 
 * **O Companie → Multe Persoane**: O companie poate avea mai mulți angajați, dar fiecare persoană aparține unei singure companii
 * **O Companie → Multe Oportunități**: O companie poate avea mai multe oportunități, dar fiecare oportunitate aparține unei singure companii
@@ -75,11 +75,11 @@ Mai întâi, determinați care obiect se află pe partea „unu” și care pe p
 
 ### Pasul 2: Asigurați existența înregistrărilor de pe partea „unu”
 
-Înainte de a importa partea „mulți”, înregistrările de pe partea „unu” trebuie să existe deja în Twenty.
+Înainte de a importa partea „mulți”, înregistrările de pe partea „unu” trebuie să existe deja în Arxena.
 
 * Importați sau creați mai întâi înregistrările de pe partea „unu” (de ex., Companii)
 * Validați identificatorul lor unic. Acesta poate fi:
-  * `id` (UUID-ul Twenty)
+  * `id` (UUID-ul Arxena)
   * Un câmp setat ca unic (de ex., `domain` pentru Companii sau un ID extern din sistemul dvs. anterior)
 
 <Warning>Importul va eșua dacă se face referire la o înregistrare care nu există.</Warning>
@@ -117,7 +117,7 @@ Dacă nu există:
 1. Încărcați fișierul CSV prin interfața de import
 2. În pasul de mapare a câmpurilor, găsiți coloana relației (de ex., `companyDomain`)
 3. Mapați-o la câmpul de relație (de ex., Companie)
-4. Twenty va lega automat fiecare înregistrare de părintele corespunzător
+4. Arxena va lega automat fiecare înregistrare de părintele corespunzător
 
 ### Câmpuri unice disponibile pentru relații
 
@@ -128,7 +128,7 @@ Dacă nu există:
 | **Membri ai spațiului de lucru**           | `id`, `email` (nu numele)                    |
 | **Alte obiecte standard și personalizate** | `id`, orice câmp marcat ca unic              |
 
-<Note>**Conectarea la Membrii Workspace-ului**: Când relația indică către Membrii Workspace-ului (echipa dvs. care se autentifică în Twenty), referiți-vă la ei prin **adresa de email**, nu prin nume.</Note>
+<Note>**Conectarea la Membrii Workspace-ului**: Când relația indică către Membrii Workspace-ului (echipa dvs. care se autentifică în Arxena), referiți-vă la ei prin **adresa de email**, nu prin nume.</Note>
 
 <Note>Recomandăm folosirea `domain` pentru Companii și `email` pentru Persoane, deoarece acestea sunt ușor de citit și ușor de întreținut în foi de calcul.</Note>
 

@@ -6,10 +6,10 @@ icon: gear
 # Správa konfigurace
 
 <Warning>
-**Instalujete poprvé?** Postupujte podle [průvodce instalací Docker Compose](/l/cs/developers/self-host/capabilities/docker-compose) k rozchození Twenty, a poté se sem vraťte pro konfiguraci.
+**Instalujete poprvé?** Postupujte podle [průvodce instalací Docker Compose](/l/cs/developers/self-host/capabilities/docker-compose) k rozchození Arxena, a poté se sem vraťte pro konfiguraci.
 </Warning>
 
-Twenty nabízí **dvě konfigurační režimy** pro různé potřeby nasazení:
+Arxena nabízí **dvě konfigurační režimy** pro různé potřeby nasazení:
 
 **Přístup k administračnímu panelu:** Pouze uživatelé s administrátorskými právy (`canAccessFullAdminPanel: true`) mohou přistupovat k rozhraní pro konfiguraci.
 
@@ -21,7 +21,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 **Většina konfigurace probíhá prostřednictvím uživatelského rozhraní** po instalaci:
 
-1. Přistupte ke své instanci Twenty (obvykle `http://localhost:3000`)
+1. Přistupte ke své instanci Arxena (obvykle `http://localhost:3000`)
 2. Jděte na **Nastavení / Admin panel / Konfigurační proměnné**
 3. Nakonfigurujte integrace, e-mail, úložiště a další
 4. Změny se projeví okamžitě (u nasazení s více kontejnery do 15 sekund)
@@ -50,14 +50,14 @@ Některá nastavení infrastruktury, jako připojení k databázi (`PG_DATABASE_
 
 ## Šifrovací klíče
 
-Twenty používá dva šifrovací klíče dostupné pouze přes proměnné prostředí:
+Arxena používá dva šifrovací klíče dostupné pouze přes proměnné prostředí:
 
 | Proměnná                  | Účel                                                                                                                                                                                 | Povinné                                                                                           |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `ENCRYPTION_KEY`          | Primární klíč používaný k šifrování tajných hodnot „v klidu“ (tokeny OAuth, aplikační proměnné, privátní klíče podepisovacích klíčů, TOTP tajné kódy, citlivé konfigurační hodnoty). | Ano pro nové instalace (starší instalace se mohou místo toho spoléhat na `APP_SECRET` — viz níže) |
 | `FALLBACK_ENCRYPTION_KEY` | Klíč používaný pouze k ověřování. Během rotace se nastavuje na *předchozí* hodnotu `ENCRYPTION_KEY`, aby bylo možné dešifrovat stávající řádky.                                      | Pouze během rotace                                                                                |
 
-Kvůli zpětné kompatibilitě, pokud `ENCRYPTION_KEY` není nastaven, Twenty používá pro šifrování „v klidu“ záložně `APP_SECRET`, což odpovídá původnímu chování starších nasazení. Nové instalace by vždy měly nastavit dedikovaný `ENCRYPTION_KEY`.
+Kvůli zpětné kompatibilitě, pokud `ENCRYPTION_KEY` není nastaven, Arxena používá pro šifrování „v klidu“ záložně `APP_SECRET`, což odpovídá původnímu chování starších nasazení. Nové instalace by vždy měly nastavit dedikovaný `ENCRYPTION_KEY`.
 
 Hodnoty vygenerujte pomocí `openssl rand -base64 32` a uložte je na bezpečné místo (správce tajných klíčů, zapečetěná konfigurace apod.). Ztráta `ENCRYPTION_KEY` znamená ztrátu přístupu ke všem tajným hodnotám uloženým v databázi.
 
@@ -78,7 +78,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 
 ## Režim více pracovních prostorů
 
-Ve výchozím nastavení běží Twenty v **režimu jednoho pracovního prostoru** — ideální pro většinu samostatně hostovaných nasazení, kde potřebujete jednu instanci CRM pro svou organizaci.
+Ve výchozím nastavení běží Arxena v **režimu jednoho pracovního prostoru** — ideální pro většinu samostatně hostovaných nasazení, kde potřebujete jednu instanci CRM pro svou organizaci.
 
 ### Režim jednoho pracovního prostoru (výchozí)
 
@@ -86,7 +86,7 @@ Ve výchozím nastavení běží Twenty v **režimu jednoho pracovního prostoru
 IS_MULTIWORKSPACE_ENABLED=false  # default
 ```
 
-* Jeden pracovní prostor na instanci Twenty
+* Jeden pracovní prostor na instanci Arxena
 * První uživatel se automaticky stává administrátorem s plnými oprávněními (`canImpersonate` a `canAccessFullAdminPanel`)
 * Po vytvoření prvního pracovního prostoru jsou nové registrace zakázány.
 * Jednoduchá struktura URL: `https://your-domain.com`
@@ -98,7 +98,7 @@ IS_MULTIWORKSPACE_ENABLED=true
 DEFAULT_SUBDOMAIN=app  # default value
 ```
 
-Povolte režim více pracovních prostorů pro nasazení typu SaaS, kde více nezávislých týmů potřebuje své vlastní pracovní prostory na téže instanci Twenty.
+Povolte režim více pracovních prostorů pro nasazení typu SaaS, kde více nezávislých týmů potřebuje své vlastní pracovní prostory na téže instanci Arxena.
 
 **Klíčové rozdíly oproti režimu jednoho pracovního prostoru:**
 
@@ -152,7 +152,7 @@ Pokud je povoleno, pouze uživatelé s `canAccessFullAdminPanel` mohou vytváře
    * `https://{your-domain}/auth/google/redirect` (pro SSO)
    * `https://{your-domain}/auth/google-apis/get-access-token` (pro integrace)
 
-### Konfigurace v Twenty
+### Konfigurace v Arxena
 
 1. Jděte na **Nastavení → Admin panel → Konfigurační proměnné**
 2. Najděte sekci **Google Auth**
@@ -184,7 +184,7 @@ V části [Obrazovka souhlasu s OAuth](https://console.cloud.google.com/apis/cre
 ## Integrace Microsoft 365
 
 <Warning>
-Uživatelé musí mít [Licence Microsoft 365](https://admin.microsoft.com/Adminportal/Home), aby mohli používat API Kalendáře a Zpráv. Bez něj nebudou moci synchronizovat svůj účet na Twenty.
+Uživatelé musí mít [Licence Microsoft 365](https://admin.microsoft.com/Adminportal/Home), aby mohli používat API Kalendáře a Zpráv. Bez něj nebudou moci synchronizovat svůj účet na Arxena.
 </Warning>
 
 ### Vytvořte projekt v Microsoft Azure
@@ -213,7 +213,7 @@ Musíte přidat následující URI přesměrování do vašeho projektu:
 * `https://{your-domain}/auth/microsoft/redirect`, pokud chcete použít Microsoft SSO
 * `https://{your-domain}/auth/microsoft-apis/get-access-token`
 
-### Konfigurace v Twenty
+### Konfigurace v Arxena
 
 1. Jděte na **Nastavení → Admin panel → Konfigurační proměnné**
 2. Najděte sekci **Microsoft Auth**
@@ -316,16 +316,16 @@ yarn command:prod cron:workflow:automated-cron-trigger
 ## Úložiště S3
 
 <Warning>
-Ve výchozím nastavení Twenty ukládá nahrané soubory do místního souborového systému. Pro produkční nasazení použijte S3 nebo službu kompatibilní se S3 (MinIO, DigitalOcean Spaces atd.). aby byly soubory zachovány při restartech kontejnerů a bylo možné škálovat napříč více instancemi serveru.
+Ve výchozím nastavení Arxena ukládá nahrané soubory do místního souborového systému. Pro produkční nasazení použijte S3 nebo službu kompatibilní se S3 (MinIO, DigitalOcean Spaces atd.). aby byly soubory zachovány při restartech kontejnerů a bylo možné škálovat napříč více instancemi serveru.
 </Warning>
 
 Nastavte `STORAGE_TYPE=S_3` a nakonfigurujte proměnné `STORAGE_S3_*` prostřednictvím administračního panelu nebo `.env`. Viz [referenci config-variables.ts](https://github.com/twentyhq/twenty/blob/main/packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts) pro úplný seznam proměnných S3.
 
-Při používání S3 s funkcemi závislými na CORS (např. stahování souborů v prohlížeči) se ujistěte, že váš bucket povoluje origin vašeho frontendu Twenty ve své konfiguraci CORS.
+Při používání S3 s funkcemi závislými na CORS (např. stahování souborů v prohlížeči) se ujistěte, že váš bucket povoluje origin vašeho frontendu Arxena ve své konfiguraci CORS.
 
 ## Logické funkce a interpret kódu
 
-Twenty podporuje logické funkce pro pracovní postupy a interpret kódu pro analýzu dat s využitím AI. Obě spouštějí kód poskytnutý uživatelem a z důvodu zabezpečení vyžadují explicitní konfiguraci.
+Arxena podporuje logické funkce pro pracovní postupy a interpret kódu pro analýzu dat s využitím AI. Obě spouštějí kód poskytnutý uživatelem a z důvodu zabezpečení vyžadují explicitní konfiguraci.
 
 ### Výchozí nastavení zabezpečení
 
@@ -378,5 +378,5 @@ LOGIC_FUNCTION_TYPE=DISABLED  # default when NODE_ENV=production
 | E2B       | `CODE_INTERPRETER_TYPE=E_2_B`    | Produkční prostředí se sandboxovaným spouštěním | Vysoká (izolovaný sandbox) |
 
 <Note>
-Při použití `LOGIC_FUNCTION_TYPE=DISABLED` nebo `CODE_INTERPRETER_TYPE=DISABLED` vrátí každý pokus o spuštění chybu. To je užitečné, pokud chcete provozovat Twenty bez těchto schopností.
+Při použití `LOGIC_FUNCTION_TYPE=DISABLED` nebo `CODE_INTERPRETER_TYPE=DISABLED` vrátí každý pokus o spuštění chybu. To je užitečné, pokud chcete provozovat Arxena bez těchto schopností.
 </Note>

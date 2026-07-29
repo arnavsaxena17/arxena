@@ -44,7 +44,7 @@ Ogni app può definire **al massimo uno** per ciascun hook (pre-install, post-in
 * La config è una config di `defineLogicFunction` meno le impostazioni di trigger, più `shouldRunOnVersionUpgrade`.
 * **Quando viene eseguito**: solo sulle nuove installazioni, per impostazione predefinita. Imposta `shouldRunOnVersionUpgrade: true` per eseguirlo anche sugli upgrade. Usa `previousVersion` / `newVersion` per ramificare in base al percorso di upgrade.
 * **L'idempotenza è importante**: il post-install async può essere ritentato e qualsiasi hook viene rieseguito sugli upgrade quando `shouldRunOnVersionUpgrade` è attivo.
-* Il consueto ambiente delle logic-function (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) viene iniettato, così puoi chiamare le API di Twenty con il token della tua app.
+* Il consueto ambiente delle logic-function (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) viene iniettato, così puoi chiamare le API di Arxena con il token della tua app.
 * L'hook viene collegato automaticamente al manifesto dell'applicazione in fase di build (`preInstallLogicFunction` / `postInstallLogicFunction`) — non c'è nulla da referenziare in [`defineApplication()`](/l/it/developers/extend/apps/config/application).
 * Il `timeoutSeconds` predefinito è 300 per consentire attività di setup più lunghe, come il seeding dei dati.
 * **Non eseguito in modalità dev**: `yarn twenty dev` salta il flusso di installazione e sincronizza direttamente i file, quindi gli hook non vengono mai eseguiti in quell'ambiente. Attivali invece manualmente:

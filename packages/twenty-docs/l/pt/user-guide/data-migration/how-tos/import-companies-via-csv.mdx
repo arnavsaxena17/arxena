@@ -1,11 +1,11 @@
 ---
 title: Importar Empresas via CSV
-description: Guia completo passo a passo para importar empresas para o Twenty.
+description: Guia completo passo a passo para importar empresas para o Arxena.
 ---
 
 ## Visão Geral
 
-Este guia explica como importar as suas empresas para o Twenty. **As empresas devem ser importadas primeiro** porque Pessoas e Oportunidades se ligam a Empresas.
+Este guia explica como importar as suas empresas para o Arxena. **As empresas devem ser importadas primeiro** porque Pessoas e Oportunidades se ligam a Empresas.
 
 ## Antes de Começar
 
@@ -74,7 +74,7 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 ```
 
 <Note>
-**Dica profissional:** Clique em **Download sample file** durante a importação para ver os nomes de colunas exatos que o Twenty espera.
+**Dica profissional:** Clique em **Download sample file** durante a importação para ver os nomes de colunas exatos que o Arxena espera.
 </Note>
 
 ## Passo 2: Aceda à funcionalidade de importação
@@ -96,11 +96,11 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 
 1. Clique em **Select file**
 2. Escolha o seu ficheiro CSV, XLSX ou XLS
-3. Aguarde que o Twenty analise o seu ficheiro
+3. Aguarde que o Arxena analise o seu ficheiro
 
 ## Passo 4: Mapeie as suas colunas
 
-O Twenty tenta automaticamente corresponder as suas colunas aos campos. Revise e ajuste:
+O Arxena tenta automaticamente corresponder as suas colunas aos campos. Revise e ajuste:
 
 1. **Verifique os mapeamentos automáticos** — confirme que estão corretos
 2. **Corrija mapeamentos incorretos** — clique no menu suspenso para selecionar o campo correto
@@ -118,8 +118,8 @@ O Twenty tenta automaticamente corresponder as suas colunas aos campos. Revise e
 
 Se tiver campos Select ou Multi-Select:
 
-1. O Twenty mostra os seus valores ao lado das opções existentes
-2. Relacione cada valor no seu ficheiro a uma opção do Twenty
+1. O Arxena mostra os seus valores ao lado das opções existentes
+2. Relacione cada valor no seu ficheiro a uma opção do Arxena
 3. Ou crie novas opções, se necessário
 
 <Note>
@@ -128,7 +128,7 @@ As opções de Select usam **nomes de API**, não os rótulos de apresentação.
 
 ## Passo 6: Rever e corrigir erros
 
-Antes de concluir a importação, o Twenty valida os seus dados:
+Antes de concluir a importação, o Arxena valida os seus dados:
 
 1. Clique em **Next Steps**
 2. As linhas com erros são destacadas em **amarelo**
@@ -139,7 +139,7 @@ Antes de concluir a importação, o Twenty valida os seus dados:
 
 | Erro                            | Causa                          | Solução                                            |
 | ------------------------------- | ------------------------------ | -------------------------------------------------- |
-| **Domínio duplicado**           | O domínio já existe no Twenty  | Remova do ficheiro ou atualize o registo existente |
+| **Domínio duplicado**           | O domínio já existe no Arxena  | Remova do ficheiro ou atualize o registo existente |
 | **Formato de domínio inválido** | Formato incorreto              | Use `https://domain.com`                           |
 | **Campo obrigatório ausente**   | O campo obrigatório está vazio | Preencha o valor ou remova a linha                 |
 
@@ -163,7 +163,7 @@ Agora pode importar registos que se ligam a Empresas:
 Para atualizar empresas em vez de criar novas:
 
 1. Inclua a coluna `domain` ou `id` no seu ficheiro
-2. O Twenty faz a correspondência dos registos por este identificador único
+2. O Arxena faz a correspondência dos registos por este identificador único
 3. As empresas existentes são atualizadas; as novas são criadas
 
 Veja [Como Atualizar Registos Existentes](/l/pt/user-guide/data-migration/how-tos/update-existing-records-via-import) para obter detalhes.
@@ -172,7 +172,7 @@ Veja [Como Atualizar Registos Existentes](/l/pt/user-guide/data-migration/how-to
 
 <AccordionGroup>
   <Accordion title="Porque é que duas Empresas não podem ter o mesmo domínio?">
-    O domínio é um identificador único no Twenty. Isto evita empresas duplicadas e garante que a sincronização de e-mail associe corretamente os e-mails à empresa certa.
+    O domínio é um identificador único no Arxena. Isto evita empresas duplicadas e garante que a sincronização de e-mail associe corretamente os e-mails à empresa certa.
   </Accordion>
 
   <Accordion title="E se tiver empresas sem domínio?">
@@ -184,7 +184,7 @@ Veja [Como Atualizar Registos Existentes](/l/pt/user-guide/data-migration/how-to
   </Accordion>
 
   <Accordion title="O que acontece se importar um domínio que já existe?">
-    Se incluir um identificador único (domínio ou id) que corresponda a uma empresa existente, a Twenty atualiza essa empresa em vez de criar um duplicado.
+    Se incluir um identificador único (domínio ou id) que corresponda a uma empresa existente, an Arxena atualiza essa empresa em vez de criar um duplicado.
   </Accordion>
 
   <Accordion title="Como corrijo erros de 'domínio duplicado'?">

@@ -16,9 +16,9 @@ Trebuie să actualizați multe înregistrări deodată? În loc să le editați 
 
 ## Cum Funcționează
 
-Când importați un fișier care conține un **identificator unic** ce se potrivește unei înregistrări existente, Twenty actualizează acea înregistrare în loc să creeze un duplicat.
+Când importați un fișier care conține un **identificator unic** ce se potrivește unei înregistrări existente, Arxena actualizează acea înregistrare în loc să creeze un duplicat.
 
-| Dacă identificatorul unic...              | Twenty va...                                            |
+| Dacă identificatorul unic...              | Arxena va...                                            |
 | ----------------------------------------- | ------------------------------------------------------- |
 | Se potrivește cu o înregistrare existentă | **Actualizează** înregistrarea existentă                |
 | Nu se potrivește cu nicio înregistrare    | **Creează** o înregistrare nouă                         |
@@ -57,7 +57,7 @@ Deschideți fișierul exportat în aplicația dvs. de calcul tabelar (Excel, Goo
 1. **Păstrați coloana cu identificatorul unic** — nu ștergeți `id`, `email` sau `domain`
 2. **Actualizați valorile** în coloanele pe care doriți să le modificați
 3. **Eliminați coloanele pe care nu trebuie să le actualizați** (opțional, dar mai ordonat)
-4. **Nu modificați valorile identificatorului unic** — altfel Twenty va crea înregistrări noi
+4. **Nu modificați valorile identificatorului unic** — altfel Arxena va crea înregistrări noi
 
 ### Exemplu: Actualizarea titlurilor de post
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Nu modificați valorile identificatorului unic.**
 
-Dacă modificați `john@acme.com` în `john.smith@acme.com`, Twenty va crea o înregistrare nouă în loc să o actualizeze pe cea existentă.
+Dacă modificați `john@acme.com` în `john.smith@acme.com`, Arxena va crea o înregistrare nouă în loc să o actualizeze pe cea existentă.
 </Warning>
 
 ## Pasul 3: Importați fișierul actualizat
@@ -95,7 +95,7 @@ Dacă modificați `john@acme.com` în `john.smith@acme.com`, Twenty va crea o î
 6. Verificați erorile
 7. Faceți clic pe **Confirm**
 
-Twenty potrivește înregistrările după identificatorul unic și le actualizează cu valorile noi.
+Arxena potrivește înregistrările după identificatorul unic și le actualizează cu valorile noi.
 
 ## Alegerea identificatorului unic potrivit
 
@@ -113,7 +113,7 @@ Dacă aveți un câmp personalizat marcat ca unic (cum ar fi un ID extern dintr-
 
 1. Includeți acel câmp în export și import
 2. Mapați-l în timpul importului
-3. Twenty va face potrivirea pe baza acelui câmp
+3. Arxena va face potrivirea pe baza acelui câmp
 
 ## Pasul 4: Verificați actualizările
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Schimbarea identificatorului unic**  | S-a schimbat `john@acme.com` în `john.smith@acme.com`        | Creează o înregistrare nouă în loc să actualizeze | Păstrați identificatorii unici neschimbați           |
 | **Câmpuri unice multiple**             | Maparea atât a `email`, cât și a `id`                        | Conflicte potențiale de potrivire                 | Mapați un singur identificator unic                  |
 | **Fără identificator unic**            | Fișierul conține doar `firstName`, `lastName`, `jobTitle`    | Toate rândurile creează înregistrări noi          | Includeți întotdeauna `email`, `domain` sau `id`     |
-| **Nepotrivire de majuscule/minuscule** | Fișierul are `John@acme.com`, dar Twenty are `john@acme.com` | Creează o înregistrare nouă                       | Exportați din Twenty pentru a obține valorile exacte |
+| **Nepotrivire de majuscule/minuscule** | Fișierul are `John@acme.com`, dar Arxena are `john@acme.com` | Creează o înregistrare nouă                       | Exportați din Arxena pentru a obține valorile exacte |
 
 ## Întrebări frecvente
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Cum știu care înregistrări vor fi actualizate și care vor fi create?">
-    În etapa de revizuire a importului, Twenty vă arată câte înregistrări vor fi actualizate și câte vor fi create, pe baza potrivirilor după identificatorul unic.
+    În etapa de revizuire a importului, Arxena vă arată câte înregistrări vor fi actualizate și câte vor fi create, pe baza potrivirilor după identificatorul unic.
   </Accordion>
 
   <Accordion title="Pot anula o actualizare în masă?">

@@ -1,5 +1,5 @@
 ---
-title: 从 Twenty 生成报价单或发票
+title: 从 Arxena 生成报价单或发票
 description: 在交易达成时，自动在外部工具中创建发票。
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## 相关内容
 
-* [从 Twenty 生成 PDF](/l/zh/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — 将生成的 PDF 附加到记录
+* [从 Arxena 生成 PDF](/l/zh/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — 将生成的 PDF 附加到记录
 * [工作流触发器](/l/zh/user-guide/workflows/capabilities/workflow-triggers)
 * [工作流操作](/l/zh/user-guide/workflows/capabilities/workflow-actions)
 * [赢单自动化](/l/zh/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

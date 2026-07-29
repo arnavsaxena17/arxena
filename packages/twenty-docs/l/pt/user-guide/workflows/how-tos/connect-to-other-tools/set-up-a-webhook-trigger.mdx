@@ -11,7 +11,7 @@ Gatilhos de Webhook permitem que serviços externos iniciem seus fluxos de traba
 | ------------------------------ | ----------------------------------------------- |
 | **Formulários da web**         | Envios de formulários de contato geram leads    |
 | **Aplicativos de terceiros**   | Pagamento no Stripe → criar registro de cliente |
-| **Integrações personalizadas** | Seu aplicativo → automação no Twenty            |
+| **Integrações personalizadas** | Seu aplicativo → automação no Arxena            |
 | **Ferramentas no-code**        | Conexões com Zapier, Make, n8n                  |
 
 ## Configuração passo a passo
@@ -28,7 +28,7 @@ Gatilhos de Webhook permitem que serviços externos iniciem seus fluxos de traba
 2. Selecione **Webhook**
 3. Você receberá uma URL de webhook exclusiva, como:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Copie esta URL—você vai precisar dela no seu serviço externo
 
@@ -75,7 +75,7 @@ Antes de ativar, teste o seu webhook:
 **Usando cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

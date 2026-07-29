@@ -30,6 +30,59 @@
       ]
     },
     {
+      "key": "apiReference",
+      "label": "API Reference",
+      "groups": [
+        {
+          "key": "apiReferenceGettingStarted",
+          "label": "Getting started",
+          "pages": [
+            "api-reference/introduction",
+            "api-reference/authentication"
+          ]
+        },
+        {
+          "key": "apiReferencePeople",
+          "label": "People",
+          "pages": [
+            "api-reference/data-sources/list-people-data-source-categories",
+            "api-reference/taxonomy/list-std-function-roots",
+            "api-reference/taxonomy/list-std-functions",
+            "api-reference/taxonomy/list-std-grades",
+            "api-reference/taxonomy/build-boolean-strings-from-taxonomy",
+            "api-reference/taxonomy/expand-and-normalize-a-job-title",
+            "api-reference/people/resolve-job-title-and-search-people",
+            "api-reference/people/search-people"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "cookbooks",
+      "label": "Cookbooks",
+      "groups": [
+        {
+          "key": "cookbooksOverview",
+          "label": "Recipes",
+          "pages": [
+            "cookbooks/search-people-by-taxonomy",
+            "cookbooks/expand-titles-then-search"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "changelog",
+      "label": "Changelog",
+      "groups": [
+        {
+          "key": "changelogReleases",
+          "label": "Releases",
+          "pages": ["changelog/july-2026"]
+        }
+      ]
+    },
+    {
       "key": "userGuide",
       "label": "User Guide",
       "groups": [
@@ -465,6 +518,7 @@
           "label": "API",
           "pages": [
             "developers/extend/api",
+            "developers/extend/api/people-api",
             "developers/extend/webhooks",
             "developers/extend/oauth"
           ]

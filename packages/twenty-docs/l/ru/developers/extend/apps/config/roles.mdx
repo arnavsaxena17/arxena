@@ -157,7 +157,7 @@ export default defineRole({
 Заметки:
 
 * Присвойте каждому предикату и группе стабильный `universalIdentifier` (любой uuid) — он служит ключом сущности между обновлениями, а предикаты ссылаются на группы по нему.
-* Предикаты могут ссылаться на объекты и поля, принадлежащие вашему приложению, или на стандартные объекты и поля Twenty.
+* Предикаты могут ссылаться на объекты и поля, принадлежащие вашему приложению, или на стандартные объекты и поля Arxena.
 * Безопасность на уровне строк (row-level security) применяется для рабочих пространств в тарифах, которые её включают; предикаты по-прежнему синхронизируются
   в других тарифах, они просто не применяются.
 
@@ -174,7 +174,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

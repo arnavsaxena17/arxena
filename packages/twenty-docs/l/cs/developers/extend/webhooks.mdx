@@ -6,7 +6,7 @@ description: Dostávejte upozornění při změnách záznamů — HTTP POST na 
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Twenty odešle HTTP POST na vaši adresu URL pokaždé, když je záznam vytvořen, aktualizován nebo smazán. Všechny typy objektů jsou podporovány, včetně vlastních objektů.
+Arxena odešle HTTP POST na vaši adresu URL pokaždé, když je záznam vytvořen, aktualizován nebo smazán. Všechny typy objektů jsou podporovány, včetně vlastních objektů.
 
 ## Vytvořit Webhook
 
@@ -27,7 +27,7 @@ Webhook se aktivuje okamžitě a začne odesílat oznámení.
 
 ## Události
 
-Twenty odesílá webhooky pro tyto typy událostí:
+Arxena odesílá webhooky pro tyto typy událostí:
 
 | Událost                    | Příklad                                                    |
 | -------------------------- | ---------------------------------------------------------- |
@@ -68,7 +68,7 @@ Odpovězte se **stavem HTTP 2xx** (200–299) pro potvrzení přijetí. Odpověd
 
 ## Ověření Webhooku
 
-Twenty kvůli bezpečnosti podepisuje každý požadavek webhooku. Ověřujte podpisy, abyste zajistili, že požadavky jsou autentické.
+Arxena kvůli bezpečnosti podepisuje každý požadavek webhooku. Ověřujte podpisy, abyste zajistili, že požadavky jsou autentické.
 
 ### Záhlaví
 
@@ -112,6 +112,6 @@ const isValid = crypto.timingSafeEqual(
 | ----------------------------------------- | ---- | --------------------------------------------------------------- |
 | **Webhooky**                              | OUT  | Automaticky informujte externí systémy o jakékoli změně záznamu |
 | **Pracovní postup + požadavek HTTP**      | OUT  | Odesílejte data ven s vlastní logikou (filtry, transformace)    |
-| **Spouštěč webhooku v pracovním postupu** | IN   | Přijímejte data do Twenty z externích systémů                   |
+| **Spouštěč webhooku v pracovním postupu** | IN   | Přijímejte data do Arxena z externích systémů                   |
 
 Pro příjem externích dat viz [Nastavení spouštěče webhooku](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

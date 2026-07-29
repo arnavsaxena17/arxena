@@ -1,10 +1,10 @@
 ---
 title: Testování
-description: Nastavení Vitestu, integrační testy proti reálnému serveru Twenty, kontrola typů a CI s GitHub Actions.
+description: Nastavení Vitestu, integrační testy proti reálnému serveru Arxena, kontrola typů a CI s GitHub Actions.
 icon: flask
 ---
 
-SDK poskytuje programová rozhraní, která vám umožní z testovacího kódu aplikaci sestavit, nasadit, nainstalovat a odinstalovat. V kombinaci s [Vitest](https://vitest.dev/) a typovanými klienty API můžete psát integrační testy, které ověří, že vaše aplikace funguje end-to-end proti reálnému serveru Twenty.
+SDK poskytuje programová rozhraní, která vám umožní z testovacího kódu aplikaci sestavit, nasadit, nainstalovat a odinstalovat. V kombinaci s [Vitest](https://vitest.dev/) a typovanými klienty API můžete psát integrační testy, které ověří, že vaše aplikace funguje end-to-end proti reálnému serveru Arxena.
 
 ## Používání balíčků npm
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## Spuštění testů
 
-Ujistěte se, že běží váš lokální server Twenty, a poté:
+Ujistěte se, že běží váš lokální server Arxena, a poté:
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ Spustí se `tsc --noEmit` proti souboru `tsconfig.json` vaší aplikace a nahlá
 
 ## CI s GitHub Actions
 
-Generátor kostry vytvoří připravený k použití workflow v `.github/workflows/ci.yml`. Při každém pushi do `main` a při každém pull requestu spustí efemérní server Twenty v runneru (pomocí akce `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`), poté spustí `yarn lint`, `yarn typecheck`, `yarn test:unit` a `yarn test` s `TWENTY_API_URL` / `TWENTY_API_KEY` směřujícími na tento server. Nejsou vyžadovány žádné tajné údaje a verzi serveru můžete připnout pomocí proměnné prostředí `TWENTY_VERSION` na začátku workflow.
+Generátor kostry vytvoří připravený k použití workflow v `.github/workflows/ci.yml`. Při každém pushi do `main` a při každém pull requestu spustí efemérní server Arxena v runneru (pomocí akce `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`), poté spustí `yarn lint`, `yarn typecheck`, `yarn test:unit` a `yarn test` s `TWENTY_API_URL` / `TWENTY_API_KEY` směřujícími na tento server. Nejsou vyžadovány žádné tajné údaje a verzi serveru můžete připnout pomocí proměnné prostředí `TWENTY_VERSION` na začátku workflow.
 
 Úplný postup pro tři workflow generované kostrou (`ci.yml`, nasazovací pipeline `cd.yml` a `publish.yml` pro publikování na npm) najdete v části [Publishing → Automated CI/CD](/l/cs/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows).

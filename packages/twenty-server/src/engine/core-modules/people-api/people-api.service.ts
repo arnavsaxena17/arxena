@@ -16,6 +16,12 @@ import {
   PEOPLE_DATA_SOURCE_CATEGORIES,
   type PeopleDataSourceAlias,
 } from './constants/people-data-source-aliases';
+import {
+  TAXONOMY_FUNCTION_ROOT_CONSTANTS,
+  TAXONOMY_GRADE_CATEGORY_CONSTANTS,
+  TAXONOMY_GRADE_LEVEL_CONSTANTS,
+  type TaxonomyConstantsResponse,
+} from './constants/taxonomy-constants';
 import type { PeopleSearchDto } from './dto/people-search.dto';
 import type { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
 import type { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
@@ -62,6 +68,15 @@ export class PeopleApiService {
         supportsStdGradeFilter: category.supportsStdGradeFilter,
         configured: configuredByAlias[category.alias],
       })),
+    };
+  }
+
+  getTaxonomyConstants(): TaxonomyConstantsResponse {
+    return {
+      status: 'ok',
+      gradeLevels: TAXONOMY_GRADE_LEVEL_CONSTANTS,
+      gradeCategories: TAXONOMY_GRADE_CATEGORY_CONSTANTS,
+      functionRoots: TAXONOMY_FUNCTION_ROOT_CONSTANTS,
     };
   }
 

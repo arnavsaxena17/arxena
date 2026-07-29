@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Se utilizzi Docker Compose, segui questi passaggi:
 
-1. Arresta Twenty: `docker compose down`
+1. Arresta Arxena: `docker compose down`
 2. Modifica il valore di `TAG` nel file `.env` nella stessa directory di `docker-compose.yml`
-3. Avvia Twenty: `docker compose up -d`
+3. Avvia Arxena: `docker compose up -d`
 
 All'avvio, il server esegue automaticamente tutte le migrazioni di aggiornamento necessarie. Non è necessario alcun comando manuale.
 
 ## Aggiornamenti tra versioni (v1.22+)
 
-A partire da **v1.22**, Twenty supporta gli aggiornamenti tra versioni. Puoi passare direttamente da qualsiasi versione supportata all'ultima versione senza dover attraversare ogni versione intermedia.
+A partire da **v1.22**, Arxena supporta gli aggiornamenti tra versioni. Puoi passare direttamente da qualsiasi versione supportata all'ultima versione senza dover attraversare ogni versione intermedia.
 
 Ad esempio, l'aggiornamento da v1.22 direttamente a v2.0 è pienamente supportato.
 
 ## Aggiornamento alla v2.5+ — envelope di crittografia dei dati a riposo
 
-A partire dalla **v2.5**, Twenty memorizza i segreti a riposo (token OAuth, variabili dell'applicazione, chiavi private di firma, valori di configurazione sensibili, segreti TOTP) all'interno di un envelope versionato `enc:v2:` crittografato con `ENCRYPTION_KEY` (o `APP_SECRET` se `ENCRYPTION_KEY` non è impostata).
+A partire dalla **v2.5**, Arxena memorizza i segreti a riposo (token OAuth, variabili dell'applicazione, chiavi private di firma, valori di configurazione sensibili, segreti TOTP) all'interno di un envelope versionato `enc:v2:` crittografato con `ENCRYPTION_KEY` (o `APP_SECRET` se `ENCRYPTION_KEY` non è impostata).
 
 Il primo avvio su v2.5 esegue comandi di aggiornamento lenti che popolano retroattivamente le righe esistenti nel nuovo envelope. Sono idempotenti — se si interrompe e si riavvia il server, riprende da dove si era interrotto — ma possono richiedere tempo su database di grandi dimensioni. Puoi monitorare l'avanzamento con `upgrade:status`.
 

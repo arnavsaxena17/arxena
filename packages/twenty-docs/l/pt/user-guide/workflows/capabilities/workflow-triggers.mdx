@@ -27,7 +27,7 @@ Inicia o fluxo de trabalho quando um novo registro é criado em um objeto seleci
 
 <Note>
 * Este gatilho é ótimo para registros criados por CSV, sincronização de caixa de correio e calendário, API.
-* **Não é recomendado para registros criados manualmente**: com este gatilho, os fluxos de trabalho começam assim que o registro é criado. Como o Twenty UI oferece salvamento automático em tempo real (não há um modo de edição e depois uma validação para salvar registros), o fluxo de trabalho será acionado antes que o usuário preencha todos os campos.
+* **Não é recomendado para registros criados manualmente**: com este gatilho, os fluxos de trabalho começam assim que o registro é criado. Como o Arxena UI oferece salvamento automático em tempo real (não há um modo de edição e depois uma validação para salvar registros), o fluxo de trabalho será acionado antes que o usuário preencha todos os campos.
   Para acionar este fluxo de trabalho em registros criados manualmente, recomenda-se usar o gatilho `Record is created or updated`.
 </Note>
 
@@ -119,7 +119,7 @@ Inicia o fluxo de trabalho quando uma solicitação GET ou POST é recebida de u
 **Configuração**:
 
 * O fluxo de trabalho fornece uma URL de webhook exclusiva — copie-a e adicione-a ao seu sistema externo como o endpoint a ser chamado.
-* Para requisições POST, defina a estrutura de corpo esperada para que o Twenty saiba quais dados esperar. Adicione aqui os campos que você receberá e que serão necessários abaixo no seu fluxo de trabalho.
+* Para requisições POST, defina a estrutura de corpo esperada para que o Arxena saiba quais dados esperar. Adicione aqui os campos que você receberá e que serão necessários abaixo no seu fluxo de trabalho.
 * Configure a autenticação (em breve).
 
 ## Escolhendo o Gatilho Correto

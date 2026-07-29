@@ -1,11 +1,11 @@
 ---
 title: Import Companies via CSV
-description: Complete step-by-step guide to importing companies into Twenty.
+description: Complete step-by-step guide to importing companies into Arxena.
 ---
 
 ## Overview
 
-This guide walks you through importing your companies into Twenty. **Companies should be imported first** because People and Opportunities link to Companies.
+This guide walks you through importing your companies into Arxena. **Companies should be imported first** because People and Opportunities link to Companies.
 
 ## Before You Start
 
@@ -68,7 +68,7 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 ```
 
 <Note>
-**Pro tip:** Click **Download sample file** during import to see the exact column names Twenty expects.
+**Pro tip:** Click **Download sample file** during import to see the exact column names Arxena expects.
 </Note>
 
 ## Step 2: Access the Import Feature
@@ -88,11 +88,11 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 
 1. Click **Select file**
 2. Choose your CSV, XLSX, or XLS file
-3. Wait for Twenty to analyze your file
+3. Wait for Arxena to analyze your file
 
 ## Step 4: Map Your Columns
 
-Twenty automatically tries to match your columns to fields. Review and adjust:
+Arxena automatically tries to match your columns to fields. Review and adjust:
 
 1. **Check automatic mappings** — verify they're correct
 2. **Fix incorrect mappings** — click the dropdown to select the right field
@@ -110,8 +110,8 @@ Twenty automatically tries to match your columns to fields. Review and adjust:
 
 If you have Select or Multi-Select fields:
 
-1. Twenty shows your values alongside existing options
-2. Match each value in your file to a Twenty option
+1. Arxena shows your values alongside existing options
+2. Match each value in your file to an Arxena option
 3. Or create new options if needed
 
 <Note>
@@ -120,7 +120,7 @@ Select options use **API names**, not display labels. Check **Settings → Data 
 
 ## Step 6: Review and Fix Errors
 
-Before completing the import, Twenty validates your data:
+Before completing the import, Arxena validates your data:
 
 1. Click **Next Steps**
 2. Rows with errors are highlighted in **yellow**
@@ -131,7 +131,7 @@ Before completing the import, Twenty validates your data:
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| **Duplicate domain** | Domain already exists in Twenty | Remove from file or update existing record |
+| **Duplicate domain** | Domain already exists in Arxena | Remove from file or update existing record |
 | **Invalid domain format** | Wrong format | Use `https://domain.com` |
 | **Missing required field** | Required field is empty | Fill in the value or remove the row |
 
@@ -155,7 +155,7 @@ Now you can import records that link to Companies:
 To update companies instead of creating new ones:
 
 1. Include the `domain` or `id` column in your file
-2. Twenty matches records by this unique identifier
+2. Arxena matches records by this unique identifier
 3. Existing companies are updated; new ones are created
 
 See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-existing-records-via-import) for details.
@@ -164,7 +164,7 @@ See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-e
 
 <AccordionGroup>
   <Accordion title="Why can't two Companies have the same domain?">
-    Domain is a unique identifier in Twenty. This prevents duplicate companies and ensures email sync correctly links emails to the right company.
+    Domain is a unique identifier in Arxena. This prevents duplicate companies and ensures email sync correctly links emails to the right company.
   </Accordion>
 
   <Accordion title="What if I have companies without a domain?">
@@ -176,7 +176,7 @@ See [How to Update Existing Records](/user-guide/data-migration/how-tos/update-e
   </Accordion>
 
   <Accordion title="What happens if I import a domain that already exists?">
-    If you include a unique identifier (domain or id) that matches an existing company, Twenty updates that company instead of creating a duplicate.
+    If you include a unique identifier (domain or id) that matches an existing company, Arxena updates that company instead of creating a duplicate.
   </Accordion>
 
   <Accordion title="How do I fix 'duplicate domain' errors?">

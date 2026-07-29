@@ -1,6 +1,6 @@
 ---
 title: Calendar și e-mailuri
-description: Conectați-vă conturile de e-mail și calendar la Twenty.
+description: Conectați-vă conturile de e-mail și calendar la Arxena.
 ---
 
 ## Opțiuni de Conexiune
@@ -10,7 +10,7 @@ description: Conectați-vă conturile de e-mail și calendar la Twenty.
 1. Mergeți la **Setări → Conturi**
 2. Faceți clic pe **Adăugați cont**
 3. Selectați **Continuați cu Google**
-4. Autorizați Twenty să acceseze Gmail și Calendarul Google
+4. Autorizați Arxena să acceseze Gmail și Calendarul Google
 5. Configurați setările de sincronizare a e-mailului (vizibilitate, creare automată) → faceți clic pe **Următorul**
 6. Configurați setările de sincronizare ale calendarului (vizibilitate, creare automată) → faceți clic pe **Adăugați cont**
 7. E-mailurile și evenimentele dvs. din calendar vor începe să se sincronizeze automat
@@ -20,7 +20,7 @@ description: Conectați-vă conturile de e-mail și calendar la Twenty.
 1. Mergeți la **Setări → Conturi**
 2. Faceți clic pe **Adăugați cont**
 3. Selectați **Continuați cu Microsoft**
-4. Autorizați Twenty să acceseze Outlook și Calendarul Microsoft
+4. Autorizați Arxena să acceseze Outlook și Calendarul Microsoft
 5. Configurați setările de sincronizare a e-mailului (vizibilitate, creare automată) → faceți clic pe **Următorul**
 6. Configurați setările de sincronizare ale calendarului (vizibilitate, creare automată) → faceți clic pe **Adăugați cont**
 7. E-mailurile și evenimentele dvs. din calendar vor începe să se sincronizeze automat
@@ -35,7 +35,7 @@ Pentru alți furnizori de e-mail și calendar:
 4. Testați conexiunea
 
 <Note>
-**Autogăzduire pe o rețea izolată de internet sau internă**: În mod implicit, Twenty refuză conexiunile de ieșire către adrese IP private/interne (protecție SSRF). Dacă serverul dvs. de e-mail sau calendar rulează pe o adresă IP locală/privată (de ex. un server on-premise într-o rețea LAN), conexiunile către acesta vor fi blocate. Pentru a le permite, setați următoarea variabilă de mediu pe server:
+**Autogăzduire pe o rețea izolată de internet sau internă**: În mod implicit, Arxena refuză conexiunile de ieșire către adrese IP private/interne (protecție SSRF). Dacă serverul dvs. de e-mail sau calendar rulează pe o adresă IP locală/privată (de ex. un server on-premise într-o rețea LAN), conexiunile către acesta vor fi blocate. Pentru a le permite, setați următoarea variabilă de mediu pe server:
 
 ```
 OUTBOUND_HTTP_SAFE_MODE_ENABLED=false
@@ -51,7 +51,7 @@ Aceasta dezactivează modul de siguranță pentru **toate** solicitările de ie�
 * **Setări Sincronizare**: Configurați setări diferite per căsuță poștală
 
 <Warning>
-Numai căsuțele poștale adevărate pot fi conectate (de exemplu, support@domain.com cu propria căsuță). Aliasurile de e-mail care redirecționează către altă căsuță poștală nu pot fi conectate la Twenty.
+Numai căsuțele poștale adevărate pot fi conectate (de exemplu, support@domain.com cu propria căsuță). Aliasurile de e-mail care redirecționează către altă căsuță poștală nu pot fi conectate la Arxena.
 </Warning>
 
 ## Configurarea E-mailului
@@ -71,7 +71,7 @@ Alegeți diferite niveluri de vizibilitate pentru e-mailurile dvs.:
 * **Doar pentru mesajele trimise**: Creați contacte numai pentru e-mailurile pe care le trimiteți
 * **Notă**: Implicit, e-mailurile interne (când toți participanții folosesc același domeniu) nu sunt sincronizate pentru a proteja confidențialitatea
 
-<Note>Când este activată, contactele sunt asociate automat cu înregistrările companiei lor, pe baza domeniului lor de e-mail. Dacă compania nu există încă, Twenty o creează pentru dvs.</Note>
+<Note>Când este activată, contactele sunt asociate automat cu înregistrările companiei lor, pe baza domeniului lor de e-mail. Dacă compania nu există încă, Arxena o creează pentru dvs.</Note>
 
 <Note>
 **Sincronizarea e-mailurilor interne**: Comportamentul "e-mailuri interne nesincronizate" este cel implicit, dar poate fi dezactivat. Comutatorul se află în setările avansate:
@@ -84,7 +84,7 @@ Aceasta este o setare la nivel de spațiu de lucru (utilă pentru universități
 
 ### Controlați ce e-mailuri se sincronizează cu Selectarea dosarelor de mesaje
 
-Controlați care foldere de e-mail se sincronizează cu Twenty:
+Controlați care foldere de e-mail se sincronizează cu Arxena:
 
 1. Accesați **Setări → Conturi** și selectați contul dvs. de e-mail conectat
 2. Alegeți ce dosare să sincronizați:
@@ -101,7 +101,7 @@ Acest lucru vă oferă control precis asupra a ceea ce apare în CRM-ul dvs. fă
 * **E-mailuri Interne**: Nu sunt sincronizate în mod implicit (e-mailurile de același domeniu rămân private). Activați comutatorul **Avansat** din partea de jos a secțiunii **Setări**, apoi activați **Sincronizează e-mailurile interne** în **General → Securitate** pentru a le include la nivel de spațiu de lucru.
 * **Atașamente**: Va veni în H1 2026
 
-**Notă**: Nu oferim o adresă de e-mail CC pentru sincronizarea selectivă. În schimb, utilizați funcția Dosar Mesaje de mai sus pentru a obține același nivel de control asupra sincronizării e-mailurilor cu Twenty.
+**Notă**: Nu oferim o adresă de e-mail CC pentru sincronizarea selectivă. În schimb, utilizați funcția Dosar Mesaje de mai sus pentru a obține același nivel de control asupra sincronizării e-mailurilor cu Arxena.
 
 ## Configurarea Calendarului
 
@@ -117,7 +117,7 @@ Alegeți ce va fi vizibil pentru alți utilizatori din workspace-ul dvs.:
 * **Da**: Creați automat contacte pentru participanți la întâlniri care nu sunt în CRM-ul dvs.
 * **Nu**: Legați doar întâlnirile de contacte existente
 
-<Note>Când este activată, contactele sunt asociate automat cu înregistrările companiei lor, pe baza domeniului lor de e-mail. Dacă compania nu există încă, Twenty o creează pentru dvs.</Note>
+<Note>Când este activată, contactele sunt asociate automat cu înregistrările companiei lor, pe baza domeniului lor de e-mail. Dacă compania nu există încă, Arxena o creează pentru dvs.</Note>
 
 ### Controlați ce evenimente sunt sincronizate
 
@@ -135,7 +135,7 @@ Alegeți ce va fi vizibil pentru alți utilizatori din workspace-ul dvs.:
 **Actualizări la fiecare 5 minute**: Atât e-mailurile cât și datele din calendar se sincronizează automat la fiecare 5 minute după importul inițial.
 
 <Note>
-**Timpul sincronizării inițiale**: Sincronizarea calendarului se finalizează rapid (de obicei în câteva minute), în timp ce sincronizarea e-mailurilor durează mai mult pentru căsuțele poștale mari. Twenty importă e-mailuri la aproximativ **400 de mesaje pe minut** (limitat de restricțiile de rată ale API-ului Gmail), astfel încât importul unei căsuțe poștale cu 10.000 de e-mailuri durează aproximativ 25 de minute. Nu vă faceți griji dacă vedeți contacte din evenimentele din calendar apărând înaintea contactelor din e-mail; acest lucru este un comportament normal.
+**Timpul sincronizării inițiale**: Sincronizarea calendarului se finalizează rapid (de obicei în câteva minute), în timp ce sincronizarea e-mailurilor durează mai mult pentru căsuțele poștale mari. Arxena importă e-mailuri la aproximativ **400 de mesaje pe minut** (limitat de restricțiile de rată ale API-ului Gmail), astfel încât importul unei căsuțe poștale cu 10.000 de e-mailuri durează aproximativ 25 de minute. Nu vă faceți griji dacă vedeți contacte din evenimentele din calendar apărând înaintea contactelor din e-mail; acest lucru este un comportament normal.
 </Note>
 
 ## Pașii următori

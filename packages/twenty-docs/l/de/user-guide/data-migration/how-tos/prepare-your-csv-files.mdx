@@ -1,6 +1,6 @@
 ---
 title: CSV-Dateien vorbereiten
-description: Vollständige Schritt-für-Schritt-Anleitung zum Formatieren deiner Daten für den Import in Twenty.
+description: Vollständige Schritt-für-Schritt-Anleitung zum Formatieren deiner Daten für den Import in Arxena.
 ---
 
 ## Übersicht
@@ -22,7 +22,7 @@ Bevor du beginnst, stelle sicher, dass deine Datei diese Anforderungen erfüllt:
 
 ## Schritt 2: Beispieldatei herunterladen
 
-**Dies ist der wichtigste Schritt.** Die Beispieldatei zeigt dir die exakten Spaltennamen und das Format, das Twenty erwartet.
+**Dies ist der wichtigste Schritt.** Die Beispieldatei zeigt dir die exakten Spaltennamen und das Format, das Arxena erwartet.
 
 1. Wechsle zur Objektansicht (Personen, Unternehmen usw.)
 2. Klicke auf **⋮** → **Datensätze importieren**
@@ -33,7 +33,7 @@ Bevor du beginnst, stelle sicher, dass deine Datei diese Anforderungen erfüllt:
 
 ## Schritt 3: Doppelte Werte entfernen
 
-Twenty erzwingt die Eindeutigkeit bestimmter Felder. Duplikate führen zu Importfehlern.
+Arxena erzwingt die Eindeutigkeit bestimmter Felder. Duplikate führen zu Importfehlern.
 
 | Objekt                         | Eindeutige Felder                                         |
 | ------------------------------ | --------------------------------------------------------- |
@@ -45,7 +45,7 @@ Twenty erzwingt die Eindeutigkeit bestimmter Felder. Duplikate führen zu Import
 
 1. Sortiere deine Tabelle nach dem eindeutigen Feld (E-Mail oder Domain)
 2. Entferne oder führe doppelte Zeilen zusammen
-3. Prüfe auf Duplikate, die in Twenty bereits existieren
+3. Prüfe auf Duplikate, die in Arxena bereits existieren
 
 <Warning>**Softgelöschte Datensätze zählen für die Eindeutigkeit.** Datensätze unter Befehlsmenü → Gelöschte Datensätze anzeigen führen zu Duplikatfehlern. Lösche sie dauerhaft oder stelle sie wieder her und aktualisiere sie.</Warning>
 
@@ -61,11 +61,11 @@ Verschiedene Feldtypen erfordern spezifische Formate. Hier ist die vollständige
 ### E-Mail-Felder
 
 * Muss ein gültiges E-Mail-Format haben: `name@domain.com`
-* Muss eindeutig sein (keine Duplikate in der Datei oder in Twenty)
+* Muss eindeutig sein (keine Duplikate in der Datei oder in Arxena)
 * Für zusätzliche E-Mails verwende dieses Format in der Spalte **Emails / Additional Emails**:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Domain-Felder
@@ -75,7 +75,7 @@ Verschiedene Feldtypen erfordern spezifische Formate. Hier ist die vollständige
 * Beide Spalten ausfüllen:
   * **Domain / Domain Label**: `domain.com`
   * **Domain / Domain URL**: `https://domain.com`
-* Muss innerhalb deiner Datei und in Twenty eindeutig sein
+* Muss innerhalb deiner Datei und in Arxena eindeutig sein
 
 ### Telefonfelder
 
@@ -163,13 +163,13 @@ Verwenden Sie das Format: `RATING_1`, `RATING_2`, `RATING_3`, `RATING_4` oder `R
 
 Füllen Sie beide Spalten aus:
 
-* **Links / Link-Label**: `Twenty`
-* **Links / Link-URL**: `https://twenty.com`
+* **Links / Link-Label**: `Arxena`
+* **Links / Link-URL**: `https://arxena.com`
 
 Für sekundäre Links verwenden Sie die Spalte **Links / Sekundäre Links**:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON-Felder
@@ -182,7 +182,7 @@ Verwenden Sie ein gültiges JSON-Format:
 
 ### ID-Felder
 
-* **Optional**: Twenty erstellt IDs automatisch, wenn sie nicht angegeben werden
+* **Optional**: Arxena erstellt IDs automatisch, wenn sie nicht angegeben werden
 * **Format**: UUID (z. B. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 * **Anwendungsfall**: ID angeben, um bestehende Datensätze zu aktualisieren, statt neue zu erstellen
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **Wichtige Regeln für Beziehungen:**
 
-* Der übergeordnete Datensatz muss bereits in Twenty vorhanden sein
+* Der übergeordnete Datensatz muss bereits in Arxena vorhanden sein
 * Verwenden Sie das **Domain-URL**-Format (`https://domain.com`), nicht die Bezeichnung
 * Ordnen Sie nur EINEN eindeutigen Bezeichner zu (nicht sowohl `companyId` ALS AUCH `companyDomain`)
 * Für Workspace-Mitglieder verwenden Sie deren **E-Mail** (nicht den Namen)
@@ -220,7 +220,7 @@ Der übergeordnete Datensatz muss vorhanden sein, bevor Sie darauf verweisen kö
 
 Siehe [Beziehungen importieren](/l/de/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv) für detaillierte Anleitungen.
 
-## Schritt 6: Sicherstellen, dass Felder in Twenty vorhanden sind
+## Schritt 6: Sicherstellen, dass Felder in Arxena vorhanden sind
 
 Der Import erstellt **Datensätze**, nicht **Felder**. Alle Felder, die Sie importieren möchten, müssen bereits in Ihrem Datenmodell vorhanden sein.
 

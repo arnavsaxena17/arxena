@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Wie die Feldzuordnung funktioniert
 
-Wenn Sie eine Datei hochladen, analysiert Twenty Ihre Spalten und versucht, sie bestehenden Feldern zuzuordnen.
+Wenn Sie eine Datei hochladen, analysiert Arxena Ihre Spalten und versucht, sie bestehenden Feldern zuzuordnen.
 
 ### Automatische Zuordnung
 
-Twenty versucht, Spalten anhand der folgenden Kriterien abzugleichen:
+Arxena versucht, Spalten anhand der folgenden Kriterien abzugleichen:
 
 * Spaltenüberschriften (genaue oder ähnliche Übereinstimmungen)
 * Erkennung des Datentyps (Datum, Zahlen, E-Mails)
 * Häufige Feldmuster
 
-<Note>**Schneller Tipp:** Exportieren Sie ein paar Zeilen aus dem Objekt, das Sie importieren möchten. Die exportierte Datei enthält genau die Spaltennamen, die Twenty erwartet, sodass die automatische Zuordnung beim Import reibungslos funktioniert.</Note>
+<Note>**Schneller Tipp:** Exportieren Sie ein paar Zeilen aus dem Objekt, das Sie importieren möchten. Die exportierte Datei enthält genau die Spaltennamen, die Arxena erwartet, sodass die automatische Zuordnung beim Import reibungslos funktioniert.</Note>
 
 ### Optionen für die manuelle Zuordnung
 
 Für jede Spalte können Sie:
 
-* **Einem Feld zuordnen**: Wählen Sie das passende Twenty-Feld aus einem Dropdown aus
+* **Einem Feld zuordnen**: Wählen Sie das passende Arxena-Feld aus einem Dropdown aus
 * **Nicht zuordnen**: Überspringen Sie die Spalte vollständig (Daten werden nicht importiert)
 
 <Note>**Felder müssen vor dem Import existieren.** Der Import erzeugt Datensätze, nicht Felder. Erstellen Sie benutzerdefinierte Felder vor dem Import unter **Einstellungen → Datenmodell**.</Note>
@@ -94,12 +94,12 @@ Unterstützte Formate:
 * Für zusätzliche E-Mails: Verwenden Sie **E-Mails / Primäre E-Mail** für die Haupt-E-Mail und **E-Mails / Zusätzliche E-Mails** mit diesem Format:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### ID-Felder
 
-Die Angabe einer `id` während des Imports ist optional. Twenty erzeugt automatisch eine, wenn keine angegeben wird.
+Die Angabe einer `id` während des Imports ist optional. Arxena erzeugt automatisch eine, wenn keine angegeben wird.
 
 Anwendungsfälle für die Zuordnung einer `id`-Spalte:
 
@@ -125,7 +125,7 @@ Verwenden Sie gültiges JSON-Format:
 * Für sekundäre Links verwenden Sie die Spalte **Links / Sekundäre Links** mit diesem Format:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Mehrfachauswahl-Felder

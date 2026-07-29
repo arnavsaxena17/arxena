@@ -11,7 +11,7 @@ Webhook トリガーは、一意の URL にデータを送信することで外�
 | -------------- | ----------------------- |
 | **Web フォーム**   | お問い合わせフォームの送信でリードを作成    |
 | **サードパーティアプリ** | Stripe の支払い → 顧客レコードを作成 |
-| **カスタム統合**     | 自社アプリ → Twenty の自動化     |
+| **カスタム統合**     | 自社アプリ → Arxena の自動化     |
 | **ノーコードツール**   | Zapier、Make、n8n との連携    |
 
 ## ステップバイステップの設定
@@ -28,7 +28,7 @@ Webhook トリガーは、一意の URL にデータを送信することで外�
 2. 「**Webhook**」を選択
 3. 次のような一意の Webhook URL が発行されます:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. この URL をコピーします—外部サービスで使用します
 
@@ -75,7 +75,7 @@ Webhook データを使用するアクションを追加します:
 **cURL を使用**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

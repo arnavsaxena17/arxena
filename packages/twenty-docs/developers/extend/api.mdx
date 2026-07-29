@@ -8,9 +8,11 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Schema-per-tenant APIs
 
-There is no static API reference for Twenty. Each workspace has its own schema — when you add a custom object (say `Invoice`), it immediately gets REST and GraphQL endpoints identical to built-in objects like `Company` or `Person`. The API is generated from the schema, so endpoints use your object and field names directly — no opaque IDs.
+There is no static API reference for Core and Metadata CRM APIs. Each workspace has its own schema — when you add a custom object (say `Invoice`), it immediately gets REST and GraphQL endpoints identical to built-in objects like `Company` or `Person`. The API is generated from the schema, so endpoints use your object and field names directly — no opaque IDs.
 
-Your workspace-specific API documentation is available under **Settings → API & Webhooks** after creating an API key. It includes an interactive playground where you can execute real calls against your data.
+Your workspace-specific CRM API documentation is available under **Settings → APIs & Webhooks** after creating an API key. It includes an interactive explorer where you can execute real calls against your data, including custom objects.
+
+For the fixed **People API** surface (search, taxonomy, data sources), use the public [API Reference](/api-reference/introduction) with an interactive Try-it playground.
 
 ## Two APIs
 
@@ -28,7 +30,7 @@ Both are available as REST and GraphQL. GraphQL adds batch upserts and the abili
 
 | Environment | Base URL |
 |-------------|----------|
-| Cloud | `https://api.twenty.com/` |
+| Cloud | `https://api.arxena.com/` |
 | Self-Hosted | `https://{your-domain}/` |
 
 ## Authentication

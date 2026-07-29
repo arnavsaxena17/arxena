@@ -9,7 +9,7 @@ Répondez aux emails entrants en quelques secondes — et non en heures. Ce flux
 
 Chaque email comporte un en-tête caché `Message-ID` — une empreinte unique attribuée par le serveur de messagerie de l'expéditeur. Lorsque vous répondez à un e-mail, votre client de messagerie définit un en-tête `In-Reply-To` faisant référence à cette empreinte. C’est ainsi que Gmail, Outlook et tous les autres clients regroupent les messages en fils de discussion.
 
-Dans Twenty, cette empreinte est stockée en tant que `headerMessageId` sur l’objet Message. Votre flux de travail la récupère et la transmet au champ In-Reply-To de l’action Send Email.
+Dans Arxena, cette empreinte est stockée en tant que `headerMessageId` sur l’objet Message. Votre flux de travail la récupère et la transmet au champ In-Reply-To de l’action Send Email.
 
 ## Création du flux de travail
 
@@ -21,7 +21,7 @@ Accédez à **Settings -> Workflows** et cliquez sur **+ New Workflow**.
 
 Choisissez **When a Record is Created** puis **Messages**.
 
-Chaque fois qu’un e-mail arrive dans Twenty, ceci se déclenche.
+Chaque fois qu’un e-mail arrive dans Arxena, ceci se déclenche.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Activez lorsque vous en êtes satisfait.
 
 ## Idées pour aller plus loin
 
-* **Ne répondre qu’aux VIP** — ajoutez une branche qui vérifie le domaine de l’expéditeur ou s’il existe en tant que Contact dans Twenty
+* **Ne répondre qu’aux VIP** — ajoutez une branche qui vérifie le domaine de l’expéditeur ou s’il existe en tant que Contact dans Arxena
 * **Orienter selon l’intention** — utilisez des invites AI Agent distinctes pour traiter différemment les demandes commerciales et les demandes d’assistance
 * **Enrichir avant de répondre** — ajoutez une étape Search Records pour intégrer l’entreprise de l’expéditeur ou l’historique d’opportunités dans l’invite d’IA afin d’obtenir des réponses plus personnalisées

@@ -4,7 +4,7 @@ icon: key
 description: Fluxul codului de autorizare cu PKCE și acreditări de client pentru acces server-la-server.
 ---
 
-Twenty implementează OAuth 2.0 cu cod de autorizare + PKCE pentru aplicațiile orientate către utilizatori și acreditări de client pentru acces server-la-server. Clienții sunt înregistrați dinamic prin [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — fără configurare manuală într-un panou de control.
+Arxena implementează OAuth 2.0 cu cod de autorizare + PKCE pentru aplicațiile orientate către utilizatori și acreditări de client pentru acces server-la-server. Clienții sunt înregistrați dinamic prin [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — fără configurare manuală într-un panou de control.
 
 ## Când să folosiți OAuth
 
@@ -13,11 +13,11 @@ Twenty implementează OAuth 2.0 cu cod de autorizare + PKCE pentru aplicațiile 
 | Scripturi interne, automatizare                             | [Cheie API](/l/ro/developers/extend/api#authentication)                                  |
 | Aplicație externă care acționează în numele unui utilizator | **OAuth — Cod de autorizare**                                                       |
 | Server-la-server, fără context de utilizator                | **OAuth — Acreditări de client**                                                    |
-| Aplicație Twenty cu extensii UI                             | [Aplicații](/l/ro/developers/extend/apps/getting-started) (OAuth este gestionat automat) |
+| Aplicație Arxena cu extensii UI                             | [Aplicații](/l/ro/developers/extend/apps/getting-started) (OAuth este gestionat automat) |
 
 ## Înregistrați un client
 
-Twenty acceptă **înregistrarea dinamică a clienților** conform [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Nu este necesară configurare manuală — înregistrați programatic:
+Arxena acceptă **înregistrarea dinamică a clienților** conform [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Nu este necesară configurare manuală — înregistrați programatic:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Solicitați domeniile de aplicare ca un șir separat prin spații: `scope=api pr
 
 ## Fluxul codului de autorizare
 
-Folosiți acest flux când aplicația dvs. acționează în numele unui utilizator Twenty.
+Folosiți acest flux când aplicația dvs. acționează în numele unui utilizator Arxena.
 
 ### 1. Redirecționați utilizatorul pentru autorizare
 
@@ -86,7 +86,7 @@ Utilizatorul vede un ecran de consimțământ și aprobă sau refuză accesul.
 
 ### 2. Gestionați callback-ul
 
-După autorizare, Twenty redirecționează înapoi către `redirect_uri`-ul dvs.:
+După autorizare, Arxena redirecționează înapoi către `redirect_uri`-ul dvs.:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ Tokenul returnat are acces la nivel de spațiu de lucru, neasociat unui utilizat
 
 ## Descoperirea serverului
 
-Twenty publică configurația sa OAuth la un endpoint standard de descoperire:
+Arxena publică configurația sa OAuth la un endpoint standard de descoperire:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ Acesta returnează toate endpoint-urile, tipurile de grant acceptate, domeniile 
 
 | Mediu                | URL de bază              |
 | -------------------- | ------------------------ |
-| **Cloud**            | `https://api.twenty.com` |
+| **Cloud**            | `https://api.arxena.com` |
 | **Găzduire proprie** | `https://{your-domain}`  |
 
 ## OAuth vs Chei API

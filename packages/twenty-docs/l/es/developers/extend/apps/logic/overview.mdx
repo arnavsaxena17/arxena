@@ -1,10 +1,10 @@
 ---
 title: Resumen
-description: TypeScript del lado del servidor que se ejecuta dentro de Twenty, activado por rutas HTTP, programaciones cron, eventos de base de datos, herramientas de IA o acciones de flujos de trabajo.
+description: TypeScript del lado del servidor que se ejecuta dentro de Arxena, activado por rutas HTTP, programaciones cron, eventos de base de datos, herramientas de IA o acciones de flujos de trabajo.
 icon: bolt
 ---
 
-La **capa de lógica** de una app de Twenty es el código que *se ejecuta*: controladores de TypeScript del lado del servidor que reaccionan a solicitudes HTTP, programaciones cron y cambios en registros; habilidades y agentes de IA que viven dentro del espacio de trabajo; y conexiones OAuth que permiten que tus funciones actúen en nombre de un usuario en servicios de terceros.
+La **capa de lógica** de una app de Arxena es el código que *se ejecuta*: controladores de TypeScript del lado del servidor que reaccionan a solicitudes HTTP, programaciones cron y cambios en registros; habilidades y agentes de IA que viven dentro del espacio de trabajo; y conexiones OAuth que permiten que tus funciones actúen en nombre de un usuario en servicios de terceros.
 
 ```text
             ┌─ HTTP route      ──┐
@@ -16,7 +16,7 @@ La **capa de lógica** de una app de Twenty es el código que *se ejecuta*: cont
             └────────────────────┘                │
                                                   ▼
                                   ┌────────────────────────────┐
-                                  │ Twenty API (records)       │
+                                  │ Arxena API (records)       │
                                   │ Third-party API            │
                                   │   (via Connection token)   │
                                   └────────────────────────────┘
@@ -48,7 +48,7 @@ Una función de lógica selecciona uno o más disparadores: cada entrada a conti
 | **Ruta HTTP**                   | Una solicitud llega a tu endpoint `/s/\<path>` | `httpRouteTriggerSettings`      |
 | **Cron**                        | Coincide una expresión CRON                                     | `cronTriggerSettings`           |
 | **Evento de base de datos**     | Se crea, actualiza o elimina un registro del espacio de trabajo | `databaseEventTriggerSettings`  |
-| **Herramienta de IA**           | Una funcionalidad de IA de Twenty decide llamar a tu función    | `toolTriggerSettings`           |
+| **Herramienta de IA**           | Una funcionalidad de IA de Arxena decide llamar a tu función    | `toolTriggerSettings`           |
 | **Acción del Flujo de Trabajo** | Un paso de flujo de trabajo invoca tu función                   | `workflowActionTriggerSettings` |
 
 Las funciones se ejecutan en un entorno aislado en procesos independientes de Node.js y acceden al espacio de trabajo a través de un cliente de API tipado con un ámbito limitado al rol declarado en [`defineApplication()`](/l/es/developers/extend/apps/config/application).

@@ -1,10 +1,10 @@
 ---
 title: Test
-description: Vitest kurulumu, gerçek bir Twenty sunucusunda entegrasyon testleri, tip denetimi ve GitHub Actions ile CI.
+description: Vitest kurulumu, gerçek bir Arxena sunucusunda entegrasyon testleri, tip denetimi ve GitHub Actions ile CI.
 icon: flask
 ---
 
-SDK, test kodundan uygulamanızı derlemenize, dağıtmanıza, yüklemenize ve kaldırmanıza olanak tanıyan programatik API'ler sağlar. Tiplenmiş API istemcileriyle birlikte [Vitest](https://vitest.dev/) kullanarak, uygulamanızın gerçek bir Twenty sunucusunda uçtan uca çalıştığını doğrulayan entegrasyon testleri yazabilirsiniz.
+SDK, test kodundan uygulamanızı derlemenize, dağıtmanıza, yüklemenize ve kaldırmanıza olanak tanıyan programatik API'ler sağlar. Tiplenmiş API istemcileriyle birlikte [Vitest](https://vitest.dev/) kullanarak, uygulamanızın gerçek bir Arxena sunucusunda uçtan uca çalıştığını doğrulayan entegrasyon testleri yazabilirsiniz.
 
 ## npm paketlerini kullanma
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## Testleri çalıştırma
 
-Yerel Twenty sunucunuzun çalıştığından emin olun, ardından:
+Yerel Arxena sunucunuzun çalıştığından emin olun, ardından:
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ Bu, uygulamanızın `tsconfig.json` dosyasına göre `tsc --noEmit` komutunu ça
 
 ## GitHub Actions ile CI
 
-İskelet oluşturucu, `.github/workflows/ci.yml` konumunda kullanıma hazır bir iş akışı üretir. `main` dalına yapılan her itmede ve her çekme isteğinde, çalıştırıcı içinde geçici bir Twenty sunucusu başlatır (`twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` eylemi aracılığıyla) ve ardından `yarn lint`, `yarn typecheck`, `yarn test:unit` ve `yarn test` komutlarını, `TWENTY_API_URL` / `TWENTY_API_KEY` bu sunucuyu işaret edecek şekilde çalıştırır. Herhangi bir gizli bilgi gerekmez ve iş akışının en üstündeki `TWENTY_VERSION` ortam değişkeni aracılığıyla sunucu sürümünü sabitleyebilirsiniz.
+İskelet oluşturucu, `.github/workflows/ci.yml` konumunda kullanıma hazır bir iş akışı üretir. `main` dalına yapılan her itmede ve her çekme isteğinde, çalıştırıcı içinde geçici bir Arxena sunucusu başlatır (`twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` eylemi aracılığıyla) ve ardından `yarn lint`, `yarn typecheck`, `yarn test:unit` ve `yarn test` komutlarını, `TWENTY_API_URL` / `TWENTY_API_KEY` bu sunucuyu işaret edecek şekilde çalıştırır. Herhangi bir gizli bilgi gerekmez ve iş akışının en üstündeki `TWENTY_VERSION` ortam değişkeni aracılığıyla sunucu sürümünü sabitleyebilirsiniz.
 
 Üç iskelet iş akışının (`ci.yml`, `cd.yml` dağıtım hattı ve npm yayınlama için `publish.yml`) eksiksiz adım adım anlatımı için [Yayınlama → Otomatik CI/CD](/l/tr/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows) bölümüne bakın.

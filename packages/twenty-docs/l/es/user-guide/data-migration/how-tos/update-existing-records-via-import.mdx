@@ -16,9 +16,9 @@ description: Guía completa paso a paso para actualizar registros en masa median
 
 ## Cómo Funciona
 
-Cuando importa un archivo que contiene un **identificador único** que coincide con un registro existente, Twenty actualiza ese registro en lugar de crear un duplicado.
+Cuando importa un archivo que contiene un **identificador único** que coincide con un registro existente, Arxena actualiza ese registro en lugar de crear un duplicado.
 
-| Si el identificador único...       | Twenty hará...                                    |
+| Si el identificador único...       | Arxena hará...                                    |
 | ---------------------------------- | ------------------------------------------------- |
 | Coincide con un registro existente | **Actualizar** el registro existente              |
 | No coincide con ningún registro    | **Crear** un nuevo registro                       |
@@ -57,7 +57,7 @@ Abra el archivo exportado en su aplicación de hoja de cálculo (Excel, Google S
 1. **Conserve la columna del identificador único** — no elimine `id`, `email` ni `domain`
 2. **Actualice los valores** en las columnas que desea cambiar
 3. **Elimine las columnas que no necesita actualizar** (opcional, pero más limpio)
-4. **No cambie los valores del identificador único** — o Twenty creará nuevos registros
+4. **No cambie los valores del identificador único** — o Arxena creará nuevos registros
 
 ### Ejemplo: Actualizar cargos
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **No cambie los valores del identificador único.**
 
-Si cambia `john@acme.com` a `john.smith@acme.com`, Twenty creará un registro nuevo en lugar de actualizar el existente.
+Si cambia `john@acme.com` a `john.smith@acme.com`, Arxena creará un registro nuevo en lugar de actualizar el existente.
 </Warning>
 
 ## Paso 3: Importe el archivo actualizado
@@ -95,7 +95,7 @@ Si cambia `john@acme.com` a `john.smith@acme.com`, Twenty creará un registro nu
 6. Verifique si hay errores
 7. Haga clic en **Confirmar**
 
-Twenty hace coincidir los registros mediante el identificador único y los actualiza con nuevos valores.
+Arxena hace coincidir los registros mediante el identificador único y los actualiza con nuevos valores.
 
 ## Elegir el identificador único adecuado
 
@@ -113,7 +113,7 @@ Si tiene un campo personalizado marcado como único (como un ID externo de otro 
 
 1. Incluya ese campo en su exportación e importación
 2. Asígnelo durante la importación
-3. Twenty hará coincidir por ese campo
+3. Arxena hará coincidir por ese campo
 
 ## Paso 4: Verifique las actualizaciones
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Cambiar el identificador único**        | Se cambió `john@acme.com` a `john.smith@acme.com`                   | Crea un nuevo registro en lugar de actualizar | Mantenga sin cambios los identificadores únicos       |
 | **Varios campos únicos**                  | Asignar ambos `email` Y `id`                                        | Posibles conflictos de coincidencia           | Asigne solo UN identificador único                    |
 | **Sin identificador único**               | El archivo solo tiene `firstName`, `lastName`, `jobTitle`           | Todas las filas crean nuevos registros        | Incluya siempre `email`, `domain` o `id`              |
-| **Diferencia de mayúsculas y minúsculas** | El archivo tiene `John@acme.com`, pero Twenty tiene `john@acme.com` | Crea un nuevo registro                        | Exporte desde Twenty para obtener los valores exactos |
+| **Diferencia de mayúsculas y minúsculas** | El archivo tiene `John@acme.com`, pero Arxena tiene `john@acme.com` | Crea un nuevo registro                        | Exporte desde Arxena para obtener los valores exactos |
 
 ## Preguntas frecuentes
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="¿Cómo sé qué registros se actualizarán y cuáles se crearán?">
-    Durante el paso de revisión de la importación, Twenty le muestra cuántos registros se actualizarán frente a cuántos se crearán según las coincidencias del identificador único.
+    Durante el paso de revisión de la importación, Arxena le muestra cuántos registros se actualizarán frente a cuántos se crearán según las coincidencias del identificador único.
   </Accordion>
 
   <Accordion title="¿Puedo deshacer una actualización masiva?">

@@ -12,11 +12,26 @@
         "command": "mintlify dev"
       }
     },
+    "export-people-openapi": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/openapi/people-api.json"],
+      "options": {
+        "command": "tsx packages/twenty-docs/scripts/export-people-openapi.ts"
+      }
+    },
     "validate": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
         "command": "mintlify validate"
+      }
+    },
+    "export": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/.mintlify/export.zip"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "mintlify export --output .mintlify/export.zip"
       }
     },
     "lint": {},

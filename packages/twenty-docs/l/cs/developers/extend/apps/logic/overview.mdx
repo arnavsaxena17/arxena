@@ -1,10 +1,10 @@
 ---
 title: Přehled
-description: Server-side TypeScript, který běží uvnitř Twenty — spouštěný pomocí HTTP rout, plánů CRON, databázových událostí, nástrojů AI nebo akcí pracovního postupu.
+description: Server-side TypeScript, který běží uvnitř Arxena — spouštěný pomocí HTTP rout, plánů CRON, databázových událostí, nástrojů AI nebo akcí pracovního postupu.
 icon: bolt
 ---
 
-**Logická vrstva** aplikace Twenty je kód, který *běží* — server-side TypeScript handlery reagující na HTTP požadavky, plány CRON a změny záznamů; AI dovednosti a agenti, kteří fungují uvnitř pracovního prostoru; a připojení OAuth, která umožňují vašim funkcím jednat jménem uživatele ve službách třetích stran.
+**Logická vrstva** aplikace Arxena je kód, který *běží* — server-side TypeScript handlery reagující na HTTP požadavky, plány CRON a změny záznamů; AI dovednosti a agenti, kteří fungují uvnitř pracovního prostoru; a připojení OAuth, která umožňují vašim funkcím jednat jménem uživatele ve službách třetích stran.
 
 ```text
             ┌─ HTTP route      ──┐
@@ -16,7 +16,7 @@ icon: bolt
             └────────────────────┘                │
                                                   ▼
                                   ┌────────────────────────────┐
-                                  │ Twenty API (records)       │
+                                  │ Arxena API (records)       │
                                   │ Third-party API            │
                                   │   (via Connection token)   │
                                   └────────────────────────────┘
@@ -48,7 +48,7 @@ Logická funkce volí jeden nebo více spouštěčů — každá z níže uveden
 | **HTTP route**              | Požadavek dorazí na váš koncový bod `/s/\<path>` | `httpRouteTriggerSettings`      |
 | **Cron**                    | CRON výraz se shoduje                                             | `cronTriggerSettings`           |
 | **Událost databáze**        | Záznam v pracovním prostoru je vytvořen, aktualizován nebo smazán | `databaseEventTriggerSettings`  |
-| **Nástroj AI**              | Funkce Twenty AI se rozhodne zavolat vaši funkci                  | `toolTriggerSettings`           |
+| **Nástroj AI**              | Funkce Arxena AI se rozhodne zavolat vaši funkci                  | `toolTriggerSettings`           |
 | **Akce pracovního postupu** | Krok pracovního postupu vyvolá vaši funkci                        | `workflowActionTriggerSettings` |
 
 Funkce běží v izolovaných sandboxovaných procesech Node.js a přistupují k pracovnímu prostoru přes typovaného klienta API omezeného na roli deklarovanou v [`defineApplication()`](/l/cs/developers/extend/apps/config/application).

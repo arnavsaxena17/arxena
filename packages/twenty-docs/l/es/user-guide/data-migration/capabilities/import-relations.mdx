@@ -5,15 +5,15 @@ description: Importar relaciones entre registros mediante CSV.
 
 ## Resumen
 
-Twenty admite importar relaciones entre objetos durante la importación de CSV. Esto te permite vincular registros (p. ej., adjuntar Personas a Empresas) como parte de tu migración de datos.
+Arxena admite importar relaciones entre objetos durante la importación de CSV. Esto te permite vincular registros (p. ej., adjuntar Personas a Empresas) como parte de tu migración de datos.
 
 <Note>**Actualmente compatible para la importación**: Relaciones de uno a muchos que apuntan a un único tipo de objeto en cada lado (p. ej., Personas → Empresas). Las relaciones que apuntan a varios tipos de objeto aún no son compatibles con la importación/exportación.</Note>
 
-## Cómo funcionan las relaciones en Twenty
+## Cómo funcionan las relaciones en Arxena
 
 ### De uno a muchos / de muchos a uno
 
-Twenty admite relaciones estándar en las que un registro se vincula a muchos otros:
+Arxena admite relaciones estándar en las que un registro se vincula a muchos otros:
 
 * **Una Empresa → Muchas Personas**: Una empresa puede tener múltiples empleados, pero cada persona pertenece a una sola empresa
 * **Una Empresa → Muchas Oportunidades**: Una empresa puede tener múltiples acuerdos, pero cada oportunidad pertenece a una sola empresa
@@ -75,11 +75,11 @@ Primero, determina qué objeto está en el lado de "uno" y cuál en el lado de "
 
 ### Paso 2: Asegúrate de que existan los registros del lado de "uno"
 
-Antes de importar el lado de "muchos", los registros del lado de "uno" ya deben existir en Twenty.
+Antes de importar el lado de "muchos", los registros del lado de "uno" ya deben existir en Arxena.
 
 * Importa o crea primero los registros del lado de "uno" (p. ej., Empresas)
 * Valida su identificador único. Este puede ser:
-  * El `id` (UUID de Twenty)
+  * El `id` (UUID de Arxena)
   * Un campo definido como único (p. ej., `domain` para Empresas, o un ID externo de tu sistema anterior)
 
 <Warning>La importación fallará si se hace referencia a un registro que no existe.</Warning>
@@ -117,7 +117,7 @@ Si no existe:
 1. Carga tu archivo CSV mediante la interfaz de importación
 2. En el paso de asignación de campos, encuentra tu columna de relación (p. ej., `companyDomain`)
 3. Asígnala al campo de relación (p. ej., Empresa)
-4. Twenty vinculará automáticamente cada registro con el padre correspondiente
+4. Arxena vinculará automáticamente cada registro con el padre correspondiente
 
 ### Campos únicos disponibles para relaciones
 
@@ -128,7 +128,7 @@ Si no existe:
 | **Miembros del espacio de trabajo**         | `id`, `email` (no el nombre)                        |
 | **Otros objetos estándar y personalizados** | `id`, cualquier campo marcado como único            |
 
-<Note>**Vinculación a Miembros del espacio de trabajo**: Cuando la relación apunta a Miembros del espacio de trabajo (tu equipo que inicia sesión en Twenty), haz referencia a su **dirección de correo electrónico**, no a su nombre.</Note>
+<Note>**Vinculación a Miembros del espacio de trabajo**: Cuando la relación apunta a Miembros del espacio de trabajo (tu equipo que inicia sesión en Arxena), haz referencia a su **dirección de correo electrónico**, no a su nombre.</Note>
 
 <Note>Recomendamos usar `domain` para Empresas y `email` para Personas, ya que son legibles para humanos y fáciles de mantener en hojas de cálculo.</Note>
 

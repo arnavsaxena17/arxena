@@ -19,11 +19,11 @@ export default defineApplication({
   description:
     'Create reusable document templates and generate personalized documents from your CRM records.',
   logo: 'public/document-generator.svg',
-  author: 'Twenty',
+  author: 'Arxena',
   category: 'Productivity',
-  websiteUrl: 'https://docs.twenty.com/l/tr/developers/extend/apps',
-  termsUrl: 'https://www.twenty.com/terms',
-  emailSupport: 'contact@twenty.com',
+  websiteUrl: 'https://docs.arxena.com/l/tr/developers/extend/apps',
+  termsUrl: 'https://www.arxena.com/terms',
+  emailSupport: 'contact@arxena.com',
   issueReportUrl: 'https://github.com/twentyhq/twenty/issues',
 });
 ```
@@ -88,7 +88,7 @@ yarn twenty app:publish
 yarn twenty app:publish --private -r <remote>
 ```
 
-`app:publish` varsayılan olarak oluşturur ve npm'e yayımlar; `--private` bunun yerine bir tarball dosyasını bir Twenty sunucusunun özel kaydına yükler. Yayımlanmış bir uygulamayı bir örneğin pazaryerinde görünür kılmak için, bir katalog eşitlemesini tetikleyin:
+`app:publish` varsayılan olarak oluşturur ve npm'e yayımlar; `--private` bunun yerine bir tarball dosyasını bir Arxena sunucusunun özel kaydına yükler. Yayımlanmış bir uygulamayı bir örneğin pazaryerinde görünür kılmak için, bir katalog eşitlemesini tetikleyin:
 
 ```bash filename="Terminal"
 yarn twenty dev:catalog-sync -r <remote>

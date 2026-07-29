@@ -1,14 +1,14 @@
 ---
 title: Frontend-Komponenten
-description: Erstellen Sie React-Komponenten, die innerhalb der Twenty-UI gerendert werden und durch eine Sandbox isoliert sind.
+description: Erstellen Sie React-Komponenten, die innerhalb der Arxena-UI gerendert werden und durch eine Sandbox isoliert sind.
 icon: window-maximize
 ---
 
-Front-Komponenten sind React-Komponenten, die direkt innerhalb der Twenty-UI gerendert werden. Sie laufen in einem **isolierten Web Worker** unter Verwendung von Remote DOM — Ihr Code wird in einem sandboxed iframe mit opaker Origin ausgeführt, wobei die UI dennoch nativ auf der Seite gerendert wird und nicht auf dieses iframe beschränkt ist.
+Front-Komponenten sind React-Komponenten, die direkt innerhalb der Arxena-UI gerendert werden. Sie laufen in einem **isolierten Web Worker** unter Verwendung von Remote DOM — Ihr Code wird in einem sandboxed iframe mit opaker Origin ausgeführt, wobei die UI dennoch nativ auf der Seite gerendert wird und nicht auf dieses iframe beschränkt ist.
 
 ## Wo Front-Komponenten verwendet werden können
 
-Front-Komponenten können an drei Stellen innerhalb von Twenty gerendert werden:
+Front-Komponenten können an drei Stellen innerhalb von Arxena gerendert werden:
 
 * **Seitenpanel** — Nicht-Headless-Front-Komponenten werden im rechten Seitenpanel geöffnet. Dies ist das Standardverhalten, wenn eine Front-Komponente über das Befehlsmenü ausgelöst wird.
 * **Widgets (Dashboards und Datensatzseiten)** — Front-Komponenten können als Widgets in [Seitenlayouts](/l/de/developers/extend/apps/layout/page-layouts) eingebettet werden. Beim Konfigurieren eines Dashboards oder eines Datensatzseiten-Layouts können Benutzer ein Front-Komponenten-Widget hinzufügen.
@@ -31,7 +31,7 @@ const HelloWorld = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Hello from my app!</h1>
-      <p>This component renders inside Twenty.</p>
+      <p>This component renders inside Arxena.</p>
     </div>
   );
 };
@@ -83,7 +83,7 @@ Klicken Sie darauf, um die Komponente inline zu rendern.
 
 Um die automatisch generierte Variablenkonfigurationsoberfläche im **Settings**-Tab deiner App durch deine eigene Komponente zu ersetzen, definiere sie mit `defineSettingsFrontComponent` statt mit `defineFrontComponent`. Es verwendet dieselben [Konfigurationsfelder](#configuration-fields) (mit Ausnahme von `isHeadless`, das nicht akzeptiert wird, da eine Einstellungskomponente immer eine sichtbare Benutzeroberfläche rendert) und kennzeichnet die Komponente zusätzlich als Einstellungen-UI der App.
 
-Die Komponente wird als Abschnitt innerhalb des **Settings**-Tabs gerendert, nicht als Ersatz für den gesamten Tab. Die von Twenty verwalteten Systembereiche – Auto-Upgrade, App-URL und Verbindungen – werden immer darüber gerendert und können von der App nicht überschrieben werden.
+Die Komponente wird als Abschnitt innerhalb des **Settings**-Tabs gerendert, nicht als Ersatz für den gesamten Tab. Die von Arxena verwalteten Systembereiche – Auto-Upgrade, App-URL und Verbindungen – werden immer darüber gerendert und können von der App nicht überschrieben werden.
 
 ```tsx src/front-components/app-settings.tsx
 import { defineSettingsFrontComponent } from 'twenty-sdk/define';
@@ -139,7 +139,7 @@ export default defineFrontComponent({
 });
 ```
 
-Da die Komponente `null` zurückgibt, überspringt Twenty das Rendern eines Containers dafür — im Layout entsteht kein Leerraum. Die Komponente hat dennoch Zugriff auf alle Hooks und die Host-Kommunikations-API.
+Da die Komponente `null` zurückgibt, überspringt Arxena das Rendern eines Containers dafür — im Layout entsteht kein Leerraum. Die Komponente hat dennoch Zugriff auf alle Hooks und die Host-Kommunikations-API.
 
 ## SDK-Command-Komponenten
 
@@ -268,7 +268,7 @@ Front-Komponenten laufen browserseitig in einem Web-Worker, der in einem sandbox
 
 Eine mit `httpRouteTriggerSettings` deklarierte Logikfunktion ist über HTTP unter ihrem Routenpfad erreichbar. `RestApiClient` behandelt Pfade, die mit `/s/` beginnen, als App-Routen, löst sie zur URL auf, unter der deine Funktionen bereitgestellt werden, und authentifiziert sie mit `TWENTY_APP_ACCESS_TOKEN`.
 
-> **In Twenty Cloud werden HTTP-ausgelöste Logikfunktionen auf einer eigenen, arbeitsbereichsspezifischen Domain bereitgestellt** unter `https://\<your-workspace-subdomain>.withtwenty.com\<path>`. Für externe Aufrufer kopiere die exakte URL aus den **HTTP trigger**-Einstellungen der Funktion oder aus dem **Settings**-Tab der Anwendung.
+> **In Arxena Cloud werden HTTP-ausgelöste Logikfunktionen auf einer eigenen, arbeitsbereichsspezifischen Domain bereitgestellt** unter `https://\<your-workspace-subdomain>.witharxena.com\<path>`. Für externe Aufrufer kopiere die exakte URL aus den **HTTP trigger**-Einstellungen der Funktion oder aus dem **Settings**-Tab der Anwendung.
 
 Eine headless Front-Komponente kann den Aufruf beim Mounten über die `Command`-Komponente ausführen und sich anschließend automatisch unmounten:
 
@@ -297,7 +297,7 @@ export default defineFrontComponent({
 });
 ```
 
-Der an `RestApiClient` übergebene Pfad ist der `httpRouteTriggerSettings.path` der Logikfunktion, der mit `/s` präfixiert ist. Belasse `isAuthRequired: true`; das `TWENTY_APP_ACCESS_TOKEN`, das Twenty für deine Komponente ausstellt, authentifiziert die Anfrage:
+Der an `RestApiClient` übergebene Pfad ist der `httpRouteTriggerSettings.path` der Logikfunktion, der mit `/s` präfixiert ist. Belasse `isAuthRequired: true`; das `TWENTY_APP_ACCESS_TOKEN`, das Arxena für deine Komponente ausstellt, authentifiziert die Anfrage:
 
 ```ts src/logic-functions/fetch-prs.logic-function.ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -325,9 +325,9 @@ export default defineLogicFunction({
 `TWENTY_APP_ACCESS_TOKEN` wird automatisch injiziert – siehe [Anwendungsvariablen](#application-variables). Da geheime Anwendungsvariablen niemals in Front-Komponenten offengelegt werden, sollten API-Schlüssel und andere sensible Logik in der Logikfunktion verbleiben und nicht in der Front-Komponente.
 </Note>
 
-### Aufrufen der Twenty-REST-API
+### Aufrufen der Arxena-REST-API
 
-Um App-HTTP-Routen aufzurufen oder Twenty-Datensätze aus einer Front-Komponente zu lesen und zu schreiben, verwende `RestApiClient` aus `twenty-client-sdk/rest`. Es sendet `/s/...`-Pfade an die Funktions-Basis-URL deines Arbeitsbereichs und alle anderen Pfade, einschließlich `/rest/...`, an `TWENTY_API_URL`.
+Um App-HTTP-Routen aufzurufen oder Arxena-Datensätze aus einer Front-Komponente zu lesen und zu schreiben, verwende `RestApiClient` aus `twenty-client-sdk/rest`. Es sendet `/s/...`-Pfade an die Funktions-Basis-URL deines Arbeitsbereichs und alle anderen Pfade, einschließlich `/rest/...`, an `TWENTY_API_URL`.
 
 | Methode                           | Beschreibung                                                                             |
 | --------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -345,7 +345,7 @@ Die Basis-URL und das Token werden standardmäßig aus der Umgebung ermittelt. G
 
 ```ts
 const client = new RestApiClient({
-  baseUrl: 'https://myworkspace.twenty.com',
+  baseUrl: 'https://myworkspace.arxena.com',
   token: 'my-token',
 });
 ```
@@ -443,14 +443,14 @@ Die folgenden Systemvariablen sind immer über `process.env` verfügbar:
 
 | Variable                  | Beschreibung                                                  |
 | ------------------------- | ------------------------------------------------------------- |
-| `TWENTY_API_URL`          | Basis-URL der Twenty-Core-API                                 |
+| `TWENTY_API_URL`          | Basis-URL der Arxena-Core-API                                 |
 | `TWENTY_APP_ACCESS_TOKEN` | Kurzlebiges Token mit dem Geltungsbereich der Rolle Ihrer App |
 
 ### `TWENTY_FUNCTIONS_URL`
 
-Twenty injiziert außerdem `TWENTY_FUNCTIONS_URL` in Front-Komponenten und Logikfunktionen: die Basis-URL, unter der die HTTP-ausgelösten Logikfunktionen deiner App bereitgestellt werden.
+Arxena injiziert außerdem `TWENTY_FUNCTIONS_URL` in Front-Komponenten und Logikfunktionen: die Basis-URL, unter der die HTTP-ausgelösten Logikfunktionen deiner App bereitgestellt werden.
 
-Sie existiert, weil diese URL nicht immer der Twenty-Server selbst ist. In Twenty Cloud werden App-Routen auf einer eigenen, arbeitsbereichsspezifischen Domain bereitgestellt (`https://\<your-workspace-subdomain>.withtwenty.com` oder die primäre öffentliche Domain der Anwendung, falls eine konfiguriert ist), damit von der App erzeugte Antworten in einem isolierten Origin und nicht im Origin der Twenty-App ausgeführt werden. Self-Hosted- und lokale Instanzen stellen App-Routen unter dem Präfix `/s` auf dem Server selbst bereit und setzen die Variable eventuell gar nicht. Da die Basis-URL je nach Arbeitsbereich und Instanz variiert, kann dein Code sie nicht hardcoden – der Server injiziert zur Laufzeit den richtigen Wert.
+Sie existiert, weil diese URL nicht immer der Arxena-Server selbst ist. In Arxena Cloud werden App-Routen auf einer eigenen, arbeitsbereichsspezifischen Domain bereitgestellt (`https://\<your-workspace-subdomain>.witharxena.com` oder die primäre öffentliche Domain der Anwendung, falls eine konfiguriert ist), damit von der App erzeugte Antworten in einem isolierten Origin und nicht im Origin der Arxena-App ausgeführt werden. Self-Hosted- und lokale Instanzen stellen App-Routen unter dem Präfix `/s` auf dem Server selbst bereit und setzen die Variable eventuell gar nicht. Da die Basis-URL je nach Arbeitsbereich und Instanz variiert, kann dein Code sie nicht hardcoden – der Server injiziert zur Laufzeit den richtigen Wert.
 
 Du musst sie nur selten direkt lesen. Rufe deine Routen über `RestApiClient` mit einem mit `/s/` präfixierten Pfad auf, und der Client löst die URL für dich auf: Er entfernt das Präfix `/s` und verwendet `TWENTY_FUNCTIONS_URL` als Ziel, mit Fallback auf `\<TWENTY_API_URL>/s`, wenn die Variable nicht gesetzt ist. Verwende `resolveUrl('/s/\<path>')`, um die absolute URL ohne das Senden einer Anfrage zu erhalten, z. B. für einen Link. Lies die Variable nur direkt aus, wenn du eine URL manuell zusammenbaust:
 
@@ -602,19 +602,19 @@ Details finden Sie im Abschnitt [Öffentliche Assets](/l/de/developers/extend/ap
 Front-Komponenten unterstützen mehrere Styling-Ansätze. Sie können verwenden:
 
 * **Inline-Styles** — `style={{ color: 'red' }}`
-* **Twenty UI-Komponenten** — Twentys eigene Komponentenbibliothek; siehe [Verwenden von Twenty UI-Komponenten](#using-twenty-ui-components) unten
+* **Arxena UI-Komponenten** — Twentys eigene Komponentenbibliothek; siehe [Verwenden von Arxena UI-Komponenten](#using-twenty-ui-components) unten
 * **Emotion** — CSS-in-JS mit `@emotion/react`
 * **Styled-components** — `styled.div`-Muster
 * **Tailwind CSS** — Utility-Klassen
 * **Beliebige CSS-in-JS-Bibliothek**, die mit React kompatibel ist
 
-## Verwenden von Twenty UI-Komponenten
+## Verwenden von Arxena UI-Komponenten
 
-Twenty liefert seine Komponentenbibliothek als [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1)-Paket aus. Frontend-Komponenten können sie für Schaltflächen, Tags, Status-Pills, Chips, Avatare, Icons, Typografie und Theme-Tokens verwenden, die automatisch zum hellen und dunklen Theme des Arbeitsbereichs passen.
+Arxena liefert seine Komponentenbibliothek als [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1)-Paket aus. Frontend-Komponenten können sie für Schaltflächen, Tags, Status-Pills, Chips, Avatare, Icons, Typografie und Theme-Tokens verwenden, die automatisch zum hellen und dunklen Theme des Arbeitsbereichs passen.
 
 ### Installation
 
-Fügen Sie das Paket zu Ihrer App hinzu und fixieren Sie es auf die Version, mit der Ihre Twenty-Instanz ausgeliefert wird:
+Fügen Sie das Paket zu Ihrer App hinzu und fixieren Sie es auf die Version, mit der Ihre Arxena-Instanz ausgeliefert wird:
 
 ```bash
 yarn add twenty-ui@1.0.0-alpha.1
@@ -669,9 +669,9 @@ Jedes benannte Icon wird per Tree Shaking berücksichtigt, sodass der Import ein
 
 ### Theming und Theme-Tokens
 
-Twenty UI-Komponenten passen sich automatisch dem hellen und dunklen Theme des Arbeitsbereichs an – der Renderer wendet das aktive Farbschema auf dem Host an und die Komponenten leiten ihre Farben daraus ab.
+Arxena UI-Komponenten passen sich automatisch dem hellen und dunklen Theme des Arbeitsbereichs an – der Renderer wendet das aktive Farbschema auf dem Host an und die Komponenten leiten ihre Farben daraus ab.
 
-Um dieselben Design-Tokens in Ihren eigenen Inline-Styles zu verwenden, rufen Sie den Hook `useTheme()` auf. Er gibt die Theme-Tokens von Twenty (Abstände, Farben, Radien, Schriftarten) zurück, die mit dem aktiven Theme verknüpft sind – ohne dass ein `ThemeProvider` in Ihrer Komponente eingerichtet werden muss:
+Um dieselben Design-Tokens in Ihren eigenen Inline-Styles zu verwenden, rufen Sie den Hook `useTheme()` auf. Er gibt die Theme-Tokens von Arxena (Abstände, Farben, Radien, Schriftarten) zurück, die mit dem aktiven Theme verknüpft sind – ohne dass ein `ThemeProvider` in Ihrer Komponente eingerichtet werden muss:
 
 ```tsx
 import { useTheme } from 'twenty-ui/theme-constants';

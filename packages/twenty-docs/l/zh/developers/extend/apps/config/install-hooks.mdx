@@ -44,7 +44,7 @@ icon: wrench
 * 该配置等同于 `defineLogicFunction` 的配置减去触发器设置，再加上 `shouldRunOnVersionUpgrade`。
 * **运行时机**：默认情况下，仅在全新安装时运行。 将 `shouldRunOnVersionUpgrade: true` 设为 true 以便在升级时也运行。 使用 `previousVersion` / `newVersion` 按升级路径分支处理。
 * **幂等性很重要**：异步 post-install 可能会被重试，而且当开启 `shouldRunOnVersionUpgrade` 时，任一钩子都会在升级时重新运行。
-* 会注入常规的逻辑函数环境（`APPLICATION_ID`、`APP_ACCESS_TOKEN`、`API_URL`），因此你可以使用应用的令牌调用 Twenty API。
+* 会注入常规的逻辑函数环境（`APPLICATION_ID`、`APP_ACCESS_TOKEN`、`API_URL`），因此你可以使用应用的令牌调用 Arxena API。
 * 该钩子会在构建时自动附加到应用清单上（`preInstallLogicFunction` / `postInstallLogicFunction`）——在 [`defineApplication()`](/l/zh/developers/extend/apps/config/application) 中无需额外引用。
 * 默认的 `timeoutSeconds` 为 300，以便支持更长的设置任务，例如数据填充。
 * **在开发模式下不会执行**：`yarn twenty dev` 会跳过安装流程并直接同步文件，因此钩子在其中不会运行。 改为手动触发它们：

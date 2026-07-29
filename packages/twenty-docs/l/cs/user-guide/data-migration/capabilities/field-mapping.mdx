@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Jak funguje mapování polí
 
-Když nahrajete soubor, Twenty analyzuje vaše sloupce a pokusí se je spárovat s existujícími poli.
+Když nahrajete soubor, Arxena analyzuje vaše sloupce a pokusí se je spárovat s existujícími poli.
 
 ### Automatické mapování
 
-Twenty se snaží spárovat sloupce na základě:
+Arxena se snaží spárovat sloupce na základě:
 
 * Názvů záhlaví sloupců (přesné nebo podobné shody)
 * Detekce typů dat (datumů, čísel, e‑mailů)
 * Běžné vzory polí
 
-<Note>**Rychlý tip:** Exportujte několik řádků z objektu, který chcete importovat. Exportovaný soubor bude mít přesně takové názvy sloupců, jaké Twenty očekává, což při importu usnadní automatické mapování.</Note>
+<Note>**Rychlý tip:** Exportujte několik řádků z objektu, který chcete importovat. Exportovaný soubor bude mít přesně takové názvy sloupců, jaké Arxena očekává, což při importu usnadní automatické mapování.</Note>
 
 ### Možnosti ručního mapování
 
 U každého sloupce můžete:
 
-* **Namapovat na pole**: Vyberte odpovídající pole Twenty z rozbalovací nabídky
+* **Namapovat na pole**: Vyberte odpovídající pole Arxena z rozbalovací nabídky
 * **Nemapovat**: Sloupec úplně přeskočte (data nebudou importována)
 
 <Note>**Pole musí existovat před importem.** Import vytváří záznamy, nikoli pole. Vytvořte vlastní pole v **Nastavení → Datový model** před importem.</Note>
@@ -94,12 +94,12 @@ Podporované formáty:
 * Pro další e‑maily: použijte **E‑maily / Primární e‑mail** pro hlavní e‑mail a **E‑maily / Další e‑maily** v tomto formátu:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Pole ID
 
-Zadání `id` při importu je volitelné. Pokud není uvedeno, Twenty jej automaticky vygeneruje.
+Zadání `id` při importu je volitelné. Pokud není uvedeno, Arxena jej automaticky vygeneruje.
 
 Příklady použití mapování sloupce `id`:
 
@@ -125,7 +125,7 @@ Podobně jako u doménových polí:
 * Pro sekundární odkazy použijte sloupec **Odkazy / Sekundární odkazy** v tomto formátu:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Pole s vícenásobným výběrem

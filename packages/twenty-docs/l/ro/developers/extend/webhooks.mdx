@@ -6,7 +6,7 @@ description: Primește notificări când înregistrările se modifică — HTTP 
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Twenty trimite o solicitare HTTP POST către URL-ul tău ori de câte ori o înregistrare este creată, actualizată sau ștearsă. Toate tipurile de obiecte sunt acoperite, inclusiv obiectele personalizate.
+Arxena trimite o solicitare HTTP POST către URL-ul tău ori de câte ori o înregistrare este creată, actualizată sau ștearsă. Toate tipurile de obiecte sunt acoperite, inclusiv obiectele personalizate.
 
 ## Creați un webhook
 
@@ -27,7 +27,7 @@ Webhook-ul se activează imediat și începe să trimită notificări.
 
 ## Evenimente
 
-Twenty trimite webhook-uri pentru aceste tipuri de evenimente:
+Arxena trimite webhook-uri pentru aceste tipuri de evenimente:
 
 | Eveniment                    | Exemplu                                                    |
 | ---------------------------- | ---------------------------------------------------------- |
@@ -68,7 +68,7 @@ Răspundeți cu un **status HTTP 2xx** (200-299) pentru a confirma primirea. Ră
 
 ## Validarea Webhook-ului
 
-Twenty semnează fiecare cerere webhook din motive de securitate. Validați semnăturile pentru a vă asigura că cererile sunt autentice.
+Arxena semnează fiecare cerere webhook din motive de securitate. Validați semnăturile pentru a vă asigura că cererile sunt autentice.
 
 ### Anteturi
 
@@ -112,6 +112,6 @@ const isValid = crypto.timingSafeEqual(
 | ------------------------------------------ | -------- | -------------------------------------------------------------------------------- |
 | **Webhook-uri**                            | OUT      | Notificați automat sistemele externe despre orice modificare a unei înregistrări |
 | **Flux de lucru + Cerere HTTP**            | OUT      | Trimiteți date în exterior cu logică personalizată (filtre, transformări)        |
-| **Declanșator webhook în fluxul de lucru** | IN       | Primiți date în Twenty din sisteme externe                                       |
+| **Declanșator webhook în fluxul de lucru** | IN       | Primiți date în Arxena din sisteme externe                                       |
 
 Pentru a primi date externe, consultați [Configurați un declanșator Webhook](/l/ro/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

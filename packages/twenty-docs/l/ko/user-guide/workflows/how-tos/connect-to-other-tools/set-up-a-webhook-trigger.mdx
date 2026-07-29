@@ -11,7 +11,7 @@ description: 외부 서비스에서 데이터를 받아 워크플로우를 트�
 | ---------- | --------------------- |
 | **웹 폼**    | 문의 폼 제출 시 리드가 생성됩니다   |
 | **서드파티 앱** | Stripe 결제 → 고객 레코드 생성 |
-| **커스텀 통합** | 사용자 앱 → Twenty 자동화    |
+| **커스텀 통합** | 사용자 앱 → Arxena 자동화    |
 | **노코드 도구** | Zapier, Make, n8n 연결  |
 
 ## 단계별 설정
@@ -28,7 +28,7 @@ description: 외부 서비스에서 데이터를 받아 워크플로우를 트�
 2. **웹훅**을 선택
 3. 다음과 같은 고유한 웹훅 URL이 제공됩니다:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. 이 URL을 복사하세요—외부 서비스에 필요합니다
 
@@ -75,7 +75,7 @@ description: 외부 서비스에서 데이터를 받아 워크플로우를 트�
 **cURL 사용**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

@@ -3,7 +3,7 @@ title: 密钥轮换
 icon: rotate
 ---
 
-Twenty 具有两个相互独立的密钥族：
+Arxena 具有两个相互独立的密钥族：
 
 * **JWT 签名密钥** — 存储在 `core."signingKey"` 中、带有 `kid` 标签的非对称 ES256 密钥对，用于对访问令牌 / 刷新令牌进行签名和验证。
 * **静态加密密钥** — `ENCRYPTION_KEY`，用于在 `enc:v2:` 封装中加密 OAuth 令牌、应用变量、签名密钥私钥、敏感配置值和 TOTP 密钥。

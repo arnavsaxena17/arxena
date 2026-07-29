@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Alan Eşlemesi Nasıl Çalışır
 
-Bir dosya yüklediğinizde, Twenty sütunlarınızı analiz eder ve bunları mevcut alanlarla eşleştirmeye çalışır.
+Bir dosya yüklediğinizde, Arxena sütunlarınızı analiz eder ve bunları mevcut alanlarla eşleştirmeye çalışır.
 
 ### Otomatik Eşleme
 
-Twenty, sütunları aşağıdakilere göre eşleştirmeye çalışır:
+Arxena, sütunları aşağıdakilere göre eşleştirmeye çalışır:
 
 * Sütun başlık adları (tam veya benzer eşleşmeler)
 * Veri türü algılama (tarihler, sayılar, e-postalar)
 * Yaygın alan kalıpları
 
-<Note>**Hızlı ipucu:** İçe aktarmak istediğiniz nesneden birkaç satır dışa aktarın. Dışa aktarılan dosya, Twenty'nin beklediği sütun adlarını tam olarak içerir; bu da içe aktarma sırasında otomatik eşlemeyi sorunsuz hale getirir.</Note>
+<Note>**Hızlı ipucu:** İçe aktarmak istediğiniz nesneden birkaç satır dışa aktarın. Dışa aktarılan dosya, Arxena'nin beklediği sütun adlarını tam olarak içerir; bu da içe aktarma sırasında otomatik eşlemeyi sorunsuz hale getirir.</Note>
 
 ### Manuel Eşleme Seçenekleri
 
 Her sütun için şunları yapabilirsiniz:
 
-* **Bir alana eşleyin**: Açılır menüden eşleşen Twenty alanını seçin
+* **Bir alana eşleyin**: Açılır menüden eşleşen Arxena alanını seçin
 * **Eşleme yapmayın**: Sütunu tamamen atlayın (veri içe aktarılmayacaktır)
 
 <Note>**Alanlar, içe aktarmadan önce mevcut olmalıdır.** İçe aktarma alanları değil, kayıtları oluşturur. İçe aktarmadan önce özel alanları **Ayarlar → Veri Modeli** altında oluşturun.</Note>
@@ -94,12 +94,12 @@ Desteklenen biçimler:
 * Ek e-postalar için: ana e-posta için **Emails / Primary Email**'i ve şu biçimle **Emails / Additional Emails**'i kullanın:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### ID Alanları
 
-İçe aktarma sırasında bir `id` belirtmek isteğe bağlıdır. Sağlanmazsa Twenty bir tane otomatik olarak oluşturur.
+İçe aktarma sırasında bir `id` belirtmek isteğe bağlıdır. Sağlanmazsa Arxena bir tane otomatik olarak oluşturur.
 
 `id` sütununu eşlemeye yönelik kullanım durumları:
 
@@ -125,7 +125,7 @@ Alan Adı alanlarına benzer:
 * İkincil bağlantılar için **Links / Secondary Links** sütununu şu biçimde kullanın:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Çoklu Seçim Alanları

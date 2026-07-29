@@ -4,7 +4,7 @@ description: Conectați obiectele între ele cu relații bidirecționale MANY_TO
 icon: diagram-project
 ---
 
-Relațiile conectează două obiecte între ele. În Twenty, relațiile sunt întotdeauna **bidirecționale** — fiecare relație are două părți, iar fiecare parte este declarată ca un câmp ce o referențiază pe cealaltă.
+Relațiile conectează două obiecte între ele. În Arxena, relațiile sunt întotdeauna **bidirecționale** — fiecare relație are două părți, iar fiecare parte este declarată ca un câmp ce o referențiază pe cealaltă.
 
 | Tip relație   | Descriere                                                                          | Are cheie străină?    |
 | ------------- | ---------------------------------------------------------------------------------- | --------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Relaționarea cu obiectele standard
 
-Pentru a crea o relație cu un obiect Twenty încorporat (Person, Company etc.), utilizați `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
+Pentru a crea o relație cu un obiect Arxena încorporat (Person, Company etc.), utilizați `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

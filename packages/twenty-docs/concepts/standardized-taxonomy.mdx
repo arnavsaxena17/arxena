@@ -1,0 +1,67 @@
+---
+title: Standardized taxonomy
+description: Apollo-style vocabulary — short function-root and grade constants, natural-language resolution, engines kept private.
+---
+
+import { TaxonomyShapeDiagram } from '/snippets/taxonomy-shape-diagram.mdx';
+import { TaxonomyQueryFlow } from '/snippets/taxonomy-query-flow.mdx';
+
+Job titles are messy. “CHRO”, “Head of People”, and “VP HR” can mean the same seat. Arxena collapses them into a **short controlled vocabulary**, then uses that vocabulary for people search, org charts, and agents.
+
+The pattern is the same shape as a sector → industry hierarchy in finance — or Apollo’s short seniority list — not a public dump of every mapped title:
+
+<TaxonomyShapeDiagram />
+
+<Note>
+These cards are **examples**, not the full catalog. Public APIs expose flat constants (roots and grade levels), not every child node under every root.
+</Note>
+
+| Noun | Meaning | Public altitude |
+| --- | --- | --- |
+| **Function root** | Department family (e.g. human resources, engineering) | Flat label list |
+| **Function** | Role family under a root | Resolved in API responses; not a public tree dump |
+| **Grade** | Seniority (entry / mid / leadership) | Flat label list |
+| **Grade category** | Org-chart / leadership band | Chart layout + illustrative examples — not scoring math |
+
+**Publish the nouns. Protect the verbs.** Labels and one worked NL example are the product surface. Assignment engines, full title maps, and Boolean generators stay internal.
+
+## How a query works (outcomes only)
+
+<TaxonomyQueryFlow />
+
+1. You (or Claude via MCP) send a **natural-language** role query and a company.
+2. Arxena resolves synonyms and company-relative seniority **server-side**.
+3. You get people plus a small `resolved` / `resolved_as` object to sanity-check — not a walkthrough of how the match was made.
+
+Primary path: [Natural language to people at a company](/cookbooks/nl-to-people-at-company).
+
+## Public constants (ungated)
+
+Short flat lists — enough to know what the system understands, not enough to rebuild it:
+
+```bash
+curl https://app.arxena.com/people-api/taxonomy/constants
+```
+
+See [List taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants).
+
+## What stays private
+
+| Keep internal | Why |
+| --- | --- |
+| Full trees with every mapped title | Commercial classification DB |
+| Boolean / keyword generation details | Paid capability + moat |
+| Scoring, thresholds, tie-breaks | Assignment engine |
+| Correction / feedback flywheel mechanics | Durable advantage |
+
+Authenticated classify/browse endpoints exist for integrators who already know codes. Prefer NL resolve for products and agents. Fair use: [Authentication](/api-reference/authentication#fair-use).
+
+## Org charts
+
+The product org chart is a **view** over the same vocabulary. Query “CHRO” in the Title query bar to filter/highlight — same resolution chips, no second ontology. “Instantly queryable” means cached charts are fast; first-time companies may take a short live build (see `resolved` / freshness on chart payloads when present).
+
+## Related
+
+- [Natural language to people at a company](/cookbooks/nl-to-people-at-company)
+- [MCP: people and org charts](/cookbooks/mcp-people-and-org-charts)
+- [List taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants)

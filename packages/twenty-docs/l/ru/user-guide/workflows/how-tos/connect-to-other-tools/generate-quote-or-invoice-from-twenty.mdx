@@ -1,5 +1,5 @@
 ---
-title: Создайте коммерческое предложение или счёт из Twenty
+title: Создайте коммерческое предложение или счёт из Arxena
 description: Автоматически создавайте счёта во внешних инструментах при закрытии сделок.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Связанные материалы
 
-* [Сгенерировать PDF из Twenty](/l/ru/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — прикрепляйте сгенерированные PDF-файлы к записям
+* [Сгенерировать PDF из Arxena](/l/ru/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — прикрепляйте сгенерированные PDF-файлы к записям
 * [Триггеры рабочего процесса](/l/ru/user-guide/workflows/capabilities/workflow-triggers)
 * [Действия рабочего процесса](/l/ru/user-guide/workflows/capabilities/workflow-actions)
 * [Автоматизации «Закрыто — выиграно»](/l/ru/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

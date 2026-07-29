@@ -21,7 +21,7 @@ En una relación de uno a muchos:
 
 El lado "uno" es el **padre**. El lado "muchos" es el **hijo**.
 
-### Relaciones comunes en Twenty
+### Relaciones comunes en Arxena
 
 | Relación                 | Lado "Uno" (Padre) | Lado "Muchos" (Hijo) |
 | ------------------------ | ------------------ | -------------------- |
@@ -41,7 +41,7 @@ Antes de importar, determine qué objeto es el padre y cuál es el hijo.
 
 ## Paso 2: Importar primero los registros padre
 
-El padre (lado "uno") debe existir en Twenty antes de poder hacer referencia a él.
+El padre (lado "uno") debe existir en Arxena antes de poder hacer referencia a él.
 
 **Orden de importación:**
 
@@ -73,7 +73,7 @@ Debe hacer referencia al registro padre mediante un **identificador único**. Op
 
 Si necesita el `id`:
 
-1. Exporte los registros padre desde Twenty
+1. Exporte los registros padre desde Arxena
 2. La exportación incluye la columna `id`
 3. Use estos IDs en su archivo de registros hijo
 
@@ -119,7 +119,7 @@ La columna `companyDomain` hace referencia al dominio de la Empresa.
 <Warning>
 **¡El formato del dominio importa!**
 
-Use `https://domain.com` (no solo `domain.com`). Esto coincide con cómo Twenty almacena los dominios de las Empresas y evita errores de coincidencia.
+Use `https://domain.com` (no solo `domain.com`). Esto coincide con cómo Arxena almacena los dominios de las Empresas y evita errores de coincidencia.
 </Warning>
 
 ### Reglas importantes
@@ -139,7 +139,7 @@ Use `https://domain.com` (no solo `domain.com`). Esto coincide con cómo Twenty 
 5. Complete las asignaciones restantes
 6. Revise los errores y confirme
 
-Twenty vinculará automáticamente cada registro hijo con el padre correspondiente.
+Arxena vinculará automáticamente cada registro hijo con el padre correspondiente.
 
 ## Paso 7: Verificar la importación
 
@@ -157,8 +157,8 @@ Después de importar:
 | **Formato de dominio incorrecto**         | Usar `acme.com` en lugar de `https://acme.com`       | Use el formato de URL completo con `https://`                               |
 | **Varios campos únicos**                  | Asignar ambos `companyId` Y `companyDomain`          | Asigne solo UN identificador único                                          |
 | **Falta el campo de relación**            | El campo de relación no existe en el modelo de datos | Créelo en **Configuración → Modelo de datos** antes de importar             |
-| **Registros inexistentes**                | El registro padre no existe en Twenty                | Importe primero los registros padre o verifique si hay errores tipográficos |
-| **Diferencia de mayúsculas y minúsculas** | `Acme.com` en el archivo pero `acme.com` en Twenty   | Asegure una coincidencia exacta de mayúsculas y minúsculas                  |
+| **Registros inexistentes**                | El registro padre no existe en Arxena                | Importe primero los registros padre o verifique si hay errores tipográficos |
+| **Diferencia de mayúsculas y minúsculas** | `Acme.com` en el archivo pero `acme.com` en Arxena   | Asegure una coincidencia exacta de mayúsculas y minúsculas                  |
 
 ## Vincular a miembros del espacio de trabajo
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="¿Qué pasa si mi registro padre no tiene dominio ni correo electrónico?">
     Tiene dos opciones:
-    1. Use el `id` de Twenty (exporte los registros padre para obtener sus IDs)
+    1. Use el `id` de Arxena (exporte los registros padre para obtener sus IDs)
     2. Cree un campo único personalizado en su modelo de datos para almacenar un ID externo de su sistema anterior
   </Accordion>
 

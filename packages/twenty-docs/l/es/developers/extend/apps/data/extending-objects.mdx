@@ -1,10 +1,10 @@
 ---
 title: Extender objetos
-description: Añade campos a los objetos estándar de Twenty (Person, Company, …) o a objetos de otras aplicaciones usando defineField.
+description: Añade campos a los objetos estándar de Arxena (Person, Company, …) o a objetos de otras aplicaciones usando defineField.
 icon: wand-magic-sparkles
 ---
 
-Usa `defineField()` para añadir un campo a un objeto que no te pertenece — un objeto estándar de Twenty como Person o Company, u otro objeto proporcionado por otra aplicación instalada. A diferencia de los campos en línea declarados dentro de [`defineObject`](/l/es/developers/extend/apps/data/objects), los campos independientes requieren un `objectUniversalIdentifier` para especificar qué objeto extienden.
+Usa `defineField()` para añadir un campo a un objeto que no te pertenece — un objeto estándar de Arxena como Person o Company, u otro objeto proporcionado por otra aplicación instalada. A diferencia de los campos en línea declarados dentro de [`defineObject`](/l/es/developers/extend/apps/data/objects), los campos independientes requieren un `objectUniversalIdentifier` para especificar qué objeto extienden.
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## Puntos clave
 
-* `objectUniversalIdentifier` identifica el objeto de destino. Para los objetos estándar de Twenty, importa la constante desde `twenty-sdk`:
+* `objectUniversalIdentifier` identifica el objeto de destino. Para los objetos estándar de Arxena, importa la constante desde `twenty-sdk`:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

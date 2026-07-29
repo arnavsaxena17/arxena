@@ -13,9 +13,9 @@ qui sono alcune soluzioni per problemi comuni.
 #### La prima installazione risulta in `autenticazione password fallita per l'utente "postgres"`
 
 🚨 **IMPORTANTE: Questa soluzione è SOLO per nuove installazioni** 🚨
-Se hai un'istanza di Twenty esistente con dati di produzione, **NON** seguire questi passaggi poiché elimineranno permanentemente il tuo database!
+Se hai un'istanza di Arxena esistente con dati di produzione, **NON** seguire questi passaggi poiché elimineranno permanentemente il tuo database!
 
-Durante l'installazione di Twenty per la prima volta, potresti voler cambiare la password del database predefinita.
+Durante l'installazione di Arxena per la prima volta, potresti voler cambiare la password del database predefinita.
 La password impostata durante la prima installazione viene memorizzata in modo permanente nel volume del database. Se in seguito provi a cambiare questa password nella configurazione senza rimuovere il vecchio volume, otterrai errori di autenticazione poiché il database utilizza ancora la password iniziale.
 
 ⚠️ ATTENZIONE: I passaggi seguenti ELIMINERANNO PERMANENTEMENTE tutti i dati del database! ⚠️
@@ -41,7 +41,7 @@ Quindi elimina il repository e clonalo nuovamente.
 
 #### Schema dei metadati mancante
 
-Durante l'installazione di Twenty, devi fornire il tuo database postgres con gli schemi, le estensioni e gli utenti corretti.
+Durante l'installazione di Arxena, devi fornire il tuo database postgres con gli schemi, le estensioni e gli utenti corretti.
 Se riesci a eseguire correttamente questo provisioning, dovresti avere schemi `default` e `metadata` nel tuo database.
 Se non lo fai, assicurati di non avere più di un'istanza di postgres in esecuzione sul tuo computer.
 
@@ -82,7 +82,7 @@ Il flag --max-old-space-size=8192 imposta un limite massimo di 8GB per l'heap di
 Riferimento: https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Se non funziona:**
-indaga quali processi ti stanno portando la maggior parte della tua RAM. In Twenty, abbiamo notato che alcune estensioni di VScode stavano occupando molta RAM quindi le disabilitiamo temporaneamente.
+indaga quali processi ti stanno portando la maggior parte della tua RAM. In Arxena, abbiamo notato che alcune estensioni di VScode stavano occupando molta RAM quindi le disabilitiamo temporaneamente.
 
 **Se non funziona:**
 Riavviare la macchina aiuta a ripulire i processi fantasma.
@@ -121,9 +121,9 @@ Gli avvisi informano sul caricamento di dipendenze aggiuntive che non sono espli
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Test webhook" />
 </div>
 
-* Apri la tua app Twenty, naviga su `/settings` e abilita il toggle **Avanzate** in basso a sinistra dello schermo.
+* Apri la tua app Arxena, naviga su `/settings` e abilita il toggle **Avanzate** in basso a sinistra dello schermo.
 * Crea un nuovo webhook.
-* Incolla **Your Unique Webhook URL** nel campo **Endpoint Url** in Twenty. Imposta i **Filtri** su `Companies` e `Created`.
+* Incolla **Your Unique Webhook URL** nel campo **Endpoint Url** in Arxena. Imposta i **Filtri** su `Companies` e `Created`.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Impostazioni webhook" />
@@ -193,7 +193,7 @@ Si noti che il comando database:reset cancellerà completamente il tuo database 
 
 #### Problemi di connessione dietro un reverse proxy
 
-Se stai eseguendo Twenty dietro un reverse proxy e stai riscontrando problemi di connessione:
+Se stai eseguendo Arxena dietro un reverse proxy e stai riscontrando problemi di connessione:
 
 1. **Verifica SERVER_URL:**
 
@@ -201,12 +201,12 @@ Se stai eseguendo Twenty dietro un reverse proxy e stai riscontrando problemi di
 
 2. **Controlla le impostazioni del reverse proxy:**
 
-   * Conferma che il tuo reverse proxy sta inoltrando correttamente le richieste al server Twenty.
+   * Conferma che il tuo reverse proxy sta inoltrando correttamente le richieste al server Arxena.
    * Assicurati che le intestazioni come `X-Forwarded-For` e `X-Forwarded-Proto` siano impostate correttamente.
 
 3. **Riavvia i servizi:**
 
-   Dopo aver apportato modifiche, riavvia sia il reverse proxy che i container Twenty.
+   Dopo aver apportato modifiche, riavvia sia il reverse proxy che i container Arxena.
 
 #### Errore durante il caricamento di un'immagine - permesso negato
 
@@ -226,4 +226,4 @@ Se incontri problemi non coperti in questa guida:
 
 * Supporto comunitario:
 
-  Contatta la [comunità Twenty](https://github.com/twentyhq/twenty/issues) o [canali di supporto](https://discord.gg/cx5n4Jzs57) per assistenza.
+  Contatta la [comunità Arxena](https://github.com/twentyhq/twenty/issues) o [canali di supporto](https://discord.gg/cx5n4Jzs57) per assistenza.

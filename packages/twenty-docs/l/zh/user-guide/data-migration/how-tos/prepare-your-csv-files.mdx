@@ -1,6 +1,6 @@
 ---
 title: 准备您的 CSV 文件
-description: 完整的分步指南，指导您将数据格式化以导入 Twenty。
+description: 完整的分步指南，指导您将数据格式化以导入 Arxena。
 ---
 
 ## 概览
@@ -22,7 +22,7 @@ description: 完整的分步指南，指导您将数据格式化以导入 Twenty
 
 ## 步骤 2：下载示例文件
 
-**这是最重要的一步。** 示例文件展示了 Twenty 期望的准确列名和格式。
+**这是最重要的一步。** 示例文件展示了 Arxena 期望的准确列名和格式。
 
 1. 进入对象视图（人员、公司等）
 2. 点击 **⋮** → **导入记录**
@@ -33,7 +33,7 @@ description: 完整的分步指南，指导您将数据格式化以导入 Twenty
 
 ## 步骤 3：移除重复值
 
-Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
+Arxena 会对某些字段强制唯一性。 重复项会导致导入错误。
 
 | 对象        | 唯一字段               |
 | --------- | ------------------ |
@@ -45,7 +45,7 @@ Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
 
 1. 按唯一字段（email 或 domain）对电子表格排序
 2. 删除或合并重复的行
-3. 检查 Twenty 中是否已存在重复项
+3. 检查 Arxena 中是否已存在重复项
 
 <Warning>**软删除的记录计入唯一性。** 位于“命令菜单 → 查看已删除的记录”中的记录会导致重复错误。 请永久删除这些记录，或将其恢复并更新。</Warning>
 
@@ -61,11 +61,11 @@ Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
 ### 电子邮件字段
 
 * 必须是有效的电子邮件格式：`name@domain.com`
-* 必须唯一（文件内及 Twenty 中不得重复）
+* 必须唯一（文件内及 Arxena 中不得重复）
 * 对于附加电子邮件，请在 **Emails / Additional Emails** 列中使用此格式：
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### 域名字段
@@ -75,7 +75,7 @@ Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
 * 填写这两列：
   * **Domain / Domain Label**：`domain.com`
   * **Domain / Domain URL**：`https://domain.com`
-* 在您的文件内以及在 Twenty 中必须唯一
+* 在您的文件内以及在 Arxena 中必须唯一
 
 ### 电话字段
 
@@ -163,13 +163,13 @@ Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
 
 填写两列：
 
-* **Links / Link Label**：`Twenty`
-* **Links / Link URL**：`https://twenty.com`
+* **Links / Link Label**：`Arxena`
+* **Links / Link URL**：`https://arxena.com`
 
 对于次要链接，请使用 **Links / Secondary Links** 列：
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON 字段
@@ -182,7 +182,7 @@ Twenty 会对某些字段强制唯一性。 重复项会导致导入错误。
 
 ### ID 字段
 
-* **可选**：如未提供，Twenty 将自动生成 ID
+* **可选**：如未提供，Arxena 将自动生成 ID
 * **格式**：UUID（例如：`c776ee49-f608-4a77-8cc8-6fe96ae1e43f`）
 * **使用场景**：包含 ID 以更新现有记录，而不是创建新记录
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **关系的重要规则：**
 
-* 父记录必须已存在于 Twenty 中
+* 父记录必须已存在于 Arxena 中
 * 使用**域名 URL** 格式（`https://domain.com`），而不是标签
 * 仅映射一个唯一标识符（不要同时包含 `companyId` 和 `companyDomain`）
 * 对于工作区成员，请使用其**电子邮箱**（而不是姓名）
@@ -220,7 +220,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 详细说明请参见[如何导入关系](/l/zh/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv)。
 
-## 步骤 6：确保 Twenty 中存在这些字段
+## 步骤 6：确保 Arxena 中存在这些字段
 
 导入会创建**记录**，而非**字段**。 要导入的所有字段必须已在您的数据模型中存在。
 

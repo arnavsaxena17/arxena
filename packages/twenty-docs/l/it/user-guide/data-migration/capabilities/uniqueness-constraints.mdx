@@ -1,13 +1,13 @@
 ---
 title: Vincoli di unicità
-description: Come Twenty applica l'unicità dei dati durante l'importazione.
+description: Come Arxena applica l'unicità dei dati durante l'importazione.
 ---
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Panoramica
 
-Twenty applica l'unicità su determinati campi per prevenire record duplicati e garantire l'integrità dei dati. Comprendere questi vincoli è essenziale per importazioni riuscite.
+Arxena applica l'unicità su determinati campi per prevenire record duplicati e garantire l'integrità dei dati. Comprendere questi vincoli è essenziale per importazioni riuscite.
 
 ## Campi univoci predefiniti
 
@@ -17,7 +17,7 @@ Twenty applica l'unicità su determinati campi per prevenire record duplicati e 
 | **Aziende**                | `id`, `domain`                           |
 | **Oggetti personalizzati** | Solo `id` (per impostazione predefinita) |
 
-<Note>Il campo `id` è l'identificatore interno di Twenty, generato automaticamente per ciascun record. Utilizza il formato UUID (ad es., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>Il campo `id` è l'identificatore interno di Arxena, generato automaticamente per ciascun record. Utilizza il formato UUID (ad es., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Campi univoci personalizzati
 
@@ -34,7 +34,7 @@ Puoi definire campi univoci aggiuntivi in **Impostazioni → Modello dati**:
 * **Identificativi aziendali**: numeri dei dipendenti, codici cliente
 * **Informazioni di contatto alternative**: profilo LinkedIn, numero di telefono
 
-<Note>Il nome del campo `id` è riservato all'ID interno di Twenty. Usa un nome diverso come `externalId` o `legacyId` per gli identificatori esterni.</Note>
+<Note>Il nome del campo `id` è riservato all'ID interno di Arxena. Usa un nome diverso come `externalId` o `legacyId` per gli identificatori esterni.</Note>
 
 ## Comportamento dell'importazione
 
@@ -67,6 +67,6 @@ Durante la fase di convalida:
 ## Migliori Pratiche
 
 1. **Rimuovi i duplicati** dal tuo file prima di importare
-2. **Verifica la presenza di record esistenti** in Twenty prima di importare
+2. **Verifica la presenza di record esistenti** in Arxena prima di importare
 3. **Usa ID esterni** quando esegui una migrazione da altri sistemi
 4. **Includi campi univoci** se vuoi aggiornare i record esistenti

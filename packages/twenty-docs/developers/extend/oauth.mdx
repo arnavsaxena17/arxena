@@ -4,7 +4,7 @@ icon: "key"
 description: Authorization code flow with PKCE and client credentials for server-to-server access.
 ---
 
-Twenty implements OAuth 2.0 with authorization code + PKCE for user-facing apps and client credentials for server-to-server access. Clients are registered dynamically via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — no manual setup in a dashboard.
+Arxena implements OAuth 2.0 with authorization code + PKCE for user-facing apps and client credentials for server-to-server access. Clients are registered dynamically via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — no manual setup in a dashboard.
 
 ## When to Use OAuth
 
@@ -13,11 +13,11 @@ Twenty implements OAuth 2.0 with authorization code + PKCE for user-facing apps 
 | Internal scripts, automation | [API Key](/developers/extend/api#authentication) |
 | External app acting on behalf of a user | **OAuth — Authorization Code** |
 | Server-to-server, no user context | **OAuth — Client Credentials** |
-| Twenty App with UI extensions | [Apps](/developers/extend/apps/getting-started) (OAuth is handled automatically) |
+| Arxena App with UI extensions | [Apps](/developers/extend/apps/getting-started) (OAuth is handled automatically) |
 
 ## Register a Client
 
-Twenty supports **dynamic client registration** per [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). No manual setup needed — register programmatically:
+Arxena supports **dynamic client registration** per [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). No manual setup needed — register programmatically:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Request scopes as a space-separated string: `scope=api profile`
 
 ## Authorization Code Flow
 
-Use this flow when your app acts on behalf of a Twenty user.
+Use this flow when your app acts on behalf of an Arxena user.
 
 ### 1. Redirect the user to authorize
 
@@ -86,7 +86,7 @@ The user sees a consent screen and approves or denies access.
 
 ### 2. Handle the callback
 
-After authorization, Twenty redirects back to your `redirect_uri`:
+After authorization, Arxena redirects back to your `redirect_uri`:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ The returned token has workspace-level access, not tied to any specific user.
 
 ## Server Discovery
 
-Twenty publishes its OAuth configuration at a standard discovery endpoint:
+Arxena publishes its OAuth configuration at a standard discovery endpoint:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ This returns all endpoints, supported grant types, scopes, and capabilities — 
 
 | Environment | Base URL |
 |-------------|----------|
-| **Cloud** | `https://api.twenty.com` |
+| **Cloud** | `https://api.arxena.com` |
 | **Self-Hosted** | `https://{your-domain}` |
 
 ## OAuth vs API Keys

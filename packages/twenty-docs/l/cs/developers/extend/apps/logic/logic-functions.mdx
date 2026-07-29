@@ -4,7 +4,7 @@ description: Definujte serverové funkce v TypeScriptu se spouštěči pro HTTP,
 icon: bolt
 ---
 
-Logické funkce jsou serverové funkce v TypeScriptu, které běží na platformě Twenty. Mohou být spouštěny požadavky HTTP, plány cronu nebo databázovými událostmi — a lze je také zpřístupnit jako nástroje pro agenty AI.
+Logické funkce jsou serverové funkce v TypeScriptu, které běží na platformě Arxena. Mohou být spouštěny požadavky HTTP, plány cronu nebo databázovými událostmi — a lze je také zpřístupnit jako nástroje pro agenty AI.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="Definujte logické funkce a jejich spouštěče">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 Logické funkce lze zpřístupnit na dvou rozhraních, z nichž každé má vlastní spouštěč:
 
-* **`toolTriggerSettings`** — zpřístupní funkci AI funkcím Twenty (chat, MCP, volání funkcí). Používá standardní JSON Schema, formát, kterému modely LLM nativně rozumějí.
-* **`workflowActionTriggerSettings`** — zobrazí funkci jako krok ve vizuálním builderu workflow. Používá bohaté `InputSchema` od Twenty, aby builder mohl vykreslit správné editory polí, voliče proměnných a štítky.
+* **`toolTriggerSettings`** — zpřístupní funkci AI funkcím Arxena (chat, MCP, volání funkcí). Používá standardní JSON Schema, formát, kterému modely LLM nativně rozumějí.
+* **`workflowActionTriggerSettings`** — zobrazí funkci jako krok ve vizuálním builderu workflow. Používá bohaté `InputSchema` od Arxena, aby builder mohl vykreslit správné editory polí, voliče proměnných a štítky.
 
 Funkce se může rozhodnout pro jedno, druhé nebo obě. Stojí po boku `cronTriggerSettings`, `databaseEventTriggerSettings` a `httpRouteTriggerSettings` — stejný vzor, stejná struktura.
 
 <Note>
-**Vztah k akci Code ve workflow.** Vestavěná akce **Code** v tvůrci workflow je sama o sobě logická funkce — Twenty pro každý krok Code vytvoří jednu a její editor zpřístupní inline. `workflowActionTriggerSettings` je způsob, jak z jednorázového inline kódu udělat **znovupoužitelnou** akci: funkci v aplikaci nadefinujete jednou a potom je možné ji vybrat v libovolném workflow, místo aby se kopírovala do každého kroku Code. Pro pohled koncového uživatele se podívejte na [akci Code](/l/cs/user-guide/workflows/capabilities/workflow-actions#code) v uživatelské příručce.
+**Vztah k akci Code ve workflow.** Vestavěná akce **Code** v tvůrci workflow je sama o sobě logická funkce — Arxena pro každý krok Code vytvoří jednu a její editor zpřístupní inline. `workflowActionTriggerSettings` je způsob, jak z jednorázového inline kódu udělat **znovupoužitelnou** akci: funkci v aplikaci nadefinujete jednou a potom je možné ji vybrat v libovolném workflow, místo aby se kopírovala do každého kroku Code. Pro pohled koncového uživatele se podívejte na [akci Code](/l/cs/user-guide/workflows/capabilities/workflow-actions#code) v uživatelské příručce.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 Hlavní body:
 
 * Funkce může míchat rozhraní — deklarujte jak `toolTriggerSettings`, tak `workflowActionTriggerSettings`, abyste ji zpřístupnili v chatu i ve workflow builderu.
-* `toolTriggerSettings.inputSchema` a `workflowActionTriggerSettings.inputSchema` jsou obě volitelné. Pokud jsou vynechány, sestavovač manifestu je odvodí ze zdrojového kódu handleru (JSON Schema pro nástroj AI, `InputSchema` od Twenty pro akci workflow). Uveďte jej explicitně, když chcete bohatší typování — například u polí s podporou `FieldMetadataType`, jako `CURRENCY` nebo `RELATION` pro workflow builder, nebo s poli `description`, která si AI agent může přečíst:
+* `toolTriggerSettings.inputSchema` a `workflowActionTriggerSettings.inputSchema` jsou obě volitelné. Pokud jsou vynechány, sestavovač manifestu je odvodí ze zdrojového kódu handleru (JSON Schema pro nástroj AI, `InputSchema` od Arxena pro akci workflow). Uveďte jej explicitně, když chcete bohatší typování — například u polí s podporou `FieldMetadataType`, jako `CURRENCY` nebo `RELATION` pro workflow builder, nebo s poli `description`, která si AI agent může přečíst:
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-Abyste deklarovali své parametry **jen jednou** a obsloužili obě rozhraní, definujte jedno JSON Schema (`InputJsonSchema`) a převeďte jej pro akci pracovního postupu pomocí `jsonSchemaToInputSchema` z `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` přebírá JSON Schema přímo, zatímco `workflowActionTriggerSettings.inputSchema` očekává `InputSchema` od Twenty:
+Abyste deklarovali své parametry **jen jednou** a obsloužili obě rozhraní, definujte jedno JSON Schema (`InputJsonSchema`) a převeďte jej pro akci pracovního postupu pomocí `jsonSchemaToInputSchema` z `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` přebírá JSON Schema přímo, zatímco `workflowActionTriggerSettings.inputSchema` očekává `InputSchema` od Arxena:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `label`        | Název zobrazený pro akci ve výběru kroků tvůrce workflow. Výchozí hodnota je `name` funkce.                                                                                      |
 | `icon`         | Ikona zobrazená vedle akce (název z `tabler-icons`, např. `IconBuilding`).                                                                                                       |
-| `inputSchema`  | Rozšířený `InputSchema` Twenty — to, co tvůrce zobrazuje jako konfigurovatelná pole (s výběrem proměnných). Volitelné; pokud je vynecháno, odvodí se z handleru.                 |
+| `inputSchema`  | Rozšířený `InputSchema` Arxena — to, co tvůrce zobrazuje jako konfigurovatelná pole (s výběrem proměnných). Volitelné; pokud je vynecháno, odvodí se z handleru.                 |
 | `outputSchema` | Definuje strukturu, kterou handler vrací, aby na **jeho výstupní pole mohly navazující kroky mapovat**. Volitelné; bez něj je výstup zpřístupněn jako jedna neprůhledná hodnota. |
 
 Dohromady — funkce zpřístupněná jako akce workflow s deklarovaným výstupem, aby se na `taskId` mohly odkazovat pozdější kroky:
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## Typovaní klienti API (twenty-client-sdk)
 
-Balíček `twenty-client-sdk` poskytuje dva typované klienty GraphQL pro práci s Twenty API z vašich logických funkcí a frontendových komponent.
+Balíček `twenty-client-sdk` poskytuje dva typované klienty GraphQL pro práci s Arxena API z vašich logických funkcí a frontendových komponent.
 
 | Klient              | Importovat                   | Koncový bod                                                      | Generováno?                    |
 | ------------------- | ---------------------------- | ---------------------------------------------------------------- | ------------------------------ |
@@ -762,9 +762,9 @@ Hlavní body:
 </AccordionGroup>
 
 <Note>
-  Když váš kód běží na Twenty (logické funkce nebo frontendové komponenty), platforma vloží přihlašovací údaje jako proměnné prostředí:
+  Když váš kód běží na Arxena (logické funkce nebo frontendové komponenty), platforma vloží přihlašovací údaje jako proměnné prostředí:
 
-  * `TWENTY_API_URL` — Základní URL Twenty API
+  * `TWENTY_API_URL` — Základní URL Arxena API
   * `TWENTY_APP_ACCESS_TOKEN` — krátkodobý klíč s rozsahem omezeným na výchozí roli funkce vaší aplikace
 
   Není nutné je předávat klientům — čtou je automaticky z `process.env`. Oprávnění API klíče jsou určena rolí deklarovanou pomocí `defineApplicationRole()` (nebo odkazovanou prostřednictvím `defaultRoleUniversalIdentifier` v `application-config.ts`).

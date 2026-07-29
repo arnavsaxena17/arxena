@@ -39,7 +39,7 @@ await kv.delete('sync-cursor:linear');
 * **`WORKSPACE`** (기본값) — 항목은 현재 워크스페이스에 설치된 앱 인스턴스에만 비공개입니다. 앱을 설치한 각 워크스페이스는 자체적인 독립 키 집합을 가집니다. 캐시, 커서, 워크스페이스별 상태에는 이 스코프를 사용하는 것이 적합합니다.
 * **`SERVER`** — 항목은 서버에서 실행 중인 앱의 모든 설치 간에 공유됩니다. 서버 항목은 \*\*클레임(claim)\*\*처럼 동작합니다. 저장된 값은 항상 해당 키를 클레임한 workspaceId이며(`set`에서 `value`를 생략하면 현재 워크스페이스에 대해 키를 클레임합니다), 그 워크스페이스만 해당 값을 덮어쓰거나 삭제할 수 있습니다. 어떤 설치에서든 해당 항목을 읽을 수 있습니다.
 
-서버 클레임은 워크스페이스 간 라우팅을 위해 존재합니다. [server-route resolver](/l/ko/developers/extend/apps/logic/logic-functions#server-route-trigger)는 애플리케이션 등록 소유자 워크스페이스에서 실행되지만, 인바운드 웹후크는 일반적으로 Twenty workspaceId가 아닌 외부 계정 ID만을 포함합니다. 각 워크스페이스가 연결 시점에 자신의 외부 ID를 클레임하게 한 다음, 라우트에서 이를 해결하세요:
+서버 클레임은 워크스페이스 간 라우팅을 위해 존재합니다. [server-route resolver](/l/ko/developers/extend/apps/logic/logic-functions#server-route-trigger)는 애플리케이션 등록 소유자 워크스페이스에서 실행되지만, 인바운드 웹후크는 일반적으로 Arxena workspaceId가 아닌 외부 계정 ID만을 포함합니다. 각 워크스페이스가 연결 시점에 자신의 외부 ID를 클레임하게 한 다음, 라우트에서 이를 해결하세요:
 
 ```ts
 // In the connected workspace, when the external account is linked:

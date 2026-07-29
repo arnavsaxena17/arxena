@@ -1,0 +1,31 @@
+---
+title: 'Changelog: July 2026'
+description: July 2026 Arxena API docs release — interactive People API reference and playground.
+---
+
+<Update label="July 29, 2026" tags={["New"]}>
+  ## Week of July 29
+
+  ### Interactive People API reference
+
+  The public documentation now includes a Mintlify **API Reference** powered by the People API OpenAPI document:
+
+  * Endpoint pages for data sources, taxonomy, title expansion, and people search
+  * Interactive **Try it** playground with Bearer auth, request builder, and live responses
+  * Prefill examples for common search and taxonomy flows
+
+  Source of truth remains the server OpenAPI builder; docs sync via `openapi/people-api.json`.
+
+  ### Cookbooks
+
+  * [Natural language to people at a company](/cookbooks/nl-to-people-at-company) (primary)
+  * [MCP: people and org charts](/cookbooks/mcp-people-and-org-charts) (primary)
+  * Advanced: [Search by taxonomy codes](/cookbooks/search-people-by-taxonomy), [Expand titles](/cookbooks/expand-titles-then-search)
+
+  ### Taxonomy altitude
+
+  Docs use an **Apollo-style** lens: public flat constants + NL resolve. Full trees, Boolean engines, and assignment logic stay private.
+
+  * [Standardized taxonomy](/concepts/standardized-taxonomy)
+  * [List taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) (ungated)
+</Update>

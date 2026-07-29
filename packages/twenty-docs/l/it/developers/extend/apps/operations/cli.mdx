@@ -19,7 +19,7 @@ La CLI `yarn twenty` è la tua interfaccia per tutto ciò che riguarda le app. E
 | `dev:translations-extract`                      | Estrai le stringhe traducibili nei cataloghi in `locales/`              | [Traduzioni](/l/it/developers/extend/apps/translations/overview)                                                   |
 | `dev:catalog-sync`                              | Attiva la sincronizzazione del catalogo del marketplace                 | [Pubblicazione](/l/it/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)                |
 | `app:publish` / `app:install` / `app:uninstall` | Ciclo di vita delle release                                             | [Pubblicazione](/l/it/developers/extend/apps/operations/publishing) e questa pagina                                |
-| `docker:*`                                      | Gestisci il container del server Twenty locale                          | [Server locale](/l/it/developers/extend/apps/getting-started/local-server)                                         |
+| `docker:*`                                      | Gestisci il container del server Arxena locale                          | [Server locale](/l/it/developers/extend/apps/getting-started/local-server)                                         |
 | `remote:*`                                      | Gestisci le connessioni al server                                       | questa pagina                                                                                                 |
 
 Ogni comando accetta `-r, --remote \<name>` per puntare a un remoto specifico anziché a quello predefinito.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-Questo è diverso da `yarn twenty docker:logs`, che mostra i log del container Docker. `yarn twenty dev:function:logs` mostra i log di esecuzione delle funzioni della tua app dal server Twenty.
+Questo è diverso da `yarn twenty docker:logs`, che mostra i log del container Docker. `yarn twenty dev:function:logs` mostra i log di esecuzione delle funzioni della tua app dal server Arxena.
 </Note>
 
 ## Generare il client tipizzato (`yarn twenty dev:generate-client`)
 
-Rigenera il client API tipizzato (`twenty-client-sdk`) dallo schema del remoto attivo, senza eseguire la build né sincronizzare un'app. Usalo per ottenere un client tipizzato in qualsiasi progetto — ad esempio un servizio backend che vive in un repository separato — che comunica con la tua istanza Twenty:
+Rigenera il client API tipizzato (`twenty-client-sdk`) dallo schema del remoto attivo, senza eseguire la build né sincronizzare un'app. Usalo per ottenere un client tipizzato in qualsiasi progetto — ad esempio un servizio backend che vive in un repository separato — che comunica con la tua istanza Arxena:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## Gestione dei remoti
 
-Un **remoto** è un server Twenty a cui la tua app si connette. Durante la configurazione, lo strumento di scaffolding ne crea uno automaticamente per te. Puoi aggiungere altri remoti o passare da uno all'altro in qualsiasi momento.
+Un **remoto** è un server Arxena a cui la tua app si connette. Durante la configurazione, lo strumento di scaffolding ne crea uno automaticamente per te. Puoi aggiungere altri remoti o passare da uno all'altro in qualsiasi momento.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

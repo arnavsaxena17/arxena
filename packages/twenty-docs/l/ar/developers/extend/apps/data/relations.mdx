@@ -4,7 +4,7 @@ description: وصِل الكائنات معًا بعلاقات MANY_TO_ONE / ONE
 icon: diagram-project
 ---
 
-تربط العلاقات كائنين معًا. في Twenty، تكون العلاقات دائمًا **ثنائية الاتجاه** — لكل علاقة جانبَان، ويُصرَّح عن كل جانب كحقل يُشير إلى الآخر.
+تربط العلاقات كائنين معًا. في Arxena، تكون العلاقات دائمًا **ثنائية الاتجاه** — لكل علاقة جانبَان، ويُصرَّح عن كل جانب كحقل يُشير إلى الآخر.
 
 | نوع العلاقة   | الوصف                                                  | هل لديه مفتاح خارجي؟   |
 | ------------- | ------------------------------------------------------ | ---------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## الربط مع الكائنات القياسية
 
-لإنشاء علاقة مع كائن Twenty مضمّن (Person, Company, etc.)، استخدم `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
+لإنشاء علاقة مع كائن Arxena مضمّن (Person, Company, etc.)، استخدم `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

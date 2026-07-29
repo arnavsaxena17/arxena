@@ -6,7 +6,7 @@ description: Lassen Sie sich benachrichtigen, wenn sich Datensätze ändern — 
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Twenty sendet einen HTTP POST an Ihre URL, wenn ein Datensatz erstellt, aktualisiert oder gelöscht wird. Alle Objekttypen sind abgedeckt, einschließlich benutzerdefinierter Objekte.
+Arxena sendet einen HTTP POST an Ihre URL, wenn ein Datensatz erstellt, aktualisiert oder gelöscht wird. Alle Objekttypen sind abgedeckt, einschließlich benutzerdefinierter Objekte.
 
 ## Webhook erstellen
 
@@ -27,7 +27,7 @@ Der Webhook wird sofort aktiviert und beginnt, Benachrichtigungen zu senden.
 
 ## Ereignisse
 
-Twenty sendet Webhooks für diese Ereignistypen:
+Arxena sendet Webhooks für diese Ereignistypen:
 
 | Ereignis                   | Beispiel                                                   |
 | -------------------------- | ---------------------------------------------------------- |
@@ -68,7 +68,7 @@ Antworten Sie mit einem **2xx-HTTP-Status** (200-299), um den Empfang zu bestät
 
 ## Webhook-Validierung
 
-Twenty signiert jede Webhook-Anfrage zu Sicherheitszwecken. Validieren Sie die Signaturen, um sicherzustellen, dass die Anfragen authentisch sind.
+Arxena signiert jede Webhook-Anfrage zu Sicherheitszwecken. Validieren Sie die Signaturen, um sicherzustellen, dass die Anfragen authentisch sind.
 
 ### Header
 
@@ -112,6 +112,6 @@ const isValid = crypto.timingSafeEqual(
 | ---------------------------- | -------- | -------------------------------------------------------------------------------- |
 | **Webhooks**                 | OUT      | Externe Systeme automatisch über jede Datensatzänderung benachrichtigen          |
 | **Workflow + HTTP-Anfrage**  | OUT      | Daten mit benutzerdefinierter Logik (Filter, Transformationen) nach außen senden |
-| **Workflow-Webhook-Trigger** | IN       | Daten aus externen Systemen in Twenty empfangen                                  |
+| **Workflow-Webhook-Trigger** | IN       | Daten aus externen Systemen in Arxena empfangen                                  |
 
 Für den Empfang externer Daten siehe [Webhook-Trigger einrichten](/l/de/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

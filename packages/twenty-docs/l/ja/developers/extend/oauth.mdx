@@ -4,7 +4,7 @@ icon: key
 description: PKCE を用いた認可コードフロー、およびサーバー間アクセス向けのクライアントクレデンシャル。
 ---
 
-Twenty は、ユーザー向けアプリでは認可コード + PKCE、サーバー間アクセスではクライアントクレデンシャルを用いた OAuth 2.0 を実装しています。 クライアントは [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) に従って動的に登録され、ダッシュボードでの手動セットアップは不要です。
+Arxena は、ユーザー向けアプリでは認可コード + PKCE、サーバー間アクセスではクライアントクレデンシャルを用いた OAuth 2.0 を実装しています。 クライアントは [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) に従って動的に登録され、ダッシュボードでの手動セットアップは不要です。
 
 ## OAuth を使用するタイミング
 
@@ -13,11 +13,11 @@ Twenty は、ユーザー向けアプリでは認可コード + PKCE、サーバ
 | 社内向けスクリプト、自動化          | [API キー](/l/ja/developers/extend/api#authentication)                  |
 | ユーザーの代理として動作する外部アプリ    | **OAuth — 認可コード**                                                |
 | サーバー間、ユーザーコンテキストなし     | **OAuth — クライアントクレデンシャル**                                        |
-| UI 拡張機能を備えた Twenty アプリ | [アプリ](/l/ja/developers/extend/apps/getting-started)（OAuth は自動で処理されます） |
+| UI 拡張機能を備えた Arxena アプリ | [アプリ](/l/ja/developers/extend/apps/getting-started)（OAuth は自動で処理されます） |
 
 ## クライアントを登録
 
-Twenty は [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) に準拠した**動的クライアント登録**をサポートします。 手動セットアップは不要—プログラムで登録します:
+Arxena は [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) に準拠した**動的クライアント登録**をサポートします。 手動セットアップは不要—プログラムで登録します:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Content-Type: application/json
 
 ## 認可コードフロー
 
-アプリが Twenty ユーザーの代理として動作する場合にこのフローを使用します。
+アプリが Arxena ユーザーの代理として動作する場合にこのフローを使用します。
 
 ### 1. ユーザーを認可にリダイレクト
 
@@ -86,7 +86,7 @@ GET /oauth/authorize?
 
 ### 2. コールバックを処理
 
-認可後、Twenty はあなたの `redirect_uri` にリダイレクトします:
+認可後、Arxena はあなたの `redirect_uri` にリダイレクトします:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ scope=api
 
 ## サーバーディスカバリー
 
-Twenty は標準のディスカバリーエンドポイントで OAuth 設定を公開しています:
+Arxena は標準のディスカバリーエンドポイントで OAuth 設定を公開しています:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ GET /.well-known/oauth-authorization-server
 
 | 環境         | ベース URL                  |
 | ---------- | ------------------------ |
-| **クラウド**   | `https://api.twenty.com` |
+| **クラウド**   | `https://api.arxena.com` |
 | **セルフホスト** | `https://{your-domain}`  |
 
 ## OAuth と API キー

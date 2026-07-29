@@ -44,7 +44,7 @@ Fiecare aplicație poate defini **cel mult unul** din fiecare hook (pre-instalar
 * Configurația este o configurație `defineLogicFunction` minus setările de declanșare, plus `shouldRunOnVersionUpgrade`.
 * **Când rulează**: doar la instalări noi, în mod implicit. Setați `shouldRunOnVersionUpgrade: true` pentru a rula și la upgrade-uri. Folosiți `previousVersion` / `newVersion` pentru a ramifica în funcție de calea de upgrade.
 * **Idempotența contează**: post-install asincron poate fi reîncercat, iar oricare hook rulează din nou la upgrade-uri când `shouldRunOnVersionUpgrade` este activat.
-* Mediul obișnuit al funcțiilor logice (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) este injectat, astfel încât puteți apela API-ul Twenty cu tokenul aplicației voastre.
+* Mediul obișnuit al funcțiilor logice (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) este injectat, astfel încât puteți apela API-ul Arxena cu tokenul aplicației voastre.
 * Hook-ul este atașat automat la manifestul aplicației la build (`preInstallLogicFunction` / `postInstallLogicFunction`) — nu este nevoie să fie referențiat în [`defineApplication()`](/l/ro/developers/extend/apps/config/application).
 * Valoarea implicită pentru `timeoutSeconds` este 300 pentru a permite sarcini de configurare mai lungi, cum ar fi popularea datelor.
 * **Nu este executat în modul dev**: `yarn twenty dev` sare peste fluxul de instalare și sincronizează fișierele direct, astfel încât hook-urile nu rulează acolo. Declanșați-le manual în schimb:

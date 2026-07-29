@@ -51,9 +51,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -75,7 +75,7 @@ export default defineApplication({
 * `name` — это уникальная строка-идентификатор, используемая в `listConnections({ providerName })` (kebab-case, должна соответствовать `^[a-z][a-z0-9-]*$`).
 * `displayName` отображается на вкладке настроек приложения и в списке инструментов ИИ.
 * `clientIdVariable` / `clientSecretVariable` — это **имена**, а не значения — они должны совпадать с ключами, объявленными в `defineApplication.serverVariables`. Фактические `client_id` и `client_secret` вводятся администратором сервера через интерфейс регистрации приложения и никогда не коммитятся в ваш репозиторий.
-* Используйте `serverVariables` (не `applicationVariables`) — учетные данные OAuth являются общими для сервера, и на каждом сервере Twenty используется одно приложение OAuth.
+* Используйте `serverVariables` (не `applicationVariables`) — учетные данные OAuth являются общими для сервера, и на каждом сервере Arxena используется одно приложение OAuth.
 * Пока оба `serverVariables` не заполнены, на вкладке настроек приложения показывается подсказка "нужен администратор сервера", а кнопка "Добавить подключение" отключена.
 * `type: 'oauth'` — единственное поддерживаемое сегодня значение. Дискриминатор совместим с будущими версиями: будущие типы (`'pat'`, `'api-key'`, ...) добавят новые блоки подконфигурации рядом с `oauth`.
 
@@ -184,7 +184,7 @@ const conn = connections.find((c) => c.visibility === 'workspace');
 1. Перейдите в настройки разработчика провайдера (например, https://linear.app/settings/api/applications/new).
 2. Установите **Redirect URI** в значение `\<SERVER_URL>/auth/apps/callback`.
 3. Скопируйте сгенерированные **Client ID** и **Client Secret**.
-4. Откройте установленное приложение в Twenty под учетной записью администратора сервера → задайте значения в соответствующих `serverVariables`.
+4. Откройте установленное приложение в Arxena под учетной записью администратора сервера → задайте значения в соответствующих `serverVariables`.
 5. Затем участники рабочего пространства смогут добавлять подключения в разделе **Подключения** конкретного приложения.
 
 </Accordion>

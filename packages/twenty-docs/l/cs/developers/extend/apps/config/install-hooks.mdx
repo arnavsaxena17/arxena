@@ -44,7 +44,7 @@ Každá aplikace smí definovat **nanejvýš jeden** hook každého typu (předi
 * Konfigurace je konfigurace `defineLogicFunction` bez nastavení triggeru, doplněná o `shouldRunOnVersionUpgrade`.
 * **Kdy se spouští**: ve výchozím nastavení pouze při čistých instalacích. Nastavte `shouldRunOnVersionUpgrade: true`, aby se spouštěl i při aktualizacích. Použijte `previousVersion` / `newVersion` k větvení podle cesty aktualizace.
 * **Idempotence je důležitá**: asynchronní post-install se může spouštět opakovaně a kterýkoli hook se znovu spouští při aktualizacích, když je `shouldRunOnVersionUpgrade` zapnuté.
-* Běžné prostředí logické funkce (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) je injektováno, takže můžete volat Twenty API s tokenem své aplikace.
+* Běžné prostředí logické funkce (`APPLICATION_ID`, `APP_ACCESS_TOKEN`, `API_URL`) je injektováno, takže můžete volat Arxena API s tokenem své aplikace.
 * Hook je při sestavení automaticky připojen k manifestu aplikace (`preInstallLogicFunction` / `postInstallLogicFunction`) — v [`defineApplication()`](/l/cs/developers/extend/apps/config/application) není potřeba na nic odkazovat.
 * Výchozí `timeoutSeconds` je 300, aby umožnil delší úlohy nastavení, jako je naplnění daty.
 * **Nespouští se v dev režimu**: `yarn twenty dev` přeskočí instalační flow a soubory synchronizuje přímo, takže se hooky v tomto režimu nikdy nespustí. Místo toho je spouštějte ručně:

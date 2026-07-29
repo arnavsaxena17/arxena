@@ -1,11 +1,11 @@
 ---
 title: Importer des contacts via CSV
-description: Guide complet étape par étape pour importer des personnes/contacts dans Twenty.
+description: Guide complet étape par étape pour importer des personnes/contacts dans Arxena.
 ---
 
 ## Vue d'ensemble
 
-Ce guide vous accompagne pour importer vos contacts (Personnes) dans Twenty. **Importez d'abord les entreprises** si vous souhaitez lier des personnes à des entreprises.
+Ce guide vous accompagne pour importer vos contacts (Personnes) dans Arxena. **Importez d'abord les entreprises** si vous souhaitez lier des personnes à des entreprises.
 
 ## Avant de démarrer
 
@@ -54,11 +54,11 @@ Si vous souhaitez lier des personnes à des entreprises, importez d'abord les en
 ### Format de l'e-mail
 
 * Doit être un format d'e-mail valide : `name@domain.com`
-* **Doit être unique** — aucun doublon dans votre fichier ni dans Twenty
+* **Doit être unique** — aucun doublon dans votre fichier ni dans Arxena
 * Pour des e-mails supplémentaires, utilisez la colonne **Emails / Additional Emails** :
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Format du téléphone
@@ -81,7 +81,7 @@ Ajoutez une colonne contenant l'identifiant unique de l'entreprise :
 | `companyId`       | UUID         | `c776ee49-f608-4a77-8cc8-6fe96ae1e43f` |
 
 <Note>
-**Utilisez le format d'URL de domaine** (`https://acme.com`), pas le libellé. Cela correspond à la façon dont les entreprises sont stockées dans Twenty.
+**Utilisez le format d'URL de domaine** (`https://acme.com`), pas le libellé. Cela correspond à la façon dont les entreprises sont stockées dans Arxena.
 </Note>
 
 ### Exemple de structure CSV
@@ -93,7 +93,7 @@ Jane,Doe,jane@widgets.co,CTO,https://widgets.co,2125551234,US
 ```
 
 <Note>
-**Astuce :** Cliquez sur **Télécharger le fichier d'exemple** lors de l'importation ou exportez quelques personnes existantes pour voir les noms de colonnes exacts attendus par Twenty.
+**Astuce :** Cliquez sur **Télécharger le fichier d'exemple** lors de l'importation ou exportez quelques personnes existantes pour voir les noms de colonnes exacts attendus par Arxena.
 </Note>
 
 ## Étape 2 : Accéder à la fonction d'importation
@@ -115,11 +115,11 @@ Jane,Doe,jane@widgets.co,CTO,https://widgets.co,2125551234,US
 
 1. Cliquez sur **Sélectionner un fichier**
 2. Choisissez votre fichier CSV, XLSX ou XLS
-3. Attendez que Twenty analyse votre fichier
+3. Attendez que Arxena analyse votre fichier
 
 ## Étape 4 : Associer vos colonnes
 
-Twenty tente automatiquement d'associer vos colonnes aux champs. Vérifiez et ajustez :
+Arxena tente automatiquement d'associer vos colonnes aux champs. Vérifiez et ajustez :
 
 1. **Vérifiez les correspondances automatiques** — assurez-vous qu'elles sont correctes
 2. **Corrigez les correspondances incorrectes** — cliquez sur la liste déroulante pour sélectionner le bon champ
@@ -142,7 +142,7 @@ Lors du mappage de la colonne entreprise :
 
 1. Trouvez votre colonne de référence de l'entreprise (par ex. `companyDomain`)
 2. Associez-la au champ de relation **Entreprise**
-3. Twenty liera chaque personne à l'entreprise correspondante
+3. Arxena liera chaque personne à l'entreprise correspondante
 
 <Warning>
 **N'associez qu'UN SEUL identifiant unique pour les relations.**
@@ -154,8 +154,8 @@ Ne mappez pas à la fois `companyId` ET `companyDomain`. Choisissez-en un — de
 
 Si vous avez des champs Sélection ou Multi-sélection (comme Source du lead) :
 
-1. Twenty affiche vos valeurs à côté des options existantes
-2. Faites correspondre chaque valeur de votre fichier à une option Twenty
+1. Arxena affiche vos valeurs à côté des options existantes
+2. Faites correspondre chaque valeur de votre fichier à une option Arxena
 3. Ou créez de nouvelles options si nécessaire
 
 <Note>
@@ -164,7 +164,7 @@ Les options de sélection utilisent les **noms d'API**, pas les libellés d'affi
 
 ## Étape 6 : Examiner et corriger les erreurs
 
-Avant de terminer l'import, Twenty valide vos données :
+Avant de terminer l'import, Arxena valide vos données :
 
 1. Cliquez sur **Prochaines étapes**
 2. Les lignes comportant des erreurs sont mises en évidence en **jaune**
@@ -175,7 +175,7 @@ Avant de terminer l'import, Twenty valide vos données :
 
 | Erreur                               | Cause                                                       | Solution                                                        |
 | ------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------- |
-| **Adresse e-mail en double**         | L'adresse e-mail existe déjà dans Twenty ou dans le fichier | Supprimez le doublon ou mettez à jour l'enregistrement existant |
+| **Adresse e-mail en double**         | L'adresse e-mail existe déjà dans Arxena ou dans le fichier | Supprimez le doublon ou mettez à jour l'enregistrement existant |
 | **Format d'adresse e-mail invalide** | Format d'adresse e-mail incorrect                           | Corrigez au format `name@domain.com`                            |
 | **Relation introuvable**             | L'entreprise n'existe pas                                   | Importez d'abord les entreprises ou corrigez la référence       |
 | **Champ obligatoire manquant**       | Le champ obligatoire est vide                               | Renseignez la valeur ou supprimez la ligne                      |
@@ -189,7 +189,7 @@ Avant de terminer l'import, Twenty valide vos données :
 
 ## Après l'import des contacts
 
-Vos contacts sont maintenant dans Twenty ! Prochaines étapes :
+Vos contacts sont maintenant dans Arxena ! Prochaines étapes :
 
 1. **Vérifiez les liens avec l'entreprise** — ouvrez quelques enregistrements de personnes pour confirmer qu'ils sont liés à la bonne entreprise
 2. **Importez des opportunités** — si nécessaire, liez-les aux personnes et aux entreprises
@@ -200,7 +200,7 @@ Vos contacts sont maintenant dans Twenty ! Prochaines étapes :
 Pour mettre à jour des contacts au lieu d'en créer de nouveaux :
 
 1. Incluez la colonne `email` ou `id` dans votre fichier
-2. Twenty fait correspondre les enregistrements à partir de cet identifiant unique
+2. Arxena fait correspondre les enregistrements à partir de cet identifiant unique
 3. Les contacts existants sont mis à jour ; les nouveaux sont créés
 
 Voir [Comment mettre à jour des enregistrements existants](/l/fr/user-guide/data-migration/how-tos/update-existing-records-via-import) pour plus de détails.
@@ -209,7 +209,7 @@ Voir [Comment mettre à jour des enregistrements existants](/l/fr/user-guide/dat
 
 <AccordionGroup>
   <Accordion title="Pourquoi deux personnes ne peuvent-elles pas avoir la même adresse e-mail ?">
-    L'adresse e-mail est un identifiant unique dans Twenty. Cela évite les contacts en double et garantit que la synchronisation des e-mails associe correctement les e-mails à la bonne personne.
+    L'adresse e-mail est un identifiant unique dans Arxena. Cela évite les contacts en double et garantit que la synchronisation des e-mails associe correctement les e-mails à la bonne personne.
   </Accordion>
 
   <Accordion title="Que faire si j'ai des personnes sans adresse e-mail ?">
@@ -225,7 +225,7 @@ Voir [Comment mettre à jour des enregistrements existants](/l/fr/user-guide/dat
   </Accordion>
 
   <Accordion title="Puis-je importer l'ID depuis mon CRM précédent ?">
-    Oui! Créez un champ personnalisé marqué comme "unique" dans votre modèle de données pour stocker l'ID externe. Remarque : le nom de champ `id` est réservé à l'ID interne de Twenty.
+    Oui! Créez un champ personnalisé marqué comme "unique" dans votre modèle de données pour stocker l'ID externe. Remarque : le nom de champ `id` est réservé à l'ID interne de Arxena.
   </Accordion>
 
   <Accordion title="Comment corriger les erreurs 'relation not found' ?">

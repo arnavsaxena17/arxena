@@ -9,9 +9,9 @@ Nefunguje import? Tato příručka vám krok za krokem pomůže identifikovat a 
 
 ## Jak funguje validace importu
 
-Po nahrání souboru a namapování sloupců Twenty vaše data ověří:
+Po nahrání souboru a namapování sloupců Arxena vaše data ověří:
 
-1. **Proběhne validace** — Twenty zkontroluje každý řádek na chyby
+1. **Proběhne validace** — Arxena zkontroluje každý řádek na chyby
 2. **Chyby jsou zvýrazněny** — problematické řádky se zobrazí **žlutě**
 3. **Můžete opravovat přímo na místě** — upravujte buňky přímo v rozhraní importu
 4. **Nebo odstraňte řádky** — problematické záznamy úplně přeskočte
@@ -26,7 +26,7 @@ Klikněte na zvýrazněný řádek a zobrazí se konkrétní chybová zpráva. B
 
 | Chybová zpráva                                                        | Co to znamená                                                            |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Duplicitní hodnoty zvýrazněné žlutě                                   | Hodnota již existuje v Twenty nebo se ve vašem souboru vyskytuje dvakrát |
+| Duplicitní hodnoty zvýrazněné žlutě                                   | Hodnota již existuje v Arxena nebo se ve vašem souboru vyskytuje dvakrát |
 | `{field} is not a valid {type}` (přejeďte myší na žlutou buňku)       | Data neodpovídají očekávanému formátu                                    |
 | Povinné pole je zvýrazněno                                            | Povinné pole je prázdné                                                  |
 | `Can't connect to {object}. No unique record found...` (import selže) | Odkazovaný záznam neexistuje                                             |
@@ -48,7 +48,7 @@ Postupujte podle níže uvedených pokynů pro jednotlivé typy chyb.
 
 Jedinečné pole (e-mail, doména):
 
-* Již existuje v Twenty
+* Již existuje v Arxena
 * Se ve vašem souboru vyskytuje dvakrát
 
 ### Jak to opravit
@@ -64,11 +64,11 @@ Jedinečné pole (e-mail, doména):
 1. Klikněte na X vedle řádku
 2. Řádek bude během importu přeskočen
 
-**Možnost 3: Nechte Twenty aktualizovat existující záznam**
+**Možnost 3: Nechte Arxena aktualizovat existující záznam**
 
 1. Ujistěte se, že váš soubor obsahuje jedinečný identifikátor (`email`, `domain` nebo `id`)
 2. Namapujte pole jedinečného identifikátoru
-3. Twenty aktualizuje existující záznam místo vytvoření duplicity
+3. Arxena aktualizuje existující záznam místo vytvoření duplicity
 
 <Note>
 **Můžete aktualizovat i jedinečná pole.**
@@ -76,7 +76,7 @@ Jedinečné pole (e-mail, doména):
 * Pokud ponecháte `id`, ale změníte `email` → e-mail bude aktualizován
 * Pokud ponecháte `email`, ale změníte `id` → ID bude aktualizováno
 
-Pokud se shoduje alespoň jeden jedinečný identifikátor, Twenty záznam aktualizuje.
+Pokud se shoduje alespoň jeden jedinečný identifikátor, Arxena záznam aktualizuje.
 </Note>
 
 ### Jak této chybě předejít
@@ -85,7 +85,7 @@ Před importem:
 
 1. Seřaďte svou tabulku podle jedinečného pole
 2. Odstraňte duplicitní řádky
-3. Zkontrolujte, zda záznamy v Twenty již existují
+3. Zkontrolujte, zda záznamy v Arxena již existují
 
 <Warning>
 **Záznamy „soft-deleted“ se započítávají do jedinečnosti.**
@@ -256,13 +256,13 @@ Tato chyba se objeví **po zahájení importu** — import selže se zprávou ja
 Can't connect to company. No unique record found with condition: id = 7776ee49-f608-4a77-8cc8-6fe96ae1e43f
 ```
 
-To znamená, že v Twenty neexistuje společnost s tímto konkrétním identifikátorem.
+To znamená, že v Arxena neexistuje společnost s tímto konkrétním identifikátorem.
 
 <Note>Na rozdíl od jiných chyb tato není zachycena během kroku kontroly dat. Import se spustí a poté selže, jakmile narazí na chybějící relaci.</Note>
 
 ### Co to znamená
 
-Pokoušíte se propojit se záznamem, který v Twenty neexistuje.
+Pokoušíte se propojit se záznamem, který v Arxena neexistuje.
 
 ### Jak to opravit
 
@@ -339,7 +339,7 @@ Viz: [Jak importovat data přes API](/l/cs/user-guide/data-migration/how-tos/imp
 
 ### Co to znamená
 
-Sloupec ve vašem souboru nelze namapovat, protože pole v Twenty neexistuje.
+Sloupec ve vašem souboru nelze namapovat, protože pole v Arxena neexistuje.
 
 ### Jak to opravit
 
@@ -361,15 +361,15 @@ Pokoušíte se přiřadit záznam uživateli (Owner, Assignee), ale relace se ne
 
 ### Časté příčiny
 
-1. **Uživatel nepřijal pozvánku** — uživatel zatím v Twenty neexistuje
-2. **Používáte uživatelské ID ze starého systému** — Twenty nedokáže spárovat ID z jiného systému
-3. **Nesprávný formát e-mailu** — e-mail neodpovídá účtu uživatele v Twenty
+1. **Uživatel nepřijal pozvánku** — uživatel zatím v Arxena neexistuje
+2. **Používáte uživatelské ID ze starého systému** — Arxena nedokáže spárovat ID z jiného systému
+3. **Nesprávný formát e-mailu** — e-mail neodpovídá účtu uživatele v Arxena
 
 ### Jak to opravit
 
-1. Ujistěte se, že všichni uživatelé **přijali svou pozvánku** do vašeho pracovního prostoru Twenty
+1. Ujistěte se, že všichni uživatelé **přijali svou pozvánku** do vašeho pracovního prostoru Arxena
 2. Použijte **e-mailovou adresu** uživatele (ne jeho jméno nebo ID ze starého systému)
-3. Použijte stejný e-mail, jaký použili k připojení do Twenty
+3. Použijte stejný e-mail, jaký použili k připojení do Arxena
 
 <Warning>
 **Uživatelé musí před importem přijmout pozvánky.**
@@ -407,7 +407,7 @@ Vyhněte se chybám tím, že před importem zkontrolujete následující:
 
 <Check>Nadřazené záznamy importovány před podřízenými záznamy</Check>
 <Check>Sloupce relací odkazují na existující záznamy</Check>
-<Check>Formát domény přesně odpovídá formátu Twenty</Check>
+<Check>Formát domény přesně odpovídá formátu Arxena</Check>
 
 ### Datový model
 
@@ -420,7 +420,7 @@ Vyhněte se chybám tím, že před importem zkontrolujete následující:
 
 Pokud jste vyzkoušeli výše uvedená řešení:
 
-1. **Stáhněte si ukázkový soubor** — uvidíte přesný formát, který Twenty očekává
+1. **Stáhněte si ukázkový soubor** — uvidíte přesný formát, který Arxena očekává
 2. **Exportujte existující záznamy** — porovnejte svůj soubor s funkčními daty
 3. **Otestujte s malou dávkou** — nejprve zkuste 5–10 řádků
 4. **Zkontrolujte referenční články:**

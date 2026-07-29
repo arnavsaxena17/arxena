@@ -159,7 +159,7 @@ export default defineRole({
 Notizen:
 
 * Geben Sie jedem Prädikat und jeder Gruppe einen stabilen `universalIdentifier` (beliebige uuid) – er identifiziert die Entität über Upgrades hinweg eindeutig, und Prädikate verweisen über ihn auf Gruppen.
-* Prädikate können auf Objekte und Felder verweisen, die Ihrer App gehören, oder auf Standardobjekte von Twenty.
+* Prädikate können auf Objekte und Felder verweisen, die Ihrer App gehören, oder auf Standardobjekte von Arxena.
 * Zeilenbasierte Sicherheit wird für Workspaces in Tarifen durchgesetzt, die sie enthalten; die Prädikate werden auch in anderen Tarifen weiterhin synchronisiert, sie werden dort einfach nicht durchgesetzt.
 
 ## Die Standard-Funktionsrolle
@@ -175,7 +175,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

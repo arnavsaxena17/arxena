@@ -9,7 +9,7 @@ Respond to inbound emails in seconds — not hours. This workflow uses an AI Age
 
 Every email carries a hidden `Message-ID` header — a unique fingerprint assigned by the sender's mail server. When you reply to an email, your mail client sets an `In-Reply-To` header referencing that fingerprint. That's how Gmail, Outlook, and every other client groups messages into threads.
 
-In Twenty, that fingerprint is stored as `headerMessageId` on the Message object. Your workflow grabs it and passes it into the Send Email action's In-Reply-To field.
+In Arxena, that fingerprint is stored as `headerMessageId` on the Message object. Your workflow grabs it and passes it into the Send Email action's In-Reply-To field.
 
 ## Building the workflow
 
@@ -21,7 +21,7 @@ Head to **Settings -> Workflows** and click **+ New Workflow**.
 
 Pick **When a Record is Created** and choose **Messages**.
 
-Every time an email lands in Twenty, this fires.
+Every time an email lands in Arxena, this fires.
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}}/>
 
@@ -116,6 +116,6 @@ Activate when you're happy with it.
 
 ## Ideas to build on
 
-- **Only reply to VIPs** — add a branch that checks the sender's domain or whether they exist as a Contact in Twenty
+- **Only reply to VIPs** — add a branch that checks the sender's domain or whether they exist as a Contact in Arxena
 - **Route by intent** — use separate AI Agent prompts to handle sales inquiries differently from support requests
 - **Enrich before replying** — add a Search Records step to pull the sender's company or deal history into the AI prompt for more personalized replies

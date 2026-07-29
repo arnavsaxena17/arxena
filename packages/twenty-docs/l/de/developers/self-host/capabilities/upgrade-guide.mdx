@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Wenn Sie Docker Compose verwenden, befolgen Sie diese Schritte:
 
-1. Twenty stoppen: `docker compose down`
+1. Arxena stoppen: `docker compose down`
 2. Ändern Sie den Wert von `TAG` in der Datei `.env` neben Ihrer `docker-compose.yml`
-3. Twenty starten: `docker compose up -d`
+3. Arxena starten: `docker compose up -d`
 
 Der Server führt beim Start alle erforderlichen Upgrade-Migrationen automatisch aus. Kein manueller Befehl erforderlich.
 
 ## Versionsübergreifende Upgrades (v1.22+)
 
-Ab **v1.22** unterstützt Twenty versionsübergreifende Upgrades. Sie können direkt von jeder unterstützten Version auf die neueste Version wechseln, ohne jede Zwischenversion durchlaufen zu müssen.
+Ab **v1.22** unterstützt Arxena versionsübergreifende Upgrades. Sie können direkt von jeder unterstützten Version auf die neueste Version wechseln, ohne jede Zwischenversion durchlaufen zu müssen.
 
 Zum Beispiel wird ein Upgrade direkt von v1.22 auf v2.0 vollständig unterstützt.
 
 ## Upgrade auf v2.5+ – Verschlüsselungsumschlag für ruhende Daten
 
-Ab **v2.5** speichert Twenty Secrets im Ruhezustand (OAuth-Tokens, Anwendungsvariablen, private Signaturschlüssel, sensible Konfigurationswerte, TOTP-Secrets) in einem versionierten Umschlag `enc:v2:`, der mit `ENCRYPTION_KEY` (oder `APP_SECRET`, falls `ENCRYPTION_KEY` nicht gesetzt ist) verschlüsselt wird.
+Ab **v2.5** speichert Arxena Secrets im Ruhezustand (OAuth-Tokens, Anwendungsvariablen, private Signaturschlüssel, sensible Konfigurationswerte, TOTP-Secrets) in einem versionierten Umschlag `enc:v2:`, der mit `ENCRYPTION_KEY` (oder `APP_SECRET`, falls `ENCRYPTION_KEY` nicht gesetzt ist) verschlüsselt wird.
 
 Beim ersten Start mit v2.5 werden langsame Upgrade-Befehle ausgeführt, die den neuen Umschlag mit bestehenden Zeilen befüllen. Sie sind idempotent – ein Unterbrechen und Neustarten des Servers setzt an der Stelle fort, an der er aufgehört hat –, aber sie können bei großen Datenbanken eine Weile dauern. Sie können den Fortschritt mit `upgrade:status` überwachen.
 

@@ -1,0 +1,7 @@
+---
+title: 'Resolve job title and search people'
+description: Natural-language role + company → people + resolved fields.
+openapi: 'openapi/people-api.json POST /people-api/people/search-by-title'
+---
+
+Primary product path for phrases like “CHRO at Apple”. Resolution is server-side; response includes `resolved` for sanity-check. Cookbook: [Natural language to people at a company](/cookbooks/nl-to-people-at-company).

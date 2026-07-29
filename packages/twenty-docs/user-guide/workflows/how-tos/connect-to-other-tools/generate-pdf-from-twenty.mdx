@@ -1,15 +1,15 @@
 ---
-title: Generate a PDF from Twenty
+title: Generate a PDF from Arxena
 description: Create a workflow to generate and attach a PDF (such as a quote) to a record.
 ---
 
-Automatically generate or fetch a PDF and attach it to a record in Twenty. This is commonly used to create quotes, invoices, or reports that are linked to Companies, Opportunities, or other objects.
+Automatically generate or fetch a PDF and attach it to a record in Arxena. This is commonly used to create quotes, invoices, or reports that are linked to Companies, Opportunities, or other objects.
 
 ## Overview
 
 This workflow uses a **Manual Trigger** so users can generate a PDF on demand for any selected record. A **Logic Function** handles:
 1. Downloading the PDF from a URL (from a PDF generation service)
-2. Uploading the file to Twenty
+2. Uploading the file to Arxena
 3. Creating an Attachment linked to the record
 
 ## Prerequisites
@@ -54,12 +54,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -258,5 +258,5 @@ Each service provides an API that returns a PDF URL, which you can then pass to 
 
 - [Workflow Triggers](/user-guide/workflows/capabilities/workflow-triggers)
 - [Logic Functions](/user-guide/workflows/capabilities/workflow-actions#code)
-- [Generate a Quote or Invoice from Twenty](/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+- [Generate a Quote or Invoice from Arxena](/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
 

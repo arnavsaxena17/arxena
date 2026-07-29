@@ -31,9 +31,11 @@ import { Mixpanel } from '~/mixpanel';
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
 import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
+import type { OrgChartTitleQueryResolved } from '../components/OrgChartTitleQueryBar';
 import { useProjectOrgChartData } from '../hooks/useProjectOrgChartData';
 import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
 import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
+import { mapStdGradeToOrgChartGradeVisibility } from '../utils/mapStdGradeToOrgChartGradeVisibility';
 import { extractCompanyDomainFromWebsite, extractOrgChartSavedCompanyMetadata, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
 import {
     StyledOrgChartConfirmDd,
@@ -152,6 +154,10 @@ export const ArxOrgChartContainer = ({
     DEFAULT_ORG_CHART_GRADE_VISIBILITY,
   );
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
+  const [titleQuery, setTitleQuery] = useState('');
+  const [titleQueryResolved, setTitleQueryResolved] =
+    useState<OrgChartTitleQueryResolved | null>(null);
+  const [isTitleQueryResolving, setIsTitleQueryResolving] = useState(false);
   const [isEnrichedLeadershipLoading, setIsEnrichedLeadershipLoading] =
     useState(false);
   const [multiSourceSelectedSources, setMultiSourceSelectedSources] = useState<
@@ -838,19 +844,32 @@ export const ArxOrgChartContainer = ({
     });
   }, [orgData, companyId]);
 
+  useEffect(() => {
+    setTitleQuery('');
+    setTitleQueryResolved(null);
+    setIsTitleQueryResolving(false);
+  }, [companyId]);
+
   const nodeDataArray = useOrgChartNodeDataArray({
     orgData: orgData as unknown as Record<string, unknown> | null,
     enrichedNodes: actions.enrichedNodes as any,
     baseUrl,
   });
 
-  const displayedNodeDataArray = useMemo(
-    () =>
-      filterOrgChartNodeDataArray(nodeDataArray, {
-        gradeVisibility,
-      }),
-    [nodeDataArray, gradeVisibility],
-  );
+  const displayedNodeDataArray = useMemo(() => {
+    const titleFunctionRoot =
+      titleQueryResolved?.stdFunctionRoot?.trim() ||
+      titleQueryResolved?.stdFunction?.trim() ||
+      undefined;
+    const titleGradeVisibility = titleQueryResolved
+      ? mapStdGradeToOrgChartGradeVisibility(titleQueryResolved.stdGrade)
+      : gradeVisibility;
+
+    return filterOrgChartNodeDataArray(nodeDataArray, {
+      functionRoot: titleFunctionRoot,
+      gradeVisibility: titleGradeVisibility,
+    });
+  }, [nodeDataArray, gradeVisibility, titleQueryResolved]);
 
   const handleGradeVisibilityChange = useCallback(
     (tier: OrgChartGradeTier, checked: boolean) => {
@@ -940,6 +959,92 @@ export const ArxOrgChartContainer = ({
     setSearchTerm('');
     setSearchResultCount(null);
   };
+
+  const handleClearTitleQueryResolved = useCallback(() => {
+    setTitleQueryResolved(null);
+    diagramHandleRef.current?.clearSearch();
+    setSearchResultCount(null);
+  }, []);
+
+  const handleResolveTitleQuery = useCallback(async () => {
+    const trimmed = titleQuery.trim();
+    if (!trimmed) {
+      return;
+    }
+    if (!baseUrl || !accessToken) {
+      enqueueSnackBar(t`Sign in to resolve job titles on the org chart.`, {
+        variant: SnackBarVariant.Error,
+      });
+      return;
+    }
+
+    setIsTitleQueryResolving(true);
+    try {
+      const params = new URLSearchParams({ job_title: trimmed });
+      const companyNameForResolve = effectiveCompanyName?.trim();
+      if (companyNameForResolve) {
+        params.set('company_name', companyNameForResolve);
+      }
+
+      const response = await fetch(
+        `${baseUrl}/people-api/titles/expand?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Title resolve failed (${response.status})`);
+      }
+
+      const payload = (await response.json()) as {
+        jobTitle?: string;
+        normalizedTitle?: string;
+        stdFunction?: string;
+        stdFunctionRoot?: string;
+        stdGrade?: string;
+        confidence?: number;
+      };
+
+      const resolved: OrgChartTitleQueryResolved = {
+        jobTitle: payload.jobTitle ?? trimmed,
+        normalizedTitle: payload.normalizedTitle,
+        stdFunction: payload.stdFunction,
+        stdFunctionRoot: payload.stdFunctionRoot,
+        stdGrade: payload.stdGrade,
+        confidence: payload.confidence,
+      };
+
+      setTitleQueryResolved(resolved);
+
+      const highlightTerm =
+        resolved.normalizedTitle?.trim() ||
+        resolved.stdFunction?.trim() ||
+        trimmed;
+      setSearchTerm(highlightTerm);
+      const handle = diagramHandleRef.current;
+      if (handle && highlightTerm) {
+        const count = handle.search(highlightTerm);
+        setSearchResultCount(count);
+      }
+    } catch (error) {
+      enqueueSnackBar(
+        error instanceof Error
+          ? error.message
+          : t`Could not resolve that job title.`,
+        { variant: SnackBarVariant.Error },
+      );
+    } finally {
+      setIsTitleQueryResolving(false);
+    }
+  }, [
+    titleQuery,
+    baseUrl,
+    accessToken,
+    effectiveCompanyName,
+    enqueueSnackBar,
+    t,
+  ]);
 
   const debouncedSetCountry = useDebouncedCallback(
     (country: string | undefined) => setSelectedCountry(country),
@@ -1731,6 +1836,14 @@ export const ArxOrgChartContainer = ({
       onChange: setBusinessDivisionQuery,
       onSubmit: () => void handleMapBusinessDivision(),
       isSubmitting: actions.isContextLoading,
+    },
+    titleQueryProps: {
+      value: titleQuery,
+      onChange: setTitleQuery,
+      onSubmit: () => void handleResolveTitleQuery(),
+      onClearResolved: handleClearTitleQueryResolved,
+      isSubmitting: isTitleQueryResolving,
+      resolved: titleQueryResolved,
     },
     toolbarTrailing: null,
     onClearCompanyCache: () =>

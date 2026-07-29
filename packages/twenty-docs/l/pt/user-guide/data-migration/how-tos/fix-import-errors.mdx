@@ -9,9 +9,9 @@ A importação não está funcionando? Este guia ajuda-o a identificar e corrigi
 
 ## Como funciona a validação da importação
 
-Depois de carregar o seu ficheiro e mapear as colunas, o Twenty valida os seus dados:
+Depois de carregar o seu ficheiro e mapear as colunas, o Arxena valida os seus dados:
 
-1. **A validação é executada** — o Twenty verifica cada linha quanto a erros
+1. **A validação é executada** — o Arxena verifica cada linha quanto a erros
 2. **Os erros são realçados** — as linhas problemáticas aparecem a **amarelo**
 3. **Pode corrigir no local** — edite as células diretamente na interface de importação
 4. **Ou remova linhas** — ignore completamente os registos problemáticos
@@ -26,7 +26,7 @@ Clique numa linha realçada para ver a mensagem de erro específica. Tipos de er
 
 | Mensagem de Erro                                                            | O que significa                                                   |
 | --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Valores duplicados realçados a amarelo                                      | O valor já existe no Twenty ou aparece duas vezes no seu ficheiro |
+| Valores duplicados realçados a amarelo                                      | O valor já existe no Arxena ou aparece duas vezes no seu ficheiro |
 | `{field} is not a valid {type}` (passe o cursor sobre a célula amarela)     | Os dados não correspondem ao formato esperado                     |
 | Campo obrigatório realçado                                                  | O campo obrigatório está vazio                                    |
 | `Can't connect to {object}. No unique record found...` (a importação falha) | O registo referenciado não existe                                 |
@@ -48,7 +48,7 @@ As linhas com valores duplicados são realçadas a amarelo na interface de impor
 
 Um campo único (email, domínio) pode:
 
-* Já existe no Twenty
+* Já existe no Arxena
 * Aparece duas vezes no seu ficheiro
 
 ### Como corrigir
@@ -64,11 +64,11 @@ Um campo único (email, domínio) pode:
 1. Clique no X ao lado da linha
 2. A linha será ignorada durante a importação
 
-**Opção 3: Deixe o Twenty atualizar o registo existente**
+**Opção 3: Deixe o Arxena atualizar o registo existente**
 
 1. Garanta que o seu ficheiro inclui um identificador único (`email`, `domain` ou `id`)
 2. Mapeie o campo do identificador único
-3. O Twenty atualizará o registo existente em vez de criar um duplicado
+3. O Arxena atualizará o registo existente em vez de criar um duplicado
 
 <Note>
 **Também pode atualizar campos únicos.**
@@ -76,7 +76,7 @@ Um campo único (email, domínio) pode:
 * Se mantiver o `id` mas alterar o `email` → o email será atualizado
 * Se mantiver o `email` mas alterar o `id` → o id será atualizado
 
-Desde que um identificador único corresponda, o Twenty atualiza o registo.
+Desde que um identificador único corresponda, o Arxena atualiza o registo.
 </Note>
 
 ### Como prevenir este erro
@@ -85,7 +85,7 @@ Antes de importar:
 
 1. Ordene a sua folha de cálculo pelo campo único
 2. Remova linhas duplicadas
-3. Verifique se os registos já existem no Twenty
+3. Verifique se os registos já existem no Arxena
 
 <Warning>
 **Registos eliminados logicamente contam para a unicidade.**
@@ -256,13 +256,13 @@ Este erro aparece após o início da importação — a importação falha com u
 Can't connect to company. No unique record found with condition: id = 7776ee49-f608-4a77-8cc8-6fe96ae1e43f
 ```
 
-Isto significa que não existe nenhuma Empresa no Twenty com esse identificador específico.
+Isto significa que não existe nenhuma Empresa no Arxena com esse identificador específico.
 
 <Note>Ao contrário de outros erros, este não é detetado durante a etapa de revisão dos dados. A importação começará e depois falhará quando encontrar a relação em falta.</Note>
 
 ### O que significa
 
-Está a tentar ligar a um registo que não existe no Twenty.
+Está a tentar ligar a um registo que não existe no Arxena.
 
 ### Como corrigir
 
@@ -339,7 +339,7 @@ Consulte: [Como Importar Dados via API](/l/pt/user-guide/data-migration/how-tos/
 
 ### O que significa
 
-Uma coluna no seu ficheiro não pode ser mapeada porque o campo não existe no Twenty.
+Uma coluna no seu ficheiro não pode ser mapeada porque o campo não existe no Arxena.
 
 ### Como corrigir
 
@@ -361,15 +361,15 @@ Está a tentar atribuir um registo a um utilizador (Proprietário, Responsável)
 
 ### Causas comuns
 
-1. **O utilizador não aceitou o convite** — o utilizador ainda não existe no Twenty
-2. **A usar o ID de utilizador do sistema antigo** — o Twenty não consegue corresponder IDs de outro sistema
-3. **Formato de email incorreto** — o email não corresponde à conta do utilizador no Twenty
+1. **O utilizador não aceitou o convite** — o utilizador ainda não existe no Arxena
+2. **A usar o ID de utilizador do sistema antigo** — o Arxena não consegue corresponder IDs de outro sistema
+3. **Formato de email incorreto** — o email não corresponde à conta do utilizador no Arxena
 
 ### Como corrigir
 
-1. Garanta que todos os utilizadores aceitaram o convite para o seu espaço de trabalho no Twenty
+1. Garanta que todos os utilizadores aceitaram o convite para o seu espaço de trabalho no Arxena
 2. Use o **endereço de email** do utilizador (não o nome nem o ID do sistema antigo)
-3. Use o mesmo email que utilizaram para aderir ao Twenty
+3. Use o mesmo email que utilizaram para aderir ao Arxena
 
 <Warning>
 **Os utilizadores devem aceitar os convites antes de importar.**
@@ -407,7 +407,7 @@ Evite erros verificando isto antes de importar:
 
 <Check>Registos pai importados antes dos registos filho</Check>
 <Check>Colunas de relação referenciam registos existentes</Check>
-<Check>O formato de domínio corresponde exatamente ao formato do Twenty</Check>
+<Check>O formato de domínio corresponde exatamente ao formato do Arxena</Check>
 
 ### Modelo de dados
 
@@ -420,7 +420,7 @@ Evite erros verificando isto antes de importar:
 
 Se já tentou as soluções acima:
 
-1. **Transfira o ficheiro de exemplo** — veja o formato exato que o Twenty espera
+1. **Transfira o ficheiro de exemplo** — veja o formato exato que o Arxena espera
 2. **Exporte os registos existentes** — compare o seu ficheiro com dados funcionais
 3. **Teste com um pequeno lote** — experimente primeiro 5–10 linhas
 4. **Consulte os artigos de referência:**

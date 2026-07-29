@@ -19,9 +19,9 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Docker Compose를 사용하는 경우 다음 단계를 따르십시오:
 
-1. Twenty 중지: `docker compose down`
+1. Arxena 중지: `docker compose down`
 2. `docker-compose.yml` 옆에 있는 `.env` 파일에서 `TAG` 값을 변경하십시오
-3. Twenty 시작: `docker compose up -d`
+3. Arxena 시작: `docker compose up -d`
 
 서버는 시작 시 필요한 모든 업그레이드 마이그레이션을 자동으로 실행합니다. 수동 명령은 필요하지 않습니다.
 

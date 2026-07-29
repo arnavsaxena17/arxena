@@ -19,7 +19,7 @@ Die `yarn twenty` CLI ist Ihre Schnittstelle für alles, was mit der App zu tun 
 | `dev:translations-extract`                      | Übersetzbare Zeichenketten in `locales/`-Kataloge extrahieren                            | [Übersetzungen](/l/de/developers/extend/apps/translations/overview)                                                       |
 | `dev:catalog-sync`                              | Eine Synchronisierung des Marktplatzkatalogs auslösen                                    | [Veröffentlichen](/l/de/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)                     |
 | `app:publish` / `app:install` / `app:uninstall` | Release-Lebenszyklus                                                                     | [Veröffentlichen](/l/de/developers/extend/apps/operations/publishing) und diese Seite                                     |
-| `docker:*`                                      | Den lokalen Twenty-Server-Container verwalten                                            | [Lokaler Server](/l/de/developers/extend/apps/getting-started/local-server)                                               |
+| `docker:*`                                      | Den lokalen Arxena-Server-Container verwalten                                            | [Lokaler Server](/l/de/developers/extend/apps/getting-started/local-server)                                               |
 | `remote:*`                                      | Serververbindungen verwalten                                                             | diese Seite                                                                                                          |
 
 Jeder Befehl akzeptiert `-r, --remote \<name>`, um ein bestimmtes Remote statt des Standard-Remotes anzusteuern.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-Dies unterscheidet sich von `yarn twenty docker:logs`, das die Docker-Container-Logs anzeigt. `yarn twenty dev:function:logs` zeigt die Funktionsausführungsprotokolle Ihrer App vom Twenty-Server.
+Dies unterscheidet sich von `yarn twenty docker:logs`, das die Docker-Container-Logs anzeigt. `yarn twenty dev:function:logs` zeigt die Funktionsausführungsprotokolle Ihrer App vom Arxena-Server.
 </Note>
 
 ## Generieren des typisierten Clients (`yarn twenty dev:generate-client`)
 
-Generieren Sie den typisierten API-Client (`twenty-client-sdk`) erneut aus dem Schema des aktiven Remotes, ohne eine App zu erstellen oder zu synchronisieren. Verwenden Sie ihn, um in jedem Projekt einen typisierten Client zu erhalten – zum Beispiel für einen Backend-Dienst in einem separaten Repository –, der mit Ihrer Twenty-Instanz kommuniziert:
+Generieren Sie den typisierten API-Client (`twenty-client-sdk`) erneut aus dem Schema des aktiven Remotes, ohne eine App zu erstellen oder zu synchronisieren. Verwenden Sie ihn, um in jedem Projekt einen typisierten Client zu erhalten – zum Beispiel für einen Backend-Dienst in einem separaten Repository –, der mit Ihrer Arxena-Instanz kommuniziert:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## Remotes verwalten
 
-Ein **Remote** ist ein Twenty-Server, mit dem sich Ihre App verbindet. Während der Einrichtung erstellt das Scaffolding-Tool automatisch eines für Sie. Sie können jederzeit weitere Remotes hinzufügen oder zwischen ihnen wechseln.
+Ein **Remote** ist ein Arxena-Server, mit dem sich Ihre App verbindet. Während der Einrichtung erstellt das Scaffolding-Tool automatisch eines für Sie. Sie können jederzeit weitere Remotes hinzufügen oder zwischen ihnen wechseln.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

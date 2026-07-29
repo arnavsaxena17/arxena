@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Si vous utilisez Docker Compose, suivez ces étapes :
 
-1. Arrêtez Twenty : `docker compose down`
+1. Arrêtez Arxena : `docker compose down`
 2. Modifiez la valeur de `TAG` dans le fichier `.env` situé à côté de votre `docker-compose.yml`
-3. Démarrez Twenty : `docker compose up -d`
+3. Démarrez Arxena : `docker compose up -d`
 
 Le serveur exécute automatiquement au démarrage toutes les migrations de mise à niveau requises. Aucune commande manuelle n'est nécessaire.
 
 ## Mises à niveau entre versions (v1.22+)
 
-À partir de **v1.22**, Twenty prend en charge les mises à niveau entre versions. Vous pouvez passer directement de n'importe quelle version prise en charge à la dernière version sans devoir passer par chaque version intermédiaire.
+À partir de **v1.22**, Arxena prend en charge les mises à niveau entre versions. Vous pouvez passer directement de n'importe quelle version prise en charge à la dernière version sans devoir passer par chaque version intermédiaire.
 
 Par exemple, la mise à niveau de la v1.22 directement vers la v2.0 est entièrement prise en charge.
 
 ## Mise à niveau vers la v2.5+ — enveloppe de chiffrement au repos
 
-À partir de la **v2.5**, Twenty stocke les secrets au repos (jetons OAuth, variables d’application, clés privées de signature, valeurs de configuration sensibles, secrets TOTP) à l’intérieur d’une enveloppe versionnée `enc:v2:` chiffrée avec `ENCRYPTION_KEY` (ou `APP_SECRET` si `ENCRYPTION_KEY` n’est pas défini).
+À partir de la **v2.5**, Arxena stocke les secrets au repos (jetons OAuth, variables d’application, clés privées de signature, valeurs de configuration sensibles, secrets TOTP) à l’intérieur d’une enveloppe versionnée `enc:v2:` chiffrée avec `ENCRYPTION_KEY` (ou `APP_SECRET` si `ENCRYPTION_KEY` n’est pas défini).
 
 Le premier démarrage sur la v2.5 exécute des commandes de mise à niveau lentes qui **rétro-remplissent** les lignes existantes dans la nouvelle enveloppe. Elles sont idempotentes — si vous interrompez puis redémarrez le serveur, le processus reprend là où il s’était arrêté — mais elles peuvent prendre du temps sur les grandes bases de données. Vous pouvez surveiller la progression avec `upgrade:status`.
 

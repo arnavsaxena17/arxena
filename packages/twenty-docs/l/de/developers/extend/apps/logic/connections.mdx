@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ Hauptpunkte:
 * `name` ist die eindeutige Bezeichner-Zeichenfolge, die in `listConnections({ providerName })` verwendet wird (kebab-case, muss `^[a-z][a-z0-9-]*$` entsprechen).
 * `displayName` wird im Einstellungs-Tab der jeweiligen App und in der KI-Toolliste angezeigt.
 * `clientIdVariable` / `clientSecretVariable` sind **Namen**, keine Werte — sie müssen den in `defineApplication.serverVariables` deklarierten Schlüsseln entsprechen. Die tatsächlichen `client_id` und `client_secret` werden vom Serveradministrator über die App-Registrierungsoberfläche eingegeben und niemals in Ihr Repository eingecheckt.
-* Verwenden Sie `serverVariables` (nicht `applicationVariables`) — OAuth-Anmeldedaten gelten serverweit und es gibt eine OAuth-App pro Twenty-Server.
+* Verwenden Sie `serverVariables` (nicht `applicationVariables`) — OAuth-Anmeldedaten gelten serverweit und es gibt eine OAuth-App pro Arxena-Server.
 * Solange beide `serverVariables` nicht ausgefüllt sind, zeigt der Einstellungs-Tab pro App den Hinweis "Benötigt Server-Admin" an und der Button "Verbindung hinzufügen" ist deaktiviert.
 * `type: 'oauth'` ist derzeit der einzige unterstützte Wert. Der Diskriminator ist vorwärtskompatibel: zukünftige Typen (`'pat'`, `'api-key'`, ...) werden neue Unterkonfigurationsblöcke neben `oauth` hinzufügen.
 
@@ -221,7 +221,7 @@ Für jeden Verbindungsanbieter muss der Serveradministrator zunächst eine OAuth
 1. Gehen Sie zu den Entwickler-Einstellungen des Anbieters (z. B. https://linear.app/settings/api/applications/new).
 2. Setzen Sie die **Redirect-URI** auf `\<SERVER_URL>/auth/apps/callback`.
 3. Kopieren Sie die generierte **Client ID** und das **Client Secret**.
-4. Öffnen Sie die installierte App in Twenty als Serveradministrator → setzen Sie die Werte in den entsprechenden `serverVariables`.
+4. Öffnen Sie die installierte App in Arxena als Serveradministrator → setzen Sie die Werte in den entsprechenden `serverVariables`.
 5. Mitglieder des Arbeitsbereichs können dann Verbindungen im **Verbindungen**-Abschnitt der jeweiligen App hinzufügen.
 
 </Accordion>

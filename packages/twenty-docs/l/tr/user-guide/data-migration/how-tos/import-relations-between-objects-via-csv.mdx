@@ -21,7 +21,7 @@ Bir bire-çoğa ilişkide:
 
 "Bir" taraf **ana** taraftır. "Çok" taraf **alt** taraftır.
 
-### Twenty'de Yaygın İlişkiler
+### Arxena'de Yaygın İlişkiler
 
 | İlişki                | "Bir" Taraf (Ana) | "Çok" Taraf (Alt) |
 | --------------------- | ----------------- | ----------------- |
@@ -41,7 +41,7 @@ Bir bire-çoğa ilişkide:
 
 ## Adım 2: Önce Ana Kayıtları İçe Aktarın
 
-Ana ("bir" taraf) kaydı, ona referans verebilmeden önce Twenty'de mevcut olmalıdır.
+Ana ("bir" taraf) kaydı, ona referans verebilmeden önce Arxena'de mevcut olmalıdır.
 
 **İçe aktarma sırası:**
 
@@ -73,7 +73,7 @@ Ana kayda **benzersiz bir tanımlayıcı** kullanarak referans vermeniz gerekir.
 
 `id` gerekiyorsa:
 
-1. Ana kayıtları Twenty'den dışa aktarın
+1. Ana kayıtları Arxena'den dışa aktarın
 2. Dışa aktarma `id` sütununu içerir
 3. Bu kimlikleri alt kayıtlar dosyanızda kullanın
 
@@ -119,7 +119,7 @@ Bob,Johnson,bob@techstart.io,Developer,https://techstart.io
 <Warning>
 **Alan adı biçimi önemlidir!**
 
-`https://domain.com` kullanın (yalnızca `domain.com` değil). Bu, Twenty'nin Şirket alan adlarını saklama biçimiyle eşleşir ve eşleştirme hatalarını önler.
+`https://domain.com` kullanın (yalnızca `domain.com` değil). Bu, Arxena'nin Şirket alan adlarını saklama biçimiyle eşleşir ve eşleştirme hatalarını önler.
 </Warning>
 
 ### Önemli Kurallar
@@ -139,7 +139,7 @@ Bob,Johnson,bob@techstart.io,Developer,https://techstart.io
 5. Kalan eşlemeleri tamamlayın
 6. Hataları gözden geçirin ve onaylayın
 
-Twenty, her alt kaydı otomatik olarak eşleşen ana kayda bağlar.
+Arxena, her alt kaydı otomatik olarak eşleşen ana kayda bağlar.
 
 ## Adım 7: İçe Aktarmayı Doğrulayın
 
@@ -157,8 +157,8 @@ Twenty, her alt kaydı otomatik olarak eşleşen ana kayda bağlar.
 | **Yanlış alan adı biçimi**       | `https://acme.com` yerine `acme.com` kullanmak | `https://` ile tam URL biçimini kullanın                          |
 | **Birden fazla benzersiz alan**  | Hem `companyId` HEM DE `companyDomain` eşlemek | Yalnızca TEK bir benzersiz tanımlayıcıyı eşleyin                  |
 | **İlişki alanı eksik**           | İlişki alanı veri modelinde yok                | İçe aktarmadan önce **Ayarlar → Veri Modeli** içinde oluşturun    |
-| **Mevcut olmayan kayıtlar**      | Ana kayıt Twenty'de mevcut değil               | Önce ana kayıtları içe aktarın veya yazım hatalarını kontrol edin |
-| **Büyük/küçük harf uyumsuzluğu** | Dosyada `Acme.com`, Twenty'de ise `acme.com`   | Bire bir büyük/küçük harf eşleşmesini sağlayın                    |
+| **Mevcut olmayan kayıtlar**      | Ana kayıt Arxena'de mevcut değil               | Önce ana kayıtları içe aktarın veya yazım hatalarını kontrol edin |
+| **Büyük/küçük harf uyumsuzluğu** | Dosyada `Acme.com`, Arxena'de ise `acme.com`   | Bire bir büyük/küçük harf eşleşmesini sağlayın                    |
 
 ## İş Alanı Üyelerine Bağlama
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Ana kaydımın alan adı veya e-postası yoksa ne olur?">
     İki seçeneğiniz var:
-    1. Twenty `id` değerini kullanın (kimlikleri almak için ana kayıtları dışa aktarın)
+    1. Arxena `id` değerini kullanın (kimlikleri almak için ana kayıtları dışa aktarın)
     2. Önceki sisteminizden gelen harici bir kimliği saklamak için veri modelinizde özel bir benzersiz alan oluşturun
   </Accordion>
 

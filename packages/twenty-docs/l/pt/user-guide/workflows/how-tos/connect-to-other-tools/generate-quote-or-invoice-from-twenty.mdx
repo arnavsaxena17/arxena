@@ -1,5 +1,5 @@
 ---
-title: Gerar um orçamento ou fatura no Twenty
+title: Gerar um orçamento ou fatura no Arxena
 description: Crie faturas automaticamente em ferramentas externas quando os negócios forem fechados.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Relacionados
 
-* [Gerar um PDF a partir do Twenty](/l/pt/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — anexar PDFs gerados aos registros
+* [Gerar um PDF a partir do Arxena](/l/pt/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — anexar PDFs gerados aos registros
 * [Gatilhos de Fluxo de Trabalho](/l/pt/user-guide/workflows/capabilities/workflow-triggers)
 * [Ações de Fluxo de Trabalho](/l/pt/user-guide/workflows/capabilities/workflow-actions)
 * [Automações de Closed Won](/l/pt/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

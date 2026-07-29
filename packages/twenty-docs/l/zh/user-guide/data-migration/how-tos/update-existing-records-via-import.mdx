@@ -16,9 +16,9 @@ description: 使用 CSV 导入批量更新记录的完整分步指南。
 
 ## 工作原理
 
-当您导入的文件包含与现有记录匹配的**唯一标识符**时，Twenty 会更新该记录，而不是创建重复项。
+当您导入的文件包含与现有记录匹配的**唯一标识符**时，Arxena 会更新该记录，而不是创建重复项。
 
-| 如果唯一标识符... | Twenty 将...          |
+| 如果唯一标识符... | Arxena 将...          |
 | ---------- | -------------------- |
 | 与现有记录匹配    | **更新**现有记录           |
 | 与任何记录都不匹配  | **创建**新记录            |
@@ -57,7 +57,7 @@ description: 使用 CSV 导入批量更新记录的完整分步指南。
 1. **保留唯一标识符列** — 不要删除 `id`、`email` 或 `domain`
 2. 在您要更改的列中**更新这些值**
 3. **移除不需要更新的列**（可选，但更简洁）
-4. **不要更改唯一标识符的值** — 否则 Twenty 将创建新记录
+4. **不要更改唯一标识符的值** — 否则 Arxena 将创建新记录
 
 ### 示例：更新职位名称
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **不要更改唯一标识符的值。**
 
-如果您将 `john@acme.com` 更改为 `john.smith@acme.com`，Twenty 将创建新记录，而不是更新现有记录。
+如果您将 `john@acme.com` 更改为 `john.smith@acme.com`，Arxena 将创建新记录，而不是更新现有记录。
 </Warning>
 
 ## 步骤 3：导入已更新的文件
@@ -95,7 +95,7 @@ id,email,firstName,lastName,jobTitle
 6. 检查是否存在错误
 7. 点击 **确认**
 
-Twenty 根据唯一标识符匹配记录，并使用新值进行更新。
+Arxena 根据唯一标识符匹配记录，并使用新值进行更新。
 
 ## 选择合适的唯一标识符
 
@@ -113,7 +113,7 @@ Twenty 根据唯一标识符匹配记录，并使用新值进行更新。
 
 1. 在导出和导入中包含该字段
 2. 在导入过程中进行映射
-3. Twenty 将基于该字段进行匹配
+3. Arxena 将基于该字段进行匹配
 
 ## 步骤 4：验证更新结果
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **更改唯一标识符** | 将 `john@acme.com` 更改为 `john.smith@acme.com`      | 创建新记录而不是更新 | 保持唯一标识符不变                    |
 | **多个唯一字段**  | 同时映射 `email` 和 `id`                              | 可能出现匹配冲突   | 仅映射一个唯一标识符                   |
 | **没有唯一标识符** | 文件仅包含 `firstName`、`lastName`、`jobTitle`          | 所有行都会创建新记录 | 务必包含 `email`、`domain` 或 `id` |
-| **大小写不匹配**  | 文件中为 `John@acme.com`，但 Twenty 中为 `john@acme.com` | 创建新记录      | 从 Twenty 导出以获取精确值            |
+| **大小写不匹配**  | 文件中为 `John@acme.com`，但 Arxena 中为 `john@acme.com` | 创建新记录      | 从 Arxena 导出以获取精确值            |
 
 ## 常见问题
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="我如何知道哪些记录会被更新、哪些会被创建？">
-    在导入审核步骤中，Twenty 会根据唯一标识符的匹配情况，显示将被更新与被创建的记录数量。
+    在导入审核步骤中，Arxena 会根据唯一标识符的匹配情况，显示将被更新与被创建的记录数量。
   </Accordion>
 
   <Accordion title="我可以撤销一次批量更新吗？">

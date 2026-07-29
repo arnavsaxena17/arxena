@@ -39,7 +39,7 @@ Each entry has a scope, passed as an option on every call. The default is `WORKS
 - **`WORKSPACE`** (default) — the entry is private to the current workspace install of your app. Each workspace that installs the app gets its own independent set of keys. This is what you want for caches, cursors, and per-workspace state.
 - **`SERVER`** — the entry is shared across **every install** of your app on the server. Server entries behave like **claims**: the stored value is always the workspaceId that claimed the key (omit `value` on `set` to claim the key for the current workspace), and only that workspace can overwrite or delete it. Any install can read the entry.
 
-Server claims exist for cross-workspace routing. A [server-route resolver](/developers/extend/apps/logic/logic-functions#server-route-trigger) runs in the application registration owner workspace, but an inbound webhook usually only carries an external account id — not a Twenty workspaceId. Have each workspace claim its external id at connect time, then resolve it in the route:
+Server claims exist for cross-workspace routing. A [server-route resolver](/developers/extend/apps/logic/logic-functions#server-route-trigger) runs in the application registration owner workspace, but an inbound webhook usually only carries an external account id — not an Arxena workspaceId. Have each workspace claim its external id at connect time, then resolve it in the route:
 
 ```ts
 // In the connected workspace, when the external account is linked:

@@ -164,7 +164,7 @@ Notes:
 
 - Give every predicate and group a stable `universalIdentifier` (any uuid) — it keys the entity
   across upgrades, and predicates reference groups by it.
-- Predicates can reference objects and fields owned by your app or by Twenty's standard objects.
+- Predicates can reference objects and fields owned by your app or by Arxena's standard objects.
 - Row-level security is enforced for workspaces on plans that include it; the predicates still sync
   on other plans, they are simply not enforced.
 
@@ -181,7 +181,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

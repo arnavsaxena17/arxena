@@ -12,9 +12,9 @@ Wenn Sie bei der Einrichtung der Entwicklungsumgebung, dem Upgrade Ihrer Instanz
 #### Erste Installation führt zu `password authentication failed for user "postgres"`
 
 🚨 **WICHTIG: Diese Lösung ist NUR für Neuinstallationen** 🚨
-Wenn Sie bereits eine bestehende Twenty-Instanz mit Produktionsdaten haben, **NICHT** diesen Schritten folgen, da diese permanent Ihre Datenbank löschen!
+Wenn Sie bereits eine bestehende Arxena-Instanz mit Produktionsdaten haben, **NICHT** diesen Schritten folgen, da diese permanent Ihre Datenbank löschen!
 
-Bei der ersten Installation von Twenty möchten Sie möglicherweise das Standard-Datenbankpasswort ändern.
+Bei der ersten Installation von Arxena möchten Sie möglicherweise das Standard-Datenbankpasswort ändern.
 Das während der ersten Installation gesetzte Passwort wird dauerhaft im Datenbank-Volumen gespeichert. Wenn Sie später versuchen, dieses Passwort in Ihrer Konfiguration zu ändern, ohne das alte Volumen zu entfernen, erhalten Sie Authentifizierungsfehler, da die Datenbank noch das ursprüngliche Passwort verwendet.
 
 ⚠️ WARNUNG: Die folgenden Schritte werden ALLE Datenbankdaten PERMANENT LÖSCHEN! ⚠️
@@ -40,7 +40,7 @@ Löschen Sie dann das Repository und klonen Sie es erneut.
 
 #### Fehlendes Metadaten-Schema
 
-Während der Twenty-Installation müssen Sie Ihre Postgres-Datenbank mit den richtigen Schemata, Erweiterungen und Benutzern bereitstellen.
+Während der Arxena-Installation müssen Sie Ihre Postgres-Datenbank mit den richtigen Schemata, Erweiterungen und Benutzern bereitstellen.
 Wenn Sie diese Bereitstellung erfolgreich durchführen, sollten Sie `default` und `metadata` Schemata in Ihrer Datenbank haben.
 Falls nicht, stellen Sie sicher, dass auf Ihrem Rechner nicht mehr als eine Postgres-Instanz läuft.
 
@@ -48,7 +48,7 @@ Falls nicht, stellen Sie sicher, dass auf Ihrem Rechner nicht mehr als eine Post
 
 Sie müssen das Paket `twenty-emails` erstellen, bevor Sie die Initialisierung der Datenbank mit `npx nx run twenty-emails:build` ausführen.
 
-#### Fehlendes Twenty-x Paket
+#### Fehlendes Arxena-x Paket
 
 Stellen Sie sicher, dass Sie `yarn` im Root-Verzeichnis ausführen und dann `npx nx server:dev twenty-server` ausführen. Wenn das immer noch nicht funktioniert, versuchen Sie, das fehlende Paket manuell zu erstellen.
 
@@ -81,7 +81,7 @@ Das Flag --max-old-space-size=8192 setzt ein oberes Limit von 8GB für den Node.
 Referenz: https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Wenn es nicht funktioniert:**
-Untersuchen Sie, welche Prozesse den größten Teil Ihres RAMs beanspruchen. Bei Twenty haben wir festgestellt, dass einige vscode-Erweiterungen viel RAM verwenden, daher deaktivieren wir sie vorübergehend.
+Untersuchen Sie, welche Prozesse den größten Teil Ihres RAMs beanspruchen. Bei Arxena haben wir festgestellt, dass einige vscode-Erweiterungen viel RAM verwenden, daher deaktivieren wir sie vorübergehend.
 
 **Wenn es nicht funktioniert:**
 Ein Neustart Ihres Computers hilft dabei, Geisterprozesse zu bereinigen.
@@ -120,9 +120,9 @@ Das ist zu erwarten, da der Benutzer ohne Anmeldung nicht berechtigt ist, da sei
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Webhook-Test" />
 </div>
 
-* Öffnen Sie Ihre Twenty-App, navigieren Sie zu `/settings`, und aktivieren Sie den **Erweitert**-Schalter unten links auf dem Bildschirm.
+* Öffnen Sie Ihre Arxena-App, navigieren Sie zu `/settings`, und aktivieren Sie den **Erweitert**-Schalter unten links auf dem Bildschirm.
 * Erstellen Sie einen neuen Webhook.
-* Fügen Sie **Ihre einzigartige Webhook-URL** in das Feld **Endpoint-Url** in Twenty ein. Stellen Sie die **Filter** auf `Companies` und `Created` ein.
+* Fügen Sie **Ihre einzigartige Webhook-URL** in das Feld **Endpoint-Url** in Arxena ein. Stellen Sie die **Filter** auf `Companies` und `Created` ein.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Webhook-Einstellungen" />
@@ -192,7 +192,7 @@ Beachten Sie, dass der database:reset-Befehl Ihre Datenbank vollständig löscht
 
 #### Verbindungsprobleme hinter einem Reverse-Proxy
 
-Wenn Sie Twenty hinter einem Reverse-Proxy ausführen und Verbindungsprobleme haben:
+Wenn Sie Arxena hinter einem Reverse-Proxy ausführen und Verbindungsprobleme haben:
 
 1. **SERVER_URL überprüfen:**
 
@@ -200,12 +200,12 @@ Wenn Sie Twenty hinter einem Reverse-Proxy ausführen und Verbindungsprobleme ha
 
 2. **Reverse-Proxy-Einstellungen prüfen:**
 
-   * Stellen Sie sicher, dass Ihr Reverse-Proxy Anfragen korrekt an den Twenty-Server weiterleitet.
+   * Stellen Sie sicher, dass Ihr Reverse-Proxy Anfragen korrekt an den Arxena-Server weiterleitet.
    * Stellen Sie sicher, dass Header wie `X-Forwarded-For` und `X-Forwarded-Proto` korrekt gesetzt sind.
 
 3. **Dienste neu starten:**
 
-   Starten Sie nach Änderungen sowohl den Reverse-Proxy als auch die Twenty-Container neu.
+   Starten Sie nach Änderungen sowohl den Reverse-Proxy als auch die Arxena-Container neu.
 
 #### Fehler beim Hochladen eines Bildes – Berechtigung verweigert
 
@@ -225,4 +225,4 @@ Wenn Sie auf Probleme stoßen, die in diesem Leitfaden nicht behandelt werden:
 
 * Unterstützung aus der Community:
 
-  Wenden Sie sich an die [Twenty Community](https://github.com/twentyhq/twenty/issues) oder [Support-Kanäle](https://discord.gg/cx5n4Jzs57) für Unterstützung.
+  Wenden Sie sich an die [Arxena Community](https://github.com/twentyhq/twenty/issues) oder [Support-Kanäle](https://discord.gg/cx5n4Jzs57) für Unterstützung.

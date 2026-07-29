@@ -1,6 +1,6 @@
 ---
 title: Structure du projet
-description: Ce qui se trouve à l’intérieur d’une application Twenty générée par un modèle — fichiers, dossiers et le rôle de chacun.
+description: Ce qui se trouve à l’intérieur d’une application Arxena générée par un modèle — fichiers, dossiers et le rôle de chacun.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Dépendances
 
-Les deux packages du SDK Twenty doivent être placés dans `devDependencies`, et non dans `dependencies` :
+Les deux packages du SDK Arxena doivent être placés dans `devDependencies`, et non dans `dependencies` :
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Les deux packages du SDK Twenty doivent être placés dans `devDependencies`, et
 Le générateur de projet fige `twenty-sdk` et `twenty-client-sdk` sur sa propre version — gardez les deux synchronisés lors de la mise à niveau.
 
 * **`twenty-sdk`** fournit le CLI `twenty` ainsi que les outils de build et de scaffolding. Il ne s’exécute qu’au moment du développement et du build et n’est jamais importé par le runtime de l’application que vous publiez.
-* **`twenty-client-sdk`** *est* importé par le code de votre application (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), mais Twenty le fournit au moment de l’exécution : les fonctions de logique l’obtiennent à partir d’une couche SDK générée, et les composants front le résolvent à partir de modules servis par le serveur. La copie que vous avez installée est uniquement utilisée pour la vérification de type et le build au moment du déploiement, elle n’a donc jamais besoin d’être incluse dans le bundle déployé.
+* **`twenty-client-sdk`** *est* importé par le code de votre application (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), mais Arxena le fournit au moment de l’exécution : les fonctions de logique l’obtiennent à partir d’une couche SDK générée, et les composants front le résolvent à partir de modules servis par le serveur. La copie que vous avez installée est uniquement utilisée pour la vérification de type et le build au moment du déploiement, elle n’a donc jamais besoin d’être incluse dans le bundle déployé.
 
 Conserver l’un ou l’autre package dans `dependencies` l’intègre dans le bundle runtime de l’application installée, où il ne fait que l’alourdir inutilement. `twenty dev:build` émet un avertissement lorsque l’un ou l’autre est encore répertorié dans `dependencies`.
 

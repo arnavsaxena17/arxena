@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ export default defineApplication({
 * `name` 是在 `listConnections({ providerName })` 中使用的唯一标识符字符串（短横线命名（kebab-case），必须匹配 `^[a-z][a-z0-9-]*$`）。
 * `displayName` 会显示在每个应用的设置选项卡以及 AI 工具列表中。
 * `clientIdVariable` / `clientSecretVariable` 是**名称**，而不是值——它们必须与 `defineApplication.serverVariables` 中声明的键匹配。 实际的 `client_id` 和 `client_secret` 由服务器管理员通过应用注册 UI 输入，绝不会提交到你的仓库。
-* 请使用 `serverVariables`（而非 `applicationVariables`）——OAuth 凭据是服务器范围的，并且每个 Twenty 服务器只配置一个 OAuth 应用。
+* 请使用 `serverVariables`（而非 `applicationVariables`）——OAuth 凭据是服务器范围的，并且每个 Arxena 服务器只配置一个 OAuth 应用。
 * 在两个 `serverVariables` 都填写之前，每个应用的设置选项卡会显示"需要服务器管理员"的提示，并且"添加连接"按钮将被禁用。
 * `type: 'oauth'` 是目前唯一受支持的取值。 该判别器具备前向兼容性：未来的类型（`'pat'`、`'api-key'` 等） 将会与 `oauth` 并列新增子配置块。
 
@@ -221,7 +221,7 @@ const conn = connections.find((c) => c.visibility === 'workspace');
 1. 前往提供方的开发者设置（例如 https://linear.app/settings/api/applications/new）。
 2. 将 **Redirect URI** 设置为 `\<SERVER_URL>/auth/apps/callback`。
 3. 复制生成的**Client ID**和**Client Secret**。
-4. 以服务器管理员身份在 Twenty 中打开已安装的应用 → 在相应的 `serverVariables` 上设置这些值。
+4. 以服务器管理员身份在 Arxena 中打开已安装的应用 → 在相应的 `serverVariables` 上设置这些值。
 5. 之后，工作区成员可以在每个应用的**连接**部分添加连接。
 
 </Accordion>

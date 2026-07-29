@@ -27,7 +27,7 @@ description: Problemas comunes de flujos de trabajo y cómo resolverlos.
 
 **Síntomas**: Al crear un registro manualmente en la IU, tu flujo de trabajo se dispara antes de que tengas tiempo de completar todos los campos. El flujo de trabajo se ejecuta con valores de campo en su mayoría vacíos.
 
-**Por qué sucede esto**: Twenty guarda todo en tiempo real; no hay un modo separado de "editar" y "lectura". Cuando creas un registro, se guarda de inmediato, lo que activa el evento "Record is created" antes de que puedas completar campos adicionales.
+**Por qué sucede esto**: Arxena guarda todo en tiempo real; no hay un modo separado de "editar" y "lectura". Cuando creas un registro, se guarda de inmediato, lo que activa el evento "Record is created" antes de que puedas completar campos adicionales.
 
 **Cuándo funciona bien "Record is created"**:
 
@@ -79,7 +79,7 @@ Si solo quieres que el flujo de trabajo se ejecute una vez por registro, agrega 
 
 * Verifica la URL del endpoint de la API
 * Verifica los encabezados de autenticación
-* Primero prueba la llamada a la API fuera de Twenty
+* Primero prueba la llamada a la API fuera de Arxena
 * Agrega manejo de errores en las acciones de código
 
 ### Errores en acciones de código

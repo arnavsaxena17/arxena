@@ -44,7 +44,7 @@ icon: wrench
 * إعداد التهيئة هو إعداد `defineLogicFunction` نفسه مطروحًا منه إعدادات المشغّل، مضافًا إليه `shouldRunOnVersionUpgrade`.
 * **موعد تشغيله**: في عمليات التثبيت الجديدة فقط، افتراضيًا. عيِّن `shouldRunOnVersionUpgrade: true` لتشغيله أيضًا عند الترقيات. استخدم `previousVersion` / `newVersion` للتفرع حسب مسار الترقية.
 * **أهمية اللاّتغيّر (Idempotency)**: قد يُعاد تشغيل post-install غير المتزامن، وأيٌّ من الخطافين يُعاد تشغيله عند الترقيات عندما يكون `shouldRunOnVersionUpgrade` مفعّلًا.
-* يتم حقن بيئة دوال المنطق المعتادة (`APPLICATION_ID`، و`APP_ACCESS_TOKEN`، و`API_URL`)، لذا يمكنك استدعاء Twenty API باستخدام رمز التطبيق الخاص بك.
+* يتم حقن بيئة دوال المنطق المعتادة (`APPLICATION_ID`، و`APP_ACCESS_TOKEN`، و`API_URL`)، لذا يمكنك استدعاء Arxena API باستخدام رمز التطبيق الخاص بك.
 * يُربَط الخطّاف تلقائيًا بملف بيان التطبيق وقت الإنشاء (`preInstallLogicFunction` / `postInstallLogicFunction`) — لا حاجة للإشارة إليه في [`defineApplication()`](/l/ar/developers/extend/apps/config/application).
 * القيمة الافتراضية لـ `timeoutSeconds` هي 300 للسماح بمهام إعداد أطول مثل بذر البيانات.
 * **غير منفَّذ في نمط التطوير**: يتخطى `yarn twenty dev` تدفق التثبيت ويزامن الملفات مباشرةً، لذا لا تعمل الخطافات هناك مطلقًا. بدلًا من ذلك، شغّلها يدويًا:

@@ -4,7 +4,7 @@ description: Personnalisez les pages de détail des enregistrements — onglets,
 icon: table-columns
 ---
 
-Une mise en page contrôle la façon dont la page de détail d'un enregistrement est organisée : quels onglets apparaissent et quels widgets ils contiennent. Utilisez `definePageLayout()` pour déclarer une mise en page pour un objet que vous possédez, ou `definePageLayoutTab()` pour ajouter un seul onglet à une mise en page qui existe déjà (la vôtre ou une mise en page standard de Twenty).
+Une mise en page contrôle la façon dont la page de détail d'un enregistrement est organisée : quels onglets apparaissent et quels widgets ils contiennent. Utilisez `definePageLayout()` pour déclarer une mise en page pour un objet que vous possédez, ou `definePageLayoutTab()` pour ajouter un seul onglet à une mise en page qui existe déjà (la vôtre ou une mise en page standard de Arxena).
 
 | Cas d'utilisation                                                                                              | Entité                |
 | -------------------------------------------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Points clés
 
-* `pageLayoutUniversalIdentifier` est **obligatoire** et doit pointer vers une mise en page de page qui existe déjà au moment de l'installation — soit une mise en page standard de Twenty, soit une mise en page définie par votre propre application. Les références inter-applications aux mises en page appartenant à une autre application installée ne sont pas prises en charge aujourd'hui. Lorsque la mise en page parente est manquante, l'installation échoue avec une erreur de validation explicite.
+* `pageLayoutUniversalIdentifier` est **obligatoire** et doit pointer vers une mise en page de page qui existe déjà au moment de l'installation — soit une mise en page standard de Arxena, soit une mise en page définie par votre propre application. Les références inter-applications aux mises en page appartenant à une autre application installée ne sont pas prises en charge aujourd'hui. Lorsque la mise en page parente est manquante, l'installation échoue avec une erreur de validation explicite.
 
-* Pour les mises en page standard de Twenty, importez les identifiants depuis `twenty-sdk/define` :
+* Pour les mises en page standard de Arxena, importez les identifiants depuis `twenty-sdk/define` :
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

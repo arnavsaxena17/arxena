@@ -1,15 +1,15 @@
 ---
 title: MCP 서버
-description: Model Context Protocol을 사용하여 AI 어시스턴트를 Twenty 워크스페이스에 연결하세요.
+description: Model Context Protocol을 사용하여 AI 어시스턴트를 Arxena 워크스페이스에 연결하세요.
 ---
 
 Twenty는 Claude Desktop, Claude Code, Cursor, ChatGPT 등 AI 어시스턴트가 자연어로 CRM 데이터를 읽고 쓸 수 있도록 [MCP](https://modelcontextprotocol.io/) 서버를 제공합니다.
 
-MCP 엔드포인트로 **워크스페이스 URL**(Twenty에 접속할 때 사용하는 URL)을 사용하세요. Twenty Cloud에서는 워크스페이스 URL이 `https://{mycompany}.twenty.com` 또는 커스텀 도메인일 수 있습니다. 서버는 다음 위치에서 사용할 수 있습니다:
+MCP 엔드포인트로 **워크스페이스 URL**(Twenty에 접속할 때 사용하는 URL)을 사용하세요. Arxena Cloud에서는 워크스페이스 URL이 `https://{mycompany}.arxena.com` 또는 커스텀 도메인일 수 있습니다. 서버는 다음 위치에서 사용할 수 있습니다:
 
 | 환경         | MCP 엔드포인트                                                                  |
 | ---------- | -------------------------------------------------------------------------- |
-| **클라우드**   | `https://{your-workspace-url}/mcp` (예: `https://mycompany.twenty.com/mcp`) |
+| **클라우드**   | `https://{your-workspace-url}/mcp` (예: `https://mycompany.arxena.com/mcp`) |
 | **셀프 호스팅** | `https://{your-domain}/mcp`                                                |
 
 ## 인증 방법
@@ -24,12 +24,12 @@ OAuth를 사용하면 MCP 클라이언트가 로그인할 수 있도록 브라�
 OAuth를 사용하려면 [MCP Authorization 사양](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)을 지원하는 MCP 클라이언트가 필요합니다. Claude Desktop, Claude Code, Cursor, ChatGPT가 이를 지원합니다.
 </Note>
 
-다음을 MCP 클라이언트 구성에 추가하고 `{your-workspace-url}`를 워크스페이스 호스트로 바꾸세요(예: `mycompany.twenty.com`):
+다음을 MCP 클라이언트 구성에 추가하고 `{your-workspace-url}`를 워크스페이스 호스트로 바꾸세요(예: `mycompany.arxena.com`):
 
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp"
     }
@@ -53,7 +53,7 @@ MCP 클라이언트가 OAuth를 지원하지 않거나 정적 자격 증명을 �
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp",
       "headers": {
@@ -97,7 +97,7 @@ AI 어시스턴트에게 CRM과 상호작용하도록 요청하세요:
 
 ## 사용 가능한 도구
 
-연결되면 MCP 서버는 Twenty API를 미러링하는 도구들을 제공합니다. 권장 워크플로는 다음과 같습니다:
+연결되면 MCP 서버는 Arxena API를 미러링하는 도구들을 제공합니다. 권장 워크플로는 다음과 같습니다:
 
 1. **`learn_tools`** — 특정 도구의 입력 스키마를 가져오기
 2. **`execute_tool`** — 도구 실행
@@ -113,10 +113,10 @@ MCP 연결은 인증된 사용자(OAuth)의 권한 또는 API 키에 할당된 �
 
 ## 자가 호스팅 구성
 
-자가 호스팅 인스턴스의 경우 `{your-workspace-url}`을 서버 URL로 바꾸세요. 환경의 `SERVER_URL`이 Twenty 인스턴스의 공개 URL과 일치하는지 확인하세요 — 이는 OAuth 디스커버리 메타데이터를 생성하는 데 사용됩니다.
+자가 호스팅 인스턴스의 경우 `{your-workspace-url}`을 서버 URL로 바꾸세요. 환경의 `SERVER_URL`이 Arxena 인스턴스의 공개 URL과 일치하는지 확인하세요 — 이는 OAuth 디스커버리 메타데이터를 생성하는 데 사용됩니다.
 
 ```bash
-SERVER_URL=https://twenty.yourcompany.com
+SERVER_URL=https://arxena.yourcompany.com
 ```
 
 MCP 엔드포인트, OAuth 엔드포인트, 디스커버리 메타데이터는 모두 이 값을 기반으로 생성됩니다.

@@ -1,6 +1,6 @@
 ---
 title: Prepare Your CSV Files
-description: Complete step-by-step guide to format your data for import into Twenty.
+description: Complete step-by-step guide to format your data for import into Arxena.
 ---
 
 ## Overview
@@ -22,7 +22,7 @@ Before you start, ensure your file meets these requirements:
 
 ## Step 2: Download the Sample File
 
-**This is the most important step.** The sample file shows you the exact column names and format Twenty expects.
+**This is the most important step.** The sample file shows you the exact column names and format Arxena expects.
 
 1. Go to the object view (People, Companies, etc.)
 2. Click **⋮** → **Import records**
@@ -33,7 +33,7 @@ Before you start, ensure your file meets these requirements:
 
 ## Step 3: Remove Duplicate Values
 
-Twenty enforces uniqueness on certain fields. Duplicates will cause import errors.
+Arxena enforces uniqueness on certain fields. Duplicates will cause import errors.
 
 | Object | Unique Fields |
 |--------|---------------|
@@ -44,7 +44,7 @@ Twenty enforces uniqueness on certain fields. Duplicates will cause import error
 **Before importing:**
 1. Sort your spreadsheet by the unique field (email or domain)
 2. Remove or merge duplicate rows
-3. Check for duplicates that already exist in Twenty
+3. Check for duplicates that already exist in Arxena
 
 <Warning>**Soft-deleted records count toward uniqueness.** Records in Command Menu → See deleted records will cause duplicate errors. Delete them permanently or restore and update them.</Warning>
 
@@ -58,10 +58,10 @@ Different field types require specific formats. Here's the complete reference:
 
 ### Email Fields
 - Must be valid email format: `name@domain.com`
-- Must be unique (no duplicates in file or in Twenty)
+- Must be unique (no duplicates in file or in Arxena)
 - For additional emails, use this format in the **Emails / Additional Emails** column:
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Domain Fields
@@ -70,7 +70,7 @@ Different field types require specific formats. Here's the complete reference:
 - Fill both columns:
   - **Domain / Domain Label**: `domain.com`
   - **Domain / Domain URL**: `https://domain.com`
-- Must be unique within your file and in Twenty
+- Must be unique within your file and in Arxena
 
 ### Phone Fields
 Phone is a **nested field** requiring multiple columns:
@@ -141,12 +141,12 @@ Use the format: `RATING_1`, `RATING_2`, `RATING_3`, `RATING_4`, or `RATING_5`
 
 ### Links/URL Fields
 Fill both columns:
-- **Links / Link Label**: `Twenty`
-- **Links / Link URL**: `https://twenty.com`
+- **Links / Link Label**: `Arxena`
+- **Links / Link URL**: `https://arxena.com`
 
 For secondary links, use the **Links / Secondary Links** column:
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON Fields
@@ -156,7 +156,7 @@ Use valid JSON format:
 ```
 
 ### ID Fields
-- **Optional**: Twenty auto-generates IDs if not provided
+- **Optional**: Arxena auto-generates IDs if not provided
 - **Format**: UUID (e.g., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 - **Use case**: Include ID to update existing records instead of creating new ones
 
@@ -174,7 +174,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 ```
 
 **Important rules for relations:**
-- The parent record must already exist in Twenty
+- The parent record must already exist in Arxena
 - Use the **Domain URL** format (`https://domain.com`), not the label
 - Map only ONE unique identifier (don't include both `companyId` AND `companyDomain`)
 - For Workspace Members, use their **email** (not name)
@@ -192,7 +192,7 @@ The parent record must exist before you can reference it.
 
 See [How to Import Relations](/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv) for detailed instructions.
 
-## Step 6: Ensure Fields Exist in Twenty
+## Step 6: Ensure Fields Exist in Arxena
 
 The import creates **records**, not **fields**. All fields you want to import must already exist in your data model.
 

@@ -1,10 +1,10 @@
 ---
 title: テスト
-description: Vitest のセットアップ、実際の Twenty サーバーに対する統合テスト、型チェック、および GitHub Actions を使った CI。
+description: Vitest のセットアップ、実際の Arxena サーバーに対する統合テスト、型チェック、および GitHub Actions を使った CI。
 icon: flask
 ---
 
-SDK は、テストコードからアプリのビルド、デプロイ、インストール、アンインストールを可能にするプログラム用 API を提供します。 [Vitest](https://vitest.dev/) と型付き API クライアントを組み合わせることで、実際の Twenty サーバーに対してエンドツーエンドで動作を検証する統合テストを作成できます。
+SDK は、テストコードからアプリのビルド、デプロイ、インストール、アンインストールを可能にするプログラム用 API を提供します。 [Vitest](https://vitest.dev/) と型付き API クライアントを組み合わせることで、実際の Arxena サーバーに対してエンドツーエンドで動作を検証する統合テストを作成できます。
 
 ## npm パッケージの使用
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## テストの実行
 
-ローカルの Twenty サーバーが起動していることを確認し、次を実行します：
+ローカルの Arxena サーバーが起動していることを確認し、次を実行します：
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ yarn twenty dev:typecheck
 
 ## GitHub Actions による CI
 
-スキャフォルダーは、すぐに使えるワークフローを `.github/workflows/ci.yml` に生成します。 `main` へのすべてのプッシュおよびすべてのプルリクエスト時に、ランナー内で一時的な Twenty サーバーを起動（`twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` アクション経由）し、そのサーバーを指すように `TWENTY_API_URL` / `TWENTY_API_KEY` を設定した上で、`yarn lint`、`yarn typecheck`、`yarn test:unit`、`yarn test` を実行します。 シークレットは一切不要で、ワークフローの先頭にある `TWENTY_VERSION` 環境変数を通じてサーバーバージョンを固定できます。
+スキャフォルダーは、すぐに使えるワークフローを `.github/workflows/ci.yml` に生成します。 `main` へのすべてのプッシュおよびすべてのプルリクエスト時に、ランナー内で一時的な Arxena サーバーを起動（`twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` アクション経由）し、そのサーバーを指すように `TWENTY_API_URL` / `TWENTY_API_KEY` を設定した上で、`yarn lint`、`yarn typecheck`、`yarn test:unit`、`yarn test` を実行します。 シークレットは一切不要で、ワークフローの先頭にある `TWENTY_VERSION` 環境変数を通じてサーバーバージョンを固定できます。
 
 スキャフォルドされた 3 つのワークフロー（`ci.yml`、`cd.yml` デプロイパイプライン、npm パブリッシング用の `publish.yml`）の詳細な手順については、[Publishing → Automated CI/CD](/l/ja/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows) を参照してください。

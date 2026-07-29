@@ -1,14 +1,14 @@
 ---
 title: Front Components
-description: Build React components that render inside Twenty's UI with sandboxed isolation.
+description: Build React components that render inside Arxena's UI with sandboxed isolation.
 icon: "window-maximize"
 ---
 
-Front components are React components that render directly inside Twenty's UI. They run in an **isolated Web Worker** using Remote DOM — your code executes inside a sandboxed, opaque-origin iframe, yet its UI still renders natively in the page rather than being confined to that iframe.
+Front components are React components that render directly inside Arxena's UI. They run in an **isolated Web Worker** using Remote DOM — your code executes inside a sandboxed, opaque-origin iframe, yet its UI still renders natively in the page rather than being confined to that iframe.
 
 ## Where front components can be used
 
-Front components can render in three locations within Twenty:
+Front components can render in three locations within Arxena:
 
 - **Side panel** — Non-headless front components open in the right-hand side panel. This is the default behavior when a front component is triggered from the command menu.
 - **Widgets (dashboards and record pages)** — Front components can be embedded as widgets inside [page layouts](/developers/extend/apps/layout/page-layouts). When configuring a dashboard or a record page layout, users can add a front component widget.
@@ -31,7 +31,7 @@ const HelloWorld = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Hello from my app!</h1>
-      <p>This component renders inside Twenty.</p>
+      <p>This component renders inside Arxena.</p>
     </div>
   );
 };
@@ -83,7 +83,7 @@ Beyond commands, you can embed a front component directly into a record page by 
 
 To replace the auto-generated variable configuration UI in your app's **Settings** tab with your own component, define it with `defineSettingsFrontComponent` instead of `defineFrontComponent`. It takes the same [configuration fields](#configuration-fields) (except `isHeadless`, which is not accepted since a settings component always renders visible UI) and additionally marks the component as the app's settings UI.
 
-The component renders as a section **inside** the Settings tab, not as a replacement for the whole tab. Twenty's system-managed sections — auto-upgrade, App URL, and connections — always render above it and cannot be overridden by the app.
+The component renders as a section **inside** the Settings tab, not as a replacement for the whole tab. Arxena's system-managed sections — auto-upgrade, App URL, and connections — always render above it and cannot be overridden by the app.
 
 ```tsx src/front-components/app-settings.tsx
 import { defineSettingsFrontComponent } from 'twenty-sdk/define';
@@ -139,7 +139,7 @@ export default defineFrontComponent({
 });
 ```
 
-Because the component returns `null`, Twenty skips rendering a container for it — no empty space appears in the layout. The component still has access to all hooks and the host communication API.
+Because the component returns `null`, Arxena skips rendering a container for it — no empty space appears in the layout. The component still has access to all hooks and the host communication API.
 
 ## SDK Command components
 
@@ -268,7 +268,7 @@ Front components run browser-side in a Web Worker sandboxed inside an opaque-ori
 
 A logic function declared with `httpRouteTriggerSettings` is reachable over HTTP at its route path. `RestApiClient` treats paths starting with `/s/` as app routes, resolves them to the URL your functions are served from, and authenticates them with `TWENTY_APP_ACCESS_TOKEN`.
 
-> **On Twenty Cloud, HTTP-triggered logic functions are served on a dedicated per-workspace domain** at `https://<your-workspace-subdomain>.withtwenty.com<path>`. For external callers, copy the exact URL from the function's **HTTP trigger** settings or the application's **Settings** tab.
+> **On Arxena Cloud, HTTP-triggered logic functions are served on a dedicated per-workspace domain** at `https://<your-workspace-subdomain>.witharxena.com<path>`. For external callers, copy the exact URL from the function's **HTTP trigger** settings or the application's **Settings** tab.
 
 A headless front component can run the call on mount via the `Command` component, then unmount automatically:
 
@@ -297,7 +297,7 @@ export default defineFrontComponent({
 });
 ```
 
-The path passed to `RestApiClient` is the logic function's `httpRouteTriggerSettings.path`, prefixed with `/s`. Keep `isAuthRequired: true`; the `TWENTY_APP_ACCESS_TOKEN` Twenty mints for your component authenticates the request:
+The path passed to `RestApiClient` is the logic function's `httpRouteTriggerSettings.path`, prefixed with `/s`. Keep `isAuthRequired: true`; the `TWENTY_APP_ACCESS_TOKEN` Arxena mints for your component authenticates the request:
 
 ```ts src/logic-functions/fetch-prs.logic-function.ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -325,9 +325,9 @@ export default defineLogicFunction({
 `TWENTY_APP_ACCESS_TOKEN` is injected automatically — see [Application variables](#application-variables). Because secret application variables are never exposed to front components, keep API keys and other sensitive logic in the logic function, not in the front component.
 </Note>
 
-### Calling the Twenty REST API
+### Calling the Arxena REST API
 
-To call app HTTP routes or read and write Twenty records from a front component, use `RestApiClient` from `twenty-client-sdk/rest`. It sends `/s/...` paths to your workspace's functions base URL and every other path, including `/rest/...`, to `TWENTY_API_URL`.
+To call app HTTP routes or read and write Arxena records from a front component, use `RestApiClient` from `twenty-client-sdk/rest`. It sends `/s/...` paths to your workspace's functions base URL and every other path, including `/rest/...`, to `TWENTY_API_URL`.
 
 | Method | Description |
 |--------|-------------|
@@ -345,7 +345,7 @@ The base URL and token are resolved from the environment by default. Pass overri
 
 ```ts
 const client = new RestApiClient({
-  baseUrl: 'https://myworkspace.twenty.com',
+  baseUrl: 'https://myworkspace.arxena.com',
   token: 'my-token',
 });
 ```
@@ -443,14 +443,14 @@ The following system variables are always available via `process.env`:
 
 | Variable | Description |
 |----------|-------------|
-| `TWENTY_API_URL` | Base URL of the Twenty core API |
+| `TWENTY_API_URL` | Base URL of the Arxena core API |
 | `TWENTY_APP_ACCESS_TOKEN` | Short-lived token scoped to your app's role |
 
 ### `TWENTY_FUNCTIONS_URL`
 
-Twenty also injects `TWENTY_FUNCTIONS_URL` into front components and logic functions: the base URL your app's HTTP-triggered logic functions are served from.
+Arxena also injects `TWENTY_FUNCTIONS_URL` into front components and logic functions: the base URL your app's HTTP-triggered logic functions are served from.
 
-It exists because that URL is not always the Twenty server itself. On Twenty Cloud, app routes are served on a dedicated per-workspace domain (`https://<your-workspace-subdomain>.withtwenty.com`, or the application's primary public domain when one is configured) so that app-authored responses run on an isolated origin rather than on the Twenty app origin. Self-hosted and local instances serve app routes under the `/s` prefix on the server itself and may not set the variable at all. Since the base URL varies per workspace and per instance, your code cannot hard-code it — the server injects the right value at runtime.
+It exists because that URL is not always the Arxena server itself. On Arxena Cloud, app routes are served on a dedicated per-workspace domain (`https://<your-workspace-subdomain>.witharxena.com`, or the application's primary public domain when one is configured) so that app-authored responses run on an isolated origin rather than on the Arxena app origin. Self-hosted and local instances serve app routes under the `/s` prefix on the server itself and may not set the variable at all. Since the base URL varies per workspace and per instance, your code cannot hard-code it — the server injects the right value at runtime.
 
 You rarely need to read it directly. Call your routes through `RestApiClient` with a `/s/`-prefixed path and the client resolves the URL for you: it strips the `/s` prefix and targets `TWENTY_FUNCTIONS_URL`, falling back to `<TWENTY_API_URL>/s` when the variable is not set. Use `resolveUrl('/s/<path>')` to get the absolute URL without sending a request, e.g. for a link. Read the variable directly only when building a URL by hand:
 
@@ -602,19 +602,19 @@ See the [public assets section](/developers/extend/apps/config/public-assets) fo
 Front components support multiple styling approaches. You can use:
 
 - **Inline styles** — `style={{ color: 'red' }}`
-- **Twenty UI components** — Twenty's own component library; see [Using Twenty UI components](#using-twenty-ui-components) below
+- **Arxena UI components** — Arxena's own component library; see [Using Arxena UI components](#using-twenty-ui-components) below
 - **Emotion** — CSS-in-JS with `@emotion/react`
 - **Styled-components** — `styled.div` patterns
 - **Tailwind CSS** — utility classes
 - **Any CSS-in-JS library** compatible with React
 
-## Using Twenty UI components
+## Using Arxena UI components
 
-Twenty ships its component library as the [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1) package. Front components can use it for buttons, tags, status pills, chips, avatars, icons, typography, and theme tokens that automatically match the workspace's light and dark theme.
+Arxena ships its component library as the [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1) package. Front components can use it for buttons, tags, status pills, chips, avatars, icons, typography, and theme tokens that automatically match the workspace's light and dark theme.
 
 ### Installation
 
-Add the package to your app, pinned to the version your Twenty instance ships:
+Add the package to your app, pinned to the version your Arxena instance ships:
 
 ```bash
 yarn add twenty-ui@1.0.0-alpha.1
@@ -669,9 +669,9 @@ Each named icon is tree-shaken, so importing a handful adds little to your bundl
 
 ### Theming and theme tokens
 
-Twenty UI components automatically match the workspace's light and dark theme — the renderer applies the active color scheme on the host, and the components resolve their colors against it.
+Arxena UI components automatically match the workspace's light and dark theme — the renderer applies the active color scheme on the host, and the components resolve their colors against it.
 
-To use the same design tokens in your own inline styles, call the `useTheme()` hook. It returns Twenty's theme tokens (spacing, colors, radii, fonts) wired to the active theme, with no `ThemeProvider` setup needed in your component:
+To use the same design tokens in your own inline styles, call the `useTheme()` hook. It returns Arxena's theme tokens (spacing, colors, radii, fonts) wired to the active theme, with no `ThemeProvider` setup needed in your component:
 
 ```tsx
 import { useTheme } from 'twenty-ui/theme-constants';

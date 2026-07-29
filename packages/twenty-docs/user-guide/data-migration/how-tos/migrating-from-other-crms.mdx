@@ -1,11 +1,11 @@
 ---
 title: Migrating from Other CRMs
-description: Step-by-step guide to migrate your data from any CRM to Twenty.
+description: Step-by-step guide to migrate your data from any CRM to Arxena.
 ---
 
 ## Overview
 
-This guide walks you through migrating your data from any CRM to Twenty. The process involves auditing your data, preparing your Twenty workspace, exporting from your current system, and importing into Twenty.
+This guide walks you through migrating your data from any CRM to Arxena. The process involves auditing your data, preparing your Arxena workspace, exporting from your current system, and importing into Arxena.
 
 <Note>Views, workflows, and permissions must be recreated manually after migration. Plan time for this configuration work.</Note>
 
@@ -27,9 +27,9 @@ Migration is an opportunity for a fresh start. Don't bring over clutter.
 
 ## Step 2: Map Your Data Model
 
-Create a mapping document between your current CRM and Twenty:
+Create a mapping document between your current CRM and Arxena:
 
-| Your CRM | Twenty |
+| Your CRM | Arxena |
 |----------|--------|
 | Account / Organization | **Company** |
 | Contact / Person | **People** |
@@ -39,14 +39,14 @@ Create a mapping document between your current CRM and Twenty:
 
 **For each field, document:**
 - The source field name
-- The target Twenty field
+- The target Arxena field
 - Any format transformations needed (dates, phone numbers, etc.)
 
 <Note>Keep this mapping document handy during import—you'll reference it when mapping columns.</Note>
 
-## Step 3: Set Up Your Twenty Workspace
+## Step 3: Set Up Your Arxena Workspace
 
-Before importing data, prepare your Twenty workspace:
+Before importing data, prepare your Arxena workspace:
 
 ### Create Custom Objects and Fields
 
@@ -66,7 +66,7 @@ The CSV import creates records, not fields. Create all custom fields in Settings
 <Warning>
 **Invite users BEFORE importing data.**
 
-If your data includes user references (Account Owner, Assignee, etc.), those users must exist in Twenty before import. Otherwise, those relations cannot be mapped.
+If your data includes user references (Account Owner, Assignee, etc.), those users must exist in Arxena before import. Otherwise, those relations cannot be mapped.
 </Warning>
 
 1. Go to **Settings → Members**
@@ -92,13 +92,13 @@ Export your data from your current CRM:
 
 ## Step 5: Clean and Format Your Data
 
-Open each exported CSV in a spreadsheet application and prepare it for Twenty.
+Open each exported CSV in a spreadsheet application and prepare it for Arxena.
 
 ### Remove Duplicates
 
 1. Sort by the unique field (email for People, domain for Companies)
 2. Remove or merge duplicate rows
-3. Verify no duplicates exist in Twenty already
+3. Verify no duplicates exist in Arxena already
 
 ### Format Fields Correctly
 
@@ -114,7 +114,7 @@ Open each exported CSV in a spreadsheet application and prepare it for Twenty.
 <Warning>
 **Domain format is critical.**
 
-Use `https://domain.com` (not `domain.com` or `www.domain.com`). This matches Twenty's format and prevents duplicates when you connect email/calendar sync.
+Use `https://domain.com` (not `domain.com` or `www.domain.com`). This matches Arxena's format and prevents duplicates when you connect email/calendar sync.
 </Warning>
 
 See [How to Prepare Your CSV Files](/user-guide/data-migration/how-tos/prepare-your-csv-files) for complete formatting requirements for all field types.
@@ -137,11 +137,11 @@ See [How to Import Relations](/user-guide/data-migration/how-tos/import-relation
 If your data includes user assignments (Owner, Assignee):
 
 1. Add a column with the **user's email** (not just their ID from the old system)
-2. Use the same email addresses that users used to join your Twenty workspace
+2. Use the same email addresses that users used to join your Arxena workspace
 
 See [How to Prepare Your CSV Files](/user-guide/data-migration/how-tos/prepare-your-csv-files) for complete formatting guide.
 
-## Step 6: Import to Twenty
+## Step 6: Import to Arxena
 
 <Warning>
 **Import Order Matters!**
@@ -160,7 +160,7 @@ The parent record must exist before you can reference it.
 
 For each CSV file, in order:
 
-1. Navigate to the object in Twenty
+1. Navigate to the object in Arxena
 2. Click **⋮ → Import records**
 3. Upload the CSV file
 4. Map columns to fields:
@@ -209,7 +209,7 @@ After importing data, complete your workspace configuration:
 
 ### Connect Email and Calendar
 - Each user connects their own account in **Settings → Accounts**
-- Twenty will start syncing emails to contact records
+- Arxena will start syncing emails to contact records
 - See [Email & Calendar](/user-guide/calendar-emails/overview)
 
 ### Train Your Team
@@ -251,7 +251,7 @@ See [How to Fix Import Errors](/user-guide/data-migration/how-tos/fix-import-err
 
 <AccordionGroup>
   <Accordion title="Can I migrate workflows automatically?">
-    Not currently. Workflows must be recreated manually in Twenty.
+    Not currently. Workflows must be recreated manually in Arxena.
   </Accordion>
 
   <Accordion title="What about file attachments?">
@@ -272,6 +272,6 @@ See [How to Fix Import Errors](/user-guide/data-migration/how-tos/fix-import-err
 <Tip>
   Want help with your migration?
 
-  - **Done for you:** [find a certified Twenty partner](https://twenty.com/partners/list?categories=SOLUTIONING&ref=docs-migrate-crm) to move your data, pipelines, and users end-to-end.
-  - **Onboarding pack:** a 4-hour guided setup with our team — [contact@twenty.com](mailto:contact@twenty.com).
+  - **Done for you:** [find a certified Arxena partner](https://arxena.com/partners/list?categories=SOLUTIONING&ref=docs-migrate-crm) to move your data, pipelines, and users end-to-end.
+  - **Onboarding pack:** a 4-hour guided setup with our team — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

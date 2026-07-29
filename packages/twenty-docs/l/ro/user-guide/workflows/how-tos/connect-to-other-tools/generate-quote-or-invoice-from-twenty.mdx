@@ -1,5 +1,5 @@
 ---
-title: Generați o ofertă sau o factură din Twenty
+title: Generați o ofertă sau o factură din Arxena
 description: Creați automat facturi în instrumente externe atunci când se închid oportunitățile.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Conexe
 
-* [Generați un PDF din Twenty](/l/ro/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — atașați PDF-uri generate la înregistrări
+* [Generați un PDF din Arxena](/l/ro/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — atașați PDF-uri generate la înregistrări
 * [Declanșatoare ale fluxurilor de lucru](/l/ro/user-guide/workflows/capabilities/workflow-triggers)
 * [Acțiuni ale fluxurilor de lucru](/l/ro/user-guide/workflows/capabilities/workflow-actions)
 * [Automatizări pentru Closed Won](/l/ro/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

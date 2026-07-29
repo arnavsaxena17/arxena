@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## 字段映射的工作原理
 
-当您上传文件时，Twenty 会分析您的列，并尝试将其与现有字段匹配。
+当您上传文件时，Arxena 会分析您的列，并尝试将其与现有字段匹配。
 
 ### 自动映射
 
-Twenty 将根据以下内容尝试匹配列：
+Arxena 将根据以下内容尝试匹配列：
 
 * 列标题名称（精确或相似匹配）
 * 数据类型检测（日期、数字、电子邮件）
 * 常见字段模式
 
-<Note>**快速提示：** 从您要导入的对象中导出几行数据。 导出的文件将包含 Twenty 期望的精确列名，从而在导入时实现无缝的自动映射。</Note>
+<Note>**快速提示：** 从您要导入的对象中导出几行数据。 导出的文件将包含 Arxena 期望的精确列名，从而在导入时实现无缝的自动映射。</Note>
 
 ### 手动映射选项
 
 对于每一列，您可以：
 
-* **映射到字段**：从下拉列表中选择匹配的 Twenty 字段
+* **映射到字段**：从下拉列表中选择匹配的 Arxena 字段
 * **不进行映射**：完全跳过该列（不会导入数据）
 
 <Note>**字段必须在导入前已存在。** 导入会创建记录，而不是创建字段。 请在导入前于 **设置 → 数据模型** 中创建自定义字段。</Note>
@@ -94,12 +94,12 @@ Twenty 将根据以下内容尝试匹配列：
 * 对于附加邮箱：主邮箱请使用 **Emails / Primary Email**，附加邮箱请使用 **Emails / Additional Emails**，并采用以下格式：
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### ID 字段
 
-在导入过程中指定 `id` 是可选的。 如未提供，Twenty 将自动生成 ID。
+在导入过程中指定 `id` 是可选的。 如未提供，Arxena 将自动生成 ID。
 
 映射 `id` 列的用例：
 
@@ -125,7 +125,7 @@ Twenty 将根据以下内容尝试匹配列：
 * 对于次要链接，请使用 **Links / Secondary Links** 列，并采用以下格式：
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### 多选字段

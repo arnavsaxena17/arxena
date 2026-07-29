@@ -4,7 +4,7 @@ description: Personalizează paginile de detaliu ale înregistrărilor — filel
 icon: table-columns
 ---
 
-Un **layout de pagină** controlează modul în care este aranjată pagina de detalii a unei înregistrări: ce file apar și ce widgeturi conțin acestea. Folosește `definePageLayout()` pentru a declara un layout pentru un obiect pe care îl deții sau `definePageLayoutTab()` pentru a adăuga o singură filă la un layout care există deja (al tău sau un layout standard Twenty).
+Un **layout de pagină** controlează modul în care este aranjată pagina de detalii a unei înregistrări: ce file apar și ce widgeturi conțin acestea. Folosește `definePageLayout()` pentru a declara un layout pentru un obiect pe care îl deții sau `definePageLayoutTab()` pentru a adăuga o singură filă la un layout care există deja (al tău sau un layout standard Arxena).
 
 | Caz de utilizare                                                                        | Entitate              |
 | --------------------------------------------------------------------------------------- | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Puncte cheie
 
-* `pageLayoutUniversalIdentifier` este **obligatoriu** și trebuie să indice către un layout de pagină care există deja la momentul instalării — fie un layout standard Twenty, fie unul definit de propria ta aplicație. Referințele cross-app către layouturi deținute de o altă aplicație instalată nu sunt acceptate în prezent. Când lipsește layoutul părinte, instalarea eșuează cu o eroare clară de validare.
+* `pageLayoutUniversalIdentifier` este **obligatoriu** și trebuie să indice către un layout de pagină care există deja la momentul instalării — fie un layout standard Arxena, fie unul definit de propria ta aplicație. Referințele cross-app către layouturi deținute de o altă aplicație instalată nu sunt acceptate în prezent. Când lipsește layoutul părinte, instalarea eșuează cu o eroare clară de validare.
 
-* Pentru layout-urile standard Twenty, importați identificatorii din `twenty-sdk/define`:
+* Pentru layout-urile standard Arxena, importați identificatorii din `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

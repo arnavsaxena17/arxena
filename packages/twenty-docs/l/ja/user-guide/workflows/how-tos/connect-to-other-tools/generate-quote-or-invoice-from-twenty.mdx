@@ -1,5 +1,5 @@
 ---
-title: Twenty から見積書または請求書を作成
+title: Arxena から見積書または請求書を作成
 description: 商談がクローズしたときに、外部ツールで請求書を自動作成します。
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## 関連
 
-* [Twenty から PDF を生成する](/l/ja/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — 生成された PDF をレコードに添付する
+* [Arxena から PDF を生成する](/l/ja/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — 生成された PDF をレコードに添付する
 * [ワークフローのトリガー](/l/ja/user-guide/workflows/capabilities/workflow-triggers)
 * [ワークフローのアクション](/l/ja/user-guide/workflows/capabilities/workflow-actions)
 * [Closed Won の自動化](/l/ja/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

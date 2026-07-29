@@ -1,15 +1,15 @@
 ---
 title: Servidor MCP
-description: Conecta asistentes de IA a tu espacio de trabajo de Twenty mediante el Model Context Protocol.
+description: Conecta asistentes de IA a tu espacio de trabajo de Arxena mediante el Model Context Protocol.
 ---
 
-Twenty expone un servidor [MCP](https://modelcontextprotocol.io/) para que los asistentes de IA — Claude Desktop, Claude Code, Cursor, ChatGPT y otros — puedan leer y escribir tus datos de CRM mediante lenguaje natural.
+Arxena expone un servidor [MCP](https://modelcontextprotocol.io/) para que los asistentes de IA — Claude Desktop, Claude Code, Cursor, ChatGPT y otros — puedan leer y escribir tus datos de CRM mediante lenguaje natural.
 
-Usa tu **URL del espacio de trabajo** (la URL que utilizas para acceder a Twenty) como el punto de acceso MCP. En Twenty Cloud, la URL de tu espacio de trabajo puede ser `https://{mycompany}.twenty.com` o un dominio personalizado. El servidor está disponible en:
+Usa tu **URL del espacio de trabajo** (la URL que utilizas para acceder an Arxena) como el punto de acceso MCP. En Arxena Cloud, la URL de tu espacio de trabajo puede ser `https://{mycompany}.arxena.com` o un dominio personalizado. El servidor está disponible en:
 
 | Entorno             | Punto de acceso MCP                                                             |
 | ------------------- | ------------------------------------------------------------------------------- |
-| **Nube**            | `https://{your-workspace-url}/mcp` (p. ej., `https://mycompany.twenty.com/mcp`) |
+| **Nube**            | `https://{your-workspace-url}/mcp` (p. ej., `https://mycompany.arxena.com/mcp`) |
 | **Autoalojamiento** | `https://{your-domain}/mcp`                                                     |
 
 ## Métodos de autenticación
@@ -24,12 +24,12 @@ Con OAuth, tu cliente MCP abre una ventana del navegador para que inicies sesió
 OAuth requiere un cliente MCP que sea compatible con la [especificación de autorización de MCP](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization). Claude Desktop, Claude Code, Cursor y ChatGPT lo admiten.
 </Note>
 
-Agrega esto a la configuración de tu cliente MCP, reemplazando `{your-workspace-url}` por el host de tu espacio de trabajo (p. ej., `mycompany.twenty.com`):
+Agrega esto a la configuración de tu cliente MCP, reemplazando `{your-workspace-url}` por el host de tu espacio de trabajo (p. ej., `mycompany.arxena.com`):
 
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp"
     }
@@ -39,7 +39,7 @@ Agrega esto a la configuración de tu cliente MCP, reemplazando `{your-workspace
 
 Eso es todo: no se necesita clave de API. Cuando el cliente se conecte por primera vez, hará lo siguiente:
 
-1. Descubrir los metadatos de OAuth de Twenty a través de `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`
+1. Descubrir los metadatos de OAuth de Arxena a través de `/.well-known/oauth-protected-resource` y `/.well-known/oauth-authorization-server`
 2. Registrarse como cliente OAuth mediante registro dinámico de clientes (RFC 7591)
 3. Abrir tu navegador para autorizar el acceso
 4. Recibir tokens y conectarse al servidor MCP
@@ -53,7 +53,7 @@ Si tu cliente MCP no es compatible con OAuth o prefieres credenciales estáticas
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp",
       "headers": {
@@ -74,7 +74,7 @@ Para crear una clave de API, ve a **Settings → MCP & APIs → API → + Create
 
 ### 1. Copia la configuración
 
-Ve a **Settings → MCP & APIs → MCP** en Twenty. Elige tu método de autenticación (OAuth o API Key), copia el fragmento JSON (ya usará la URL de tu espacio de trabajo) y pégalo en el archivo de configuración de tu cliente MCP.
+Ve a **Settings → MCP & APIs → MCP** en Arxena. Elige tu método de autenticación (OAuth o API Key), copia el fragmento JSON (ya usará la URL de tu espacio de trabajo) y pégalo en el archivo de configuración de tu cliente MCP.
 
 | Cliente            | Ubicación del archivo de configuración                                                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ Ve a **Settings → MCP & APIs → MCP** en Twenty. Elige tu método de autentic
 
 ### 2. Conectar
 
-Reinicia tu cliente MCP (o recarga la configuración). Si usas OAuth, se te redirigirá a Twenty para autorizar el acceso. Si usas una clave de API, la conexión es inmediata.
+Reinicia tu cliente MCP (o recarga la configuración). Si usas OAuth, se te redirigirá an Arxena para autorizar el acceso. Si usas una clave de API, la conexión es inmediata.
 
 ### 3. Empieza a usarlo
 
@@ -97,7 +97,7 @@ Pídele a tu asistente de IA que interactúe con tu CRM:
 
 ## Herramientas disponibles
 
-Una vez conectado, el servidor MCP expone herramientas que reflejan la API de Twenty. El flujo de trabajo recomendado es:
+Una vez conectado, el servidor MCP expone herramientas que reflejan la API de Arxena. El flujo de trabajo recomendado es:
 
 1. **`learn_tools`** — obtener el esquema de entrada para herramientas específicas
 2. **`execute_tool`** — ejecutar una herramienta
@@ -113,10 +113,10 @@ Las conexiones MCP heredan los permisos del usuario autenticado (OAuth) o del ro
 
 ## Configuración autohospedada
 
-Para instancias autohospedadas, reemplaza `{your-workspace-url}` por la URL de tu servidor. Asegúrate de que `SERVER_URL` en tu entorno coincida con la URL pública de tu instancia de Twenty — se utiliza para generar los metadatos de descubrimiento de OAuth.
+Para instancias autohospedadas, reemplaza `{your-workspace-url}` por la URL de tu servidor. Asegúrate de que `SERVER_URL` en tu entorno coincida con la URL pública de tu instancia de Arxena — se utiliza para generar los metadatos de descubrimiento de OAuth.
 
 ```bash
-SERVER_URL=https://twenty.yourcompany.com
+SERVER_URL=https://arxena.yourcompany.com
 ```
 
 El punto de acceso MCP, los puntos de acceso de OAuth y los metadatos de descubrimiento se derivan de este valor.

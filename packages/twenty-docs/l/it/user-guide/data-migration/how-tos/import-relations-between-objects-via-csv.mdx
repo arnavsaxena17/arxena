@@ -21,7 +21,7 @@ In una relazione uno-a-molti:
 
 Il lato "uno" è il **genitore**. Il lato "molti" è il **figlio**.
 
-### Relazioni comuni in Twenty
+### Relazioni comuni in Arxena
 
 | Relazione             | Lato "uno" (genitore) | Lato "molti" (figlio) |
 | --------------------- | --------------------- | --------------------- |
@@ -41,7 +41,7 @@ Prima di importare, determina quale oggetto è il genitore e quale è il figlio.
 
 ## Passaggio 2: Importa prima i record genitore
 
-Il genitore (lato "uno") deve esistere in Twenty prima di potervi fare riferimento.
+Il genitore (lato "uno") deve esistere in Arxena prima di potervi fare riferimento.
 
 **Ordine di importazione:**
 
@@ -73,7 +73,7 @@ Devi fare riferimento al record genitore usando un **identificatore univoco**. O
 
 Se ti serve l'`id`:
 
-1. Esporta i record genitore da Twenty
+1. Esporta i record genitore da Arxena
 2. L'esportazione include la colonna `id`
 3. Usa questi ID nel file dei record figlio
 
@@ -119,7 +119,7 @@ La colonna `companyDomain` fa riferimento al dominio dell'Azienda.
 <Warning>
 **Il formato del dominio è importante!**
 
-Usa `https://domain.com` (non solo `domain.com`). Questo corrisponde a come Twenty archivia i domini delle Aziende e previene errori di corrispondenza.
+Usa `https://domain.com` (non solo `domain.com`). Questo corrisponde a come Arxena archivia i domini delle Aziende e previene errori di corrispondenza.
 </Warning>
 
 ### Regole importanti
@@ -139,7 +139,7 @@ Usa `https://domain.com` (non solo `domain.com`). Questo corrisponde a come Twen
 5. Completa le restanti mappature
 6. Controlla gli errori e conferma
 
-Twenty collegherà automaticamente ogni record figlio al genitore corrispondente.
+Arxena collegherà automaticamente ogni record figlio al genitore corrispondente.
 
 ## Passaggio 7: Verifica l'importazione
 
@@ -157,8 +157,8 @@ Dopo l'importazione:
 | **Formato del dominio errato**            | Uso di `acme.com` invece di `https://acme.com`    | Usa il formato URL completo con `https://`                                         |
 | **Più campi univoci**                     | Mappare sia `companyId` che `companyDomain`       | Mappa un solo identificatore univoco                                               |
 | **Campo di relazione mancante**           | Il campo di relazione non esiste nel modello dati | Crealo in **Impostazioni → Modello dati** prima dell'importazione                  |
-| **Record inesistenti**                    | Il record genitore non esiste in Twenty           | Importa prima i record genitore oppure verifica la presenza di errori di battitura |
-| **Discrepanza tra maiuscole e minuscole** | `Acme.com` nel file ma `acme.com` in Twenty       | Assicurati che le maiuscole/minuscole corrispondano esattamente                    |
+| **Record inesistenti**                    | Il record genitore non esiste in Arxena           | Importa prima i record genitore oppure verifica la presenza di errori di battitura |
+| **Discrepanza tra maiuscole e minuscole** | `Acme.com` nel file ma `acme.com` in Arxena       | Assicurati che le maiuscole/minuscole corrispondano esattamente                    |
 
 ## Collegamento ai membri del Workspace
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Cosa succede se il mio record genitore non ha un dominio o un'email?">
     Hai due opzioni:
-    1. Usa l'`id` di Twenty (esporta i record genitore per ottenere i loro ID)
+    1. Usa l'`id` di Arxena (esporta i record genitore per ottenere i loro ID)
     2. Crea un campo univoco personalizzato nel tuo modello dati per archiviare un ID esterno dal sistema precedente
   </Accordion>
 

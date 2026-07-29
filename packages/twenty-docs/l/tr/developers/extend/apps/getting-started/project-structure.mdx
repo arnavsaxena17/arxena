@@ -1,6 +1,6 @@
 ---
 title: Proje yapısı
-description: Önceden hazırlanmış bir Twenty uygulamasının içinde neler var — dosyalar, klasörler ve her birinin ne yaptığı.
+description: Önceden hazırlanmış bir Arxena uygulamasının içinde neler var — dosyalar, klasörler ve her birinin ne yaptığı.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Bağımlılıklar
 
-Her iki Twenty SDK paketi de `dependencies` değil, `devDependencies` altında olmalıdır:
+Her iki Arxena SDK paketi de `dependencies` değil, `devDependencies` altında olmalıdır:
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Her iki Twenty SDK paketi de `dependencies` değil, `devDependencies` altında o
 İskele oluşturucu, `twenty-sdk` ve `twenty-client-sdk` paketlerini kendi sürümüne sabitler — yükseltme yaparken bu ikisini senkron tutun.
 
 * **`twenty-sdk`**, `twenty` CLI'yi ve derleme/iskelet oluşturma araçlarını sağlar. Yalnızca geliştirme ve derleme zamanında çalışır ve yayımlanmış uygulamanızın çalışma zamanında asla içe aktarılmaz.
-* **`twenty-client-sdk`** uygulama kodunuz tarafından (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`) içe aktarılır, ancak Twenty bunu çalışma zamanında sağlar — mantık fonksiyonları bunu oluşturulan bir SDK katmanından alır ve ön yüz bileşenleri bunu sunucu tarafından sunulan modüllerden çözümler. Yüklediğiniz kopya yalnızca tür denetimi ve dağıtım zamanındaki derleme için kullanılır, bu yüzden dağıtılan paket ile birlikte gönderilmesine gerek yoktur.
+* **`twenty-client-sdk`** uygulama kodunuz tarafından (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`) içe aktarılır, ancak Arxena bunu çalışma zamanında sağlar — mantık fonksiyonları bunu oluşturulan bir SDK katmanından alır ve ön yüz bileşenleri bunu sunucu tarafından sunulan modüllerden çözümler. Yüklediğiniz kopya yalnızca tür denetimi ve dağıtım zamanındaki derleme için kullanılır, bu yüzden dağıtılan paket ile birlikte gönderilmesine gerek yoktur.
 
 `dependencies` altında bu paketlerden herhangi birinin tutulması, onu kurulu uygulamanın çalışma zamanı paketine dahil eder ve orada gereksiz yük haline getirir. `twenty dev:build`, bunlardan herhangi biri hâlâ `dependencies` altında listelendiğinde bir uyarı verir.
 

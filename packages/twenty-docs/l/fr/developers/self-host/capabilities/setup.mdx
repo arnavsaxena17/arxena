@@ -6,10 +6,10 @@ icon: gear
 # Gestion de la configuration
 
 <Warning>
-**Première installation ?** Suivez le [Guide d’installation de Docker Compose](/l/fr/developers/self-host/capabilities/docker-compose) pour faire fonctionner Twenty, puis revenez ici pour la configuration.
+**Première installation ?** Suivez le [Guide d’installation de Docker Compose](/l/fr/developers/self-host/capabilities/docker-compose) pour faire fonctionner Arxena, puis revenez ici pour la configuration.
 </Warning>
 
-Twenty offre **deux modes de configuration** pour répondre à différents besoins de déploiement :
+Arxena offre **deux modes de configuration** pour répondre à différents besoins de déploiement :
 
 **Accès au panneau d'administration :** Seuls les utilisateurs avec des privilèges d'administrateur (`canAccessFullAdminPanel: true`) peuvent accéder à l'interface de configuration.
 
@@ -21,7 +21,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 **La plupart des configurations se fait via l'interface utilisateur** après l'installation :
 
-1. Accédez à votre instance Twenty (généralement `http://localhost:3000`)
+1. Accédez à votre instance Arxena (généralement `http://localhost:3000`)
 2. Allez dans **Paramètres / Panneau d’administration / Variables de configuration**
 3. Configurez les intégrations, les e-mails, le stockage et plus encore
 4. Les modifications prennent effet immédiatement (dans les 15 secondes pour les déploiements multi-conteneurs)
@@ -50,14 +50,14 @@ Certains paramètres d'infrastructure comme les connexions de base de données (
 
 ## Clés de chiffrement
 
-Twenty utilise deux clés de chiffrement uniquement définissables via des variables d'environnement :
+Arxena utilise deux clés de chiffrement uniquement définissables via des variables d'environnement :
 
 | Variable                  | Objectif                                                                                                                                                                         | Obligatoire                                                                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `ENCRYPTION_KEY`          | Clé principale utilisée pour chiffrer les secrets au repos (jetons OAuth, variables d'application, clés privées de signature, secrets TOTP, valeurs de configuration sensibles). | Oui pour les nouvelles installations (les anciennes installations peuvent s'appuyer à la place sur `APP_SECRET` — voir ci-dessous) |
 | `FALLBACK_ENCRYPTION_KEY` | Clé utilisée uniquement pour la vérification. Définie lors d'une rotation sur l’*ancienne* valeur de `ENCRYPTION_KEY` afin que les lignes existantes restent déchiffrables.      | Uniquement pendant la rotation                                                                                                     |
 
-Pour assurer la rétrocompatibilité, si `ENCRYPTION_KEY` n'est pas défini, Twenty se rabat sur `APP_SECRET` pour le chiffrement au repos, ce qui correspond au comportement historique des anciens déploiements. Les nouvelles installations doivent toujours définir une `ENCRYPTION_KEY` dédiée.
+Pour assurer la rétrocompatibilité, si `ENCRYPTION_KEY` n'est pas défini, Arxena se rabat sur `APP_SECRET` pour le chiffrement au repos, ce qui correspond au comportement historique des anciens déploiements. Les nouvelles installations doivent toujours définir une `ENCRYPTION_KEY` dédiée.
 
 Générez les valeurs avec `openssl rand -base64 32` et stockez-les dans un endroit sûr (un gestionnaire de secrets, une configuration scellée, etc.). Perdre `ENCRYPTION_KEY` signifie perdre l'accès à tous les secrets stockés dans la base de données.
 
@@ -78,7 +78,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 
 ## Mode multi-espaces de travail
 
-Par défaut, Twenty fonctionne en **mode à espace de travail unique** — idéal pour la plupart des déploiements auto-hébergés où vous avez besoin d'une seule instance CRM pour votre organisation.
+Par défaut, Arxena fonctionne en **mode à espace de travail unique** — idéal pour la plupart des déploiements auto-hébergés où vous avez besoin d'une seule instance CRM pour votre organisation.
 
 ### Mode à espace de travail unique (par défaut)
 
@@ -86,7 +86,7 @@ Par défaut, Twenty fonctionne en **mode à espace de travail unique** — idéa
 IS_MULTIWORKSPACE_ENABLED=false  # default
 ```
 
-* Un espace de travail par instance Twenty
+* Un espace de travail par instance Arxena
 * Le premier utilisateur devient automatiquement administrateur avec tous les privilèges (`canImpersonate` et `canAccessFullAdminPanel`)
 * Les nouvelles inscriptions sont désactivées après la création du premier espace de travail
 * Structure d'URL simple : `https://your-domain.com`
@@ -98,7 +98,7 @@ IS_MULTIWORKSPACE_ENABLED=true
 DEFAULT_SUBDOMAIN=app  # default value
 ```
 
-Activez le mode multi-espaces de travail pour des déploiements de type SaaS où plusieurs équipes indépendantes ont besoin de leurs propres espaces de travail sur la même instance Twenty.
+Activez le mode multi-espaces de travail pour des déploiements de type SaaS où plusieurs équipes indépendantes ont besoin de leurs propres espaces de travail sur la même instance Arxena.
 
 **Principales différences par rapport au mode à espace de travail unique :**
 
@@ -152,7 +152,7 @@ Lorsqu'il est activé, seuls les utilisateurs disposant de `canAccessFullAdminPa
    * `https://{your-domain}/auth/google/redirect` (pour le SSO)
    * `https://{your-domain}/auth/google-apis/get-access-token` (pour les intégrations)
 
-### Configurez dans Twenty
+### Configurez dans Arxena
 
 1. Allez dans **Paramètres → Panneau d’administration → Variables de configuration**
 2. Retrouvez la section **Google Auth**
@@ -184,7 +184,7 @@ Sous [Écran de consentement OAuth](https://console.cloud.google.com/apis/creden
 ## Intégration Microsoft 365
 
 <Warning>
-Les utilisateurs doivent avoir une [licence Microsoft 365](https://admin.microsoft.com/Adminportal/Home) pour pouvoir utiliser les API Calendrier et Messagerie. Ils ne pourront pas synchroniser leur compte sur Twenty sans cela.
+Les utilisateurs doivent avoir une [licence Microsoft 365](https://admin.microsoft.com/Adminportal/Home) pour pouvoir utiliser les API Calendrier et Messagerie. Ils ne pourront pas synchroniser leur compte sur Arxena sans cela.
 </Warning>
 
 ### Créez un projet dans Microsoft Azure
@@ -213,7 +213,7 @@ Vous devez ajouter les URI de redirection suivantes à votre projet :
 * `https://{your-domain}/auth/microsoft/redirect` si vous souhaitez utiliser Microsoft SSO
 * `https://{your-domain}/auth/microsoft-apis/get-access-token`
 
-### Configurez dans Twenty
+### Configurez dans Arxena
 
 1. Allez dans **Paramètres → Panneau d’administration → Variables de configuration**
 2. Retrouvez la section **Microsoft Auth**
@@ -316,16 +316,16 @@ yarn command:prod cron:workflow:automated-cron-trigger
 ## Stockage S3
 
 <Warning>
-Par défaut, Twenty stocke les fichiers téléversés sur le système de fichiers local. Pour les déploiements en production, utilisez S3 ou un service compatible S3 (MinIO, DigitalOcean Spaces, etc.). afin de garantir la persistance des fichiers lors des redémarrages des conteneurs et la montée en charge sur plusieurs instances de serveur.
+Par défaut, Arxena stocke les fichiers téléversés sur le système de fichiers local. Pour les déploiements en production, utilisez S3 ou un service compatible S3 (MinIO, DigitalOcean Spaces, etc.). afin de garantir la persistance des fichiers lors des redémarrages des conteneurs et la montée en charge sur plusieurs instances de serveur.
 </Warning>
 
 Définissez `STORAGE_TYPE=S_3` et configurez les variables `STORAGE_S3_*` via le panneau d'administration ou `.env`. Voir la [référence config-variables.ts](https://github.com/twentyhq/twenty/blob/main/packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts) pour la liste complète des variables S3.
 
-Lorsque vous utilisez S3 avec des fonctionnalités dépendantes de CORS (par exemple les téléchargements de fichiers dans le navigateur), assurez-vous que votre compartiment S3 autorise l'origine de votre frontend Twenty dans sa configuration CORS.
+Lorsque vous utilisez S3 avec des fonctionnalités dépendantes de CORS (par exemple les téléchargements de fichiers dans le navigateur), assurez-vous que votre compartiment S3 autorise l'origine de votre frontend Arxena dans sa configuration CORS.
 
 ## Fonctions logiques et interpréteur de code
 
-Twenty prend en charge les fonctions logiques pour les flux de travail et l'interpréteur de code pour l'analyse de données par IA. Les deux exécutent du code fourni par l'utilisateur et nécessitent une configuration explicite pour la sécurité.
+Arxena prend en charge les fonctions logiques pour les flux de travail et l'interpréteur de code pour l'analyse de données par IA. Les deux exécutent du code fourni par l'utilisateur et nécessitent une configuration explicite pour la sécurité.
 
 ### Paramètres de sécurité par défaut
 
@@ -378,5 +378,5 @@ LOGIC_FUNCTION_TYPE=DISABLED  # default when NODE_ENV=production
 | E2B       | `CODE_INTERPRETER_TYPE=E_2_B`    | Production avec exécution en bac à sable | Élevée (bac à sable isolé) |
 
 <Note>
-Lorsque vous utilisez `LOGIC_FUNCTION_TYPE=DISABLED` ou `CODE_INTERPRETER_TYPE=DISABLED`, toute tentative d'exécution renverra une erreur. Cela est utile si vous souhaitez exécuter Twenty sans ces capacités.
+Lorsque vous utilisez `LOGIC_FUNCTION_TYPE=DISABLED` ou `CODE_INTERPRETER_TYPE=DISABLED`, toute tentative d'exécution renverra une erreur. Cela est utile si vous souhaitez exécuter Arxena sans ces capacités.
 </Note>

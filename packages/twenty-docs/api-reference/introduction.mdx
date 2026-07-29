@@ -1,0 +1,54 @@
+---
+title: API Documentation
+description: Introduction to the Arxena People API — base URLs, authentication, and interactive playground.
+---
+
+Use the Arxena People API for **natural-language people search** at a company, public taxonomy constants, and auth-gated advanced filters — then try real requests from this documentation.
+
+<CardGroup cols={2}>
+  <Card title="NL → people" icon="wand-magic-sparkles" href="/cookbooks/nl-to-people-at-company">
+    CHRO / HR leadership at a company
+  </Card>
+  <Card title="Taxonomy constants" icon="list" href="/api-reference/taxonomy/list-taxonomy-constants">
+    Public flat grade and function-root labels
+  </Card>
+</CardGroup>
+
+## Getting started
+
+1. [Create an API key](/api-reference/authentication) in **Settings → APIs & Webhooks**
+2. Open any endpoint in this API Reference
+3. Paste your Bearer token in the playground Authorization field
+4. Click **Send** to call the live API
+
+## Base URL
+
+```text
+https://app.arxena.com
+```
+
+Cloud examples in this reference use `https://app.arxena.com`.
+
+## What is covered here
+
+| Surface | In this API Reference | Notes |
+|---------|------------------------|-------|
+| People API | Yes — interactive playground | Fixed REST surface under `/people-api` |
+| Core / Metadata CRM APIs | No | Schema is workspace-specific; use the in-app explorer under **Settings → APIs & Webhooks** for custom objects |
+
+## Guides
+
+<CardGroup cols={2}>
+  <Card title="Standardized taxonomy" icon="sitemap" href="/concepts/standardized-taxonomy">
+    Publish nouns, protect verbs — Apollo-style altitude
+  </Card>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Bearer tokens, API keys, and fair use
+  </Card>
+  <Card title="NL → people" icon="wand-magic-sparkles" href="/cookbooks/nl-to-people-at-company">
+    CHRO / HR leadership at a company
+  </Card>
+  <Card title="MCP" icon="robot" href="/cookbooks/mcp-people-and-org-charts">
+    Claude / Cursor via Arxena MCP
+  </Card>
+</CardGroup>

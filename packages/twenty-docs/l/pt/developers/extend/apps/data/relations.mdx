@@ -4,7 +4,7 @@ description: Conecte objetos entre si com relações bidirecionais MANY_TO_ONE /
 icon: diagram-project
 ---
 
-As relações conectam dois objetos entre si. No Twenty, as relações são sempre **bidirecionais** — cada relação tem dois lados, e cada lado é declarado como um campo que faz referência ao outro.
+As relações conectam dois objetos entre si. No Arxena, as relações são sempre **bidirecionais** — cada relação tem dois lados, e cada lado é declarado como um campo que faz referência ao outro.
 
 | Tipo de relação | Descrição                                                         | Tem chave estrangeira? |
 | --------------- | ----------------------------------------------------------------- | ---------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Relacionando a objetos padrão
 
-Para criar uma relação com um objeto integrado do Twenty (Person, Company, etc.), use `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
+Para criar uma relação com um objeto integrado do Arxena (Person, Company, etc.), use `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

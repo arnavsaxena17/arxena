@@ -6,7 +6,7 @@ description: Receba notificações quando os registros mudarem — HTTP POST par
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Twenty envia um HTTP POST para sua URL sempre que um registro é criado, atualizado ou excluído. Todos os tipos de objeto estão cobertos, incluindo objetos personalizados.
+Arxena envia um HTTP POST para sua URL sempre que um registro é criado, atualizado ou excluído. Todos os tipos de objeto estão cobertos, incluindo objetos personalizados.
 
 ## Criar Webhook
 
@@ -27,7 +27,7 @@ O webhook é ativado imediatamente e começa a enviar notificações.
 
 ## Eventos
 
-O Twenty envia webhooks para estes tipos de eventos:
+O Arxena envia webhooks para estes tipos de eventos:
 
 | Evento                  | Exemplo                                                    |
 | ----------------------- | ---------------------------------------------------------- |
@@ -68,7 +68,7 @@ Responda com um **status HTTP 2xx** (200-299) para confirmar o recebimento. Resp
 
 ## Validação de Webhook
 
-O Twenty assina cada solicitação de webhook por segurança. Valide as assinaturas para garantir que as solicitações sejam autênticas.
+O Arxena assina cada solicitação de webhook por segurança. Valide as assinaturas para garantir que as solicitações sejam autênticas.
 
 ### Cabeçalhos
 
@@ -112,6 +112,6 @@ const isValid = crypto.timingSafeEqual(
 | ------------------------------------------- | ------- | -------------------------------------------------------------------------------- |
 | **Webhooks**                                | SAÍDA   | Notificar automaticamente sistemas externos sobre qualquer alteração de registro |
 | **Fluxo de trabalho + Solicitação HTTP**    | SAÍDA   | Enviar dados para fora com lógica personalizada (filtros, transformações)        |
-| **Gatilho de webhook de fluxo de trabalho** | ENTRADA | Receber dados no Twenty a partir de sistemas externos                            |
+| **Gatilho de webhook de fluxo de trabalho** | ENTRADA | Receber dados no Arxena a partir de sistemas externos                            |
 
 Para receber dados externos, consulte [Configurar um gatilho de Webhook](/l/pt/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

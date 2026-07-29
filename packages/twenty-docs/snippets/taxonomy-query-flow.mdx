@@ -1,0 +1,29 @@
+export const TaxonomyQueryFlow = () => (
+  <div className="tx-flow">
+    <div className="tx-flow__step">
+      <span className="tx-flow__label">Natural language query</span>
+      <span className="tx-flow__sub">Company name + role phrase</span>
+    </div>
+    <div className="tx-flow__arrow" aria-hidden="true">
+      ↓
+    </div>
+    <div className="tx-flow__step tx-flow__step--resolve">
+      <span className="tx-flow__label">Resolve against taxonomy</span>
+      <span className="tx-flow__sub">Function root + grade category</span>
+    </div>
+    <div className="tx-flow__arrow" aria-hidden="true">
+      ↓
+    </div>
+    <div className="tx-flow__step">
+      <span className="tx-flow__label">Fetch via API</span>
+      <span className="tx-flow__sub">Scoped to company + role</span>
+    </div>
+    <div className="tx-flow__arrow" aria-hidden="true">
+      ↓
+    </div>
+    <div className="tx-flow__step tx-flow__step--result">
+      <span className="tx-flow__label">Ranked results</span>
+      <span className="tx-flow__sub">Deduped, confidence-scored</span>
+    </div>
+  </div>
+);

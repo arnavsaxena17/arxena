@@ -1,5 +1,5 @@
 ---
-title: Générer un devis ou une facture depuis Twenty
+title: Générer un devis ou une facture depuis Arxena
 description: Créer automatiquement des factures dans des outils externes lorsque des affaires se clôturent.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Articles connexes
 
-* [Générer un PDF à partir de Twenty](/l/fr/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — joindre les PDF générés aux enregistrements
+* [Générer un PDF à partir de Arxena](/l/fr/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — joindre les PDF générés aux enregistrements
 * [Déclencheurs de flux de travail](/l/fr/user-guide/workflows/capabilities/workflow-triggers)
 * [Actions de flux de travail](/l/fr/user-guide/workflows/capabilities/workflow-actions)
 * [Automatisations Closed Won](/l/fr/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

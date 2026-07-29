@@ -1,16 +1,16 @@
 ---
-title: Genera un PDF da Twenty
+title: Genera un PDF da Arxena
 description: Crea un flusso di lavoro per generare e allegare un PDF (ad esempio un preventivo) a un record.
 ---
 
-Genera o recupera automaticamente un PDF e allegalo a un record in Twenty. Questo viene comunemente utilizzato per creare preventivi, fatture o report collegati ad Aziende, Opportunità o altri oggetti.
+Genera o recupera automaticamente un PDF e allegalo a un record in Arxena. Questo viene comunemente utilizzato per creare preventivi, fatture o report collegati ad Aziende, Opportunità o altri oggetti.
 
 ## Panoramica
 
 Questo flusso di lavoro usa un **Attivatore manuale** così gli utenti possono generare un PDF su richiesta per qualsiasi record selezionato. Una **Funzione logica** gestisce:
 
 1. Scaricare il PDF da un URL (da un servizio di generazione di PDF)
-2. Caricare il file su Twenty
+2. Caricare il file su Arxena
 3. Creare un allegato collegato al record
 
 ## Prerequisiti
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ Ogni servizio fornisce un'API che restituisce un URL PDF, che puoi quindi passar
 
 * [Trigger dei flussi di lavoro](/l/it/user-guide/workflows/capabilities/workflow-triggers)
 * [Funzioni logiche](/l/it/user-guide/workflows/capabilities/workflow-actions#code)
-* [Genera un preventivo o una fattura da Twenty](/l/it/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Genera un preventivo o una fattura da Arxena](/l/it/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

@@ -1,16 +1,16 @@
 ---
-title: Twenty'den bir PDF oluşturun
+title: Arxena'den bir PDF oluşturun
 description: Bir kayda PDF (ör. bir teklif) oluşturup eklemek için bir iş akışı oluşturun.
 ---
 
-Twenty'de PDF'yi otomatik olarak oluşturun veya edinin ve bir kayda ekleyin. Bu, Şirketler, Fırsatlar veya diğer nesnelere bağlı teklif, fatura ya da raporlar oluşturmak için yaygın olarak kullanılır.
+Arxena'de PDF'yi otomatik olarak oluşturun veya edinin ve bir kayda ekleyin. Bu, Şirketler, Fırsatlar veya diğer nesnelere bağlı teklif, fatura ya da raporlar oluşturmak için yaygın olarak kullanılır.
 
 ## Genel Bakış
 
 Bu iş akışı, kullanıcıların seçilen herhangi bir kayıt için isteğe bağlı olarak PDF oluşturabilmesi için **Manuel Tetikleyici** kullanır. Bir **Mantıksal İşlev** şunları gerçekleştirir:
 
 1. PDF'yi bir URL'den indirme (bir PDF oluşturma hizmetinden)
-2. Dosyayı Twenty'ye yükleme
+2. Dosyayı Arxena'ye yükleme
 3. Kayda bağlı bir ek oluşturma
 
 ## Ön Gereksinimler
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ Her hizmet, bir PDF URL'si döndüren bir API sağlar; ardından bunu mantıksal
 
 * [İş Akışı Tetikleyicileri](/l/tr/user-guide/workflows/capabilities/workflow-triggers)
 * [Mantıksal İşlevler](/l/tr/user-guide/workflows/capabilities/workflow-actions#code)
-* [Twenty'den Teklif veya Fatura Oluşturun](/l/tr/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Arxena'den Teklif veya Fatura Oluşturun](/l/tr/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

@@ -1,6 +1,6 @@
 ---
 title: Prepara i tuoi file CSV
-description: Guida completa passo passo per formattare i tuoi dati per l'importazione in Twenty.
+description: Guida completa passo passo per formattare i tuoi dati per l'importazione in Arxena.
 ---
 
 ## Panoramica
@@ -22,7 +22,7 @@ Prima di iniziare, assicurati che il tuo file soddisfi questi requisiti:
 
 ## Passaggio 2: Scarica il file di esempio
 
-**Questo è il passaggio più importante.** Il file di esempio ti mostra i nomi delle colonne e il formato esatti che Twenty si aspetta.
+**Questo è il passaggio più importante.** Il file di esempio ti mostra i nomi delle colonne e il formato esatti che Arxena si aspetta.
 
 1. Vai alla vista dell'oggetto (Persone, Aziende, ecc.)
 2. Fai clic su **⋮** → **Importa record**
@@ -33,7 +33,7 @@ Prima di iniziare, assicurati che il tuo file soddisfi questi requisiti:
 
 ## Passaggio 3: Rimuovi i valori duplicati
 
-Twenty impone l'unicità su alcuni campi. I duplicati causeranno errori di importazione.
+Arxena impone l'unicità su alcuni campi. I duplicati causeranno errori di importazione.
 
 | Oggetto                    | Campi unici                                                   |
 | -------------------------- | ------------------------------------------------------------- |
@@ -45,7 +45,7 @@ Twenty impone l'unicità su alcuni campi. I duplicati causeranno errori di impor
 
 1. Ordina il tuo foglio di calcolo in base al campo univoco (email o dominio)
 2. Rimuovi o unisci le righe duplicate
-3. Verifica la presenza di duplicati già esistenti in Twenty
+3. Verifica la presenza di duplicati già esistenti in Arxena
 
 <Warning>**I record eliminati in modo non definitivo contano ai fini dell'unicità.** I record in Menu Comandi → Vedi record eliminati causeranno errori di duplicato. Eliminali definitivamente oppure ripristinali e aggiornali.</Warning>
 
@@ -61,11 +61,11 @@ Tipi di campo diversi richiedono formati specifici. Ecco il riferimento completo
 ### Campi email
 
 * Deve avere un formato email valido: `name@domain.com`
-* Deve essere univoco (nessun duplicato nel file o in Twenty)
+* Deve essere univoco (nessun duplicato nel file o in Arxena)
 * Per email aggiuntive, usa questo formato nella colonna **Email / Email aggiuntive**:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Campi del dominio
@@ -75,7 +75,7 @@ Tipi di campo diversi richiedono formati specifici. Ecco il riferimento completo
 * Compila entrambe le colonne:
   * **Dominio / Etichetta dominio**: `domain.com`
   * **Dominio / URL dominio**: `https://domain.com`
-* Deve essere univoco all'interno del tuo file e in Twenty
+* Deve essere univoco all'interno del tuo file e in Arxena
 
 ### Campi telefono
 
@@ -163,13 +163,13 @@ Usa il formato: `RATING_1`, `RATING_2`, `RATING_3`, `RATING_4` o `RATING_5`
 
 Compila entrambe le colonne:
 
-* **Link / Etichetta del link**: `Twenty`
-* **Link / URL del link**: `https://twenty.com`
+* **Link / Etichetta del link**: `Arxena`
+* **Link / URL del link**: `https://arxena.com`
 
 Per i link secondari, usa la colonna **Link / Link secondari**:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Campi JSON
@@ -182,7 +182,7 @@ Usa un formato JSON valido:
 
 ### Campi ID
 
-* **Opzionale**: Twenty genera automaticamente gli ID se non forniti
+* **Opzionale**: Arxena genera automaticamente gli ID se non forniti
 * **Formato**: UUID (ad es., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 * **Caso d'uso**: Includi l'ID per aggiornare i record esistenti invece di crearne di nuovi
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **Regole importanti per le relazioni:**
 
-* Il record padre deve già esistere in Twenty
+* Il record padre deve già esistere in Arxena
 * Usa il formato **URL del dominio** (`https://domain.com`), non l'etichetta
 * Mappa un solo identificatore univoco (non includere sia `companyId` che `companyDomain`)
 * Per i membri dello spazio di lavoro, usa la loro **email** (non il nome)
@@ -220,7 +220,7 @@ Il record padre deve esistere prima di potervi fare riferimento.
 
 Consulta [Come importare le relazioni](/l/it/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv) per istruzioni dettagliate.
 
-## Passaggio 6: Verifica che i campi esistano in Twenty
+## Passaggio 6: Verifica che i campi esistano in Arxena
 
 L'importazione crea record, non campi. Tutti i campi che vuoi importare devono già esistere nel tuo modello dati.
 

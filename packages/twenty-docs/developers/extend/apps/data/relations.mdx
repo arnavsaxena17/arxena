@@ -4,7 +4,7 @@ description: Connect objects together with bidirectional MANY_TO_ONE / ONE_TO_MA
 icon: "diagram-project"
 ---
 
-Relations connect two objects together. In Twenty, relations are always **bidirectional** — every relation has two sides, and each side is declared as a field that references the other.
+Relations connect two objects together. In Arxena, relations are always **bidirectional** — every relation has two sides, and each side is declared as a field that references the other.
 
 | Relation type | Description | Has foreign key? |
 |---------------|-------------|------------------|
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Relating to standard objects
 
-To create a relation with a built-in Twenty object (Person, Company, etc.), use `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
+To create a relation with a built-in Arxena object (Person, Company, etc.), use `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

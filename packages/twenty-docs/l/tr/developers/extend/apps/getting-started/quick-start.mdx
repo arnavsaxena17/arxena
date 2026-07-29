@@ -1,21 +1,21 @@
 ---
 title: Hızlı Başlangıç
 icon: rocket
-description: İlk Twenty uygulamanızı dakikalar içinde oluşturun.
+description: İlk Arxena uygulamanızı dakikalar içinde oluşturun.
 ---
 
 ## Ön Gereksinimler
 
 * **Node.js 24.5+** — [Buradan indirin](https://nodejs.org/)
 * **Yarn 4** — Corepack aracılığıyla Node ile birlikte gelir. Etkinleştirin: `corepack enable`
-* **Docker** — [Buradan indirin](https://www.docker.com/products/docker-desktop/). Yerel bir Twenty sunucusunu çalıştırmak için gereklidir. Zaten başka bir yerde Twenty çalıştırıyorsanız atlayın.
+* **Docker** — [Buradan indirin](https://www.docker.com/products/docker-desktop/). Yerel bir Arxena sunucusunu çalıştırmak için gereklidir. Zaten başka bir yerde Arxena çalıştırıyorsanız atlayın.
 
-Bir Twenty uygulaması oluşturmanın üç aşaması vardır. İskelet oluşturucu bunları tek bir sorunsuz akış komutuna indirger, ancak her aşama ayrı bir kavramdır — bir şeyler başarısız olduğunda hangi aşamada olduğunuzu bilmek neyi düzeltmeniz gerektiğini söyler.
+Bir Arxena uygulaması oluşturmanın üç aşaması vardır. İskelet oluşturucu bunları tek bir sorunsuz akış komutuna indirger, ancak her aşama ayrı bir kavramdır — bir şeyler başarısız olduğunda hangi aşamada olduğunuzu bilmek neyi düzeltmeniz gerektiğini söyler.
 
 | Aşama                        | Ne yaparsınız                                     | Araç                                | Sonuç                              |
 | ---------------------------- | ------------------------------------------------- | ----------------------------------- | ---------------------------------- |
 | **1. İskelet Oluşturma**     | Uygulamanın kaynak kodunu oluşturun               | `npx create-twenty-app`             | Diskte bir TypeScript projesi      |
-| **2. Bir sunucu çalıştırma** | Eşitleme yapacağınız bir Twenty sunucusu başlatın | Docker + `yarn twenty docker:start` | Çalışan bir Twenty örneği          |
+| **2. Bir sunucu çalıştırma** | Eşitleme yapacağınız bir Arxena sunucusu başlatın | Docker + `yarn twenty docker:start` | Çalışan bir Arxena örneği          |
 | **3. Eşitleme**              | Kodunuzu sunucuya canlı olarak eşitleyin          | `yarn twenty dev`                   | Değişiklikleriniz arayüzde görünür |
 
 ---
@@ -34,20 +34,20 @@ npx create-twenty-app@latest my-twenty-app
 
 ---
 
-## Aşama 2 — Yerel bir Twenty sunucusu çalıştırın
+## Aşama 2 — Yerel bir Arxena sunucusu çalıştırın
 
-Uygulamanızın eşitleme yapacağı bir Twenty sunucusuna ihtiyacı vardır. Sunucu, Docker içinde yerel olarak çalışan tam bir Twenty örneğidir — UI, GraphQL API, PostgreSQL. Yerel kodunuz tanımlarını bu sunucuya yükler; bu da onların arayüzde görünmesini sağlar.
+Uygulamanızın eşitleme yapacağı bir Arxena sunucusuna ihtiyacı vardır. Sunucu, Docker içinde yerel olarak çalışan tam bir Arxena örneğidir — UI, GraphQL API, PostgreSQL. Yerel kodunuz tanımlarını bu sunucuya yükler; bu da onların arayüzde görünmesini sağlar.
 
 İskele oluşturucu bunu sizin için başlatır: Docker çalışırken `twentycrm/twenty-app-dev` imajını çeker, onu `2020` portunda başlatır ve CLI'yı önceden doldurulmuş demo çalışma alanına (`tim@apple.dev`) karşı kimlik doğrular — oturum açmanız gerekmez.
 
-Bunun yerine mevcut bir Twenty sunucusuna bağlanmak için `--url \<your-server-url>` parametresini iletin. Uzak sunucular OAuth ile kimlik doğrular: oturum açabilmeniz ve **Authorize**'a tıklayabilmeniz için bir tarayıcı açılır; bu, CLI'ye çalışma alanınıza erişim sağlar. (Yerelde de `--authentication-method oauth` ile OAuth kullanmayı tercih edebilirsiniz — `tim@apple.dev` / `tim@apple.dev` ile oturum açın.)
+Bunun yerine mevcut bir Arxena sunucusuna bağlanmak için `--url \<your-server-url>` parametresini iletin. Uzak sunucular OAuth ile kimlik doğrular: oturum açabilmeniz ve **Authorize**'a tıklayabilmeniz için bir tarayıcı açılır; bu, CLI'ye çalışma alanınıza erişim sağlar. (Yerelde de `--authentication-method oauth` ile OAuth kullanmayı tercih edebilirsiniz — `tim@apple.dev` / `tim@apple.dev` ile oturum açın.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Twenty oturum açma ekranı" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Arxena oturum açma ekranı" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Twenty CLI yetkilendirme ekranı" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Arxena CLI yetkilendirme ekranı" />
 </div>
 
 Terminaliniz her şeyin kurulduğunu onaylayacaktır.
@@ -56,7 +56,7 @@ Terminaliniz her şeyin kurulduğunu onaylayacaktır.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="Uygulama iskeleti başarıyla oluşturuldu" />
 </div>
 
-**Bu aşamadan sonra:** [http://localhost:2020](http://localhost:2020) adresinde çalışan bir Twenty sunucunuz ve ona eşitleme yapmak için yetkilendirilmiş bir CLI'ınız olur.
+**Bu aşamadan sonra:** [http://localhost:2020](http://localhost:2020) adresinde çalışan bir Arxena sunucunuz ve ona eşitleme yapmak için yetkilendirilmiş bir CLI'ınız olur.
 
 <Note>
 Docker yüklü değilse veya çalışmıyorsa, iskelet oluşturucu işletim sisteminiz için doğru başlatma komutunu söyleyecektir. Docker çalışır duruma geldiğinde, `yarn twenty docker:start` ile devam edebilirsiniz — yeniden iskelet oluşturmaya gerek yok.
@@ -138,7 +138,7 @@ Uygulamalar **varlıklardan** oluşur — her biri tek bir `export default` içe
 | ------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **Nesneler ve Alanlar**   | Özel veri modelleri (Post Card, Invoice vb.) tiplendirilmiş alanlarla                                     |
 | **Mantıksal işlevler**    | HTTP rotaları, cron zamanlamaları veya veritabanı olayları tarafından tetiklenen sunucu tarafı TypeScript |
-| **Ön uç bileşenleri**     | Twenty'nin arayüzünde görüntülenen React bileşenleri (yan panel, widget'lar, komut menüsü)                |
+| **Ön uç bileşenleri**     | Arxena'nin arayüzünde görüntülenen React bileşenleri (yan panel, widget'lar, komut menüsü)                |
 | **Beceriler ve Aracılar** | Yapay zeka yetenekleri — yeniden kullanılabilir yönergeler ve otonom asistanlar                           |
 | **Görünümler ve Gezinme** | Önceden yapılandırılmış liste görünümleri ve kenar çubuğu menü öğeleri                                    |
 | **Sayfa düzenleri**       | Sekmeler ve widget'lar içeren özel kayıt ayrıntı sayfaları                                                |

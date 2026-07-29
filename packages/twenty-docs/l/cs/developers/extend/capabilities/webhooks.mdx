@@ -5,7 +5,7 @@ description: Dostávejte oznámení v reálném čase, když ve vašem CRM dojde
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Webhooky posílají data do vašich systémů v reálném čase, když v Twenty dojde k událostem — bez potřeby průběžného dotazování. Použijte je k udržování externích systémů v synchronizaci, spouštění automatizací nebo zasílání upozornění.
+Webhooky posílají data do vašich systémů v reálném čase, když v Arxena dojde k událostem — bez potřeby průběžného dotazování. Použijte je k udržování externích systémů v synchronizaci, spouštění automatizací nebo zasílání upozornění.
 
 ## Vytvořit Webhook
 
@@ -26,7 +26,7 @@ Webhook se aktivuje okamžitě a začne odesílat oznámení.
 
 ## Události
 
-Twenty odesílá webhooky pro tyto typy událostí:
+Arxena odesílá webhooky pro tyto typy událostí:
 
 | Událost                    | Příklad                                                    |
 | -------------------------- | ---------------------------------------------------------- |
@@ -67,7 +67,7 @@ Odpovězte se **stavem HTTP 2xx** (200–299) pro potvrzení přijetí. Odpověd
 
 ## Ověření Webhooku
 
-Twenty kvůli bezpečnosti podepisuje každý požadavek webhooku. Ověřujte podpisy, abyste zajistili, že požadavky jsou autentické.
+Arxena kvůli bezpečnosti podepisuje každý požadavek webhooku. Ověřujte podpisy, abyste zajistili, že požadavky jsou autentické.
 
 ### Záhlaví
 
@@ -107,6 +107,6 @@ const isValid = expectedSignature === req.headers["x-twenty-webhook-signature"];
 | ----------------------------------------- | ---- | --------------------------------------------------------------- |
 | **Webhooky**                              | OUT  | Automaticky informujte externí systémy o jakékoli změně záznamu |
 | **Pracovní postup + požadavek HTTP**      | OUT  | Odesílejte data ven s vlastní logikou (filtry, transformace)    |
-| **Spouštěč webhooku v pracovním postupu** | IN   | Přijímejte data do Twenty z externích systémů                   |
+| **Spouštěč webhooku v pracovním postupu** | IN   | Přijímejte data do Arxena z externích systémů                   |
 
 Pro příjem externích dat viz [Nastavení spouštěče webhooku](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

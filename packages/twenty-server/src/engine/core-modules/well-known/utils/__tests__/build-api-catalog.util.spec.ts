@@ -2,6 +2,7 @@ import { buildApiCatalog } from 'src/engine/core-modules/well-known/utils/build-
 
 describe('buildApiCatalog', () => {
   const baseUrl = 'https://mycompany.twenty.com';
+  const appBaseUrl = 'https://app.arxena.com';
 
   it('anchors each surface at its canonical URL on the given host', () => {
     const catalog = buildApiCatalog(baseUrl);
@@ -55,6 +56,16 @@ describe('buildApiCatalog', () => {
     for (const entry of catalog.linkset) {
       expect(entry['service-doc']?.[0]?.href).toMatch(
         /^https:\/\/docs\.twenty\.com\//,
+      );
+    }
+  });
+
+  it('derives docs host from app-like origins', () => {
+    const catalog = buildApiCatalog(appBaseUrl);
+
+    for (const entry of catalog.linkset) {
+      expect(entry['service-doc']?.[0]?.href).toMatch(
+        /^https:\/\/docs\.arxena\.com\//,
       );
     }
   });

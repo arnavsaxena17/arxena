@@ -13,9 +13,9 @@ iată câteva soluții la problemele comune.
 #### Prima instalare rezultă în `autentificare parola eșuată pentru utilizatorul "postgres"`
 
 🚨 **IMPORTANT: Această soluție este DOAR pentru instalările noi** 🚨
-Dacă aveți deja o instanță Twenty cu date de producție, **NU** urmați acești pași deoarece vor șterge permanent baza dvs. de date!
+Dacă aveți deja o instanță Arxena cu date de producție, **NU** urmați acești pași deoarece vor șterge permanent baza dvs. de date!
 
-În timp ce instalați Twenty pentru prima dată, este posibil să doriți să schimbați parola implicită a bazei de date.
+În timp ce instalați Arxena pentru prima dată, este posibil să doriți să schimbați parola implicită a bazei de date.
 Parola pe care o setați în timpul primei instalări devine stocată permanent în volumul bazei de date. Dacă mai târziu încercați să schimbați această parolă în configurația dvs. fără a elimina vechiul volum, veți obține erori de autentificare deoarece baza de date folosește încă parola originală.
 
 ⚠️ AVERTIZARE: Următorii pași vor ȘTERGE PERMANENT toate datele din baza de date! ⚠️
@@ -41,7 +41,7 @@ Apoi ștergeți depozitul și clonați-l din nou.
 
 #### Schema de metadate lipsă
 
-În timpul instalării Twenty, trebuie să aprovizionați baza de date postgres cu schemele, extensiile și utilizatorii corecți.
+În timpul instalării Arxena, trebuie să aprovizionați baza de date postgres cu schemele, extensiile și utilizatorii corecți.
 Dacă reușiți să executați această aprovizionare, ar trebui să aveți schemele `default` și `metadata` în baza dvs. de date.
 Dacă nu, asigurați-vă că nu aveți mai mult de o instanță postgres funcționând pe computerul dvs.
 
@@ -82,7 +82,7 @@ Flag-ul --max-old-space-size=8192 setează o limită superioară de 8 GB pentru 
 Referință: https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Dacă nu funcționează:**
-Investigați care procese consumă cea mai mare parte din RAM-ul mașinii dvs. La Twenty, am observat că unele extensii VScode consumau multă RAM, așa că le dezactivăm temporar.
+Investigați care procese consumă cea mai mare parte din RAM-ul mașinii dvs. La Arxena, am observat că unele extensii VScode consumau multă RAM, așa că le dezactivăm temporar.
 
 **Dacă nu funcționează:**
 Repornirea mașinii ajută la curățarea proceselor fantomă.
@@ -121,9 +121,9 @@ Acest lucru este așteptat deoarece utilizatorul este neautorizat când este dec
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Test de webhook" />
 </div>
 
-* Deschideți aplicația Twenty, navigați la `/settings` și activați comutatorul **Avansat** în colțul din stânga jos al ecranului.
+* Deschideți aplicația Arxena, navigați la `/settings` și activați comutatorul **Avansat** în colțul din stânga jos al ecranului.
 * Creați un nou webhook.
-* Lipiți **Your Unique Webhook URL** în câmpul **Endpoint Url** din Twenty. Setați **Filtrele** pe `Companii` și `Create`.
+* Lipiți **Your Unique Webhook URL** în câmpul **Endpoint Url** din Arxena. Setați **Filtrele** pe `Companii` și `Create`.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Setări webhook" />
@@ -193,7 +193,7 @@ Rețineți că comenzile database:reset vor șterge complet baza dvs. de date ș
 
 #### Probleme de conexiune în spatele unui proxy invers
 
-Dacă rulați Twenty în spatele unui proxy invers și întâmpinați probleme de conexiune:
+Dacă rulați Arxena în spatele unui proxy invers și întâmpinați probleme de conexiune:
 
 1. **Verificați SERVER_URL:**
 
@@ -201,12 +201,12 @@ Dacă rulați Twenty în spatele unui proxy invers și întâmpinați probleme d
 
 2. **Verificați Setările Proxy-ului Invers:**
 
-   * Confirmați că proxy-ul invers transmite corect cererile către serverul Twenty.
+   * Confirmați că proxy-ul invers transmite corect cererile către serverul Arxena.
    * Asigurați-vă că headerele precum `X-Forwarded-For` și `X-Forwarded-Proto` sunt setate corect.
 
 3. **Reporniți Serviciile:**
 
-   După ce faceți schimbări, reporniți atât proxy-ul invers, cât și containerele Twenty.
+   După ce faceți schimbări, reporniți atât proxy-ul invers, cât și containerele Arxena.
 
 #### Eroare la încărcarea unei imagini - permisiune refuzată
 
@@ -226,4 +226,4 @@ Dacă întâmpinați probleme care nu sunt acoperite în acest ghid:
 
 * Suport Comunitar:
 
-  Contactați [comunitatea Twenty](https://github.com/twentyhq/twenty/issues) sau [canalele de suport](https://discord.gg/cx5n4Jzs57) pentru asistență.
+  Contactați [comunitatea Arxena](https://github.com/twentyhq/twenty/issues) sau [canalele de suport](https://discord.gg/cx5n4Jzs57) pentru asistență.

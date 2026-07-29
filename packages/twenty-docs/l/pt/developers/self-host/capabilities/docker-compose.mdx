@@ -9,7 +9,7 @@ Os contêineres Docker são para hospedagem em produção ou auto-hospedagem. Pa
 
 ## Visão geral
 
-Este guia fornece instruções passo a passo para instalar e configurar o aplicativo Twenty usando Docker Compose. O objetivo é tornar o processo simples e evitar armadilhas comuns que possam quebrar sua configuração.
+Este guia fornece instruções passo a passo para instalar e configurar o aplicativo Arxena usando Docker Compose. O objetivo é tornar o processo simples e evitar armadilhas comuns que possam quebrar sua configuração.
 
 **Importante:** Modifique apenas as configurações explicitamente mencionadas neste guia. Alterar outras configurações pode levar a problemas.
 
@@ -22,7 +22,7 @@ Consulte [Configurar Variáveis de Ambiente](/l/pt/developers/self-host/capabili
 
 ## Opção 1: Script de uma linha
 
-Instale a versão estável mais recente do Twenty com um único comando:
+Instale a versão estável mais recente do Arxena com um único comando:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/scripts/install.sh)
@@ -107,9 +107,9 @@ curl http://localhost:3000
 
 ## Configuração
 
-### Expor o Twenty para Acesso Externo
+### Expor o Arxena para Acesso Externo
 
-Por padrão, o Twenty é executado em `localhost` na porta `3000`. Para acessá-lo via um domínio externo ou endereço IP, você precisa configurar o `SERVER_URL` no seu arquivo `.env`.
+Por padrão, o Arxena é executado em `localhost` na porta `3000`. Para acessá-lo via um domínio externo ou endereço IP, você precisa configurar o `SERVER_URL` no seu arquivo `.env`.
 
 #### Compreendendo `SERVER_URL`
 
@@ -121,11 +121,11 @@ Por padrão, o Twenty é executado em `localhost` na porta `3000`. Para acessá-
 
 ### Requisitos de SSL
 
-SSL (HTTPS) é necessário para que certos recursos do navegador funcionem corretamente. Embora esses recursos possam funcionar durante o desenvolvimento local (já que os navegadores tratam o localhost de modo diferente), é necessária uma configuração adequada de SSL ao hospedar o Twenty em um domínio normal.
+SSL (HTTPS) é necessário para que certos recursos do navegador funcionem corretamente. Embora esses recursos possam funcionar durante o desenvolvimento local (já que os navegadores tratam o localhost de modo diferente), é necessária uma configuração adequada de SSL ao hospedar o Arxena em um domínio normal.
 
 Por exemplo, a API da área de transferência pode exigir um contexto seguro - alguns recursos, como botões de cópia através do aplicativo, podem não funcionar sem HTTPS ativado.
 
-Recomendamos fortemente configurar o Twenty atrás de um proxy reverso com terminação SSL para segurança e funcionalidade ótimas.
+Recomendamos fortemente configurar o Arxena atrás de um proxy reverso com terminação SSL para segurança e funcionalidade ótimas.
 
 #### Configurando `SERVER_URL`
 
@@ -258,5 +258,5 @@ Se encontrar algum problema, verifique [Resolução de Problemas](/l/pt/develope
 ## Hospedagem Gerenciada
 
 <Tip>
-  Prefere não executar e manter o Twenty você mesmo? [Encontre um parceiro Twenty certificado de hospedagem](https://twenty.com/partners/list?categories=HOSTING\&ref=docs-docker-compose) para implantar, hospedar e gerir a sua instância de ponta a ponta. *(Ou entre em contato com a nossa equipe: [contact@twenty.com](mailto:contact@twenty.com).)*
+  Prefere não executar e manter o Arxena você mesmo? [Encontre um parceiro Arxena certificado de hospedagem](https://arxena.com/partners/list?categories=HOSTING\&ref=docs-docker-compose) para implantar, hospedar e gerir a sua instância de ponta a ponta. *(Ou entre em contato com a nossa equipe: [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>

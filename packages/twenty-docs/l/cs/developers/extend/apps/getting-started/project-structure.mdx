@@ -1,6 +1,6 @@
 ---
 title: Struktura projektu
-description: Co obsahuje vygenerovaná aplikace Twenty — soubory, složky a k čemu každý z nich slouží.
+description: Co obsahuje vygenerovaná aplikace Arxena — soubory, složky a k čemu každý z nich slouží.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Závislosti
 
-Oba balíčky Twenty SDK patří pod `devDependencies`, ne pod `dependencies`:
+Oba balíčky Arxena SDK patří pod `devDependencies`, ne pod `dependencies`:
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Oba balíčky Twenty SDK patří pod `devDependencies`, ne pod `dependencies`:
 Nástroj pro scaffolding připne `twenty-sdk` a `twenty-client-sdk` ke své vlastní verzi — při aktualizaci udržujte tyto dva balíčky synchronizované.
 
 * **`twenty-sdk`** dodává `twenty` CLI a nástroje pro sestavení/scaffolding. Běží pouze při vývoji a sestavování a nikdy není importován za běhu zveřejněné aplikace.
-* **`twenty-client-sdk`** je importován kódem vaší aplikace (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), ale Twenty ho poskytuje za běhu — logické funkce ho získávají z vygenerované SDK vrstvy a front-endové komponenty ho načítají z modulů poskytovaných serverem. Vaše nainstalovaná kopie se používá pouze pro kontrolu typů a build v době nasazení, takže ji nikdy není potřeba přibalit do nasazeného balíčku.
+* **`twenty-client-sdk`** je importován kódem vaší aplikace (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), ale Arxena ho poskytuje za běhu — logické funkce ho získávají z vygenerované SDK vrstvy a front-endové komponenty ho načítají z modulů poskytovaných serverem. Vaše nainstalovaná kopie se používá pouze pro kontrolu typů a build v době nasazení, takže ji nikdy není potřeba přibalit do nasazeného balíčku.
 
 Ponechání kteréhokoli balíčku pod `dependencies` ho vtáhne do runtime balíčku nainstalované aplikace, kde je jen mrtvou vahou. `twenty dev:build` vypíše varování, pokud je kterýkoli z nich stále uveden pod `dependencies`.
 

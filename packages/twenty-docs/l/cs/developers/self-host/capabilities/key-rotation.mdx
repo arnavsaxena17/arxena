@@ -3,7 +3,7 @@ title: Rotace klíčů
 icon: rotate
 ---
 
-Twenty má dvě nezávislé rodiny klíčů:
+Arxena má dvě nezávislé rodiny klíčů:
 
 * **Klíče pro podepisování JWT** — asymetrické páry klíčů ES256 (označené `kid`), uložené v `core."signingKey"`, používané k podepisování a ověřování přístupových/obnovovacích tokenů.
 * **Šifrovací klíč pro data v klidu** — `ENCRYPTION_KEY`, používaný k šifrování OAuth tokenů, aplikačních proměnných, soukromých klíčů podepisovacích klíčů, citlivých konfiguračních hodnot a TOTP tajemství uvnitř obálky `enc:v2:`.

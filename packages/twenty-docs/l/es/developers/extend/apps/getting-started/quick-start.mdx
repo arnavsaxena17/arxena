@@ -1,21 +1,21 @@
 ---
 title: Inicio rápido
 icon: rocket
-description: Crea tu primera aplicación de Twenty en minutos.
+description: Crea tu primera aplicación de Arxena en minutos.
 ---
 
 ## Prerrequisitos
 
 * **Node.js 24.5+** — [Descargar](https://nodejs.org/)
 * **Yarn 4** — incluido con Node.js a través de Corepack. Actívalo: `corepack enable`
-* **Docker** — [Descargar](https://www.docker.com/products/docker-desktop/). Necesario para ejecutar un servidor local de Twenty. Omítelo si ya tienes Twenty ejecutándose en otro lugar.
+* **Docker** — [Descargar](https://www.docker.com/products/docker-desktop/). Necesario para ejecutar un servidor local de Arxena. Omítelo si ya tienes Arxena ejecutándose en otro lugar.
 
-La creación de una app de Twenty tiene tres fases. El generador las combina en un único comando de ruta ideal, pero cada fase es un concepto independiente — cuando algo falla, saber en qué fase estás te indica qué debes corregir.
+La creación de una app de Arxena tiene tres fases. El generador las combina en un único comando de ruta ideal, pero cada fase es un concepto independiente — cuando algo falla, saber en qué fase estás te indica qué debes corregir.
 
 | Fase                        | Qué haces                                           | Herramienta                         | Resultado                            |
 | --------------------------- | --------------------------------------------------- | ----------------------------------- | ------------------------------------ |
 | **1. Generar estructura**   | Genera el código fuente de la app                   | `npx create-twenty-app`             | Un proyecto de TypeScript en disco   |
-| **2. Ejecutar un servidor** | Inicia un servidor de Twenty con el que sincronizar | Docker + `yarn twenty docker:start` | Una instancia de Twenty en ejecución |
+| **2. Ejecutar un servidor** | Inicia un servidor de Arxena con el que sincronizar | Docker + `yarn twenty docker:start` | Una instancia de Arxena en ejecución |
 | **3. Sincronizar**          | Sincroniza en vivo tu código con el servidor        | `yarn twenty dev`                   | Tus cambios aparecen en la UI        |
 
 ---
@@ -34,20 +34,20 @@ El generador no es interactivo: el nombre del directorio se convierte en el nomb
 
 ---
 
-## Fase 2 — Ejecuta un servidor local de Twenty
+## Fase 2 — Ejecuta un servidor local de Arxena
 
-Tu app necesita un servidor de Twenty con el que sincronizar. El servidor es una instancia completa de Twenty — UI, API GraphQL, PostgreSQL — ejecutándose localmente en Docker. Tu código local sube sus definiciones a ese servidor, lo que hace que aparezcan en la UI.
+Tu app necesita un servidor de Arxena con el que sincronizar. El servidor es una instancia completa de Arxena — UI, API GraphQL, PostgreSQL — ejecutándose localmente en Docker. Tu código local sube sus definiciones a ese servidor, lo que hace que aparezcan en la UI.
 
 El generador inicia uno por ti: con Docker en ejecución, extrae la imagen `twentycrm/twenty-app-dev`, la inicia en el puerto `2020` y autentica la CLI contra el espacio de trabajo de demostración preconfigurado (`tim@apple.dev`), sin necesidad de iniciar sesión.
 
-Para conectarte a un servidor Twenty existente en su lugar, pasa `--url \<your-server-url>`. Los servidores remotos se autentican con OAuth: se abre un navegador para que puedas iniciar sesión y hacer clic en **Authorize**, lo que le da a la CLI acceso a tu espacio de trabajo. (También puedes optar por usar OAuth localmente con `--authentication-method oauth`: inicia sesión con `tim@apple.dev` / `tim@apple.dev`.)
+Para conectarte a un servidor Arxena existente en su lugar, pasa `--url \<your-server-url>`. Los servidores remotos se autentican con OAuth: se abre un navegador para que puedas iniciar sesión y hacer clic en **Authorize**, lo que le da a la CLI acceso a tu espacio de trabajo. (También puedes optar por usar OAuth localmente con `--authentication-method oauth`: inicia sesión con `tim@apple.dev` / `tim@apple.dev`.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Pantalla de inicio de sesión de Twenty" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Pantalla de inicio de sesión de Arxena" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Pantalla de autorización de la CLI de Twenty" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Pantalla de autorización de la CLI de Arxena" />
 </div>
 
 Tu terminal confirmará que todo está configurado.
@@ -56,7 +56,7 @@ Tu terminal confirmará que todo está configurado.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="Aplicación generada correctamente" />
 </div>
 
-**Después de esta fase:** tienes un servidor de Twenty en ejecución en [http://localhost:2020](http://localhost:2020) con tu CLI autorizada para sincronizar con él.
+**Después de esta fase:** tienes un servidor de Arxena en ejecución en [http://localhost:2020](http://localhost:2020) con tu CLI autorizada para sincronizar con él.
 
 <Note>
 Si Docker no está instalado o en ejecución, el generador te indicará el comando de inicio correcto para tu sistema operativo. Una vez que Docker esté en marcha, puedes reanudar con `yarn twenty docker:start` — no es necesario volver a generar la estructura.
@@ -138,7 +138,7 @@ Las apps se componen de **entidades** — cada una definida como un archivo de T
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | **Objetos y campos**        | Modelos de datos personalizados (Post Card, Invoice, etc.). con campos tipados                                            |
 | **Funciones de lógica**     | Funciones de TypeScript del lado del servidor activadas por rutas HTTP, programaciones de cron o eventos de base de datos |
-| **Componentes de frontend** | Componentes de React que se renderizan dentro de la interfaz de Twenty (panel lateral, widgets, menú de comandos)         |
+| **Componentes de frontend** | Componentes de React que se renderizan dentro de la interfaz de Arxena (panel lateral, widgets, menú de comandos)         |
 | **Habilidades y agentes**   | Capacidades de IA — instrucciones reutilizables y asistentes autónomos                                                    |
 | **Vistas y navegación**     | Vistas de lista preconfiguradas y elementos del menú lateral                                                              |
 | **Diseños de página**       | Páginas de detalle de registros personalizadas con pestañas y widgets                                                     |

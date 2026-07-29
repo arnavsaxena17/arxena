@@ -1,10 +1,10 @@
 ---
 title: Overview
-description: Server-side TypeScript that runs inside Twenty — triggered by HTTP routes, cron schedules, database events, AI tools, or workflow actions.
+description: Server-side TypeScript that runs inside Arxena — triggered by HTTP routes, cron schedules, database events, AI tools, or workflow actions.
 icon: "bolt"
 ---
 
-A Twenty app's **logic layer** is the code that *runs* — server-side TypeScript handlers reacting to HTTP requests, cron schedules, and record changes; AI skills and agents that live inside the workspace; and OAuth connections that let your functions act on a user's behalf in third-party services.
+An Arxena app's **logic layer** is the code that *runs* — server-side TypeScript handlers reacting to HTTP requests, cron schedules, and record changes; AI skills and agents that live inside the workspace; and OAuth connections that let your functions act on a user's behalf in third-party services.
 
 ```text
             ┌─ HTTP route      ──┐
@@ -16,7 +16,7 @@ A Twenty app's **logic layer** is the code that *runs* — server-side TypeScrip
             └────────────────────┘                │
                                                   ▼
                                   ┌────────────────────────────┐
-                                  │ Twenty API (records)       │
+                                  │ Arxena API (records)       │
                                   │ Third-party API            │
                                   │   (via Connection token)   │
                                   └────────────────────────────┘
@@ -48,7 +48,7 @@ A logic function picks one or more triggers — every entry below is a separate 
 | **HTTP route** | A request hits your `/s/<path>` endpoint | `httpRouteTriggerSettings` |
 | **Cron** | A CRON expression matches | `cronTriggerSettings` |
 | **Database event** | A workspace record is created, updated, or deleted | `databaseEventTriggerSettings` |
-| **AI tool** | A Twenty AI feature decides to call your function | `toolTriggerSettings` |
+| **AI tool** | An Arxena AI feature decides to call your function | `toolTriggerSettings` |
 | **Workflow action** | A workflow step invokes your function | `workflowActionTriggerSettings` |
 
 Functions run sandboxed in isolated Node.js processes and access the workspace through a typed API client scoped to the role declared on [`defineApplication()`](/developers/extend/apps/config/application).

@@ -3,7 +3,7 @@ title: Schlüsselrotation
 icon: rotate
 ---
 
-Twenty hat zwei unabhängige Schlüsselfamilien:
+Arxena hat zwei unabhängige Schlüsselfamilien:
 
 * **JWT-Signaturschlüssel** — asymmetrische ES256-Schlüsselpaare (`kid`-markiert), die in `core."signingKey"` gespeichert sind und zum Signieren und Verifizieren von Access-/Refresh-Tokens verwendet werden.
 * **Verschlüsselungsschlüssel im Ruhezustand** — `ENCRYPTION_KEY`, wird verwendet, um OAuth-Tokens, Anwendungsvariablen, die privaten Schlüssel der Signierschlüssel, sensible Konfigurationswerte und TOTP-Geheimnisse innerhalb eines `enc:v2:`-Umschlags zu verschlüsseln.

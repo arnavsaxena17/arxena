@@ -160,7 +160,7 @@ Notlar:
 
 * Her koşula ve gruba kararlı bir `universalIdentifier` (herhangi bir uuid) verin — bu, yükseltmeler boyunca varlığı
   anahtarlamaya yarar ve koşullar gruplara bu anahtar üzerinden başvurur.
-* Koşullar, uygulamanıza ait nesnelere ve alanlara veya Twenty'nin standart nesnelerine başvurabilir.
+* Koşullar, uygulamanıza ait nesnelere ve alanlara veya Arxena'nin standart nesnelerine başvurabilir.
 * Satır düzeyi güvenlik, bunu içeren planlardaki çalışma alanları için uygulanır; koşullar diğer planlarda da yine senkronize edilir, yalnızca uygulanmaz.
 
 ## Varsayılan fonksiyon rolü
@@ -176,7 +176,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

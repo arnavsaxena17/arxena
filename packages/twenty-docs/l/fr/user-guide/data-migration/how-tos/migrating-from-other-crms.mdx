@@ -1,11 +1,11 @@
 ---
 title: Migration depuis d'autres CRM
-description: Guide pas à pas pour migrer vos données de n'importe quel CRM vers Twenty.
+description: Guide pas à pas pour migrer vos données de n'importe quel CRM vers Arxena.
 ---
 
 ## Vue d'ensemble
 
-Ce guide vous accompagne pour migrer vos données depuis n'importe quel CRM vers Twenty. Le processus consiste à auditer vos données, à préparer votre espace de travail sur Twenty, à exporter depuis votre système actuel et à importer dans Twenty.
+Ce guide vous accompagne pour migrer vos données depuis n'importe quel CRM vers Arxena. Le processus consiste à auditer vos données, à préparer votre espace de travail sur Arxena, à exporter depuis votre système actuel et à importer dans Arxena.
 
 <Note>Les vues, les flux de travail et les autorisations doivent être recréés manuellement après la migration. Prévoyez du temps pour ce travail de configuration.</Note>
 
@@ -29,9 +29,9 @@ La migration est une occasion de repartir sur de bonnes bases. N'importez pas de
 
 ## Étape 2 : Cartographiez votre modèle de données
 
-Créez un document de correspondance entre votre CRM actuel et Twenty :
+Créez un document de correspondance entre votre CRM actuel et Arxena :
 
-| Votre CRM             | Twenty                 |
+| Votre CRM             | Arxena                 |
 | --------------------- | ---------------------- |
 | Compte / Organisation | **Entreprise**         |
 | Contact / Personne    | **Personnes**          |
@@ -42,14 +42,14 @@ Créez un document de correspondance entre votre CRM actuel et Twenty :
 **Pour chaque champ, documentez :**
 
 * Le nom du champ source
-* Le champ Twenty cible
+* Le champ Arxena cible
 * Toute transformation de format nécessaire (dates, numéros de téléphone, etc.)
 
 <Note>Gardez ce document de mappage à portée de main pendant l'importation — vous vous y référerez lors de la mise en correspondance des colonnes.</Note>
 
-## Étape 3 : Configurez votre espace de travail Twenty
+## Étape 3 : Configurez votre espace de travail Arxena
 
-Avant d'importer des données, préparez votre espace de travail Twenty :
+Avant d'importer des données, préparez votre espace de travail Arxena :
 
 ### Créez des objets et des champs personnalisés
 
@@ -69,7 +69,7 @@ L'import CSV crée des enregistrements, pas des champs. Créez tous les champs p
 <Warning>
 **Invitez les utilisateurs AVANT d'importer des données.**
 
-Si vos données incluent des références à des utilisateurs (propriétaire du compte, assigné, etc.), ces utilisateurs doivent exister dans Twenty avant l'importation. Sinon, ces relations ne pourront pas être mises en correspondance.
+Si vos données incluent des références à des utilisateurs (propriétaire du compte, assigné, etc.), ces utilisateurs doivent exister dans Arxena avant l'importation. Sinon, ces relations ne pourront pas être mises en correspondance.
 </Warning>
 
 1. Allez dans **Paramètres → Membres**
@@ -96,13 +96,13 @@ Exportez vos données depuis votre CRM actuel :
 
 ## Étape 5 : Nettoyez et mettez en forme vos données
 
-Ouvrez chaque CSV exporté dans une application de tableur et préparez-le pour Twenty.
+Ouvrez chaque CSV exporté dans une application de tableur et préparez-le pour Arxena.
 
 ### Supprimez les doublons
 
 1. Triez par le champ unique (e-mail pour les Personnes, domaine pour les Entreprises)
 2. Supprimez ou fusionnez les lignes en double
-3. Vérifiez qu'il n'existe pas déjà de doublons dans Twenty
+3. Vérifiez qu'il n'existe pas déjà de doublons dans Arxena
 
 ### Formatez correctement les champs
 
@@ -118,7 +118,7 @@ Ouvrez chaque CSV exporté dans une application de tableur et préparez-le pour 
 <Warning>
 **Le format du domaine est critique.**
 
-Utilisez `https://domain.com` (pas `domain.com` ni `www.domain.com`). Cela correspond au format de Twenty et évite les doublons lorsque vous connectez la synchronisation e-mail/calendrier.
+Utilisez `https://domain.com` (pas `domain.com` ni `www.domain.com`). Cela correspond au format de Arxena et évite les doublons lorsque vous connectez la synchronisation e-mail/calendrier.
 </Warning>
 
 Voir [Comment préparer vos fichiers CSV](/l/fr/user-guide/data-migration/how-tos/prepare-your-csv-files) pour connaître les exigences complètes de formatage pour tous les types de champs.
@@ -142,11 +142,11 @@ Voir [Comment importer des relations](/l/fr/user-guide/data-migration/how-tos/im
 Si vos données incluent des attributions d'utilisateur (propriétaire, assigné) :
 
 1. Ajoutez une colonne avec l'**e-mail de l'utilisateur** (pas seulement son ID de l'ancien système)
-2. Utilisez les mêmes adresses e-mail que celles utilisées par les utilisateurs pour rejoindre votre espace de travail Twenty
+2. Utilisez les mêmes adresses e-mail que celles utilisées par les utilisateurs pour rejoindre votre espace de travail Arxena
 
 Voir [Comment préparer vos fichiers CSV](/l/fr/user-guide/data-migration/how-tos/prepare-your-csv-files) pour un guide de formatage complet.
 
-## Étape 6 : Importez dans Twenty
+## Étape 6 : Importez dans Arxena
 
 <Warning>
 **L'ordre d'importation est important !**
@@ -165,7 +165,7 @@ L'enregistrement parent doit exister avant que vous puissiez y faire référence
 
 Pour chaque fichier CSV, dans l'ordre :
 
-1. Accédez à l'objet dans Twenty
+1. Accédez à l'objet dans Arxena
 2. Cliquez sur **⋮ → Importer des enregistrements**
 3. Téléversez le fichier CSV
 4. Faites correspondre les colonnes aux champs :
@@ -220,7 +220,7 @@ Après l'importation des données, terminez la configuration de votre espace de 
 ### Connectez les e-mails et le calendrier
 
 * Chaque utilisateur connecte son propre compte dans **Paramètres → Comptes**
-* Twenty commencera à synchroniser les e-mails avec les enregistrements de contacts
+* Arxena commencera à synchroniser les e-mails avec les enregistrements de contacts
 * Voir [E-mails et calendrier](/l/fr/user-guide/calendar-emails/overview)
 
 ### Formez votre équipe
@@ -266,7 +266,7 @@ Voir [Comment corriger les erreurs d'importation](/l/fr/user-guide/data-migratio
 
 <AccordionGroup>
   <Accordion title="Puis-je migrer les flux de travail automatiquement ?">
-    Pas pour le moment. Les flux de travail doivent être recréés manuellement dans Twenty.
+    Pas pour le moment. Les flux de travail doivent être recréés manuellement dans Arxena.
   </Accordion>
 
   <Accordion title="Qu'en est-il des pièces jointes ?">
@@ -287,6 +287,6 @@ Voir [Comment corriger les erreurs d'importation](/l/fr/user-guide/data-migratio
 <Tip>
   Vous voulez de l'aide pour votre migration ?
 
-  * **Clé en main :** [trouvez un partenaire Twenty certifié](https://twenty.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm) pour déplacer vos données, pipelines et utilisateurs de bout en bout.
-  * **Pack d'onboarding :** une configuration guidée de 4 heures avec notre équipe — [contact@twenty.com](mailto:contact@twenty.com).
+  * **Clé en main :** [trouvez un partenaire Arxena certifié](https://arxena.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm) pour déplacer vos données, pipelines et utilisateurs de bout en bout.
+  * **Pack d'onboarding :** une configuration guidée de 4 heures avec notre équipe — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

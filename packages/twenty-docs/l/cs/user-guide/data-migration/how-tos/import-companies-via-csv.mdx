@@ -1,11 +1,11 @@
 ---
 title: Importujte společnosti pomocí CSV
-description: Kompletní podrobný návod krok za krokem k importu společností do Twenty.
+description: Kompletní podrobný návod krok za krokem k importu společností do Arxena.
 ---
 
 ## Přehled
 
-Tento průvodce vás provede importem vašich společností do Twenty. **Společnosti by se měly importovat jako první**, protože Osoby a Příležitosti se propojují se Společnostmi.
+Tento průvodce vás provede importem vašich společností do Arxena. **Společnosti by se měly importovat jako první**, protože Osoby a Příležitosti se propojují se Společnostmi.
 
 ## Než začnete
 
@@ -74,7 +74,7 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 ```
 
 <Note>
-**Tip pro profíky:** Během importu klikněte na **Download sample file**, abyste viděli přesné názvy sloupců, které Twenty očekává.
+**Tip pro profíky:** Během importu klikněte na **Download sample file**, abyste viděli přesné názvy sloupců, které Arxena očekává.
 </Note>
 
 ## Krok 2: Přejděte na funkci importu
@@ -96,11 +96,11 @@ Widget Co,https://widgets.co,widgets.co,New York,USA,50
 
 1. Klikněte na **Select file**
 2. Vyberte svůj soubor CSV, XLSX nebo XLS
-3. Počkejte, až Twenty analyzuje váš soubor
+3. Počkejte, až Arxena analyzuje váš soubor
 
 ## Krok 4: Namapujte své sloupce
 
-Twenty se automaticky pokusí přiřadit vaše sloupce k polím. Zkontrolujte a upravte:
+Arxena se automaticky pokusí přiřadit vaše sloupce k polím. Zkontrolujte a upravte:
 
 1. **Zkontrolujte automatická mapování** — ověřte, že jsou správná
 2. **Opravte nesprávná mapování** — klikněte na rozbalovací nabídku a vyberte správné pole
@@ -118,8 +118,8 @@ Twenty se automaticky pokusí přiřadit vaše sloupce k polím. Zkontrolujte a 
 
 Pokud máte pole typu Select nebo Multi-Select:
 
-1. Twenty zobrazí vaše hodnoty vedle stávajících možností
-2. Spárujte každou hodnotu ve svém souboru s možností v Twenty
+1. Arxena zobrazí vaše hodnoty vedle stávajících možností
+2. Spárujte každou hodnotu ve svém souboru s možností v Arxena
 3. Nebo podle potřeby vytvořte nové možnosti
 
 <Note>
@@ -128,7 +128,7 @@ Možnosti typu Select používají **názvy API**, nikoli zobrazované štítky.
 
 ## Krok 6: Zkontrolujte a opravte chyby
 
-Před dokončením importu Twenty ověří vaše data:
+Před dokončením importu Arxena ověří vaše data:
 
 1. Klikněte na **Další kroky**
 2. Řádky s chybami jsou zvýrazněny **žlutě**
@@ -139,7 +139,7 @@ Před dokončením importu Twenty ověří vaše data:
 
 | Chyba                      | Příčina                      | Řešení                                                   |
 | -------------------------- | ---------------------------- | -------------------------------------------------------- |
-| **Duplicitní doména**      | Doména již existuje v Twenty | Odstraňte ze souboru nebo aktualizujte existující záznam |
+| **Duplicitní doména**      | Doména již existuje v Arxena | Odstraňte ze souboru nebo aktualizujte existující záznam |
 | **Neplatný formát domény** | Nesprávný formát             | Použijte `https://domain.com`                            |
 | **Chybí povinné pole**     | Povinné pole je prázdné      | Doplňte hodnotu nebo řádek odstraňte                     |
 
@@ -163,7 +163,7 @@ Nyní můžete importovat záznamy, které se propojují se Společnostmi:
 Chcete-li aktualizovat společnosti místo vytváření nových:
 
 1. Zahrňte do svého souboru sloupec `domain` nebo `id`
-2. Twenty páruje záznamy podle tohoto jedinečného identifikátoru
+2. Arxena páruje záznamy podle tohoto jedinečného identifikátoru
 3. Existující společnosti se aktualizují; nové se vytvoří
 
 Podrobnosti viz [Jak aktualizovat existující záznamy](/l/cs/user-guide/data-migration/how-tos/update-existing-records-via-import).
@@ -172,7 +172,7 @@ Podrobnosti viz [Jak aktualizovat existující záznamy](/l/cs/user-guide/data-m
 
 <AccordionGroup>
   <Accordion title="Proč nemohou mít dvě Společnosti stejnou doménu?">
-    Doména je v Twenty jedinečný identifikátor. Tím se předchází duplicitním společnostem a zajišťuje se, že synchronizace e-mailů správně propojí e-maily se správnou společností.
+    Doména je v Arxena jedinečný identifikátor. Tím se předchází duplicitním společnostem a zajišťuje se, že synchronizace e-mailů správně propojí e-maily se správnou společností.
   </Accordion>
 
   <Accordion title="Co když mám společnosti bez domény?">
@@ -184,7 +184,7 @@ Podrobnosti viz [Jak aktualizovat existující záznamy](/l/cs/user-guide/data-m
   </Accordion>
 
   <Accordion title="Co se stane, když naimportuji doménu, která už existuje?">
-    Pokud zahrnete jedinečný identifikátor (doménu nebo id), který odpovídá existující společnosti, Twenty tuto společnost aktualizuje místo vytvoření duplikátu.
+    Pokud zahrnete jedinečný identifikátor (doménu nebo id), který odpovídá existující společnosti, Arxena tuto společnost aktualizuje místo vytvoření duplikátu.
   </Accordion>
 
   <Accordion title="Jak opravím chyby 'duplicate domain'?">

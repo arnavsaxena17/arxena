@@ -58,7 +58,7 @@ Aynı çifti şablonlar için de ekleyin. İkisi de artık kenar çubuğunda gö
 
 ## Bir ön uç bileşeni
 
-Bir [ön uç bileşeni](/l/tr/developers/extend/apps/layout/front-components), Twenty içinde izole edilmiş bir React bileşenidir. Bizimki seçili kaydı okur, kişi şablonlarını `CoreApiClient` aracılığıyla yükler ve bir önceki bölümdeki rotaya POST isteği gönderir.
+Bir [ön uç bileşeni](/l/tr/developers/extend/apps/layout/front-components), Arxena içinde izole edilmiş bir React bileşenidir. Bizimki seçili kaydı okur, kişi şablonlarını `CoreApiClient` aracılığıyla yükler ve bir önceki bölümdeki rotaya POST isteği gönderir.
 
 ```tsx filename="src/front-components/generate-document-form.front-component.tsx"
 import { useEffect, useState } from 'react';
@@ -241,7 +241,7 @@ Herhangi bir belgeyi açın — **Preview** sekmesi, belgeyi paylaşılabilir we
 ## Zengin metin editörüyle bir şablonu düzenleme
 
 Şablonların özel bir bileşene hiç ihtiyacı yoktur. `body` bir
-`RICH_TEXT` alanı olduğu için, Twenty bunun için zaten tam özellikli bir zengin metin editörü sunar — standart Note ve Task nesnelerinin kullandığı editörün aynısı. Biz sadece onu şablon kayıt sayfasında görünür hale getiriyoruz.
+`RICH_TEXT` alanı olduğu için, Arxena bunun için zaten tam özellikli bir zengin metin editörü sunar — standart Note ve Task nesnelerinin kullandığı editörün aynısı. Biz sadece onu şablon kayıt sayfasında görünür hale getiriyoruz.
 
 `FIELD` widget'lı, `EDITOR` görüntü modunda ve `fieldMetadataId` aracılığıyla `body` alanını işaret eden bir sekme ekleyin:
 
@@ -268,7 +268,7 @@ Herhangi bir belgeyi açın — **Preview** sekmesi, belgeyi paylaşılabilir we
 Bir `RICH_TEXT` alanı, hem editörün blok JSON'unu hem de bir Markdown izdüşümünü saklar. Oluşturma hattı bu Markdown izdüşümünü okur, böylece yer tutucular, PDF ve paylaşılabilir web sayfası hiç değişmeden çalışmaya devam eder — tam [`template-record.page-layout.ts`](https://github.com/twentyhq/twenty/blob/main/packages/twenty-apps/examples/document-generator/src/page-layouts/template-record.page-layout.ts) dosyasına bakın.
 Artık editörler, şablonları düzgün bir zengin metin editöründe yazıyor:
 
-<Frame caption="Template sekmesi: Twenty'nin yerel zengin metin editörü, body alanına bağlı.">
+<Frame caption="Template sekmesi: Arxena'nin yerel zengin metin editörü, body alanına bağlı.">
   <img src="/images/docs/developers/extends/apps/document-generator/10-template-editor.png" alt="Yerel zengin metin editörü sekmesine sahip şablon kaydı" />
 </Frame>
 

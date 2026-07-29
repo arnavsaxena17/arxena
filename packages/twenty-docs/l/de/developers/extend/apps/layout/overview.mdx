@@ -1,10 +1,10 @@
 ---
 title: Übersicht
-description: Binden Sie Ihre App in das UI von Twenty ein – Seitenleisten-Einträge, gespeicherte Ansichten, Registerkarten auf Datensatzseiten und isolierte React-Komponenten.
+description: Binden Sie Ihre App in das UI von Arxena ein – Seitenleisten-Einträge, gespeicherte Ansichten, Registerkarten auf Datensatzseiten und isolierte React-Komponenten.
 icon: table-columns
 ---
 
-Die **Layout-Ebene** einer Twenty-App umfasst alles, was der Benutzer sieht: wo die App in der Seitenleiste erscheint, welche Listenansichten sie bereitstellt, wie ihre Detailseiten für Datensätze angeordnet sind und welche benutzerdefinierten React-Komponenten innerhalb dieser Seiten gerendert werden.
+Die **Layout-Ebene** einer Arxena-App umfasst alles, was der Benutzer sieht: wo die App in der Seitenleiste erscheint, welche Listenansichten sie bereitstellt, wie ihre Detailseiten für Datensätze angeordnet sind und welche benutzerdefinierten React-Komponenten innerhalb dieser Seiten gerendert werden.
 
 ```text
    Sidebar               Record list            Record detail page
@@ -36,7 +36,7 @@ Die **Layout-Ebene** einer Twenty-App umfasst alles, was der Benutzer sieht: wo 
     `definePageLayout` und `definePageLayoutTab` — Registerkarten und Widgets auf der Detailseite eines Datensatzes.
   </Card>
   <Card title="Frontend-Komponenten" icon="window-maximize" href="/l/de/developers/extend/apps/layout/front-components">
-    `defineFrontComponent` — isolierte React-Komponenten, die innerhalb von Twenty gerendert werden.
+    `defineFrontComponent` — isolierte React-Komponenten, die innerhalb von Arxena gerendert werden.
   </Card>
   <Card title="Befehlsmenü-Einträge" icon="terminal" href="/l/de/developers/extend/apps/layout/command-menu-items">
     `defineCommandMenuItem` — Frontend-Komponenten als Cmd+K-Einträge und Schnellaktionen registrieren.
@@ -54,4 +54,4 @@ Die **Layout-Ebene** einer Twenty-App umfasst alles, was der Benutzer sieht: wo 
 | **App-Einstellungen**                           | Ein benutzerdefinierter Konfigurationsabschnitt im Tab "Einstellungen" der App, anstelle der standardmäßigen Variablen-Benutzeroberfläche | `defineSettingsFrontComponent`            |
 | **Befehlsmenü (Cmd+K)**                         | Eine angeheftete Schnellaktion oder ein versteckter Befehl                                                                                | `defineCommandMenuItem`                   |
 
-Frontend-Komponenten laufen in einem isolierten Web Worker unter Verwendung von Remote DOM – sie werden nativ auf der Seite gerendert (nicht in einem iframe), können aber die Hostseite oder das DOM nicht direkt erreichen. Die Kommunikation mit Twenty erfolgt über eine Message-Passing-Host-API.
+Frontend-Komponenten laufen in einem isolierten Web Worker unter Verwendung von Remote DOM – sie werden nativ auf der Seite gerendert (nicht in einem iframe), können aber die Hostseite oder das DOM nicht direkt erreichen. Die Kommunikation mit Arxena erfolgt über eine Message-Passing-Host-API.

@@ -39,7 +39,7 @@ Fiecare intrare are un domeniu de aplicare, transmis ca opțiune la fiecare apel
 * **`WORKSPACE`** (implicit) — intrarea este privată pentru instalarea curentă a workspace-ului aplicației tale. Fiecare workspace care instalează aplicația primește propriul set independent de chei. Aceasta este opțiunea potrivită pentru cache-uri, cursoare și stare specifică fiecărui workspace.
 * **`SERVER`** — intrarea este partajată între **fiecare instalare** a aplicației tale de pe server. Intrările de tip server se comportă ca niște **claim-uri**: valoarea stocată este întotdeauna workspaceId-ul care a revendicat cheia (omite `value` la `set` pentru a revendica cheia pentru workspace-ul curent), iar doar acel workspace o poate suprascrie sau șterge. Orice instalare poate citi intrarea.
 
-Revendicările de server există pentru rutare între workspace-uri. Un [server-route resolver](/l/ro/developers/extend/apps/logic/logic-functions#server-route-trigger) rulează în workspace-ul proprietar al înregistrării aplicației, dar un webhook de intrare, de obicei, conține doar un id de cont extern — nu un Twenty workspaceId. Configurați fiecare workspace să își revendice ID-ul extern la momentul conectării, apoi rezolvați-l în rută:
+Revendicările de server există pentru rutare între workspace-uri. Un [server-route resolver](/l/ro/developers/extend/apps/logic/logic-functions#server-route-trigger) rulează în workspace-ul proprietar al înregistrării aplicației, dar un webhook de intrare, de obicei, conține doar un id de cont extern — nu un Arxena workspaceId. Configurați fiecare workspace să își revendice ID-ul extern la momentul conectării, apoi rezolvați-l în rută:
 
 ```ts
 // In the connected workspace, when the external account is linked:

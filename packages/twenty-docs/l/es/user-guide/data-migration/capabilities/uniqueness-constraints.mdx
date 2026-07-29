@@ -1,13 +1,13 @@
 ---
 title: Restricciones de unicidad
-description: Cómo Twenty garantiza la unicidad de los datos durante la importación.
+description: Cómo Arxena garantiza la unicidad de los datos durante la importación.
 ---
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Resumen
 
-Twenty aplica unicidad en ciertos campos para evitar registros duplicados y garantizar la integridad de los datos. Comprender estas restricciones es esencial para realizar importaciones exitosas.
+Arxena aplica unicidad en ciertos campos para evitar registros duplicados y garantizar la integridad de los datos. Comprender estas restricciones es esencial para realizar importaciones exitosas.
 
 ## Campos únicos predeterminados
 
@@ -17,7 +17,7 @@ Twenty aplica unicidad en ciertos campos para evitar registros duplicados y gara
 | **Empresas**               | `id`, `domain`                      |
 | **Objetos personalizados** | solo `id` (de forma predeterminada) |
 
-<Note>El campo `id` es el identificador interno de Twenty, generado automáticamente para cada registro. Utiliza el formato UUID (p. ej., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>El campo `id` es el identificador interno de Arxena, generado automáticamente para cada registro. Utiliza el formato UUID (p. ej., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Campos únicos personalizados
 
@@ -34,7 +34,7 @@ Puedes definir campos únicos adicionales en **Configuración → Modelo de dato
 * **Identificadores empresariales**: Números de empleado, códigos de cliente
 * **Información de contacto alternativa**: Perfil de LinkedIn, número de teléfono
 
-<Note>El nombre de campo `id` está reservado para el ID interno de Twenty. Usa un nombre diferente como `externalId` o `legacyId` para los identificadores externos.</Note>
+<Note>El nombre de campo `id` está reservado para el ID interno de Arxena. Usa un nombre diferente como `externalId` o `legacyId` para los identificadores externos.</Note>
 
 ## Comportamiento de la importación
 
@@ -67,6 +67,6 @@ Durante la fase de validación:
 ## Mejores prácticas
 
 1. **Elimina los duplicados** de tu archivo antes de importar
-2. **Comprueba si existen registros** en Twenty antes de importar
+2. **Comprueba si existen registros** en Arxena antes de importar
 3. **Usa ID externos** al migrar desde otros sistemas
 4. **Incluye campos únicos** si quieres actualizar registros existentes

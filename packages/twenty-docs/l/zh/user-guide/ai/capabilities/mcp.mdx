@@ -1,15 +1,15 @@
 ---
 title: MCP服务器
-description: 使用 Model Context Protocol 将 AI 助手连接到你的 Twenty 工作区。
+description: 使用 Model Context Protocol 将 AI 助手连接到你的 Arxena 工作区。
 ---
 
-Twenty 提供一个 [MCP](https://modelcontextprotocol.io/) 服务器，使 AI 助手——Claude Desktop、Claude Code、Cursor、ChatGPT 等——能够通过自然语言读取和写入您的 CRM 数据。
+Arxena 提供一个 [MCP](https://modelcontextprotocol.io/) 服务器，使 AI 助手——Claude Desktop、Claude Code、Cursor、ChatGPT 等——能够通过自然语言读取和写入您的 CRM 数据。
 
-将您的**工作区 URL**（用于访问 Twenty 的 URL）用作 MCP 端点。 在 Twenty Cloud 上，您的工作区 URL 可能是 `https://{mycompany}.twenty.com`，也可能是自定义域名。 服务器可通过以下地址访问：
+将您的**工作区 URL**（用于访问 Arxena 的 URL）用作 MCP 端点。 在 Arxena Cloud 上，您的工作区 URL 可能是 `https://{mycompany}.arxena.com`，也可能是自定义域名。 服务器可通过以下地址访问：
 
 | 环境      | MCP 端点                                                                     |
 | ------- | -------------------------------------------------------------------------- |
-| **云端**  | `https://{your-workspace-url}/mcp` (例如 `https://mycompany.twenty.com/mcp`) |
+| **云端**  | `https://{your-workspace-url}/mcp` (例如 `https://mycompany.arxena.com/mcp`) |
 | **自托管** | `https://{your-domain}/mcp`                                                |
 
 ## 身份验证方法
@@ -24,12 +24,12 @@ Twenty 提供一个 [MCP](https://modelcontextprotocol.io/) 服务器，使 AI �
 OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)的 MCP 客户端。 Claude Desktop、Claude Code、Cursor 和 ChatGPT 均支持它。
 </Note>
 
-将以下内容添加到 MCP 客户端配置中，并将 `{your-workspace-url}` 替换为您的工作区主机（例如 `mycompany.twenty.com`）：
+将以下内容添加到 MCP 客户端配置中，并将 `{your-workspace-url}` 替换为您的工作区主机（例如 `mycompany.arxena.com`）：
 
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp"
     }
@@ -39,7 +39,7 @@ OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specificati
 
 就这样——无需 API 密钥。 客户端首次连接时将：
 
-1. 通过 `/.well-known/oauth-protected-resource` 和 `/.well-known/oauth-authorization-server` 发现 Twenty 的 OAuth 元数据
+1. 通过 `/.well-known/oauth-protected-resource` 和 `/.well-known/oauth-authorization-server` 发现 Arxena 的 OAuth 元数据
 2. 通过动态客户端注册（RFC 7591）将自身注册为 OAuth 客户端
 3. 打开您的浏览器以授权访问
 4. 接收令牌并连接到 MCP 服务器
@@ -53,7 +53,7 @@ OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specificati
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp",
       "headers": {
@@ -74,7 +74,7 @@ OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specificati
 
 ### 1. 复制配置
 
-在 Twenty 中前往 **Settings → MCP & APIs → MCP**。 选择您的身份验证方式（OAuth 或 API 密钥），复制 JSON 片段（其中已包含您的工作区 URL），并将其粘贴到 MCP 客户端的配置文件中。
+在 Arxena 中前往 **Settings → MCP & APIs → MCP**。 选择您的身份验证方式（OAuth 或 API 密钥），复制 JSON 片段（其中已包含您的工作区 URL），并将其粘贴到 MCP 客户端的配置文件中。
 
 | 客户端                | 配置文件位置                                                                                                                              |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specificati
 
 ### 2. 连接
 
-重启您的 MCP 客户端（或重新加载配置）。 如果使用 OAuth，您将被重定向到 Twenty 以授权访问。 如果使用 API 密钥，连接会立即建立。
+重启您的 MCP 客户端（或重新加载配置）。 如果使用 OAuth，您将被重定向到 Arxena 以授权访问。 如果使用 API 密钥，连接会立即建立。
 
 ### 3. 开始使用
 
@@ -97,7 +97,7 @@ OAuth 需要支持[MCP 授权规范](https://modelcontextprotocol.io/specificati
 
 ## 可用工具
 
-连接后，MCP 服务器会提供与 Twenty API 一一对应的工具。 推荐的工作流程是：
+连接后，MCP 服务器会提供与 Arxena API 一一对应的工具。 推荐的工作流程是：
 
 1. **`learn_tools`** — 获取特定工具的输入模式
 2. **`execute_tool`** — 运行工具
@@ -113,10 +113,10 @@ MCP 连接将继承已通过身份验证的用户（OAuth）的权限，或继�
 
 ## 自托管配置
 
-对于自托管实例，请将 `{your-workspace-url}` 替换为您的服务器 URL。 请确保您环境中的 `SERVER_URL` 与 Twenty 实例的公共 URL 一致——该值用于生成 OAuth 发现元数据。
+对于自托管实例，请将 `{your-workspace-url}` 替换为您的服务器 URL。 请确保您环境中的 `SERVER_URL` 与 Arxena 实例的公共 URL 一致——该值用于生成 OAuth 发现元数据。
 
 ```bash
-SERVER_URL=https://twenty.yourcompany.com
+SERVER_URL=https://arxena.yourcompany.com
 ```
 
 MCP 端点、OAuth 端点以及发现元数据都基于该值生成。

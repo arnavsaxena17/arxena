@@ -19,7 +19,7 @@ icon: terminal
 | `dev:translations-extract`                      | استخراج السلاسل القابلة للترجمة إلى كتالوجات `locales/`                              | [الترجمات](/l/ar/developers/extend/apps/translations/overview)                                           |
 | `dev:catalog-sync`                              | تشغيل مزامنة كتالوج السوق                                                            | [النشر](/l/ar/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)              |
 | `app:publish` / `app:install` / `app:uninstall` | دورة حياة الإصدارات                                                                  | [النشر](/l/ar/developers/extend/apps/operations/publishing) وهذه الصفحة                                  |
-| `docker:*`                                      | إدارة حاوية خادم Twenty المحلي                                                       | [الخادم المحلي](/l/ar/developers/extend/apps/getting-started/local-server)                               |
+| `docker:*`                                      | إدارة حاوية خادم Arxena المحلي                                                       | [الخادم المحلي](/l/ar/developers/extend/apps/getting-started/local-server)                               |
 | `remote:*`                                      | إدارة اتصالات الخادم                                                                 | هذه الصفحة                                                                                          |
 
 كل أمر يقبل الوسيط `-r, --remote \<name>` لاستهداف خادم بعيد معيَّن بدلاً من الخادم الافتراضي.
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-يختلف هذا عن `yarn twenty docker:logs`، الذي يعرض سجلات حاوية Docker. يعرض `yarn twenty dev:function:logs` سجلات تنفيذ دوال تطبيقك من خادم Twenty.
+يختلف هذا عن `yarn twenty docker:logs`، الذي يعرض سجلات حاوية Docker. يعرض `yarn twenty dev:function:logs` سجلات تنفيذ دوال تطبيقك من خادم Arxena.
 </Note>
 
 ## توليد العميل محدد الأنواع (`yarn twenty dev:generate-client`)
 
-أعد توليد عميل واجهة برمجة التطبيقات محدد الأنواع (`twenty-client-sdk`) من مخطط الجهة البعيدة النشطة، دون بناء تطبيق أو مزامنته. استخدمه للحصول على عميل محدد الأنواع في أي مشروع — مثل خدمة خلفية موجودة في مستودع منفصل — يتواصل مع مثيل Twenty الخاص بك:
+أعد توليد عميل واجهة برمجة التطبيقات محدد الأنواع (`twenty-client-sdk`) من مخطط الجهة البعيدة النشطة، دون بناء تطبيق أو مزامنته. استخدمه للحصول على عميل محدد الأنواع في أي مشروع — مثل خدمة خلفية موجودة في مستودع منفصل — يتواصل مع مثيل Arxena الخاص بك:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## إدارة الريموتات
 
-**الريموت** هو خادم Twenty يتصل به تطبيقك. أثناء الإعداد، تُنشئ أداة إنشاء الهيكل واحدًا لك تلقائيًا. يمكنك إضافة ريموتات أخرى أو التبديل بينها في أي وقت.
+**الريموت** هو خادم Arxena يتصل به تطبيقك. أثناء الإعداد، تُنشئ أداة إنشاء الهيكل واحدًا لك تلقائيًا. يمكنك إضافة ريموتات أخرى أو التبديل بينها في أي وقت.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

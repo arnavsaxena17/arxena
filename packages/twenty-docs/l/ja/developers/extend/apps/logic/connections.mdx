@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ export default defineApplication({
 * `listConnections({ providerName })` で使用される一意の識別子文字列が `name` です（kebab-case、`^[a-z][a-z0-9-]*$` に一致する必要があります）。
 * `displayName` はアプリごとの設定タブおよび AI ツール一覧に表示されます。
 * `clientIdVariable` / `clientSecretVariable` は値ではなく**名前**です — `defineApplication.serverVariables` で宣言されたキーと一致している必要があります。 実際の `client_id` と `client_secret` は、アプリ登録 UI を通じてサーバー管理者が入力し、あなたのリポジトリにコミットされることはありません。
-* `applicationVariables` ではなく `serverVariables` を使用してください — OAuth の認証情報はサーバー全体で共有され、Twenty サーバーごとに 1 つの OAuth アプリとなります。
+* `applicationVariables` ではなく `serverVariables` を使用してください — OAuth の認証情報はサーバー全体で共有され、Arxena サーバーごとに 1 つの OAuth アプリとなります。
 * 両方の `serverVariables` が入力されるまで、アプリごとの設定タブには"サーバー管理者が必要"というヒントが表示され、"接続を追加"ボタンは無効になります。
 * 現在サポートされる値は `type: 'oauth'` のみです。 この判別子は前方互換です。将来のタイプ（`'pat'`、`'api-key'`、...） は、`oauth` に並ぶ新しいサブ設定ブロックを追加します。
 
@@ -221,7 +221,7 @@ const conn = connections.find((c) => c.visibility === 'workspace');
 1. プロバイダーの開発者設定に移動します（例: https://linear.app/settings/api/applications/new）。
 2. **Redirect URI** を `\<SERVER_URL>/auth/apps/callback` に設定します。
 3. 生成された **Client ID** と **Client Secret** をコピーします。
-4. サーバー管理者として Twenty でインストール済みアプリを開き、対応する `serverVariables` に値を設定します。
+4. サーバー管理者として Arxena でインストール済みアプリを開き、対応する `serverVariables` に値を設定します。
 5. その後、ワークスペースメンバーはアプリごとの **Connections** セクションから接続を追加できます。
 
 </Accordion>

@@ -1,13 +1,13 @@
 ---
 title: Benzersizlik Kısıtlamaları
-description: Twenty'nin içe aktarma sırasında veri benzersizliğini nasıl sağladığı.
+description: Arxena'nin içe aktarma sırasında veri benzersizliğini nasıl sağladığı.
 ---
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Genel Bakış
 
-Yinelenen kayıtları önlemek ve veri bütünlüğünü sağlamak için Twenty bazı alanlarda benzersizliği uygular. Başarılı içe aktarmalar için bu kısıtlamaları anlamak kritiktir.
+Yinelenen kayıtları önlemek ve veri bütünlüğünü sağlamak için Arxena bazı alanlarda benzersizliği uygular. Başarılı içe aktarmalar için bu kısıtlamaları anlamak kritiktir.
 
 ## Varsayılan Benzersiz Alanlar
 
@@ -17,7 +17,7 @@ Yinelenen kayıtları önlemek ve veri bütünlüğünü sağlamak için Twenty 
 | **Şirketler**     | `id`, `domain`                    |
 | **Özel nesneler** | Yalnızca `id` (varsayılan olarak) |
 
-<Note>`id` alanı Twenty'nin dahili tanımlayıcısıdır, her kayıt için otomatik olarak oluşturulur. UUID biçimini kullanır (ör. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>`id` alanı Arxena'nin dahili tanımlayıcısıdır, her kayıt için otomatik olarak oluşturulur. UUID biçimini kullanır (ör. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Özel Benzersiz Alanlar
 
@@ -34,7 +34,7 @@ Ek benzersiz alanları **Ayarlar → Veri Modeli** altında tanımlayabilirsiniz
 * **İş tanımlayıcıları**: Çalışan numaraları, müşteri kodları
 * **Alternatif iletişim bilgileri**: LinkedIn profili, telefon numarası
 
-<Note>`id` alan adı Twenty'nin dahili ID'si için ayrılmıştır. Harici tanımlayıcılar için `externalId` veya `legacyId` gibi farklı bir ad kullanın.</Note>
+<Note>`id` alan adı Arxena'nin dahili ID'si için ayrılmıştır. Harici tanımlayıcılar için `externalId` veya `legacyId` gibi farklı bir ad kullanın.</Note>
 
 ## İçe Aktarma Davranışı
 
@@ -67,6 +67,6 @@ Doğrulama aşamasında:
 ## En İyi Uygulamalar
 
 1. İçe aktarmadan önce dosyanızdan **yinelenenleri kaldırın**
-2. İçe aktarmadan önce Twenty'de **mevcut kayıtları kontrol edin**
+2. İçe aktarmadan önce Arxena'de **mevcut kayıtları kontrol edin**
 3. Diğer sistemlerden geçiş yaparken **harici ID'leri kullanın**
 4. Mevcut kayıtları güncellemek istiyorsanız **benzersiz alanları dahil edin**

@@ -1,14 +1,14 @@
 ---
 title: Frontendové komponenty
-description: Vytvářejte komponenty Reactu, které se vykreslují uvnitř uživatelského rozhraní Twenty se sandboxovou izolací.
+description: Vytvářejte komponenty Reactu, které se vykreslují uvnitř uživatelského rozhraní Arxena se sandboxovou izolací.
 icon: window-maximize
 ---
 
-Frontendové komponenty jsou React komponenty, které se vykreslují přímo v uživatelském rozhraní Twenty. Běží v **izolovaném Web Workeru** s využitím Remote DOM — váš kód se spouští uvnitř sandboxovaného iframe s nejasným původem (opaque-origin), ale jeho UI se stále vykresluje nativně na stránce, místo aby bylo omezené na tento iframe.
+Frontendové komponenty jsou React komponenty, které se vykreslují přímo v uživatelském rozhraní Arxena. Běží v **izolovaném Web Workeru** s využitím Remote DOM — váš kód se spouští uvnitř sandboxovaného iframe s nejasným původem (opaque-origin), ale jeho UI se stále vykresluje nativně na stránce, místo aby bylo omezené na tento iframe.
 
 ## Kde lze použít frontendové komponenty
 
-Frontendové komponenty se mohou vykreslovat na třech místech v rámci Twenty:
+Frontendové komponenty se mohou vykreslovat na třech místech v rámci Arxena:
 
 * **Postranní panel** — Frontendové komponenty, které nejsou headless, se otevírají v pravém postranním panelu. Toto je výchozí chování, když je frontendová komponenta vyvolána z příkazového menu.
 * **Widgety (nástěnky a stránky záznamů)** — front komponenty lze vkládat jako widgety do [rozložení stránky](/l/cs/developers/extend/apps/layout/page-layouts). Při konfiguraci nástěnky nebo rozložení stránky záznamu mohou uživatelé přidat widget frontendové komponenty.
@@ -31,7 +31,7 @@ const HelloWorld = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Hello from my app!</h1>
-      <p>This component renders inside Twenty.</p>
+      <p>This component renders inside Arxena.</p>
     </div>
   );
 };
@@ -83,7 +83,7 @@ Mimo příkazy můžete frontendovou komponentu vložit přímo na stránku záz
 
 Chcete-li nahradit automaticky generované uživatelské rozhraní pro konfiguraci proměnných na kartě **Settings** (Nastavení) vaší aplikace vlastní komponentou, definujte ji pomocí `defineSettingsFrontComponent` místo `defineFrontComponent`. Používá stejná [konfigurační pole](#configuration-fields) (kromě `isHeadless`, který není podporován, protože komponenta nastavení vždy vykresluje viditelné uživatelské rozhraní) a zároveň označuje komponentu jako uživatelské rozhraní nastavení aplikace.
 
-Komponenta se vykreslí jako sekce **uvnitř** karty Settings, nikoli jako náhrada celé karty. Systémem spravované sekce Twenty — automatická aktualizace, App URL a připojení — se vždy zobrazují nad ní a aplikace je nemůže přebít.
+Komponenta se vykreslí jako sekce **uvnitř** karty Settings, nikoli jako náhrada celé karty. Systémem spravované sekce Arxena — automatická aktualizace, App URL a připojení — se vždy zobrazují nad ní a aplikace je nemůže přebít.
 
 ```tsx src/front-components/app-settings.tsx
 import { defineSettingsFrontComponent } from 'twenty-sdk/define';
@@ -139,7 +139,7 @@ export default defineFrontComponent({
 });
 ```
 
-Protože komponenta vrací `null`, Twenty přeskočí vykreslení kontejneru — v rozvržení se neobjeví žádné prázdné místo. Komponenta má však stále přístup ke všem hookům a API komunikace s hostitelem.
+Protože komponenta vrací `null`, Arxena přeskočí vykreslení kontejneru — v rozvržení se neobjeví žádné prázdné místo. Komponenta má však stále přístup ke všem hookům a API komunikace s hostitelem.
 
 ## Komponenty SDK Command
 
@@ -268,7 +268,7 @@ Front komponenty běží v prohlížeči v sandboxovaném Web Workeru uvnitř if
 
 Logická funkce deklarovaná pomocí `httpRouteTriggerSettings` je přes HTTP dostupná na své cestě (route path). `RestApiClient` považuje cesty začínající na `/s/` za aplikační trasy, převede je na URL, ze které jsou vaše funkce poskytovány, a autentizuje je pomocí `TWENTY_APP_ACCESS_TOKEN`.
 
-> **V Twenty Cloud jsou logické funkce spouštěné přes HTTP poskytovány na vyhrazené doméně pro každý workspace** na adrese `https://\<your-workspace-subdomain>.withtwenty.com\<path>`. Pro externí volající zkopírujte přesnou URL z nastavení funkce **HTTP trigger** nebo z karty **Settings** aplikace.
+> **V Arxena Cloud jsou logické funkce spouštěné přes HTTP poskytovány na vyhrazené doméně pro každý workspace** na adrese `https://\<your-workspace-subdomain>.witharxena.com\<path>`. Pro externí volající zkopírujte přesnou URL z nastavení funkce **HTTP trigger** nebo z karty **Settings** aplikace.
 
 Headless front komponenta může volání spustit při mountu přes komponentu `Command` a poté se automaticky odmountovat:
 
@@ -297,7 +297,7 @@ export default defineFrontComponent({
 });
 ```
 
-Cesta předaná `RestApiClient` je `httpRouteTriggerSettings.path` logické funkce s předponou `/s`. Ponechte `isAuthRequired: true`; `TWENTY_APP_ACCESS_TOKEN`, který Twenty vygeneruje pro vaši komponentu, požadavek autentizuje:
+Cesta předaná `RestApiClient` je `httpRouteTriggerSettings.path` logické funkce s předponou `/s`. Ponechte `isAuthRequired: true`; `TWENTY_APP_ACCESS_TOKEN`, který Arxena vygeneruje pro vaši komponentu, požadavek autentizuje:
 
 ```ts src/logic-functions/fetch-prs.logic-function.ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -325,9 +325,9 @@ export default defineLogicFunction({
 `TWENTY_APP_ACCESS_TOKEN` je vložen automaticky — viz [Proměnné aplikace](#application-variables). Protože tajné proměnné aplikace nejsou nikdy vystaveny front komponentám, ponechte API klíče a další citlivou logiku v logické funkci, ne ve front komponentě.
 </Note>
 
-### Volání Twenty REST API
+### Volání Arxena REST API
 
-Pro volání aplikačních HTTP tras nebo čtení a zápis záznamů Twenty z front komponenty použijte `RestApiClient` z `twenty-client-sdk/rest`. Odesílá cesty `/s/...` na základní URL funkcí vašeho workspace a všechny ostatní cesty, včetně `/rest/...`, na `TWENTY_API_URL`.
+Pro volání aplikačních HTTP tras nebo čtení a zápis záznamů Arxena z front komponenty použijte `RestApiClient` z `twenty-client-sdk/rest`. Odesílá cesty `/s/...` na základní URL funkcí vašeho workspace a všechny ostatní cesty, včetně `/rest/...`, na `TWENTY_API_URL`.
 
 | Metoda                            | Popis                                                                |
 | --------------------------------- | -------------------------------------------------------------------- |
@@ -345,7 +345,7 @@ Základní URL a token jsou ve výchozím nastavení odvozeny z prostředí. Pod
 
 ```ts
 const client = new RestApiClient({
-  baseUrl: 'https://myworkspace.twenty.com',
+  baseUrl: 'https://myworkspace.arxena.com',
   token: 'my-token',
 });
 ```
@@ -443,14 +443,14 @@ Následující systémové proměnné jsou vždy dostupné přes `process.env`:
 
 | Proměnná                  | Popis                                                          |
 | ------------------------- | -------------------------------------------------------------- |
-| `TWENTY_API_URL`          | Základní URL Twenty core API                                   |
+| `TWENTY_API_URL`          | Základní URL Arxena core API                                   |
 | `TWENTY_APP_ACCESS_TOKEN` | Krátkodobý token s oprávněními omezenými na roli vaší aplikace |
 
 ### `TWENTY_FUNCTIONS_URL`
 
-Twenty také vkládá `TWENTY_FUNCTIONS_URL` do front komponent a logických funkcí: základní URL, ze které jsou poskytovány vaše logické funkce spouštěné přes HTTP.
+Arxena také vkládá `TWENTY_FUNCTIONS_URL` do front komponent a logických funkcí: základní URL, ze které jsou poskytovány vaše logické funkce spouštěné přes HTTP.
 
-Existuje proto, že tato URL není vždy samotný server Twenty. V Twenty Cloud jsou aplikační trasy poskytovány na vyhrazené doméně pro každý workspace (`https://\<your-workspace-subdomain>.withtwenty.com`, nebo hlavní veřejná doména aplikace, pokud je nakonfigurována), aby odpovědi vytvořené aplikací běžely na odděleném původu, a nikoli na původu aplikace Twenty. Self-hostované a lokální instance poskytují aplikační trasy pod předponou `/s` přímo na serveru a proměnnou nemusí vůbec nastavovat. Protože se základní URL liší podle workspace a instance, váš kód ji nemůže napevno zakódovat — server správnou hodnotu vloží za běhu.
+Existuje proto, že tato URL není vždy samotný server Arxena. V Arxena Cloud jsou aplikační trasy poskytovány na vyhrazené doméně pro každý workspace (`https://\<your-workspace-subdomain>.witharxena.com`, nebo hlavní veřejná doména aplikace, pokud je nakonfigurována), aby odpovědi vytvořené aplikací běžely na odděleném původu, a nikoli na původu aplikace Arxena. Self-hostované a lokální instance poskytují aplikační trasy pod předponou `/s` přímo na serveru a proměnnou nemusí vůbec nastavovat. Protože se základní URL liší podle workspace a instance, váš kód ji nemůže napevno zakódovat — server správnou hodnotu vloží za běhu.
 
 Jen zřídka ji potřebujete číst přímo. Volání svých tras provádějte přes `RestApiClient` s cestou s předponou `/s/` a klient za vás URL vyřeší: odstraní předponu `/s` a zacílí na `TWENTY_FUNCTIONS_URL`, přičemž pokud proměnná není nastavena, použije jako zálohu `\<TWENTY_API_URL>/s`. Použijte `resolveUrl('/s/\<path>')` pro získání absolutní URL bez odeslání požadavku, např. pro odkaz. Proměnnou čtěte přímo pouze při ručním sestavování URL:
 
@@ -602,19 +602,19 @@ Podrobnosti viz [sekci veřejných souborů](/l/cs/developers/extend/apps/config
 Frontendové komponenty podporují více přístupů ke stylování. Můžete použít:
 
 * **Inline styly** — `style={{ color: 'red' }}`
-* **Komponenty Twenty UI** — vlastní knihovna komponent Twenty; podívejte se níže na [Používání komponent Twenty UI](#using-twenty-ui-components)
+* **Komponenty Arxena UI** — vlastní knihovna komponent Arxena; podívejte se níže na [Používání komponent Arxena UI](#using-twenty-ui-components)
 * **Emotion** — CSS-in-JS s `@emotion/react`
 * **Styled-components** — vzory `styled.div`
 * **Tailwind CSS** — utilitní třídy
 * **Jakákoli CSS-in-JS knihovna** kompatibilní s Reactem
 
-## Používání komponent Twenty UI
+## Používání komponent Arxena UI
 
-Twenty dodává svou knihovnu komponent jako balíček [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1). Frontendové komponenty jej mohou používat pro tlačítka, tagy, stavové štítky, čipy, avatary, ikony, typografii a tokeny motivu, které se automaticky přizpůsobují světlému a tmavému motivu pracovního prostoru.
+Arxena dodává svou knihovnu komponent jako balíček [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1). Frontendové komponenty jej mohou používat pro tlačítka, tagy, stavové štítky, čipy, avatary, ikony, typografii a tokeny motivu, které se automaticky přizpůsobují světlému a tmavému motivu pracovního prostoru.
 
 ### Instalace
 
-Přidejte balíček do své aplikace, připnutý k verzi, se kterou je dodána vaše instance Twenty:
+Přidejte balíček do své aplikace, připnutý k verzi, se kterou je dodána vaše instance Arxena:
 
 ```bash
 yarn add twenty-ui@1.0.0-alpha.1
@@ -669,9 +669,9 @@ Každá pojmenovaná ikona je odstraňována tree-shakingem, takže import něko
 
 ### Témování a tokeny motivu
 
-Komponenty Twenty UI se automaticky přizpůsobí světlému a tmavému motivu pracovního prostoru — renderer použije na hostiteli aktivní barevné schéma a komponenty podle něj odvodí své barvy.
+Komponenty Arxena UI se automaticky přizpůsobí světlému a tmavému motivu pracovního prostoru — renderer použije na hostiteli aktivní barevné schéma a komponenty podle něj odvodí své barvy.
 
-Chcete-li ve svých vlastních inline stylech používat stejné design tokeny, zavolejte hook `useTheme()`. Vrací tokeny motivu Twenty (odsazení, barvy, poloměry, písma) napojené na aktivní motiv, aniž by bylo potřeba v komponentě nastavovat `ThemeProvider`:
+Chcete-li ve svých vlastních inline stylech používat stejné design tokeny, zavolejte hook `useTheme()`. Vrací tokeny motivu Arxena (odsazení, barvy, poloměry, písma) napojené na aktivní motiv, aniž by bylo potřeba v komponentě nastavovat `ThemeProvider`:
 
 ```tsx
 import { useTheme } from 'twenty-ui/theme-constants';

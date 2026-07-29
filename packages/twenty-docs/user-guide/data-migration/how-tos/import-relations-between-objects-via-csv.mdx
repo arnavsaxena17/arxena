@@ -20,7 +20,7 @@ In a one-to-many relation:
 
 The "one" side is the **parent**. The "many" side is the **child**.
 
-### Common Relations in Twenty
+### Common Relations in Arxena
 
 | Relation | "One" Side (Parent) | "Many" Side (Child) |
 |----------|---------------------|---------------------|
@@ -40,7 +40,7 @@ Before importing, determine which object is the parent and which is the child.
 
 ## Step 2: Import the Parent Records First
 
-The parent ("one" side) must exist in Twenty before you can reference it.
+The parent ("one" side) must exist in Arxena before you can reference it.
 
 **Import order:**
 1. **Companies** first (no dependencies)
@@ -70,7 +70,7 @@ You need to reference the parent record using a **unique identifier**. Available
 ### Finding the Identifier
 
 If you need the `id`:
-1. Export the parent records from Twenty
+1. Export the parent records from Arxena
 2. The export includes the `id` column
 3. Use these IDs in your child records file
 
@@ -114,7 +114,7 @@ The `companyDomain` column references the Company's domain.
 <Warning>
 **Domain format matters!**
 
-Use `https://domain.com` (not just `domain.com`). This matches how Twenty stores Company domains and prevents matching errors.
+Use `https://domain.com` (not just `domain.com`). This matches how Arxena stores Company domains and prevents matching errors.
 </Warning>
 
 ### Important Rules
@@ -134,7 +134,7 @@ Use `https://domain.com` (not just `domain.com`). This matches how Twenty stores
 5. Complete the remaining mapping
 6. Review errors and confirm
 
-Twenty will automatically link each child record to the matching parent.
+Arxena will automatically link each child record to the matching parent.
 
 ## Step 7: Verify the Import
 
@@ -151,8 +151,8 @@ After importing:
 | **Wrong domain format** | Using `acme.com` instead of `https://acme.com` | Use full URL format with `https://` |
 | **Multiple unique fields** | Mapping both `companyId` AND `companyDomain` | Map only ONE unique identifier |
 | **Missing relation field** | The relation field doesn't exist in the data model | Create it in **Settings → Data Model** before importing |
-| **Non-existent records** | The parent record doesn't exist in Twenty | Import parent records first, or check for typos |
-| **Case mismatch** | `Acme.com` in file but `acme.com` in Twenty | Ensure exact case matching |
+| **Non-existent records** | The parent record doesn't exist in Arxena | Import parent records first, or check for typos |
+| **Case mismatch** | `Acme.com` in file but `acme.com` in Arxena | Ensure exact case matching |
 
 ## Linking to Workspace Members
 
@@ -172,7 +172,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="What if my parent record doesn't have a domain or email?">
     You have two options:
-    1. Use the Twenty `id` (export parent records to get their IDs)
+    1. Use the Arxena `id` (export parent records to get their IDs)
     2. Create a custom unique field in your data model to store an external ID from your previous system
   </Accordion>
 

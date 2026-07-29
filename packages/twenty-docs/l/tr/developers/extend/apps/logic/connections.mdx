@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ export default defineApplication({
 * `name`, `listConnections({ providerName })` içinde kullanılan benzersiz tanımlayıcı dizedir (kebab-case, `^[a-z][a-z0-9-]*$` ile eşleşmelidir).
 * `displayName` uygulama başına ayarlar sekmesinde ve Yapay Zeka araç listesinde gösterilir.
 * `clientIdVariable` / `clientSecretVariable` değer değil, **isimdir** — `defineApplication.serverVariables` içinde bildirilen anahtarlarla eşleşmelidir. Gerçek `client_id` ve `client_secret`, sunucu yöneticisi tarafından uygulama kayıt arayüzü üzerinden girilir; deponuza asla commit edilmez.
-* `serverVariables` kullanın (`applicationVariables` değil) — OAuth kimlik bilgileri sunucu genelidir ve her Twenty sunucusu için bir OAuth uygulaması vardır.
+* `serverVariables` kullanın (`applicationVariables` değil) — OAuth kimlik bilgileri sunucu genelidir ve her Arxena sunucusu için bir OAuth uygulaması vardır.
 * Her iki `serverVariables` da doldurulana kadar, uygulama başına ayarlar sekmesi "sunucu yöneticisine ihtiyaç var" ipucunu gösterir ve "Bağlantı ekle" düğmesi devre dışı bırakılır.
 * `type: 'oauth'` bugün desteklenen tek değerdir. Ayırt edici alan ileriye dönük uyumludur: gelecekteki türler (`'pat'`, `'api-key'`, ...) `oauth` yanında yeni alt yapılandırma blokları eklenecektir.
 
@@ -221,7 +221,7 @@ Her bağlantı sağlayıcısı için, sunucu yöneticisinin önce üçüncü tar
 1. Sağlayıcının geliştirici ayarlarına gidin (örn. https://linear.app/settings/api/applications/new).
 2. **Redirect URI**'yi `\<SERVER_URL>/auth/apps/callback` olarak ayarlayın.
 3. Oluşturulan **Client ID** ve **Client Secret**'ı kopyalayın.
-4. Yüklü uygulamayı Twenty'de bir sunucu yöneticisi olarak açın → karşılık gelen `serverVariables` üzerinde değerleri ayarlayın.
+4. Yüklü uygulamayı Arxena'de bir sunucu yöneticisi olarak açın → karşılık gelen `serverVariables` üzerinde değerleri ayarlayın.
 5. Ardından çalışma alanı üyeleri, uygulama başına **Bağlantılar** bölümünden bağlantılar ekleyebilir.
 
 </Accordion>

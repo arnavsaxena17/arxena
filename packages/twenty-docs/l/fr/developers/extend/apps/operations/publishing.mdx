@@ -1,15 +1,15 @@
 ---
 title: Publication
 icon: upload
-description: Distribuez votre application Twenty sur la marketplace ou déployez-la en interne.
+description: Distribuez votre application Arxena sur la marketplace ou déployez-la en interne.
 ---
 
 ## Vue d'ensemble
 
 Une fois que votre application est [créée et testée en local](/l/fr/developers/extend/apps/getting-started/concepts), vous avez deux options pour sa distribution :
 
-* **Déployer une archive tar** — téléversez votre application directement sur un serveur Twenty spécifique pour un usage interne ou privé.
-* **Publier sur npm** — répertoriez votre application dans la marketplace Twenty pour que tout espace de travail puisse la découvrir et l'installer.
+* **Déployer une archive tar** — téléversez votre application directement sur un serveur Arxena spécifique pour un usage interne ou privé.
+* **Publier sur npm** — répertoriez votre application dans la marketplace Arxena pour que tout espace de travail puisse la découvrir et l'installer.
 
 Les deux parcours commencent à la même étape de **build**.
 
@@ -25,7 +25,7 @@ Cela compile les sources TypeScript, transpile les fonctions de logique et les c
 
 ## Déploiement sur un serveur (archive tar)
 
-Pour les applications que vous ne souhaitez pas rendre publiques — outils propriétaires, intégrations réservées aux entreprises ou versions expérimentales — vous pouvez déployer une archive tar directement sur un serveur Twenty.
+Pour les applications que vous ne souhaitez pas rendre publiques — outils propriétaires, intégrations réservées aux entreprises ou versions expérimentales — vous pouvez déployer une archive tar directement sur un serveur Arxena.
 
 ### Prérequis
 
@@ -79,7 +79,7 @@ Les tags de préversion fonctionnent comme prévu : incrémenter `1.0.0-rc.1` �
 
 ### Compatibilité des versions du serveur
 
-Si votre application utilise une fonctionnalité introduite dans une version spécifique du serveur Twenty (par exemple, des fournisseurs OAuth ajoutés en v2.3.0), vous devez déclarer la version minimale du serveur requise par votre application en utilisant le champ `engines.twenty` dans `package.json`:
+Si votre application utilise une fonctionnalité introduite dans une version spécifique du serveur Arxena (par exemple, des fournisseurs OAuth ajoutés en v2.3.0), vous devez déclarer la version minimale du serveur requise par votre application en utilisant le champ `engines.twenty` dans `package.json`:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ Il exécute automatiquement vos tests d’intégration à chaque push sur `main`
 **Ce que cela fait:**
 
 1. Récupère le code source de votre application.
-2. Lance une instance de test Twenty isolée à l’aide de l’action composite `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (l’équivalent CI de `yarn twenty docker:start --test`).
+2. Lance une instance de test Arxena isolée à l’aide de l’action composite `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (l’équivalent CI de `yarn twenty docker:start --test`).
 3. Active Corepack, configure Node.js à partir de votre `.nvmrc` et installe les dépendances avec `yarn install --immutable`.
 4. Exécute `yarn test`, en passant `TWENTY_API_URL` et `TWENTY_API_KEY` depuis l’instance lancée pour que vos tests puissent communiquer avec un serveur réel.
 
 **Paramètres de configuration:**
 
-* `TWENTY_VERSION` (variable d’environnement, par défaut `latest`) — figez la version du serveur Twenty utilisée en CI en la modifiant dans `ci.yml`.
+* `TWENTY_VERSION` (variable d’environnement, par défaut `latest`) — figez la version du serveur Arxena utilisée en CI en la modifiant dans `ci.yml`.
 * La concurrence est regroupée par `github.ref` et annule les exécutions en cours lors de nouveaux push.
 
 Aucun secret n’est requis — l’instance de test est éphémère et n’existe que pendant la durée du job.
 
 ### CD — `cd.yml`
 
-Déploie votre application vers un serveur Twenty configuré à chaque push sur `main`, et éventuellement depuis une pull request lorsque le label `deploy` est appliqué.
+Déploie votre application vers un serveur Arxena configuré à chaque push sur `main`, et éventuellement depuis une pull request lorsque le label `deploy` est appliqué.
 
 **Ce que cela fait:**
 
@@ -146,7 +146,7 @@ Déploie votre application vers un serveur Twenty configuré à chaque push sur 
 
 | Paramètre               | Où                                                          | Objectif                                                                                                                |
 | ----------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `TWENTY_DEPLOY_URL`     | `env` dans `cd.yml` (par défaut `http://localhost:3000`)    | Le serveur Twenty vers lequel déployer. Remplacez ceci par l’URL réelle de votre serveur avant la première utilisation. |
+| `TWENTY_DEPLOY_URL`     | `env` dans `cd.yml` (par défaut `http://localhost:3000`)    | Le serveur Arxena vers lequel déployer. Remplacez ceci par l’URL réelle de votre serveur avant la première utilisation. |
 | `TWENTY_DEPLOY_API_KEY` | Dépôt GitHub **Settings → Secrets and variables → Actions** | Clé API avec la permission de déployer sur le serveur cible.                                                            |
 
 <Note>
@@ -168,7 +168,7 @@ Publie votre application sur npm avec provenance lorsque vous poussez une étiqu
 
 **Configuration unique :**
 
-Sur npmjs.com, ouvrez votre package > **Settings → Trusted Publisher** et enregistrez ce dépôt avec le workflow `publish.yml` (voir la [documentation npm sur la publication de confiance](https://docs.npmjs.com/trusted-publishers)). La publication avec provenance certifie quel dépôt GitHub a construit le package, ce qui est aussi la façon de revendiquer la propriété de votre application dans une marketplace Twenty.
+Sur npmjs.com, ouvrez votre package > **Settings → Trusted Publisher** et enregistrez ce dépôt avec le workflow `publish.yml` (voir la [documentation npm sur la publication de confiance](https://docs.npmjs.com/trusted-publishers)). La publication avec provenance certifie quel dépôt GitHub a construit le package, ce qui est aussi la façon de revendiquer la propriété de votre application dans une marketplace Arxena.
 
 <Note>
 npm n’accepte la provenance que depuis des dépôts sources **publics**. Si vous publiez depuis un dépôt privé, npm rejette le bundle de provenance OIDC avec une erreur `E422 ... Erreur « Unsupported GitHub Actions source repository visibility: "private"` ». Pour publier depuis un dépôt privé, désactivez la provenance en définissant `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'` dans la variable `env` de l’étape de publication (un indice commenté est inclus dans le fichier `publish.yml` généré automatiquement) :
@@ -187,7 +187,7 @@ Les workflows `ci.yml` et `cd.yml` référencent des actions réutilisables sur 
 
 ## Publication sur npm
 
-Publier sur npm rend votre application découvrable dans la marketplace Twenty. N'importe quel espace de travail Twenty peut parcourir, installer et mettre à niveau des applications de la marketplace directement depuis l'interface utilisateur.
+Publier sur npm rend votre application découvrable dans la marketplace Arxena. N'importe quel espace de travail Arxena peut parcourir, installer et mettre à niveau des applications de la marketplace directement depuis l'interface utilisateur.
 
 ### Prérequis
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### Comment fonctionne la découverte de la place de marché
 
-Le serveur Twenty synchronise son catalogue de la place de marché à partir du registre npm **toutes les heures**.
+Le serveur Arxena synchronise son catalogue de la place de marché à partir du registre npm **toutes les heures**.
 
 Vous pouvez déclencher la synchronisation immédiatement au lieu d'attendre :
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 Les métadonnées affichées dans la marketplace proviennent de votre configuration `defineApplication()` — voir [Métadonnées de la marketplace](#marketplace-metadata) ci-dessus.
 
 <Note>
-Si votre application ne définit pas de `aboutDescription` dans `defineApplication()`, la place de marché utilisera automatiquement le `README.md` de votre package depuis npm comme contenu de la page À propos. Cela signifie que vous pouvez maintenir un seul README à la fois pour npm et pour la place de marché Twenty. Si vous souhaitez une description différente dans la place de marché, définissez explicitement `aboutDescription`.
+Si votre application ne définit pas de `aboutDescription` dans `defineApplication()`, la place de marché utilisera automatiquement le `README.md` de votre package depuis npm comme contenu de la page À propos. Cela signifie que vous pouvez maintenir un seul README à la fois pour npm et pour la place de marché Arxena. Si vous souhaitez une description différente dans la place de marché, définissez explicitement `aboutDescription`.
 </Note>
 
 ### Publication via CI
@@ -270,14 +270,14 @@ Le workflow `publish.yml` préconfiguré décrit ci-dessus publie automatiquemen
 Pour d’autres systèmes de CI (GitLab CI, CircleCI, etc.), exécutez `yarn install` puis `yarn twenty app:publish`. La provenance est émise lorsque l’environnement peut générer un jeton OIDC et est ignorée automatiquement dans le cas contraire.
 
 <Note>
-La **provenance npm** ajoute un badge de confiance à votre fiche npm, permettant aux utilisateurs de vérifier que le package a été construit à partir d’un commit spécifique dans un pipeline CI public. C’est également ce qui vous permet de revendiquer la propriété de votre application dans une marketplace Twenty. Voir la [documentation npm sur la provenance](https://docs.npmjs.com/generating-provenance-statements) pour plus de détails.
+La **provenance npm** ajoute un badge de confiance à votre fiche npm, permettant aux utilisateurs de vérifier que le package a été construit à partir d’un commit spécifique dans un pipeline CI public. C’est également ce qui vous permet de revendiquer la propriété de votre application dans une marketplace Arxena. Voir la [documentation npm sur la provenance](https://docs.npmjs.com/generating-provenance-statements) pour plus de détails.
 </Note>
 
 ## Installation des applications
 
 Une fois qu'une application est publiée (npm) ou déployée (tarball), les espaces de travail peuvent l'installer via l'interface utilisateur.
 
-Accédez à la page **Paramètres > Applications** dans Twenty, où les applications de la place de marché et celles déployées en tarball peuvent être parcourues et installées.
+Accédez à la page **Paramètres > Applications** dans Arxena, où les applications de la place de marché et celles déployées en tarball peuvent être parcourues et installées.
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

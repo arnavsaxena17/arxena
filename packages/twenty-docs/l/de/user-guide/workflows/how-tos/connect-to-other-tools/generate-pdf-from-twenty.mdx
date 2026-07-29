@@ -1,16 +1,16 @@
 ---
-title: Ein PDF aus Twenty generieren
+title: Ein PDF aus Arxena generieren
 description: Erstellen Sie einen Workflow, um ein PDF (z. B. ein Angebot) zu generieren und an einen Datensatz anzuhängen.
 ---
 
-Automatisch ein PDF generieren oder abrufen und an einen Datensatz in Twenty anhängen. Dies wird häufig verwendet, um Angebote, Rechnungen oder Berichte zu erstellen, die mit Companies, Opportunities oder anderen Objekten verknüpft sind.
+Automatisch ein PDF generieren oder abrufen und an einen Datensatz in Arxena anhängen. Dies wird häufig verwendet, um Angebote, Rechnungen oder Berichte zu erstellen, die mit Companies, Opportunities oder anderen Objekten verknüpft sind.
 
 ## Übersicht
 
 Dieser Workflow verwendet einen **Manuellen Auslöser**, damit Benutzer bei Bedarf für jeden ausgewählten Datensatz ein PDF generieren können. Eine **Logikfunktion** übernimmt:
 
 1. Das Herunterladen des PDFs von einer URL (von einem PDF-Generierungsdienst)
-2. Das Hochladen der Datei in Twenty
+2. Das Hochladen der Datei in Arxena
 3. Das Erstellen eines Anhangs, der mit dem Datensatz verknüpft ist
 
 ## Voraussetzungen
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ Jeder Dienst stellt eine API bereit, die eine PDF-URL zurückgibt, die Sie ansch
 
 * [Workflow-Trigger](/l/de/user-guide/workflows/capabilities/workflow-triggers)
 * [Logikfunktionen](/l/de/user-guide/workflows/capabilities/workflow-actions#code)
-* [Ein Angebot oder eine Rechnung aus Twenty generieren](/l/de/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Ein Angebot oder eine Rechnung aus Arxena generieren](/l/de/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

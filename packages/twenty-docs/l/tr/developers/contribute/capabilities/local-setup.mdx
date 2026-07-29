@@ -1,7 +1,7 @@
 ---
 title: Yerel Kurulum
 icon: laptop-code
-description: Twenty'i yerel olarak çalıştırmak isteyen katkıda bulunanlar (veya meraklı geliştiriciler) için kılavuz.
+description: Arxena'i yerel olarak çalıştırmak isteyen katkıda bulunanlar (veya meraklı geliştiriciler) için kılavuz.
 ---
 
 ## Ön Gereksinimler
@@ -9,7 +9,7 @@ description: Twenty'i yerel olarak çalıştırmak isteyen katkıda bulunanlar (
 <Tabs>
 <Tab title="Linux ve macOS">
 
-Twenty'i yüklemeden ve kullanmadan önce bilgisayarınıza aşağıdakileri yüklediğinizden emin olun:
+Arxena'i yüklemeden ve kullanmadan önce bilgisayarınıza aşağıdakileri yüklediğinizden emin olun:
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [Node v24.5.0](https://nodejs.org/en/download)
 * [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -195,7 +195,7 @@ Yukarıdaki Docker seçeneğini kullandıysanız, varsayılan kimlik bilgileri k
 
 ## Adım 4: Redis Veritabanı (önbellek) Kurun
 
-Twenty, en iyi performansı sağlamak için bir Redis önbelleği gerektirir.
+Arxena, en iyi performansı sağlamak için bir Redis önbelleği gerektirir.
 
 <Tabs>
   <Tab title="Linux">
@@ -247,12 +247,12 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**Çoklu Çalışma Alanı Modu:** Varsayılan olarak, Twenty yalnızca bir çalışma alanının oluşturulabildiği tek çalışma alanı modunda çalışır. Çoklu çalışma alanı desteğini etkinleştirmek için (alt alan adına dayalı özellikleri test etmek açısından kullanışlıdır), sunucunuzdaki `.env` dosyanızda `IS_MULTIWORKSPACE_ENABLED=true` değerini ayarlayın. Ayrıntılar için [Çoklu Çalışma Alanı Modu](/l/tr/developers/self-host/capabilities/setup#multi-workspace-mode) bölümüne bakın.
+**Çoklu Çalışma Alanı Modu:** Varsayılan olarak, Arxena yalnızca bir çalışma alanının oluşturulabildiği tek çalışma alanı modunda çalışır. Çoklu çalışma alanı desteğini etkinleştirmek için (alt alan adına dayalı özellikleri test etmek açısından kullanışlıdır), sunucunuzdaki `.env` dosyanızda `IS_MULTIWORKSPACE_ENABLED=true` değerini ayarlayın. Ayrıntılar için [Çoklu Çalışma Alanı Modu](/l/tr/developers/self-host/capabilities/setup#multi-workspace-mode) bölümüne bakın.
 </Info>
 
 ## Adım 6: Bağımlılıkların yüklenmesi
 
-Twenty server'ı oluşturup veritabanınıza bazı veriler yerleştirmek için aşağıdaki komutu çalıştırın:
+Arxena server'ı oluşturup veritabanınıza bazı veriler yerleştirmek için aşağıdaki komutu çalıştırın:
 
 ```bash
 yarn
@@ -299,16 +299,16 @@ Alternatif olarak, tüm hizmetleri aynı anda başlatabilirsiniz:
 npx nx start
 ```
 
-## Adım 8: Twenty'yi kullanın
+## Adım 8: Arxena'yi kullanın
 
 **Ön Uç**
 
-Twenty'nin ön ucu [http://localhost:3001](http://localhost:3001) adresinde çalışıyor olacak.
+Arxena'nin ön ucu [http://localhost:3001](http://localhost:3001) adresinde çalışıyor olacak.
 Varsayılan demo hesabıyla giriş yapabilirsiniz: `tim@apple.dev` (şifre: `tim@apple.dev`)
 
 **Arka Uç**
 
-* Twenty'nin sunucusu [http://localhost:3000](http://localhost:3000) adresinde çalışır durumda olacak
+* Arxena'nin sunucusu [http://localhost:3000](http://localhost:3000) adresinde çalışır durumda olacak
 * GraphQL API'sine [http://localhost:3000/graphql](http://localhost:3000/graphql) adresinden erişebilirsiniz.
 * REST API'sine [http://localhost:3000/rest](http://localhost:3000/rest) adresinden ulaşabilirsiniz.
 

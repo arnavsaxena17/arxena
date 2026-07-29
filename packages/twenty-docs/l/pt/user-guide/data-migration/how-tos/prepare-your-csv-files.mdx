@@ -1,6 +1,6 @@
 ---
 title: Prepare seus arquivos CSV
-description: Guia completo passo a passo para formatar seus dados para importação no Twenty.
+description: Guia completo passo a passo para formatar seus dados para importação no Arxena.
 ---
 
 ## Visão Geral
@@ -22,7 +22,7 @@ Antes de começar, verifique se o seu arquivo atende a estes requisitos:
 
 ## Etapa 2: Baixe o arquivo de exemplo
 
-**Esta é a etapa mais importante.** O arquivo de exemplo mostra os nomes exatos das colunas e o formato que o Twenty espera.
+**Esta é a etapa mais importante.** O arquivo de exemplo mostra os nomes exatos das colunas e o formato que o Arxena espera.
 
 1. Navegue até qualquer objeto (Pessoas, Empresas, etc.)
 2. Clique em **⋮** → **Importar registros**
@@ -33,7 +33,7 @@ Antes de começar, verifique se o seu arquivo atende a estes requisitos:
 
 ## Etapa 3: Remova valores duplicados
 
-O Twenty impõe unicidade em determinados campos. Duplicados causarão erros de importação.
+O Arxena impõe unicidade em determinados campos. Duplicados causarão erros de importação.
 
 | Objeto                     | Campos exclusivos                                                  |
 | -------------------------- | ------------------------------------------------------------------ |
@@ -45,7 +45,7 @@ O Twenty impõe unicidade em determinados campos. Duplicados causarão erros de 
 
 1. Ordene sua planilha pelo campo exclusivo (email ou domínio)
 2. Remova ou mescle linhas duplicadas
-3. Verifique se há duplicados que já existem no Twenty
+3. Verifique se há duplicados que já existem no Arxena
 
 <Warning>**Registros excluídos logicamente contam para a unicidade.** Registros em Menu de Comando → Ver registros excluídos causarão erros de duplicação. Exclua-os permanentemente ou restaure e atualize-os.</Warning>
 
@@ -61,11 +61,11 @@ Tipos de campo diferentes exigem formatos específicos. Aqui está a referência
 ### Campos de email
 
 * Deve estar em um formato de email válido: `name@domain.com`
-* Deve ser exclusivo (sem duplicados no arquivo ou no Twenty)
+* Deve ser exclusivo (sem duplicados no arquivo ou no Arxena)
 * Para emails adicionais, use este formato na coluna **Emails / Additional Emails**:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Campos de domínio
@@ -75,7 +75,7 @@ Tipos de campo diferentes exigem formatos específicos. Aqui está a referência
 * Preencha ambas as colunas:
   * **Domain / Domain Label**: `domain.com`
   * **Domain / Domain URL**: `https://domain.com`
-* Deve ser exclusivo dentro do seu arquivo e no Twenty
+* Deve ser exclusivo dentro do seu arquivo e no Arxena
 
 ### Campos de telefone
 
@@ -163,13 +163,13 @@ Use o formato: `RATING_1`, `RATING_2`, `RATING_3`, `RATING_4` ou `RATING_5`
 
 Preencha ambas as colunas:
 
-* **Links / Rótulo do Link**: `Twenty`
-* **Links / URL do Link**: `https://twenty.com`
+* **Links / Rótulo do Link**: `Arxena`
+* **Links / URL do Link**: `https://arxena.com`
 
 Para links secundários, use a coluna **Links / Links Secundários**:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Campos JSON
@@ -182,7 +182,7 @@ Use um formato JSON válido:
 
 ### Campos de ID
 
-* **Opcional**: a Twenty gera IDs automaticamente se não forem fornecidos
+* **Opcional**: an Arxena gera IDs automaticamente se não forem fornecidos
 * **Formato**: UUID (por exemplo, `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`)
 * **Caso de uso**: Inclua o ID para atualizar registros existentes em vez de criar novos
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **Regras importantes para relações:**
 
-* O registro pai já deve existir na Twenty
+* O registro pai já deve existir na Arxena
 * Use o formato **URL de domínio** (`https://domain.com`), não o rótulo
 * Mapeie apenas UM identificador exclusivo (não inclua `companyId` E `companyDomain`)
 * Para Membros do Workspace, use o **email** deles (não o nome)
@@ -220,7 +220,7 @@ O registro pai deve existir antes de você poder referenciá-lo.
 
 Veja [Como importar relações](/l/pt/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv) para instruções detalhadas.
 
-## Etapa 6: Garanta que os campos existam na Twenty
+## Etapa 6: Garanta que os campos existam na Arxena
 
 A importação cria registros, não campos. Todos os campos que você deseja importar já devem existir no seu modelo de dados.
 

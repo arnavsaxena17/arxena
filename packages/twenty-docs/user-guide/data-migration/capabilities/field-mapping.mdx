@@ -6,19 +6,19 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## How Field Mapping Works
 
-When you upload a file, Twenty analyzes your columns and attempts to match them to existing fields.
+When you upload a file, Arxena analyzes your columns and attempts to match them to existing fields.
 
 ### Automatic Mapping
-Twenty tries to match columns based on:
+Arxena tries to match columns based on:
 - Column header names (exact or similar matches)
 - Data type detection (dates, numbers, emails)
 - Common field patterns
 
-<Note>**Quick tip:** Export a few rows from the object you want to import. The exported file will have the exact column names Twenty expects, making automatic mapping seamless during import.</Note>
+<Note>**Quick tip:** Export a few rows from the object you want to import. The exported file will have the exact column names Arxena expects, making automatic mapping seamless during import.</Note>
 
 ### Manual Mapping Options
 For each column, you can:
-- **Map to a field**: Select the matching Twenty field from a dropdown
+- **Map to a field**: Select the matching Arxena field from a dropdown
 - **Do not map**: Skip the column entirely (data won't be imported)
 
 <Note>**Fields must exist before import.** The import creates records, not fields. Create custom fields under **Settings → Data Model** before importing.</Note>
@@ -77,11 +77,11 @@ Supported formats:
 - **Emails must be unique within the file to import**
 - For additional emails: use **Emails / Primary Email** for the main email, and **Emails / Additional Emails** with this format:
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Id Fields
-Specifying an `id` during import is optional. Twenty auto-generates one if not provided.
+Specifying an `id` during import is optional. Arxena auto-generates one if not provided.
 
 Use cases for mapping an `id` column:
 - **Set a specific ID**: Choose the UUID for newly created records
@@ -102,7 +102,7 @@ Similar to Domain fields:
 - Use full URL format: `https://example.com`
 - For secondary links, use **Links / Secondary Links** column with this format:
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{ "url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Multi-Select Fields

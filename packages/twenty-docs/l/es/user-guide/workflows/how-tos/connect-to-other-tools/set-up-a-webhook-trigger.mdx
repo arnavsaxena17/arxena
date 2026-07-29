@@ -11,7 +11,7 @@ Los disparadores de webhook permiten que servicios externos inicien tus flujos d
 | -------------------------------- | ---------------------------------------------------------------- |
 | **Formularios web**              | Los envíos del formulario de contacto crean clientes potenciales |
 | **Aplicaciones de terceros**     | Pago de Stripe → crear registro de cliente                       |
-| **Integraciones personalizadas** | Tu aplicación → Automatización de Twenty                         |
+| **Integraciones personalizadas** | Tu aplicación → Automatización de Arxena                         |
 | **Herramientas sin código**      | Conexiones con Zapier, Make, n8n                                 |
 
 ## Configuración paso a paso
@@ -28,7 +28,7 @@ Los disparadores de webhook permiten que servicios externos inicien tus flujos d
 2. Selecciona **Webhook**
 3. Recibirás una URL de webhook única como:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Copia esta URL; la necesitarás para tu servicio externo
 
@@ -75,7 +75,7 @@ Antes de activarlo, prueba tu webhook:
 **Usando cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

@@ -24,7 +24,7 @@ kısalık için bu içe aktarmaları atlar — kendi dosyalarınızda bunları e
 ## Şablon nesnesi
 
 Bir şablonun bir `name` alanı, `{{placeholders}}` içeren bir `body` alanı ve bunun bir Person mı yoksa bir Company için mi yazıldığını belirten bir `target` alanı vardır. `body` bir
-`RICH_TEXT` alanıdır, bu nedenle Twenty ona tam özellikli bir zengin metin düzenleyicisi verir.
+`RICH_TEXT` alanıdır, bu nedenle Arxena ona tam özellikli bir zengin metin düzenleyicisi verir.
 
 ```ts filename="src/objects/document-template.object.ts"
 import { defineObject, FieldType } from 'twenty-sdk/define';
@@ -100,7 +100,7 @@ Diğer taraf (`template-documents-relation.field.ts`),
 ters yönde işaret eden ve adı `documents` olan bir `RelationType.ONE_TO_MANY` alanıdır.
 Tam desen için [Relations](/l/tr/developers/extend/apps/data/relations) bölümüne bakın.
 
-## Bunu Twenty'de görün
+## Bunu Arxena'de görün
 
 `yarn twenty dev` çalışırken **Settings → Data model** bölümünü açın. Her iki nesne de
 uygulamanızla etiketlenmiş olarak görünür.

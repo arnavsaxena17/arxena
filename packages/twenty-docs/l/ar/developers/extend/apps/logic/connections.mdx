@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ export default defineApplication({
 * `name` هي سلسلة المعرّف الفريدة المستخدمة في `listConnections({ providerName })` (بصيغة kebab-case، ويجب أن تطابق `^[a-z][a-z0-9-]*$`).
 * `displayName` يظهر في علامة تبويب إعدادات كل تطبيق وفي قائمة أدوات الذكاء الاصطناعي.
 * `clientIdVariable` / `clientSecretVariable` هي **أسماء**، وليست قيماً — ويجب أن تطابق المفاتيح المصرَّح بها في `defineApplication.serverVariables`. يُدخِل مسؤول الخادم القيم الفعلية `client_id` و`client_secret` عبر واجهة تسجيل التطبيق، ولا تُضمَّن أبدًا في مستودعك.
-* استخدم `serverVariables` (وليس `applicationVariables`) — بيانات اعتماد OAuth على مستوى الخادم، ويوجد تطبيق OAuth واحد لكل خادم Twenty.
+* استخدم `serverVariables` (وليس `applicationVariables`) — بيانات اعتماد OAuth على مستوى الخادم، ويوجد تطبيق OAuth واحد لكل خادم Arxena.
 * إلى أن يتم ملء كلا `serverVariables`، تعرض علامة تبويب إعدادات كل تطبيق تلميح "بحاجة إلى مسؤول الخادم" ويكون زر "إضافة اتصال" معطّلًا.
 * `type: 'oauth'` هي القيمة الوحيدة المدعومة حاليًا. المميِّز متوافق مع الإصدارات المستقبلية: الأنواع المستقبلية (`'pat'`، `'api-key'`، ...) ستضيف كُتل تهيئة فرعية جديدة إلى جانب `oauth`.
 
@@ -221,7 +221,7 @@ const conn = connections.find((c) => c.visibility === 'workspace');
 1. انتقل إلى إعدادات المطوّر لدى المزوّد (مثل https://linear.app/settings/api/applications/new).
 2. عيّن **Redirect URI** إلى `\<SERVER_URL>/auth/apps/callback`.
 3. انسخ **Client ID** و**Client Secret** المُنشأين.
-4. افتح التطبيق المُثبَّت في Twenty كمسؤول خادم → عيّن القيم على `serverVariables` المقابلة.
+4. افتح التطبيق المُثبَّت في Arxena كمسؤول خادم → عيّن القيم على `serverVariables` المقابلة.
 5. بعد ذلك، يمكن لأعضاء مساحة العمل إضافة الاتصالات من قسم **الاتصالات** الخاص بكل تطبيق.
 
 </Accordion>

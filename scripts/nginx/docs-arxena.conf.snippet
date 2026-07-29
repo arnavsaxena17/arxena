@@ -1,0 +1,31 @@
+# Arxena Docs - nginx vhost for docs.arxena.com
+
+server {
+  listen 80;
+  server_name docs.arxena.com;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  server_name docs.arxena.com;
+
+  ssl_certificate /etc/letsencrypt/live/docs.arxena.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/docs.arxena.com/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+  root /home/ubuntu/twenty/packages/twenty-docs/.deploy/arxena;
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}

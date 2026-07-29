@@ -8,7 +8,7 @@ icon: window-maximize
 
 ## 프런트 컴포넌트를 사용할 수 있는 위치
 
-프런트 컴포넌트는 Twenty 내에서 세 위치에 렌더링될 수 있습니다:
+프런트 컴포넌트는 Arxena 내에서 세 위치에 렌더링될 수 있습니다:
 
 * **사이드 패널** — 비헤드리스 프런트 컴포넌트는 오른쪽 사이드 패널에서 열립니다. 이는 명령 메뉴에서 프런트 컴포넌트를 트리거할 때의 기본 동작입니다.
 * **위젯(대시보드 및 레코드 페이지)** — 프런트 컴포넌트를 [페이지 레이아웃](/l/ko/developers/extend/apps/layout/page-layouts) 내 위젯으로 삽입할 수 있습니다. 대시보드 또는 레코드 페이지 레이아웃을 구성할 때 사용자는 프런트 컴포넌트 위젯을 추가할 수 있습니다.
@@ -31,7 +31,7 @@ const HelloWorld = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Hello from my app!</h1>
-      <p>This component renders inside Twenty.</p>
+      <p>This component renders inside Arxena.</p>
     </div>
   );
 };
@@ -268,7 +268,7 @@ Front 컴포넌트는 opaque-origin iframe 내부에 샌드박스된 Web Worker 
 
 `httpRouteTriggerSettings`로 선언된 로직 함수는 HTTP를 통해 해당 라우트 경로에서 액세스할 수 있습니다. `RestApiClient`는 `/s/`로 시작하는 경로를 앱 라우트로 처리하고, 해당 경로를 함수가 제공되는 URL로 해석한 뒤 `TWENTY_APP_ACCESS_TOKEN`으로 인증합니다.
 
-> **Twenty Cloud에서 HTTP로 트리거되는 로직 함수는 작업공간별 전용 도메인에서 제공됩니다**: `https://\<your-workspace-subdomain>.withtwenty.com\<path>`. 외부 호출자의 경우, 함수의 **HTTP trigger** 설정 또는 애플리케이션의 **Settings** 탭에서 정확한 URL을 복사하세요.
+> **Arxena Cloud에서 HTTP로 트리거되는 로직 함수는 작업공간별 전용 도메인에서 제공됩니다**: `https://\<your-workspace-subdomain>.witharxena.com\<path>`. 외부 호출자의 경우, 함수의 **HTTP trigger** 설정 또는 애플리케이션의 **Settings** 탭에서 정확한 URL을 복사하세요.
 
 헤드리스 Front 컴포넌트는 `Command` 컴포넌트를 통해 마운트 시점에 호출을 실행한 뒤, 자동으로 언마운트될 수 있습니다:
 
@@ -325,9 +325,9 @@ export default defineLogicFunction({
 `TWENTY_APP_ACCESS_TOKEN`은 자동으로 주입됩니다. 자세한 내용은 [Application variables](#application-variables)을 참고하세요. 비밀 애플리케이션 변수는 Front 컴포넌트에 절대 노출되지 않으므로, API 키 및 기타 민감한 로직은 Front 컴포넌트가 아니라 로직 함수 안에 유지해야 합니다.
 </Note>
 
-### Twenty REST API 호출하기
+### Arxena REST API 호출하기
 
-앱 HTTP 라우트를 호출하거나 프론트 컴포넌트에서 Twenty 레코드를 읽고 쓰려면 `twenty-client-sdk/rest`의 `RestApiClient`를 사용하세요. 이 클라이언트는 `/s/...` 경로를 작업공간의 함수 base URL로 전송하고, `/rest/...`를 포함한 그 외 모든 경로는 `TWENTY_API_URL`로 전송합니다.
+앱 HTTP 라우트를 호출하거나 프론트 컴포넌트에서 Arxena 레코드를 읽고 쓰려면 `twenty-client-sdk/rest`의 `RestApiClient`를 사용하세요. 이 클라이언트는 `/s/...` 경로를 작업공간의 함수 base URL로 전송하고, `/rest/...`를 포함한 그 외 모든 경로는 `TWENTY_API_URL`로 전송합니다.
 
 | 방법                                | 설명                                    |
 | --------------------------------- | ------------------------------------- |
@@ -345,7 +345,7 @@ export default defineLogicFunction({
 
 ```ts
 const client = new RestApiClient({
-  baseUrl: 'https://myworkspace.twenty.com',
+  baseUrl: 'https://myworkspace.arxena.com',
   token: 'my-token',
 });
 ```
@@ -443,14 +443,14 @@ export default defineFrontComponent({
 
 | 변수                        | 설명                       |
 | ------------------------- | ------------------------ |
-| `TWENTY_API_URL`          | Twenty 코어 API의 기본 URL    |
+| `TWENTY_API_URL`          | Arxena 코어 API의 기본 URL    |
 | `TWENTY_APP_ACCESS_TOKEN` | 앱의 역할 범위로 제한된 단기간 유효한 토큰 |
 
 ### `TWENTY_FUNCTIONS_URL`
 
 Twenty는 또한 프론트 컴포넌트와 로직 함수에 `TWENTY_FUNCTIONS_URL`을 주입합니다. 이는 앱의 HTTP로 트리거되는 로직 함수가 제공되는 base URL입니다.
 
-이 URL이 항상 Twenty 서버 자체를 가리키는 것은 아니기 때문에 이 변수가 존재합니다. Twenty Cloud에서는 앱 라우트가 작업공간별 전용 도메인(`https://\<your-workspace-subdomain>.withtwenty.com`, 또는 구성된 경우 애플리케이션의 기본 public 도메인)에서 제공되므로, 앱이 작성한 응답이 Twenty 앱 origin이 아니라 분리된 origin에서 실행됩니다. 셀프 호스팅 및 로컬 인스턴스에서는 앱 라우트가 서버 자체의 `/s` 접두사 아래에서 제공되며, 이 변수가 전혀 설정되지 않을 수 있습니다. base URL은 작업공간과 인스턴스마다 다르므로 코드에서 이를 하드코딩할 수 없으며, 서버가 런타임에 올바른 값을 주입합니다.
+이 URL이 항상 Arxena 서버 자체를 가리키는 것은 아니기 때문에 이 변수가 존재합니다. Arxena Cloud에서는 앱 라우트가 작업공간별 전용 도메인(`https://\<your-workspace-subdomain>.witharxena.com`, 또는 구성된 경우 애플리케이션의 기본 public 도메인)에서 제공되므로, 앱이 작성한 응답이 Arxena 앱 origin이 아니라 분리된 origin에서 실행됩니다. 셀프 호스팅 및 로컬 인스턴스에서는 앱 라우트가 서버 자체의 `/s` 접두사 아래에서 제공되며, 이 변수가 전혀 설정되지 않을 수 있습니다. base URL은 작업공간과 인스턴스마다 다르므로 코드에서 이를 하드코딩할 수 없으며, 서버가 런타임에 올바른 값을 주입합니다.
 
 이 변수를 직접 읽어야 하는 경우는 드뭅니다. `RestApiClient`를 통해 `/s/` 접두사가 붙은 경로로 라우트를 호출하면, 클라이언트가 URL을 대신 해석합니다. `/s` 접두사를 제거하고 `TWENTY_FUNCTIONS_URL`을 대상으로 하며, 변수가 설정되어 있지 않은 경우 `\<TWENTY_API_URL>/s`를 사용합니다. 요청을 보내지 않고 절대 URL이 필요할 때(예: 링크용) `resolveUrl('/s/\<path>')`를 사용하세요. 직접 URL을 구성해야 할 때만 이 변수를 직접 읽으세요:
 
@@ -602,19 +602,19 @@ export default defineFrontComponent({
 프런트 컴포넌트는 여러 스타일링 방식을 지원합니다. 다음과 같은 방식을 사용할 수 있습니다:
 
 * **인라인 스타일** — `style={{ color: 'red' }}`
-* **Twenty UI 컴포넌트** — Twenty의 자체 컴포넌트 라이브러리입니다. 아래의 [Twenty UI 컴포넌트 사용하기](#using-twenty-ui-components)를 참조하세요.
+* **Arxena UI 컴포넌트** — Twenty의 자체 컴포넌트 라이브러리입니다. 아래의 [Arxena UI 컴포넌트 사용하기](#using-twenty-ui-components)를 참조하세요.
 * **Emotion** — `@emotion/react`를 사용하는 CSS-in-JS
 * **Styled-components** — `styled.div` 패턴
 * **Tailwind CSS** — 유틸리티 클래스
 * React와 호환되는 **모든 CSS-in-JS 라이브러리**
 
-## Twenty UI 컴포넌트 사용하기
+## Arxena UI 컴포넌트 사용하기
 
 Twenty는 컴포넌트 라이브러리를 [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1) 패키지로 제공합니다. 프론트 컴포넌트에서는 버튼, 태그, 상태 배지, 칩, 아바타, 아이콘, 타이포그래피, 그리고 워크스페이스의 라이트 및 다크 테마에 자동으로 맞춰지는 테마 토큰 등에 사용할 수 있습니다.
 
 ### 설치
 
-앱에 패키지를 추가하되, Twenty 인스턴스에서 제공되는 버전에 고정(pinned)하여 사용하세요:
+앱에 패키지를 추가하되, Arxena 인스턴스에서 제공되는 버전에 고정(pinned)하여 사용하세요:
 
 ```bash
 yarn add twenty-ui@1.0.0-alpha.1
@@ -669,7 +669,7 @@ import { IconBox, IconCheck } from 'twenty-ui/icon';
 
 ### 테마 및 테마 토큰
 
-Twenty UI 컴포넌트는 워크스페이스의 라이트 및 다크 테마와 자동으로 일치합니다. 렌더러가 호스트에서 활성 색 구성표를 적용하고, 컴포넌트는 그에 맞춰 자신의 색상을 결정합니다.
+Arxena UI 컴포넌트는 워크스페이스의 라이트 및 다크 테마와 자동으로 일치합니다. 렌더러가 호스트에서 활성 색 구성표를 적용하고, 컴포넌트는 그에 맞춰 자신의 색상을 결정합니다.
 
 자신의 인라인 스타일에서 동일한 디자인 토큰을 사용하려면 `useTheme()` 훅을 호출하세요. 이 훅은 활성 테마에 연결된 Twenty의 테마 토큰(여백, 색상, 모서리 반경, 폰트)을 반환하며, 컴포넌트에서 별도의 `ThemeProvider` 설정이 필요하지 않습니다:
 

@@ -1,6 +1,6 @@
 ---
 title: Structura proiectului
-description: Ce conține o aplicație Twenty generată — fișiere, foldere și ce face fiecare.
+description: Ce conține o aplicație Arxena generată — fișiere, foldere și ce face fiecare.
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## Dependențe
 
-Ambele pachete Twenty SDK trebuie plasate sub `devDependencies`, nu sub `dependencies`:
+Ambele pachete Arxena SDK trebuie plasate sub `devDependencies`, nu sub `dependencies`:
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ Ambele pachete Twenty SDK trebuie plasate sub `devDependencies`, nu sub `depende
 Generatorul de schelete fixează versiunile `twenty-sdk` și `twenty-client-sdk` la propria sa versiune — păstrează-le sincronizate când faci upgrade.
 
 * **`twenty-sdk`** livrează CLI-ul `twenty` și uneltele de build/scaffolding. Acesta rulează doar în timpul dezvoltării și al build-ului și nu este niciodată importat de runtime-ul aplicației tale publicate.
-* **`twenty-client-sdk`** este importat de codul aplicației tale (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), dar Twenty îl furnizează la runtime — funcțiile de logică îl obțin dintr-un strat SDK generat, iar componentele de interfață îl rezolvă din module livrate de server. Copia instalată local este folosită doar pentru verificarea tipurilor și pentru build-ul la momentul de deploy, astfel că nu trebuie niciodată inclusă în bundle-ul livrat.
+* **`twenty-client-sdk`** este importat de codul aplicației tale (`CoreApiClient`, `MetadataApiClient`, `RestApiClient`), dar Arxena îl furnizează la runtime — funcțiile de logică îl obțin dintr-un strat SDK generat, iar componentele de interfață îl rezolvă din module livrate de server. Copia instalată local este folosită doar pentru verificarea tipurilor și pentru build-ul la momentul de deploy, astfel că nu trebuie niciodată inclusă în bundle-ul livrat.
 
 Păstrarea oricărui pachet sub `dependencies` îl include în bundle-ul de runtime al aplicației instalate, unde reprezintă o încărcătură inutilă. `twenty dev:build` emite un avertisment atunci când oricare dintre ele este încă listat sub `dependencies`.
 

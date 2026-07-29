@@ -1,16 +1,16 @@
 ---
-title: 在 Twenty 中生成 PDF
+title: 在 Arxena 中生成 PDF
 description: 创建一个工作流，用于生成 PDF（例如报价单）并将其附加到记录。
 ---
 
-自动生成或获取 PDF，并将其附加到 Twenty 中的记录。 这通常用于创建与公司、商机或其他对象关联的报价单、发票或报告。
+自动生成或获取 PDF，并将其附加到 Arxena 中的记录。 这通常用于创建与公司、商机或其他对象关联的报价单、发票或报告。
 
 ## 概览
 
 此工作流使用 **手动触发器**，因此用户可以按需为任何选定的记录生成 PDF。 **逻辑函数** 句柄：
 
 1. 从 URL（来自 PDF 生成服务）下载 PDF
-2. 将文件上传到 Twenty
+2. 将文件上传到 Arxena
 3. 创建与该记录关联的附件
 
 ## 先决条件
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ export const main = async (
 
 * [工作流触发器](/l/zh/user-guide/workflows/capabilities/workflow-triggers)
 * [逻辑函数](/l/zh/user-guide/workflows/capabilities/workflow-actions#code)
-* [从 Twenty 生成报价单或发票](/l/zh/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [从 Arxena 生成报价单或发票](/l/zh/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

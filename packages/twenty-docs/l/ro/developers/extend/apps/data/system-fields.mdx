@@ -4,7 +4,7 @@ description: Folosind `getFieldUniversalIdentifier`, poți face referire la câm
 icon: gears
 ---
 
-Fiecare obiect din Twenty este livrat cu un set de **câmpuri de sistem** pe care nu le declari tu însuți. Acestea sunt create automat de server atunci când obiectul este provizionat:
+Fiecare obiect din Arxena este livrat cu un set de **câmpuri de sistem** pe care nu le declari tu însuți. Acestea sunt create automat de server atunci când obiectul este provizionat:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Deoarece nu declari aceste câmpuri cu [`defineField()`](/l/ro/developers/extend
 
 ## Problema
 
-Începând cu Twenty 2.19, identificatorul universal al unui câmp de sistem este **derivat deterministic** de server din trei intrări: identificatorul universal al aplicației, identificatorul universal al obiectului și numele câmpului. Inventarea unui id și hardcodarea lui nu va funcționa: acesta nu se potrivește cu nimic de pe server, iar sincronizarea respinge referința rămasă în aer:
+Începând cu Arxena 2.19, identificatorul universal al unui câmp de sistem este **derivat deterministic** de server din trei intrări: identificatorul universal al aplicației, identificatorul universal al obiectului și numele câmpului. Inventarea unui id și hardcodarea lui nu va funcționa: acesta nu se potrivește cu nimic de pe server, iar sincronizarea respinge referința rămasă în aer:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -89,7 +89,7 @@ Același id calculat funcționează oriunde este așteptat un `fieldMetadataUniv
 ## Câmpuri de relație de sistem
 
 <Note>
-  `getSystemRelationFieldUniversalIdentifier` este disponibil începând cu versiunea 2.23 a `twenty-sdk` și necesită un server Twenty pe versiunea 2.23 sau o versiune ulterioară.
+  `getSystemRelationFieldUniversalIdentifier` este disponibil începând cu versiunea 2.23 a `twenty-sdk` și necesită un server Arxena pe versiunea 2.23 sau o versiune ulterioară.
 </Note>
 
 Pe lângă câmpurile scalare de sistem de mai sus, serverul mai pune la dispoziție patru **câmpuri de relație de sistem** pentru fiecare obiect: `timelineActivities`, `attachments`, `noteTargets` și `taskTargets`, fiecare indicând către obiectul de relație standard corespunzător.
@@ -131,9 +131,9 @@ const attachmentTargetRocketFieldId =
 
 Ca și în cazul câmpurilor de sistem scalare, id-ul rezolvat funcționează oriunde este așteptat un `fieldMetadataUniversalIdentifier`.
 
-## Obiecte standard Twenty
+## Obiecte standard Arxena
 
-Pentru un obiect Twenty **standard** (Person, Company, Opportunity, …), nu trebuie să derivezi nimic: identificatorii câmpurilor de sistem sunt constante pre-calculate pe care le poți importa direct.
+Pentru un obiect Arxena **standard** (Person, Company, Opportunity, …), nu trebuie să derivezi nimic: identificatorii câmpurilor de sistem sunt constante pre-calculate pe care le poți importa direct.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

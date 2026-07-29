@@ -1,21 +1,21 @@
 ---
 title: 빠른 시작
 icon: rocket
-description: 몇 분 만에 첫 번째 Twenty 앱을 만들어 보세요.
+description: 몇 분 만에 첫 번째 Arxena 앱을 만들어 보세요.
 ---
 
 ## 사전 준비
 
 * **Node.js 24.5+** — [여기에서 다운로드](https://nodejs.org/)
 * **Yarn 4** — Corepack을 통해 Node.js와 함께 제공됩니다. 활성화하려면: `corepack enable`
-* **Docker** — [여기에서 다운로드](https://www.docker.com/products/docker-desktop/). 로컬 Twenty 서버를 실행하려면 필요합니다. 이미 다른 곳에서 Twenty가 실행 중이라면 건너뛰세요.
+* **Docker** — [여기에서 다운로드](https://www.docker.com/products/docker-desktop/). 로컬 Arxena 서버를 실행하려면 필요합니다. 이미 다른 곳에서 Twenty가 실행 중이라면 건너뛰세요.
 
-Twenty 앱을 빌드하는 과정은 세 단계로 이루어집니다. 스캐폴더는 이를 단일 해피 패스 명령으로 합쳐 주지만, 각 단계는 별개의 개념입니다 — 문제가 발생했을 때 현재 단계가 어디인지 알면 무엇을 고쳐야 하는지 파악할 수 있습니다.
+Arxena 앱을 빌드하는 과정은 세 단계로 이루어집니다. 스캐폴더는 이를 단일 해피 패스 명령으로 합쳐 주지만, 각 단계는 별개의 개념입니다 — 문제가 발생했을 때 현재 단계가 어디인지 알면 무엇을 고쳐야 하는지 파악할 수 있습니다.
 
 | 단계           | 하는 일                      | 도구                                  | 결과                   |
 | ------------ | ------------------------- | ----------------------------------- | -------------------- |
 | **1. 스캐폴딩**  | 앱의 소스 코드를 생성              | `npx create-twenty-app`             | 디스크에 TypeScript 프로젝트 |
-| **2. 서버 실행** | 동기화 대상으로 사용할 Twenty 서버 시작 | Docker + `yarn twenty docker:start` | 실행 중인 Twenty 인스턴스    |
+| **2. 서버 실행** | 동기화 대상으로 사용할 Arxena 서버 시작 | Docker + `yarn twenty docker:start` | 실행 중인 Arxena 인스턴스    |
 | **3. 동기화**   | 코드를 서버와 실시간 동기화           | `yarn twenty dev`                   | 변경 사항이 UI에 표시됨       |
 
 ---
@@ -34,20 +34,20 @@ npx create-twenty-app@latest my-twenty-app
 
 ---
 
-## 2단계 — 로컬 Twenty 서버 실행
+## 2단계 — 로컬 Arxena 서버 실행
 
-앱은 동기화할 Twenty 서버가 필요합니다. 이 서버는 Docker에서 로컬로 실행되는 완전한 Twenty 인스턴스입니다 — UI, GraphQL API, PostgreSQL을 포함합니다. 로컬 코드가 해당 서버로 정의를 업로드하면 UI에 표시됩니다.
+앱은 동기화할 Arxena 서버가 필요합니다. 이 서버는 Docker에서 로컬로 실행되는 완전한 Arxena 인스턴스입니다 — UI, GraphQL API, PostgreSQL을 포함합니다. 로컬 코드가 해당 서버로 정의를 업로드하면 UI에 표시됩니다.
 
 Scaffolder가 이를 대신 시작합니다. Docker가 실행 중이면 `twentycrm/twenty-app-dev` 이미지를 pull 하고, 포트 `2020`에서 시작한 다음, 미리 시드된 데모 워크스페이스(`tim@apple.dev`)에 대해 CLI를 인증합니다. 별도의 로그인은 필요하지 않습니다.
 
-대신 기존 Twenty 서버에 연결하려면 `--url \<your-server-url>`을 전달하세요. 원격 서버는 OAuth로 인증합니다. 브라우저가 열리면 로그인한 뒤 **Authorize**를 클릭해 워크스페이스에 대한 CLI 액세스를 허용하면 됩니다. (로컬에서도 `--authentication-method oauth`로 OAuth를 선택할 수 있습니다. `tim@apple.dev` / `tim@apple.dev`로 로그인하세요.)
+대신 기존 Arxena 서버에 연결하려면 `--url \<your-server-url>`을 전달하세요. 원격 서버는 OAuth로 인증합니다. 브라우저가 열리면 로그인한 뒤 **Authorize**를 클릭해 워크스페이스에 대한 CLI 액세스를 허용하면 됩니다. (로컬에서도 `--authentication-method oauth`로 OAuth를 선택할 수 있습니다. `tim@apple.dev` / `tim@apple.dev`로 로그인하세요.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Twenty 로그인 화면" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Arxena 로그인 화면" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Twenty CLI 권한 부여 화면" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Arxena CLI 권한 부여 화면" />
 </div>
 
 권한 부여가 완료되면 터미널에 설정이 완료되었다는 메시지가 표시됩니다.
@@ -56,7 +56,7 @@ Scaffolder가 이를 대신 시작합니다. Docker가 실행 중이면 `twentyc
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="앱 스캐폴딩 성공" />
 </div>
 
-**이 단계를 마치면:** [http://localhost:2020](http://localhost:2020)에서 Twenty 서버가 실행 중이며, CLI가 해당 서버로 동기화하도록 권한이 부여됩니다.
+**이 단계를 마치면:** [http://localhost:2020](http://localhost:2020)에서 Arxena 서버가 실행 중이며, CLI가 해당 서버로 동기화하도록 권한이 부여됩니다.
 
 <Note>
 Docker가 설치되어 있지 않거나 실행 중이 아니면, 스캐폴더가 OS에 맞는 올바른 시작 명령을 알려줍니다. Docker가 올라오면 `yarn twenty docker:start`로 이어서 진행할 수 있습니다 — 다시 스캐폴딩할 필요는 없습니다.

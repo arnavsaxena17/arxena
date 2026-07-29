@@ -4,7 +4,7 @@ description: ビューやその他のエンティティから `createdAt` や `u
 icon: gears
 ---
 
-Twenty のすべてのオブジェクトには、あなたが自分で宣言する必要のない **システムフィールド** のセットがあらかじめ用意されています。 これらは、オブジェクトがプロビジョニングされるときにサーバーによって自動的に作成されます。
+Arxena のすべてのオブジェクトには、あなたが自分で宣言する必要のない **システムフィールド** のセットがあらかじめ用意されています。 これらは、オブジェクトがプロビジョニングされるときにサーバーによって自動的に作成されます。
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Twenty のすべてのオブジェクトには、あなたが自分で宣言す�
 
 ## 問題
 
-Twenty 2.19 以降、システムフィールドのユニバーサル識別子は、アプリケーションのユニバーサル識別子、オブジェクトのユニバーサル識別子、およびフィールド名という 3 つの入力からサーバーによって **決定的に導出** されます。 id を独自に作成してハードコードしても機能しません。サーバー上のどの値とも一致せず、同期時にそのぶら下がった参照は拒否されます。
+Arxena 2.19 以降、システムフィールドのユニバーサル識別子は、アプリケーションのユニバーサル識別子、オブジェクトのユニバーサル識別子、およびフィールド名という 3 つの入力からサーバーによって **決定的に導出** されます。 id を独自に作成してハードコードしても機能しません。サーバー上のどの値とも一致せず、同期時にそのぶら下がった参照は拒否されます。
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -87,7 +87,7 @@ export default defineView({
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier` は `twenty-sdk`
-  2.23 以降で利用可能であり、バージョン 2.23 以降の Twenty サーバーが必要です。
+  2.23 以降で利用可能であり、バージョン 2.23 以降の Arxena サーバーが必要です。
 </Note>
 
 上記のスカラー型システムフィールドに加えて、サーバーはすべてのオブジェクトに対して 4 つの**システムリレーションフィールド**を提供します。`timelineActivities`、`attachments`、`noteTargets`、`taskTargets` であり、それぞれが対応する標準リレーションオブジェクトを参照します。
@@ -129,9 +129,9 @@ const attachmentTargetRocketFieldId =
 
 スカラーのシステムフィールドと同様に、解決された ID は `fieldMetadataUniversalIdentifier` が想定されるあらゆる場所で使用できます。
 
-## 標準の Twenty オブジェクト
+## 標準の Arxena オブジェクト
 
-**標準** の Twenty オブジェクト（Person、Company、Opportunity など）の場合、何も導出する必要はありません。システムフィールドの識別子はあらかじめ計算された定数として用意されており、直接インポートできます。
+**標準** の Arxena オブジェクト（Person、Company、Opportunity など）の場合、何も導出する必要はありません。システムフィールドの識別子はあらかじめ計算された定数として用意されており、直接インポートできます。
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

@@ -7,14 +7,14 @@ description: Fehlerbehebung bei fehlenden E-Mails in Datensätzen.
 
 ### 1. Erstsynchronisierung läuft noch
 
-Die E-Mail-Synchronisierung braucht Zeit, insbesondere bei großen Postfächern. Twenty importiert E-Mails mit etwa **400 Nachrichten pro Minute** (begrenzt durch die Ratenbegrenzung der Gmail API).
+Die E-Mail-Synchronisierung braucht Zeit, insbesondere bei großen Postfächern. Arxena importiert E-Mails mit etwa **400 Nachrichten pro Minute** (begrenzt durch die Ratenbegrenzung der Gmail API).
 
 * **Kalendersynchronisierung**: in wenigen Minuten abgeschlossen
 * **E-Mail-Synchronisierung**: Abhängig von der Postfachgröße (z. B. 10.000 E-Mails ≈ 25 Minuten, 50.000 E-Mails ≈ 2 Stunden)
 
 **Lösung**: Warten Sie, bis der Erstimport abgeschlossen ist. Die Dauer lässt sich anhand der Größe Ihres Postfachs abschätzen.
 
-### 2. Kontakt existiert in Twenty nicht
+### 2. Kontakt existiert in Arxena nicht
 
 E-Mails erscheinen nur bei vorhandenen Personen-Datensätzen. Wenn der Kontakt noch nicht erstellt wurde:
 

@@ -1,5 +1,5 @@
 ---
-title: Vytvořte nabídku nebo fakturu z Twenty
+title: Vytvořte nabídku nebo fakturu z Arxena
 description: Automaticky vytvářejte faktury v externích nástrojích, když se obchodní případy uzavřou.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Související
 
-* [Vygenerovat PDF z Twenty](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — připojte vygenerované soubory PDF k záznamům
+* [Vygenerovat PDF z Arxena](/l/cs/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — připojte vygenerované soubory PDF k záznamům
 * [Spouštěče pracovních postupů](/l/cs/user-guide/workflows/capabilities/workflow-triggers)
 * [Akce pracovních postupů](/l/cs/user-guide/workflows/capabilities/workflow-actions)
 * [Automatizace pro Uzavřeno – vyhráno](/l/cs/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

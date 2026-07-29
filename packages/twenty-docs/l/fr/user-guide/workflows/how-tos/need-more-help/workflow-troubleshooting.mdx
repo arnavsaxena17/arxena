@@ -27,7 +27,7 @@ description: Problèmes courants des flux de travail et comment les résoudre.
 
 **Symptômes**: Lors de la création manuelle d'un enregistrement dans l'interface, votre flux de travail se déclenche avant que vous n'ayez eu le temps de remplir tous les champs. Le flux de travail s'exécute alors que la plupart des champs sont vides.
 
-**Pourquoi cela se produit**: Twenty enregistre tout en temps réel — il n'y a pas de mode "édition" distinct du mode "lecture". Lorsque vous créez un enregistrement, il est enregistré immédiatement, déclenchant l'événement "Record is created" avant que vous ne puissiez remplir des champs supplémentaires.
+**Pourquoi cela se produit**: Arxena enregistre tout en temps réel — il n'y a pas de mode "édition" distinct du mode "lecture". Lorsque vous créez un enregistrement, il est enregistré immédiatement, déclenchant l'événement "Record is created" avant que vous ne puissiez remplir des champs supplémentaires.
 
 **Quand "Record is created" fonctionne bien**:
 
@@ -79,7 +79,7 @@ Si vous souhaitez que le flux de travail ne s'exécute qu'une seule fois par enr
 
 * Vérifiez l'URL du point de terminaison de l'API
 * Vérifiez les en-têtes d'authentification
-* Testez d'abord l'appel d'API en dehors de Twenty
+* Testez d'abord l'appel d'API en dehors de Arxena
 * Ajoutez une gestion des erreurs dans les actions Code
 
 ### Erreurs des actions Code

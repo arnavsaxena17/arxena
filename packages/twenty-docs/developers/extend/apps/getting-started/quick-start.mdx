@@ -1,21 +1,21 @@
 ---
 title: Quick Start
 icon: "rocket"
-description: Create your first Twenty app in minutes.
+description: Create your first Arxena app in minutes.
 ---
 
 ## Prerequisites
 
 - **Node.js 24.5+** — [Download](https://nodejs.org/)
 - **Yarn 4** — bundled with Node via Corepack. Enable it: `corepack enable`
-- **Docker** — [Download](https://www.docker.com/products/docker-desktop/). Needed to run a local Twenty server. Skip if you already have Twenty running elsewhere.
+- **Docker** — [Download](https://www.docker.com/products/docker-desktop/). Needed to run a local Arxena server. Skip if you already have Arxena running elsewhere.
 
-Building a Twenty app has three phases. The scaffolder collapses them into one happy-path command, but each phase is a separate concept — when something fails, knowing which phase you're in tells you what to fix.
+Building an Arxena app has three phases. The scaffolder collapses them into one happy-path command, but each phase is a separate concept — when something fails, knowing which phase you're in tells you what to fix.
 
 | Phase | What you do | Tool | Result |
 |---|---|---|---|
 | **1. Scaffold** | Generate the app's source code | `npx create-twenty-app` | A TypeScript project on disk |
-| **2. Run a server** | Start a Twenty server to sync into | Docker + `yarn twenty docker:start` | A running Twenty instance |
+| **2. Run a server** | Start an Arxena server to sync into | Docker + `yarn twenty docker:start` | A running Arxena instance |
 | **3. Sync** | Live-sync your code to the server | `yarn twenty dev` | Your changes appear in the UI |
 
 ---
@@ -34,20 +34,20 @@ The scaffolder is non-interactive: the directory name becomes the app name. Pass
 
 ---
 
-## Phase 2 — Run a local Twenty server
+## Phase 2 — Run a local Arxena server
 
-Your app needs a Twenty server to sync into. The server is a full Twenty instance — UI, GraphQL API, PostgreSQL — running locally in Docker. Your local code uploads its definitions to that server, which makes them appear in the UI.
+Your app needs an Arxena server to sync into. The server is a full Arxena instance — UI, GraphQL API, PostgreSQL — running locally in Docker. Your local code uploads its definitions to that server, which makes them appear in the UI.
 
 The scaffolder starts one for you: with Docker running, it pulls the `twentycrm/twenty-app-dev` image, starts it on port `2020`, and authenticates the CLI against the pre-seeded demo workspace (`tim@apple.dev`) — no sign-in required.
 
-To connect to an existing Twenty server instead, pass `--url <your-server-url>`. Remote servers authenticate with OAuth: a browser opens so you can sign in and click **Authorize**, which gives the CLI access to your workspace. (You can also opt into OAuth locally with `--authentication-method oauth` — sign in with `tim@apple.dev` / `tim@apple.dev`.)
+To connect to an existing Arxena server instead, pass `--url <your-server-url>`. Remote servers authenticate with OAuth: a browser opens so you can sign in and click **Authorize**, which gives the CLI access to your workspace. (You can also opt into OAuth locally with `--authentication-method oauth` — sign in with `tim@apple.dev` / `tim@apple.dev`.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Twenty login screen" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Arxena login screen" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Twenty CLI authorization screen" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Arxena CLI authorization screen" />
 </div>
 
 Your terminal will confirm everything is set up.
@@ -56,7 +56,7 @@ Your terminal will confirm everything is set up.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="App scaffolded successfully" />
 </div>
 
-**After this phase:** you have a running Twenty server at [http://localhost:2020](http://localhost:2020) with your CLI authorized to sync to it.
+**After this phase:** you have a running Arxena server at [http://localhost:2020](http://localhost:2020) with your CLI authorized to sync to it.
 
 <Note>
 If Docker isn't installed or running, the scaffolder will tell you the right start command for your OS. Once Docker is up, you can resume with `yarn twenty docker:start` — no need to re-scaffold.
@@ -138,7 +138,7 @@ Apps are composed of **entities** — each defined as a TypeScript file with a s
 |--------|-------------|
 | **Objects & Fields** | Custom data models (Post Card, Invoice, etc.) with typed fields |
 | **Logic functions** | Server-side TypeScript triggered by HTTP routes, cron schedules, or database events |
-| **Front components** | React components that render inside Twenty's UI (side panel, widgets, command menu) |
+| **Front components** | React components that render inside Arxena's UI (side panel, widgets, command menu) |
 | **Skills & Agents** | AI capabilities — reusable instructions and autonomous assistants |
 | **Views & Navigation** | Pre-configured list views and sidebar menu items |
 | **Page layouts** | Custom record detail pages with tabs and widgets |

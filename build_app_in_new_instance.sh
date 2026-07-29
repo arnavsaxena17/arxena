@@ -235,6 +235,7 @@ set_deploy_status TWENTY_ORGCHART kept-existing-files
 set_deploy_status TWENTY_UI kept-existing-files
 set_deploy_status TWENTY_WEBSITE kept-existing-files
 set_deploy_status TWENTY_MCP_SERVER kept-existing-files
+set_deploy_status TWENTY_DOCS kept-existing-files
 
 if deploy_component TWENTY_SERVER "twenty-server dist" "$REPO_DIR/packages/twenty-server/dist" \
   /home/ubuntu/twenty/packages/twenty-server/dist \
@@ -343,6 +344,23 @@ if deploy_component TWENTY_WEBSITE "twenty-website .next" "$REPO_DIR/packages/tw
   set_deploy_status TWENTY_WEBSITE updated
 fi
 
+if [ "$(get_build_status TWENTY_DOCS)" = "success" ]; then
+  DOCS_DEPLOY_ROOT="$REPO_DIR/packages/twenty-docs/.deploy"
+  mkdir -p "$DOCS_DEPLOY_ROOT/arxena" "$DOCS_DEPLOY_ROOT/arxanalytics"
+
+  if stage_remote_dir /home/ubuntu/twenty/packages/twenty-docs/.mintlify/exports/arxena \
+    "$DOCS_DEPLOY_ROOT/arxena"; then
+    DEPLOYMENTS_APPLIED=1
+    set_deploy_status TWENTY_DOCS updated
+  fi
+
+  if stage_remote_dir /home/ubuntu/twenty/packages/twenty-docs/.mintlify/exports/arxanalytics \
+    "$DOCS_DEPLOY_ROOT/arxanalytics"; then
+    DEPLOYMENTS_APPLIED=1
+    set_deploy_status TWENTY_DOCS updated
+  fi
+fi
+
 if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   # Ensure /img/* icons exist under the SPA root even when an older front
   # build artifact omitted public/img (nginx falls back to index.html otherwise).
@@ -352,7 +370,7 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
   scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/package.json "$REPO_DIR/package.json"
   scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/twenty/yarn.lock "$REPO_DIR/yarn.lock"
   # Copy workspace package.json files (twenty-server, etc.) so deps match exactly
-  for pkg in twenty-server twenty-front twenty-website twenty-shared twenty-client-sdk twenty-orgchart twenty-ui twenty-emails twenty-mcp-server; do
+  for pkg in twenty-server twenty-front twenty-website twenty-shared twenty-client-sdk twenty-orgchart twenty-ui twenty-emails twenty-mcp-server twenty-docs; do
     if [ -d "$REPO_DIR/packages/$pkg" ]; then
       scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS:/home/ubuntu/twenty/packages/$pkg/package.json" "$REPO_DIR/packages/$pkg/package.json" 2>/dev/null || true
     fi
@@ -388,6 +406,79 @@ if [ "$DEPLOYMENTS_APPLIED" -eq 1 ]; then
     fi
   fi
 
+  ensure_docs_nginx_site() {
+    local domain="$1"
+    local export_dir="$2"
+    local snippet_source="$3"
+    local available_path="$4"
+    local enabled_path="$5"
+    local cert_email="${DOCS_CERTBOT_EMAIL:-support@arxena.com}"
+
+    if [ ! -d "$export_dir" ]; then
+      echo "Docs export directory missing for $domain: $export_dir"
+      return 1
+    fi
+
+    sudo mkdir -p /var/www/certbot
+
+    if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+      echo "Staging HTTP-only nginx for $domain certificate..."
+      sudo tee "$available_path" >/dev/null <<NGINX_HTTP
+server {
+  listen 80;
+  server_name ${domain};
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    return 200 'docs pending cert\n';
+    add_header Content-Type text/plain;
+  }
+}
+NGINX_HTTP
+      sudo ln -sf "$available_path" "$enabled_path"
+      sudo nginx -t
+      sudo systemctl reload nginx
+      sleep 5
+      sudo certbot certonly --webroot -w /var/www/certbot \
+        -d "$domain" \
+        --non-interactive --agree-tos -m "$cert_email"
+    fi
+
+    sudo cp "$snippet_source" "$available_path"
+    sudo ln -sf "$available_path" "$enabled_path"
+    sudo nginx -t
+    sudo systemctl reload nginx
+  }
+
+  DOCS_IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT \
+    http://169.254.169.254/latest/api/token \
+    -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
+  CURRENT_INSTANCE_ID="$(curl -s --connect-timeout 1 \
+    -H "X-aws-ec2-metadata-token: $DOCS_IMDS_TOKEN" \
+    http://169.254.169.254/latest/meta-data/instance-id || true)"
+  if [ "$(get_deploy_status TWENTY_DOCS)" = "updated" ]; then
+    if [ "$CURRENT_INSTANCE_ID" = "i-01fa0853163833136" ]; then
+      ensure_docs_nginx_site \
+        docs.arxena.com \
+        "$REPO_DIR/packages/twenty-docs/.deploy/arxena" \
+        "$REPO_DIR/scripts/nginx/docs-arxena.conf.snippet" \
+        /etc/nginx/sites-available/docs-arxena.conf \
+        /etc/nginx/sites-enabled/docs-arxena.conf
+    fi
+
+    if [ "$CURRENT_INSTANCE_ID" = "i-0f294090da1d0956b" ]; then
+      ensure_docs_nginx_site \
+        docs.arxanalytics.com \
+        "$REPO_DIR/packages/twenty-docs/.deploy/arxanalytics" \
+        "$REPO_DIR/scripts/nginx/docs-arxanalytics.conf.snippet" \
+        /etc/nginx/sites-available/docs-arxanalytics.conf \
+        /etc/nginx/sites-enabled/docs-arxanalytics.conf
+    fi
+  fi
+
   echo "Restarting NGINX and PM2"
   # 6. Restart services
   sudo systemctl restart nginx
@@ -400,7 +491,7 @@ else
 fi
 
 echo "Final required build summary before shutdown:"
-for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_MCP_SERVER; do
+for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS; do
   echo " - ${build_name}: build=$(get_build_status "$build_name"), files=$(get_deploy_status "$build_name")"
 done
 

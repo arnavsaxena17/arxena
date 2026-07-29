@@ -1,11 +1,11 @@
 ---
 title: Diğer CRM'lerden Taşınma
-description: Verilerinizi herhangi bir CRM'den Twenty'ye taşımak için adım adım kılavuz.
+description: Verilerinizi herhangi bir CRM'den Arxena'ye taşımak için adım adım kılavuz.
 ---
 
 ## Genel Bakış
 
-Bu kılavuz, verilerinizi herhangi bir CRM'den Twenty'ye taşıma sürecinde size yol gösterir. Süreç, verilerinizi denetlemeyi, Twenty çalışma alanınızı hazırlamayı, mevcut sisteminizden dışa aktarmayı ve Twenty'ye içe aktarmayı içerir.
+Bu kılavuz, verilerinizi herhangi bir CRM'den Arxena'ye taşıma sürecinde size yol gösterir. Süreç, verilerinizi denetlemeyi, Arxena çalışma alanınızı hazırlamayı, mevcut sisteminizden dışa aktarmayı ve Arxena'ye içe aktarmayı içerir.
 
 <Note>Görünümler, iş akışları ve izinler geçişten sonra manuel olarak yeniden oluşturulmalıdır. Bu yapılandırma çalışması için zaman planlayın.</Note>
 
@@ -29,9 +29,9 @@ Geçiş, yeni bir başlangıç için bir fırsattır. Gereksiz karmaşayı taş�
 
 ## Adım 2: Veri Modelinizi Eşleyin
 
-Mevcut CRM'iniz ile Twenty arasında bir eşleme belgesi oluşturun:
+Mevcut CRM'iniz ile Arxena arasında bir eşleme belgesi oluşturun:
 
-| CRM'iniz         | Twenty                 |
+| CRM'iniz         | Arxena                 |
 | ---------------- | ---------------------- |
 | Hesap / Kuruluş  | **Şirket**             |
 | İrtibat / Kişi   | **Kişiler**            |
@@ -42,14 +42,14 @@ Mevcut CRM'iniz ile Twenty arasında bir eşleme belgesi oluşturun:
 **Her alan için şunları belgeleyin:**
 
 * Kaynak alan adı
-* Hedef Twenty alanı
+* Hedef Arxena alanı
 * Gerekli biçim dönüştürmeleri (tarihler, telefon numaraları vb.)
 
 <Note>İçe aktarma sırasında bu eşleme belgesini elinizin altında bulundurun—sütunları eşlerken ona başvuracaksınız.</Note>
 
-## Adım 3: Twenty Çalışma Alanınızı Kurun
+## Adım 3: Arxena Çalışma Alanınızı Kurun
 
-Verileri içe aktarmadan önce Twenty çalışma alanınızı hazırlayın:
+Verileri içe aktarmadan önce Arxena çalışma alanınızı hazırlayın:
 
 ### Özel Nesneler ve Alanlar Oluşturun
 
@@ -69,7 +69,7 @@ CSV içe aktarma alanları değil, kayıtları oluşturur. İçe aktarmadan önc
 <Warning>
 **Kullanıcıları verileri içe aktarmadan ÖNCE davet edin.**
 
-Verileriniz kullanıcı referansları içeriyorsa (Hesap Sahibi, Atanan vb.), bu kullanıcıların içe aktarmadan önce Twenty'de mevcut olması gerekir. Aksi halde bu ilişkiler eşlenemez.
+Verileriniz kullanıcı referansları içeriyorsa (Hesap Sahibi, Atanan vb.), bu kullanıcıların içe aktarmadan önce Arxena'de mevcut olması gerekir. Aksi halde bu ilişkiler eşlenemez.
 </Warning>
 
 1. **Ayarlar → Üyeler** bölümüne gidin
@@ -96,13 +96,13 @@ Verilerinizi mevcut CRM'inizden dışa aktarın:
 
 ## Adım 5: Verilerinizi Temizleyin ve Biçimlendirin
 
-Dışa aktarılan her CSV'yi bir hesap tablosu uygulamasında açın ve Twenty için hazırlayın.
+Dışa aktarılan her CSV'yi bir hesap tablosu uygulamasında açın ve Arxena için hazırlayın.
 
 ### Yinelenenleri Kaldırın
 
 1. Benzersiz alana göre sıralayın (Kişiler için e-posta, Şirketler için alan adı)
 2. Yinelenen satırları kaldırın veya birleştirin
-3. Twenty'de halihazırda yinelenen olmadığını doğrulayın
+3. Arxena'de halihazırda yinelenen olmadığını doğrulayın
 
 ### Alanları Doğru Biçimlendirin
 
@@ -118,7 +118,7 @@ Dışa aktarılan her CSV'yi bir hesap tablosu uygulamasında açın ve Twenty i
 <Warning>
 **Alan adı biçimi kritiktir.**
 
-`https://domain.com` kullanın (`domain.com` veya `www.domain.com` değil). Bu, Twenty'nin biçimiyle eşleşir ve e-posta/takvim eşzamanlamasını bağladığınızda yinelenmeleri önler.
+`https://domain.com` kullanın (`domain.com` veya `www.domain.com` değil). Bu, Arxena'nin biçimiyle eşleşir ve e-posta/takvim eşzamanlamasını bağladığınızda yinelenmeleri önler.
 </Warning>
 
 Tüm alan türleri için tam biçimlendirme gereksinimleri için [CSV Dosyalarınızı Nasıl Hazırlarsınız](/l/tr/user-guide/data-migration/how-tos/prepare-your-csv-files) bölümüne bakın.
@@ -142,11 +142,11 @@ Kayıtları bağlamaya ilişkin ayrıntılı talimatlar için [İlişkiler Nası
 Verileriniz kullanıcı atamaları içeriyorsa (Sahip, Atanan):
 
 1. **Kullanıcının e-posta adresini** içeren bir sütun ekleyin (yalnızca eski sistemdeki kimlikleri değil)
-2. Kullanıcıların Twenty çalışma alanınıza katılmak için kullandıklarıyla aynı e-posta adreslerini kullanın
+2. Kullanıcıların Arxena çalışma alanınıza katılmak için kullandıklarıyla aynı e-posta adreslerini kullanın
 
 Tam biçimlendirme kılavuzu için [CSV Dosyalarınızı Nasıl Hazırlarsınız](/l/tr/user-guide/data-migration/how-tos/prepare-your-csv-files) bölümüne bakın.
 
-## Adım 6: Twenty'ye İçe Aktarın
+## Adım 6: Arxena'ye İçe Aktarın
 
 <Warning>
 **İçe Aktarma Sırası Önemlidir!**
@@ -165,7 +165,7 @@ Ona referans verebilmeden önce ana kayıt mevcut olmalıdır.
 
 Her CSV dosyası için, sırayla:
 
-1. Twenty'de nesneye gidin
+1. Arxena'de nesneye gidin
 2. **⋮ → Kayıtları içe aktar**'ı tıklayın
 3. CSV dosyasını yükleyin
 4. Sütunları alanlarla eşleyin:
@@ -220,7 +220,7 @@ Verileri içe aktardıktan sonra çalışma alanı yapılandırmanızı tamamlay
 ### E-posta ve Takvimi Bağlayın
 
 * Her kullanıcı kendi hesabını **Ayarlar → Hesaplar** bölümünde bağlar
-* Twenty, e-postaları kişi kayıtlarıyla eşzamanlamaya başlayacaktır
+* Arxena, e-postaları kişi kayıtlarıyla eşzamanlamaya başlayacaktır
 * Bkz. [E-posta ve Takvim](/l/tr/user-guide/calendar-emails/overview)
 
 ### Ekibinizi Eğitin
@@ -266,7 +266,7 @@ Ayrıntılı sorun giderme adımları için [İçe Aktarma Hataları Nasıl Düz
 
 <AccordionGroup>
   <Accordion title="İş akışlarını otomatik olarak taşıyabilir miyim?">
-    Şu anda mümkün değil. İş akışları Twenty'de manuel olarak yeniden oluşturulmalıdır.
+    Şu anda mümkün değil. İş akışları Arxena'de manuel olarak yeniden oluşturulmalıdır.
   </Accordion>
 
   <Accordion title="Dosya ekleri ne olacak?">
@@ -287,6 +287,6 @@ Ayrıntılı sorun giderme adımları için [İçe Aktarma Hataları Nasıl Düz
 <Tip>
   Geçişiniz için yardıma mı ihtiyacınız var?
 
-  * **Sizin yerinize yapılır:** verilerinizi, pipeline'larınızı ve kullanıcılarınızı uçtan uca taşımak için [sertifikalı bir Twenty iş ortağı bulun](https://twenty.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm).
-  * **Oryantasyon paketi:** ekibimizle 4 saatlik rehberli kurulum — [contact@twenty.com](mailto:contact@twenty.com).
+  * **Sizin yerinize yapılır:** verilerinizi, pipeline'larınızı ve kullanıcılarınızı uçtan uca taşımak için [sertifikalı bir Arxena iş ortağı bulun](https://arxena.com/partners/list?categories=SOLUTIONING\&ref=docs-migrate-crm).
+  * **Oryantasyon paketi:** ekibimizle 4 saatlik rehberli kurulum — [contact@arxena.com](mailto:contact@arxena.com).
 </Tip>

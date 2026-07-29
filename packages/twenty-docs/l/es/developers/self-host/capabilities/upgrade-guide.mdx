@@ -19,21 +19,21 @@ cat databases_backup.sql | docker exec -i {db_container_name_or_id} psql -U {pos
 
 Si usa Docker Compose, siga estos pasos:
 
-1. Detenga Twenty: `docker compose down`
+1. Detenga Arxena: `docker compose down`
 2. Cambie el valor de `TAG` en el archivo `.env` junto a su `docker-compose.yml`
-3. Inicie Twenty: `docker compose up -d`
+3. Inicie Arxena: `docker compose up -d`
 
 El servidor ejecuta automáticamente todas las migraciones de actualización necesarias al iniciarse. No se requiere ningún comando manual.
 
 ## Actualizaciones entre versiones (v1.22+)
 
-A partir de la **v1.22**, Twenty admite actualizaciones entre versiones. Puede actualizar directamente desde cualquier versión compatible a la última versión sin tener que pasar por cada versión intermedia.
+A partir de la **v1.22**, Arxena admite actualizaciones entre versiones. Puede actualizar directamente desde cualquier versión compatible a la última versión sin tener que pasar por cada versión intermedia.
 
 Por ejemplo, actualizar de la v1.22 directamente a la v2.0 está totalmente admitido.
 
 ## Actualización a v2.5+ — envoltura de cifrado de datos en reposo
 
-A partir de la **v2.5**, Twenty almacena los secretos en reposo (tokens OAuth, variables de aplicación, claves privadas de firma, valores de configuración sensibles, secretos TOTP) dentro de una envoltura versionada `enc:v2:` cifrada con `ENCRYPTION_KEY` (o `APP_SECRET` si `ENCRYPTION_KEY` no está definido).
+A partir de la **v2.5**, Arxena almacena los secretos en reposo (tokens OAuth, variables de aplicación, claves privadas de firma, valores de configuración sensibles, secretos TOTP) dentro de una envoltura versionada `enc:v2:` cifrada con `ENCRYPTION_KEY` (o `APP_SECRET` si `ENCRYPTION_KEY` no está definido).
 
 El primer arranque en la v2.5 ejecuta comandos de actualización lentos que **rellenan** las filas existentes en la nueva envoltura. Son idempotentes: si se interrumpe y se reinicia el servidor, se reanuda desde donde se quedó, pero pueden tardar un tiempo en bases de datos grandes. Puedes supervisar el progreso con `upgrade:status`.
 

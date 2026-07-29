@@ -1,0 +1,32 @@
+---
+title: Search people by taxonomy
+description: Advanced — search with std codes when you already know them.
+---
+
+Prefer [natural-language search-by-title](/cookbooks/nl-to-people-at-company) for products and agents. Use this path only when you already hold `stdFunction` / `stdGrade` from a prior resolution.
+
+## Steps
+
+1. Confirm `index` is configured via data sources (auth)
+2. Optionally read public [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) for valid roots / grade levels
+3. `POST /people-api/people/search` with `dataSource: "index"` and std filters
+
+```bash
+curl -X POST \
+  -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  -H 'Content-Type: application/json' \
+  https://app.arxena.com/people-api/people/search \
+  -d '{
+    "dataSource": "index",
+    "companyName": "Stripe",
+    "stdFunction": "engineering",
+    "stdGrade": "leadership",
+    "limit": 20
+  }'
+```
+
+## Related
+
+- [Natural language to people at a company](/cookbooks/nl-to-people-at-company)
+- [Standardized taxonomy](/concepts/standardized-taxonomy)
+- [Authentication](/api-reference/authentication)

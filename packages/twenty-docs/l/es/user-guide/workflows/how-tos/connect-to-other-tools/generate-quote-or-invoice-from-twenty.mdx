@@ -1,5 +1,5 @@
 ---
-title: Generar una cotización o una factura desde Twenty
+title: Generar una cotización o una factura desde Arxena
 description: Crea automáticamente facturas en herramientas externas cuando se ganan las oportunidades.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Relacionado
 
-* [Generar un PDF desde Twenty](/l/es/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — adjuntar los PDF generados a los registros
+* [Generar un PDF desde Arxena](/l/es/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — adjuntar los PDF generados a los registros
 * [Disparadores de flujos de trabajo](/l/es/user-guide/workflows/capabilities/workflow-triggers)
 * [Acciones de flujos de trabajo](/l/es/user-guide/workflows/capabilities/workflow-actions)
 * [Automatizaciones de Cerrado ganado](/l/es/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

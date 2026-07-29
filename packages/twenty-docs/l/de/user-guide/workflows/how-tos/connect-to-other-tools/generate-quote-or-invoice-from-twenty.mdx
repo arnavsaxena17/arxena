@@ -1,5 +1,5 @@
 ---
-title: Ein Angebot oder eine Rechnung aus Twenty erstellen.
+title: Ein Angebot oder eine Rechnung aus Arxena erstellen.
 description: Rechnungen in externen Tools automatisch erstellen, wenn Deals abgeschlossen werden.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id
@@ -138,7 +138,7 @@ Body: {{code.invoice}}
 
 ## Verwandt
 
-* [Ein PDF aus Twenty generieren](/l/de/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — generierte PDFs an Datensätze anhängen
+* [Ein PDF aus Arxena generieren](/l/de/user-guide/workflows/how-tos/connect-to-other-tools/generate-pdf-from-twenty) — generierte PDFs an Datensätze anhängen
 * [Workflow-Trigger](/l/de/user-guide/workflows/capabilities/workflow-triggers)
 * [Workflow-Aktionen](/l/de/user-guide/workflows/capabilities/workflow-actions)
 * [Automatisierungen für Closed Won](/l/de/user-guide/workflows/how-tos/crm-automations/closed-won-automations)

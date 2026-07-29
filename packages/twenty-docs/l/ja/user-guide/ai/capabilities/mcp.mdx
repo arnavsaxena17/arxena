@@ -1,15 +1,15 @@
 ---
 title: MCP サーバー
-description: Model Context Protocol を使用して、AI アシスタントを Twenty ワークスペースに接続します。
+description: Model Context Protocol を使用して、AI アシスタントを Arxena ワークスペースに接続します。
 ---
 
-Twenty は [MCP](https://modelcontextprotocol.io/) サーバーを公開し、Claude Desktop、Claude Code、Cursor、ChatGPT などの AI アシスタントが自然言語で CRM データを読み書きできるようにします。
+Arxena は [MCP](https://modelcontextprotocol.io/) サーバーを公開し、Claude Desktop、Claude Code、Cursor、ChatGPT などの AI アシスタントが自然言語で CRM データを読み書きできるようにします。
 
-MCP エンドポイントとして、あなたの**ワークスペース URL**（Twenty にアクセスするために使用している URL）を使用します。 Twenty Cloud では、ワークスペース URL は `https://{mycompany}.twenty.com` またはカスタムドメインの場合があります。 サーバーは次の場所で利用できます:
+MCP エンドポイントとして、あなたの**ワークスペース URL**（Arxena にアクセスするために使用している URL）を使用します。 Arxena Cloud では、ワークスペース URL は `https://{mycompany}.arxena.com` またはカスタムドメインの場合があります。 サーバーは次の場所で利用できます:
 
 | 環境         | MCP エンドポイント                                                                |
 | ---------- | -------------------------------------------------------------------------- |
-| **クラウド**   | `https://{your-workspace-url}/mcp` (例: `https://mycompany.twenty.com/mcp`) |
+| **クラウド**   | `https://{your-workspace-url}/mcp` (例: `https://mycompany.arxena.com/mcp`) |
 | **セルフホスト** | `https://{your-domain}/mcp`                                                |
 
 ## 認証方法
@@ -24,12 +24,12 @@ OAuth を使用すると、MCP クライアントがログイン用のブラウ�
 OAuth を利用するには、[MCP Authorization 仕様](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)をサポートする MCP クライアントが必要です。 Claude Desktop、Claude Code、Cursor、ChatGPT が対応しています。
 </Note>
 
-MCP クライアントの設定に次を追加し、`{your-workspace-url}` をワークスペースのホスト（例: `mycompany.twenty.com`）に置き換えてください:
+MCP クライアントの設定に次を追加し、`{your-workspace-url}` をワークスペースのホスト（例: `mycompany.arxena.com`）に置き換えてください:
 
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp"
     }
@@ -39,7 +39,7 @@ MCP クライアントの設定に次を追加し、`{your-workspace-url}` を�
 
 以上です — API キーは不要です。 クライアントが初回接続する際には、次を実行します:
 
-1. `/.well-known/oauth-protected-resource` および `/.well-known/oauth-authorization-server` を通じて Twenty の OAuth メタデータを検出する
+1. `/.well-known/oauth-protected-resource` および `/.well-known/oauth-authorization-server` を通じて Arxena の OAuth メタデータを検出する
 2. 動的クライアント登録（RFC 7591）を通じて自らを OAuth クライアントとして登録する
 3. アクセスを許可するためにブラウザーを開く
 4. トークンを受け取り、MCP サーバーに接続する
@@ -53,7 +53,7 @@ MCP クライアントが OAuth をサポートしていない場合、または
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp",
       "headers": {
@@ -74,7 +74,7 @@ API キーを作成するには、**Settings → MCP & APIs → API → + Create
 
 ### 1. 構成をコピー
 
-Twenty で **Settings → MCP & APIs → MCP** に移動します。 認証方法（OAuth または API Key）を選択し、JSON スニペットをコピーして（ワークスペース URL は既に反映されています）、MCP クライアントの設定ファイルに貼り付けます。
+Arxena で **Settings → MCP & APIs → MCP** に移動します。 認証方法（OAuth または API Key）を選択し、JSON スニペットをコピーして（ワークスペース URL は既に反映されています）、MCP クライアントの設定ファイルに貼り付けます。
 
 | クライアント             | 設定ファイルの場所                                                                                                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ Twenty で **Settings → MCP & APIs → MCP** に移動します。 認証方�
 
 ### 2. 接続
 
-MCP クライアントを再起動します（または設定を再読み込みします）。 OAuth を使用している場合、アクセス許可のために Twenty にリダイレクトされます。 API キーを使用する場合は、すぐに接続されます。
+MCP クライアントを再起動します（または設定を再読み込みします）。 OAuth を使用している場合、アクセス許可のために Arxena にリダイレクトされます。 API キーを使用する場合は、すぐに接続されます。
 
 ### 3. 使い始める
 
@@ -97,7 +97,7 @@ AI アシスタントに CRM とやり取りするよう依頼してください
 
 ## 利用可能なツール
 
-接続されると、MCP サーバーは Twenty API を反映したツールを公開します。 推奨されるワークフローは次のとおりです:
+接続されると、MCP サーバーは Arxena API を反映したツールを公開します。 推奨されるワークフローは次のとおりです:
 
 1. **`learn_tools`** — 特定のツールの入力スキーマを取得する
 2. **`execute_tool`** — ツールを実行する
@@ -113,10 +113,10 @@ MCP 接続は、認証済みユーザー（OAuth）の権限、または API キ
 
 ## セルフホスト構成
 
-セルフホストのインスタンスでは、`{your-workspace-url}` をサーバーの URL に置き換えてください。 環境の `SERVER_URL` が Twenty インスタンスの公開 URL と一致していることを確認してください — これは OAuth のディスカバリ メタデータの生成に使用されます。
+セルフホストのインスタンスでは、`{your-workspace-url}` をサーバーの URL に置き換えてください。 環境の `SERVER_URL` が Arxena インスタンスの公開 URL と一致していることを確認してください — これは OAuth のディスカバリ メタデータの生成に使用されます。
 
 ```bash
-SERVER_URL=https://twenty.yourcompany.com
+SERVER_URL=https://arxena.yourcompany.com
 ```
 
 MCP エンドポイント、OAuth エンドポイント、およびディスカバリ メタデータはすべてこの値から導出されます。

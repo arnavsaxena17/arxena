@@ -27,7 +27,7 @@ Inicia el flujo de trabajo cuando se crea un nuevo registro en un objeto selecci
 
 <Note>
 * Este activador es ideal para registros creados por CSV, sincronización de buzón y de calendario, o API.
-* **No se recomienda para registros creados manualmente**: con este activador, los flujos de trabajo comienzan tan pronto como se crea el registro. Dado que Twenty UI ofrece guardado automático sobre la marcha (no hay un modo de edición y luego una validación para guardar registros), el flujo de trabajo se activará antes de que el usuario complete todos los campos.
+* **No se recomienda para registros creados manualmente**: con este activador, los flujos de trabajo comienzan tan pronto como se crea el registro. Dado que Arxena UI ofrece guardado automático sobre la marcha (no hay un modo de edición y luego una validación para guardar registros), el flujo de trabajo se activará antes de que el usuario complete todos los campos.
   Para activar este flujo de trabajo en registros creados manualmente, se recomienda usar el activador `Record is created or updated` en su lugar.
 </Note>
 
@@ -119,7 +119,7 @@ Inicia el flujo de trabajo cuando se recibe una solicitud GET o POST de un servi
 **Configuración**:
 
 * El flujo de trabajo proporciona una URL de webhook única—cópiala y agrégala a tu sistema externo como el endpoint a invocar.
-* Para solicitudes POST, define la estructura del cuerpo esperada para que Twenty sepa qué datos esperar. Añade aquí los campos que recibirás y que se necesitarán más abajo en tu flujo de trabajo.
+* Para solicitudes POST, define la estructura del cuerpo esperada para que Arxena sepa qué datos esperar. Añade aquí los campos que recibirás y que se necesitarán más abajo en tu flujo de trabajo.
 * Configura la autenticación (próximamente).
 
 ## Elegir el activador correcto

@@ -11,7 +11,7 @@ Webhook triggers allow external services to start your workflows by sending data
 |----------|---------|
 | **Web forms** | Contact form submissions create leads |
 | **Third-party apps** | Stripe payment → create customer record |
-| **Custom integrations** | Your app → Twenty automation |
+| **Custom integrations** | Your app → Arxena automation |
 | **No-code tools** | Zapier, Make, n8n connections |
 
 ## Step-by-Step Setup
@@ -28,7 +28,7 @@ Webhook triggers allow external services to start your workflows by sending data
 2. Select **Webhook**
 3. You'll receive a unique webhook URL like:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. Copy this URL—you'll need it for your external service
 
@@ -74,7 +74,7 @@ Before activating, test your webhook:
 
 **Using cURL**:
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

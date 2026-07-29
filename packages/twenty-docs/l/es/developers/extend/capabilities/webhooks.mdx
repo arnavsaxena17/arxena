@@ -5,7 +5,7 @@ description: Recibe notificaciones en tiempo real cuando ocurran eventos en tu C
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Los webhooks envían datos a tus sistemas en tiempo real cuando ocurren eventos en Twenty — no se requiere sondeo. Úsalos para mantener sincronizados los sistemas externos, activar automatizaciones o enviar alertas.
+Los webhooks envían datos a tus sistemas en tiempo real cuando ocurren eventos en Arxena — no se requiere sondeo. Úsalos para mantener sincronizados los sistemas externos, activar automatizaciones o enviar alertas.
 
 ## Crear un Webhook
 
@@ -26,7 +26,7 @@ El webhook se activa de inmediato y comienza a enviar notificaciones.
 
 ## Eventos
 
-Twenty envía webhooks para estos tipos de eventos:
+Arxena envía webhooks para estos tipos de eventos:
 
 | Evento                       | Ejemplo                                                    |
 | ---------------------------- | ---------------------------------------------------------- |
@@ -67,7 +67,7 @@ Responde con un **estado HTTP 2xx** (200-299) para confirmar la recepción. Las 
 
 ## Validación de Webhook
 
-Twenty firma cada solicitud de webhook por seguridad. Valida las firmas para garantizar que las solicitudes sean auténticas.
+Arxena firma cada solicitud de webhook por seguridad. Valida las firmas para garantizar que las solicitudes sean auténticas.
 
 ### Encabezados
 
@@ -107,6 +107,6 @@ const isValid = expectedSignature === req.headers["x-twenty-webhook-signature"];
 | --------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
 | **Webhooks**                                  | SALIDA    | Notificar automáticamente a los sistemas externos cualquier cambio en un registro |
 | **Flujo de trabajo + solicitud HTTP**         | SALIDA    | Enviar datos con lógica personalizada (filtros, transformaciones)                 |
-| **Disparador de webhook de flujo de trabajo** | ENTRADA   | Recibir datos en Twenty desde sistemas externos                                   |
+| **Disparador de webhook de flujo de trabajo** | ENTRADA   | Recibir datos en Arxena desde sistemas externos                                   |
 
 Para recibir datos externos, consulta [Configurar un disparador de webhook](/l/es/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

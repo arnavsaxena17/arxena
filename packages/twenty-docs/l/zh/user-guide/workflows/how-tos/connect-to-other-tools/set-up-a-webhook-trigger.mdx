@@ -11,7 +11,7 @@ Webhook 触发器允许外部服务通过向唯一的 URL 发送数据来启动�
 | --------- | ------------------ |
 | **网页表单**  | 联系表单提交会创建线索        |
 | **第三方应用** | Stripe 支付 → 创建客户记录 |
-| **自定义集成** | 您的应用 → Twenty 自动化  |
+| **自定义集成** | 您的应用 → Arxena 自动化  |
 | **无代码工具** | Zapier、Make、n8n 连接 |
 
 ## 分步设置
@@ -28,7 +28,7 @@ Webhook 触发器允许外部服务通过向唯一的 URL 发送数据来启动�
 2. 选择 **Webhook**
 3. 您将收到一个唯一的 Webhook URL，例如：
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. 复制此 URL——您需要在外部服务中使用它
 
@@ -75,7 +75,7 @@ Webhook 触发器允许外部服务通过向唯一的 URL 发送数据来启动�
 **使用 cURL**：
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

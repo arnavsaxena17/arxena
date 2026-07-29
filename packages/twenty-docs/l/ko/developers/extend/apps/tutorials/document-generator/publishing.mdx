@@ -19,11 +19,11 @@ export default defineApplication({
   description:
     'Create reusable document templates and generate personalized documents from your CRM records.',
   logo: 'public/document-generator.svg',
-  author: 'Twenty',
+  author: 'Arxena',
   category: 'Productivity',
-  websiteUrl: 'https://docs.twenty.com/l/ko/developers/extend/apps',
-  termsUrl: 'https://www.twenty.com/terms',
-  emailSupport: 'contact@twenty.com',
+  websiteUrl: 'https://docs.arxena.com/l/ko/developers/extend/apps',
+  termsUrl: 'https://www.arxena.com/terms',
+  emailSupport: 'contact@arxena.com',
   issueReportUrl: 'https://github.com/twentyhq/twenty/issues',
 });
 ```
@@ -87,7 +87,7 @@ yarn twenty app:publish
 yarn twenty app:publish --private -r <remote>
 ```
 
-`app:publish`는 기본적으로 빌드하고 npm에 게시합니다. `--private`는 대신 Twenty 서버의 프라이빗 레지스트리에 tarball을 업로드합니다. 배포된 앱을 인스턴스의 마켓플레이스에 표시하려면 카탈로그 동기화를 트리거하세요:
+`app:publish`는 기본적으로 빌드하고 npm에 게시합니다. `--private`는 대신 Arxena 서버의 프라이빗 레지스트리에 tarball을 업로드합니다. 배포된 앱을 인스턴스의 마켓플레이스에 표시하려면 카탈로그 동기화를 트리거하세요:
 
 ```bash filename="Terminal"
 yarn twenty dev:catalog-sync -r <remote>

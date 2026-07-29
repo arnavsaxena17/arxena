@@ -1,15 +1,15 @@
 ---
 title: Publikování
 icon: upload
-description: Distribuujte svou aplikaci Twenty do Marketplace nebo ji nasaďte interně.
+description: Distribuujte svou aplikaci Arxena do Marketplace nebo ji nasaďte interně.
 ---
 
 ## Přehled
 
 Jakmile je vaše aplikace [sestavena a otestována lokálně](/l/cs/developers/extend/apps/getting-started/concepts), máte dvě cesty, jak ji distribuovat:
 
-* **Nasaďte tarball** — nahrajte svou aplikaci přímo na konkrétní server Twenty pro interní nebo soukromé použití.
-* **Publish to npm** — uveďte svou aplikaci v Marketplace Twenty, aby ji mohl kterýkoli pracovní prostor objevit a nainstalovat.
+* **Nasaďte tarball** — nahrajte svou aplikaci přímo na konkrétní server Arxena pro interní nebo soukromé použití.
+* **Publish to npm** — uveďte svou aplikaci v Marketplace Arxena, aby ji mohl kterýkoli pracovní prostor objevit a nainstalovat.
 
 Obě cesty začínají stejným krokem **build**.
 
@@ -25,7 +25,7 @@ Tím se zkompilují zdrojové soubory TypeScriptu, transpilují logické funkce 
 
 ## Nasazení na server (tarball)
 
-U aplikací, které nechcete zpřístupnit veřejně — proprietární nástroje, integrace pouze pro enterprise nebo experimentální buildy — můžete nasadit tarball přímo na server Twenty.
+U aplikací, které nechcete zpřístupnit veřejně — proprietární nástroje, integrace pouze pro enterprise nebo experimentální buildy — můžete nasadit tarball přímo na server Arxena.
 
 ### Předpoklady
 
@@ -79,7 +79,7 @@ Předběžné tagy fungují podle očekávání: zvýšení z `1.0.0-rc.1` → `
 
 ### Kompatibilita verze serveru
 
-Pokud vaše aplikace používá funkci zavedenou v konkrétní verzi serveru Twenty (například poskytovatelé OAuth přidaní ve verzi 2.3.0), měli byste deklarovat minimální verzi serveru, kterou vaše aplikace vyžaduje, pomocí pole `engines.twenty` v `package.json`:
+Pokud vaše aplikace používá funkci zavedenou v konkrétní verzi serveru Arxena (například poskytovatelé OAuth přidaní ve verzi 2.3.0), měli byste deklarovat minimální verzi serveru, kterou vaše aplikace vyžaduje, pomocí pole `engines.twenty` v `package.json`:
 
 ```json filename="package.json"
 {
@@ -121,20 +121,20 @@ Automaticky spouští integrační testy při každém pushi do `main` a u pull 
 **K čemu slouží:**
 
 1. Provede checkout zdrojového kódu vaší aplikace.
-2. Spustí izolovanou testovací instanci Twenty pomocí složené akce `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (ekvivalent v CI k `yarn twenty docker:start --test`).
+2. Spustí izolovanou testovací instanci Arxena pomocí složené akce `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test@main` (ekvivalent v CI k `yarn twenty docker:start --test`).
 3. Povolí Corepack, nastaví Node.js podle vašeho `.nvmrc` a nainstaluje závislosti pomocí `yarn install --immutable`.
 4. Spustí `yarn test` a předá `TWENTY_API_URL` a `TWENTY_API_KEY` ze spuštěné instance, aby vaše testy mohly komunikovat se skutečným serverem.
 
 **Konfigurační volby:**
 
-* `TWENTY_VERSION` (env, výchozí hodnota `latest`) — uzamkněte v CI používanou verzi serveru Twenty úpravou této hodnoty v `ci.yml`.
+* `TWENTY_VERSION` (env, výchozí hodnota `latest`) — uzamkněte v CI používanou verzi serveru Arxena úpravou této hodnoty v `ci.yml`.
 * Souběžné běhy jsou seskupeny podle `github.ref` a při nových pushích ruší právě probíhající běhy.
 
 Nejsou potřeba žádné secrety — testovací instance je efemérní a existuje pouze po dobu běhu úlohy.
 
 ### CD — `cd.yml`
 
-Nasazuje vaši aplikaci na nakonfigurovaný server Twenty při každém pushi do `main` a volitelně také z pull requestu, pokud je přidán štítek `deploy`.
+Nasazuje vaši aplikaci na nakonfigurovaný server Arxena při každém pushi do `main` a volitelně také z pull requestu, pokud je přidán štítek `deploy`.
 
 **K čemu slouží:**
 
@@ -146,7 +146,7 @@ Nasazuje vaši aplikaci na nakonfigurovaný server Twenty při každém pushi do
 
 | Nastavení               | Kde                                                             | Účel                                                                                                 |
 | ----------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `TWENTY_DEPLOY_URL`     | `env` v `cd.yml` (výchozí `http://localhost:3000`)              | Server Twenty, na který se nasazuje. Před prvním použitím to změňte na skutečnou URL vašeho serveru. |
+| `TWENTY_DEPLOY_URL`     | `env` v `cd.yml` (výchozí `http://localhost:3000`)              | Server Arxena, na který se nasazuje. Před prvním použitím to změňte na skutečnou URL vašeho serveru. |
 | `TWENTY_DEPLOY_API_KEY` | GitHub repozitář **Settings → Secrets and variables → Actions** | API klíč s oprávněním k nasazení na cílovém serveru.                                                 |
 
 <Note>
@@ -168,7 +168,7 @@ Publikuje vaši aplikaci na npm s doloženým původem, když odešlete tag verz
 
 **Jednorázové nastavení:**
 
-Na npmjs.com otevřete svůj balíček > **Settings → Trusted Publisher** a zaregistrujte tento repozitář s workflowem `publish.yml` (viz [dokumentaci k důvěryhodnému publikování na npm](https://docs.npmjs.com/trusted-publishers)). Publikování s provenance potvrzuje, který repozitář na GitHubu balíček sestavil, a zároveň tak uplatňujete vlastnictví své aplikace na tržišti Twenty.
+Na npmjs.com otevřete svůj balíček > **Settings → Trusted Publisher** a zaregistrujte tento repozitář s workflowem `publish.yml` (viz [dokumentaci k důvěryhodnému publikování na npm](https://docs.npmjs.com/trusted-publishers)). Publikování s provenance potvrzuje, který repozitář na GitHubu balíček sestavil, a zároveň tak uplatňujete vlastnictví své aplikace na tržišti Arxena.
 
 <Note>
 npm přijímá údaje o původu pouze z **veřejných** zdrojových repozitářů. Pokud publikujete ze soukromého repozitáře, npm odmítne balíček údajů o původu OIDC s chybou `E422 ... Unsupported GitHub Actions source repository visibility: "private"` error. Chcete-li publikovat ze soukromého repozitáře, vypněte prokazování původu nastavením `TWENTY_APP_PUBLISH_DISABLE_PROVENANCE: 'true'` v `env` publikačního kroku (ve vygenerovaném `publish.yml` je uveden zakomentovaný tip):
@@ -187,7 +187,7 @@ Workflowy `ci.yml` a `cd.yml` odkazují na znovupoužitelné akce na `@main`, ta
 
 ## Publikování na npm
 
-Publikování na npm zajistí, že bude vaše aplikace dohledatelná v Marketplace Twenty. Jakýkoli pracovní prostor Twenty může procházet, instalovat a aktualizovat aplikace z Marketplace přímo z UI.
+Publikování na npm zajistí, že bude vaše aplikace dohledatelná v Marketplace Arxena. Jakýkoli pracovní prostor Arxena může procházet, instalovat a aktualizovat aplikace z Marketplace přímo z UI.
 
 ### Požadavky
 
@@ -247,7 +247,7 @@ yarn twenty app:publish --tag beta
 
 ### Jak funguje objevování v tržišti
 
-Server Twenty synchronizuje svůj katalog tržiště z registru npm **každou hodinu**.
+Server Arxena synchronizuje svůj katalog tržiště z registru npm **každou hodinu**.
 
 Synchronizaci můžete spustit okamžitě místo čekání:
 
@@ -260,7 +260,7 @@ yarn twenty dev:catalog-sync
 Metadata zobrazená na tržišti pocházejí z vaší konfigurace `defineApplication()` — viz výše [Metadata tržiště](#marketplace-metadata).
 
 <Note>
-Pokud vaše aplikace nedefinuje `aboutDescription` v `defineApplication()`, tržiště automaticky použije soubor `README.md` vašeho balíčku z npm jako obsah stránky O aplikaci. To znamená, že můžete spravovat jediný soubor README jak pro npm, tak pro tržiště Twenty. Pokud chcete v tržišti jiný popis, explicitně nastavte `aboutDescription`.
+Pokud vaše aplikace nedefinuje `aboutDescription` v `defineApplication()`, tržiště automaticky použije soubor `README.md` vašeho balíčku z npm jako obsah stránky O aplikaci. To znamená, že můžete spravovat jediný soubor README jak pro npm, tak pro tržiště Arxena. Pokud chcete v tržišti jiný popis, explicitně nastavte `aboutDescription`.
 </Note>
 
 ### Publikování pomocí CI
@@ -270,14 +270,14 @@ Vygenerované workflow `publish.yml` popsané výše publikuje na npm automatick
 Pro jiné CI systémy (GitLab CI, CircleCI atd.) spusťte `yarn install` a poté `yarn twenty app:publish`. Provenance se vydává, pokud prostředí umí vytvořit token OIDC, a v opačném případě se automaticky vynechá.
 
 <Note>
-**npm provenance** přidává k vašemu záznamu na npm odznak důvěryhodnosti a umožňuje uživatelům ověřit, že balíček byl sestaven z konkrétního commitu ve veřejné CI pipeline. Také vám umožňuje uplatnit vlastnictví vaší aplikace na tržišti Twenty. Podrobnosti najdete v [dokumentaci k npm provenance](https://docs.npmjs.com/generating-provenance-statements).
+**npm provenance** přidává k vašemu záznamu na npm odznak důvěryhodnosti a umožňuje uživatelům ověřit, že balíček byl sestaven z konkrétního commitu ve veřejné CI pipeline. Také vám umožňuje uplatnit vlastnictví vaší aplikace na tržišti Arxena. Podrobnosti najdete v [dokumentaci k npm provenance](https://docs.npmjs.com/generating-provenance-statements).
 </Note>
 
 ## Instalace aplikací
 
 Jakmile je aplikace publikována (npm) nebo nasazena (tarball), mohou ji pracovní prostory nainstalovat prostřednictvím uživatelského rozhraní.
 
-Přejděte na stránku **Nastavení > Aplikace** v Twenty, kde lze procházet a instalovat jak aplikace z tržiště, tak aplikace nasazené jako tarball.
+Přejděte na stránku **Nastavení > Aplikace** v Arxena, kde lze procházet a instalovat jak aplikace z tržiště, tak aplikace nasazené jako tarball.
 
 {/* TODO: add screenshot of the UI when the app is registered */}
 

@@ -7,23 +7,23 @@ import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Come funziona la mappatura dei campi
 
-Quando carichi un file, Twenty analizza le colonne e tenta di abbinarle ai campi esistenti.
+Quando carichi un file, Arxena analizza le colonne e tenta di abbinarle ai campi esistenti.
 
 ### Mappatura automatica
 
-Twenty tenta di abbinare le colonne in base a:
+Arxena tenta di abbinare le colonne in base a:
 
 * Nomi delle intestazioni di colonna (corrispondenze esatte o simili)
 * Rilevamento del tipo di dati (date, numeri, email)
 * Modelli comuni dei campi
 
-<Note>**Suggerimento rapido:** Esporta alcune righe dall'oggetto che desideri importare. Il file esportato avrà esattamente i nomi di colonna che Twenty si aspetta, rendendo la mappatura automatica agevole durante l'importazione.</Note>
+<Note>**Suggerimento rapido:** Esporta alcune righe dall'oggetto che desideri importare. Il file esportato avrà esattamente i nomi di colonna che Arxena si aspetta, rendendo la mappatura automatica agevole durante l'importazione.</Note>
 
 ### Opzioni di mappatura manuale
 
 Per ogni colonna, puoi:
 
-* **Mappa a un campo**: seleziona dal menu a discesa il campo di Twenty corrispondente
+* **Mappa a un campo**: seleziona dal menu a discesa il campo di Arxena corrispondente
 * **Non mappare**: salta completamente la colonna (i dati non verranno importati)
 
 <Note>**I campi devono esistere prima dell'importazione.** L'importazione crea record, non campi. Crea i campi personalizzati in **Impostazioni → Modello dati** prima di importare.</Note>
@@ -94,12 +94,12 @@ Formati supportati:
 * Per email aggiuntive: usa **Email / Email primaria** per l'email principale e **Email / Email aggiuntive** con questo formato:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### Campi ID
 
-Specificare un `id` durante l'importazione è facoltativo. Twenty ne genera automaticamente uno se non viene fornito.
+Specificare un `id` durante l'importazione è facoltativo. Arxena ne genera automaticamente uno se non viene fornito.
 
 Casi d'uso per la mappatura di una colonna `id`:
 
@@ -125,7 +125,7 @@ Simili ai campi dominio:
 * Per i link secondari, usa la colonna **Link / Link secondari** con questo formato:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### Campi a selezione multipla

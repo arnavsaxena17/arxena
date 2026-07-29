@@ -1,14 +1,14 @@
 ---
 title: Componente front-end
-description: Construiți componente React care se afișează în interfața Twenty, cu izolare în sandbox.
+description: Construiți componente React care se afișează în interfața Arxena, cu izolare în sandbox.
 icon: window-maximize
 ---
 
-Componentele front-end sunt componente React care se afișează direct în interfața Twenty. Acestea rulează într-un **Web Worker** izolat folosind Remote DOM — codul se execută într-un iframe cu origine opacă, într-un mediu izolat (sandboxed), însă interfața sa se redă în continuare nativ în pagină, în loc să fie limitată la acel iframe.
+Componentele front-end sunt componente React care se afișează direct în interfața Arxena. Acestea rulează într-un **Web Worker** izolat folosind Remote DOM — codul se execută într-un iframe cu origine opacă, într-un mediu izolat (sandboxed), însă interfața sa se redă în continuare nativ în pagină, în loc să fie limitată la acel iframe.
 
 ## Unde pot fi utilizate componentele front-end
 
-Componentele front-end pot fi afișate în trei locații în cadrul Twenty:
+Componentele front-end pot fi afișate în trei locații în cadrul Arxena:
 
 * **Panou lateral** — Componentele front-end care nu sunt headless se deschid în panoul lateral din dreapta. Acesta este comportamentul implicit atunci când o componentă front-end este declanșată din meniul de comenzi.
 * **Widgeturi (tablouri de bord și pagini de înregistrare)** — Componentele frontale pot fi încorporate ca widgeturi în [machetele de pagină](/l/ro/developers/extend/apps/layout/page-layouts). La configurarea unui tablou de bord sau a machetei unei pagini de înregistrare, utilizatorii pot adăuga un widget de componentă front-end.
@@ -31,7 +31,7 @@ const HelloWorld = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Hello from my app!</h1>
-      <p>This component renders inside Twenty.</p>
+      <p>This component renders inside Arxena.</p>
     </div>
   );
 };
@@ -83,7 +83,7 @@ Dincolo de comenzi, puteți încorpora o componentă front-end direct într-o pa
 
 Pentru a înlocui interfața UI de configurare a variabilelor generată automat din fila **Settings** a aplicației cu propria ta componentă, definește-o cu `defineSettingsFrontComponent` în loc de `defineFrontComponent`. Acesta folosește aceleași [câmpuri de configurare](#configuration-fields) (cu excepția lui `isHeadless`, care nu este acceptat deoarece o componentă de setări afișează întotdeauna o interfață vizibilă) și, în plus, marchează componenta ca interfața de setări a aplicației.
 
-Componenta este afișată ca o secțiune în interiorul filei Settings, nu ca un înlocuitor pentru întreaga filă. Secțiunile gestionate de sistem ale Twenty — actualizare automată, URL aplicație și conexiuni — sunt întotdeauna afișate deasupra și nu pot fi suprascrise de aplicație.
+Componenta este afișată ca o secțiune în interiorul filei Settings, nu ca un înlocuitor pentru întreaga filă. Secțiunile gestionate de sistem ale Arxena — actualizare automată, URL aplicație și conexiuni — sunt întotdeauna afișate deasupra și nu pot fi suprascrise de aplicație.
 
 ```tsx src/front-components/app-settings.tsx
 import { defineSettingsFrontComponent } from 'twenty-sdk/define';
@@ -139,7 +139,7 @@ export default defineFrontComponent({
 });
 ```
 
-Deoarece componenta returnează `null`, Twenty omite redarea unui container pentru ea — nu apare spațiu gol în layout. Componenta are în continuare acces la toate hook-urile și la API-ul de comunicare cu gazda.
+Deoarece componenta returnează `null`, Arxena omite redarea unui container pentru ea — nu apare spațiu gol în layout. Componenta are în continuare acces la toate hook-urile și la API-ul de comunicare cu gazda.
 
 ## Componentele Command din SDK
 
@@ -268,7 +268,7 @@ Componentele de front rulează în browser, într-un Web Worker sandboxat în in
 
 O funcție logică declarată cu `httpRouteTriggerSettings` este accesibilă prin HTTP la ruta sa. `RestApiClient` tratează căile care încep cu `/s/` ca rute ale aplicației, le rezolvă către URL-ul de la care sunt deservite funcțiile tale și le autentifică folosind `TWENTY_APP_ACCESS_TOKEN`.
 
-> **În Twenty Cloud, funcțiile logice declanșate prin HTTP sunt deservite pe un domeniu dedicat pentru fiecare spațiu de lucru** la `https://\<your-workspace-subdomain>.withtwenty.com\<path>`. Pentru apelanții externi, copiază URL-ul exact din setările **HTTP trigger** ale funcției sau din fila **Settings** a aplicației.
+> **În Arxena Cloud, funcțiile logice declanșate prin HTTP sunt deservite pe un domeniu dedicat pentru fiecare spațiu de lucru** la `https://\<your-workspace-subdomain>.witharxena.com\<path>`. Pentru apelanții externi, copiază URL-ul exact din setările **HTTP trigger** ale funcției sau din fila **Settings** a aplicației.
 
 O componentă de front headless poate efectua apelul la montare prin componenta `Command`, apoi se demontează automat:
 
@@ -297,7 +297,7 @@ export default defineFrontComponent({
 });
 ```
 
-Calea transmisă către `RestApiClient` este proprietatea `httpRouteTriggerSettings.path` a funcției logice, cu prefixul `/s`. Păstrează `isAuthRequired: true`; `TWENTY_APP_ACCESS_TOKEN` pe care Twenty îl generează pentru componenta ta autentifică cererea:
+Calea transmisă către `RestApiClient` este proprietatea `httpRouteTriggerSettings.path` a funcției logice, cu prefixul `/s`. Păstrează `isAuthRequired: true`; `TWENTY_APP_ACCESS_TOKEN` pe care Arxena îl generează pentru componenta ta autentifică cererea:
 
 ```ts src/logic-functions/fetch-prs.logic-function.ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -325,9 +325,9 @@ export default defineLogicFunction({
 `TWENTY_APP_ACCESS_TOKEN` este injectat automat — vezi [Application variables](#application-variables). Deoarece variabilele de aplicație secrete nu sunt niciodată expuse componentelor de front, păstrează cheile API și altă logică sensibilă în funcția logică, nu în componenta de front.
 </Note>
 
-### Apelarea API-ului REST Twenty
+### Apelarea API-ului REST Arxena
 
-Pentru a apela rute HTTP ale aplicației sau pentru a citi și scrie înregistrări Twenty dintr-un front component, folosește `RestApiClient` din `twenty-client-sdk/rest`. Trimite căile de forma `/s/...` către URL-ul de bază al funcțiilor spațiului tău de lucru, iar orice altă cale, inclusiv `/rest/...`, către `TWENTY_API_URL`.
+Pentru a apela rute HTTP ale aplicației sau pentru a citi și scrie înregistrări Arxena dintr-un front component, folosește `RestApiClient` din `twenty-client-sdk/rest`. Trimite căile de forma `/s/...` către URL-ul de bază al funcțiilor spațiului tău de lucru, iar orice altă cale, inclusiv `/rest/...`, către `TWENTY_API_URL`.
 
 | Metodă                            | Descriere                                                                     |
 | --------------------------------- | ----------------------------------------------------------------------------- |
@@ -345,7 +345,7 @@ URL-ul de bază și tokenul sunt rezolvate din mediu în mod implicit. Transmite
 
 ```ts
 const client = new RestApiClient({
-  baseUrl: 'https://myworkspace.twenty.com',
+  baseUrl: 'https://myworkspace.arxena.com',
   token: 'my-token',
 });
 ```
@@ -443,14 +443,14 @@ Următoarele variabile de sistem sunt întotdeauna disponibile prin `process.env
 
 | Variabilă                 | Descriere                                                |
 | ------------------------- | -------------------------------------------------------- |
-| `TWENTY_API_URL`          | URL-ul de bază al API-ului de bază Twenty                |
+| `TWENTY_API_URL`          | URL-ul de bază al API-ului de bază Arxena                |
 | `TWENTY_APP_ACCESS_TOKEN` | Token cu durată scurtă, limitat la rolul aplicației dvs. |
 
 ### `TWENTY_FUNCTIONS_URL`
 
-Twenty injectează, de asemenea, `TWENTY_FUNCTIONS_URL` în front components și în funcțiile logice: URL-ul de bază de la care sunt deservite funcțiile logice ale aplicației tale declanșate prin HTTP.
+Arxena injectează, de asemenea, `TWENTY_FUNCTIONS_URL` în front components și în funcțiile logice: URL-ul de bază de la care sunt deservite funcțiile logice ale aplicației tale declanșate prin HTTP.
 
-Există deoarece acel URL nu este întotdeauna chiar serverul Twenty. În Twenty Cloud, rutele aplicației sunt deservite pe un domeniu dedicat pentru fiecare spațiu de lucru (`https://\<your-workspace-subdomain>.withtwenty.com` sau domeniul public principal al aplicației atunci când este configurat unul), astfel încât răspunsurile generate de aplicație să ruleze pe o origine izolată, nu pe originea aplicației Twenty. Instanțele self-hosted și locale deservesc rutele aplicației sub prefixul `/s` chiar pe server și este posibil să nu seteze deloc variabila. Deoarece URL-ul de bază variază în funcție de spațiul de lucru și de instanță, codul tău nu îl poate hardcoda — serverul injectează valoarea corectă la runtime.
+Există deoarece acel URL nu este întotdeauna chiar serverul Arxena. În Arxena Cloud, rutele aplicației sunt deservite pe un domeniu dedicat pentru fiecare spațiu de lucru (`https://\<your-workspace-subdomain>.witharxena.com` sau domeniul public principal al aplicației atunci când este configurat unul), astfel încât răspunsurile generate de aplicație să ruleze pe o origine izolată, nu pe originea aplicației Arxena. Instanțele self-hosted și locale deservesc rutele aplicației sub prefixul `/s` chiar pe server și este posibil să nu seteze deloc variabila. Deoarece URL-ul de bază variază în funcție de spațiul de lucru și de instanță, codul tău nu îl poate hardcoda — serverul injectează valoarea corectă la runtime.
 
 Rareori ai nevoie să o citești direct. Apelează-ți rutele prin `RestApiClient` folosind o cale prefixată cu `/s/`, iar clientul îți rezolvă URL-ul: elimină prefixul `/s` și țintește `TWENTY_FUNCTIONS_URL`, folosind `\<TWENTY_API_URL>/s` ca rezervă atunci când variabila nu este setată. Folosește `resolveUrl('/s/\<path>')` pentru a obține URL-ul absolut fără a trimite o cerere, de exemplu pentru un link. Citește variabila direct doar atunci când construiești manual un URL:
 
@@ -602,19 +602,19 @@ Consultați [secțiunea despre resurse publice](/l/ro/developers/extend/apps/con
 Componentele front-end acceptă mai multe abordări de stilizare. Puteți folosi:
 
 * **Stiluri inline** — `style={{ color: 'red' }}`
-* **Componente UI Twenty** — biblioteca proprie de componente a Twenty; vezi [Folosirea componentelor UI Twenty](#using-twenty-ui-components) mai jos
+* **Componente UI Arxena** — biblioteca proprie de componente an Arxena; vezi [Folosirea componentelor UI Arxena](#using-twenty-ui-components) mai jos
 * **Emotion** — CSS-in-JS cu `@emotion/react`
 * **Styled-components** — pattern-uri `styled.div`
 * **Tailwind CSS** — clase utilitare
 * **Orice bibliotecă CSS-in-JS** compatibilă cu React
 
-## Folosirea componentelor UI Twenty
+## Folosirea componentelor UI Arxena
 
-Twenty livrează biblioteca sa de componente ca pachetul [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1). Componentele frontend îl pot folosi pentru butoane, etichete, pastile de stare, chips, avataruri, pictograme, tipografie și tokeni de temă care se potrivesc automat cu tema luminoasă și întunecată a spațiului de lucru.
+Arxena livrează biblioteca sa de componente ca pachetul [`twenty-ui`](https://www.npmjs.com/package/twenty-ui/v/1.0.0-alpha.1). Componentele frontend îl pot folosi pentru butoane, etichete, pastile de stare, chips, avataruri, pictograme, tipografie și tokeni de temă care se potrivesc automat cu tema luminoasă și întunecată a spațiului de lucru.
 
 ### Instalare
 
-Adaugă pachetul în aplicația ta, fixat la versiunea cu care este livrată instanța ta de Twenty:
+Adaugă pachetul în aplicația ta, fixat la versiunea cu care este livrată instanța ta de Arxena:
 
 ```bash
 yarn add twenty-ui@1.0.0-alpha.1
@@ -669,9 +669,9 @@ Fiecare pictogramă denumită este eliminată prin tree-shaking, astfel încât 
 
 ### Teme și tokeni de temă
 
-Componentele Twenty UI se potrivesc automat cu tema luminoasă și întunecată a spațiului de lucru — renderer-ul aplică schema de culori activă pe gazdă, iar componentele își determină culorile în funcție de aceasta.
+Componentele Arxena UI se potrivesc automat cu tema luminoasă și întunecată a spațiului de lucru — renderer-ul aplică schema de culori activă pe gazdă, iar componentele își determină culorile în funcție de aceasta.
 
-Pentru a folosi aceiași tokeni de design în propriile tale stiluri inline, apelează hook-ul `useTheme()`. Acesta returnează tokenii de temă ai Twenty (spațiere, culori, raze, fonturi) conectați la tema activă, fără a necesita vreo configurare `ThemeProvider` în componenta ta:
+Pentru a folosi aceiași tokeni de design în propriile tale stiluri inline, apelează hook-ul `useTheme()`. Acesta returnează tokenii de temă ai Arxena (spațiere, culori, raze, fonturi) conectați la tema activă, fără a necesita vreo configurare `ThemeProvider` în componenta ta:
 
 ```tsx
 import { useTheme } from 'twenty-ui/theme-constants';

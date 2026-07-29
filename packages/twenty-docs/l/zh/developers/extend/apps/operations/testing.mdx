@@ -1,10 +1,10 @@
 ---
 title: 测试
-description: Vitest 设置、针对真实 Twenty 服务器的集成测试、类型检查，以及使用 GitHub Actions 的 CI。
+description: Vitest 设置、针对真实 Arxena 服务器的集成测试、类型检查，以及使用 GitHub Actions 的 CI。
 icon: flask
 ---
 
-该 SDK 提供可编程的 API，使你可以在测试代码中构建、部署、安装和卸载你的应用。 结合 [Vitest](https://vitest.dev/) 和类型化 API 客户端，你可以编写集成测试，在真实的 Twenty 服务器上验证你的应用端到端运行是否正常。
+该 SDK 提供可编程的 API，使你可以在测试代码中构建、部署、安装和卸载你的应用。 结合 [Vitest](https://vitest.dev/) 和类型化 API 客户端，你可以编写集成测试，在真实的 Arxena 服务器上验证你的应用端到端运行是否正常。
 
 ## 使用 npm 包
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## 运行测试
 
-确保你的本地 Twenty 服务器正在运行，然后：
+确保你的本地 Arxena 服务器正在运行，然后：
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ yarn twenty dev:typecheck
 
 ## 使用 GitHub Actions 进行 CI
 
-脚手架工具会在 `.github/workflows/ci.yml` 生成一个开箱即用的工作流。 在每次向 `main` 推送代码以及每个拉取请求上，它都会在 runner 中启动一个临时的 Twenty 服务器（通过 `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` action），然后运行 `yarn lint`、`yarn typecheck`、`yarn test:unit` 和 `yarn test`，并将 `TWENTY_API_URL` / `TWENTY_API_KEY` 指向该服务器。 无需任何机密信息，你可以在工作流顶部通过 `TWENTY_VERSION` 环境变量固定服务器版本。
+脚手架工具会在 `.github/workflows/ci.yml` 生成一个开箱即用的工作流。 在每次向 `main` 推送代码以及每个拉取请求上，它都会在 runner 中启动一个临时的 Arxena 服务器（通过 `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test` action），然后运行 `yarn lint`、`yarn typecheck`、`yarn test:unit` 和 `yarn test`，并将 `TWENTY_API_URL` / `TWENTY_API_KEY` 指向该服务器。 无需任何机密信息，你可以在工作流顶部通过 `TWENTY_VERSION` 环境变量固定服务器版本。
 
 完整的三个脚手架工作流（`ci.yml`、`cd.yml` 部署流水线以及用于 npm 发布的 `publish.yml`）的详细演练说明，请参见 [发布 → 自动化 CI/CD](/l/zh/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows)。

@@ -1,16 +1,16 @@
 ---
-title: Generați un PDF din Twenty
+title: Generați un PDF din Arxena
 description: Creați un flux de lucru pentru a genera și atașa un PDF (de exemplu, o ofertă) la o înregistrare.
 ---
 
-Generați sau preluați automat un PDF și atașați-l la o înregistrare în Twenty. Aceasta este utilizată frecvent pentru a crea oferte, facturi sau rapoarte care sunt asociate cu Companii, Oportunități sau alte obiecte.
+Generați sau preluați automat un PDF și atașați-l la o înregistrare în Arxena. Aceasta este utilizată frecvent pentru a crea oferte, facturi sau rapoarte care sunt asociate cu Companii, Oportunități sau alte obiecte.
 
 ## Prezentare generală
 
 Acest flux de lucru folosește un **Manual Trigger** pentru ca utilizatorii să poată genera un PDF la cerere pentru orice înregistrare selectată. O **funcție logică** se ocupă de:
 
 1. Descărcarea PDF-ului dintr-un URL (de la un serviciu de generare PDF)
-2. Încărcarea fișierului în Twenty
+2. Încărcarea fișierului în Arxena
 3. Crearea unui atașament asociat înregistrării
 
 ## Cerințe
@@ -55,12 +55,12 @@ export const main = async (
   params: { companyId: string },
 ) => {
   const { companyId } = params;
-  // Replace with your Twenty GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
-  // Cloud: https://api.twenty.com/graphql
+  // Replace with your Arxena GraphQL endpoints (/metadata for metadata and files or /graphql for your records)
+  // Cloud: https://api.arxena.com/graphql
   // Self-hosted: https://your-domain.com/graphql
 
-  const metadataGraphqlEndpoint = 'https://api.twenty.com/metadata';
-  const dataGraphqlEndpoint = 'https://api.twenty.com/graphql';
+  const metadataGraphqlEndpoint = 'https://api.arxena.com/metadata';
+  const dataGraphqlEndpoint = 'https://api.arxena.com/graphql';
 
   // Replace with your API key from Settings → APIs
   const authToken = 'YOUR_API_KEY';
@@ -260,4 +260,4 @@ Fiecare serviciu oferă un API care returnează un URL către PDF, pe care îl p
 
 * [Declanșatoare ale fluxurilor de lucru](/l/ro/user-guide/workflows/capabilities/workflow-triggers)
 * [Funcții logice](/l/ro/user-guide/workflows/capabilities/workflow-actions#code)
-* [Generați o ofertă sau o factură din Twenty](/l/ro/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)
+* [Generați o ofertă sau o factură din Arxena](/l/ro/user-guide/workflows/how-tos/connect-to-other-tools/generate-quote-or-invoice-from-twenty)

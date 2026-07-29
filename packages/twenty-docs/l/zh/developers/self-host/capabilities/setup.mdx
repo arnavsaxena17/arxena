@@ -6,10 +6,10 @@ icon: gear
 # 配置管理
 
 <Warning>
-**第一次安装？** 请按照 [Docker Compose 安装指南](/l/zh/developers/self-host/capabilities/docker-compose) 获得 Twenty 运行，然后返回此处进行配置。
+**第一次安装？** 请按照 [Docker Compose 安装指南](/l/zh/developers/self-host/capabilities/docker-compose) 获得 Arxena 运行，然后返回此处进行配置。
 </Warning>
 
-Twenty 提供**两种配置模式**以适应不同的部署需求：
+Arxena 提供**两种配置模式**以适应不同的部署需求：
 
 **管理员面板访问：** 只有具有管理员权限的用户(`canAccessFullAdminPanel: true`) 可以访问配置界面。
 
@@ -21,7 +21,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 **大多数配置在安装后通过 UI 进行：**
 
-1. 访问你的 Twenty 实例（通常为 `http://localhost:3000`)
+1. 访问你的 Arxena 实例（通常为 `http://localhost:3000`)
 2. 转到 **设置 / 管理员面板 / 配置变量**
 3. 配置集成、电子邮件、存储等
 4. 更改会立即生效（多容器部署在 15 秒内）
@@ -50,14 +50,14 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=true  # default
 
 ## 加密密钥
 
-Twenty 使用两个仅通过环境变量配置的加密密钥：
+Arxena 使用两个仅通过环境变量配置的加密密钥：
 
 | 变量                        | 目的                                                           | 必填                                    |
 | ------------------------- | ------------------------------------------------------------ | ------------------------------------- |
 | `ENCRYPTION_KEY`          | 用于对静态存储的机密信息（OAuth 令牌、应用程序变量、签名密钥的私钥、TOTP 密钥、敏感配置值）进行加密的主密钥。 | 新安装必须设置（旧安装可能依赖于 `APP_SECRET` —— 见下文） |
 | `FALLBACK_ENCRYPTION_KEY` | 仅用于验证的密钥。 在轮换期间，将其设置为*先前的* `ENCRYPTION_KEY`，以便现有行仍可解密。       | 仅在轮换期间                                |
 
-为保持向后兼容性，如果未设置 `ENCRYPTION_KEY`，Twenty 将回退为使用 `APP_SECRET` 进行静态数据加密——与旧部署的旧版行为一致。 新的安装应始终设置专用的 `ENCRYPTION_KEY`。
+为保持向后兼容性，如果未设置 `ENCRYPTION_KEY`，Arxena 将回退为使用 `APP_SECRET` 进行静态数据加密——与旧部署的旧版行为一致。 新的安装应始终设置专用的 `ENCRYPTION_KEY`。
 
 使用 `openssl rand -base64 32` 生成值，并将其安全存储（如密钥管理器、加密配置等）。 丢失 `ENCRYPTION_KEY` 意味着将失去对数据库中存储的所有机密的访问权限。
 
@@ -78,7 +78,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 
 ## 多工作区模式
 
-默认情况下，Twenty 以**单工作区模式**运行——对于大多数需要为组织部署一个 CRM 实例的自托管部署而言，这是理想之选。
+默认情况下，Arxena 以**单工作区模式**运行——对于大多数需要为组织部署一个 CRM 实例的自托管部署而言，这是理想之选。
 
 ### 单工作区模式（默认）
 
@@ -86,7 +86,7 @@ IS_CONFIG_VARIABLES_IN_DB_ENABLED=false
 IS_MULTIWORKSPACE_ENABLED=false  # default
 ```
 
-* 每个 Twenty 实例一个工作区
+* 每个 Arxena 实例一个工作区
 * 首位用户会自动成为具有完整权限的管理员（`canImpersonate` 和 `canAccessFullAdminPanel`）
 * 创建第一个工作区后，新注册将被禁用
 * 简单的 URL 结构：`https://your-domain.com`
@@ -98,7 +98,7 @@ IS_MULTIWORKSPACE_ENABLED=true
 DEFAULT_SUBDOMAIN=app  # default value
 ```
 
-对于在同一 Twenty 实例上需要多个独立团队拥有各自工作区的类 SaaS 部署，启用多工作区模式。
+对于在同一 Arxena 实例上需要多个独立团队拥有各自工作区的类 SaaS 部署，启用多工作区模式。
 
 **与单工作区模式的关键区别：**
 
@@ -152,7 +152,7 @@ IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS=true
    * `https://{your-domain}/auth/google/redirect` (用于 SSO)
    * `https://{your-domain}/auth/google-apis/get-access-token` (用于集成)
 
-### 在 Twenty 中配置
+### 在 Arxena 中配置
 
 1. 转到 **设置 → 管理员面板 → 配置变量**
 2. 找到 **Google 身份验证** 部分
@@ -184,7 +184,7 @@ IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS=true
 ## Microsoft 365 集成
 
 <Warning>
-用户必须拥有 [Microsoft 365 许可证](https://admin.microsoft.com/Adminportal/Home) 才能使用日历和消息传递 API。 没有许可证，他们将无法在 Twenty 上同步他们的帐户。
+用户必须拥有 [Microsoft 365 许可证](https://admin.microsoft.com/Adminportal/Home) 才能使用日历和消息传递 API。 没有许可证，他们将无法在 Arxena 上同步他们的帐户。
 </Warning>
 
 ### 在 Microsoft Azure 中创建项目
@@ -213,7 +213,7 @@ IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS=true
 * `https://{your-domain}/auth/microsoft/redirect` 如果你想使用 Microsoft SSO
 * `https://{your-domain}/auth/microsoft-apis/get-access-token`
 
-### 在 Twenty 中配置
+### 在 Arxena 中配置
 
 1. 转到 **设置 → 管理员面板 → 配置变量**
 2. 找到 **Microsoft 身份验证** 部分
@@ -316,16 +316,16 @@ yarn command:prod cron:workflow:automated-cron-trigger
 ## S3 存储
 
 <Warning>
-默认情况下，Twenty 将上传的文件存储在本地文件系统上。 对于生产环境部署，请使用 S3 或兼容 S3 的服务（MinIO、DigitalOcean Spaces 等）。 以确保文件在容器重启后仍然存在，并可在多个服务器实例间扩展。
+默认情况下，Arxena 将上传的文件存储在本地文件系统上。 对于生产环境部署，请使用 S3 或兼容 S3 的服务（MinIO、DigitalOcean Spaces 等）。 以确保文件在容器重启后仍然存在，并可在多个服务器实例间扩展。
 </Warning>
 
 设置 `STORAGE_TYPE=S_3`，并通过管理面板或 `.env` 配置 `STORAGE_S3_*` 变量。 有关 S3 变量的完整列表，请参见[config-variables.ts 参考](https://github.com/twentyhq/twenty/blob/main/packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts)。
 
-在将 S3 与依赖 CORS 的功能（例如浏览器内文件下载）一起使用时，请确保你的存储桶在其 CORS 配置中允许你的 Twenty 前端来源。
+在将 S3 与依赖 CORS 的功能（例如浏览器内文件下载）一起使用时，请确保你的存储桶在其 CORS 配置中允许你的 Arxena 前端来源。
 
 ## 逻辑函数与代码解释器
 
-Twenty 支持用于工作流的逻辑函数，以及用于 AI 数据分析的代码解释器。 二者都会运行用户提供的代码，并要求进行显式配置以确保安全。
+Arxena 支持用于工作流的逻辑函数，以及用于 AI 数据分析的代码解释器。 二者都会运行用户提供的代码，并要求进行显式配置以确保安全。
 
 ### 安全默认设置
 
@@ -378,5 +378,5 @@ LOGIC_FUNCTION_TYPE=DISABLED  # default when NODE_ENV=production
 | E2B | `CODE_INTERPRETER_TYPE=E_2_B`    | 生产环境（沙盒化执行） | 高（隔离沙盒） |
 
 <Note>
-当使用 `LOGIC_FUNCTION_TYPE=DISABLED` 或 `CODE_INTERPRETER_TYPE=DISABLED` 时，任何执行尝试都会返回错误。 如果你想在不启用这些功能的情况下运行 Twenty，这将很有用。
+当使用 `LOGIC_FUNCTION_TYPE=DISABLED` 或 `CODE_INTERPRETER_TYPE=DISABLED` 时，任何执行尝试都会返回错误。 如果你想在不启用这些功能的情况下运行 Arxena，这将很有用。
 </Note>

@@ -69,7 +69,7 @@ export const main = async (params: {
   const formattedTasks = tasksDue
     .map(
       t =>
-        `${t.title}\nhttps://yourSubDomain.twenty.com/object/task/${t.id}`
+        `${t.title}\nhttps://yourSubDomain.arxena.com/object/task/${t.id}`
     )
     .join("\n\n");
 
@@ -78,7 +78,7 @@ export const main = async (params: {
 ```
 
 <Note>
-Replace `yourSubDomain` with your actual Twenty workspace subdomain.
+Replace `yourSubDomain` with your actual Arxena workspace subdomain.
 </Note>
 
 ### Step 6: Send Email (Inside Iterator)

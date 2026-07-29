@@ -1,0 +1,54 @@
+---
+title: Authentication
+description: Authenticate People API requests with a workspace-scoped Bearer token.
+---
+
+Most People API requests require a workspace token:
+
+```http
+Authorization: Bearer YOUR_API_KEY_TOKEN
+```
+
+## Create a token
+
+1. Go to **Settings → APIs & Webhooks**
+2. Click **+ Create key**
+3. Save the key and copy it immediately — it is shown once
+4. Use the generated token as your Bearer credential in the playground or your client
+
+For production use, assign the API key to a role under **Settings → Members → Roles → Assignment** so the key only gets the permissions it needs.
+
+<Warning>
+Keep this token secret. Anyone who has it can call the People API with your workspace permissions.
+</Warning>
+
+## Using the playground
+
+On any endpoint page in this API Reference:
+
+1. Open the interactive playground (right panel or **Try it**)
+2. Set Authorization to your Bearer token
+3. Fill required parameters
+4. Click **Send**
+
+Requests are proxied through Mintlify to your API host so you can try calls without leaving the docs.
+
+## Public (no auth)
+
+These stay ungated on purpose — short **nouns**, not engines:
+
+```bash
+curl https://app.arxena.com/people-api/openapi.json
+curl https://app.arxena.com/people-api/taxonomy/constants
+```
+
+[Taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) are Apollo-style flat label lists (grade levels, grade categories, function roots). Everything else that classifies, searches people, or builds Booleans requires Bearer auth.
+
+## Fair use
+
+- **Constants** are public vocabulary for integrators and agents.
+- **Do not** scrape auth-gated taxonomy classify/list endpoints to rebuild a competing title ontology or keyword engine.
+- Auth-gated taxonomy browse/classify is rate-limited per workspace.
+- Use API keys with least privilege; rotate if exposed.
+
+By using the People API you agree to use returned labels and people results for recruiting workflows — not to reverse-engineer proprietary classification systems. See [Standardized taxonomy](/concepts/standardized-taxonomy#what-stays-private).

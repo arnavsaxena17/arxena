@@ -1,6 +1,6 @@
 ---
 title: 项目结构
-description: 脚手架生成的 Twenty 应用中包含哪些内容——文件、文件夹以及它们各自的作用。
+description: 脚手架生成的 Arxena 应用中包含哪些内容——文件、文件夹以及它们各自的作用。
 icon: folder-tree
 ---
 
@@ -56,7 +56,7 @@ my-twenty-app/
 
 ## 依赖项
 
-这两个 Twenty SDK 软件包都应放在 `devDependencies` 下，而不是 `dependencies`：
+这两个 Arxena SDK 软件包都应放在 `devDependencies` 下，而不是 `dependencies`：
 
 ```json filename="package.json"
 {
@@ -72,7 +72,7 @@ my-twenty-app/
 脚手架工具将 `twenty-sdk` 和 `twenty-client-sdk` 固定为与自身相同的版本——升级时请保持这两者同步。
 
 * **`twenty-sdk`** 提供 `twenty` CLI 以及构建/脚手架工具。 它只在开发和构建阶段运行，且永远不会在已发布应用的运行时环境中被导入。
-* **`twenty-client-sdk`** 会被你的应用代码（`CoreApiClient`、`MetadataApiClient`、`RestApiClient`）导入，但 Twenty 会在运行时提供它——逻辑函数从生成的 SDK 层获取它，前端组件则从服务器提供的模块中解析它。 你安装的副本仅用于类型检查和部署时的构建，因此不需要被打包进已部署的 bundle 中。
+* **`twenty-client-sdk`** 会被你的应用代码（`CoreApiClient`、`MetadataApiClient`、`RestApiClient`）导入，但 Arxena 会在运行时提供它——逻辑函数从生成的 SDK 层获取它，前端组件则从服务器提供的模块中解析它。 你安装的副本仅用于类型检查和部署时的构建，因此不需要被打包进已部署的 bundle 中。
 
 把任意一个软件包放在 `dependencies` 下，都会把它拉入已安装应用的运行时 bundle 中，在那里只是累赘。 当任一软件包仍然列在 `dependencies` 下时，`twenty dev:build` 会发出警告。
 

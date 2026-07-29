@@ -1,7 +1,7 @@
 ---
 title: 本地设置
 icon: laptop-code
-description: 本指南适用于希望在本地运行 Twenty 的贡献者或好奇的开发人员。
+description: 本指南适用于希望在本地运行 Arxena 的贡献者或好奇的开发人员。
 ---
 
 ## 先决条件
@@ -9,7 +9,7 @@ description: 本指南适用于希望在本地运行 Twenty 的贡献者或好�
 <Tabs>
 <Tab title="Linux 和 macOS">
 
-在安装和使用 Twenty 之前，请确保在您的计算机上安装以下内容：
+在安装和使用 Arxena 之前，请确保在您的计算机上安装以下内容：
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 * [Node v24.5.0](https://nodejs.org/en/download)
 * [yarn v4](https://yarnpkg.com/getting-started/install)
@@ -195,7 +195,7 @@ cd twenty
 
 ## 步骤 4：设置 Redis 数据库（缓存）
 
-Twenty 需要 Redis 缓存来提供最佳性能。
+Arxena 需要 Redis 缓存来提供最佳性能。
 
 <Tabs>
   <Tab title="Linux">
@@ -247,12 +247,12 @@ cp ./packages/twenty-server/.env.example ./packages/twenty-server/.env
 ```
 
 <Info>
-**多工作区模式：** 默认情况下，Twenty 以单工作区模式运行，在此模式下只能创建一个工作区。 要启用多工作区支持（对于测试基于子域的功能很有用），请在服务器的 `.env` 文件中设置 `IS_MULTIWORKSPACE_ENABLED=true`。 详见 [多工作区模式](/l/zh/developers/self-host/capabilities/setup#multi-workspace-mode)。
+**多工作区模式：** 默认情况下，Arxena 以单工作区模式运行，在此模式下只能创建一个工作区。 要启用多工作区支持（对于测试基于子域的功能很有用），请在服务器的 `.env` 文件中设置 `IS_MULTIWORKSPACE_ENABLED=true`。 详见 [多工作区模式](/l/zh/developers/self-host/capabilities/setup#multi-workspace-mode)。
 </Info>
 
 ## 步骤 6：安装依赖项
 
-要构建 Twenty 服务器并向你的数据库预置一些数据，请运行以下命令：
+要构建 Arxena 服务器并向你的数据库预置一些数据，请运行以下命令：
 
 ```bash
 yarn
@@ -299,16 +299,16 @@ npx nx start twenty-front
 npx nx start
 ```
 
-## 步骤 8：使用 Twenty
+## 步骤 8：使用 Arxena
 
 **前端**
 
-Twenty 的前端将在 [http://localhost:3001](http://localhost:3001) 运行。
+Arxena 的前端将在 [http://localhost:3001](http://localhost:3001) 运行。
 您可以使用默认的演示帐号登录：`tim@apple.dev` （密码：`tim@apple.dev`）
 
 **后端**
 
-* Twenty 的服务器将在 [http://localhost:3000](http://localhost:3000) 启动并运行
+* Arxena 的服务器将在 [http://localhost:3000](http://localhost:3000) 启动并运行
 * 可在 [http://localhost:3000/graphql](http://localhost:3000/graphql) 访问 GraphQL API
 * 可通过 [http://localhost:3000/rest](http://localhost:3000/rest) 访问 REST API
 

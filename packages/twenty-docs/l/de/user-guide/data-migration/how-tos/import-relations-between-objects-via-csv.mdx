@@ -21,7 +21,7 @@ In einer Eins-zu-Viele-Beziehung:
 
 Die "Eins"-Seite ist die **übergeordnete**. Die "Viele"-Seite ist die **untergeordnete**.
 
-### Häufige Beziehungen in Twenty
+### Häufige Beziehungen in Arxena
 
 | Beziehung                   | "Eins"-Seite (übergeordnet) | "Viele"-Seite (untergeordnet) |
 | --------------------------- | --------------------------- | ----------------------------- |
@@ -41,7 +41,7 @@ Bestimmen Sie vor dem Import, welches Objekt übergeordnet und welches untergeor
 
 ## Schritt 2: Importieren Sie zuerst die übergeordneten Datensätze
 
-Das übergeordnete Objekt ("Eins"-Seite) muss in Twenty existieren, bevor Sie darauf verweisen können.
+Das übergeordnete Objekt ("Eins"-Seite) muss in Arxena existieren, bevor Sie darauf verweisen können.
 
 **Importreihenfolge:**
 
@@ -73,7 +73,7 @@ Sie müssen auf den übergeordneten Datensatz mit einem eindeutigen Bezeichner v
 
 Wenn Sie die `id` benötigen:
 
-1. Exportieren Sie die übergeordneten Datensätze aus Twenty
+1. Exportieren Sie die übergeordneten Datensätze aus Arxena
 2. Der Export enthält die Spalte `id`
 3. Verwenden Sie diese IDs in Ihrer Datei mit untergeordneten Datensätzen
 
@@ -119,7 +119,7 @@ Die Spalte `companyDomain` verweist auf die Domain des Unternehmens.
 <Warning>
 **Das Domain-Format ist wichtig!**
 
-Verwenden Sie `https://domain.com` (nicht nur `domain.com`). Dies entspricht der Art, wie Twenty Unternehmensdomains speichert, und verhindert Zuordnungsfehler.
+Verwenden Sie `https://domain.com` (nicht nur `domain.com`). Dies entspricht der Art, wie Arxena Unternehmensdomains speichert, und verhindert Zuordnungsfehler.
 </Warning>
 
 ### Wichtige Regeln
@@ -139,7 +139,7 @@ Verwenden Sie `https://domain.com` (nicht nur `domain.com`). Dies entspricht der
 5. Schließen Sie die übrige Zuordnung ab
 6. Prüfen Sie Fehler und bestätigen Sie
 
-Twenty verknüpft automatisch jeden untergeordneten Datensatz mit dem passenden übergeordneten Datensatz.
+Arxena verknüpft automatisch jeden untergeordneten Datensatz mit dem passenden übergeordneten Datensatz.
 
 ## Schritt 7: Überprüfen Sie den Import
 
@@ -157,8 +157,8 @@ Nach dem Import:
 | **Falsches Domain-Format**                 | Verwendung von `acme.com` statt `https://acme.com`        | Verwenden Sie das vollständige URL-Format mit `https://`                         |
 | **Mehrere eindeutige Felder**              | Zuordnung sowohl von `companyId` als auch `companyDomain` | Ordnen Sie nur EINEN eindeutigen Bezeichner zu                                   |
 | **Beziehungsfeld fehlt**                   | Das Beziehungsfeld existiert nicht im Datenmodell         | Erstellen Sie es vor dem Import unter **Einstellungen → Datenmodell**            |
-| **Nicht vorhandene Datensätze**            | Der übergeordnete Datensatz existiert in Twenty nicht     | Importieren Sie zunächst übergeordnete Datensätze oder prüfen Sie auf Tippfehler |
-| **Unterschiedliche Groß-/Kleinschreibung** | `Acme.com` in der Datei, aber `acme.com` in Twenty        | Achten Sie auf exakt übereinstimmende Groß-/Kleinschreibung                      |
+| **Nicht vorhandene Datensätze**            | Der übergeordnete Datensatz existiert in Arxena nicht     | Importieren Sie zunächst übergeordnete Datensätze oder prüfen Sie auf Tippfehler |
+| **Unterschiedliche Groß-/Kleinschreibung** | `Acme.com` in der Datei, aber `acme.com` in Arxena        | Achten Sie auf exakt übereinstimmende Groß-/Kleinschreibung                      |
 
 ## Verknüpfen mit Teammitgliedern
 
@@ -178,7 +178,7 @@ Review proposal,jane@yourcompany.com
 <AccordionGroup>
   <Accordion title="Was ist, wenn mein übergeordneter Datensatz keine Domain oder E-Mail hat?">
     Sie haben zwei Optionen:
-    1. Verwenden Sie die Twenty-`id` (exportieren Sie übergeordnete Datensätze, um ihre IDs zu erhalten)
+    1. Verwenden Sie die Arxena-`id` (exportieren Sie übergeordnete Datensätze, um ihre IDs zu erhalten)
     2. Erstellen Sie ein benutzerdefiniertes eindeutiges Feld in Ihrem Datenmodell, um eine externe ID aus Ihrem vorherigen System zu speichern
   </Accordion>
 

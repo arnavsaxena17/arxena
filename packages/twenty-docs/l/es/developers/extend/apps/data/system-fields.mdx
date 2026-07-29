@@ -4,7 +4,7 @@ description: Haz referencia a los campos de sistema creados automáticamente, co
 icon: gears
 ---
 
-Cada objeto en Twenty viene con un conjunto de **campos de sistema** que nunca declaras tú mismo. Los crea automáticamente el servidor cuando se aprovisiona el objeto:
+Cada objeto en Arxena viene con un conjunto de **campos de sistema** que nunca declaras tú mismo. Los crea automáticamente el servidor cuando se aprovisiona el objeto:
 
 `id`, `createdAt`, `updatedAt`, `deletedAt`, `createdBy`, `updatedBy`, `position`, `searchVector`
 
@@ -12,7 +12,7 @@ Como no declaras estos campos con [`defineField()`](/l/es/developers/extend/apps
 
 ## Problema
 
-Desde Twenty 2.19, el identificador universal de un campo de sistema se **deriva de forma determinista** en el servidor a partir de tres entradas: el identificador universal de la aplicación, el identificador universal del objeto y el nombre del campo. Inventar un id y ponerlo de forma fija en el código no funcionará: no coincide con nada en el servidor y la sincronización rechaza la referencia colgante:
+Desde Arxena 2.19, el identificador universal de un campo de sistema se **deriva de forma determinista** en el servidor a partir de tres entradas: el identificador universal de la aplicación, el identificador universal del objeto y el nombre del campo. Inventar un id y ponerlo de forma fija en el código no funcionará: no coincide con nada en el servidor y la sincronización rechaza la referencia colgante:
 
 ```
 Dev sync failed: viewField: INVALID_VIEW_DATA: Field metadata not found
@@ -90,7 +90,7 @@ El mismo id resuelto funciona en cualquier lugar donde se espere un `fieldMetada
 
 <Note>
   `getSystemRelationFieldUniversalIdentifier` está disponible desde `twenty-sdk`
-  2.23 en adelante y requiere un servidor Twenty en la versión 2.23 o posterior.
+  2.23 en adelante y requiere un servidor Arxena en la versión 2.23 o posterior.
 </Note>
 
 Además de los campos escalares del sistema mencionados arriba, el servidor también aprovisiona cuatro **campos de relación del sistema** en cada objeto: `timelineActivities`, `attachments`, `noteTargets` y `taskTargets`, cada uno apuntando al objeto de relación estándar correspondiente.
@@ -132,9 +132,9 @@ const attachmentTargetRocketFieldId =
 
 Como con los campos de sistema escalares, el id resuelto funciona en cualquier lugar donde se espere un `fieldMetadataUniversalIdentifier`.
 
-## Objetos estándar de Twenty
+## Objetos estándar de Arxena
 
-Para un objeto **estándar** de Twenty (Persona, Compañía, Oportunidad, …), no necesitas derivar nada: los identificadores de los campos de sistema son constantes precalculadas que puedes importar directamente.
+Para un objeto **estándar** de Arxena (Persona, Compañía, Oportunidad, …), no necesitas derivar nada: los identificadores de los campos de sistema son constantes precalculadas que puedes importar directamente.
 
 ```ts
 import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

@@ -26,7 +26,7 @@ below omit those imports for brevity — keep them in your own files.
 
 A template has a `name`, a `body` with `{{placeholders}}`, and a `target` that
 says whether it's written for a Person or a Company. The `body` is a
-`RICH_TEXT` field, so Twenty gives it a full rich-text editor.
+`RICH_TEXT` field, so Arxena gives it a full rich-text editor.
 
 ```ts filename="src/objects/document-template.object.ts"
 import { defineObject, FieldType } from 'twenty-sdk/define';
@@ -102,7 +102,7 @@ The other side (`template-documents-relation.field.ts`) is a
 `RelationType.ONE_TO_MANY` field named `documents` that points the opposite way.
 See [Relations](/developers/extend/apps/data/relations) for the full pattern.
 
-## See it in Twenty
+## See it in Arxena
 
 With `yarn twenty dev` running, open **Settings → Data model**. Both objects
 appear, tagged with your app.

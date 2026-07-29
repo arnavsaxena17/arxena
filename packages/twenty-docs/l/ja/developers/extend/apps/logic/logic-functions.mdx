@@ -4,7 +4,7 @@ description: HTTP、cron、およびデータベースのイベントトリガ�
 icon: bolt
 ---
 
-ロジック関数は、Twenty プラットフォーム上で実行されるサーバーサイドの TypeScript 関数です。 HTTPリクエスト、cronスケジュール、またはデータベースイベントでトリガーでき、AIエージェント向けのツールとして公開することもできます。
+ロジック関数は、Arxena プラットフォーム上で実行されるサーバーサイドの TypeScript 関数です。 HTTPリクエスト、cronスケジュール、またはデータベースイベントでトリガーでき、AIエージェント向けのツールとして公開することもできます。
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="ロジック関数とそのトリガーを定義">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 ロジック関数は 2 つのサーフェス上で公開でき、それぞれに固有のトリガーがあります:
 
-* **`toolTriggerSettings`** — Twenty の AI 機能（チャット、MCP、関数呼び出し）からその関数を見つけられるようにします。 標準的な JSON Schema を使用します。これは LLM がネイティブに理解する形式です。
-* **`workflowActionTriggerSettings`** — ビジュアル ワークフロー ビルダー内のステップとして関数を表示します。 ビルダーが適切なフィールドエディタ、変数ピッカー、ラベルをレンダリングできるよう、Twenty の充実した `InputSchema` を使用します。
+* **`toolTriggerSettings`** — Arxena の AI 機能（チャット、MCP、関数呼び出し）からその関数を見つけられるようにします。 標準的な JSON Schema を使用します。これは LLM がネイティブに理解する形式です。
+* **`workflowActionTriggerSettings`** — ビジュアル ワークフロー ビルダー内のステップとして関数を表示します。 ビルダーが適切なフィールドエディタ、変数ピッカー、ラベルをレンダリングできるよう、Arxena の充実した `InputSchema` を使用します。
 
 関数は一方、もう一方、またはその両方を選択できます。 これらは `cronTriggerSettings`、`databaseEventTriggerSettings`、`httpRouteTriggerSettings` と並列に存在します — 同じパターン、同じ形です。
 
 <Note>
-**ワークフローの Code アクションとの関係。** ワークフロービルダーに組み込まれている **Code** アクション自体もロジック関数です。Twenty は Code ステップごとに 1 つ作成し、そのエディタをインラインで表示します。 `workflowActionTriggerSettings` を使うことで、その使い捨てのインラインコードを**再利用可能な**アクションに変換できます。アプリ内でその関数を 1 度定義すれば、各 Code ステップにコードをコピーペーストする代わりに、任意のワークフローで選択できるようになります。 エンドユーザー側の表示については、ユーザーガイドの [Code action](/l/ja/user-guide/workflows/capabilities/workflow-actions#code) を参照してください。
+**ワークフローの Code アクションとの関係。** ワークフロービルダーに組み込まれている **Code** アクション自体もロジック関数です。Arxena は Code ステップごとに 1 つ作成し、そのエディタをインラインで表示します。 `workflowActionTriggerSettings` を使うことで、その使い捨てのインラインコードを**再利用可能な**アクションに変換できます。アプリ内でその関数を 1 度定義すれば、各 Code ステップにコードをコピーペーストする代わりに、任意のワークフローで選択できるようになります。 エンドユーザー側の表示については、ユーザーガイドの [Code action](/l/ja/user-guide/workflows/capabilities/workflow-actions#code) を参照してください。
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 主なポイント：
 
 * 関数はサーフェスを混在させることができます — `toolTriggerSettings` と `workflowActionTriggerSettings` の両方を宣言して、チャットおよびワークフロー ビルダーの両方に公開します。
-* `toolTriggerSettings.inputSchema` と `workflowActionTriggerSettings.inputSchema` はいずれも任意です。 省略された場合、マニフェストビルダーはハンドラーのソースコードからそれらを推論します（AI ツールには JSON Schema、ワークフロー アクションには Twenty の `InputSchema`）。 より豊富な型付けが必要な場合は、明示的に指定してください — たとえば、ワークフロー ビルダー向けに `CURRENCY` や `RELATION` といった `FieldMetadataType` に対応したフィールド、または AI エージェントが読み取れる `description` フィールドを使用する場合など:
+* `toolTriggerSettings.inputSchema` と `workflowActionTriggerSettings.inputSchema` はいずれも任意です。 省略された場合、マニフェストビルダーはハンドラーのソースコードからそれらを推論します（AI ツールには JSON Schema、ワークフロー アクションには Arxena の `InputSchema`）。 より豊富な型付けが必要な場合は、明示的に指定してください — たとえば、ワークフロー ビルダー向けに `CURRENCY` や `RELATION` といった `FieldMetadataType` に対応したフィールド、または AI エージェントが読み取れる `description` フィールドを使用する場合など:
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-パラメーターを**一度だけ**宣言して両方のサーフェスで利用できるようにするには、単一の JSON Schema（`InputJsonSchema`）を定義し、`twenty-sdk/logic-function` の `jsonSchemaToInputSchema` を使ってワークフローアクション用に変換します。 `toolTriggerSettings.inputSchema` は JSON Schema を直接受け取りますが、`workflowActionTriggerSettings.inputSchema` には Twenty の `InputSchema` が必要です。
+パラメーターを**一度だけ**宣言して両方のサーフェスで利用できるようにするには、単一の JSON Schema（`InputJsonSchema`）を定義し、`twenty-sdk/logic-function` の `jsonSchemaToInputSchema` を使ってワークフローアクション用に変換します。 `toolTriggerSettings.inputSchema` は JSON Schema を直接受け取りますが、`workflowActionTriggerSettings.inputSchema` には Arxena の `InputSchema` が必要です。
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | -------------------------------------------------------------------------------------------------- |
 | `label`        | ワークフロービルダーのステップピッカーに表示されるアクション名。 指定しない場合は、関数の `name` がデフォルトになります。                                  |
 | `icon`         | アクションの横に表示されるアイコン（`tabler-icons` の名前。例: `IconBuilding`）。                                           |
-| `inputSchema`  | Twenty のリッチな `InputSchema` — ビルダーが設定可能なフィールド（変数ピッカー付き）としてレンダリングするものです。 省略可能。省略された場合はハンドラーから推論されます。 |
+| `inputSchema`  | Arxena のリッチな `InputSchema` — ビルダーが設定可能なフィールド（変数ピッカー付き）としてレンダリングするものです。 省略可能。省略された場合はハンドラーから推論されます。 |
 | `outputSchema` | ハンドラーが返すデータの形を宣言し、**後続のステップがその出力フィールドへマッピングできるようにします**。 省略可能。指定しない場合、出力は単一の不透明な値として公開されます。         |
 
 これらを組み合わせると、ワークフローアクションとして公開される関数になり、`taskId` を後続ステップから参照できるように出力を宣言できます。
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## 型付き API クライアント（`twenty-client-sdk`）
 
-`twenty-client-sdk` パッケージは、ロジック関数やフロントコンポーネントから Twenty API とやり取りするための、型付き GraphQL クライアントを 2 つ提供します。
+`twenty-client-sdk` パッケージは、ロジック関数やフロントコンポーネントから Arxena API とやり取りするための、型付き GraphQL クライアントを 2 つ提供します。
 
 | クライアント              | インポート                        | エンドポイント                              | 自動生成？             |
 | ------------------- | ---------------------------- | ------------------------------------ | ----------------- |
@@ -762,9 +762,9 @@ console.log(uploadedFile);
 </AccordionGroup>
 
 <Note>
-  コードが Twenty 上で実行される際（ロジック関数やフロントコンポーネント）、プラットフォームは認証情報を環境変数として注入します:
+  コードが Arxena 上で実行される際（ロジック関数やフロントコンポーネント）、プラットフォームは認証情報を環境変数として注入します:
 
-  * `TWENTY_API_URL` — Twenty API のベース URL
+  * `TWENTY_API_URL` — Arxena API のベース URL
   * `TWENTY_APP_ACCESS_TOKEN` — アプリケーションのデフォルト関数ロールにスコープされた短命のキー
 
   これらをクライアントに渡す必要はありません — 自動的に `process.env` から読み取ります。 API キーの権限は、`defineApplicationRole()` で宣言されたロール（または `application-config.ts` の `defaultRoleUniversalIdentifier` で参照されるロール）によって決まります。

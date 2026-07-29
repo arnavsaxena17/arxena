@@ -4,7 +4,7 @@ description: Nesneleri çift yönlü MANY_TO_ONE / ONE_TO_MANY ilişkilerle birb
 icon: diagram-project
 ---
 
-İlişkiler iki nesneyi birbirine bağlar. Twenty'de ilişkiler her zaman **çift yönlüdür** — her ilişkinin iki tarafı vardır ve her taraf diğeriyle ilişkili alan olarak tanımlanır.
+İlişkiler iki nesneyi birbirine bağlar. Arxena'de ilişkiler her zaman **çift yönlüdür** — her ilişkinin iki tarafı vardır ve her taraf diğeriyle ilişkili alan olarak tanımlanır.
 
 | İlişki türü   | Açıklama                                                  | Yabancı anahtar var mı? |
 | ------------- | --------------------------------------------------------- | ----------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Standart nesnelerle ilişkilendirme
 
-Yerleşik bir Twenty nesnesiyle (Person, Company, vb.) ilişki oluşturmak için `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` kullanın:
+Yerleşik bir Arxena nesnesiyle (Person, Company, vb.) ilişki oluşturmak için `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS` kullanın:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

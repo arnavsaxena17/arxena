@@ -4,7 +4,7 @@ description: HTTP, cron 및 데이터베이스 이벤트 트리거를 사용하�
 icon: bolt
 ---
 
-로직 함수는 Twenty 플랫폼에서 실행되는 서버 측 TypeScript 함수입니다. 이 함수들은 HTTP 요청, cron 스케줄 또는 데이터베이스 이벤트에 의해 트리거될 수 있으며 — AI 에이전트를 위한 도구로도 제공할 수 있습니다.
+로직 함수는 Arxena 플랫폼에서 실행되는 서버 측 TypeScript 함수입니다. 이 함수들은 HTTP 요청, cron 스케줄 또는 데이터베이스 이벤트에 의해 트리거될 수 있으며 — AI 에이전트를 위한 도구로도 제공할 수 있습니다.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="로직 함수와 해당 트리거 정의">
@@ -617,7 +617,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## 타입이 지정된 API 클라이언트(twenty-client-sdk)
 
-`twenty-client-sdk` 패키지는 로직 함수와 프런트 컴포넌트에서 Twenty API와 상호작용하기 위한 타입이 지정된 두 가지 GraphQL 클라이언트를 제공합니다.
+`twenty-client-sdk` 패키지는 로직 함수와 프런트 컴포넌트에서 Arxena API와 상호작용하기 위한 타입이 지정된 두 가지 GraphQL 클라이언트를 제공합니다.
 
 | 클라이언트               | 가져오기                         | 엔드포인트                            | 생성 여부?         |
 | ------------------- | ---------------------------- | -------------------------------- | -------------- |
@@ -763,7 +763,7 @@ console.log(uploadedFile);
 <Note>
   코드가 Twenty에서 실행될 때(로직 함수 또는 프런트 컴포넌트), 플랫폼이 자격 증명을 환경 변수로 주입합니다:
 
-  * `TWENTY_API_URL` — Twenty API의 기본 URL
+  * `TWENTY_API_URL` — Arxena API의 기본 URL
   * `TWENTY_APP_ACCESS_TOKEN` — 애플리케이션의 기본 함수 역할 범위로 제한된 단기 키
 
   클라이언트에 이를 전달할 필요가 없습니다 — 자동으로 `process.env`에서 읽습니다. API 키의 권한은 `defineApplicationRole()`으로 선언된 역할(또는 `application-config.ts`의 `defaultRoleUniversalIdentifier`를 통해 참조된 역할)에 의해 결정됩니다.

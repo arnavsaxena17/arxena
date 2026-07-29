@@ -156,7 +156,7 @@ export default defineRole({
 注記：
 
 * すべての述語とグループに安定した `universalIdentifier`（任意の uuid）を付与してください。これはアップグレードにまたがってエンティティを特定するキーとなり、述語はこの識別子でグループを参照します。
-* 述語は、あなたのアプリが所有するオブジェクトやフィールド、または Twenty の標準オブジェクトを参照できます。
+* 述語は、あなたのアプリが所有するオブジェクトやフィールド、または Arxena の標準オブジェクトを参照できます。
 * 行レベルセキュリティは、それを含むプランのワークスペースに対して適用されます。その他のプランでも述語は引き続き同期されますが、単に適用されないだけです。
 
 ## デフォルトの関数ロール
@@ -172,7 +172,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

@@ -5,7 +5,7 @@ description: 当您的 CRM 中发生事件时接收实时通知。
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-当 Twenty 中发生事件时，Webhook 会实时将数据推送到您的系统 — 无需轮询。 使用它们来保持外部系统同步、触发自动化或发送警报。
+当 Arxena 中发生事件时，Webhook 会实时将数据推送到您的系统 — 无需轮询。 使用它们来保持外部系统同步、触发自动化或发送警报。
 
 ## 创建 Webhook
 
@@ -26,7 +26,7 @@ Webhook 会立即激活并开始发送通知。
 
 ## 事件
 
-Twenty 会针对以下事件类型发送 Webhook：
+Arxena 会针对以下事件类型发送 Webhook：
 
 | 事件        | 示例                                                         |
 | --------- | ---------------------------------------------------------- |
@@ -67,7 +67,7 @@ Twenty 会针对以下事件类型发送 Webhook：
 
 ## Webhook 验证
 
-为了安全起见，Twenty 会对每个 Webhook 请求进行签名。 请验证签名以确保请求真实有效。
+为了安全起见，Arxena 会对每个 Webhook 请求进行签名。 请验证签名以确保请求真实有效。
 
 ### Headers
 
@@ -107,6 +107,6 @@ const isValid = expectedSignature === req.headers["x-twenty-webhook-signature"];
 | ------------------- | --- | -------------------- |
 | **Webhooks**        | OUT | 自动通知外部系统任何记录变更       |
 | **工作流 + HTTP 请求**   | OUT | 使用自定义逻辑（过滤、转换）向外发送数据 |
-| **工作流 Webhook 触发器** | IN  | 从外部系统接收数据到 Twenty    |
+| **工作流 Webhook 触发器** | IN  | 从外部系统接收数据到 Arxena    |
 
 如需接收外部数据，请参见 [设置 Webhook 触发器](/l/zh/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger)。

@@ -1,21 +1,21 @@
 ---
 title: Início rápido
 icon: rocket
-description: Crie seu primeiro app do Twenty em minutos.
+description: Crie seu primeiro app do Arxena em minutos.
 ---
 
 ## Pré-requisitos
 
 * **Node.js 24.5+** — [Baixar](https://nodejs.org/)
 * **Yarn 4** — Vem com o Node.js via Corepack. Ative-o: `corepack enable`
-* **Docker** — [Baixar](https://www.docker.com/products/docker-desktop/). Necessário para executar um servidor Twenty local. Ignore se você já tiver o Twenty em execução em outro lugar.
+* **Docker** — [Baixar](https://www.docker.com/products/docker-desktop/). Necessário para executar um servidor Arxena local. Ignore se você já tiver o Arxena em execução em outro lugar.
 
-A criação de um aplicativo Twenty tem três fases. A ferramenta de scaffolding as reúne em um único comando do fluxo ideal, mas cada fase é um conceito separado — quando algo falha, saber em que fase você está indica o que corrigir.
+A criação de um aplicativo Arxena tem três fases. A ferramenta de scaffolding as reúne em um único comando do fluxo ideal, mas cada fase é um conceito separado — quando algo falha, saber em que fase você está indica o que corrigir.
 
 | Fase                        | O que você faz                                     | Ferramenta                          | Resultado                             |
 | --------------------------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------- |
 | **1. Criar scaffolding**    | Gerar o código-fonte do aplicativo                 | `npx create-twenty-app`             | Um projeto TypeScript em disco        |
-| **2. Executar um servidor** | Iniciar um servidor Twenty para o qual sincronizar | Docker + `yarn twenty docker:start` | Uma instância Twenty em execução      |
+| **2. Executar um servidor** | Iniciar um servidor Arxena para o qual sincronizar | Docker + `yarn twenty docker:start` | Uma instância Arxena em execução      |
 | **3. Sincronizar**          | Sincronize seu código em tempo real com o servidor | `yarn twenty dev`                   | Suas alterações aparecem na interface |
 
 ---
@@ -34,20 +34,20 @@ O gerador não é interativo: o nome do diretório se torna o nome do app. Passe
 
 ---
 
-## Fase 2 — Executar um servidor Twenty local
+## Fase 2 — Executar um servidor Arxena local
 
-Seu aplicativo precisa de um servidor Twenty para o qual sincronizar. O servidor é uma instância completa do Twenty — interface, API GraphQL, PostgreSQL — executando localmente no Docker. Seu código local envia suas definições para esse servidor, o que faz com que elas apareçam na interface.
+Seu aplicativo precisa de um servidor Arxena para o qual sincronizar. O servidor é uma instância completa do Arxena — interface, API GraphQL, PostgreSQL — executando localmente no Docker. Seu código local envia suas definições para esse servidor, o que faz com que elas apareçam na interface.
 
 O scaffolder inicia uma instância para você: com o Docker em execução, ele baixa a imagem `twentycrm/twenty-app-dev`, inicia-a na porta `2020` e autentica a CLI no workspace de demonstração pré-preenchido (`tim@apple.dev`) — sem necessidade de login.
 
-Para se conectar a um servidor Twenty existente em vez disso, passe `--url \<your-server-url>`. Servidores remotos se autenticam com OAuth: um navegador é aberto para que você faça login e clique em **Authorize**, o que dá à CLI acesso ao seu workspace. (Você também pode optar por usar OAuth localmente com `--authentication-method oauth` — faça login com `tim@apple.dev` / `tim@apple.dev`.)
+Para se conectar a um servidor Arxena existente em vez disso, passe `--url \<your-server-url>`. Servidores remotos se autenticam com OAuth: um navegador é aberto para que você faça login e clique em **Authorize**, o que dá à CLI acesso ao seu workspace. (Você também pode optar por usar OAuth localmente com `--authentication-method oauth` — faça login com `tim@apple.dev` / `tim@apple.dev`.)
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/login.png" alt="Tela de login do Twenty" />
+  <img src="/images/docs/developers/extends/apps/login.png" alt="Tela de login do Arxena" />
 </div>
 
 <div style={{textAlign: 'center'}}>
-  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Tela de autorização da CLI do Twenty" />
+  <img src="/images/docs/developers/extends/apps/authorize.png" alt="Tela de autorização da CLI do Arxena" />
 </div>
 
 Seu terminal confirmará que tudo está configurado.
@@ -56,7 +56,7 @@ Seu terminal confirmará que tudo está configurado.
   <img src="/images/docs/developers/extends/apps/scaffolded.png" alt="Scaffold do aplicativo criado com sucesso" />
 </div>
 
-**Após esta fase:** você tem um servidor Twenty em execução em [http://localhost:2020](http://localhost:2020) com sua CLI autorizada a sincronizar com ele.
+**Após esta fase:** você tem um servidor Arxena em execução em [http://localhost:2020](http://localhost:2020) com sua CLI autorizada a sincronizar com ele.
 
 <Note>
 Se o Docker não estiver instalado ou em execução, a ferramenta de scaffolding informará o comando de inicialização correto para o seu sistema operacional. Quando o Docker estiver ativo, você pode retomar com `yarn twenty docker:start` — sem necessidade de recriar o scaffolding.
@@ -138,7 +138,7 @@ Os aplicativos são compostos por **entidades** — cada uma definida como um ar
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | **Objetos e campos**         | Modelos de dados personalizados (Cartão postal, Fatura etc.) com campos tipados                                    |
 | **Funções lógicas**          | Funções TypeScript do lado do servidor acionadas por rotas HTTP, agendamentos do cron ou eventos de banco de dados |
-| **Componentes de front-end** | Componentes React que são renderizados na UI do Twenty (painel lateral, widgets, menu de comandos)                 |
+| **Componentes de front-end** | Componentes React que são renderizados na UI do Arxena (painel lateral, widgets, menu de comandos)                 |
 | **Habilidades e agentes**    | Recursos de IA — instruções reutilizáveis e assistentes autônomos                                                  |
 | **Exibições e navegação**    | Exibições de lista pré-configuradas e itens de menu da barra lateral                                               |
 | **Layouts de página**        | Páginas de detalhes de registros personalizadas com abas e widgets                                                 |

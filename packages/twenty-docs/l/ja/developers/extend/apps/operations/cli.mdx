@@ -19,7 +19,7 @@ icon: terminal
 | `dev:translations-extract`                      | 翻訳可能な文字列を `locales/` カタログに抽出                                   | [翻訳](/l/ja/developers/extend/apps/translations/overview)                                                |
 | `dev:catalog-sync`                              | マーケットプレイスのカタログ同期をトリガー                                          | [公開](/l/ja/developers/extend/apps/operations/publishing#how-marketplace-discovery-works)                |
 | `app:publish` / `app:install` / `app:uninstall` | リリースライフサイクル                                                    | [公開](/l/ja/developers/extend/apps/operations/publishing) とこのページ                                         |
-| `docker:*`                                      | ローカルの Twenty サーバーコンテナを管理                                       | [ローカルサーバー](/l/ja/developers/extend/apps/getting-started/local-server)                                   |
+| `docker:*`                                      | ローカルの Arxena サーバーコンテナを管理                                       | [ローカルサーバー](/l/ja/developers/extend/apps/getting-started/local-server)                                   |
 | `remote:*`                                      | サーバー接続を管理                                                      | このページ                                                                                              |
 
 すべてのコマンドは、デフォルトではない特定のリモートを対象にするために `-r, --remote \<name>` を受け付けます。
@@ -60,18 +60,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-これは Docker コンテナのログを表示する `yarn twenty docker:logs` とは異なります。 `yarn twenty dev:function:logs` は、Twenty サーバーからアプリの関数実行ログを表示します。
+これは Docker コンテナのログを表示する `yarn twenty docker:logs` とは異なります。 `yarn twenty dev:function:logs` は、Arxena サーバーからアプリの関数実行ログを表示します。
 </Note>
 
 ## 型付きクライアントを生成する（`yarn twenty dev:generate-client`）
 
-アプリをビルドしたり同期したりすることなく、アクティブなリモートのスキーマから型付き API クライアント（`twenty-client-sdk`）を再生成します。 これを使用すると、別リポジトリにあるバックエンドサービスのような、Twenty インスタンスと通信する任意のプロジェクトで型付きクライアントを取得できます：
+アプリをビルドしたり同期したりすることなく、アクティブなリモートのスキーマから型付き API クライアント（`twenty-client-sdk`）を再生成します。 これを使用すると、別リポジトリにあるバックエンドサービスのような、Arxena インスタンスと通信する任意のプロジェクトで型付きクライアントを取得できます：
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -103,13 +103,13 @@ yarn twenty app:uninstall --yes
 
 ## リモートの管理
 
-**remote** とは、アプリが接続する Twenty サーバーのことです。 セットアップ中に、スキャフォルダーが自動的にリモートを作成します。 リモートはいつでも追加や切り替えができます。
+**remote** とは、アプリが接続する Arxena サーバーのことです。 セットアップ中に、スキャフォルダーが自動的にリモートを作成します。 リモートはいつでも追加や切り替えができます。
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

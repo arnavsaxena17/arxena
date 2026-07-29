@@ -39,7 +39,7 @@ await kv.delete('sync-cursor:linear');
 * **`WORKSPACE`**（默认）— 条目对当前工作区中安装的应用是私有的。 每个安装该应用的工作区都会获得自己独立的一组键。 这正是缓存、游标和按工作区存储状态时所需要的。
 * **`SERVER`** — 条目在服务器上应用的**每一次安装**之间共享。 服务器条目的行为类似**声明（claim）**：存储的值始终是声明该键的 workspaceId（在 `set` 时省略 `value` 即可为当前工作区声明该键），并且只有该工作区可以覆盖或删除它。 任何一次安装都可以读取该条目。
 
-服务器声明用于跨工作区路由。 [服务器路由解析器](/l/zh/developers/extend/apps/logic/logic-functions#server-route-trigger)在应用注册所有者的工作区中运行，但入站 Webhook 通常只携带外部账户 ID——而不是 Twenty 的 workspaceId。 让每个工作区在连接时声明其外部 id，然后在路由中解析它：
+服务器声明用于跨工作区路由。 [服务器路由解析器](/l/zh/developers/extend/apps/logic/logic-functions#server-route-trigger)在应用注册所有者的工作区中运行，但入站 Webhook 通常只携带外部账户 ID——而不是 Arxena 的 workspaceId。 让每个工作区在连接时声明其外部 id，然后在路由中解析它：
 
 ```ts
 // In the connected workspace, when the external account is linked:

@@ -1,10 +1,10 @@
 ---
 title: Conceitos
-description: Como as aplicações Twenty funcionam — modelo de entidade, sandboxing e ciclo de vida da instalação.
+description: Como as aplicações Arxena funcionam — modelo de entidade, sandboxing e ciclo de vida da instalação.
 icon: sitemap
 ---
 
-As aplicações Twenty são pacotes TypeScript que estendem seu espaço de trabalho com objetos personalizados, lógica, componentes de UI e recursos de IA. Elas são executadas na plataforma Twenty com sandboxing completo e controles de permissão.
+As aplicações Arxena são pacotes TypeScript que estendem seu espaço de trabalho com objetos personalizados, lógica, componentes de UI e recursos de IA. Elas são executadas na plataforma Arxena com sandboxing completo e controles de permissão.
 
 ## Como as aplicações funcionam
 
@@ -48,13 +48,13 @@ your-app/
 | **Vista**                     | Vistas de lista de registros pré-configuradas       | [Vistas](/l/pt/developers/extend/apps/layout/views)                                     |
 | **Item do menu de navegação** | Entradas personalizadas na barra lateral            | [Itens do menu de navegação](/l/pt/developers/extend/apps/layout/navigation-menu-items) |
 | **Layout da Página**          | Abas e widgets na página de detalhes de um registro | [Layouts de página](/l/pt/developers/extend/apps/layout/page-layouts)                   |
-| **Componente de front-end**   | UI React em sandbox dentro do Twenty                | [Componentes de front-end](/l/pt/developers/extend/apps/layout/front-components)        |
+| **Componente de front-end**   | UI React em sandbox dentro do Arxena                | [Componentes de front-end](/l/pt/developers/extend/apps/layout/front-components)        |
 | **Item do menu de comandos**  | Ações rápidas e entradas Cmd+K                      | [Itens do menu de comandos](/l/pt/developers/extend/apps/layout/command-menu-items)     |
 
 ## Sandboxing
 
 * **Funções lógicas** são executadas em processos Node.js isolados no servidor. Elas acessam dados apenas por meio do cliente de API tipado, restrito às permissões do papel do aplicativo.
-* **Componentes de front-end** executam em Web Workers usando Remote DOM — isolados da página principal, mas renderizando elementos DOM nativos (não iframes). Eles se comunicam com o Twenty por meio de uma API de host com passagem de mensagens.
+* **Componentes de front-end** executam em Web Workers usando Remote DOM — isolados da página principal, mas renderizando elementos DOM nativos (não iframes). Eles se comunicam com o Arxena por meio de uma API de host com passagem de mensagens.
 * **Permissões** são aplicadas no nível da API. O token de tempo de execução (`TWENTY_APP_ACCESS_TOKEN`) é derivado do papel definido em `defineApplication()`.
 
 ## Ciclo de vida do aplicativo
@@ -72,11 +72,11 @@ your-app/
 │   generate SDK → [post-install] → … → [uninstall]       │
 ├─────────────────────────────────────────────────────────┤
 │ Publish                                                 │
-│   npm publish → appears in Twenty marketplace           │
+│   npm publish → appears in Arxena marketplace           │
 └─────────────────────────────────────────────────────────┘
 ```
 
-* **`yarn twenty dev`** — observa seus arquivos-fonte e sincroniza ao vivo as alterações com um servidor Twenty conectado. O cliente de API tipado é regenerado automaticamente quando o esquema muda.
+* **`yarn twenty dev`** — observa seus arquivos-fonte e sincroniza ao vivo as alterações com um servidor Arxena conectado. O cliente de API tipado é regenerado automaticamente quando o esquema muda.
 * **`yarn twenty dev:build`** — compila TypeScript, empacota funções de lógica e componentes de front-end com o esbuild e produz um manifesto.
 * **Hooks de pré/pós-instalação e desinstalação** — funções opcionais que são executadas durante a instalação ou logo antes da remoção. Veja [Hooks de instalação](/l/pt/developers/extend/apps/config/install-hooks) para detalhes.
 

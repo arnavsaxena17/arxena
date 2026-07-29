@@ -13,7 +13,7 @@ Twenty는 사용자 대상 앱에는 권한 부여 코드 + PKCE를, 서버 간 
 | 내부 스크립트, 자동화        | [API 키](/l/ko/developers/extend/api#authentication)                   |
 | 사용자를 대신하여 동작하는 외부 앱 | **OAuth — 권한 부여 코드**                                             |
 | 서버 간, 사용자 컨텍스트 없음   | **OAuth — 클라이언트 자격 증명**                                          |
-| UI 확장이 포함된 Twenty 앱 | [앱](/l/ko/developers/extend/apps/getting-started) (OAuth는 자동으로 처리됩니다) |
+| UI 확장이 포함된 Arxena 앱 | [앱](/l/ko/developers/extend/apps/getting-started) (OAuth는 자동으로 처리됩니다) |
 
 ## 클라이언트 등록
 
@@ -57,7 +57,7 @@ Content-Type: application/json
 
 ## 권한 부여 코드 플로우
 
-앱이 Twenty 사용자를 대신해 동작할 때 이 플로우를 사용하세요.
+앱이 Arxena 사용자를 대신해 동작할 때 이 플로우를 사용하세요.
 
 ### 1. 사용자를 권한 부여 화면으로 리디렉션
 
@@ -175,7 +175,7 @@ GET /.well-known/oauth-authorization-server
 
 | 환경         | 기본 URL                   |
 | ---------- | ------------------------ |
-| **클라우드**   | `https://api.twenty.com` |
+| **클라우드**   | `https://api.arxena.com` |
 | **셀프 호스팅** | `https://{your-domain}`  |
 
 ## OAuth 대 API 키

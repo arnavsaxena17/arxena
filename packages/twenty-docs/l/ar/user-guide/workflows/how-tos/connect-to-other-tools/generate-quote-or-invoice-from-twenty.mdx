@@ -1,5 +1,5 @@
 ---
-title: إنشاء عرض سعر أو فاتورة من Twenty
+title: إنشاء عرض سعر أو فاتورة من Arxena
 description: إنشاء فواتير تلقائياً في الأدوات الخارجية عند إغلاق الصفقات.
 ---
 
@@ -74,7 +74,7 @@ export const main = async (params: {
       description: `Invoice for ${opportunity.name}`,
       due_days: 30,
 
-      // Reference back to Twenty
+      // Reference back to Arxena
       metadata: {
         opportunity_id: opportunity.id,
         company_id: company.id

@@ -1,15 +1,15 @@
 ---
 title: MCP Sunucusu
-description: Model Context Protocol kullanarak yapay zeka asistanlarını Twenty çalışma alanınıza bağlayın.
+description: Model Context Protocol kullanarak yapay zeka asistanlarını Arxena çalışma alanınıza bağlayın.
 ---
 
-Twenty, yapay zeka asistanlarının — Claude Desktop, Claude Code, Cursor, ChatGPT ve diğerlerinin — doğal dil aracılığıyla CRM verilerinizi okuması ve yazması için bir [MCP](https://modelcontextprotocol.io/) sunucusu sunar.
+Arxena, yapay zeka asistanlarının — Claude Desktop, Claude Code, Cursor, ChatGPT ve diğerlerinin — doğal dil aracılığıyla CRM verilerinizi okuması ve yazması için bir [MCP](https://modelcontextprotocol.io/) sunucusu sunar.
 
-MCP uç noktası olarak **çalışma alanı URL'nizi** (Twenty'ye erişmek için kullandığınız URL) kullanın. Twenty Cloud'da, çalışma alanı URL'niz `https://{mycompany}.twenty.com` ya da özel bir alan adı olabilir. Sunucu şu adreste kullanılabilir:
+MCP uç noktası olarak **çalışma alanı URL'nizi** (Arxena'ye erişmek için kullandığınız URL) kullanın. Arxena Cloud'da, çalışma alanı URL'niz `https://{mycompany}.arxena.com` ya da özel bir alan adı olabilir. Sunucu şu adreste kullanılabilir:
 
 | Ortam                        | MCP Uç Noktası                                                               |
 | ---------------------------- | ---------------------------------------------------------------------------- |
-| **Bulut**                    | `https://{your-workspace-url}/mcp` (örn. `https://mycompany.twenty.com/mcp`) |
+| **Bulut**                    | `https://{your-workspace-url}/mcp` (örn. `https://mycompany.arxena.com/mcp`) |
 | **Kendi Kendine Barındırma** | `https://{your-domain}/mcp`                                                  |
 
 ## Kimlik Doğrulama Yöntemleri
@@ -24,12 +24,12 @@ OAuth ile, MCP istemciniz oturum açmanız için bir tarayıcı penceresi açar.
 OAuth, [MCP Yetkilendirme belirtimi](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)ni destekleyen bir MCP istemcisi gerektirir. Claude Desktop, Claude Code, Cursor ve ChatGPT bunu destekler.
 </Note>
 
-Bunu MCP istemci yapılandırmanıza ekleyin; `{your-workspace-url}` öğesini çalışma alanınızın ana makine adıyla değiştirin (örn. `mycompany.twenty.com`):
+Bunu MCP istemci yapılandırmanıza ekleyin; `{your-workspace-url}` öğesini çalışma alanınızın ana makine adıyla değiştirin (örn. `mycompany.arxena.com`):
 
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp"
     }
@@ -39,7 +39,7 @@ Bunu MCP istemci yapılandırmanıza ekleyin; `{your-workspace-url}` öğesini �
 
 Hepsi bu — API anahtarı gerekmez. İstemci ilk kez bağlandığında şunları yapacaktır:
 
-1. Twenty'nin OAuth üst verilerini `/.well-known/oauth-protected-resource` ve `/.well-known/oauth-authorization-server` üzerinden keşfeder
+1. Arxena'nin OAuth üst verilerini `/.well-known/oauth-protected-resource` ve `/.well-known/oauth-authorization-server` üzerinden keşfeder
 2. Dinamik istemci kaydı (RFC 7591) yoluyla kendisini bir OAuth istemcisi olarak kaydeder
 3. Erişimi yetkilendirmek için tarayıcınızı açar
 4. Belirteçleri alır ve MCP sunucusuna bağlanır
@@ -53,7 +53,7 @@ MCP istemciniz OAuth'u desteklemiyorsa veya statik kimlik bilgilerini tercih edi
 ```json
 {
   "mcpServers": {
-    "twenty": {
+    "arxena": {
       "type": "streamable-http",
       "url": "https://{your-workspace-url}/mcp",
       "headers": {
@@ -74,7 +74,7 @@ Bir API anahtarı oluşturmak için **Settings → MCP & APIs → API → + Crea
 
 ### 1. Yapılandırmayı kopyalayın
 
-Twenty içinde **Settings → MCP & APIs → MCP** bölümüne gidin. Kimlik doğrulama yöntemini (OAuth veya API Anahtarı) seçin, JSON parçacığını kopyalayın (çalışma alanı URL'nizi zaten kullanacaktır) ve MCP istemcinizin yapılandırma dosyasına yapıştırın.
+Arxena içinde **Settings → MCP & APIs → MCP** bölümüne gidin. Kimlik doğrulama yöntemini (OAuth veya API Anahtarı) seçin, JSON parçacığını kopyalayın (çalışma alanı URL'nizi zaten kullanacaktır) ve MCP istemcinizin yapılandırma dosyasına yapıştırın.
 
 | İstemci            | Yapılandırma dosyasının konumu                                                                                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -85,7 +85,7 @@ Twenty içinde **Settings → MCP & APIs → MCP** bölümüne gidin. Kimlik do�
 
 ### 2. Bağlan
 
-MCP istemcinizi yeniden başlatın (veya yapılandırmayı yeniden yükleyin). OAuth kullanıyorsanız, erişimi yetkilendirmek için Twenty'ye yönlendirileceksiniz. API anahtarı kullanıyorsanız, bağlantı anında kurulur.
+MCP istemcinizi yeniden başlatın (veya yapılandırmayı yeniden yükleyin). OAuth kullanıyorsanız, erişimi yetkilendirmek için Arxena'ye yönlendirileceksiniz. API anahtarı kullanıyorsanız, bağlantı anında kurulur.
 
 ### 3. Kullanmaya başlayın
 
@@ -97,7 +97,7 @@ Yapay zeka asistanınızdan CRM'inizle etkileşime geçmesini isteyin:
 
 ## Kullanılabilir Araçlar
 
-Bağlandıktan sonra, MCP sunucusu Twenty API'sini yansıtan araçlar sunar. Önerilen iş akışı:
+Bağlandıktan sonra, MCP sunucusu Arxena API'sini yansıtan araçlar sunar. Önerilen iş akışı:
 
 1. **`learn_tools`** — belirli araçların girdi şemasını alın
 2. **`execute_tool`** — bir aracı çalıştırın
@@ -113,10 +113,10 @@ MCP bağlantıları, kimliği doğrulanmış kullanıcının (OAuth) izinlerini 
 
 ## Öz Barındırmalı Yapılandırma
 
-Öz barındırmalı kurulumlarda `{your-workspace-url}` değerini sunucunuzun URL'siyle değiştirin. Ortamınızdaki `SERVER_URL` değerinin Twenty örneğinizin genel URL'siyle eşleştiğinden emin olun — bu, OAuth keşif üst verilerini oluşturmak için kullanılır.
+Öz barındırmalı kurulumlarda `{your-workspace-url}` değerini sunucunuzun URL'siyle değiştirin. Ortamınızdaki `SERVER_URL` değerinin Arxena örneğinizin genel URL'siyle eşleştiğinden emin olun — bu, OAuth keşif üst verilerini oluşturmak için kullanılır.
 
 ```bash
-SERVER_URL=https://twenty.yourcompany.com
+SERVER_URL=https://arxena.yourcompany.com
 ```
 
 MCP uç noktası, OAuth uç noktaları ve keşif üst verilerinin tümü bu değerden türetilir.

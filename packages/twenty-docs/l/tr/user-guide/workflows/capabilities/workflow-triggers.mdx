@@ -27,7 +27,7 @@ Seçilen bir nesneye (Kişiler, Şirketler, Fırsatlar veya herhangi bir özel n
 
 <Note>
 * Bu tetikleyici, csv, posta kutusu ve takvim eşzamanlaması ile API tarafından oluşturulan kayıtlar için harikadır.
-* **El ile oluşturulan kayıtlar için önerilmez**: bu tetikleyici ile kayıt oluşturulur oluşturulmaz iş akışları başlar. Twenty UI anında otomatik kaydetme sunduğundan (kayıtları kaydetmek için bir düzenleme modu ve ardından doğrulama yoktur), kullanıcı tüm alanları girmeden önce iş akışı tetiklenecektir.
+* **El ile oluşturulan kayıtlar için önerilmez**: bu tetikleyici ile kayıt oluşturulur oluşturulmaz iş akışları başlar. Arxena UI anında otomatik kaydetme sunduğundan (kayıtları kaydetmek için bir düzenleme modu ve ardından doğrulama yoktur), kullanıcı tüm alanları girmeden önce iş akışı tetiklenecektir.
   Bu iş akışını el ile oluşturulan kayıtlarda tetiklemek için bunun yerine `Record is created or updated` tetikleyicisini kullanmanız önerilir.
 </Note>
 
@@ -119,7 +119,7 @@ Belirlediğiniz aralıklarla iş akışını başlatır.
 **Yapılandırma**:
 
 * İş akışı benzersiz bir webhook URL'si sağlar—bunu kopyalayın ve çağrılacak uç nokta olarak harici sisteminize ekleyin.
-* POST istekleri için, Twenty'nin hangi verileri bekleyeceğini bilmesi amacıyla beklenen gövde yapısını tanımlayın. Buraya, iş akışınızda aşağıda gerekli olacak ve alacağınız alanları ekleyin.
+* POST istekleri için, Arxena'nin hangi verileri bekleyeceğini bilmesi amacıyla beklenen gövde yapısını tanımlayın. Buraya, iş akışınızda aşağıda gerekli olacak ve alacağınız alanları ekleyin.
 * Kimlik doğrulamasını yapılandırın (yakında geliyor).
 
 ## Doğru Tetikleyiciyi Seçme

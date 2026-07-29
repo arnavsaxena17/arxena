@@ -1,10 +1,10 @@
 ---
 title: Rozšiřování objektů
-description: Přidávejte pole ke standardním objektům Twenty (Person, Company, …) nebo k objektům z jiných aplikací pomocí `defineField`.
+description: Přidávejte pole ke standardním objektům Arxena (Person, Company, …) nebo k objektům z jiných aplikací pomocí `defineField`.
 icon: wand-magic-sparkles
 ---
 
-Použijte `defineField()` pro přidání pole k objektu, který nevlastníte — standardnímu objektu Twenty, jako je Person nebo Company, nebo objektu dodanému jinou nainstalovanou aplikací. Na rozdíl od inline polí deklarovaných uvnitř [`defineObject`](/l/cs/developers/extend/apps/data/objects) vyžadují samostatná pole `objectUniversalIdentifier` k určení, který objekt rozšiřují.
+Použijte `defineField()` pro přidání pole k objektu, který nevlastníte — standardnímu objektu Arxena, jako je Person nebo Company, nebo objektu dodanému jinou nainstalovanou aplikací. Na rozdíl od inline polí deklarovaných uvnitř [`defineObject`](/l/cs/developers/extend/apps/data/objects) vyžadují samostatná pole `objectUniversalIdentifier` k určení, který objekt rozšiřují.
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## Hlavní body
 
-* `objectUniversalIdentifier` identifikuje cílový objekt. Pro standardní objekty Twenty importujte konstantu z `twenty-sdk`:
+* `objectUniversalIdentifier` identifikuje cílový objekt. Pro standardní objekty Arxena importujte konstantu z `twenty-sdk`:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

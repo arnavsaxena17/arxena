@@ -4,7 +4,7 @@ icon: key
 description: PKCE'li yetkilendirme kodu akışı ve sunucudan sunucuya erişim için istemci kimlik bilgileri.
 ---
 
-Twenty, kullanıcıya dönük uygulamalar için yetkilendirme kodu + PKCE'yi ve sunucudan sunucuya erişim için istemci kimlik bilgilerini kullanarak OAuth 2.0'ı uygular. İstemciler [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) aracılığıyla dinamik olarak kaydedilir — bir kontrol panelinde manuel kurulum gerekmez.
+Arxena, kullanıcıya dönük uygulamalar için yetkilendirme kodu + PKCE'yi ve sunucudan sunucuya erişim için istemci kimlik bilgilerini kullanarak OAuth 2.0'ı uygular. İstemciler [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) aracılığıyla dinamik olarak kaydedilir — bir kontrol panelinde manuel kurulum gerekmez.
 
 ## OAuth Ne Zaman Kullanılır
 
@@ -13,11 +13,11 @@ Twenty, kullanıcıya dönük uygulamalar için yetkilendirme kodu + PKCE'yi ve 
 | Dahili betikler, otomasyon                          | [API Anahtarı](/l/tr/developers/extend/api#authentication)                                    |
 | Bir kullanıcının adına hareket eden harici uygulama | **OAuth — Yetkilendirme Kodu**                                                           |
 | Sunucudan sunucuya, kullanıcı bağlamı yok           | **OAuth — İstemci Kimlik Bilgileri**                                                     |
-| UI uzantılarına sahip Twenty Uygulaması             | [Uygulamalar](/l/tr/developers/extend/apps/getting-started) (OAuth otomatik olarak yönetilir) |
+| UI uzantılarına sahip Arxena Uygulaması             | [Uygulamalar](/l/tr/developers/extend/apps/getting-started) (OAuth otomatik olarak yönetilir) |
 
 ## Bir İstemci Kaydedin
 
-Twenty, [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) uyarınca **dinamik istemci kaydını** destekler. Manuel kurulum gerekmez — programatik olarak kaydedin:
+Arxena, [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) uyarınca **dinamik istemci kaydını** destekler. Manuel kurulum gerekmez — programatik olarak kaydedin:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Kapsamları boşlukla ayrılmış bir dize olarak isteyin: `scope=api profile`
 
 ## Yetkilendirme Kodu Akışı
 
-Uygulamanız bir Twenty kullanıcısı adına hareket ettiğinde bu akışı kullanın.
+Uygulamanız bir Arxena kullanıcısı adına hareket ettiğinde bu akışı kullanın.
 
 ### 1. Kullanıcıyı yetkilendirmek için yönlendirin
 
@@ -86,7 +86,7 @@ Kullanıcı bir onay ekranı görür ve erişimi onaylar veya reddeder.
 
 ### 2. Geri dönüşü işleyin
 
-Yetkilendirmeden sonra, Twenty `redirect_uri` adresinize geri yönlendirir:
+Yetkilendirmeden sonra, Arxena `redirect_uri` adresinize geri yönlendirir:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ Döndürülen belirteç, belirli bir kullanıcıya bağlı olmayan, çalışma a
 
 ## Sunucu Keşfi
 
-Twenty, OAuth yapılandırmasını standart bir keşif uç noktasında yayımlar:
+Arxena, OAuth yapılandırmasını standart bir keşif uç noktasında yayımlar:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ Bu, tüm uç noktaları, desteklenen grant türlerini, kapsamları ve yetenekler
 
 | Ortam                        | Temel URL                |
 | ---------------------------- | ------------------------ |
-| **Bulut**                    | `https://api.twenty.com` |
+| **Bulut**                    | `https://api.arxena.com` |
 | **Kendi Kendine Barındırma** | `https://{your-domain}`  |
 
 ## OAuth ve API Anahtarları

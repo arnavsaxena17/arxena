@@ -4,7 +4,7 @@ description: definePageLayout ve definePageLayoutTab kullanarak kayıt ayrıntı
 icon: table-columns
 ---
 
-Bir sayfa düzeni, bir kaydın ayrıntı sayfasının nasıl düzenleneceğini kontrol eder: hangi sekmelerin görüneceği ve bunların hangi widget'ları içereceği. Sahibi olduğunuz bir nesne için bir düzen tanımlamak amacıyla `definePageLayout()` kullanın veya halihazırda var olan bir düzene (size ait veya standart bir Twenty düzenine) tek bir sekme eklemek için `definePageLayoutTab()` kullanın.
+Bir sayfa düzeni, bir kaydın ayrıntı sayfasının nasıl düzenleneceğini kontrol eder: hangi sekmelerin görüneceği ve bunların hangi widget'ları içereceği. Sahibi olduğunuz bir nesne için bir düzen tanımlamak amacıyla `definePageLayout()` kullanın veya halihazırda var olan bir düzene (size ait veya standart bir Arxena düzenine) tek bir sekme eklemek için `definePageLayoutTab()` kullanın.
 
 | Kullanım alanı                                                                 | Varlık                |
 | ------------------------------------------------------------------------------ | --------------------- |
@@ -95,9 +95,9 @@ export default definePageLayoutTab({
 
 ### Önemli noktalar
 
-* `pageLayoutUniversalIdentifier` **zorunludur** ve kurulum anında zaten var olan bir sayfa düzenini işaret etmelidir — standart bir Twenty düzeni veya kendi uygulamanız tarafından tanımlanan bir düzen olabilir. Başka yüklü bir uygulamaya ait düzenlere uygulamalar arası referanslar bugün desteklenmemektedir. Üst düzen eksik olduğunda, kurulum net bir doğrulama hatasıyla başarısız olur.
+* `pageLayoutUniversalIdentifier` **zorunludur** ve kurulum anında zaten var olan bir sayfa düzenini işaret etmelidir — standart bir Arxena düzeni veya kendi uygulamanız tarafından tanımlanan bir düzen olabilir. Başka yüklü bir uygulamaya ait düzenlere uygulamalar arası referanslar bugün desteklenmemektedir. Üst düzen eksik olduğunda, kurulum net bir doğrulama hatasıyla başarısız olur.
 
-* Standart Twenty yerleşimleri için tanımlayıcıları `twenty-sdk/define` içinden içe aktarın:
+* Standart Arxena yerleşimleri için tanımlayıcıları `twenty-sdk/define` içinden içe aktarın:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

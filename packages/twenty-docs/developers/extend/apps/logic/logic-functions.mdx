@@ -4,7 +4,7 @@ description: Define server-side TypeScript functions with HTTP, cron, and databa
 icon: "bolt"
 ---
 
-Logic functions are server-side TypeScript functions that run on the Twenty platform. They can be triggered by HTTP requests, cron schedules, or database events — and can also be exposed as tools for AI agents.
+Logic functions are server-side TypeScript functions that run on the Arxena platform. They can be triggered by HTTP requests, cron schedules, or database events — and can also be exposed as tools for AI agents.
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="Define logic functions and their triggers">
@@ -425,13 +425,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 Logic functions can be exposed on two surfaces, each with its own trigger:
 
-- **`toolTriggerSettings`** — makes the function discoverable by Twenty's AI features (chat, MCP, function calling). Uses standard JSON Schema, the format LLMs natively understand.
-- **`workflowActionTriggerSettings`** — makes the function appear as a step in the visual workflow builder. Uses Twenty's rich `InputSchema` so the builder can render proper field editors, variable pickers, and labels.
+- **`toolTriggerSettings`** — makes the function discoverable by Arxena's AI features (chat, MCP, function calling). Uses standard JSON Schema, the format LLMs natively understand.
+- **`workflowActionTriggerSettings`** — makes the function appear as a step in the visual workflow builder. Uses Arxena's rich `InputSchema` so the builder can render proper field editors, variable pickers, and labels.
 
 A function can opt into one, the other, or both. They sit alongside `cronTriggerSettings`, `databaseEventTriggerSettings`, and `httpRouteTriggerSettings` — same pattern, same shape.
 
 <Note>
-**Relationship to the workflow Code action.** The built-in **Code** action in the workflow builder is itself a logic function — Twenty creates one per Code step and exposes its editor inline. `workflowActionTriggerSettings` is how you turn that one-off, inline code into a **reusable** action: define the function once in your app and it becomes selectable in any workflow, instead of being copy-pasted into each Code step. See the [Code action](/user-guide/workflows/capabilities/workflow-actions#code) in the user guide for the end-user view.
+**Relationship to the workflow Code action.** The built-in **Code** action in the workflow builder is itself a logic function — Arxena creates one per Code step and exposes its editor inline. `workflowActionTriggerSettings` is how you turn that one-off, inline code into a **reusable** action: define the function once in your app and it becomes selectable in any workflow, instead of being copy-pasted into each Code step. See the [Code action](/user-guide/workflows/capabilities/workflow-actions#code) in the user guide for the end-user view.
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -469,7 +469,7 @@ export default defineLogicFunction({
 Key points:
 
 - A function can mix surfaces — declare both `toolTriggerSettings` and `workflowActionTriggerSettings` to expose it in chat AND in the workflow builder.
-- `toolTriggerSettings.inputSchema` and `workflowActionTriggerSettings.inputSchema` are both optional. When omitted, the manifest builder infers them from the handler source code (JSON Schema for the AI tool, Twenty's `InputSchema` for the workflow action). Provide one explicitly when you want richer typing — for example, with `FieldMetadataType`-aware fields like `CURRENCY` or `RELATION` for the workflow builder, or with `description` fields the AI agent can read:
+- `toolTriggerSettings.inputSchema` and `workflowActionTriggerSettings.inputSchema` are both optional. When omitted, the manifest builder infers them from the handler source code (JSON Schema for the AI tool, Arxena's `InputSchema` for the workflow action). Provide one explicitly when you want richer typing — for example, with `FieldMetadataType`-aware fields like `CURRENCY` or `RELATION` for the workflow builder, or with `description` fields the AI agent can read:
 
 ```ts
 export default defineLogicFunction({
@@ -493,7 +493,7 @@ export default defineLogicFunction({
 });
 ```
 
-To declare your parameters **once** and serve both surfaces, define a single JSON Schema (`InputJsonSchema`) and convert it for the workflow action with `jsonSchemaToInputSchema` from `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` takes the JSON Schema directly, while `workflowActionTriggerSettings.inputSchema` expects Twenty's `InputSchema`:
+To declare your parameters **once** and serve both surfaces, define a single JSON Schema (`InputJsonSchema`) and convert it for the workflow action with `jsonSchemaToInputSchema` from `twenty-sdk/logic-function`. `toolTriggerSettings.inputSchema` takes the JSON Schema directly, while `workflowActionTriggerSettings.inputSchema` expects Arxena's `InputSchema`:
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -527,7 +527,7 @@ export default defineLogicFunction({
 |-------|---------|
 | `label` | Name shown for the action in the workflow builder's step picker. Defaults to the function `name`. |
 | `icon` | Icon shown next to the action (a `tabler-icons` name, e.g. `IconBuilding`). |
-| `inputSchema` | Twenty's rich `InputSchema` — what the builder renders as configurable fields (with variable pickers). Optional; inferred from the handler when omitted. |
+| `inputSchema` | Arxena's rich `InputSchema` — what the builder renders as configurable fields (with variable pickers). Optional; inferred from the handler when omitted. |
 | `outputSchema` | Declares the shape the handler returns, so **subsequent steps can map to its output fields**. Optional; without it, the output is exposed as a single opaque value. |
 
 Putting it together — a function exposed as a workflow action, with a declared output so later steps can reference `taskId`:
@@ -617,7 +617,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## Typed API clients (twenty-client-sdk)
 
-The `twenty-client-sdk` package provides two typed GraphQL clients for interacting with the Twenty API from your logic functions and front components.
+The `twenty-client-sdk` package provides two typed GraphQL clients for interacting with the Arxena API from your logic functions and front components.
 
 | Client | Import | Endpoint | Generated? |
 |--------|--------|----------|------------|
@@ -762,9 +762,9 @@ Key points:
 
 
 <Note>
-  When your code runs on Twenty (logic functions or front components), the platform injects credentials as environment variables:
+  When your code runs on Arxena (logic functions or front components), the platform injects credentials as environment variables:
 
-  - `TWENTY_API_URL` — Base URL of the Twenty API
+  - `TWENTY_API_URL` — Base URL of the Arxena API
   - `TWENTY_APP_ACCESS_TOKEN` — Short-lived key scoped to your application's default function role
 
   You do **not** need to pass these to the clients — they read from `process.env` automatically. The API key's permissions are determined by the role declared with `defineApplicationRole()` (or referenced via `defaultRoleUniversalIdentifier` in `application-config.ts`).

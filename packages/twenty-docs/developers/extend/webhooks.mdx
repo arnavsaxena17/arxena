@@ -6,7 +6,7 @@ description: Get notified when records change — HTTP POST to your endpoint on 
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
-Twenty sends an HTTP POST to your URL whenever a record is created, updated, or deleted. All object types are covered, including custom objects.
+Arxena sends an HTTP POST to your URL whenever a record is created, updated, or deleted. All object types are covered, including custom objects.
 
 ## Create a Webhook
 
@@ -27,7 +27,7 @@ The webhook activates immediately and starts sending notifications.
 
 ## Events
 
-Twenty sends webhooks for these event types:
+Arxena sends webhooks for these event types:
 
 | Event | Example |
 |-------|---------|
@@ -68,7 +68,7 @@ Respond with a **2xx HTTP status** (200-299) to acknowledge receipt. Non-2xx res
 
 ## Webhook Validation
 
-Twenty signs each webhook request for security. Validate signatures to ensure requests are authentic.
+Arxena signs each webhook request for security. Validate signatures to ensure requests are authentic.
 
 ### Headers
 
@@ -112,6 +112,6 @@ const isValid = crypto.timingSafeEqual(
 |--------|-----------|----------|
 | **Webhooks** | OUT | Automatically notify external systems of any record change |
 | **Workflow + HTTP Request** | OUT | Send data out with custom logic (filters, transformations) |
-| **Workflow Webhook Trigger** | IN | Receive data into Twenty from external systems |
+| **Workflow Webhook Trigger** | IN | Receive data into Arxena from external systems |
 
 For receiving external data, see [Set Up a Webhook Trigger](/user-guide/workflows/how-tos/connect-to-other-tools/set-up-a-webhook-trigger).

@@ -1,6 +1,6 @@
 ---
 title: CSV ファイルを準備する
-description: Twenty へのインポート用にデータをフォーマットするための、完全なステップバイステップガイド。
+description: Arxena へのインポート用にデータをフォーマットするための、完全なステップバイステップガイド。
 ---
 
 ## 概要
@@ -22,7 +22,7 @@ description: Twenty へのインポート用にデータをフォーマットす
 
 ## ステップ 2: サンプルファイルをダウンロードする
 
-**これは最も重要なステップです。** サンプルファイルには、Twenty が想定する正確な列名と形式が示されています。
+**これは最も重要なステップです。** サンプルファイルには、Arxena が想定する正確な列名と形式が示されています。
 
 1. オブジェクトビュー（People、Companies など）に移動します。
 2. 「**⋮**」→「**Import records**」をクリックします。
@@ -33,7 +33,7 @@ description: Twenty へのインポート用にデータをフォーマットす
 
 ## ステップ 3: 重複値を削除する
 
-Twenty は一部のフィールドに一意性を強制します。 重複はインポートエラーの原因になります。
+Arxena は一部のフィールドに一意性を強制します。 重複はインポートエラーの原因になります。
 
 | オブジェクト         | 一意のフィールド                 |
 | -------------- | ------------------------ |
@@ -45,7 +45,7 @@ Twenty は一部のフィールドに一意性を強制します。 重複はイ
 
 1. スプレッドシートを一意フィールド（email または domain）で並べ替えます。
 2. 重複行を削除または統合します。
-3. Twenty に既に存在する重複がないか確認します。
+3. Arxena に既に存在する重複がないか確認します。
 
 <Warning>**ソフト削除されたレコードも一意性の判定に含まれます。** Command Menu → See deleted records にあるレコードは重複エラーの原因になります。 それらを完全に削除するか、復元して更新してください。</Warning>
 
@@ -61,11 +61,11 @@ Twenty は一部のフィールドに一意性を強制します。 重複はイ
 ### メールフィールド
 
 * 有効なメール形式である必要があります: `name@domain.com`
-* 一意である必要があります（ファイル内および Twenty 内に重複がないこと）
+* 一意である必要があります（ファイル内および Arxena 内に重複がないこと）
 * 追加のメールについては、**Emails / Additional Emails** 列で次の形式を使用します:
 
 ```
-["jane@twenty.com","jane.doe@twenty.com"]
+["jane@arxena.com","jane.doe@arxena.com"]
 ```
 
 ### ドメインフィールド
@@ -75,7 +75,7 @@ Twenty は一部のフィールドに一意性を強制します。 重複はイ
 * 両方の列を入力してください。
   * **Domain / Domain Label**: `domain.com`
   * **Domain / Domain URL**: `https://domain.com`
-* ファイル内および Twenty 内で一意である必要があります
+* ファイル内および Arxena 内で一意である必要があります
 
 ### 電話番号フィールド
 
@@ -163,13 +163,13 @@ JSON 配列形式を使用します:
 
 両方の列を入力:
 
-* **Links / Link Label**: `Twenty`
-* **Links / Link URL**: `https://twenty.com`
+* **Links / Link Label**: `Arxena`
+* **Links / Link URL**: `https://arxena.com`
 
 二次リンクは **Links / Secondary Links** 列を使用します:
 
 ```
-[{"url":"https://twenty.com","label":"Twenty"}]
+[{"url":"https://arxena.com","label":"Arxena"}]
 ```
 
 ### JSON フィールド
@@ -182,7 +182,7 @@ JSON 配列形式を使用します:
 
 ### ID フィールド
 
-* **任意**: 指定がない場合、Twenty が ID を自動生成します
+* **任意**: 指定がない場合、Arxena が ID を自動生成します
 * **形式**: UUID（例: `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`）
 * **用途**: 新規作成ではなく既存レコードを更新する場合は ID を含めます
 
@@ -202,7 +202,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 **リレーションに関する重要なルール:**
 
-* 親レコードは事前に Twenty に存在している必要があります
+* 親レコードは事前に Arxena に存在している必要があります
 * ラベルではなく **ドメイン URL** 形式（`https://domain.com`）を使用してください
 * 一意の識別子は 1 つだけマッピングしてください（`companyId` と `companyDomain` を両方含めない）
 * ワークスペースメンバーには **メールアドレス**（氏名ではなく）を使用してください
@@ -220,7 +220,7 @@ Jane,Doe,jane@widgets.co,https://widgets.co
 
 詳細な手順については、[リレーションをインポートする方法](/l/ja/user-guide/data-migration/how-tos/import-relations-between-objects-via-csv)を参照してください。
 
-## 手順6: Twenty にフィールドが存在することを確認
+## 手順6: Arxena にフィールドが存在することを確認
 
 インポートで作成されるのはフィールドではなくレコードです。 インポートしたいフィールドはすべて、あらかじめデータモデルに存在している必要があります。
 

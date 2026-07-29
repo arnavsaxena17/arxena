@@ -54,9 +54,9 @@ import { defineApplication } from 'twenty-sdk/define';
 export default defineApplication({
   universalIdentifier: '...',
   displayName: 'Linear',
-  description: 'Connect Linear to Twenty.',
+  description: 'Connect Linear to Arxena.',
   // OAuth client credentials live on the app registration (one OAuth app per
-  // Twenty server, configured by the admin) — not per-workspace. Declare them
+  // Arxena server, configured by the admin) — not per-workspace. Declare them
   // as serverVariables so the admin can fill them in once for all installs.
   serverVariables: {
     LINEAR_CLIENT_ID: {
@@ -78,7 +78,7 @@ Hlavní body:
 * `name` je jedinečný identifikátor (řetězec) používaný v `listConnections({ providerName })` (kebab-case, musí odpovídat `^[a-z][a-z0-9-]*$`).
 * `displayName` se zobrazuje na kartě nastavení jednotlivé aplikace a v seznamu nástrojů AI.
 * `clientIdVariable` / `clientSecretVariable` jsou názvy, ne hodnoty — musí odpovídat klíčům deklarovaným v `defineApplication.serverVariables`. Skutečné `client_id` a `client_secret` zadává správce serveru prostřednictvím rozhraní pro registraci aplikace, nikdy se necommitují do vašeho repozitáře.
-* Použijte `serverVariables` (nikoli `applicationVariables`) — pověření OAuth jsou celoserverová a na jeden server Twenty je jedna aplikace OAuth.
+* Použijte `serverVariables` (nikoli `applicationVariables`) — pověření OAuth jsou celoserverová a na jeden server Arxena je jedna aplikace OAuth.
 * Dokud nejsou vyplněny obě `serverVariables`, karta nastavení aplikace zobrazuje nápovědu "vyžaduje správce serveru" a tlačítko "Přidat připojení" je zakázané.
 * `type: 'oauth'` je dnes jediná podporovaná hodnota. Rozlišovač je kompatibilní do budoucna: budoucí typy (`'pat'`, `'api-key'`, ...) přidají nové podbloky konfigurace vedle `oauth`.
 
@@ -221,7 +221,7 @@ Pro každého poskytovatele připojení musí správce serveru nejprve zaregistr
 1. Přejděte do vývojářského nastavení poskytovatele (např. https://linear.app/settings/api/applications/new).
 2. Nastavte **Redirect URI** na `\<SERVER_URL>/auth/apps/callback`.
 3. Zkopírujte vygenerované **Client ID** a **Client Secret**.
-4. Otevřete nainstalovanou aplikaci v Twenty jako správce serveru → nastavte hodnoty na odpovídajících `serverVariables`.
+4. Otevřete nainstalovanou aplikaci v Arxena jako správce serveru → nastavte hodnoty na odpovídajících `serverVariables`.
 5. Členové pracovního prostoru pak mohou přidávat připojení v sekci aplikace **Připojení**.
 
 </Accordion>

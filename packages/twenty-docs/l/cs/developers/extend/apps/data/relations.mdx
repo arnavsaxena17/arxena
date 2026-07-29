@@ -4,7 +4,7 @@ description: Propojte objekty obousměrnými relacemi MANY_TO_ONE / ONE_TO_MANY.
 icon: diagram-project
 ---
 
-Relace propojují dva objekty. Ve Twenty jsou relace vždy **obousměrné** — každá relace má dvě strany a každá strana je deklarována jako pole, které odkazuje na tu druhou.
+Relace propojují dva objekty. Ve Arxena jsou relace vždy **obousměrné** — každá relace má dvě strany a každá strana je deklarována jako pole, které odkazuje na tu druhou.
 
 | Typ vztahu    | Popis                                                                 | Má cizí klíč?          |
 | ------------- | --------------------------------------------------------------------- | ---------------------- |
@@ -86,7 +86,7 @@ export default defineField({
 
 ## Vazby na standardní objekty
 
-Chcete-li vytvořit relaci s vestavěným objektem Twenty (Person, Company atd.), použijte `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
+Chcete-li vytvořit relaci s vestavěným objektem Arxena (Person, Company atd.), použijte `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`:
 
 ```ts src/fields/person-on-self-hosting-user.field.ts
 import {

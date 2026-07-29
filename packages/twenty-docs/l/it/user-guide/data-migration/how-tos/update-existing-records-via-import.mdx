@@ -16,9 +16,9 @@ Devi aggiornare molti record in una sola volta? Invece di modificarli uno per un
 
 ## Come Funziona
 
-Quando importi un file che contiene un **identificatore univoco** corrispondente a un record esistente, Twenty aggiorna quel record invece di crearne un duplicato.
+Quando importi un file che contiene un **identificatore univoco** corrispondente a un record esistente, Arxena aggiorna quel record invece di crearne un duplicato.
 
-| Se l'identificatore univoco...    | Twenty farà...                                             |
+| Se l'identificatore univoco...    | Arxena farà...                                             |
 | --------------------------------- | ---------------------------------------------------------- |
 | Corrisponde a un record esistente | **Aggiorna** il record esistente                           |
 | Non corrisponde ad alcun record   | **Crea** un nuovo record                                   |
@@ -57,7 +57,7 @@ Apri il file esportato nella tua applicazione di fogli di calcolo (Excel, Google
 1. **Mantieni la colonna dell'identificatore univoco** — non eliminare `id`, `email` o `domain`
 2. **Aggiorna i valori** nelle colonne che vuoi modificare
 3. **Rimuovi le colonne che non devi aggiornare** (opzionale, ma più pulito)
-4. **Non modificare i valori dell'identificatore univoco** — altrimenti Twenty creerà nuovi record
+4. **Non modificare i valori dell'identificatore univoco** — altrimenti Arxena creerà nuovi record
 
 ### Esempio: aggiornare i titoli professionali
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Non modificare i valori dell'identificatore univoco.**
 
-Se modifichi `john@acme.com` in `john.smith@acme.com`, Twenty creerà un nuovo record invece di aggiornare quello esistente.
+Se modifichi `john@acme.com` in `john.smith@acme.com`, Arxena creerà un nuovo record invece di aggiornare quello esistente.
 </Warning>
 
 ## Passaggio 3: Importa il file aggiornato
@@ -95,7 +95,7 @@ Se modifichi `john@acme.com` in `john.smith@acme.com`, Twenty creerà un nuovo r
 6. Verifica la presenza di errori
 7. Fai clic su **Conferma**
 
-Twenty abbina i record in base all'identificatore univoco e li aggiorna con i nuovi valori.
+Arxena abbina i record in base all'identificatore univoco e li aggiorna con i nuovi valori.
 
 ## Scegliere l'identificatore univoco giusto
 
@@ -113,7 +113,7 @@ Se hai un campo personalizzato contrassegnato come univoco (come un ID esterno d
 
 1. Includi quel campo nell'esportazione e nell'importazione
 2. Mappalo durante l'importazione
-3. Twenty abbinerà in base a quel campo
+3. Arxena abbinerà in base a quel campo
 
 ## Passaggio 4: Verifica gli aggiornamenti
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Modifica dell'identificatore univoco**  | Modificato `john@acme.com` in `john.smith@acme.com`       | Crea un nuovo record invece di aggiornare | Mantieni invariati gli identificatori univoci  |
 | **Più campi univoci**                     | Mappare sia `email` che `id`                              | Possibili conflitti di corrispondenza     | Mappa un solo identificatore univoco           |
 | **Nessun identificatore univoco**         | Il file contiene solo `firstName`, `lastName`, `jobTitle` | Tutte le righe creano nuovi record        | Includi sempre `email`, `domain` o `id`        |
-| **Discrepanza tra maiuscole e minuscole** | Il file ha `John@acme.com` ma Twenty ha `john@acme.com`   | Crea un nuovo record                      | Esporta da Twenty per ottenere i valori esatti |
+| **Discrepanza tra maiuscole e minuscole** | Il file ha `John@acme.com` ma Arxena ha `john@acme.com`   | Crea un nuovo record                      | Esporta da Arxena per ottenere i valori esatti |
 
 ## FAQ
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Come faccio a sapere quali record saranno aggiornati e quali creati?">
-    Durante la fase di revisione dell'importazione, Twenty ti mostra quanti record verranno aggiornati e quanti creati in base alle corrispondenze dell'identificatore univoco.
+    Durante la fase di revisione dell'importazione, Arxena ti mostra quanti record verranno aggiornati e quanti creati in base alle corrispondenze dell'identificatore univoco.
   </Accordion>
 
   <Accordion title="Posso annullare un aggiornamento in blocco?">

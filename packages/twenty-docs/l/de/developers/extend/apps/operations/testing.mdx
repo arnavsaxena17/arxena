@@ -1,10 +1,10 @@
 ---
 title: Tests
-description: Vitest-Setup, Integrationstests gegen einen realen Twenty-Server, Typprüfung und CI mit GitHub Actions.
+description: Vitest-Setup, Integrationstests gegen einen realen Arxena-Server, Typprüfung und CI mit GitHub Actions.
 icon: flask
 ---
 
-Das SDK stellt programmgesteuerte APIs bereit, mit denen Sie Ihre App aus Testcode heraus bauen, bereitstellen, installieren und deinstallieren können. In Kombination mit [Vitest](https://vitest.dev/) und den typisierten API-Clients können Sie Integrationstests schreiben, die prüfen, dass Ihre App End-to-End gegen einen echten Twenty-Server funktioniert.
+Das SDK stellt programmgesteuerte APIs bereit, mit denen Sie Ihre App aus Testcode heraus bauen, bereitstellen, installieren und deinstallieren können. In Kombination mit [Vitest](https://vitest.dev/) und den typisierten API-Clients können Sie Integrationstests schreiben, die prüfen, dass Ihre App End-to-End gegen einen echten Arxena-Server funktioniert.
 
 ## Verwendung von npm-Paketen
 
@@ -125,7 +125,7 @@ export async function setup() {
   // Verify the server is running
   const response = await fetch(`${apiUrl}/healthz`);
   if (!response.ok) {
-    throw new Error(`Twenty server is not reachable at ${apiUrl}.`);
+    throw new Error(`Arxena server is not reachable at ${apiUrl}.`);
   }
 
   // Write the SDK's test config (the CLI reads config.test.json when NODE_ENV=test)
@@ -233,7 +233,7 @@ describe('App installation', () => {
 
 ## Tests ausführen
 
-Stellen Sie sicher, dass Ihr lokaler Twenty-Server läuft, und führen Sie dann Folgendes aus:
+Stellen Sie sicher, dass Ihr lokaler Arxena-Server läuft, und führen Sie dann Folgendes aus:
 
 ```bash filename="Terminal"
 yarn test
@@ -257,6 +257,6 @@ Dies führt `tsc --noEmit` unter Verwendung der `tsconfig.json` Ihrer App aus un
 
 ## CI mit GitHub Actions
 
-Das Scaffolding-Tool erzeugt einen einsatzbereiten Workflow unter `.github/workflows/ci.yml`. Bei jedem Push auf `main` und jeder Pull-Request startet es einen kurzlebigen Twenty-Server im Runner (über die Aktion `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`) und führt anschließend `yarn lint`, `yarn typecheck`, `yarn test:unit` und `yarn test` aus, wobei `TWENTY_API_URL` / `TWENTY_API_KEY` auf diesen Server verweisen. Es sind keine Geheimnisse erforderlich, und Sie können die Serverversion über die Umgebungsvariable `TWENTY_VERSION` oben im Workflow fixieren.
+Das Scaffolding-Tool erzeugt einen einsatzbereiten Workflow unter `.github/workflows/ci.yml`. Bei jedem Push auf `main` und jeder Pull-Request startet es einen kurzlebigen Arxena-Server im Runner (über die Aktion `twentyhq/twenty/.github/actions/spawn-twenty-app-dev-test`) und führt anschließend `yarn lint`, `yarn typecheck`, `yarn test:unit` und `yarn test` aus, wobei `TWENTY_API_URL` / `TWENTY_API_KEY` auf diesen Server verweisen. Es sind keine Geheimnisse erforderlich, und Sie können die Serverversion über die Umgebungsvariable `TWENTY_VERSION` oben im Workflow fixieren.
 
 Unter [Veröffentlichen → Automatisiertes CI/CD](/l/de/developers/extend/apps/operations/publishing#automated-cicd-scaffolded-workflows) finden Sie eine vollständige Schritt-für-Schritt-Anleitung zu den drei eingerichteten Workflows (`ci.yml`, der `cd.yml`-Bereitstellungspipeline und `publish.yml` für die npm-Veröffentlichung).

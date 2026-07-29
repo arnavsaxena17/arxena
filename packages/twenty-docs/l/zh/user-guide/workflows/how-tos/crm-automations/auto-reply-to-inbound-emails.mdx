@@ -9,7 +9,7 @@ description: 构建一个使用 AI 对入站邮件进行分拣，并自动以线
 
 每封电子邮件都包含一个隐藏的 `Message-ID` 头部—由发件人的邮件服务器分配的唯一指纹。 当您回复一封电子邮件时，您的邮件客户端会设置一个 `In-Reply-To` 标头以引用该指纹。 这就是 Gmail、Outlook 以及其他所有客户端将邮件分组为会话的方式。
 
-在 Twenty 中，该指纹作为 `headerMessageId` 存储在 Message 对象中。 您的工作流会获取它，并将其传递到 Send Email 操作的 In-Reply-To 字段。
+在 Arxena 中，该指纹作为 `headerMessageId` 存储在 Message 对象中。 您的工作流会获取它，并将其传递到 Send Email 操作的 In-Reply-To 字段。
 
 ## 构建工作流
 
@@ -21,7 +21,7 @@ description: 构建一个使用 AI 对入站邮件进行分拣，并自动以线
 
 选择 **When a Record is Created**，然后选择 **Messages**。
 
-每当有邮件进入 Twenty 时，这一步就会触发。
+每当有邮件进入 Arxena 时，这一步就会触发。
 
 <img src="/images/user-guide/workflows/auto-reply/workflow-overview.png" style={{width:'100%'}} />
 
@@ -116,6 +116,6 @@ Gmail 使用主题行将邮件归入同一会话。 要让 Gmail 在原始会话
 
 ## 进阶构建思路
 
-* **仅回复 VIP** — 添加一个分支，用于检查发件人的域名，或他们是否在 Twenty 中作为联系人存在
+* **仅回复 VIP** — 添加一个分支，用于检查发件人的域名，或他们是否在 Arxena 中作为联系人存在
 * **按意图路由** — 使用不同的 AI Agent 提示词，将销售咨询与支持请求区分处理
 * **回复前先丰富信息** — 添加一个 Search Records 步骤，将发件人的公司或交易历史拉入 AI 提示词中，以获得更个性化的回复

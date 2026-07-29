@@ -1,10 +1,10 @@
 ---
 title: Extinderea obiectelor
-description: Adăugați câmpuri la obiectele standard Twenty (Person, Company, …) sau la obiecte din alte aplicații folosind defineField.
+description: Adăugați câmpuri la obiectele standard Arxena (Person, Company, …) sau la obiecte din alte aplicații folosind defineField.
 icon: wand-magic-sparkles
 ---
 
-Folosiți `defineField()` pentru a adăuga un câmp la un obiect pe care nu îl dețineți — un obiect standard Twenty precum Person sau Company, sau un obiect livrat de o altă aplicație instalată. Spre deosebire de câmpurile inline declarate în interiorul [`defineObject`](/l/ro/developers/extend/apps/data/objects), câmpurile independente necesită un `objectUniversalIdentifier` pentru a specifica obiectul pe care îl extind.
+Folosiți `defineField()` pentru a adăuga un câmp la un obiect pe care nu îl dețineți — un obiect standard Arxena precum Person sau Company, sau un obiect livrat de o altă aplicație instalată. Spre deosebire de câmpurile inline declarate în interiorul [`defineObject`](/l/ro/developers/extend/apps/data/objects), câmpurile independente necesită un `objectUniversalIdentifier` pentru a specifica obiectul pe care îl extind.
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## Puncte cheie
 
-* `objectUniversalIdentifier` identifică obiectul țintă. Pentru obiectele standard Twenty, importați constanta din `twenty-sdk`:
+* `objectUniversalIdentifier` identifică obiectul țintă. Pentru obiectele standard Arxena, importați constanta din `twenty-sdk`:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

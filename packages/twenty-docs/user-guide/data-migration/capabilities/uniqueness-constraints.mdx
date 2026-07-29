@@ -1,12 +1,12 @@
 ---
 title: Uniqueness Constraints
-description: How Twenty enforces data uniqueness during import.
+description: How Arxena enforces data uniqueness during import.
 ---
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Overview
 
-Twenty enforces uniqueness on certain fields to prevent duplicate records and ensure data integrity. Understanding these constraints is essential for successful imports.
+Arxena enforces uniqueness on certain fields to prevent duplicate records and ensure data integrity. Understanding these constraints is essential for successful imports.
 
 ## Default Unique Fields
 
@@ -16,7 +16,7 @@ Twenty enforces uniqueness on certain fields to prevent duplicate records and en
 | **Companies** | `id`, `domain` |
 | **Custom objects** | `id` only (by default) |
 
-<Note>The `id` field is Twenty's internal identifier, auto-generated for each record. It uses UUID format (e.g., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>The `id` field is Arxena's internal identifier, auto-generated for each record. It uses UUID format (e.g., `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Custom Unique Fields
 
@@ -32,7 +32,7 @@ You can define additional unique fields under **Settings → Data Model**:
 - **Business identifiers**: Employee numbers, customer codes
 - **Alternative contact info**: LinkedIn profile, phone number
 
-<Note>The field name `id` is reserved for Twenty's internal ID. Use a different name like `externalId` or `legacyId` for external identifiers.</Note>
+<Note>The field name `id` is reserved for Arxena's internal ID. Use a different name like `externalId` or `legacyId` for external identifiers.</Note>
 
 ## Import Behavior
 
@@ -62,7 +62,7 @@ During the validation phase:
 ## Best Practices
 
 1. **Remove duplicates** from your file before importing
-2. **Check for existing records** in Twenty before importing
+2. **Check for existing records** in Arxena before importing
 3. **Use external IDs** when migrating from other systems
 4. **Include unique fields** if you want to update existing records
 

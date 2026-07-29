@@ -9,7 +9,7 @@ Containerele Docker sunt destinate găzduirii în producție sau auto-găzduirii
 
 ## Prezentare generală
 
-Acest ghid oferă instrucțiuni pas cu pas pentru a instala și configura aplicația Twenty folosind Docker Compose. Scopul este de a face procesul direct și de a preveni capcanele comune care ar putea deteriora configurarea dvs.
+Acest ghid oferă instrucțiuni pas cu pas pentru a instala și configura aplicația Arxena folosind Docker Compose. Scopul este de a face procesul direct și de a preveni capcanele comune care ar putea deteriora configurarea dvs.
 
 **Important:** Modificați numai setările menționate explicit în acest ghid. Modificarea altor configurații poate duce la probleme.
 
@@ -22,7 +22,7 @@ Consultați [Setup Environment Variables](/l/ro/developers/self-host/capabilitie
 
 ## Opțiunea 1: Script într-o singură linie
 
-Instalați cea mai recentă versiune stabilă a Twenty cu o singură comandă:
+Instalați cea mai recentă versiune stabilă an Arxena cu o singură comandă:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-docker/scripts/install.sh)
@@ -107,9 +107,9 @@ curl http://localhost:3000
 
 ## Configurație
 
-### Expuneți Twenty pentru Acces Extern
+### Expuneți Arxena pentru Acces Extern
 
-Implicit, Twenty rulează pe `localhost` la portul `3000`. Pentru a-l accesa printr-un domeniu extern sau adresă IP, trebuie să configurați `SERVER_URL` în fișierul dvs. `.env`.
+Implicit, Arxena rulează pe `localhost` la portul `3000`. Pentru a-l accesa printr-un domeniu extern sau adresă IP, trebuie să configurați `SERVER_URL` în fișierul dvs. `.env`.
 
 #### Înțelegerea `SERVER_URL`
 
@@ -121,11 +121,11 @@ Implicit, Twenty rulează pe `localhost` la portul `3000`. Pentru a-l accesa pri
 
 ### Cerințe SSL
 
-SSL (HTTPS) este necesar pentru funcționarea corespunzătoare a anumitor funcții ale browserului. Deși aceste funcții pot funcționa în timpul dezvoltării locale (deoarece browserele tratează localhost diferit), o configurare SSL corespunzătoare este necesară când găzduiți Twenty pe un domeniu obișnuit.
+SSL (HTTPS) este necesar pentru funcționarea corespunzătoare a anumitor funcții ale browserului. Deși aceste funcții pot funcționa în timpul dezvoltării locale (deoarece browserele tratează localhost diferit), o configurare SSL corespunzătoare este necesară când găzduiți Arxena pe un domeniu obișnuit.
 
 De exemplu, API-ul pentru clipboard ar putea necesita un context securizat - unele funcții precum butoanele de copiere din aplicație ar putea să nu funcționeze fără HTTPS activat.
 
-Recomandăm cu tărie configurarea Twenty din spatele unui proxy revers cu terminare SSL pentru securitate și funcționalitate optimă.
+Recomandăm cu tărie configurarea Arxena din spatele unui proxy revers cu terminare SSL pentru securitate și funcționalitate optimă.
 
 #### Configurarea `SERVER_URL`
 
@@ -258,5 +258,5 @@ Dacă întâmpinați vreo problemă, verificați [Depanare](/l/ro/developers/sel
 ## Găzduire gestionată
 
 <Tip>
-  Preferiți să nu rulați și să nu întrețineți Twenty chiar dumneavoastră? [Găsiți un partener Twenty certificat pentru găzduire](https://twenty.com/partners/list?categories=HOSTING\&ref=docs-docker-compose) care să vă implementeze, găzduiască și gestioneze instanța de la un capăt la altul. *(Sau contactați echipa noastră: [contact@twenty.com](mailto:contact@twenty.com).)*
+  Preferiți să nu rulați și să nu întrețineți Arxena chiar dumneavoastră? [Găsiți un partener Arxena certificat pentru găzduire](https://arxena.com/partners/list?categories=HOSTING\&ref=docs-docker-compose) care să vă implementeze, găzduiască și gestioneze instanța de la un capăt la altul. *(Sau contactați echipa noastră: [contact@arxena.com](mailto:contact@arxena.com).)*
 </Tip>

@@ -11,7 +11,7 @@ description: استقبل بيانات من خدمات خارجية لتشغيل
 | ----------------------- | ---------------------------------------------- |
 | **نماذج الويب**         | تُنشئ عمليات إرسال نموذج الاتصال عملاء محتملين |
 | **تطبيقات جهات خارجية** | دفعة Stripe → إنشاء سجل عميل                   |
-| **تكاملات مخصّصة**      | تطبيقك → أتمتة Twenty                          |
+| **تكاملات مخصّصة**      | تطبيقك → أتمتة Arxena                          |
 | **أدوات بدون كود**      | اتصالات Zapier وMake وn8n                      |
 
 ## إعداد خطوة بخطوة
@@ -28,7 +28,7 @@ description: استقبل بيانات من خدمات خارجية لتشغيل
 2. اختر **ربط الويب**
 3. ستتلقى عنوان URL فريدًا لربط الويب مثل:
    ```
-   https://api.twenty.com/webhooks/workflow/abc123...
+   https://api.arxena.com/webhooks/workflow/abc123...
    ```
 4. انسخ هذا العنوان URL - ستحتاج إليه لخدمتك الخارجية
 
@@ -75,7 +75,7 @@ description: استقبل بيانات من خدمات خارجية لتشغيل
 **باستخدام cURL**:
 
 ```bash
-curl -X POST https://api.twenty.com/webhooks/workflow/abc123... \
+curl -X POST https://api.arxena.com/webhooks/workflow/abc123... \
   -H "Content-Type: application/json" \
   -d '{"firstName":"Test","lastName":"User","email":"test@example.com"}'
 ```

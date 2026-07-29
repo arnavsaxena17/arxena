@@ -1,0 +1,64 @@
+---
+title: MCP people and org charts
+description: Connect Claude or Cursor — ask sentences; taxonomy resolution stays server-side.
+---
+
+MCP is the NL-first surface: the agent should pass a **role query + company**, not invent `std_grade` codes. Resolution happens on Arxena’s side.
+
+## Prerequisites
+
+1. Create a workspace API key in **Settings → APIs & Webhooks**
+2. Treat the JWT like a password ([Authentication](/api-reference/authentication))
+
+Setup overview: [arxena.com/solutions/mcp-server](https://arxena.com/solutions/mcp-server)
+
+## Connect Cursor
+
+```json
+{
+  "mcpServers": {
+    "arxena": {
+      "url": "https://mcp.arxena.com/mcp",
+      "headers": { "X-API-KEY": "<workspace-api-key-jwt>" }
+    }
+  }
+}
+```
+
+## Connect Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "arxena": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.arxena.com/mcp",
+        "--header",
+        "X-API-KEY: ${ARXENA_API_KEY}"
+      ],
+      "env": {
+        "ARXENA_API_KEY": "<workspace-api-key-jwt>"
+      }
+    }
+  }
+}
+```
+
+Quit Claude Desktop fully after editing.
+
+## Prompts
+
+- “Get me HR leadership at Apple”
+- “Find CHRO-type people at Apple”
+- “Who is Head of HR at Apple?”
+
+Prefer the tool that takes a **job title + company** (`search_people_by_job_title`). Use code-based search only when you already have std filters. Public vocabulary nouns: [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants).
+
+## Related
+
+- [Natural language to people at a company](/cookbooks/nl-to-people-at-company)
+- [Standardized taxonomy](/concepts/standardized-taxonomy)
+- [Authentication](/api-reference/authentication)

@@ -4,7 +4,7 @@ icon: key
 description: Tok s autorizačním kódem s PKCE a přihlašovacími údaji klienta pro přístup server-to-server.
 ---
 
-Twenty implementuje OAuth 2.0 s autorizačním kódem + PKCE pro aplikace pro uživatele a přihlašovací údaje klienta pro přístup server-to-server. Klienti se registrují dynamicky přes [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — žádné ruční nastavení v dashboardu.
+Arxena implementuje OAuth 2.0 s autorizačním kódem + PKCE pro aplikace pro uživatele a přihlašovací údaje klienta pro přístup server-to-server. Klienti se registrují dynamicky přes [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — žádné ruční nastavení v dashboardu.
 
 ## Kdy použít OAuth
 
@@ -13,11 +13,11 @@ Twenty implementuje OAuth 2.0 s autorizačním kódem + PKCE pro aplikace pro u�
 | Interní skripty, automatizace                        | [Klíč API](/l/cs/developers/extend/api#authentication)                                |
 | Externí aplikace jednající jménem uživatele          | **OAuth — autorizační kód**                                                      |
 | Server-to-server, bez uživatelského kontextu         | **OAuth — přihlašovací údaje klienta**                                           |
-| Aplikace Twenty s rozšířeními uživatelského rozhraní | [Aplikace](/l/cs/developers/extend/apps/getting-started) (OAuth je řešen automaticky) |
+| Aplikace Arxena s rozšířeními uživatelského rozhraní | [Aplikace](/l/cs/developers/extend/apps/getting-started) (OAuth je řešen automaticky) |
 
 ## Registrace klienta
 
-Twenty podporuje **dynamickou registraci klienta** podle [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Není potřeba žádné ruční nastavení — registrujte programově:
+Arxena podporuje **dynamickou registraci klienta** podle [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Není potřeba žádné ruční nastavení — registrujte programově:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Vyžádejte oprávnění jako řetězec oddělený mezerami: `scope=api profile`
 
 ## Tok s autorizačním kódem
 
-Tento tok použijte, když vaše aplikace jedná jménem uživatele Twenty.
+Tento tok použijte, když vaše aplikace jedná jménem uživatele Arxena.
 
 ### 1. Přesměrujte uživatele k autorizaci
 
@@ -86,7 +86,7 @@ Uživatel uvidí souhlasovou obrazovku a přístup schválí nebo zamítne.
 
 ### 2. Zpracujte callback
 
-Po autorizaci Twenty přesměruje zpět na vaše `redirect_uri`:
+Po autorizaci Arxena přesměruje zpět na vaše `redirect_uri`:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ Vrácený token má přístup na úrovni pracovního prostoru, není vázán na 
 
 ## Zjišťování serveru
 
-Twenty zveřejňuje svou konfiguraci OAuth na standardním koncovém bodu pro zjišťování:
+Arxena zveřejňuje svou konfiguraci OAuth na standardním koncovém bodu pro zjišťování:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ Vrací všechny koncové body, podporované typy grantů, oprávnění a možnos
 
 | Prostředí           | Základní URL             |
 | ------------------- | ------------------------ |
-| **Cloud**           | `https://api.twenty.com` |
+| **Cloud**           | `https://api.arxena.com` |
 | **Vlastní hosting** | `https://{your-domain}`  |
 
 ## OAuth vs klíče API

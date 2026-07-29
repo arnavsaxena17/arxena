@@ -4,7 +4,7 @@ icon: key
 description: Flusso del codice di autorizzazione con PKCE e credenziali client per l'accesso da server a server.
 ---
 
-Twenty implementa OAuth 2.0 con codice di autorizzazione + PKCE per le app rivolte agli utenti e credenziali client per l'accesso da server a server. I client vengono registrati dinamicamente tramite [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — nessuna configurazione manuale in una dashboard.
+Arxena implementa OAuth 2.0 con codice di autorizzazione + PKCE per le app rivolte agli utenti e credenziali client per l'accesso da server a server. I client vengono registrati dinamicamente tramite [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — nessuna configurazione manuale in una dashboard.
 
 ## Quando utilizzare OAuth
 
@@ -13,11 +13,11 @@ Twenty implementa OAuth 2.0 con codice di autorizzazione + PKCE per le app rivol
 | Script interni, automazioni                       | [Chiave API](/l/it/developers/extend/api#authentication)                              |
 | App esterna che agisce per conto di un utente     | **OAuth — Codice di autorizzazione**                                             |
 | Da server a server, nessun contesto utente        | **OAuth — Credenziali client**                                                   |
-| App Twenty con estensioni dell'interfaccia utente | [App](/l/it/developers/extend/apps/getting-started) (OAuth è gestito automaticamente) |
+| App Arxena con estensioni dell'interfaccia utente | [App](/l/it/developers/extend/apps/getting-started) (OAuth è gestito automaticamente) |
 
 ## Registrare un client
 
-Twenty supporta la **registrazione dinamica dei client** secondo [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Non è necessaria alcuna configurazione manuale — registra a livello di codice:
+Arxena supporta la **registrazione dinamica dei client** secondo [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591). Non è necessaria alcuna configurazione manuale — registra a livello di codice:
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Richiedi gli ambiti come stringa separata da spazi: `scope=api profile`
 
 ## Flusso con codice di autorizzazione
 
-Usa questo flusso quando la tua app agisce per conto di un utente Twenty.
+Usa questo flusso quando la tua app agisce per conto di un utente Arxena.
 
 ### 1. Reindirizza l'utente per autorizzare
 
@@ -86,7 +86,7 @@ L'utente vede una schermata di consenso e approva o nega l'accesso.
 
 ### 2. Gestisci la callback
 
-Dopo l'autorizzazione, Twenty reindirizza al tuo `redirect_uri`:
+Dopo l'autorizzazione, Arxena reindirizza al tuo `redirect_uri`:
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ Il token restituito ha accesso a livello di spazio di lavoro, non legato a un ut
 
 ## Scoperta del server
 
-Twenty pubblica la propria configurazione OAuth in un endpoint di discovery standard:
+Arxena pubblica la propria configurazione OAuth in un endpoint di discovery standard:
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ Questo restituisce tutti gli endpoint, i tipi di grant supportati, gli ambiti e 
 
 | Ambiente          | URL di base              |
 | ----------------- | ------------------------ |
-| **Cloud**         | `https://api.twenty.com` |
+| **Cloud**         | `https://api.arxena.com` |
 | **Auto-ospitato** | `https://{your-domain}`  |
 
 ## OAuth vs Chiavi API

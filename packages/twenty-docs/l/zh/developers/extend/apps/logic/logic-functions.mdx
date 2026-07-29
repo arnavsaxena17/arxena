@@ -4,7 +4,7 @@ description: 定义具有 HTTP、cron 和数据库事件触发器的服务端 Ty
 icon: bolt
 ---
 
-逻辑函数是在 Twenty 平台上运行的服务端 TypeScript 函数。 它们可以由 HTTP 请求、cron 调度或数据库事件触发——也可以作为工具暴露给 AI 智能体。
+逻辑函数是在 Arxena 平台上运行的服务端 TypeScript 函数。 它们可以由 HTTP 请求、cron 调度或数据库事件触发——也可以作为工具暴露给 AI 智能体。
 
 <AccordionGroup>
 <Accordion title="defineLogicFunction" description="定义逻辑函数及其触发器">
@@ -426,13 +426,13 @@ const handler = async (event: PersonDestroyedEvent) => {
 
 逻辑函数可以在两个入口对外公开，每个入口都有各自的触发器：
 
-* **`toolTriggerSettings`** — 使该函数可被 Twenty 的 AI 功能（chat、MCP、function calling）发现。 使用标准 JSON Schema，LLM 能够原生理解的格式。
-* **`workflowActionTriggerSettings`** — 使该函数在可视化工作流构建器中显示为一个步骤。 使用 Twenty 丰富的 `InputSchema`，以便构建器可以呈现合适的字段编辑器、变量选择器和标签。
+* **`toolTriggerSettings`** — 使该函数可被 Arxena 的 AI 功能（chat、MCP、function calling）发现。 使用标准 JSON Schema，LLM 能够原生理解的格式。
+* **`workflowActionTriggerSettings`** — 使该函数在可视化工作流构建器中显示为一个步骤。 使用 Arxena 丰富的 `InputSchema`，以便构建器可以呈现合适的字段编辑器、变量选择器和标签。
 
 函数可以选择加入其中一个、另一个，或两者都加入。 它们与 `cronTriggerSettings`、`databaseEventTriggerSettings` 和 `httpRouteTriggerSettings` 并列 — 相同的模式、相同的结构。
 
 <Note>
-**与工作流 Code 动作的关系。** 工作流构建器中的内置 **Code** 动作本身就是一个逻辑函数 —— Twenty 会为每个 Code 步骤创建一个逻辑函数，并在行内展示其编辑器。 `workflowActionTriggerSettings` 是将一次性行内代码转换为**可复用**动作的方式：在你的应用中定义一次该函数，它就可以在任意工作流中被选择，而不需要在每个 Code 步骤中复制粘贴。 请参阅用户指南中的[Code 动作](/l/zh/user-guide/workflows/capabilities/workflow-actions#code)以了解终端用户视图。
+**与工作流 Code 动作的关系。** 工作流构建器中的内置 **Code** 动作本身就是一个逻辑函数 —— Arxena 会为每个 Code 步骤创建一个逻辑函数，并在行内展示其编辑器。 `workflowActionTriggerSettings` 是将一次性行内代码转换为**可复用**动作的方式：在你的应用中定义一次该函数，它就可以在任意工作流中被选择，而不需要在每个 Code 步骤中复制粘贴。 请参阅用户指南中的[Code 动作](/l/zh/user-guide/workflows/capabilities/workflow-actions#code)以了解终端用户视图。
 </Note>
 
 ```ts src/logic-functions/enrich-company.logic-function.ts
@@ -470,7 +470,7 @@ export default defineLogicFunction({
 关键点：
 
 * 函数可以混用这些入口 — 同时声明 `toolTriggerSettings` 和 `workflowActionTriggerSettings`，即可在 chat 和工作流构建器中同时公开它。
-* `toolTriggerSettings.inputSchema` 和 `workflowActionTriggerSettings.inputSchema` 均为可选。 如果省略，清单构建器会根据处理器源代码进行推断（AI 工具使用 JSON Schema，工作流操作使用 Twenty 的 `InputSchema`）。 当你需要更丰富的类型时，可显式提供一个 — 例如，在工作流构建器中使用对 `FieldMetadataType` 友好的字段（如 `CURRENCY` 或 `RELATION`），或提供 AI 智能体可读取的 `description` 字段：
+* `toolTriggerSettings.inputSchema` 和 `workflowActionTriggerSettings.inputSchema` 均为可选。 如果省略，清单构建器会根据处理器源代码进行推断（AI 工具使用 JSON Schema，工作流操作使用 Arxena 的 `InputSchema`）。 当你需要更丰富的类型时，可显式提供一个 — 例如，在工作流构建器中使用对 `FieldMetadataType` 友好的字段（如 `CURRENCY` 或 `RELATION`），或提供 AI 智能体可读取的 `description` 字段：
 
 ```ts
 export default defineLogicFunction({
@@ -494,7 +494,7 @@ export default defineLogicFunction({
 });
 ```
 
-要只声明**一次**参数并服务于这两种界面，请定义一个单个 JSON Schema（`InputJsonSchema`），并使用来自 `twenty-sdk/logic-function` 的 `jsonSchemaToInputSchema` 将其转换为工作流操作所用。 `toolTriggerSettings.inputSchema` 直接接受 JSON Schema，而 `workflowActionTriggerSettings.inputSchema` 需要的是 Twenty 的 `InputSchema`：
+要只声明**一次**参数并服务于这两种界面，请定义一个单个 JSON Schema（`InputJsonSchema`），并使用来自 `twenty-sdk/logic-function` 的 `jsonSchemaToInputSchema` 将其转换为工作流操作所用。 `toolTriggerSettings.inputSchema` 直接接受 JSON Schema，而 `workflowActionTriggerSettings.inputSchema` 需要的是 Arxena 的 `InputSchema`：
 
 ```ts
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -528,7 +528,7 @@ export default defineLogicFunction({
 | -------------- | --------------------------------------------------------------------------- |
 | `label`        | 在工作流构建器的步骤选择器中为该动作显示的名称。 默认为函数的 `name`。                                     |
 | `icon`         | 在该动作旁边显示的图标（一个 `tabler-icons` 名称，例如 `IconBuilding`）。                        |
-| `inputSchema`  | Twenty 提供的功能丰富的 `InputSchema` —— 构建器会将其渲染为可配置字段（带变量选择器）。 可选；若省略，则会从处理函数中推断。 |
+| `inputSchema`  | Arxena 提供的功能丰富的 `InputSchema` —— 构建器会将其渲染为可配置字段（带变量选择器）。 可选；若省略，则会从处理函数中推断。 |
 | `outputSchema` | 声明处理函数返回的数据结构，这样**后续步骤就可以映射到它的输出字段**。 可选；如果不提供，输出会作为单个不透明值暴露。               |
 
 把上述内容组合在一起 —— 将一个函数暴露为工作流动作，并声明输出，以便后续步骤可以引用 `taskId`：
@@ -618,7 +618,7 @@ const handler = async (params: { parentMessageId?: string }) => {
 
 ## 类型化 API 客户端（`twenty-client-sdk`）
 
-`twenty-client-sdk` 包提供了两个类型化的 GraphQL 客户端，供你的逻辑函数和前端组件与 Twenty API 交互。
+`twenty-client-sdk` 包提供了两个类型化的 GraphQL 客户端，供你的逻辑函数和前端组件与 Arxena API 交互。
 
 | 客户端                 | 导入                           | 端点                       | 是否生成？     |
 | ------------------- | ---------------------------- | ------------------------ | --------- |
@@ -762,9 +762,9 @@ console.log(uploadedFile);
 </AccordionGroup>
 
 <Note>
-  当你的代码在 Twenty 上运行（逻辑函数或前端组件）时，平台会以环境变量的形式注入凭据：
+  当你的代码在 Arxena 上运行（逻辑函数或前端组件）时，平台会以环境变量的形式注入凭据：
 
-  * `TWENTY_API_URL`——Twenty API 的基础 URL
+  * `TWENTY_API_URL`——Arxena API 的基础 URL
   * `TWENTY_APP_ACCESS_TOKEN`——作用域限定为你的应用默认函数角色的短期密钥
 
   你无需将这些值传递给客户端——它们会自动从 `process.env` 读取。 API 密钥的权限由使用 `defineApplicationRole()` 声明的角色（或在 `application-config.ts` 中通过 `defaultRoleUniversalIdentifier` 引用的角色）决定。

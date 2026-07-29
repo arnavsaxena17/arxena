@@ -4,7 +4,7 @@ icon: key
 description: 采用 PKCE 的授权码流程和用于服务器到服务器访问的客户端凭证。
 ---
 
-Twenty 对面向用户的应用采用授权码 + PKCE 实现 OAuth 2.0，对服务器到服务器访问采用客户端凭证。 客户端通过 [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) 动态注册——无需在仪表板中手动设置。
+Arxena 对面向用户的应用采用授权码 + PKCE 实现 OAuth 2.0，对服务器到服务器访问采用客户端凭证。 客户端通过 [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) 动态注册——无需在仪表板中手动设置。
 
 ## 何时使用 OAuth
 
@@ -13,11 +13,11 @@ Twenty 对面向用户的应用采用授权码 + PKCE 实现 OAuth 2.0，对服�
 | 内部脚本、自动化            | [API 密钥](/l/zh/developers/extend/api#authentication)             |
 | 代表用户执行操作的外部应用       | **OAuth — 授权码**                                             |
 | 服务器到服务器，无用户上下文      | **OAuth — 客户端凭证**                                           |
-| 带有 UI 扩展的 Twenty 应用 | [应用](/l/zh/developers/extend/apps/getting-started) (OAuth 将自动处理) |
+| 带有 UI 扩展的 Arxena 应用 | [应用](/l/zh/developers/extend/apps/getting-started) (OAuth 将自动处理) |
 
 ## 注册客户端
 
-根据 [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)，Twenty 支持**动态客户端注册**。 无需手动设置——以编程方式注册：
+根据 [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)，Arxena 支持**动态客户端注册**。 无需手动设置——以编程方式注册：
 
 ```bash
 POST /oauth/register
@@ -57,7 +57,7 @@ Content-Type: application/json
 
 ## 授权码流程
 
-当你的应用代表某个 Twenty 用户执行操作时，请使用此流程。
+当你的应用代表某个 Arxena 用户执行操作时，请使用此流程。
 
 ### 1. 重定向用户以进行授权
 
@@ -86,7 +86,7 @@ GET /oauth/authorize?
 
 ### 2. 处理回调
 
-授权后，Twenty 会重定向回你的 `redirect_uri`：
+授权后，Arxena 会重定向回你的 `redirect_uri`：
 
 ```
 https://myapp.com/callback?code=AUTH_CODE&state=random_state_value
@@ -156,7 +156,7 @@ scope=api
 
 ## 服务器发现
 
-Twenty 在标准发现端点发布其 OAuth 配置：
+Arxena 在标准发现端点发布其 OAuth 配置：
 
 ```
 GET /.well-known/oauth-authorization-server
@@ -175,7 +175,7 @@ GET /.well-known/oauth-authorization-server
 
 | 环境      | 基础 URL                   |
 | ------- | ------------------------ |
-| **云端**  | `https://api.twenty.com` |
+| **云端**  | `https://api.arxena.com` |
 | **自托管** | `https://{your-domain}`  |
 
 ## OAuth 与 API 密钥对比

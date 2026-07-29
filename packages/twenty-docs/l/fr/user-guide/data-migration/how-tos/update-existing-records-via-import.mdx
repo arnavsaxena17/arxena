@@ -16,9 +16,9 @@ Besoin de mettre à jour de nombreux enregistrements en une seule fois ? Au lieu
 
 ## Comment ça marche
 
-Lorsque vous importez un fichier contenant un **identifiant unique** qui correspond à un enregistrement existant, Twenty met à jour cet enregistrement au lieu de créer un doublon.
+Lorsque vous importez un fichier contenant un **identifiant unique** qui correspond à un enregistrement existant, Arxena met à jour cet enregistrement au lieu de créer un doublon.
 
-| Si l'identifiant unique...              | Twenty va...                                                                    |
+| Si l'identifiant unique...              | Arxena va...                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------- |
 | Correspond à un enregistrement existant | **Mettre à jour** l'enregistrement existant                                     |
 | Ne correspond à aucun enregistrement    | **Créer** un nouvel enregistrement                                              |
@@ -57,7 +57,7 @@ Ouvrez le fichier exporté dans votre application de feuille de calcul (Excel, G
 1. **Conservez la colonne de l'identifiant unique** — ne supprimez pas `id`, `email` ni `domain`
 2. **Mettez à jour les valeurs** dans les colonnes que vous souhaitez modifier
 3. **Supprimez les colonnes que vous n'avez pas besoin de mettre à jour** (facultatif, mais plus propre)
-4. **Ne modifiez pas les valeurs des identifiants uniques** — sinon Twenty créera de nouveaux enregistrements
+4. **Ne modifiez pas les valeurs des identifiants uniques** — sinon Arxena créera de nouveaux enregistrements
 
 ### Exemple : Mise à jour des intitulés de poste
 
@@ -82,7 +82,7 @@ id,email,firstName,lastName,jobTitle
 <Warning>
 **Ne modifiez pas les valeurs des identifiants uniques.**
 
-Si vous remplacez `john@acme.com` par `john.smith@acme.com`, Twenty créera un nouvel enregistrement au lieu de mettre à jour l'existant.
+Si vous remplacez `john@acme.com` par `john.smith@acme.com`, Arxena créera un nouvel enregistrement au lieu de mettre à jour l'existant.
 </Warning>
 
 ## Étape 3 : Importer le fichier mis à jour
@@ -95,7 +95,7 @@ Si vous remplacez `john@acme.com` par `john.smith@acme.com`, Twenty créera un n
 6. Recherchez des erreurs
 7. Cliquez sur **Confirmer**
 
-Twenty fait correspondre les enregistrements via l'identifiant unique et les met à jour avec les nouvelles valeurs.
+Arxena fait correspondre les enregistrements via l'identifiant unique et les met à jour avec les nouvelles valeurs.
 
 ## Choisir le bon identifiant unique
 
@@ -113,7 +113,7 @@ Si vous avez un champ personnalisé marqué comme unique (comme un ID externe pr
 
 1. Incluez ce champ dans votre export et votre import
 2. Associez-le lors de l'importation
-3. Twenty effectuera la correspondance sur ce champ
+3. Arxena effectuera la correspondance sur ce champ
 
 ## Étape 4 : Vérifier les mises à jour
 
@@ -151,7 +151,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
 | **Modifier l'identifiant unique** | Remplacé `john@acme.com` par `john.smith@acme.com`                       | Crée un nouvel enregistrement au lieu de mettre à jour | Conservez les identifiants uniques inchangés            |
 | **Plusieurs champs uniques**      | Association de `email` ET `id`                                           | Risques de conflits de correspondance                  | N'associez qu'UN SEUL identifiant unique                |
 | **Pas d'identifiant unique**      | Le fichier ne contient que `firstName`, `lastName`, `jobTitle`           | Toutes les lignes créent de nouveaux enregistrements   | Incluez toujours `email`, `domain` ou `id`              |
-| **Incohérence de casse**          | Le fichier contient `John@acme.com` mais Twenty contient `john@acme.com` | Crée un nouvel enregistrement                          | Exportez depuis Twenty pour obtenir les valeurs exactes |
+| **Incohérence de casse**          | Le fichier contient `John@acme.com` mais Arxena contient `john@acme.com` | Crée un nouvel enregistrement                          | Exportez depuis Arxena pour obtenir les valeurs exactes |
 
 ## FAQ
 
@@ -173,7 +173,7 @@ newperson@acme.com,New,Person,Analyst      ← Creates new (email doesn't match)
   </Accordion>
 
   <Accordion title="Comment savoir quels enregistrements seront mis à jour et lesquels seront créés ?">
-    Lors de l'étape de révision de l'import, Twenty vous indique combien d'enregistrements seront mis à jour ou créés en fonction des correspondances d'identifiants uniques.
+    Lors de l'étape de révision de l'import, Arxena vous indique combien d'enregistrements seront mis à jour ou créés en fonction des correspondances d'identifiants uniques.
   </Accordion>
 
   <Accordion title="Puis-je annuler une mise à jour en masse ?">

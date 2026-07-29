@@ -1,10 +1,10 @@
 ---
 title: Visão Geral
-description: TypeScript do lado do servidor que é executado dentro do Twenty — acionado por rotas HTTP, agendamentos cron, eventos de banco de dados, ferramentas de IA ou ações de fluxos de trabalho.
+description: TypeScript do lado do servidor que é executado dentro do Arxena — acionado por rotas HTTP, agendamentos cron, eventos de banco de dados, ferramentas de IA ou ações de fluxos de trabalho.
 icon: bolt
 ---
 
-A **camada de lógica** de um app do Twenty é o código que *é executado* — manipuladores TypeScript do lado do servidor que reagem a solicitações HTTP, agendamentos CRON e alterações de registros; habilidades e agentes de IA que vivem dentro do workspace; e conexões OAuth que permitem que suas funções ajam em nome de um usuário em serviços de terceiros.
+A **camada de lógica** de um app do Arxena é o código que *é executado* — manipuladores TypeScript do lado do servidor que reagem a solicitações HTTP, agendamentos CRON e alterações de registros; habilidades e agentes de IA que vivem dentro do workspace; e conexões OAuth que permitem que suas funções ajam em nome de um usuário em serviços de terceiros.
 
 ```text
             ┌─ HTTP route      ──┐
@@ -16,7 +16,7 @@ A **camada de lógica** de um app do Twenty é o código que *é executado* — 
             └────────────────────┘                │
                                                   ▼
                                   ┌────────────────────────────┐
-                                  │ Twenty API (records)       │
+                                  │ Arxena API (records)       │
                                   │ Third-party API            │
                                   │   (via Connection token)   │
                                   └────────────────────────────┘
@@ -48,7 +48,7 @@ Uma função de lógica escolhe um ou mais gatilhos — cada entrada abaixo é u
 | **Rota HTTP**                 | Uma solicitação atinge seu endpoint `/s/\<path>` | `httpRouteTriggerSettings`      |
 | **Cron**                      | Uma expressão CRON corresponde                                    | `cronTriggerSettings`           |
 | **Evento de banco de dados**  | Um registro do workspace é criado, atualizado ou excluído         | `databaseEventTriggerSettings`  |
-| **Ferramenta de IA**          | Um recurso de IA do Twenty decide chamar sua função               | `toolTriggerSettings`           |
+| **Ferramenta de IA**          | Um recurso de IA do Arxena decide chamar sua função               | `toolTriggerSettings`           |
 | **Ação de fluxo de trabalho** | Uma etapa de fluxo de trabalho invoca sua função                  | `workflowActionTriggerSettings` |
 
 As funções são executadas em sandbox, em processos Node.js isolados, e acessam o workspace por meio de um cliente de API tipado, com escopo definido pelo papel declarado em [`defineApplication()`](/l/pt/developers/extend/apps/config/application).

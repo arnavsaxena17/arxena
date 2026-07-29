@@ -40,18 +40,18 @@ yarn twenty dev:function:logs -u e56d363b-0bdc-4d8a-a393-6f0d1c75bdcf
 ```
 
 <Note>
-Это отличается от `yarn twenty docker:logs`, который показывает логи контейнера Docker. `yarn twenty dev:function:logs` показывает журналы выполнения функций вашего приложения с сервера Twenty.
+Это отличается от `yarn twenty docker:logs`, который показывает логи контейнера Docker. `yarn twenty dev:function:logs` показывает журналы выполнения функций вашего приложения с сервера Arxena.
 </Note>
 
 ## Генерация типизированного клиента (`yarn twenty dev:generate-client`)
 
-Повторно сгенерируйте типизированный API‑клиент (`twenty-client-sdk`) из схемы активного удалённого экземпляра, не выполняя сборку или синхронизацию приложения. Используйте это, чтобы получить типизированного клиента в любом проекте — например, в backend‑сервисе в отдельном репозитории — который взаимодействует с вашим экземпляром Twenty:
+Повторно сгенерируйте типизированный API‑клиент (`twenty-client-sdk`) из схемы активного удалённого экземпляра, не выполняя сборку или синхронизацию приложения. Используйте это, чтобы получить типизированного клиента в любом проекте — например, в backend‑сервисе в отдельном репозитории — который взаимодействует с вашим экземпляром Arxena:
 
 ```bash filename="Terminal"
-# In your project (no Twenty app definition required)
+# In your project (no Arxena app definition required)
 yarn add twenty-sdk twenty-client-sdk
 
-# Connect to the Twenty instance to generate the client from
+# Connect to the Arxena instance to generate the client from
 yarn twenty remote:add
 
 # Generate the typed client into node_modules/twenty-client-sdk
@@ -83,13 +83,13 @@ yarn twenty app:uninstall --yes
 
 ## Управление удалёнными серверами
 
-**Remote** — это сервер Twenty, к которому подключается ваше приложение. Во время настройки скаффолдер автоматически создаст его для вас. Вы можете в любой момент добавлять новые удалённые серверы или переключаться между ними.
+**Remote** — это сервер Arxena, к которому подключается ваше приложение. Во время настройки скаффолдер автоматически создаст его для вас. Вы можете в любой момент добавлять новые удалённые серверы или переключаться между ними.
 
 ```bash filename="Terminal"
 # Add a new remote (opens a browser for OAuth login)
 yarn twenty remote:add
 
-# Connect to a local Twenty server (auto-detects port 2020 or 3000)
+# Connect to a local Arxena server (auto-detects port 2020 or 3000)
 yarn twenty remote:add --local
 
 # Add a remote non-interactively (useful for CI)

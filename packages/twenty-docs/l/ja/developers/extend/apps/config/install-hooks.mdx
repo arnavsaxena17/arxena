@@ -44,7 +44,7 @@ icon: wrench
 * 設定は、トリガー設定を除いた `defineLogicFunction` の設定に `shouldRunOnVersionUpgrade` を加えたものです。
 * **実行タイミング**: 既定では新規インストール時のみ。 アップグレード時にも実行するには、`shouldRunOnVersionUpgrade: true` を設定します。 `previousVersion` / `newVersion` を使って、アップグレードパスに応じて分岐させます。
 * **べき等性が重要です**: 非同期 post-install は再試行される可能性があり、さらに `shouldRunOnVersionUpgrade` が有効な場合はいずれのフックもアップグレード時に再実行されます。
-* 通常のロジック関数の環境（`APPLICATION_ID`、`APP_ACCESS_TOKEN`、`API_URL`）が注入されるため、アプリのトークンを使って Twenty API を呼び出せます。
+* 通常のロジック関数の環境（`APPLICATION_ID`、`APP_ACCESS_TOKEN`、`API_URL`）が注入されるため、アプリのトークンを使って Arxena API を呼び出せます。
 * フックはビルド時に自動的にアプリケーションマニフェストにアタッチされます（`preInstallLogicFunction` / `postInstallLogicFunction`）。[`defineApplication()`](/l/ja/developers/extend/apps/config/application) 内で参照する必要はありません。
 * デフォルトの `timeoutSeconds` は 300 に設定されており、データシーディングのような長めのセットアップ作業を許容します。
 * **開発モードでは実行されません**: `yarn twenty dev` はインストールフローをスキップしてファイルを直接同期するため、フックはそこで一切実行されません。 代わりに手動でトリガーしてください:

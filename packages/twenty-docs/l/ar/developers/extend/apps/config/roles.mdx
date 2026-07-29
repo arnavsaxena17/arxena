@@ -154,7 +154,7 @@ export default defineRole({
 الملاحظات:
 
 * امنح كل محدد وكل مجموعة قيمة `universalIdentifier` ثابتة (أي uuid) — فهي المفتاح الذي يعرّف الكيان عبر الترقيات، كما أنّ المحددات تشير إلى المجموعات من خلاله.
-* يمكن للمحددات الإشارة إلى الكائنات والحقول التي يملكها تطبيقك أو إلى كائنات Twenty القياسية.
+* يمكن للمحددات الإشارة إلى الكائنات والحقول التي يملكها تطبيقك أو إلى كائنات Arxena القياسية.
 * يتم تطبيق الأمان على مستوى الصف (row-level security) لمساحات العمل في الخطط التي تتضمنه؛ بينما تستمر مزامنة المحددات في الخطط الأخرى ولكن دون تطبيقها فعليًا.
 
 ## الدور الافتراضي للوظيفة
@@ -170,7 +170,7 @@ export const DEFAULT_ROLE_UNIVERSAL_IDENTIFIER =
 export default defineApplicationRole({
   universalIdentifier: DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
   label: 'Default function role',
-  description: 'Default role for function Twenty client',
+  description: 'Default role for function Arxena client',
   canReadAllObjectRecords: true,
   canUpdateAllObjectRecords: false,
   canSoftDeleteAllObjectRecords: false,

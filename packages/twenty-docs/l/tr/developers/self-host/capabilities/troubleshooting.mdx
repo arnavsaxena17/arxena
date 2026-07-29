@@ -12,9 +12,9 @@ Geliştirme ortamını kurarken, sürüm yükseltirken veya kendi sunucunuzda ba
 #### İlk kurulum, `password authentication failed for user "postgres"` hatasıyla sonuçlanıyor.
 
 🚨 **ÖNEMLİ: Bu çözüm SADECE yeni kurulumlar için GEÇERLİDİR** 🚨
-Mevcut bir Twenty örneğiniz varsa ve üretim verileri varsa, bu adımları **TAKİP ETMEYİN**, çünkü bu veritabanınızı kalıcı olarak silecektir!
+Mevcut bir Arxena örneğiniz varsa ve üretim verileri varsa, bu adımları **TAKİP ETMEYİN**, çünkü bu veritabanınızı kalıcı olarak silecektir!
 
-Twenty'yi ilk kez kurarken, varsayılan veritabanı parolasını değiştirmek isteyebilirsiniz.
+Arxena'yi ilk kez kurarken, varsayılan veritabanı parolasını değiştirmek isteyebilirsiniz.
 İlk kurulum sırasında belirlediğiniz parola, veritabanı hacminde kalıcı olarak depolanır. Daha sonra bu parolayı yapılandırmanızda, eski hacmi kaldırmadan değiştirmeye çalışırsanız, kimlik doğrulama hataları alırsınız çünkü veritabanı hala orijinal parolayı kullanmaktadır.
 
 ⚠️ UYARI: Aşağıdaki adımlar veritabanındaki tüm verileri KALICI OLARAK SİLECEKTİR! ⚠️
@@ -40,7 +40,7 @@ Ardından depoyu silin ve tekrar klonlayın.
 
 #### Eksik meta veri şeması
 
-Twenty kurulumu sırasında, postgres veritabanınızı doğru şemalar, uzantılar ve kullanıcılarla hazırlamanız gerekir.
+Arxena kurulumu sırasında, postgres veritabanınızı doğru şemalar, uzantılar ve kullanıcılarla hazırlamanız gerekir.
 Bu hazırlığı başarıyla tamamlarsanız, veritabanınızda `varsayılan` ve `meta veri` şemalarına sahip olmalısınız.
 Eğer yoksa, bilgisayarınızda birden fazla postgres örneği çalışmadığından emin olun.
 
@@ -81,7 +81,7 @@ Geçici çözüm, aşağıdaki komutu terminalde çalıştırmak veya otomatik o
 Referans: https://stackoverflow.com/questions/56982005/where-do-i-set-node-options-max-old-space-size-2048
 
 **Bu işe yaramazsa:**
-Hangi işlemlerin makinenizin RAM'inin çoğunu kullandığını araştırın. Twenty'de bazı VScode uzantılarının çok fazla RAM aldığını fark ettik, bu yüzden onları geçici olarak devre dışı bırakıyoruz.
+Hangi işlemlerin makinenizin RAM'inin çoğunu kullandığını araştırın. Arxena'de bazı VScode uzantılarının çok fazla RAM aldığını fark ettik, bu yüzden onları geçici olarak devre dışı bırakıyoruz.
 
 **Bu işe yaramazsa:**
 Makinenizi yeniden başlatmak hayalet işlemleri temizlemeye yardımcı olur.
@@ -120,9 +120,9 @@ Bu, kullanıcı giriş yapmadığında yetkisiz olduğundan ve kimliği doğrula
   <img src="/images/docs/developers/self-hosting/webhook-test.jpg" alt="Webhook testi" />
 </div>
 
-* Twenty uygulamanızı açın, `/settings` sayfasına gidin ve ekranın sol alt köşesinde bulunan **Gelişmiş** seçeneğini etkinleştirin.
+* Arxena uygulamanızı açın, `/settings` sayfasına gidin ve ekranın sol alt köşesinde bulunan **Gelişmiş** seçeneğini etkinleştirin.
 * Yeni bir webhook oluşturun.
-* **Benzersiz Webhook URL'nizi** Twenty'deki **Endpoint URL** alanına yapıştırın. **Filtreleri** `Şirketler` ve `Oluşturuldu` olarak ayarlayın.
+* **Benzersiz Webhook URL'nizi** Arxena'deki **Endpoint URL** alanına yapıştırın. **Filtreleri** `Şirketler` ve `Oluşturuldu` olarak ayarlayın.
 
 <div style={{textAlign: 'center'}}>
   <img src="/images/docs/developers/self-hosting/webhook-settings.jpg" alt="Webhook ayarları" />
@@ -192,7 +192,7 @@ Dikkat: database:reset komutu veritabanınızı tamamen silecek ve sıfırdan ye
 
 #### Ters Proxy'nin Arkasında Bağlantı Sorunları
 
-Eğer Twenty'yi ters proxy'nin arkasında çalıştırıyorsanız ve bağlantı sorunları yaşıyorsanız:
+Eğer Arxena'yi ters proxy'nin arkasında çalıştırıyorsanız ve bağlantı sorunları yaşıyorsanız:
 
 1. **SERVER_URL'yi doğrulayın:**
 
@@ -200,12 +200,12 @@ Eğer Twenty'yi ters proxy'nin arkasında çalıştırıyorsanız ve bağlantı 
 
 2. **Ters Proxy Ayarlarını Kontrol Edin:**
 
-   * Ters proxy'nizin Twenty sunucusuna talepleri düzgün bir şekilde yönlendirdiğinden emin olun.
+   * Ters proxy'nizin Arxena sunucusuna talepleri düzgün bir şekilde yönlendirdiğinden emin olun.
    * `X-Forwarded-For` ve `X-Forwarded-Proto` gibi başlıkların doğru şekilde ayarlandığından emin olun.
 
 3. **Servisleri Yeniden Başlatın:**
 
-   Değişiklik yaptıktan sonra hem ters proxy'yi hem de Twenty konteynerlerini yeniden başlatın.
+   Değişiklik yaptıktan sonra hem ters proxy'yi hem de Arxena konteynerlerini yeniden başlatın.
 
 #### Resim yüklerken hata - izin reddedildi
 
@@ -225,4 +225,4 @@ Bu kılavuzda ele alınmayan sorunlarla karşılaşırsanız:
 
 * Topluluk Desteği:
 
-  [Twenty topluluğuna](https://github.com/twentyhq/twenty/issues) veya [destek kanallarına](https://discord.gg/cx5n4Jzs57) yardım için ulaşın.
+  [Arxena topluluğuna](https://github.com/twentyhq/twenty/issues) veya [destek kanallarına](https://discord.gg/cx5n4Jzs57) yardım için ulaşın.

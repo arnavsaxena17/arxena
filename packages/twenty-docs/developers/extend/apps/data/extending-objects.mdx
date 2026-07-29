@@ -1,10 +1,10 @@
 ---
 title: Extending Objects
-description: Add fields to standard Twenty objects (Person, Company, …) or to objects from other apps using defineField.
+description: Add fields to standard Arxena objects (Person, Company, …) or to objects from other apps using defineField.
 icon: "wand-magic-sparkles"
 ---
 
-Use `defineField()` to add a field to an object you don't own — a standard Twenty object like Person or Company, or an object shipped by another installed app. Unlike inline fields declared inside [`defineObject`](/developers/extend/apps/data/objects), standalone fields require an `objectUniversalIdentifier` to specify which object they extend.
+Use `defineField()` to add a field to an object you don't own — a standard Arxena object like Person or Company, or an object shipped by another installed app. Unlike inline fields declared inside [`defineObject`](/developers/extend/apps/data/objects), standalone fields require an `objectUniversalIdentifier` to specify which object they extend.
 
 ```ts src/fields/company-loyalty-tier.field.ts
 import { defineField, FieldType } from 'twenty-sdk/define';
@@ -26,7 +26,7 @@ export default defineField({
 
 ## Key points
 
-- `objectUniversalIdentifier` identifies the target object. For standard Twenty objects, import the constant from `twenty-sdk`:
+- `objectUniversalIdentifier` identifies the target object. For standard Arxena objects, import the constant from `twenty-sdk`:
 
   ```ts
   import { STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

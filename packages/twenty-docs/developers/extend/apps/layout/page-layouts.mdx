@@ -4,7 +4,7 @@ description: Customize record detail pages — tabs, widgets, and where front co
 icon: "table-columns"
 ---
 
-A **page layout** controls how a record's detail page is arranged: which tabs appear and what widgets they contain. Use `definePageLayout()` to declare a layout for an object you own, or `definePageLayoutTab()` to add a single tab to a layout that already exists (yours or a standard Twenty one).
+A **page layout** controls how a record's detail page is arranged: which tabs appear and what widgets they contain. Use `definePageLayout()` to declare a layout for an object you own, or `definePageLayoutTab()` to add a single tab to a layout that already exists (yours or a standard Arxena one).
 
 | Use case | Entity |
 |----------|--------|
@@ -95,8 +95,8 @@ export default definePageLayoutTab({
 
 ### Key points
 
-- `pageLayoutUniversalIdentifier` is **required** and must point to a page layout that already exists at install time — either a standard Twenty layout or one defined by your own app. Cross-app references to layouts owned by another installed app are not supported today. When the parent layout is missing, installation fails with a clear validation error.
-- For standard Twenty layouts, import identifiers from `twenty-sdk/define`:
+- `pageLayoutUniversalIdentifier` is **required** and must point to a page layout that already exists at install time — either a standard Arxena layout or one defined by your own app. Cross-app references to layouts owned by another installed app are not supported today. When the parent layout is missing, installation fails with a clear validation error.
+- For standard Arxena layouts, import identifiers from `twenty-sdk/define`:
 
   ```ts
   import { STANDARD_PAGE_LAYOUT_UNIVERSAL_IDENTIFIERS } from 'twenty-sdk/define';

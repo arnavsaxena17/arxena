@@ -26,7 +26,7 @@ description: Common workflow issues and how to resolve them.
 
 **Symptoms**: When manually creating a record in the UI, your workflow triggers before you've had time to fill in all the fields. The workflow runs with mostly empty field values.
 
-**Why this happens**: Twenty saves everything in real-time — there's no separate "edit" vs "read" mode. When you create a record, it's saved immediately, triggering the "Record is created" event before you can fill in additional fields.
+**Why this happens**: Arxena saves everything in real-time — there's no separate "edit" vs "read" mode. When you create a record, it's saved immediately, triggering the "Record is created" event before you can fill in additional fields.
 
 **When "Record is created" works well**:
 - Records created via API calls (fields are populated in a single request)
@@ -72,7 +72,7 @@ If you only want the workflow to run once per record, add a Filter action to che
 **Solutions**:
 - Verify API endpoint URL
 - Check authentication headers
-- Test the API call outside of Twenty first
+- Test the API call outside of Arxena first
 - Add error handling in Code actions
 
 ### Code Action Errors

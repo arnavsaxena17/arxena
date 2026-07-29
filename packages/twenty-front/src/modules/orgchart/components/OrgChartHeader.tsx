@@ -13,6 +13,10 @@ import {
     OrgChartCompanyInfo,
     OrgChartCompanyInfoProps,
 } from './OrgChartCompanyInfo';
+import {
+    OrgChartTitleQueryBar,
+    OrgChartTitleQueryBarProps,
+} from './OrgChartTitleQueryBar';
 
 const StyledHeader = styled.div`
   align-items: flex-start;
@@ -91,6 +95,7 @@ export type OrgChartHeaderProps = OrgChartCompanyInfoProps & {
   hasFilters: boolean;
   filtersProps: OrgChartFiltersProps;
   businessDivisionQueryProps?: OrgChartBusinessDivisionQueryProps;
+  titleQueryProps?: OrgChartTitleQueryBarProps;
   /** Extra controls in the filter toolbar (e.g. LinkedIn query generator preference). */
   toolbarTrailing?: ReactNode;
   onClearCompanyCache?: () => void;
@@ -117,6 +122,7 @@ export const OrgChartHeader = ({
   hasFilters,
   filtersProps,
   businessDivisionQueryProps,
+  titleQueryProps,
   toolbarTrailing,
   onClearCompanyCache,
   onShare,
@@ -154,6 +160,9 @@ export const OrgChartHeader = ({
         {hasFilters && (
           <StyledOrgChartToolbar>
             <OrgChartFilters {...filtersProps} omitMarginLeft />
+            {titleQueryProps && (
+              <OrgChartTitleQueryBar {...titleQueryProps} />
+            )}
             {businessDivisionQueryProps && (
               <OrgChartBusinessDivisionQuery {...businessDivisionQueryProps} />
             )}

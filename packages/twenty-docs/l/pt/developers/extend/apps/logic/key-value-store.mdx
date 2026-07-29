@@ -39,7 +39,7 @@ Cada registro tem um escopo, passado como uma opção em cada chamada. O padrão
 * **`WORKSPACE`** (padrão) — o registro é privado para a instalação atual do seu app no workspace. Cada workspace que instala o app recebe seu próprio conjunto independente de chaves. É isso que você quer para caches, cursores e estado por workspace.
 * **`SERVER`** — o registro é compartilhado entre **todas as instalações** do seu app no servidor. Registros de servidor se comportam como **claims**: o valor armazenado é sempre o workspaceId que reivindicou a chave (omita `value` em `set` para reivindicar a chave para o workspace atual), e somente esse workspace pode sobrescrevê-la ou excluí-la. Qualquer instalação pode ler o registro.
 
-Claims de servidor existem para roteamento entre workspaces. Um [server-route resolver](/l/pt/developers/extend/apps/logic/logic-functions#server-route-trigger) é executado no workspace proprietário do registro do aplicativo, mas um webhook de entrada normalmente só carrega um id de conta externa — não um workspaceId do Twenty. Faça com que cada workspace reivindique seu id externo no momento da conexão e, em seguida, resolva-o na rota:
+Claims de servidor existem para roteamento entre workspaces. Um [server-route resolver](/l/pt/developers/extend/apps/logic/logic-functions#server-route-trigger) é executado no workspace proprietário do registro do aplicativo, mas um webhook de entrada normalmente só carrega um id de conta externa — não um workspaceId do Arxena. Faça com que cada workspace reivindique seu id externo no momento da conexão e, em seguida, resolva-o na rota:
 
 ```ts
 // In the connected workspace, when the external account is linked:

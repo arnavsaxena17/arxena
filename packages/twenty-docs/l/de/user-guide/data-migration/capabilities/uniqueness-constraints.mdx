@@ -1,13 +1,13 @@
 ---
 title: Eindeutigkeitsbeschränkungen
-description: Wie Twenty während des Imports die Dateneindeutigkeit erzwingt.
+description: Wie Arxena während des Imports die Dateneindeutigkeit erzwingt.
 ---
 
 import { VimeoEmbed } from '/snippets/vimeo-embed.mdx';
 
 ## Überblick
 
-Twenty erzwingt die Eindeutigkeit bei bestimmten Feldern, um doppelte Datensätze zu verhindern und die Datenintegrität sicherzustellen. Das Verständnis dieser Einschränkungen ist für erfolgreiche Importe entscheidend.
+Arxena erzwingt die Eindeutigkeit bei bestimmten Feldern, um doppelte Datensätze zu verhindern und die Datenintegrität sicherzustellen. Das Verständnis dieser Einschränkungen ist für erfolgreiche Importe entscheidend.
 
 ## Standardmäßige eindeutige Felder
 
@@ -17,7 +17,7 @@ Twenty erzwingt die Eindeutigkeit bei bestimmten Feldern, um doppelte Datensätz
 | **Unternehmen**                | `id`, `domain`           |
 | **Benutzerdefinierte Objekte** | nur `id` (standardmäßig) |
 
-<Note>Das Feld `id` ist die interne Kennung von Twenty und wird für jeden Datensatz automatisch generiert. Es verwendet das UUID-Format (z. B. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
+<Note>Das Feld `id` ist die interne Kennung von Arxena und wird für jeden Datensatz automatisch generiert. Es verwendet das UUID-Format (z. B. `c776ee49-f608-4a77-8cc8-6fe96ae1e43f`).</Note>
 
 ## Benutzerdefinierte eindeutige Felder
 
@@ -34,7 +34,7 @@ Sie können unter **Einstellungen → Datenmodell** zusätzliche eindeutige Feld
 * **Geschäftskennungen**: Mitarbeiternummern, Kundencodes
 * **Alternative Kontaktinformationen**: LinkedIn-Profil, Telefonnummer
 
-<Note>Der Feldname `id` ist für die interne ID von Twenty reserviert. Verwenden Sie für externe Kennungen einen anderen Namen wie `externalId` oder `legacyId`.</Note>
+<Note>Der Feldname `id` ist für die interne ID von Arxena reserviert. Verwenden Sie für externe Kennungen einen anderen Namen wie `externalId` oder `legacyId`.</Note>
 
 ## Importverhalten
 
@@ -67,6 +67,6 @@ Während der Validierungsphase:
 ## Beste Praktiken
 
 1. **Entfernen Sie Duplikate** aus Ihrer Datei vor dem Import
-2. **Prüfen Sie vorhandene Datensätze** in Twenty vor dem Import
+2. **Prüfen Sie vorhandene Datensätze** in Arxena vor dem Import
 3. **Verwenden Sie externe IDs**, wenn Sie aus anderen Systemen migrieren
 4. **Fügen Sie eindeutige Felder hinzu**, wenn Sie vorhandene Datensätze aktualisieren möchten
