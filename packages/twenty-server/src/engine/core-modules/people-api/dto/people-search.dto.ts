@@ -37,6 +37,10 @@ export class PeopleSearchDto {
 
   @IsOptional()
   @IsString()
+  stdFunctionRoot?: string;
+
+  @IsOptional()
+  @IsString()
   stdGrade?: string;
 
   @IsOptional()

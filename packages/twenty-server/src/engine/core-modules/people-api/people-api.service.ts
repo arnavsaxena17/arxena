@@ -18,10 +18,14 @@ import {
 } from './constants/people-data-source-aliases';
 import type { PeopleSearchDto } from './dto/people-search.dto';
 import type { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
+import type { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
+import type { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
 import type {
   DataSourcesStatusResponse,
+  ExpandJobTitlesResponse,
   PeopleSearchByTitleResponse,
   PeopleSearchResponse,
+  TaxonomyBooleanStringsResponse,
   TaxonomyItem,
 } from './people-api.types';
 import { extractTaxonomyItemValue } from './utils/extract-taxonomy-item-value.util';
@@ -201,11 +205,15 @@ export class PeopleApiService {
       return this.searchPeopleFromContactOut(body, dataSource);
     }
 
-    if (dataSource === 'pdl' || dataSource === 'harvest') {
+    if (dataSource === 'pdl') {
       throw new HttpException(
-        `People search via data source "${dataSource}" is not yet exposed on this endpoint. Use dataSource "index" for std_function and std_grade filters.`,
+        `People search via data source "pdl" is not yet exposed on this endpoint.`,
         HttpStatus.NOT_IMPLEMENTED,
       );
+    }
+
+    if (dataSource === 'harvest') {
+      return this.searchPeopleFromHarvest(body, dataSource);
     }
 
     throw new HttpException(
@@ -312,6 +320,163 @@ export class PeopleApiService {
       dataSource,
       total: people.length,
       items: people,
+    };
+  }
+
+  private async searchPeopleFromHarvest(
+    body: PeopleSearchDto,
+    dataSource: PeopleDataSourceAlias,
+  ): Promise<PeopleSearchResponse> {
+    if (!this.harvestLinkedinService.isConfigured()) {
+      throw new HttpException(
+        'Harvest data source is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    // Build a keyword search string from whichever taxonomy fields are provided.
+    const searchTerms = [
+      body.stdFunction,
+      body.stdFunctionRoot,
+      body.stdGrade,
+      body.jobTitle,
+    ]
+      .map((value) => value?.trim())
+      .filter((value): value is string => !!value);
+
+    if (searchTerms.length === 0 && !body.query?.trim()) {
+      throw new HttpException(
+        'At least one of stdFunction, stdGrade, stdFunctionRoot, jobTitle, or query is required for harvest search',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const search =
+      searchTerms.length > 0 ? searchTerms.join(' OR ') : body.query!.trim();
+
+    const sessionId = `people-api-${Date.now()}`;
+
+    const companyName = body.companyName?.trim();
+    const items = await this.harvestLinkedinService.fetchAllLeadsFromQueryParams(
+      {
+        params: {
+          search,
+          currentCompanies: companyName,
+          locations: body.country?.trim(),
+          sessionId,
+        },
+        maxProfiles: body.limit ?? 20,
+      },
+    );
+
+    return {
+      status: 'ok',
+      dataSource,
+      total: items.length,
+      items,
+    };
+  }
+
+  async expandJobTitles(
+    dto: ExpandJobTitlesDto,
+  ): Promise<ExpandJobTitlesResponse> {
+    const jobTitle = dto.jobTitle?.trim();
+    if (!jobTitle) {
+      throw new HttpException('jobTitle is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const classification =
+      await this.titleTaxonomyRemoteService.classifyTitle(jobTitle);
+
+    if (!classification) {
+      throw new HttpException(
+        'Title taxonomy service is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const stdFunction = extractTaxonomyItemValue(classification.function);
+    const stdFunctionRoot = extractTaxonomyItemValue(
+      classification.function_root,
+    );
+    const stdGrade = extractTaxonomyItemValue(classification.grade);
+
+    // Build a structured query from the classified taxonomy fields for keyword generation.
+    const queryParts = [stdFunction, stdGrade, stdFunctionRoot, jobTitle]
+      .filter((value): value is string => !!value)
+      .slice(0, 2);
+
+    const keywordsResult =
+      queryParts.length > 0
+        ? await this.titleTaxonomyRemoteService.searchKeywordsFromQuery({
+            query: queryParts.join(' '),
+            companyName: dto.companyName,
+            resolvedIntent: {
+              std_function: stdFunction,
+              std_function_root: stdFunctionRoot,
+              std_grade: stdGrade,
+            },
+          })
+        : null;
+
+    return {
+      status: 'ok',
+      jobTitle,
+      normalizedTitle: classification.normalized_title?.trim() || null,
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
+      confidence: classification.confidence ?? 0,
+      booleanQuery: keywordsResult?.boolean_query ?? null,
+      keywordGroups: keywordsResult?.keyword_groups ?? [],
+    };
+  }
+
+  async getTaxonomyBooleanStrings(
+    dto: TaxonomyBooleanStringsDto,
+  ): Promise<TaxonomyBooleanStringsResponse> {
+    const hasInput =
+      !!dto.stdFunction?.trim() ||
+      !!dto.stdGrade?.trim() ||
+      !!dto.stdFunctionRoot?.trim();
+
+    if (!hasInput) {
+      throw new HttpException(
+        'At least one of stdFunction, stdGrade, or stdFunctionRoot is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Compose a natural-language query from the taxonomy values for the keyword service.
+    const queryParts = [dto.stdFunction, dto.stdGrade, dto.stdFunctionRoot]
+      .map((value) => value?.trim())
+      .filter((value): value is string => !!value);
+    const query = queryParts.join(' ');
+
+    const result = await this.titleTaxonomyRemoteService.searchKeywordsFromQuery(
+      {
+        query,
+        companyName: dto.companyName,
+        resolvedIntent: {
+          std_function: dto.stdFunction?.trim() ?? null,
+          std_function_root: dto.stdFunctionRoot?.trim() ?? null,
+          std_grade: dto.stdGrade?.trim() ?? null,
+        },
+      },
+    );
+
+    if (!result) {
+      throw new HttpException(
+        'Title taxonomy service is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    return {
+      status: 'ok',
+      query,
+      booleanQuery: result.boolean_query ?? null,
+      keywordGroups: result.keyword_groups ?? [],
     };
   }
 

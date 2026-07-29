@@ -26,7 +26,6 @@
     "./style.css": "./dist/twenty-orgchart.css"
   },
   "style": "./dist/twenty-orgchart.css",
-
   "dependencies": {
     "@linaria/react": "^7.0.1",
     "@tabler/icons-react": "^2.44.0",

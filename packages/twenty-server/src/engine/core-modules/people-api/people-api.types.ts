@@ -41,3 +41,30 @@ export type DataSourcesStatusResponse = {
     configured: boolean;
   }>;
 };
+
+export type ExpandJobTitlesResponse = {
+  status: 'ok';
+  jobTitle: string;
+  normalizedTitle: string | null;
+  stdFunction: string | null;
+  stdFunctionRoot: string | null;
+  stdGrade: string | null;
+  confidence: number;
+  booleanQuery: string | null;
+  keywordGroups: Array<{
+    type?: string;
+    terms?: string[];
+    clause?: string;
+  }>;
+};
+
+export type TaxonomyBooleanStringsResponse = {
+  status: 'ok';
+  query: string;
+  booleanQuery: string | null;
+  keywordGroups: Array<{
+    type?: string;
+    terms?: string[];
+    clause?: string;
+  }>;
+};

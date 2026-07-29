@@ -17,7 +17,9 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { buildPeopleApiOpenApiDocument } from '../api-docs/people-api.openapi';
+import { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import { PeopleSearchDto } from './dto/people-search.dto';
+import { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
 import { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
 import { PeopleApiService } from './people-api.service';
 
@@ -64,6 +66,59 @@ export class PeopleApiController {
     @Query('title') title?: string,
   ) {
     return this.peopleApiService.getGrades(gradeLevel, title);
+  }
+
+  @Get('taxonomy/boolean-strings')
+  @UseGuards(JwtAuthGuard)
+  async getTaxonomyBooleanStrings(
+    @Query('std_function') stdFunction?: string,
+    @Query('std_grade') stdGrade?: string,
+    @Query('std_function_root') stdFunctionRoot?: string,
+    @Query('company_name') companyName?: string,
+  ) {
+    try {
+      const dto: TaxonomyBooleanStringsDto = {
+        stdFunction,
+        stdGrade,
+        stdFunctionRoot,
+        companyName,
+      };
+
+      return await this.peopleApiService.getTaxonomyBooleanStrings(dto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('People API taxonomy boolean-strings failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Taxonomy boolean-strings failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('titles/expand')
+  @UseGuards(JwtAuthGuard)
+  async expandJobTitles(
+    @Query('job_title') jobTitle: string,
+    @Query('company_name') companyName?: string,
+  ) {
+    try {
+      const dto: ExpandJobTitlesDto = { jobTitle, companyName };
+
+      return await this.peopleApiService.expandJobTitles(dto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('People API titles expand failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Title expansion failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('people/search-by-title')
