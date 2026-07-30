@@ -462,15 +462,6 @@ NGINX_HTTP
         /etc/nginx/sites-available/docs-arxena.conf \
         /etc/nginx/sites-enabled/docs-arxena.conf
     fi
-
-    if [ "$CURRENT_INSTANCE_ID" = "i-0f294090da1d0956b" ]; then
-      ensure_docs_nginx_site \
-        docs.arxanalytics.com \
-        "$REPO_DIR/packages/twenty-docs/.deploy/arxanalytics" \
-        "$REPO_DIR/scripts/nginx/docs-arxanalytics.conf.snippet" \
-        /etc/nginx/sites-available/docs-arxanalytics.conf \
-        /etc/nginx/sites-enabled/docs-arxanalytics.conf
-    fi
   fi
 
   echo "Restarting NGINX and PM2"

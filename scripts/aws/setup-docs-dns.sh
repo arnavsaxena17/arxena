@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create or update docs.arxena.com and docs.arxanalytics.com A records -> production EC2 public IPs.
+# Create or update the docs.arxena.com A record -> production EC2 public IP.
 
 set -euo pipefail
 
@@ -7,8 +7,6 @@ AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 
 ARXENA_HOSTED_ZONE_ID="${ARXENA_HOSTED_ZONE_ID:-Z07810821LEDHY49LZU73}"
 ARXENA_INSTANCE_ID="${ARXENA_INSTANCE_ID:-i-01fa0853163833136}"
-ARXANALYTICS_HOSTED_ZONE_ID="${ARXANALYTICS_HOSTED_ZONE_ID:-Z04105001ZCRNM04WYV4D}"
-ARXANALYTICS_INSTANCE_ID="${ARXANALYTICS_INSTANCE_ID:-i-0f294090da1d0956b}"
 TTL="${TTL:-300}"
 
 get_public_ip() {
@@ -55,15 +53,9 @@ EOF
 }
 
 ARXENA_PUBLIC_IP="$(get_public_ip "$ARXENA_INSTANCE_ID")"
-ARXANALYTICS_PUBLIC_IP="$(get_public_ip "$ARXANALYTICS_INSTANCE_ID")"
 
 upsert_record "$ARXENA_HOSTED_ZONE_ID" docs.arxena.com "$ARXENA_PUBLIC_IP"
-upsert_record \
-  "$ARXANALYTICS_HOSTED_ZONE_ID" \
-  docs.arxanalytics.com \
-  "$ARXANALYTICS_PUBLIC_IP"
 
 echo "DNS upserts submitted."
 echo "Verify:"
 echo "  dig +short docs.arxena.com"
-echo "  dig +short docs.arxanalytics.com"
