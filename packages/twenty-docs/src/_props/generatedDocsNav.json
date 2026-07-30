@@ -1,0 +1,61 @@
+{
+  "languages": [
+    {
+      "language": "en",
+      "tabs": [
+        {
+          "tab": "API Reference",
+          "groups": [
+            {
+              "group": "Getting started",
+              "pages": [
+                "api-reference/introduction",
+                "api-reference/authentication",
+                "concepts/standardized-taxonomy"
+              ]
+            },
+            {
+              "group": "People",
+              "pages": [
+                "api-reference/data-sources/list-people-data-source-categories",
+                "api-reference/taxonomy/list-taxonomy-constants",
+                "api-reference/people/resolve-job-title-and-search-people",
+                "api-reference/people/search-people",
+                "api-reference/taxonomy/list-std-function-roots",
+                "api-reference/taxonomy/list-std-grades",
+                "api-reference/taxonomy/list-std-functions",
+                "api-reference/taxonomy/expand-and-normalize-a-job-title",
+                "api-reference/taxonomy/build-boolean-strings-from-taxonomy"
+              ]
+            }
+          ]
+        },
+        {
+          "tab": "Cookbooks",
+          "groups": [
+            {
+              "group": "Recipes",
+              "pages": [
+                "cookbooks/nl-to-people-at-company",
+                "cookbooks/mcp-people-and-org-charts",
+                "cookbooks/search-people-by-taxonomy",
+                "cookbooks/expand-titles-then-search"
+              ]
+            }
+          ]
+        },
+        {
+          "tab": "Changelog",
+          "groups": [
+            {
+              "group": "Releases",
+              "pages": [
+                "changelog/july-2026"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

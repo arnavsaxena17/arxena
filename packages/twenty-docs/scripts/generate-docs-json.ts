@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 
 import {
-  DEFAULT_LANGUAGE,
-  SUPPORTED_LANGUAGES,
+    DEFAULT_LANGUAGE,
+    SUPPORTED_LANGUAGES,
 } from '../navigation/supported-languages';
 
 type BasePage = string | BaseGroup;
@@ -68,6 +68,10 @@ const baseStructurePath = path.resolve(
   '../navigation/base-structure.json',
 );
 const docsPath = path.resolve(__dirname, '../docs.json');
+const generatedDocsNavPath = path.resolve(
+  __dirname,
+  '../src/_props/generatedDocsNav.json',
+);
 const localesRoot = path.resolve(__dirname, '../l');
 
 const baseStructure: BaseStructure = JSON.parse(
@@ -198,3 +202,8 @@ if (!docsConfig.navigation) {
 docsConfig.navigation.languages = languages;
 
 fs.writeFileSync(docsPath, `${JSON.stringify(docsConfig, null, 2)}\n`);
+fs.mkdirSync(path.dirname(generatedDocsNavPath), { recursive: true });
+fs.writeFileSync(
+  generatedDocsNavPath,
+  `${JSON.stringify(docsConfig.navigation, null, 2)}\n`,
+);

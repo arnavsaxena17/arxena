@@ -7,6 +7,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(docsRoot, '../..');
 const docsJsonPath = path.join(docsRoot, 'docs.json');
+const generatedDocsNavPath = path.join(
+  docsRoot,
+  'src',
+  '_props',
+  'generatedDocsNav.json',
+);
 const exportRoot = path.join(docsRoot, '.mintlify', 'exports');
 
 const exportConfigs = [
@@ -102,6 +108,14 @@ const isPopulatedDirectory = (targetPath) => {
   );
 };
 
+const writeGeneratedDocsNav = (docsConfig) => {
+  fs.mkdirSync(path.dirname(generatedDocsNavPath), { recursive: true });
+  fs.writeFileSync(
+    generatedDocsNavPath,
+    `${JSON.stringify(docsConfig.navigation ?? {}, null, 2)}\n`,
+  );
+};
+
 const runMintlifyExport = ({
   outputName,
   canonicalUrl,
@@ -136,6 +150,7 @@ const runMintlifyExport = ({
   fs.rmSync(extractDir, { recursive: true, force: true });
 
   fs.writeFileSync(docsJsonPath, `${JSON.stringify(docsConfig, null, 2)}\n`);
+  writeGeneratedDocsNav(docsConfig);
 
   const mintlifyCommand = mintlifyBin ?? 'npx';
   const mintlifyArgs = mintlifyBin
@@ -205,4 +220,5 @@ try {
     docsJsonPath,
     `${JSON.stringify(originalDocsConfig, null, 2)}\n`,
   );
+  writeGeneratedDocsNav(originalDocsConfig);
 }
