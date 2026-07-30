@@ -109,7 +109,9 @@ const runMintlifyExport = ({
   originalDocsConfig,
   mintlifyBin,
 }) => {
+  const exportZipPath = path.join(exportRoot, `${outputName}.zip`);
   const extractDir = path.join(exportRoot, outputName);
+  const tempRoot = path.join(exportRoot, '.tmp', outputName);
 
   const docsConfig = structuredClone(originalDocsConfig);
 
@@ -129,14 +131,16 @@ const runMintlifyExport = ({
   }
 
   fs.mkdirSync(exportRoot, { recursive: true });
+  fs.mkdirSync(tempRoot, { recursive: true });
+  fs.rmSync(exportZipPath, { force: true });
   fs.rmSync(extractDir, { recursive: true, force: true });
 
   fs.writeFileSync(docsJsonPath, `${JSON.stringify(docsConfig, null, 2)}\n`);
 
   const mintlifyCommand = mintlifyBin ?? 'npx';
   const mintlifyArgs = mintlifyBin
-    ? ['export', '--output', extractDir]
-    : ['mintlify', 'export', '--output', extractDir];
+    ? ['export', '--output', exportZipPath]
+    : ['mintlify', 'export', '--output', exportZipPath];
 
   execFileSync(mintlifyCommand, mintlifyArgs, {
     cwd: docsRoot,
@@ -150,7 +154,23 @@ const runMintlifyExport = ({
       ]
         .filter(Boolean)
         .join(' '),
+      TMPDIR: tempRoot,
+      TMP: tempRoot,
+      TEMP: tempRoot,
     },
+  });
+
+  if (!fs.existsSync(exportZipPath) || fs.statSync(exportZipPath).size === 0) {
+    throw new Error(
+      `Mintlify export did not produce a bundle at ${exportZipPath}. ` +
+        'Check the mintlify export logs above for React/OOM errors.',
+    );
+  }
+
+  fs.mkdirSync(extractDir, { recursive: true });
+  execFileSync('unzip', ['-oq', exportZipPath, '-d', extractDir], {
+    cwd: docsRoot,
+    stdio: 'inherit',
   });
 
   if (!isPopulatedDirectory(extractDir)) {

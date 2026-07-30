@@ -36,29 +36,14 @@
     ],
     "url": "full",
     "playground": {
-      "display": "interactive",
+      "display": "simple",
       "proxy": false
     },
     "examples": {
       "languages": [
         "curl",
-        "node",
-        "ruby",
-        "php",
-        "python",
         "javascript",
-        "typescript",
-        "go",
-        "java",
-        "csharp",
-        "c",
-        "c++",
-        "kotlin",
-        "swift",
-        "rust",
-        "powershell",
-        "dart",
-        "dotnet"
+        "python"
       ],
       "defaults": "required",
       "prefill": true
