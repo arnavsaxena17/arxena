@@ -15,11 +15,6 @@ const exportConfigs = [
     canonicalUrl: 'https://docs.arxena.com',
     primaryHref: 'https://app.arxena.com/welcome',
   },
-  {
-    outputName: 'arxanalytics',
-    canonicalUrl: 'https://docs.arxanalytics.com',
-    primaryHref: 'https://app.arxanalytics.com/welcome',
-  },
 ];
 
 const resolveMintlifyBin = () => {
@@ -107,65 +102,6 @@ const isPopulatedDirectory = (targetPath) => {
   );
 };
 
-const isZipFile = (targetPath) => {
-  if (!fs.existsSync(targetPath) || !fs.statSync(targetPath).isFile()) {
-    return false;
-  }
-
-  const fileDescriptor = fs.openSync(targetPath, 'r');
-  const signatureBuffer = Buffer.alloc(4);
-
-  try {
-    fs.readSync(fileDescriptor, signatureBuffer, 0, 4, 0);
-  } finally {
-    fs.closeSync(fileDescriptor);
-  }
-
-  return signatureBuffer.equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-};
-
-const resolveMintlifyExportDirectory = ({
-  exportArtifactPath,
-  extractDir,
-  outputName,
-}) => {
-  if (isPopulatedDirectory(extractDir)) {
-    return;
-  }
-
-  const siblingDir = path.join(exportRoot, outputName);
-
-  if (isPopulatedDirectory(siblingDir)) {
-    return;
-  }
-
-  if (
-    fs.existsSync(exportArtifactPath) &&
-    fs.statSync(exportArtifactPath).isDirectory()
-  ) {
-    fs.renameSync(exportArtifactPath, extractDir);
-    return;
-  }
-
-  if (isZipFile(exportArtifactPath)) {
-    fs.mkdirSync(extractDir, { recursive: true });
-    execFileSync('unzip', ['-oq', exportArtifactPath, '-d', extractDir], {
-      cwd: docsRoot,
-      stdio: 'inherit',
-    });
-    return;
-  }
-
-  const artifactPreview = fs.existsSync(exportArtifactPath)
-    ? fs.readFileSync(exportArtifactPath, 'utf8').slice(0, 200)
-    : 'Artifact path was not created.';
-
-  throw new Error(
-    `Mintlify export for "${outputName}" did not produce a usable directory or zip artifact at ${exportArtifactPath}. ` +
-      `Artifact preview: ${JSON.stringify(artifactPreview)}`,
-  );
-};
-
 const runMintlifyExport = ({
   outputName,
   canonicalUrl,
@@ -173,7 +109,6 @@ const runMintlifyExport = ({
   originalDocsConfig,
   mintlifyBin,
 }) => {
-  const exportArtifactPath = path.join(exportRoot, `${outputName}.zip`);
   const extractDir = path.join(exportRoot, outputName);
 
   const docsConfig = structuredClone(originalDocsConfig);
@@ -194,15 +129,14 @@ const runMintlifyExport = ({
   }
 
   fs.mkdirSync(exportRoot, { recursive: true });
-  fs.rmSync(exportArtifactPath, { recursive: true, force: true });
   fs.rmSync(extractDir, { recursive: true, force: true });
 
   fs.writeFileSync(docsJsonPath, `${JSON.stringify(docsConfig, null, 2)}\n`);
 
   const mintlifyCommand = mintlifyBin ?? 'npx';
   const mintlifyArgs = mintlifyBin
-    ? ['export', '--output', exportArtifactPath]
-    : ['mintlify', 'export', '--output', exportArtifactPath];
+    ? ['export', '--output', extractDir]
+    : ['mintlify', 'export', '--output', extractDir];
 
   execFileSync(mintlifyCommand, mintlifyArgs, {
     cwd: docsRoot,
@@ -219,18 +153,12 @@ const runMintlifyExport = ({
     },
   });
 
-  if (!fs.existsSync(exportArtifactPath) && !isPopulatedDirectory(extractDir)) {
+  if (!isPopulatedDirectory(extractDir)) {
     throw new Error(
-      `Mintlify export did not produce ${exportArtifactPath}. ` +
+      `Mintlify export did not produce a populated directory at ${extractDir}. ` +
         'Check the mintlify export logs above for React/OOM errors.',
     );
   }
-
-  resolveMintlifyExportDirectory({
-    exportArtifactPath,
-    extractDir,
-    outputName,
-  });
 };
 
 const originalDocsConfig = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));

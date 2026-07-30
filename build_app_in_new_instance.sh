@@ -346,16 +346,10 @@ fi
 
 if [ "$(get_build_status TWENTY_DOCS)" = "success" ]; then
   DOCS_DEPLOY_ROOT="$REPO_DIR/packages/twenty-docs/.deploy"
-  mkdir -p "$DOCS_DEPLOY_ROOT/arxena" "$DOCS_DEPLOY_ROOT/arxanalytics"
+  mkdir -p "$DOCS_DEPLOY_ROOT/arxena"
 
   if stage_remote_dir /home/ubuntu/twenty/packages/twenty-docs/.mintlify/exports/arxena \
     "$DOCS_DEPLOY_ROOT/arxena"; then
-    DEPLOYMENTS_APPLIED=1
-    set_deploy_status TWENTY_DOCS updated
-  fi
-
-  if stage_remote_dir /home/ubuntu/twenty/packages/twenty-docs/.mintlify/exports/arxanalytics \
-    "$DOCS_DEPLOY_ROOT/arxanalytics"; then
     DEPLOYMENTS_APPLIED=1
     set_deploy_status TWENTY_DOCS updated
   fi
