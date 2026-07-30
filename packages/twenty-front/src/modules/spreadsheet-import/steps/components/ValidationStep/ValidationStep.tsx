@@ -1,3 +1,8 @@
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import {
+    projectIdAtom,
+    projectsState,
+} from '@/candidate-table/states/states';
 import { SpreadsheetImportTable } from '@/spreadsheet-import/components/SpreadsheetImportTable';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useHideStepBar } from '@/spreadsheet-import/hooks/useHideStepBar';
@@ -5,28 +10,37 @@ import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpre
 import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
-  type ImportedStructuredRow,
-  type SpreadsheetImportImportValidationResult,
+    type ImportedStructuredRow,
+    type SpreadsheetImportImportValidationResult,
 } from '@/spreadsheet-import/types';
 import { type SpreadsheetColumns } from '@/spreadsheet-import/types/SpreadsheetColumns';
 import { SpreadsheetColumnType } from '@/spreadsheet-import/types/SpreadsheetColumnType';
+import {
+    isCandidateSpreadsheetImportPath,
+    isLikelyValidPhoneNumber,
+    isPhoneNumberHeader,
+    isValidUuidString,
+} from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useMemo,
-  useState,
+    type Dispatch,
+    type SetStateAction,
+    useCallback,
+    useMemo,
+    useState,
 } from 'react';
-import { ModalContent } from 'twenty-ui/surfaces';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { type RowsChangeData } from 'react-data-grid';
 import { isDefined } from 'twenty-shared/utils';
 import { IconTrash } from 'twenty-ui/icon';
 import { Button, Toggle } from 'twenty-ui/input';
+import { ModalContent } from 'twenty-ui/surfaces';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { generateColumns } from './components/columns';
 import { type ImportedStructuredRowMetadata } from './types';
 
@@ -105,6 +119,40 @@ type ValidationStepProps = {
   setCurrentStepState: Dispatch<SetStateAction<SpreadsheetImportStep>>;
 };
 
+const assignCurrentProjectToRows = <T extends ImportedStructuredRow>({
+  rows,
+  projectId,
+  projectName,
+}: {
+  rows: T[];
+  projectId: string;
+  projectName?: string;
+}): T[] => {
+  return rows.map((row) => {
+    const existingProjectValue = (row as Record<string, unknown>).projects;
+    const existingJobsValue = (row as Record<string, unknown>).jobs;
+
+    if (
+      (typeof existingProjectValue === 'string' &&
+        isValidUuidString(existingProjectValue)) ||
+      (typeof existingJobsValue === 'string' &&
+        isValidUuidString(existingJobsValue))
+    ) {
+      return row;
+    }
+
+    return {
+      ...row,
+      projects: projectId,
+      jobs: projectId,
+      __projectMatch: {
+        matchedId: projectId,
+        matchedName: projectName ?? '',
+      },
+    };
+  });
+};
+
 export const ValidationStep = ({
   initialData,
   importedColumns,
@@ -114,19 +162,54 @@ export const ValidationStep = ({
 }: ValidationStepProps) => {
   const hideStepBar = useHideStepBar();
   const { enqueueDialog } = useDialogManager();
+  const { enqueueErrorSnackBar, enqueueSuccessSnackBar } = useSnackBar();
   const {
     spreadsheetImportFields: fields,
     onClose,
     onSubmit,
     rowHook,
     tableHook,
+    enableUploadProgressSseWhileOpen,
   } = useSpreadsheetImportInternal();
+
+  const projectIdFromAtom = useAtomStateValue(projectIdAtom);
+  const projects = useAtomStateValue(projectsState);
+  const tokenPair = useAtomStateValue(tokenPairState);
+
+  const currentProject = projects.find(
+    (project) => project.id === projectIdFromAtom,
+  );
+
+  const processInitialData = useCallback(
+    (rows: ImportedStructuredRow[]) => {
+      if (
+        !isDefined(currentProject) ||
+        !projectIdFromAtom ||
+        projectIdFromAtom === 'project-id'
+      ) {
+        return rows;
+      }
+
+      return assignCurrentProjectToRows({
+        rows,
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+      });
+    },
+    [currentProject, projectIdFromAtom],
+  );
 
   const [data, setData] = useState<
     (ImportedStructuredRow & ImportedStructuredRowMetadata)[]
   >(
     useMemo(
-      () => addErrorsAndRunHooks(initialData, fields, rowHook, tableHook),
+      () =>
+        addErrorsAndRunHooks(
+          processInitialData(initialData),
+          fields,
+          rowHook,
+          tableHook,
+        ),
       // oxlint-disable-next-line react-hooks/exhaustive-deps
       [],
     ),
@@ -223,6 +306,64 @@ export const ValidationStep = ({
     [],
   );
 
+  const uploadCandidatesToArxena = async (
+    candidates: Record<string, any>[],
+  ) => {
+    const accessToken =
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+
+    let project: { id: string; name: string; arxenaSiteId: string } | null =
+      null;
+
+    if (
+      isDefined(currentProject) &&
+      projectIdFromAtom &&
+      projectIdFromAtom !== 'project-id'
+    ) {
+      project = {
+        id: currentProject.id,
+        name: currentProject.name,
+        arxenaSiteId: currentProject.pathPosition || currentProject.id,
+      };
+    }
+
+    const dataSource = 'spreadsheet_import';
+    const popupData: Record<string, any> = {
+      job_id: project?.arxenaSiteId,
+      job_name: project?.name,
+      twenty_job_id: project?.id,
+      job_data_source: dataSource,
+    };
+
+    const response = await fetch(
+      `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          candidates,
+          popup_data: popupData,
+          data_source: dataSource,
+          job: project ? { id: project.id, name: project.name } : null,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`Upload failed with status ${response.status}`);
+    }
+
+    const responseText = await response.text();
+    if (!responseText) {
+      return [];
+    }
+
+    return JSON.parse(responseText);
+  };
+
   const submitData = async () => {
     const calculatedData = data.reduce(
       (acc, value) => {
@@ -248,6 +389,69 @@ export const ValidationStep = ({
         allStructuredRows: data,
       } satisfies SpreadsheetImportImportValidationResult,
     );
+
+    const isCandidateImport =
+      enableUploadProgressSseWhileOpen === true ||
+      isCandidateSpreadsheetImportPath();
+
+    if (isCandidateImport) {
+      setCurrentStepState({
+        type: SpreadsheetImportStepType.loading,
+      });
+      hideStepBar();
+
+      try {
+        const headers = Object.keys(data[0] ?? {}).filter(
+          (key) => !key.startsWith('__'),
+        );
+        const candidatesForArxena = data.map((row) => {
+          const cleanRow: Record<string, any> = {};
+
+          headers.forEach((header) => {
+            const value = (row as Record<string, any>)[header];
+
+            if (isPhoneNumberHeader(header)) {
+              if (isLikelyValidPhoneNumber(value)) {
+                cleanRow[header] = value;
+              }
+            } else {
+              cleanRow[header] = value;
+            }
+          });
+
+          if (isDefined((row as any).__projectMatch)) {
+            const projectMatch = (row as any).__projectMatch;
+            if (isDefined(projectMatch.matchedId)) {
+              cleanRow.projects = projectMatch.matchedId;
+              cleanRow.jobs = projectMatch.matchedId;
+              cleanRow['Job Applied For'] = projectMatch.matchedName;
+            }
+          }
+
+          return cleanRow;
+        });
+
+        await uploadCandidatesToArxena(candidatesForArxena);
+        enqueueSuccessSnackBar({
+          message: `Imported ${candidatesForArxena.length} candidates`,
+        });
+        onClose();
+        return;
+      } catch (error) {
+        enqueueErrorSnackBar({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to import candidates',
+        });
+        setCurrentStepState({
+          type: SpreadsheetImportStepType.validateData,
+          data,
+          importedColumns,
+        });
+        return;
+      }
+    }
 
     setCurrentStepState({
       type: SpreadsheetImportStepType.importData,

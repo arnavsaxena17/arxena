@@ -14,12 +14,18 @@ export { ARXENA_CHROME_WEBSTORE_URL } from './ArxenaChromeWebstoreUrl';
 export { AUTO_SELECT_FAST_MODEL_ID } from './AutoSelectFastModelId';
 export { AUTO_SELECT_SMART_MODEL_ID } from './AutoSelectSmartModelId';
 export { BACKEND_BATCH_REQUEST_MAX_COUNT } from './BackendBatchRequestMaxCount';
+export {
+  DEFAULT_API_SEARCH_CREDIT_COST,
+  getApiSearchCreditCost,
+  FREE_SIGNUP_API_CREDITS,
+} from './billing/api-search-costs.constant';
 export type {
   CreditPackKey,
   PricingIntent,
   SupportedPricingCurrency,
   PricingPlanId,
   MapType,
+  BillingSkuKind,
   PricingPlanTier,
   PricingPlan,
   PricingSegmentTone,
@@ -28,6 +34,9 @@ export type {
   OnboardingIntentPathKey,
 } from './billing/credit-packs.constant';
 export {
+  AI_CREDIT_MICRO_FACTOR,
+  FREE_SIGNUP_AI_CREDITS,
+  aiCreditsToMicro,
   PRICING_PLANS,
   PRICING_MARKETING_HERO_HEADLINE,
   PRICING_MARKETING_HERO_SUBHEADLINE,
@@ -64,7 +73,9 @@ export {
   SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
   getSmallPaymentTestCreditPackKey,
   SMALL_PAYMENT_TEST_CREDIT_PACKS,
+  BILLING_ENTITLEMENT_SKUS,
   CREDIT_PACKS,
+  getCreditPacksByKind,
   DEFAULT_CREDIT_PACKS,
   getCreditPacksForIntent,
   PRICING_PLAN_ID_TO_INTENT,

@@ -191,7 +191,10 @@ type CandidateTableProjectsPageMenuDropdownProps = {
   isExtensionInstalled: boolean;
   isExtensionChecking?: boolean;
   onDownloadClick: () => void;
-  creditsTotal?: number;
+  mapCredits?: number;
+  revealCredits?: number;
+  apiCredits?: number;
+  aiCredits?: number;
   onCreditsClick?: () => void;
 };
 
@@ -204,7 +207,10 @@ export const CandidateTableProjectsPageMenuDropdown = ({
   isExtensionInstalled,
   isExtensionChecking = false,
   onDownloadClick,
-  creditsTotal,
+  mapCredits,
+  revealCredits,
+  apiCredits,
+  aiCredits,
   onCreditsClick,
 }: CandidateTableProjectsPageMenuDropdownProps) => {
   const theme = useTheme();
@@ -359,13 +365,61 @@ export const CandidateTableProjectsPageMenuDropdown = ({
                       }}
                     />
 
-                    {creditsTotal !== undefined &&
+                    {mapCredits !== undefined &&
                       onCreditsClick !== undefined && (
                         <MenuItem
-                          testId="credits-button"
-                          text="Credits"
+                          testId="map-credits-button"
+                          text="Map credits"
                           LeftIcon={IconCoins}
-                          contextualText={String(creditsTotal)}
+                          contextualText={String(mapCredits)}
+                          contextualTextPosition="right"
+                          onClick={() => {
+                            onCreditsClick();
+                            closeDropdown(
+                              CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                            );
+                          }}
+                        />
+                      )}
+                    {revealCredits !== undefined &&
+                      onCreditsClick !== undefined && (
+                        <MenuItem
+                          testId="reveal-credits-button"
+                          text="Reveal credits"
+                          LeftIcon={IconCoins}
+                          contextualText={String(revealCredits)}
+                          contextualTextPosition="right"
+                          onClick={() => {
+                            onCreditsClick();
+                            closeDropdown(
+                              CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                            );
+                          }}
+                        />
+                      )}
+                    {apiCredits !== undefined &&
+                      onCreditsClick !== undefined && (
+                        <MenuItem
+                          testId="api-credits-button"
+                          text="API credits"
+                          LeftIcon={IconCoins}
+                          contextualText={String(apiCredits)}
+                          contextualTextPosition="right"
+                          onClick={() => {
+                            onCreditsClick();
+                            closeDropdown(
+                              CANDIDATE_TABLE_JOBS_PAGE_MENU_DROPDOWN_ID,
+                            );
+                          }}
+                        />
+                      )}
+                    {aiCredits !== undefined &&
+                      onCreditsClick !== undefined && (
+                        <MenuItem
+                          testId="ai-credits-button"
+                          text="AI credits"
+                          LeftIcon={IconCoins}
+                          contextualText={String(aiCredits)}
                           contextualTextPosition="right"
                           onClick={() => {
                             onCreditsClick();

@@ -483,6 +483,11 @@ export class WorkspaceEntity {
   @Column({ type: 'boolean', nullable: false, default: true })
   useRecommendedModels: boolean;
 
+  // How Razorpay subscription cycle grants apply maps/reveals/AI entitlements
+  @Field(() => String, { nullable: false })
+  @Column({ type: 'varchar', nullable: false, default: 'reset' })
+  creditFulfillmentMode: 'reset' | 'add' | 'split';
+
   @Column({ nullable: false, type: 'uuid' })
   workspaceCustomApplicationId: string;
 

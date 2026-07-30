@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { ThemeContext } from 'twenty-ui/theme-constants';
 
@@ -9,6 +9,7 @@ import { matchColumnsState } from '@/spreadsheet-import/steps/components/MatchCo
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 
 const SpreadsheetImport = React.lazy(() =>
   import('./SpreadsheetImport').then((module) => ({
@@ -41,6 +42,30 @@ export const SpreadsheetImportProvider = (
   const setMatchColumns = useSetAtomState(matchColumnsState);
 
   const { closeModal } = useModal();
+  const {
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  } = useUploadProgressSseSession();
+
+  const shouldHoldUploadProgressSse =
+    spreadsheetImportDialog.isOpen &&
+    spreadsheetImportDialog.options?.enableUploadProgressSseWhileOpen === true;
+
+  useEffect(() => {
+    if (!shouldHoldUploadProgressSse) {
+      return;
+    }
+
+    beginUploadProgressSseSession();
+
+    return () => {
+      endUploadProgressSseSessionAfterDelay();
+    };
+  }, [
+    shouldHoldUploadProgressSse,
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  ]);
 
   const handleClose = () => {
     spreadsheetImportDialog.options?.onAbortSubmit?.();

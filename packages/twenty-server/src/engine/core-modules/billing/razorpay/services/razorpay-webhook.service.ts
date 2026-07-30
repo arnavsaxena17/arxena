@@ -1,9 +1,10 @@
 /* @license Enterprise */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as crypto from 'crypto';
+import { getCreditPackByKey } from 'twenty-shared';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { In, Repository } from 'typeorm';
 
@@ -15,17 +16,12 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
-    CleanWorkspaceDeletionWarningUserVarsJob,
-    CleanWorkspaceDeletionWarningUserVarsJobData,
+  CleanWorkspaceDeletionWarningUserVarsJob,
+  CleanWorkspaceDeletionWarningUserVarsJobData,
 } from 'src/engine/workspace-manager/workspace-cleaner/jobs/clean-workspace-deletion-warning-user-vars.job';
 import { BillingSubscriptionEntity } from '../../entities/billing-subscription.entity';
-import { WorkspaceCredits } from '../../entities/workspace-credits.entity';
 import { SubscriptionStatus } from '../../enums/billing-subscription-status.enum';
-import { CreditTransactionService } from '../../services/credit-transaction.service';
-import {
-    RAZORPAY_CREDIT_PACKS,
-    type CreditPackKey,
-} from '../constants/credit-packs.constant';
+import { EntitlementFulfillmentService } from '../../services/entitlement-fulfillment.service';
 import { RazorpayOrderService } from './razorpay-order.service';
 
 type RazorpayWebhookPayload = {
@@ -47,6 +43,7 @@ type RazorpayWebhookPayload = {
         current_end?: number;
         charge_at?: number;
         end_at?: number;
+        plan_id?: string;
       };
     };
   };
@@ -86,18 +83,20 @@ export class RazorpayWebhookService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly razorpayOrderService: RazorpayOrderService,
-    private readonly creditTransactionService: CreditTransactionService,
+    @Inject(forwardRef(() => EntitlementFulfillmentService))
+    private readonly entitlementFulfillmentService: EntitlementFulfillmentService,
     @InjectMessageQueue(MessageQueue.workspaceQueue)
     private readonly messageQueueService: MessageQueueService,
-    @InjectRepository(WorkspaceCredits)
-    private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
     @InjectRepository(BillingSubscriptionEntity)
     private readonly billingSubscriptionRepository: Repository<BillingSubscriptionEntity>,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
   ) {}
 
-  handlePayload(signature: string, rawBody: Buffer | Uint8Array): Promise<Record<string, unknown>> {
+  handlePayload(
+    signature: string,
+    rawBody: Buffer | Uint8Array,
+  ): Promise<Record<string, unknown>> {
     const secretVal = (
       this.environmentService as { get(key: string): unknown }
     ).get('BILLING_RAZORPAY_WEBHOOK_SECRET');
@@ -106,7 +105,9 @@ export class RazorpayWebhookService {
       throw new Error('BILLING_RAZORPAY_WEBHOOK_SECRET is not set');
     }
 
-    const bodyBuffer = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody);
+    const bodyBuffer = Buffer.isBuffer(rawBody)
+      ? rawBody
+      : Buffer.from(rawBody);
     const expectedSignature = crypto
       .createHmac('sha256', secret)
       .update(bodyBuffer as crypto.BinaryLike)
@@ -152,13 +153,17 @@ export class RazorpayWebhookService {
     }
 
     let workspaceId: string | undefined = payment.notes?.workspaceId;
-    let creditPackKey: string | undefined = payment.notes?.creditPackKey;
+    let creditPackKey: string | undefined =
+      payment.notes?.creditPackKey ?? payment.notes?.skuKey;
     if ((!workspaceId || !creditPackKey) && payment.order_id) {
       const orderNotes = await this.razorpayOrderService.getOrderNotes(
         payment.order_id,
       );
       workspaceId = workspaceId ?? orderNotes?.workspaceId;
-      creditPackKey = creditPackKey ?? orderNotes?.creditPackKey;
+      creditPackKey =
+        creditPackKey ??
+        orderNotes?.creditPackKey ??
+        (orderNotes as { skuKey?: string } | null)?.skuKey;
     }
     if (!workspaceId || !creditPackKey) {
       this.logger.log(
@@ -167,56 +172,27 @@ export class RazorpayWebhookService {
       return { received: true, event: 'payment.captured' };
     }
 
-    const creditPackKeyTyped = creditPackKey as CreditPackKey;
-    const pack = RAZORPAY_CREDIT_PACKS.find((p) => p.key === creditPackKeyTyped);
+    const pack = getCreditPackByKey(creditPackKey);
     if (!pack) {
-      this.logger.warn(`Unknown creditPackKey: ${creditPackKeyTyped}`);
+      this.logger.warn(`Unknown creditPackKey: ${creditPackKey}`);
       return { received: true, event: 'payment.captured' };
     }
 
-    // Two-pool model: tier.maps funds the org-chart pool (1 credit per chart),
-    // tier.credits funds the unified reveal pool (consumed at runtime via
-    // getRevealCost('email' | 'phone')).
-    const orgChartDelta = pack.mapsCount;
-    const revealDelta = pack.credits;
-
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId },
-    });
-    if (row) {
-      await this.workspaceCreditsRepository.update(
-        { workspaceId },
-        {
-          orgChartCredits: row.orgChartCredits + orgChartDelta,
-          revealCredits: row.revealCredits + revealDelta,
-        },
+    if (pack.kind === 'subscription') {
+      this.logger.log(
+        `payment.captured for subscription SKU ${pack.key}; subscription webhooks own cycle grants`,
       );
-    } else {
-      await this.workspaceCreditsRepository.insert({
-        workspaceId,
-        orgChartCredits: orgChartDelta,
-        revealCredits: revealDelta,
-      });
+      return { received: true, event: 'payment.captured' };
     }
 
-    await this.creditTransactionService.recordTransaction({
+    await this.entitlementFulfillmentService.fulfillOneTimePack({
       workspaceId,
-      type: 'credit',
-      creditType: 'org_chart',
-      amount: orgChartDelta,
-      metadata: { creditPackKey, source: 'payment_captured' },
-    });
-
-    await this.creditTransactionService.recordTransaction({
-      workspaceId,
-      type: 'credit',
-      creditType: 'reveal_top_up',
-      amount: revealDelta,
-      metadata: { creditPackKey, source: 'payment_captured' },
+      sku: pack,
+      paymentId: payment.id,
     });
 
     this.logger.log(
-      `payment.captured: +${orgChartDelta} org chart credits and +${revealDelta} reveal credits for workspace ${workspaceId}`,
+      `payment.captured: fulfilled one-time pack ${pack.key} for workspace ${workspaceId}`,
     );
     return { received: true, event: 'payment.captured' };
   }
@@ -274,13 +250,13 @@ export class RazorpayWebhookService {
 
     await this.billingSubscriptionRepository.manager.transaction(
       async (tx) => {
-        const repo = tx.getRepository(BillingSubscription);
+        const repo = tx.getRepository(BillingSubscriptionEntity);
         if (isNewStatusActive) {
           await repo.update(
             {
               workspaceId,
               status: In(activeStatuses),
-            } as FindOptionsWhere<BillingSubscription>,
+            } as FindOptionsWhere<BillingSubscriptionEntity>,
             { status: SubscriptionStatus.Canceled },
           );
         }
@@ -331,6 +307,28 @@ export class RazorpayWebhookService {
         await this.messageQueueService.add<CleanWorkspaceDeletionWarningUserVarsJobData>(
           CleanWorkspaceDeletionWarningUserVarsJob.name,
           { workspaceId },
+        );
+      }
+    }
+
+    // Grant cycle entitlements on activate / renew
+    if (
+      (body.event === 'subscription.activated' ||
+        body.event === 'subscription.charged') &&
+      isNewStatusActive
+    ) {
+      const skuKey = sub.notes?.skuKey ?? sub.notes?.creditPackKey;
+      const pack = skuKey ? getCreditPackByKey(skuKey) : undefined;
+      if (pack && pack.kind === 'subscription') {
+        await this.entitlementFulfillmentService.fulfillSubscriptionCycle({
+          workspaceId,
+          sku: pack,
+          periodStart: currentPeriodStart,
+          razorpayEventId: `${body.event}:${sub.id}`,
+        });
+      } else {
+        this.logger.log(
+          `Subscription event ${body.event}: no subscription SKU in notes (skuKey=${skuKey ?? 'none'})`,
         );
       }
     }

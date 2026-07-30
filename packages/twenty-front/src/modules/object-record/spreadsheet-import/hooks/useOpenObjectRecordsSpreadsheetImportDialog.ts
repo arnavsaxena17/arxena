@@ -2,6 +2,7 @@ import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient
 import { useObjectMetadataItem } from '@/object-metadata/hooks/useObjectMetadataItem';
 import { useGenerateDepthRecordGqlFieldsFromObject } from '@/object-record/graphql/record-gql-fields/hooks/useGenerateDepthRecordGqlFieldsFromObject';
 import { useBatchCreateManyRecords } from '@/object-record/hooks/useBatchCreateManyRecords';
+import { getCandidateSpecificImportFields } from '@/object-record/spreadsheet-import/constants/CandidateImportFields';
 import { useBuildSpreadsheetImportFields } from '@/object-record/spreadsheet-import/hooks/useBuildSpreadSheetImportFields';
 import { buildRecordFromImportedStructuredRow } from '@/object-record/spreadsheet-import/utils/buildRecordFromImportedStructuredRow';
 import { spreadsheetImportFilterAvailableFieldMetadataItems } from '@/object-record/spreadsheet-import/utils/spreadsheetImportFilterAvailableFieldMetadataItems';
@@ -12,6 +13,7 @@ import { spreadsheetImportCreatedRecordsProgressState } from '@/spreadsheet-impo
 import { type SpreadsheetImportDialogOptions } from '@/spreadsheet-import/types';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { useIcons } from 'twenty-ui/icon';
 
 export const useOpenObjectRecordsSpreadsheetImportDialog = (
   objectNameSingular: string,
@@ -19,6 +21,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   const apolloCoreClient = useApolloCoreClient();
   const { openSpreadsheetImportDialog } = useOpenSpreadsheetImportDialog();
   const { buildSpreadsheetImportFields } = useBuildSpreadsheetImportFields();
+  const { getIcon } = useIcons();
 
   const { enqueueErrorSnackBar } = useSnackBar();
 
@@ -56,12 +59,32 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
         objectMetadataItem.updatableFields,
       );
 
-    const spreadsheetImportFields = buildSpreadsheetImportFields(
+    let spreadsheetImportFields = buildSpreadsheetImportFields(
       availableFieldMetadataItemsToImport,
     );
 
+    const isCandidateOrPersonImport =
+      objectNameSingular === 'candidate' || objectNameSingular === 'person';
+
+    if (isCandidateOrPersonImport) {
+      const candidateSpecificFields =
+        getCandidateSpecificImportFields(getIcon);
+      const existingFieldKeys = new Set(
+        spreadsheetImportFields.map((field) => field.key),
+      );
+      const newCandidateFields = candidateSpecificFields.filter(
+        (field) => !existingFieldKeys.has(field.key),
+      );
+
+      spreadsheetImportFields = [
+        ...spreadsheetImportFields,
+        ...newCandidateFields,
+      ];
+    }
+
     openSpreadsheetImportDialog({
       ...options,
+      enableUploadProgressSseWhileOpen: objectNameSingular === 'candidate',
       onSubmit: async (data) => {
         const createInputs = data.validStructuredRows.map((record) => {
           const fieldMapping: Record<string, any> =

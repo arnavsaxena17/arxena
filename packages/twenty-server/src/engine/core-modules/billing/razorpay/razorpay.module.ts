@@ -1,8 +1,9 @@
 /* @license Enterprise */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BillingSubscriptionEntity } from 'src/engine/core-modules/billing/entities/billing-subscription.entity';
 import { CreditTransaction } from 'src/engine/core-modules/billing/entities/credit-transaction.entity';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
@@ -20,6 +21,7 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
   imports: [
     EnvironmentModule,
     MessageQueueModule,
+    forwardRef(() => BillingModule),
     TypeOrmModule.forFeature([
       BillingSubscriptionEntity,
       WorkspaceCredits,

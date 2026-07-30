@@ -135,13 +135,6 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               indentationLevel: 2,
             },
             {
-              label: t`Baileys`,
-              path: SettingsPath.Baileys,
-              Icon: IconMessageCircle,
-              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
-              indentationLevel: 2,
-            },
-            {
               label: t`LinkedIn Business`,
               path: SettingsPath.LinkedinSignUp,
               Icon: IconBrandLinkedin,

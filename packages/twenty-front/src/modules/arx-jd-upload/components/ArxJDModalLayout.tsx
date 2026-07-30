@@ -1,6 +1,6 @@
-import { IconButton } from 'twenty-ui';
+import { IconButton } from 'twenty-ui/input';
 import { IconX } from 'twenty-ui/icon';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 import {
   StyledAdjuster,
@@ -8,7 +8,6 @@ import {
   StyledBody,
   StyledFooter,
   StyledModal,
-  StyledModalContainer,
   StyledModalContent,
   StyledModalHeader,
   StyledScrollableContent,
@@ -32,78 +31,36 @@ export const ArxJDModalLayout = ({
   footer,
   navigation,
 }: ArxJDModalLayoutProps) => {
-  // Debug log
-  console.log('ArxJDModalLayout rendering with navigation:', !!navigation);
-  
   if (!isOpen) {
     return null;
   }
 
+  const stopPropagation = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
   return (
-    <StyledBackdrop
-      onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-        e.stopPropagation();
-        onClose();
-      }}
-    >
-      <StyledAdjuster
-        onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-      >
-        <StyledModal
-          onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-          onMouseDown={(e: React.MouseEvent<HTMLDivElement>) =>
-            e.stopPropagation()
-          }
-          onMouseUp={(e: React.MouseEvent<HTMLDivElement>) =>
-            e.stopPropagation()
-          }
-          onMouseMove={(e: React.MouseEvent<HTMLDivElement>) =>
-            e.stopPropagation()
-          }
-        >
-          <StyledModalContainer
-            onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-              e.stopPropagation()
-            }
-            onMouseDown={(e: React.MouseEvent<HTMLDivElement>) =>
-              e.stopPropagation()
-            }
-            onMouseUp={(e: React.MouseEvent<HTMLDivElement>) =>
-              e.stopPropagation()
-            }
-            onMouseMove={(e: React.MouseEvent<HTMLDivElement>) =>
-              e.stopPropagation()
-            }
-          >
-            <StyledModalContent
-              onClick={(e: React.MouseEvent<HTMLDivElement>) =>
-                e.stopPropagation()
-              }
-              onMouseDown={(e: React.MouseEvent<HTMLDivElement>) =>
-                e.stopPropagation()
-              }
-              onMouseUp={(e: React.MouseEvent<HTMLDivElement>) =>
-                e.stopPropagation()
-              }
-              onMouseMove={(e: React.MouseEvent<HTMLDivElement>) =>
-                e.stopPropagation()
-              }
-            >
-              <StyledModalHeader>
-                <StyledTitle>{title}</StyledTitle>
-                <IconButton Icon={IconX} onClick={onClose} variant="tertiary" />
-              </StyledModalHeader>
-              <StyledScrollableContent>
-                <StyledBody>{children}</StyledBody>
-              </StyledScrollableContent>
-              {navigation && (
-                <StyledFooter onClick={(e) => e.stopPropagation()}>
-                  {navigation}
-                </StyledFooter>
-              )}
-              {footer && <StyledFooter>{footer}</StyledFooter>}
-            </StyledModalContent>
-          </StyledModalContainer>
+    <StyledBackdrop onClick={onClose}>
+      <StyledAdjuster onClick={stopPropagation}>
+        <StyledModal onClick={stopPropagation} onMouseDown={stopPropagation}>
+          <StyledModalContent onClick={stopPropagation}>
+            <StyledModalHeader>
+              <StyledTitle>{title}</StyledTitle>
+              <IconButton
+                Icon={IconX}
+                onClick={onClose}
+                variant="tertiary"
+                size="small"
+              />
+            </StyledModalHeader>
+            <StyledScrollableContent>
+              <StyledBody>{children}</StyledBody>
+            </StyledScrollableContent>
+            {navigation && (
+              <StyledFooter onClick={stopPropagation}>{navigation}</StyledFooter>
+            )}
+            {footer && <StyledFooter>{footer}</StyledFooter>}
+          </StyledModalContent>
         </StyledModal>
       </StyledAdjuster>
     </StyledBackdrop>

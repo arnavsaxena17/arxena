@@ -1,7 +1,7 @@
 import { IconDownload } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
 import { IconComponent } from 'twenty-ui/icon';
-import { IconAlertCircle, IconHierarchy2, IconMessage } from 'twenty-ui/icon';
+import { IconAlertCircle, IconHierarchy2 } from 'twenty-ui/icon';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useLingui } from '@lingui/react/macro';
@@ -13,6 +13,7 @@ import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
+import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 const StyledCompanySearchWrapper = styled.div`
@@ -148,12 +149,11 @@ export type CandidateTablePageHeaderProps = {
   onAddCredits?: () => void;
   orgChartCredits?: number;
   revealCredits?: number;
+  apiCredits?: number;
   revealCreditsAsEmailEquivalent?: number;
   revealCreditsAsPhoneEquivalent?: number;
   emailRevealCost?: number;
   phoneRevealCost?: number;
-  /** Opens/toggles the job page Floating AI chat (FloatingAIChat). */
-  onFloatingAIChatToggle?: () => void;
   onMergeJobs?: () => void;
   isMergeMode?: boolean;
   onMergeModeCancel?: () => void;
@@ -184,11 +184,11 @@ export const CandidateTablePageHeader = ({
   onAddCredits,
   orgChartCredits,
   revealCredits,
+  apiCredits,
   revealCreditsAsEmailEquivalent,
   revealCreditsAsPhoneEquivalent,
   emailRevealCost,
   phoneRevealCost,
-  onFloatingAIChatToggle,
   onMergeJobs,
   isMergeMode,
   onMergeModeCancel,
@@ -201,10 +201,22 @@ export const CandidateTablePageHeader = ({
     orgChartLinkedinCandidateSourceState,
   );
 
-  const creditsTotal =
-    orgChartCredits !== undefined
-      ? (orgChartCredits ?? 0) + (revealCredits ?? 0)
-      : undefined;
+  const {
+    isGetResourceCreditUsageQueryLoaded,
+    hasResourceCreditUsage,
+    getResourceCreditUsage,
+  } = useGetResourceCreditUsage();
+  let aiCreditsDisplay: number | undefined;
+  if (isGetResourceCreditUsageQueryLoaded && hasResourceCreditUsage) {
+    try {
+      const usage = getResourceCreditUsage();
+      const available =
+        (usage.totalGrantedCredits ?? 0) - (usage.usedCredits ?? 0);
+      aiCreditsDisplay = Math.max(0, Math.round(available / 1_000_000));
+    } catch {
+      aiCreditsDisplay = undefined;
+    }
+  }
 
   const companySearchDisabledByUnipile =
     orgChartLinkedinSource === 'unipile' && !isLinkedinConnected;
@@ -265,14 +277,6 @@ export const CandidateTablePageHeader = ({
             />
           </>
         ) : null}
-        {onFloatingAIChatToggle !== undefined && (
-          <Button
-            title="AI Chat"
-            Icon={IconMessage}
-            variant="secondary"
-            onClick={onFloatingAIChatToggle}
-          />
-        )}
         {/* {!isExtensionInstalled && (
           <Button
             title="Download App"
@@ -296,9 +300,12 @@ export const CandidateTablePageHeader = ({
           isExtensionInstalled={isExtensionInstalled}
           isExtensionChecking={isExtensionChecking}
           onDownloadClick={onDownloadClick}
-          creditsTotal={creditsTotal}
+          mapCredits={orgChartCredits}
+          revealCredits={revealCredits}
+          apiCredits={apiCredits}
+          aiCredits={aiCreditsDisplay}
           onCreditsClick={
-            creditsTotal !== undefined
+            orgChartCredits !== undefined
               ? () => setIsCreditModalOpen(true)
               : undefined
           }
@@ -311,10 +318,12 @@ export const CandidateTablePageHeader = ({
           onClose={() => setIsCreditModalOpen(false)}
           orgChartCredits={orgChartCredits}
           revealCredits={revealCredits}
+          apiCredits={apiCredits}
           revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
           revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
           emailRevealCost={emailRevealCost}
           phoneRevealCost={phoneRevealCost}
+          aiCredits={aiCreditsDisplay}
         />
       )}
     </>

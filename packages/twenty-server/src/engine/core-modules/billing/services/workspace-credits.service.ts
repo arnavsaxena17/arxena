@@ -4,15 +4,23 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
-import { computeRevealCreditCost, getRevealCost } from 'twenty-shared';
+import {
+  FREE_SIGNUP_AI_CREDITS,
+  FREE_SIGNUP_API_CREDITS,
+  aiCreditsToMicro,
+  computeRevealCreditCost,
+  getApiSearchCreditCost,
+  getRevealCost,
+} from 'twenty-shared';
 
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
+import { BillingCreditService } from 'src/engine/core-modules/billing/services/billing-credit.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 
 const DEFAULT_FREE_ORG_CHART_CREDITS = 3;
 const DEFAULT_FREE_REVEAL_CREDITS = 0;
 
-export type AdminCreditPool = 'org_chart' | 'reveal';
+export type AdminCreditPool = 'org_chart' | 'reveal' | 'ai' | 'api';
 
 @Injectable()
 export class WorkspaceCreditsService {
@@ -20,6 +28,7 @@ export class WorkspaceCreditsService {
     @InjectRepository(WorkspaceCredits)
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
     private readonly creditTransactionService: CreditTransactionService,
+    private readonly billingCreditService: BillingCreditService,
   ) {}
 
   private readEnvCount(envKey: string, defaultValue: number): number {
@@ -45,6 +54,13 @@ export class WorkspaceCreditsService {
     );
   }
 
+  private getFreeApiCredits(): number {
+    return this.readEnvCount(
+      'FREE_SIGNUP_API_CREDITS',
+      FREE_SIGNUP_API_CREDITS,
+    );
+  }
+
   async getOrCreate(workspaceId: string): Promise<WorkspaceCredits> {
     let row = await this.workspaceCreditsRepository.findOne({
       where: { workspaceId },
@@ -55,8 +71,37 @@ export class WorkspaceCreditsService {
       workspaceId,
       orgChartCredits: this.getFreeOrgChartCredits(),
       revealCredits: this.getFreeRevealCredits(),
+      apiCredits: this.getFreeApiCredits(),
     });
-    return this.workspaceCreditsRepository.save(row);
+    row = await this.workspaceCreditsRepository.save(row);
+
+    // One-time free signup AI grant into upstream creditBalanceMicro
+    const idempotencyKey = 'signup_ai_grant';
+    const alreadyGranted =
+      await this.creditTransactionService.hasFulfillmentIdempotencyKey(
+        workspaceId,
+        idempotencyKey,
+      );
+    if (!alreadyGranted && FREE_SIGNUP_AI_CREDITS > 0) {
+      await this.billingCreditService.creditWorkspaceBalance({
+        workspaceId,
+        amountMicro: aiCreditsToMicro(FREE_SIGNUP_AI_CREDITS),
+      });
+      await this.creditTransactionService.recordTransaction({
+        workspaceId,
+        type: 'credit',
+        creditType: 'ai_top_up',
+        amount: FREE_SIGNUP_AI_CREDITS,
+        metadata: {
+          idempotencyKey,
+          skuKey: 'signup',
+          source: 'signup_ai_grant',
+          grantPath: 'credit_balance_micro',
+        },
+      });
+    }
+
+    return row;
   }
 
   // ---------------------------------------------------------------------------
@@ -156,6 +201,7 @@ export class WorkspaceCreditsService {
         workspaceId,
         orgChartCredits: amount,
         revealCredits: 0,
+        apiCredits: 0,
       });
     }
   }
@@ -263,12 +309,169 @@ export class WorkspaceCreditsService {
         workspaceId,
         orgChartCredits: 0,
         revealCredits: amount,
+        apiCredits: 0,
+      });
+    }
+  }
+
+  async setOrgChartCredits(workspaceId: string, amount: number): Promise<void> {
+    const safeAmount = Math.max(0, Math.round(amount));
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { orgChartCredits: safeAmount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: safeAmount,
+        revealCredits: 0,
+        apiCredits: 0,
+      });
+    }
+  }
+
+  async setRevealCredits(workspaceId: string, amount: number): Promise<void> {
+    const safeAmount = Math.max(0, Math.round(amount));
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { revealCredits: safeAmount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: 0,
+        revealCredits: safeAmount,
+        apiCredits: 0,
       });
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Admin: bulk adjust either pool by an arbitrary delta (positive or negative).
+  // API credits — People API search (default 1 credit per search).
+  // ---------------------------------------------------------------------------
+
+  computeApiSearchCreditsNeeded(searchCount = 1): number {
+    return Math.max(0, searchCount) * getApiSearchCreditCost();
+  }
+
+  async getApiCreditsAvailable(workspaceId: string): Promise<number> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+
+    return row?.apiCredits ?? 0;
+  }
+
+  async hasSufficientApiCredits(
+    workspaceId: string,
+    searchCount = 1,
+  ): Promise<boolean> {
+    const required = this.computeApiSearchCreditsNeeded(searchCount);
+    const available = await this.getApiCreditsAvailable(workspaceId);
+
+    return available >= required;
+  }
+
+  async debitApiCredits(
+    workspaceId: string,
+    searchCount = 1,
+    metadata?: { source?: string; dataSource?: string; endpoint?: string },
+  ): Promise<void> {
+    const required = this.computeApiSearchCreditsNeeded(searchCount);
+
+    if (required <= 0) {
+      return;
+    }
+
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (!row) {
+      throw new HttpException(
+        'Workspace credits not found',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    const newApiCredits = row.apiCredits - required;
+    if (newApiCredits < 0) {
+      throw new HttpException(
+        {
+          message: 'Insufficient API credits',
+          creditsNeeded: required,
+          creditsAvailable: row.apiCredits,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    await this.workspaceCreditsRepository.update(
+      { workspaceId },
+      { apiCredits: newApiCredits },
+    );
+
+    await this.creditTransactionService.recordTransaction({
+      workspaceId,
+      type: 'debit',
+      creditType: 'api_search',
+      amount: required,
+      metadata: {
+        ...(metadata ?? {}),
+        searchCount,
+        costPerSearch: getApiSearchCreditCost(),
+      },
+    });
+  }
+
+  async addApiCredits(workspaceId: string, amount: number): Promise<void> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { apiCredits: row.apiCredits + amount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: 0,
+        revealCredits: 0,
+        apiCredits: amount,
+      });
+    }
+  }
+
+  async setApiCredits(workspaceId: string, amount: number): Promise<void> {
+    const safeAmount = Math.max(0, Math.round(amount));
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+    if (row) {
+      await this.workspaceCreditsRepository.update(
+        { workspaceId },
+        { apiCredits: safeAmount },
+      );
+    } else {
+      await this.workspaceCreditsRepository.insert({
+        workspaceId,
+        orgChartCredits: 0,
+        revealCredits: 0,
+        apiCredits: safeAmount,
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin: bulk adjust a pool by an arbitrary delta (positive or negative).
   // ---------------------------------------------------------------------------
 
   async adjustCredits(
@@ -280,11 +483,37 @@ export class WorkspaceCreditsService {
       return;
     }
 
+    if (creditType === 'ai') {
+      if (delta > 0) {
+        await this.billingCreditService.creditWorkspaceBalance({
+          workspaceId,
+          amountMicro: aiCreditsToMicro(delta),
+        });
+        await this.creditTransactionService.recordTransaction({
+          workspaceId,
+          type: 'credit',
+          creditType: 'ai_top_up',
+          amount: delta,
+          metadata: { source: 'admin_adjust' },
+        });
+      }
+      return;
+    }
+
     if (delta > 0) {
       if (creditType === 'org_chart') {
         await this.addOrgChartCredits(workspaceId, delta);
-      } else {
+      } else if (creditType === 'reveal') {
         await this.addRevealCredits(workspaceId, delta);
+      } else {
+        await this.addApiCredits(workspaceId, delta);
+        await this.creditTransactionService.recordTransaction({
+          workspaceId,
+          type: 'credit',
+          creditType: 'api_top_up',
+          amount: delta,
+          metadata: { source: 'admin_adjust' },
+        });
       }
       return;
     }
@@ -296,7 +525,12 @@ export class WorkspaceCreditsService {
       return;
     }
 
-    const field = creditType === 'org_chart' ? 'orgChartCredits' : 'revealCredits';
+    const field =
+      creditType === 'org_chart'
+        ? 'orgChartCredits'
+        : creditType === 'reveal'
+          ? 'revealCredits'
+          : 'apiCredits';
     const current = row[field];
     const newValue = Math.max(0, current + delta);
     await this.workspaceCreditsRepository.update(

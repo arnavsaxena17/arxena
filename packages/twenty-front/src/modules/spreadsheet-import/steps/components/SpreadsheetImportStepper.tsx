@@ -1,18 +1,19 @@
-import { useCallback, useContext, useState } from 'react';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useCallback, useContext, useState } from 'react';
 import { ModalContent } from 'twenty-ui/surfaces';
 
 import { ImportDataStep } from '@/spreadsheet-import/steps/components/ImportDataStep';
 import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import { CircularProgressBar } from 'twenty-ui/feedback';
+import { ThemeContext } from 'twenty-ui/theme-constants';
 import { MatchColumnsStep } from './MatchColumnsStep/MatchColumnsStep';
 import { SelectHeaderStep } from './SelectHeaderStep/SelectHeaderStep';
 import { SelectSheetStep } from './SelectSheetStep/SelectSheetStep';
+import { UploadResumesStep } from './UploadResumesStep/UploadResumesStep';
 import { UploadStep } from './UploadStep/UploadStep';
 import { ValidationStep } from './ValidationStep/ValidationStep';
-import { ThemeContext } from 'twenty-ui/theme-constants';
 
 type SpreadsheetImportStepperProps = {
   nextStep: () => void;
@@ -99,6 +100,18 @@ export const SpreadsheetImportStepper = ({
           nextStep={nextStep}
           onBack={handleBack}
           onError={handleError}
+        />
+      );
+    case SpreadsheetImportStepType.uploadResumes:
+      return (
+        <UploadResumesStep
+          files={currentStepState.files}
+          setCurrentStepState={setCurrentStepState}
+          onError={handleError}
+          nextStep={nextStep}
+          setPreviousStepState={setPreviousStepState}
+          onBack={handleBack}
+          currentStepState={currentStepState}
         />
       );
     case SpreadsheetImportStepType.validateData:

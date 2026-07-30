@@ -52,6 +52,15 @@ export class CreditPackOutput {
   @Field()
   creditsDisplay: string;
 
+  @Field()
+  kind: string;
+
+  @Field()
+  aiCredits: number;
+
+  @Field()
+  apiCredits: number;
+
   /** JSON-stringified Record<SupportedPricingCurrency, number>. */
   @Field()
   pricesSubunitsJson: string;

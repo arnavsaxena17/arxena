@@ -14,44 +14,49 @@ const StyledContainer = styled.div`
 `;
 
 const StyledOrSeparator = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[2]};
-  margin: ${themeCssVariables.spacing[2]} 0;
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[3]};
+  margin: ${themeCssVariables.spacing[1]} 0;
+  width: 100%;
 
   &::before,
   &::after {
+    background-color: ${themeCssVariables.border.color.medium};
     content: '';
     flex: 1;
     height: 1px;
-    background-color: ${themeCssVariables.border.color.medium};
   }
 `;
 
 const StyledNameInputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[2]};
-  padding: ${themeCssVariables.spacing[3]};
   background-color: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[3]};
+  padding: ${themeCssVariables.spacing[4]};
+  width: 100%;
 `;
 
 const StyledNameInput = styled.input`
   background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
-  padding: ${themeCssVariables.spacing[2]};
-  font-size: ${themeCssVariables.font.size.md};
+  box-sizing: border-box;
   color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  width: 100%;
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.color.blue};
+    outline: none;
   }
 `;
 
@@ -59,6 +64,12 @@ const StyledLabel = styled.label`
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
+`;
+
+const StyledActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 `;
 
 type UploadFormProps = {
@@ -170,18 +181,19 @@ export const UploadForm = ({
           onKeyDown={handleNameInputKeyDown}
           disabled={isCreatingJob || isUploading}
         />
-        <Button
-          title={isCreatingJob ? 'Creating...' : 'Create Project'}
-          fullWidth={false}
-          size="small"
-          position="middle"
-          accent="blue"
-          justify="center"
-          variant="secondary"
-          onClick={handleCreateJobFromName}
-          disabled={!jobName.trim() || isCreatingJob || isUploading}
-          isLoading={isCreatingJob}
-        />
+        <StyledActions>
+          <Button
+            title={isCreatingJob ? 'Creating...' : 'Create Project'}
+            fullWidth={false}
+            size="small"
+            accent="blue"
+            justify="center"
+            variant="primary"
+            onClick={handleCreateJobFromName}
+            disabled={!jobName.trim() || isCreatingJob || isUploading}
+            isLoading={isCreatingJob}
+          />
+        </StyledActions>
       </StyledNameInputContainer>
     </StyledContainer>
   );

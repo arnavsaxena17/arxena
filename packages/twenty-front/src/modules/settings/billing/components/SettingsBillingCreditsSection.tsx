@@ -120,12 +120,14 @@ export const SettingsBillingCreditsSection = ({
   currentBillingSubscription,
   onUpdatePayment,
   isUpdatePaymentDisabled,
+  hidePriceSelector = false,
 }: {
   currentBillingSubscription: NonNullable<
     CurrentWorkspace['currentBillingSubscription']
   >;
   onUpdatePayment: () => void;
   isUpdatePaymentDisabled: boolean;
+  hidePriceSelector?: boolean;
 }) => {
   const theme = useTheme();
   const subscriptionStatus = useSubscriptionStatus();
@@ -213,8 +215,8 @@ export const SettingsBillingCreditsSection = ({
   return (
     <Section>
       <H2Title
-        title={t`Credits`}
-        description={t`Credits are used by workflows, AI chats, agents, and approved apps`}
+        title={t`AI & usage credits`}
+        description={t`Used by workflows, AI chats, agents, and approved apps. Contact support to change your plan.`}
       />
       <StyledSettingsBillingCard>
         <StyledSettingsBillingCardHeader>
@@ -234,21 +236,23 @@ export const SettingsBillingCreditsSection = ({
               </StyledCreditsInterval>
             </StyledCreditsHeading>
           </StyledCreditsHeadingLeft>
-          <ResourceCreditPriceSelector
-            resourceCreditPrices={resourceCreditPrices}
-            isTrialing={isTrialing}
-            shouldRedirectToManageBilling={isCancellationScheduled}
-            shouldRedirectToUpdatePayment={shouldUpdatePayment}
-            canEndTrialPeriod={hasPermissionToEndTrialPeriod}
-            onManageBilling={onUpdatePayment}
-            isManageBillingDisabled={isUpdatePaymentDisabled}
-            onUpdatePayment={onUpdatePayment}
-            isUpdatePaymentDisabled={isUpdatePaymentDisabled}
-            canCancelCreditPackSwitch={canCancelCreditPackSwitch}
-            onCancelCreditPackSwitch={() =>
-              openModal(BILLING_MODAL_IDS.cancelSwitchMeteredPrice)
-            }
-          />
+          {!hidePriceSelector && (
+            <ResourceCreditPriceSelector
+              resourceCreditPrices={resourceCreditPrices}
+              isTrialing={isTrialing}
+              shouldRedirectToManageBilling={isCancellationScheduled}
+              shouldRedirectToUpdatePayment={shouldUpdatePayment}
+              canEndTrialPeriod={hasPermissionToEndTrialPeriod}
+              onManageBilling={onUpdatePayment}
+              isManageBillingDisabled={isUpdatePaymentDisabled}
+              onUpdatePayment={onUpdatePayment}
+              isUpdatePaymentDisabled={isUpdatePaymentDisabled}
+              canCancelCreditPackSwitch={canCancelCreditPackSwitch}
+              onCancelCreditPackSwitch={() =>
+                openModal(BILLING_MODAL_IDS.cancelSwitchMeteredPrice)
+              }
+            />
+          )}
         </StyledSettingsBillingCardHeader>
         <StyledCreditsCardBody>
           <ProgressBar

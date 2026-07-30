@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { ThrottlerModule } from 'src/engine/core-modules/throttler/throttler.module';
@@ -16,6 +17,7 @@ import { PeopleApiService } from './people-api.service';
     OrgChartModule,
     CandidateSearchModule,
     AuthModule,
+    BillingModule,
     WorkspaceCacheStorageModule,
     ThrottlerModule,
     TwentyConfigModule,

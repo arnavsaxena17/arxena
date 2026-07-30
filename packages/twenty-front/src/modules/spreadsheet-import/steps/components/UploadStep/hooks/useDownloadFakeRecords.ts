@@ -1,20 +1,31 @@
-import { useContextStoreObjectMetadataItemOrThrow } from '@/context-store/hooks/useContextStoreObjectMetadataItemOrThrow';
-import { spreadsheetImportFilterAvailableFieldMetadataItems } from '@/object-record/spreadsheet-import/utils/spreadsheetImportFilterAvailableFieldMetadataItems';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { getCompositeSubFieldLabelWithFieldLabel } from '@/object-record/spreadsheet-import/utils/spreadsheetImportGetCompositeSubFieldLabelWithFieldLabel';
 import { SETTINGS_COMPOSITE_FIELD_TYPE_CONFIGS } from '@/settings/data-model/constants/SettingsCompositeFieldTypeConfigs';
 import { SETTINGS_NON_COMPOSITE_FIELD_TYPE_CONFIGS } from '@/settings/data-model/constants/SettingsNonCompositeFieldTypeConfigs';
+import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { formatValueForCSV } from '@/spreadsheet-import/utils/formatValueForCSV';
 import { sanitizeValueForCSVExport } from '@/spreadsheet-import/utils/sanitizeValueForCSVExport';
 import { saveAs } from 'file-saver';
 import { FieldMetadataType } from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
 
+// Prefer RSI dialog fields over ContextStore — ProjectPage mounts SpreadsheetImport
+// outside ContextStoreComponentInstanceContext (provider only wraps the table).
 export const useDownloadFakeRecords = () => {
-  const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();
+  const { availableFieldMetadataItems } = useSpreadsheetImportInternal();
+  const { objectMetadataItems } = useObjectMetadataItems();
 
-  const availableFieldMetadataItems =
-    spreadsheetImportFilterAvailableFieldMetadataItems(
-      objectMetadataItem.updatableFields,
-    );
+  const objectMetadataId = availableFieldMetadataItems.find((field) =>
+    isDefined(field.objectMetadataId),
+  )?.objectMetadataId;
+
+  const objectMetadataItem = objectMetadataItems.find(
+    (item) => item.id === objectMetadataId,
+  );
+
+  const sampleFileName = `${(
+    objectMetadataItem?.labelPlural ?? 'records'
+  ).toLowerCase()}-sample.csv`;
 
   const buildTableWithFakeRecords = () => {
     const headerRow: string[] = [];
@@ -138,7 +149,7 @@ export const useDownloadFakeRecords = () => {
     const { headerRow, bodyRows } = buildTableWithFakeRecords();
     const csvContent = formatToCsvContent([headerRow, ...bodyRows]);
     const blob = new Blob(csvContent, { type: 'text/csv' });
-    saveAs(blob, `${objectMetadataItem.labelPlural.toLowerCase()}-sample.csv`);
+    saveAs(blob, sampleFileName);
   };
 
   return { downloadSample };

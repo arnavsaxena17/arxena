@@ -17,8 +17,7 @@ import { RecruiterDetails } from './ProjectDetailsForm';
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  /* top:5vh; */
-  height: 90%;
+  min-height: 0;
   width: 100%;
 `;
 
@@ -27,28 +26,29 @@ const StyledHeader = styled.div`
   background-color: ${themeCssVariables.background.secondary};
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   display: flex;
-  height: 60px;
+  flex-shrink: 0;
   min-height: 60px;
-  padding: 0px;
-  padding-left: ${themeCssVariables.spacing[6]};
-  padding-right: ${themeCssVariables.spacing[6]};
+  padding: 0 ${themeCssVariables.spacing[4]};
 `;
 
 const StyledContent = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   width: 100%;
 `;
 
 const StyledLoadingContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
   gap: ${themeCssVariables.spacing[4]};
+  justify-content: center;
+  min-height: 240px;
+  padding: ${themeCssVariables.spacing[8]};
+  width: 100%;
 `;
 
 const StyledLoadingMessage = styled.div`

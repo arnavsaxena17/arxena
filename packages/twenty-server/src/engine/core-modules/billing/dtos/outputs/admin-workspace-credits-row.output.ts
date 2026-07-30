@@ -21,4 +21,7 @@ export class AdminWorkspaceCreditsRowOutput {
 
   @Field()
   revealCredits: number;
+
+  @Field()
+  apiCredits: number;
 }

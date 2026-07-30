@@ -286,6 +286,7 @@ export const Projects = () => {
     workspaceCredits?: {
       orgChartCredits: number;
       revealCredits: number;
+      apiCredits: number;
       revealCreditsAsEmailEquivalent?: number;
       revealCreditsAsPhoneEquivalent?: number;
       emailRevealCost?: number;
@@ -294,6 +295,7 @@ export const Projects = () => {
   } | undefined)?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits ?? undefined;
   const revealCredits = credits?.revealCredits ?? undefined;
+  const apiCredits = credits?.apiCredits ?? undefined;
   const revealCreditsAsEmailEquivalent =
     credits?.revealCreditsAsEmailEquivalent ?? undefined;
   const revealCreditsAsPhoneEquivalent =
@@ -581,6 +583,7 @@ export const Projects = () => {
             isWhatsappLoggedIn={isWhatsappLoggedIn}
             orgChartCredits={orgChartCredits}
             revealCredits={revealCredits}
+            apiCredits={apiCredits}
             revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
             revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
             emailRevealCost={emailRevealCost}
@@ -631,6 +634,7 @@ export const Projects = () => {
             isWhatsappLoggedIn={isWhatsappLoggedIn}
             orgChartCredits={orgChartCredits}
             revealCredits={revealCredits}
+            apiCredits={apiCredits}
             revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
             revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
             emailRevealCost={emailRevealCost}

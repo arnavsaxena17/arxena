@@ -20,9 +20,23 @@ export type PricingPlanId =
 
 export type MapType = 'Function Specific' | 'Full Company' | 'Full Company Timelines';
 
+export type BillingSkuKind = 'subscription' | 'one_time';
+
+/** Display AI credits → upstream micro-credits (1 display = $1 ≈ 1e6 micro). */
+export const AI_CREDIT_MICRO_FACTOR = 1_000_000;
+
+export const FREE_SIGNUP_AI_CREDITS = 1;
+
+export const aiCreditsToMicro = (aiCredits: number): number =>
+  Math.max(0, Math.round(aiCredits)) * AI_CREDIT_MICRO_FACTOR;
+
 export type PricingPlanTier = {
   maps: number;
   credits: number;
+  /** Display AI credits included with this tier (0 allowed). */
+  aiCredits?: number;
+  /** People API search credits included with this tier (0 allowed). */
+  apiCredits?: number;
   pricesSubunits: Record<SupportedPricingCurrency, number>;
 };
 
@@ -78,6 +92,12 @@ export type CreditPack = {
   inheritedFromPlanId: PricingPlanId | null;
   /** Explicit per-currency price subunits (preferred over GBP-rate conversion). */
   pricesSubunits: Record<SupportedPricingCurrency, number>;
+  /** subscription = monthly allowance; one_time = prepaid top-up. */
+  kind: BillingSkuKind;
+  /** Display AI credits (stored upstream as aiCredits * AI_CREDIT_MICRO_FACTOR). */
+  aiCredits: number;
+  /** People API search credits (1 credit per search by default). */
+  apiCredits: number;
 };
 
 const PRICING_CURRENCY_RATES_FROM_GBP: Record<
@@ -555,26 +575,34 @@ export const buildInitialPricingTierStateByMinMaps = (): Record<
 const buildCreditPackFromTier = (
   plan: PricingPlan,
   tier: PricingPlanTier,
-): CreditPack => ({
-  key: `${plan.id}_maps_${tier.maps}`,
-  name: `${plan.label} — ${tier.maps} maps`,
-  credits: tier.credits,
-  amountSubunits: tier.pricesSubunits.GBP,
-  currency: 'GBP',
-  creditsDisplay: `${tier.credits.toLocaleString('en-US')} credits — ${tier.maps} talent maps`,
-  useCase: plan.tagline,
-  features: plan.ownFeatures,
-  includedEmailCredits: tier.credits,
-  includedPhoneCredits: Math.floor(tier.credits / 5),
-  planId: plan.id,
-  intent: plan.intent,
-  mapsCount: tier.maps,
-  mapType: plan.mapType,
-  mapTypeLabel: plan.mapTypeLabel,
-  tagline: plan.tagline,
-  inheritedFromPlanId: plan.inheritedFromPlanId,
-  pricesSubunits: tier.pricesSubunits,
-});
+): CreditPack => {
+  const aiCredits = tier.aiCredits ?? 0;
+  const apiCredits = tier.apiCredits ?? 0;
+
+  return {
+    key: `${plan.id}_maps_${tier.maps}`,
+    name: `${plan.label} — ${tier.maps} maps`,
+    credits: tier.credits,
+    amountSubunits: tier.pricesSubunits.GBP,
+    currency: 'GBP',
+    creditsDisplay: `${tier.credits.toLocaleString('en-US')} reveal credits — ${tier.maps} talent maps${aiCredits > 0 ? ` — ${aiCredits} AI` : ''}${apiCredits > 0 ? ` — ${apiCredits} API` : ''}`,
+    useCase: plan.tagline,
+    features: plan.ownFeatures,
+    includedEmailCredits: tier.credits,
+    includedPhoneCredits: Math.floor(tier.credits / 5),
+    planId: plan.id,
+    intent: plan.intent,
+    mapsCount: tier.maps,
+    mapType: plan.mapType,
+    mapTypeLabel: plan.mapTypeLabel,
+    tagline: plan.tagline,
+    inheritedFromPlanId: plan.inheritedFromPlanId,
+    pricesSubunits: tier.pricesSubunits,
+    kind: 'one_time',
+    aiCredits,
+    apiCredits,
+  };
+};
 
 export const CREDIT_PACKS_BY_PLAN: Record<PricingPlanId, CreditPack[]> =
   PRICING_PLAN_ORDER.reduce<Record<PricingPlanId, CreditPack[]>>(
@@ -633,11 +661,11 @@ export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
       amountSubunits: SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY.GBP,
       currency: 'GBP',
       creditsDisplay:
-        '1 org chart credit · 1 reveal credit (sandbox / card test)',
+        '1 org chart credit · 1 reveal credit · 1 API · 0 AI (sandbox / card test)',
       useCase: plan.tagline,
       features: [
         '$1 total charge plus card surcharge (Razorpay test mode).',
-        'Grants exactly one map credit and one reveal credit.',
+        'Grants exactly one map credit, one reveal credit, and one API credit.',
         'Enable only via SMALL_PAYMENT_TESTING — never leave on in production.',
       ],
       includedEmailCredits: 1,
@@ -650,11 +678,195 @@ export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
       tagline: plan.tagline,
       inheritedFromPlanId: plan.inheritedFromPlanId,
       pricesSubunits: { ...SMALL_PAYMENT_TEST_PRICE_SUBUNITS_BY_CURRENCY },
+      kind: 'one_time' as const,
+      aiCredits: 0,
+      apiCredits: 1,
     };
   });
 
+const STARTER_SUBSCRIPTION_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 9999 * 100,
+  USD: 99 * 100,
+  GBP: 79 * 100,
+  EUR: 89 * 100,
+  AUD: 149 * 100,
+  AED: 369 * 100,
+};
+
+const GROWTH_SUBSCRIPTION_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 24999 * 100,
+  USD: 249 * 100,
+  GBP: 199 * 100,
+  EUR: 229 * 100,
+  AUD: 379 * 100,
+  AED: 919 * 100,
+};
+
+const TOPUP_MAPS_REVEALS_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 4999 * 100,
+  USD: 49 * 100,
+  GBP: 39 * 100,
+  EUR: 45 * 100,
+  AUD: 75 * 100,
+  AED: 179 * 100,
+};
+
+const TOPUP_AI_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 7999 * 100,
+  USD: 79 * 100,
+  GBP: 65 * 100,
+  EUR: 75 * 100,
+  AUD: 119 * 100,
+  AED: 289 * 100,
+};
+
+const TOPUP_API_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 2999 * 100,
+  USD: 29 * 100,
+  GBP: 25 * 100,
+  EUR: 29 * 100,
+  AUD: 45 * 100,
+  AED: 109 * 100,
+};
+
+/** Explicit subscription + standalone top-up SKUs (PR-tunable allocations). */
+export const BILLING_ENTITLEMENT_SKUS: CreditPack[] = [
+  {
+    key: 'starter_monthly',
+    name: 'Starter monthly',
+    credits: 50,
+    amountSubunits: STARTER_SUBSCRIPTION_PRICES.GBP,
+    currency: 'GBP',
+    creditsDisplay: '10 maps · 50 reveals · 100 API · 5 AI / month',
+    useCase: 'Monthly allowance for maps, reveals, API, and AI usage',
+    features: [
+      '10 map credits each billing cycle',
+      '50 reveal credits each billing cycle',
+      '100 API search credits each billing cycle',
+      '5 AI credits each billing cycle',
+    ],
+    includedEmailCredits: 50,
+    includedPhoneCredits: 10,
+    planId: 'sales',
+    intent: 'SALES',
+    mapsCount: 10,
+    mapType: 'Function Specific',
+    mapTypeLabel: 'Any Function · All Levels',
+    tagline: 'Starter monthly entitlement',
+    inheritedFromPlanId: null,
+    pricesSubunits: STARTER_SUBSCRIPTION_PRICES,
+    kind: 'subscription',
+    aiCredits: 5,
+    apiCredits: 100,
+  },
+  {
+    key: 'growth_monthly',
+    name: 'Growth monthly',
+    credits: 200,
+    amountSubunits: GROWTH_SUBSCRIPTION_PRICES.GBP,
+    currency: 'GBP',
+    creditsDisplay: '30 maps · 200 reveals · 500 API · 20 AI / month',
+    useCase: 'Higher monthly allowance for teams',
+    features: [
+      '30 map credits each billing cycle',
+      '200 reveal credits each billing cycle',
+      '500 API search credits each billing cycle',
+      '20 AI credits each billing cycle',
+    ],
+    includedEmailCredits: 200,
+    includedPhoneCredits: 40,
+    planId: 'recruitment',
+    intent: 'RECRUITING',
+    mapsCount: 30,
+    mapType: 'Full Company',
+    mapTypeLabel: 'Full company · All Levels & Functions',
+    tagline: 'Growth monthly entitlement',
+    inheritedFromPlanId: 'sales',
+    pricesSubunits: GROWTH_SUBSCRIPTION_PRICES,
+    kind: 'subscription',
+    aiCredits: 20,
+    apiCredits: 500,
+  },
+  {
+    key: 'topup_maps_reveals',
+    name: 'Maps & reveals top-up',
+    credits: 25,
+    amountSubunits: TOPUP_MAPS_REVEALS_PRICES.GBP,
+    currency: 'GBP',
+    creditsDisplay: '5 maps · 25 reveals · 0 API · 0 AI',
+    useCase: 'One-time maps and reveal top-up',
+    features: ['Adds 5 map credits', 'Adds 25 reveal credits'],
+    includedEmailCredits: 25,
+    includedPhoneCredits: 5,
+    planId: 'sales',
+    intent: 'SALES',
+    mapsCount: 5,
+    mapType: 'Function Specific',
+    mapTypeLabel: 'Any Function · All Levels',
+    tagline: 'Prepaid maps and reveals',
+    inheritedFromPlanId: null,
+    pricesSubunits: TOPUP_MAPS_REVEALS_PRICES,
+    kind: 'one_time',
+    aiCredits: 0,
+    apiCredits: 0,
+  },
+  {
+    key: 'topup_ai',
+    name: 'AI credits top-up',
+    credits: 0,
+    amountSubunits: TOPUP_AI_PRICES.GBP,
+    currency: 'GBP',
+    creditsDisplay: '0 maps · 0 reveals · 0 API · 10 AI',
+    useCase: 'One-time AI usage top-up',
+    features: ['Adds 10 AI credits to your usage balance'],
+    includedEmailCredits: 0,
+    includedPhoneCredits: 0,
+    planId: 'sales',
+    intent: 'SALES',
+    mapsCount: 0,
+    mapType: 'Function Specific',
+    mapTypeLabel: 'Any Function · All Levels',
+    tagline: 'Prepaid AI usage',
+    inheritedFromPlanId: null,
+    pricesSubunits: TOPUP_AI_PRICES,
+    kind: 'one_time',
+    aiCredits: 10,
+    apiCredits: 0,
+  },
+  {
+    key: 'topup_api',
+    name: 'API credits top-up',
+    credits: 0,
+    amountSubunits: TOPUP_API_PRICES.GBP,
+    currency: 'GBP',
+    creditsDisplay: '0 maps · 0 reveals · 200 API · 0 AI',
+    useCase: 'One-time People API search top-up',
+    features: ['Adds 200 API search credits'],
+    includedEmailCredits: 0,
+    includedPhoneCredits: 0,
+    planId: 'sales',
+    intent: 'SALES',
+    mapsCount: 0,
+    mapType: 'Function Specific',
+    mapTypeLabel: 'Any Function · All Levels',
+    tagline: 'Prepaid People API searches',
+    inheritedFromPlanId: null,
+    pricesSubunits: TOPUP_API_PRICES,
+    kind: 'one_time',
+    aiCredits: 0,
+    apiCredits: 200,
+  },
+];
+
 // Backwards-compatible export (server re-exports this as RAZORPAY_CREDIT_PACKS).
-export const CREDIT_PACKS: CreditPack[] = ALL_CREDIT_PACKS;
+// Includes plan-volume one-time packs plus explicit subscription / top-up SKUs.
+export const CREDIT_PACKS: CreditPack[] = [
+  ...ALL_CREDIT_PACKS,
+  ...BILLING_ENTITLEMENT_SKUS,
+];
+
+export const getCreditPacksByKind = (kind: BillingSkuKind): CreditPack[] =>
+  CREDIT_PACKS.filter((pack) => pack.kind === kind);
 
 export const DEFAULT_CREDIT_PACKS: CreditPack[] = CREDIT_PACKS_BY_INTENT.SALES;
 
@@ -686,7 +898,10 @@ export const PRICING_INTENT_TO_PLAN_ID: Record<PricingIntent, PricingPlanId> =
 
 export const getCreditPackByKey = (
   key: CreditPackKey,
-): CreditPack | undefined => ALL_CREDIT_PACKS.find((pack) => pack.key === key);
+): CreditPack | undefined =>
+  [...CREDIT_PACKS, ...SMALL_PAYMENT_TEST_CREDIT_PACKS].find(
+    (pack) => pack.key === key,
+  );
 
 /** Credit pack for a plan volume — always matches `findPricingPlanTier` (single source with `PRICING_PLANS`). */
 export const getCreditPackForPlanVolume = (

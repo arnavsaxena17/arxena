@@ -1,6 +1,6 @@
 /* @license Enterprise */
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ClickHouseModule } from 'src/database/clickHouse/clickHouse.module';
@@ -40,6 +40,7 @@ import { BillingUsageService } from 'src/engine/core-modules/billing/services/bi
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { BillingStripeCatalogService } from 'src/engine/core-modules/billing/services/billing-stripe-catalog.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
+import { EntitlementFulfillmentService } from 'src/engine/core-modules/billing/services/entitlement-fulfillment.service';
 import { ResourceCreditService } from 'src/engine/core-modules/billing/services/resource-credit.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { WorkspaceCurrentBillingSubscriptionCacheService } from 'src/engine/core-modules/billing/services/workspace-current-billing-subscription-cache.service';
@@ -68,7 +69,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     CoreEntityCacheModule,
     FeatureFlagModule,
     StripeModule,
-    RazorpayModule,
+    forwardRef(() => RazorpayModule),
     EnvironmentModule,
     GeoModule,
     EmailModule,
@@ -122,6 +123,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     BillingGaugeService,
     WorkspaceCreditsService,
     CreditTransactionService,
+    EntitlementFulfillmentService,
     InvoiceRequestService,
     PricingCurrencyService,
     WorkspaceCurrentBillingSubscriptionCacheService,
@@ -146,6 +148,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
     ResourceCreditService,
     WorkspaceCreditsService,
     CreditTransactionService,
+    EntitlementFulfillmentService,
     InvoiceRequestService,
     PricingCurrencyService,
   ],

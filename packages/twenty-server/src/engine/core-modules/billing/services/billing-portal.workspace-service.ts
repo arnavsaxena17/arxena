@@ -70,6 +70,7 @@ export class BillingPortalWorkspaceService {
     successReturnUrl?: string;
     razorpayPlanId?: string;
     quantity?: number;
+    skuKey?: string;
   }): Promise<{
     subscriptionId: string;
     keyId: string;
@@ -96,6 +97,7 @@ export class BillingPortalWorkspaceService {
         planId,
         workspaceId: params.workspace.id,
         quantity,
+        skuKey: params.skuKey,
       });
     const base = `${serverUrl.replace(/\/$/, '')}/billing/razorpay-subscription-callback`;
     const search = new URLSearchParams();

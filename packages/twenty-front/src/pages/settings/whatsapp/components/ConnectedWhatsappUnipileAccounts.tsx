@@ -188,12 +188,13 @@ const RetryButton = styled.button`
 `;
 
 interface ConnectedWhatsappUnipileAccountsProps {
+  refreshTrigger?: number;
   onAccountsLoaded?: (shouldShowConnectQr: boolean) => void;
 }
 
 export const ConnectedWhatsappUnipileAccounts: React.FC<
   ConnectedWhatsappUnipileAccountsProps
-> = ({ onAccountsLoaded }) => {
+> = ({ refreshTrigger, onAccountsLoaded }) => {
   const getNormalizedStatus = useCallback(
     (status?: string | null) => (status ? status.toLowerCase() : ''),
     [],
@@ -346,6 +347,12 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       onAccountsLoaded?.(true);
     }
   }, [accessToken, loadAccounts, onAccountsLoaded]);
+
+  useEffect(() => {
+    if (accessToken && refreshTrigger != null && refreshTrigger > 0) {
+      loadAccounts();
+    }
+  }, [refreshTrigger, accessToken, loadAccounts]);
 
   const handleDisconnect = async (accountId: string) => {
     if (

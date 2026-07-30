@@ -11,16 +11,14 @@ import { UploadForm } from './UploadForm';
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1;
   width: 100%;
-  overflow: auto;
 `;
 
 const StyledContent = styled.div`
   display: flex;
-  flex: 1;
   flex-direction: column;
-  padding: ${themeCssVariables.spacing[4]};
+  gap: ${themeCssVariables.spacing[4]};
+  width: 100%;
 `;
 
 const StyledInstructions = styled.div`

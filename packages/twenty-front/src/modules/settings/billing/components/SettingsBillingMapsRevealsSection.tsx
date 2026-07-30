@@ -50,6 +50,7 @@ type WorkspaceCreditsQuery = {
   workspaceCredits?: {
     orgChartCredits: number;
     revealCredits: number;
+    apiCredits: number;
     revealCreditsAsEmailEquivalent: number;
     revealCreditsAsPhoneEquivalent: number;
     emailRevealCost: number;
@@ -69,8 +70,8 @@ export const SettingsBillingMapsRevealsSection = () => {
   return (
     <Section>
       <H2Title
-        title={t`Talent maps & contact reveals`}
-        description={t`Prepaid balances for org charts and contact reveals. Separate from AI credits.`}
+        title={t`Map, reveal & API credits`}
+        description={t`Prepaid balances for org charts, contact reveals, and People API searches. AI & usage credits are listed separately below.`}
       />
       <StyledSettingsBillingCard>
         <StyledSettingsBillingCardHeader>
@@ -87,6 +88,12 @@ export const SettingsBillingMapsRevealsSection = () => {
             <StyledBalanceLabel>{t`Reveal credits`}</StyledBalanceLabel>
             <StyledBalanceValue>
               {credits?.revealCredits ?? 0}
+            </StyledBalanceValue>
+          </StyledBalanceItem>
+          <StyledBalanceItem>
+            <StyledBalanceLabel>{t`API credits`}</StyledBalanceLabel>
+            <StyledBalanceValue>
+              {credits?.apiCredits ?? 0}
             </StyledBalanceValue>
           </StyledBalanceItem>
           <StyledBalanceItem>
@@ -112,6 +119,7 @@ export const SettingsBillingMapsRevealsSection = () => {
           onClose={() => setIsHistoryOpen(false)}
           orgChartCredits={credits.orgChartCredits}
           revealCredits={credits.revealCredits}
+          apiCredits={credits.apiCredits}
           emailRevealCost={credits.emailRevealCost}
           phoneRevealCost={credits.phoneRevealCost}
         />

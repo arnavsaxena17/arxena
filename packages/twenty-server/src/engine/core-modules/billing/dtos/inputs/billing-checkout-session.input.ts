@@ -47,6 +47,11 @@ export class BillingCheckoutSessionInput {
   @IsOptional()
   razorpayPlanId?: string;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  skuKey?: string;
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()

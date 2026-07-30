@@ -14,13 +14,10 @@ import {
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 
 /**
- * Stores credits for a workspace using two distinct pools:
- *   - orgChartCredits: 1 credit per org chart created (regardless of employee count).
- *     Funded on payment.captured by the number of `maps` in the purchased tier.
- *   - revealCredits: unified pool covering both email and phone reveals. Default
- *     spend rates (1 credit/email, 5 credits/phone) come from getRevealCost(kind)
- *     in twenty-shared so operators can retune them via env vars at runtime.
- *     Funded on payment.captured by the tier's `credits` field.
+ * Stores prepaid Arxena credit pools per workspace:
+ *   - orgChartCredits: 1 credit per org chart created
+ *   - revealCredits: unified email/phone reveal pool
+ *   - apiCredits: People API search calls (default 1 credit per search)
  */
 @Entity({ name: 'workspaceCredits', schema: 'core' })
 @ObjectType()
@@ -45,4 +42,8 @@ export class WorkspaceCredits {
   @Field()
   @Column({ type: 'int', default: 0 })
   revealCredits: number;
+
+  @Field()
+  @Column({ type: 'int', default: 0 })
+  apiCredits: number;
 }

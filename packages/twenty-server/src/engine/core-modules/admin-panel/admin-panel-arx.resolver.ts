@@ -25,8 +25,11 @@ import { LinkedInUnipileMonitoringService } from 'src/engine/core-modules/arx-ch
 import { WhatsAppMonitoringUnifiedService } from 'src/engine/core-modules/arx-chat/services/whatsapp-monitoring-unified.service';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
 import { AdminAdjustWorkspaceCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-adjust-workspace-credits.input';
+import { AdminSetCreditFulfillmentModeInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-set-credit-fulfillment-mode.input';
 import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/dtos/outputs/admin-workspace-credits-row.output';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
+import { CreditFulfillmentMode } from 'src/engine/core-modules/billing/enums/credit-fulfillment-mode.enum';
+import { EntitlementFulfillmentService } from 'src/engine/core-modules/billing/services/entitlement-fulfillment.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { PreventNestToAutoLogGraphqlErrorsFilter } from 'src/engine/core-modules/graphql/filters/prevent-nest-to-auto-log-graphql-errors.filter';
@@ -70,6 +73,7 @@ export class AdminPanelArxResolver {
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
+    private readonly entitlementFulfillmentService: EntitlementFulfillmentService,
     private readonly workspaceService: WorkspaceService,
     private readonly whatsAppMonitoringUnifiedService: WhatsAppMonitoringUnifiedService,
     private readonly linkedInUnipileMonitoringService: LinkedInUnipileMonitoringService,
@@ -261,6 +265,7 @@ export class AdminPanelArxResolver {
           creatorEmailByWorkspaceId.get(workspace.id) ?? null,
         orgChartCredits: credits?.orgChartCredits ?? 0,
         revealCredits: credits?.revealCredits ?? 0,
+        apiCredits: credits?.apiCredits ?? 0,
       };
     });
   }
@@ -273,11 +278,33 @@ export class AdminPanelArxResolver {
   ): Promise<boolean> {
     await this.workspaceCreditsService.adjustCredits(
       input.workspaceId,
-      input.creditType as 'org_chart' | 'reveal',
+      input.creditType as 'org_chart' | 'reveal' | 'ai' | 'api',
       input.delta,
     );
 
     return true;
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Mutation(() => Boolean)
+  async adminSetCreditFulfillmentMode(
+    @Args('input', { type: () => AdminSetCreditFulfillmentModeInput })
+    input: AdminSetCreditFulfillmentModeInput,
+  ): Promise<boolean> {
+    await this.entitlementFulfillmentService.setFulfillmentMode(
+      input.workspaceId,
+      input.mode,
+    );
+
+    return true;
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Query(() => CreditFulfillmentMode)
+  async adminGetCreditFulfillmentMode(
+    @Args('workspaceId') workspaceId: string,
+  ): Promise<CreditFulfillmentMode> {
+    return this.entitlementFulfillmentService.getFulfillmentMode(workspaceId);
   }
 
   @UseGuards(AdminPanelGuard)

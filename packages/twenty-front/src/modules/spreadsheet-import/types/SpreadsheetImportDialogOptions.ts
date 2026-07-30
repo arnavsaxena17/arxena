@@ -1,4 +1,5 @@
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
+import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { type SpreadsheetColumns } from '@/spreadsheet-import/types/SpreadsheetColumns';
 import { type SpreadsheetImportFields } from '@/spreadsheet-import/types/SpreadsheetImportFields';
 import { type SpreadsheetImportImportValidationResult } from '@/spreadsheet-import/types/SpreadsheetImportImportValidationResult';
@@ -6,7 +7,6 @@ import { type ImportedRow } from '@/spreadsheet-import/types/SpreadsheetImportIm
 import { type ImportedStructuredRow } from '@/spreadsheet-import/types/SpreadsheetImportImportedStructuredRow';
 import { type SpreadsheetImportRowHook } from '@/spreadsheet-import/types/SpreadsheetImportRowHook';
 import { type SpreadsheetImportTableHook } from '@/spreadsheet-import/types/SpreadsheetImportTableHook';
-import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 
 export type SpreadsheetImportDialogOptions = {
   // callback when RSI is closed before final submit
@@ -61,4 +61,6 @@ export type SpreadsheetImportDialogOptions = {
   selectHeader?: boolean;
   // Available field for import
   availableFieldMetadataItems: FieldMetadataItem[];
+  // Hold upload-progress SSE while the dialog is open (candidate Excel/CV import)
+  enableUploadProgressSseWhileOpen?: boolean;
 };

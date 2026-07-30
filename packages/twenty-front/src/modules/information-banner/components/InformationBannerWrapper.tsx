@@ -16,11 +16,14 @@ import { useIsWorkspaceActivationStatusEqualsTo } from '@/workspace/hooks/useIsW
 import { useSubscriptionStatus } from '@/workspace/hooks/useSubscriptionStatus';
 import { hasReachedCurrentBillingPeriodCapSelector } from '@/workspace/states/hasReachedCurrentBillingPeriodCapSelector';
 
+import { InformationBannerNoMoreArxenaCredits } from '@/information-banner/components/billing/InformationBannerNoMoreArxenaCredits';
 import { InformationBannerNoMoreCredits } from '@/information-banner/components/billing/InformationBannerNoMoreCredits';
+import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
 import {
   PermissionFlagType,
   SubscriptionStatus,
 } from '~/generated-metadata/graphql';
+import { useQuery } from '@apollo/client/react';
 
 const StyledInformationBannerWrapper = styled.div`
   position: relative;
@@ -42,6 +45,18 @@ export const InformationBannerWrapper = () => {
     hasReachedCurrentBillingPeriodCapSelector,
   );
 
+  const { data: workspaceCreditsData } = useQuery<{
+    workspaceCredits?: {
+      orgChartCredits?: number;
+      revealCredits?: number;
+      apiCredits?: number;
+    };
+  }>(WORKSPACE_CREDITS);
+
+  const mapCredits = workspaceCreditsData?.workspaceCredits?.orgChartCredits;
+  const revealCredits = workspaceCreditsData?.workspaceCredits?.revealCredits;
+  const apiCredits = workspaceCreditsData?.workspaceCredits?.apiCredits;
+
   const displayBillingSubscriptionPausedBanner =
     isWorkspaceSuspended && subscriptionStatus === SubscriptionStatus.Paused;
 
@@ -62,6 +77,20 @@ export const InformationBannerWrapper = () => {
     !displayEndTrialPeriodBanner &&
     hasReachedCurrentBillingPeriodCap;
 
+  const depletedArxenaCreditKinds = [
+    ...(!isWorkspaceSuspended && isDefined(mapCredits) && mapCredits <= 0
+      ? (['maps'] as const)
+      : []),
+    ...(!isWorkspaceSuspended &&
+    isDefined(revealCredits) &&
+    revealCredits <= 0
+      ? (['reveals'] as const)
+      : []),
+    ...(!isWorkspaceSuspended && isDefined(apiCredits) && apiCredits <= 0
+      ? (['api'] as const)
+      : []),
+  ];
+
   return (
     <StyledInformationBannerWrapper>
       <InformationBannerNonProductionInstance />
@@ -81,6 +110,11 @@ export const InformationBannerWrapper = () => {
       {displayFailPaymentInfoBanner && <InformationBannerFailPaymentInfo />}
       {displayEndTrialPeriodBanner && <InformationBannerEndTrialPeriod />}
       {displayNoMoreCreditsBanner && <InformationBannerNoMoreCredits />}
+      {depletedArxenaCreditKinds.length > 0 && (
+        <InformationBannerNoMoreArxenaCredits
+          kinds={depletedArxenaCreditKinds}
+        />
+      )}
     </StyledInformationBannerWrapper>
   );
 };

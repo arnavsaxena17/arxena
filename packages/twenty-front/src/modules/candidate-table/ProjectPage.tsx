@@ -1,9 +1,4 @@
-import { IconCheckbox } from 'twenty-ui/icon';
 import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
-import { TableContainer } from "@/candidate-table/components/styled";
-import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { useFetchOtherFieldKeys } from '@/arx-ai-filtering/hooks/useFetchOtherFieldKeys';
 import { useInitializeEnrichments } from '@/arx-ai-filtering/hooks/useInitializeEnrichments';
@@ -12,9 +7,14 @@ import { currentProjectIdState, isArxEnrichModalOpenState } from "@/arx-ai-filte
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { TableContainer } from "@/candidate-table/components/styled";
 import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
 import { filteredCandidatesCountState, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import axios from 'axios';
+import { IconCheckbox } from 'twenty-ui/icon';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
@@ -33,7 +33,6 @@ import { useObjectMetadataItems } from "@/object-metadata/hooks/useObjectMetadat
 import { RecordIndexContextProvider } from "@/object-record/record-index/contexts/RecordIndexContext";
 import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
-import { SnackBarVariant } from "@/ui/feedback/snack-bar-manager/components/SnackBar";
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -41,23 +40,21 @@ import { InterviewCreationModal } from '@/video-interview/interview-creation/Int
 import { isVideoInterviewModalOpenState } from "@/video-interview/interview-creation/states/videoInterviewModalState";
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useQuery } from '@apollo/client/react';
-import { useTheme } from 'twenty-ui/theme-constants';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
-import { FloatingAIChat } from '@/candidate-search/components/FloatingAIChat/FloatingAIChat';
 import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
 import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { Mixpanel } from '~/mixpanel';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
 import { useBaileysConnection } from '../baileys/contexts/BaileysContext';
 import { useUnipile } from '../unipile/contexts/UnipileContext';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // import { ChatKitWidget } from './components/ChatKitWidget';
 import { ProjectStatisticsModal } from './components/ProjectStatisticsModal';
@@ -131,6 +128,7 @@ export const ProjectPage: React.FC = () => {
     workspaceCredits?: {
       orgChartCredits: number;
       revealCredits: number;
+      apiCredits: number;
       revealCreditsAsEmailEquivalent?: number;
       revealCreditsAsPhoneEquivalent?: number;
       emailRevealCost?: number;
@@ -139,6 +137,7 @@ export const ProjectPage: React.FC = () => {
   } | undefined)?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits ?? undefined;
   const revealCredits = credits?.revealCredits ?? undefined;
+  const apiCredits = credits?.apiCredits ?? undefined;
   const revealCreditsAsEmailEquivalent =
     credits?.revealCreditsAsEmailEquivalent ?? undefined;
   const revealCreditsAsPhoneEquivalent =
@@ -252,9 +251,6 @@ export const ProjectPage: React.FC = () => {
     dataTableRefreshFunctionState,
   );
   const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useAtomState(isBulkMessageModalOpenState);
-  const [isFloatingAIChatExpanded, setIsFloatingAIChatExpanded] =
-    useState(false);
-
   // Use the job status toggle hook
   const { isJobActive, toggleJobStatus } = useProjectStatusToggle({
     projectId,
@@ -334,10 +330,6 @@ export const ProjectPage: React.FC = () => {
     debugLog("Downloading app");
     setIsDownloadModalOpen(true);
   }, [setIsDownloadModalOpen]);
-
-  const handleFloatingAIChatToggle = useCallback(() => {
-    setIsFloatingAIChatExpanded((prev) => !prev);
-  }, []);
 
   const handleSaveSelected = useCallback(async (candidates: any[]) => {
     if (candidates.length === 0) {
@@ -691,7 +683,6 @@ export const ProjectPage: React.FC = () => {
             hasClosePageButton={true}
             onClosePage={navigateToJobsList}
             onAddJob={openAddJobModal}
-            onFloatingAIChatToggle={handleFloatingAIChatToggle}
             isExtensionInstalled={isExtensionInstalled}
             isExtensionChecking={isExtensionChecking}
             onDownloadClick={handleDownloadClick}
@@ -699,6 +690,7 @@ export const ProjectPage: React.FC = () => {
             isWhatsappLoggedIn={isWhatsappLoggedIn}
             orgChartCredits={orgChartCredits}
             revealCredits={revealCredits}
+            apiCredits={apiCredits}
             revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
             revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
             emailRevealCost={emailRevealCost}
@@ -767,13 +759,6 @@ export const ProjectPage: React.FC = () => {
                   <HotTableActionMenu tableId={projectId} />
                 </div>
 
-                {/* Floating AI Chat - New UI */}
-                {isNewSearchUIEnabled && (
-                  <FloatingAIChat
-                    isExpanded={isFloatingAIChatExpanded}
-                    onExpandedChange={setIsFloatingAIChatExpanded}
-                  />
-                )}
               </ActionMenuComponentInstanceContext.Provider>
             </ContextStoreComponentInstanceContext.Provider>
 

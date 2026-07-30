@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { billingState } from '@/client-config/states/billingState';
 import { SettingsBillingCreditsSection } from '@/settings/billing/components/SettingsBillingCreditsSection';
 import { SettingsBillingMapsRevealsSection } from '@/settings/billing/components/SettingsBillingMapsRevealsSection';
 import { SettingsBillingRazorpayCatalog } from '@/settings/billing/components/SettingsBillingRazorpayCatalog';
@@ -23,6 +24,9 @@ export const SettingsBillingContent = () => {
   const { t } = useLingui();
 
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const billing = useAtomStateValue(billingState);
+  const isRazorpay =
+    (billing as { provider?: string } | null)?.provider === 'razorpay';
 
   const currentBillingSubscription =
     currentWorkspace?.currentBillingSubscription;
@@ -32,8 +36,10 @@ export const SettingsBillingContent = () => {
     billingHasPaymentMethodSelector,
   );
 
-  const { isGetResourceCreditUsageQueryLoaded: isUsageQueryLoaded } =
-    useGetResourceCreditUsage();
+  const {
+    isGetResourceCreditUsageQueryLoaded: isUsageQueryLoaded,
+    hasResourceCreditUsage,
+  } = useGetResourceCreditUsage();
 
   const displayTrialNoPaymentMethodCard =
     subscriptionStatus === SubscriptionStatus.Trialing &&
@@ -73,11 +79,13 @@ export const SettingsBillingContent = () => {
       {hasNotCanceledCurrentSubscription &&
         currentWorkspace &&
         currentBillingSubscription &&
-        isUsageQueryLoaded && (
+        isUsageQueryLoaded &&
+        hasResourceCreditUsage && (
           <SettingsBillingCreditsSection
             currentBillingSubscription={currentBillingSubscription}
             onUpdatePayment={openBillingPortal}
             isUpdatePaymentDisabled={isBillingPortalSessionDisabled}
+            hidePriceSelector={isRazorpay}
           />
         )}
       <Section>

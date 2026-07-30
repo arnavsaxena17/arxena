@@ -8,6 +8,7 @@ import { useComputeColumnSuggestionsAndAutoMatch } from '@/spreadsheet-import/ho
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
+import { isResumeUploadFile } from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { exceedsMaxRecords } from '@/spreadsheet-import/utils/exceedsMaxRecords';
 import { mapWorkbook } from '@/spreadsheet-import/utils/mapWorkbook';
 import { DropZone } from './components/DropZone';
@@ -30,14 +31,37 @@ export const UploadStep = ({
   currentStepState,
 }: UploadStepProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { maxRecords, uploadStepHook, selectHeaderStepHook, selectHeader } =
-    useSpreadsheetImportInternal();
+  const {
+    maxRecords,
+    uploadStepHook,
+    selectHeaderStepHook,
+    selectHeader,
+    enableUploadProgressSseWhileOpen,
+  } = useSpreadsheetImportInternal();
 
   const computeColumnSuggestionsAndAutoMatch =
     useComputeColumnSuggestionsAndAutoMatch();
 
   const handleContinue = useCallback(
-    async (workbook: WorkBook, file: File) => {
+    async (workbook: WorkBook | null, files: File[]) => {
+      const resumeFiles = files.filter(isResumeUploadFile);
+
+      if (resumeFiles.length > 0 && enableUploadProgressSseWhileOpen === true) {
+        setCurrentStepState({
+          type: SpreadsheetImportStepType.uploadResumes,
+          files: resumeFiles,
+        });
+        setPreviousStepState(currentStepState);
+        nextStep();
+        return;
+      }
+
+      if (!workbook || files.length === 0) {
+        onError(t`No spreadsheet file found`);
+        return;
+      }
+
+      const file = files[0];
       setUploadedFile(file);
       const isSingleSheet = workbook.SheetNames.length === 1;
       if (isSingleSheet) {
@@ -58,7 +82,6 @@ export const UploadStep = ({
               data: mappedWorkbook,
             });
           } else {
-            // Automatically select first row as header
             const trimmedData = mappedWorkbook.slice(1);
 
             const { importedRows: data, headerRow: headerValues } =
@@ -99,13 +122,14 @@ export const UploadStep = ({
       currentStepState,
       uploadStepHook,
       computeColumnSuggestionsAndAutoMatch,
+      enableUploadProgressSseWhileOpen,
     ],
   );
 
   const handleOnContinue = useCallback(
-    async (data: WorkBook, file: File) => {
+    async (workbook: WorkBook | null, files: File[]) => {
       setIsLoading(true);
-      await handleContinue(data, file);
+      await handleContinue(workbook, files);
       setIsLoading(false);
     },
     [handleContinue],

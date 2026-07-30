@@ -132,6 +132,7 @@ export class BillingResolver {
       requirePaymentMethod,
       razorpayPlanId,
       quantity,
+      skuKey,
     }: BillingCheckoutSessionInput,
     @AuthApiKey() apiKey?: ApiKeyEntity,
   ) {
@@ -169,6 +170,7 @@ export class BillingResolver {
             successReturnUrl,
             razorpayPlanId,
             quantity,
+            skuKey,
           },
         );
 
@@ -502,6 +504,9 @@ export class BillingResolver {
       includedEmailCredits: pack.includedEmailCredits,
       includedPhoneCredits: pack.includedPhoneCredits,
       creditsDisplay: pack.creditsDisplay,
+      kind: pack.kind,
+      aiCredits: pack.aiCredits,
+      apiCredits: pack.apiCredits,
       pricesSubunitsJson: JSON.stringify(pack.pricesSubunits),
     }));
   }
@@ -580,12 +585,14 @@ export class BillingResolver {
 
     const orgChartCredits = row?.orgChartCredits ?? 0;
     const revealCredits = row?.revealCredits ?? 0;
+    const apiCredits = row?.apiCredits ?? 0;
     const emailRevealCost = getRevealCost('email');
     const phoneRevealCost = getRevealCost('phone');
 
     return {
       orgChartCredits,
       revealCredits,
+      apiCredits,
       revealCreditsAsEmailEquivalent:
         emailRevealCost > 0 ? Math.floor(revealCredits / emailRevealCost) : 0,
       revealCreditsAsPhoneEquivalent:

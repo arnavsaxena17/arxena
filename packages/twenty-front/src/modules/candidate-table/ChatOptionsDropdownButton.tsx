@@ -1,39 +1,59 @@
-import { MenuItem } from 'twenty-ui/navigation';
-import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icon';
 import { Trans } from '@lingui/react/macro';
 import { useId } from 'react';
+import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icon';
+import { MenuItem } from 'twenty-ui/navigation';
 
+import { useArxEnrichCreationModal } from '@/arx-ai-filtering/hooks/useArxEnrichCreationModal';
 import { useArxUploadJDModal } from '@/arx-jd-upload/hooks/useArxUploadJDModal';
-import { DROPDOWN_OFFSET_Y } from '@/ui/layout/dropdown/constants/DropdownOffsetY';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { StyledHeaderDropdownButton } from '@/ui/layout/dropdown/components/StyledHeaderDropdownButton';
+import { DROPDOWN_OFFSET_Y } from '@/ui/layout/dropdown/constants/DropdownOffsetY';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
+import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
 
-const handleCreateEnrichments = () => {
-  console.log('Action: Create Enrichments');
+type ChatOptionsDropdownButtonProps = {
+  onUploadCV?: () => void;
 };
 
-const handleUploadCV = () => {
-  console.log('Action: Upload CV');
-};
-
-const handleCreateVideoInterview = () => {
-  console.log('Action: Create Video Interview');
-};
-
-export const ChatOptionsDropdownButton = () => {
+export const ChatOptionsDropdownButton = ({
+  onUploadCV,
+}: ChatOptionsDropdownButtonProps) => {
   const dropdownId = useId();
   const isDropdownOpen = useAtomComponentStateValue(
     isDropdownOpenComponentState,
     dropdownId,
   );
+  const { closeDropdown } = useCloseDropdown();
   const { openUploadJDModal } = useArxUploadJDModal();
+  const { openModal: openEnrichmentModal } = useArxEnrichCreationModal();
+  const { openModal: openVideoInterviewModal } = useInterviewCreationModal();
+
+  const closeOptionsDropdown = () => {
+    closeDropdown(dropdownId);
+  };
+
+  const handleCreateEnrichments = () => {
+    openEnrichmentModal();
+    closeOptionsDropdown();
+  };
 
   const handleUploadJD = () => {
     openUploadJDModal();
+    closeOptionsDropdown();
+  };
+
+  const handleUploadCV = () => {
+    onUploadCV?.();
+    closeOptionsDropdown();
+  };
+
+  const handleCreateVideoInterview = () => {
+    openVideoInterviewModal();
+    closeOptionsDropdown();
   };
 
   return (

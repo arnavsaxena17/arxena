@@ -26,6 +26,10 @@ export type SpreadsheetImportStep =
       importedColumns: SpreadsheetColumns;
     }
   | {
+      type: SpreadsheetImportStepType.uploadResumes;
+      files: File[];
+    }
+  | {
       type: SpreadsheetImportStepType.loading;
     }
   | {

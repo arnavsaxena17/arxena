@@ -71,9 +71,14 @@ export class BillingUsageService {
     workspace: WorkspaceEntity,
   ): Promise<BillingResourceCreditUsageDTO[]> {
     const subscription =
-      await this.billingSubscriptionService.getCurrentBillingSubscriptionOrThrow(
-        { workspaceId: workspace.id },
-      );
+      await this.billingSubscriptionService.getCurrentBillingSubscription({
+        workspaceId: workspace.id,
+      });
+
+    // Razorpay / Arxena workspaces often have no Stripe RESOURCE_CREDIT item
+    if (!isDefined(subscription)) {
+      return [];
+    }
 
     const resourceCreditItemDetail =
       await this.billingSubscriptionItemService.getResourceCreditSubscriptionItemDetails(
@@ -81,10 +86,7 @@ export class BillingUsageService {
       );
 
     if (!isDefined(resourceCreditItemDetail)) {
-      throw new BillingException(
-        `Resource credit item not found for workspace ${workspace.id}`,
-        BillingExceptionCode.BILLING_SUBSCRIPTION_ITEM_NOT_FOUND,
-      );
+      return [];
     }
 
     const { periodStart, periodEnd } = this.getSubscriptionPeriod(subscription);

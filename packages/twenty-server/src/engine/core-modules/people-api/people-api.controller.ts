@@ -18,6 +18,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { ThrottlerException } from 'src/engine/core-modules/throttler/throttler.exception';
 import { ThrottlerService } from 'src/engine/core-modules/throttler/throttler.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { buildPeopleApiOpenApiDocument } from '../api-docs/people-api.openapi';
@@ -35,6 +36,7 @@ export class PeopleApiController {
     private readonly peopleApiService: PeopleApiService,
     private readonly throttlerService: ThrottlerService,
     private readonly twentyConfigService: TwentyConfigService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
   ) {}
 
   @Get('openapi.json')
@@ -154,8 +156,16 @@ export class PeopleApiController {
 
   @Post('people/search-by-title')
   @UseGuards(JwtAuthGuard)
-  async searchPeopleByJobTitle(@Body() body: TitleFromJobSearchDto) {
+  async searchPeopleByJobTitle(
+    @Req() request: Request,
+    @Body() body: TitleFromJobSearchDto,
+  ) {
     try {
+      await this.debitApiSearchCreditOrThrow(request, {
+        endpoint: 'people/search-by-title',
+        dataSource: body.dataSource,
+      });
+
       return await this.peopleApiService.searchPeopleByJobTitle(body);
     } catch (error) {
       if (error instanceof HttpException) {
@@ -171,8 +181,13 @@ export class PeopleApiController {
 
   @Post('people/search')
   @UseGuards(JwtAuthGuard)
-  async searchPeople(@Body() body: PeopleSearchDto) {
+  async searchPeople(@Req() request: Request, @Body() body: PeopleSearchDto) {
     try {
+      await this.debitApiSearchCreditOrThrow(request, {
+        endpoint: 'people/search',
+        dataSource: body.dataSource,
+      });
+
       return await this.peopleApiService.searchPeople(body);
     } catch (error) {
       if (error instanceof HttpException) {
@@ -216,5 +231,47 @@ export class PeopleApiController {
       }
       throw error;
     }
+  }
+
+  private async debitApiSearchCreditOrThrow(
+    request: Request,
+    metadata: { endpoint: string; dataSource?: string },
+  ): Promise<void> {
+    if (process.env.IS_BILLING_ENABLED !== 'true') {
+      return;
+    }
+
+    const workspaceId = request.workspace?.id;
+    if (!isDefined(workspaceId)) {
+      throw new HttpException(
+        'Workspace context required for People API search',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    await this.workspaceCreditsService.getOrCreate(workspaceId);
+
+    const hasSufficient =
+      await this.workspaceCreditsService.hasSufficientApiCredits(workspaceId, 1);
+    if (!hasSufficient) {
+      const creditsAvailable =
+        await this.workspaceCreditsService.getApiCreditsAvailable(workspaceId);
+
+      throw new HttpException(
+        {
+          message: 'Insufficient API credits',
+          creditsNeeded:
+            this.workspaceCreditsService.computeApiSearchCreditsNeeded(1),
+          creditsAvailable,
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
+    await this.workspaceCreditsService.debitApiCredits(workspaceId, 1, {
+      source: 'people_api',
+      endpoint: metadata.endpoint,
+      dataSource: metadata.dataSource,
+    });
   }
 }

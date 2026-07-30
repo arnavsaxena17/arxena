@@ -91,12 +91,14 @@ Wave 2: `orgchart`, `candidate-table`, `candidate-search`, `arx-jd-upload`
 - Project DataTable blank: restored `flex:1`/`min-height:0` on upstream `PageBody`/`PagePanel` (Handsontable height chain) — see migration track §0/§9.2
 - Candidate name click: `SidePanelPages.CandidateChat` mounts `CandidateChatDrawer` (stubbed `useRightDrawer` previously set `isRightPanelOpen` with no UI)
 - Record selection actions: workflows `action-menu` configs/hooks → `EngineComponentKey` + `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*`; HotTable bottom bar + All Actions → side panel (migration track §2.11). Needs workspace metadata sync for new CMIs.
+- Import candidates: `useDownloadFakeRecords` no longer requires ContextStore (ProjectPage mounts SpreadsheetImport outside that provider) — migration track §0/§9.2
+- Candidate Excel/CV import parity with workflows: project auto-assign, `upload-profiles` (`spreadsheet_import`), ARX `CandidateImportFields`, resume PDF/DOC via `UploadResumesStep` + SSE — migration track §0/§9.2
 
 Wave 3: `assistant`, `arx-ai-filtering`
 
 Wave 4: `unipile`, chrome-extension* (AuthBridge + Sidecar + `CHROME_EXTENSION_ID` client-config wired), linkedin-unipile, whatsapp-unipile
 
-Settings Accounts (messaging connections): WhatsApp Unipile, WhatsApp Business / Facebook Official, Baileys, LinkedIn Business, Google Contacts — nav + routes + pages on `port/arxena-modules`. Google OAuth scopes aligned with workflows (`contacts`, `drive`, `gmail.modify`).
+Settings Accounts (messaging connections): WhatsApp Unipile, WhatsApp Business / Facebook Official, LinkedIn Business, Google Contacts — nav + routes + pages on `port/arxena-modules`. Baileys nav item hidden (page/route retained). Google OAuth scopes aligned with workflows (`contacts`, `drive`, `gmail.modify`).
 
 Settings Profile: restored workflows account IDs card (member/user/workspace id, schema, names) on `SettingsProfile` using `SettingsTableCard`.
 
@@ -108,13 +110,14 @@ Wave 5: `video-interview`
 
 ### Billing / Razorpay / credits / IP (wave 5+)
 
-- [x] Dual-wallet credits: Arxena `workspaceCredits` (maps + reveals) via Razorpay packs; Stripe resource credits stay for AI
+- [x] Dual-wallet credits: Arxena `workspaceCredits` (maps + reveals + **API**) via Razorpay packs **and** upstream AI (`RESOURCE_CREDIT` / `creditBalanceMicro`) also fulfilled from Razorpay. SKUs have `kind: subscription | one_time` plus `maps` / `reveals` / `apiCredits` / `aiCredits`. People API `people/search` + `people/search-by-title` debit `apiCredits` (tag `api_search`). Subscription cycles use workspace `creditFulfillmentMode` (`reset` default, `add`, `split`). One-time packs always ADD. Free signup grants maps + API + 1 AI credit.
 - [x] Razorpay module + webhooks + GraphQL credit/pack APIs
-- [x] Instance commands for workspaceCredits, creditTransactions, Razorpay columns, org_chart_client_ip_rule
+- [x] Instance commands for workspaceCredits (incl. `apiCredits`), creditTransactions, Razorpay columns, org_chart_client_ip_rule
 - [x] Admin credits/IP GraphQL (already on HEAD in admin-panel-arx)
-- [x] Settings dual Billing UX (maps/reveals + AI)
+- [x] Settings dual Billing UX (maps/reveals/API + AI)
 - [x] Website org-chart API guard + middleware
 
+**Future unified credit:** Keep typed debit categories (`creditType` tags + cost constants like `getApiSearchCreditCost` / `getRevealCost`). A single wallet can later debit proportional units from one balance while still recording category tags — call sites already go through `WorkspaceCreditsService` facades.
 
 Ignore Twenty leftovers: `favorites`, `prefetch`, `serverless-functions`, `databases`, etc.
 

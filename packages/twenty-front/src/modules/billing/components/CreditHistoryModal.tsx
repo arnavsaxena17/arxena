@@ -1,81 +1,101 @@
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useMemo } from 'react';
+import { IconX } from 'twenty-ui/icon';
+import { IconButton } from 'twenty-ui/input';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { Modal } from '@/ui/layout/modal/components/Modal';
 
 import { CREDIT_TRANSACTIONS } from '../graphql/creditTransactions';
 
-const StyledTransactionMeta = styled.div`
-  font-size: 12px;
-  color: ${themeCssVariables.font.color.tertiary};
-  margin-top: ${themeCssVariables.spacing[1]};
-`;
-
 const StyledModalContent = styled.div`
-  padding: ${themeCssVariables.spacing[4]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[4]};
-  min-width: 360px;
-  max-width: 560px;
   max-height: 70vh;
   overflow: hidden;
+  padding: ${themeCssVariables.spacing[5]};
+  width: 100%;
+`;
+
+const StyledHeader = styled.div`
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-between;
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledTitle = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledBalanceSection = styled.div`
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: ${themeCssVariables.spacing[2]};
+  width: 100%;
 `;
 
 const StyledBalanceRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: ${themeCssVariables.spacing[2]};
+  align-items: flex-start;
   background: ${themeCssVariables.background.tertiary};
   border-radius: ${themeCssVariables.border.radius.sm};
+  display: flex;
   font-size: ${themeCssVariables.font.size.md};
-  font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[3]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
+  width: 100%;
 `;
 
 const StyledBalanceLabel = styled.span`
   color: ${themeCssVariables.font.color.secondary};
+  flex: 1;
+  font-weight: ${themeCssVariables.font.weight.medium};
+  min-width: 0;
 `;
 
 const StyledBalanceValue = styled.span`
+  flex-shrink: 0;
   font-weight: ${themeCssVariables.font.weight.semiBold};
+  text-align: right;
 `;
 
 const StyledList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[1]};
-  overflow-y: auto;
-  flex: 1;
+  gap: ${themeCssVariables.spacing[2]};
+  max-height: 320px;
   min-height: 0;
+  overflow-y: auto;
+  width: 100%;
 `;
 
 const StyledTransactionRow = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background: ${themeCssVariables.background.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[3]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
+`;
+
+const StyledTransactionMeta = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: 12px;
+  margin-top: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledTransactionAmount = styled.span<{ type: string }>`
+  flex-shrink: 0;
   font-weight: ${themeCssVariables.font.weight.medium};
   color: ${({ type }) =>
     type === 'debit'
@@ -84,10 +104,10 @@ const StyledTransactionAmount = styled.span<{ type: string }>`
 `;
 
 const StyledEmptyState = styled.div`
-  padding: ${themeCssVariables.spacing[6]};
-  text-align: center;
   color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[4]} 0;
+  text-align: center;
 `;
 
 type CreditHistoryModalProps = {
@@ -95,17 +115,22 @@ type CreditHistoryModalProps = {
   onClose: () => void;
   orgChartCredits?: number;
   revealCredits?: number;
+  apiCredits?: number;
   revealCreditsAsEmailEquivalent?: number;
   revealCreditsAsPhoneEquivalent?: number;
   emailRevealCost?: number;
   phoneRevealCost?: number;
+  aiCredits?: number;
 };
 
 const CREDIT_TYPE_LABELS: Record<string, string> = {
-  org_chart: 'Org chart',
+  org_chart: 'Map credits',
   email_reveal: 'Email reveal',
   phone_reveal: 'Phone reveal',
   reveal_top_up: 'Reveal top-up',
+  ai_top_up: 'AI credits',
+  api_search: 'API search',
+  api_top_up: 'API top-up',
   email_contact: 'Email contact',
   phone_contact: 'Phone contact',
 };
@@ -125,10 +150,12 @@ export const CreditHistoryModal = ({
   onClose,
   orgChartCredits = 0,
   revealCredits = 0,
+  apiCredits = 0,
   revealCreditsAsEmailEquivalent,
   revealCreditsAsPhoneEquivalent,
   emailRevealCost = 1,
   phoneRevealCost = 5,
+  aiCredits,
 }: CreditHistoryModalProps) => {
   const emailEquivalent =
     revealCreditsAsEmailEquivalent ??
@@ -152,8 +179,9 @@ export const CreditHistoryModal = ({
   };
 
   const items = useMemo((): TransactionItem[] => {
-    const raw = (data as { creditTransactions?: { items: TransactionItem[] } } | undefined)
-      ?.creditTransactions?.items;
+    const raw = (
+      data as { creditTransactions?: { items: TransactionItem[] } } | undefined
+    )?.creditTransactions?.items;
     return Array.isArray(raw) ? raw : [];
   }, [data]);
 
@@ -163,10 +191,18 @@ export const CreditHistoryModal = ({
   return isOpen ? (
     <Modal isClosable onClose={onClose} size="medium" padding="none">
       <StyledModalContent>
-        <StyledTitle>Credit History</StyledTitle>
+        <StyledHeader>
+          <StyledTitle>Credit History</StyledTitle>
+          <IconButton
+            Icon={IconX}
+            onClick={onClose}
+            variant="tertiary"
+            size="small"
+          />
+        </StyledHeader>
         <StyledBalanceSection>
           <StyledBalanceRow>
-            <StyledBalanceLabel>Org chart credits</StyledBalanceLabel>
+            <StyledBalanceLabel>Map credits</StyledBalanceLabel>
             <StyledBalanceValue>{orgChartCredits}</StyledBalanceValue>
           </StyledBalanceRow>
           <StyledBalanceRow>
@@ -174,9 +210,20 @@ export const CreditHistoryModal = ({
               Reveal credits ({emailRevealCost}/email · {phoneRevealCost}/phone)
             </StyledBalanceLabel>
             <StyledBalanceValue>
-              {revealCredits} (≈ {emailEquivalent} emails or {phoneEquivalent} phones)
+              {revealCredits} (≈ {emailEquivalent} emails or {phoneEquivalent}{' '}
+              phones)
             </StyledBalanceValue>
           </StyledBalanceRow>
+          <StyledBalanceRow>
+            <StyledBalanceLabel>API credits</StyledBalanceLabel>
+            <StyledBalanceValue>{apiCredits}</StyledBalanceValue>
+          </StyledBalanceRow>
+          {aiCredits !== undefined && (
+            <StyledBalanceRow>
+              <StyledBalanceLabel>AI & usage credits</StyledBalanceLabel>
+              <StyledBalanceValue>{aiCredits}</StyledBalanceValue>
+            </StyledBalanceRow>
+          )}
         </StyledBalanceSection>
         <StyledList>
           {loading && (
@@ -195,8 +242,9 @@ export const CreditHistoryModal = ({
               <StyledTransactionRow key={item.id ?? Math.random()}>
                 <div>
                   <div>
-                    {CREDIT_TYPE_LABELS[item.creditType ?? ''] ?? item.creditType} –{' '}
-                    {item.type === 'debit' ? 'Used' : 'Added'}
+                    {CREDIT_TYPE_LABELS[item.creditType ?? ''] ??
+                      item.creditType}{' '}
+                    – {item.type === 'debit' ? 'Used' : 'Added'}
                   </div>
                   {formatMetadata(item.metadata ?? null) && (
                     <StyledTransactionMeta>
@@ -204,7 +252,7 @@ export const CreditHistoryModal = ({
                     </StyledTransactionMeta>
                   )}
                 </div>
-                <StyledTransactionAmount>
+                <StyledTransactionAmount type={item.type ?? 'credit'}>
                   {item.type === 'debit' ? '-' : '+'}
                   {item.amount ?? 0}
                 </StyledTransactionAmount>

@@ -16,26 +16,29 @@ export const useGetResourceCreditUsage = () => {
     return isDefined(data?.getResourceCreditUsage) && !loading;
   };
 
+  const resourceCreditUsage = data?.getResourceCreditUsage?.find(
+    (productUsage) =>
+      productUsage.productKey === BillingProductKey.RESOURCE_CREDIT,
+  );
+
+  const hasResourceCreditUsage = isDefined(resourceCreditUsage);
+
   const getResourceCreditUsage = () => {
     if (!data) {
       throw new Error('getResourceCreditUsage was not loaded');
     }
 
-    const usage = data.getResourceCreditUsage.find(
-      (productUsage) =>
-        productUsage.productKey === BillingProductKey.RESOURCE_CREDIT,
-    );
-
-    if (!isDefined(usage)) {
+    if (!isDefined(resourceCreditUsage)) {
       throw new Error('RESOURCE_CREDIT usage not found');
     }
 
-    return usage;
+    return resourceCreditUsage;
   };
 
   return {
     refetchResourceCreditUsage,
     isGetResourceCreditUsageQueryLoaded: isGetResourceCreditUsageQueryLoaded(),
+    hasResourceCreditUsage,
     getResourceCreditUsage,
   };
 };

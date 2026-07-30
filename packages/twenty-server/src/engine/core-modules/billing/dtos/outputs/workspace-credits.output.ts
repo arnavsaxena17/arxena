@@ -25,4 +25,7 @@ export class WorkspaceCreditsOutput {
   /** getRevealCost('phone') — runtime-resolved. */
   @Field()
   phoneRevealCost: number;
+
+  @Field()
+  apiCredits: number;
 }

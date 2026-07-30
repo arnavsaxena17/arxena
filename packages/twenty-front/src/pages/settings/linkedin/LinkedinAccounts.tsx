@@ -4,17 +4,28 @@ import { useApiKeysState } from '@/arx-jd-upload/hooks/useApiKeysState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
 import { LinkedinCookieSyncConsentSetting } from '@/unipile/components/LinkedinCookieSyncConsentSetting';
+import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import type { LinkedinSignupCompleteData } from 'twenty-shared/arx';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
+import { Button } from 'twenty-ui/input';
 import { Mixpanel } from '~/mixpanel';
 import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccounts';
 import { LinkedinSignup } from './LinkedinSignup';
 
+const AddAnotherAccountRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin: 0.5rem 0 1rem;
+`;
+
 export const LinkedinAccounts = () => {
   const { t } = useLingui();
   const [accountsRefreshTrigger, setAccountsRefreshTrigger] = useState(0);
+  const [accountsLoadSettled, setAccountsLoadSettled] = useState(false);
+  const [hasConnectedAccounts, setHasConnectedAccounts] = useState(false);
+  const [isAddingAnotherAccount, setIsAddingAnotherAccount] = useState(false);
   const bumpLinkedinUnipileUi = useCallback(() => {
     setAccountsRefreshTrigger((n) => n + 1);
   }, []);
@@ -23,6 +34,7 @@ export const LinkedinAccounts = () => {
   const handleSignupComplete = useCallback(
     async (data: LinkedinSignupCompleteData) => {
       Mixpanel.track('linkedin_connect_complete');
+      setIsAddingAnotherAccount(false);
       if (data.accountId) {
         try {
           await updateSpecificApiKey(
@@ -43,6 +55,7 @@ export const LinkedinAccounts = () => {
 
   const handleSignupCancel = (currentStep: string) => {
     console.log('LinkedIn signup cancelled at step:', currentStep);
+    setIsAddingAnotherAccount(false);
   };
 
   const handleSignupError = (error: Error) => {
@@ -53,9 +66,17 @@ export const LinkedinAccounts = () => {
     Mixpanel.track('linkedin_connect_complete');
   };
 
-  const handleAccountsLoaded = (_hasConnected: boolean) => {
-    // Connected accounts list drives QR / signup visibility internally
-  };
+  const handleAccountsLoaded = useCallback((hasConnected: boolean) => {
+    setHasConnectedAccounts(hasConnected);
+    setAccountsLoadSettled(true);
+    if (!hasConnected) {
+      setIsAddingAnotherAccount(false);
+    }
+  }, []);
+
+  const shouldShowSignupForm =
+    accountsLoadSettled &&
+    (!hasConnectedAccounts || isAddingAnotherAccount);
 
   return (
     <SettingsPageLayout
@@ -73,11 +94,24 @@ export const LinkedinAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
-        <LinkedinSignup
-          onSignupComplete={handleSignupComplete}
-          onSignupError={handleSignupError}
-          onSignupCancel={handleSignupCancel}
-        />
+        {accountsLoadSettled &&
+          hasConnectedAccounts &&
+          !isAddingAnotherAccount && (
+            <AddAnotherAccountRow>
+              <Button
+                title={t`Add another LinkedIn account`}
+                onClick={() => setIsAddingAnotherAccount(true)}
+                variant="secondary"
+              />
+            </AddAnotherAccountRow>
+          )}
+        {shouldShowSignupForm && (
+          <LinkedinSignup
+            onSignupComplete={handleSignupComplete}
+            onSignupError={handleSignupError}
+            onSignupCancel={handleSignupCancel}
+          />
+        )}
         <LinkedinCookieSyncConsentSetting
           onLinkedinStoredProfileAction={bumpLinkedinUnipileUi}
         />

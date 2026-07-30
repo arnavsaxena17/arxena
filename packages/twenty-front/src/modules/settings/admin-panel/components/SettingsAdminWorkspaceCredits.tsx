@@ -2,6 +2,7 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useApolloAdminClient } from '@/settings/admin-panel/apollo/hooks/useApolloAdminClient';
 import { ADMIN_ADJUST_WORKSPACE_CREDITS } from '@/settings/admin-panel/graphql/mutations/adminAdjustWorkspaceCredits';
 import { ADMIN_DELETE_WORKSPACE } from '@/settings/admin-panel/graphql/mutations/adminDeleteWorkspace';
+import { ADMIN_SET_CREDIT_FULFILLMENT_MODE } from '@/settings/admin-panel/graphql/mutations/adminSetCreditFulfillmentMode';
 import { GET_ADMIN_WORKSPACES_WITH_CREDITS } from '@/settings/admin-panel/graphql/queries/getAdminWorkspacesWithCredits';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -30,9 +31,10 @@ type WorkspaceCreditsRow = {
   workspaceCreatorEmail?: string | null;
   orgChartCredits: number;
   revealCredits: number;
+  apiCredits: number;
 };
 
-type CreditType = 'ORG_CHART' | 'REVEAL';
+type CreditType = 'ORG_CHART' | 'REVEAL' | 'AI' | 'API';
 
 type RowCreditEdit = {
   creditType: CreditType;
@@ -172,7 +174,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
+  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
 
 const BULK_DELETE_WORKSPACES_MODAL_ID =
   'settings-admin-workspace-credits-bulk-delete';
@@ -227,6 +229,9 @@ export const SettingsAdminWorkspaceCredits = () => {
     ADMIN_ADJUST_WORKSPACE_CREDITS,
     { client: apolloAdminClient },
   );
+  const [setFulfillmentMode] = useMutation<{
+    adminSetCreditFulfillmentMode: boolean;
+  }>(ADMIN_SET_CREDIT_FULFILLMENT_MODE, { client: apolloAdminClient });
   const [deleteWorkspaceMutation] = useMutation<{
     adminDeleteWorkspace: boolean;
   }>(ADMIN_DELETE_WORKSPACE, { client: apolloAdminClient });
@@ -339,6 +344,29 @@ export const SettingsAdminWorkspaceCredits = () => {
       });
     } finally {
       setAdjustingWorkspaceId(null);
+    }
+  };
+
+  const handleSetFulfillmentMode = async (
+    workspaceId: string,
+    mode: 'reset' | 'add' | 'split',
+  ) => {
+    try {
+      await setFulfillmentMode({
+        variables: {
+          input: { workspaceId, mode },
+        },
+      });
+      enqueueSuccessSnackBar({
+        message: t`Fulfillment mode set to ${mode}`,
+      });
+    } catch (err) {
+      enqueueErrorSnackBar({
+        message:
+          err instanceof Error
+            ? err.message
+            : t`Failed to set fulfillment mode`,
+      });
     }
   };
 
@@ -494,6 +522,9 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledMobileCreditItem>
                       {t`Reveal`}: {row.revealCredits}
                     </StyledMobileCreditItem>
+                    <StyledMobileCreditItem>
+                      {t`API`}: {row.apiCredits}
+                    </StyledMobileCreditItem>
                   </StyledMobileCreditsRow>
                   <StyledMobileActionsColumn>
                     <StyledMobileSelect
@@ -508,6 +539,22 @@ export const SettingsAdminWorkspaceCredits = () => {
                     >
                       <option value="ORG_CHART">{t`Org chart`}</option>
                       <option value="REVEAL">{t`Reveal`}</option>
+                      <option value="API">{t`API`}</option>
+                      <option value="AI">{t`AI`}</option>
+                    </StyledMobileSelect>
+                    <StyledMobileSelect
+                      defaultValue="reset"
+                      onChange={(e) =>
+                        void handleSetFulfillmentMode(
+                          row.workspaceId,
+                          e.target.value as 'reset' | 'add' | 'split',
+                        )
+                      }
+                      aria-label={t`Fulfillment mode`}
+                    >
+                      <option value="reset">{t`Mode: reset`}</option>
+                      <option value="add">{t`Mode: add`}</option>
+                      <option value="split">{t`Mode: split`}</option>
                     </StyledMobileSelect>
                     <TextInput
                       value={rowCreditEdit.delta}
@@ -549,6 +596,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                 <TableHeader>{t`Creator email`}</TableHeader>
                 <TableHeader align="right">{t`Org chart`}</TableHeader>
                 <TableHeader align="right">{t`Reveal`}</TableHeader>
+                <TableHeader align="right">{t`API`}</TableHeader>
                 <TableHeader>{t`Actions`}</TableHeader>
               </TableRow>
               {rows.map((row) => {
@@ -588,6 +636,9 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledTableCell align="right">
                       {row.revealCredits}
                     </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {row.apiCredits}
+                    </StyledTableCell>
                     <StyledTableCell>
                       <StyledActionsControlsRow>
                         <StyledSelect
@@ -602,6 +653,22 @@ export const SettingsAdminWorkspaceCredits = () => {
                         >
                           <option value="ORG_CHART">{t`Org chart`}</option>
                           <option value="REVEAL">{t`Reveal`}</option>
+                          <option value="API">{t`API`}</option>
+                          <option value="AI">{t`AI`}</option>
+                        </StyledSelect>
+                        <StyledSelect
+                          defaultValue="reset"
+                          onChange={(e) =>
+                            void handleSetFulfillmentMode(
+                              row.workspaceId,
+                              e.target.value as 'reset' | 'add' | 'split',
+                            )
+                          }
+                          aria-label={t`Fulfillment mode`}
+                        >
+                          <option value="reset">{t`Mode: reset`}</option>
+                          <option value="add">{t`Mode: add`}</option>
+                          <option value="split">{t`Mode: split`}</option>
                         </StyledSelect>
                         <StyledAmountInputWrap>
                           <TextInput

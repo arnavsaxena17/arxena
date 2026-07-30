@@ -11,57 +11,52 @@ export const StyledBackdrop = styled.div`
   height: 100vh;
   justify-content: center;
   left: 0;
+  padding: ${themeCssVariables.spacing[6]};
   pointer-events: auto;
   position: fixed;
   top: 0;
   width: 100vw;
   z-index: 2000;
-  isolation: isolate; /* Creates a new stacking context */
+  isolation: isolate;
 `;
 
 export const StyledModalContainer = styled.div`
-  align-items: center;
-  background-color: transparent;
   display: flex;
-  flex-direction: row;
-  height: 90vh;
-  justify-content: center;
+  flex-direction: column;
+  max-height: 90vh;
   position: relative;
-  width: 80vw;
+  width: 100%;
   z-index: 2001;
 `;
 
 export const StyledAdjuster = styled.div`
-  display: flex;
-  width: 100%;
-  height: 100%;
-  padding: 0 120px;
-  justify-content: center;
   align-items: center;
+  display: flex;
+  justify-content: center;
+  max-height: 100%;
+  max-width: 900px;
   position: relative;
+  width: min(900px, 100%);
 `;
 
 export const StyledModal = styled.div`
   background-color: ${themeCssVariables.background.tertiary};
-  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-  flex-basis: 900px;
-  z-index: 2002;
-  overflow: hidden;
-  max-height: 90vh;
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   box-sizing: border-box;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+  max-height: 90vh;
+  overflow: hidden;
   pointer-events: auto;
+  position: relative;
   user-select: text;
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
-  isolation: isolate;
-
-  /* Removed global pointer-events override that was interfering with button clicks */
+  width: 100%;
+  z-index: 2002;
 
   ::-webkit-scrollbar {
     width: 8px;
@@ -90,24 +85,20 @@ export const StyledModal = styled.div`
 export const StyledScrollableContent = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 8px;
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: calc(
-    90vh - 120px
-  ); /* Increased from 160px to allow more content to be visible */
+  overflow-y: auto;
+  width: 100%;
 `;
 
 export const StyledModalContent = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
-  padding: ${themeCssVariables.spacing[4]};
-  position: relative;
+  max-height: 90vh;
   overflow: hidden;
+  padding: ${themeCssVariables.spacing[5]};
+  position: relative;
+  width: 100%;
 `;
 
 export const StyledModalHeader = styled.div`
@@ -116,7 +107,6 @@ export const StyledModalHeader = styled.div`
   display: flex;
   flex-shrink: 0;
   justify-content: space-between;
-  margin-top: ${themeCssVariables.spacing[4]};
   margin-bottom: ${themeCssVariables.spacing[4]};
   z-index: 1;
 `;
@@ -130,10 +120,9 @@ export const StyledTitle = styled.div`
 export const StyledBody = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1;
-  gap: ${themeCssVariables.spacing[2]};
-  padding-bottom: ${themeCssVariables.spacing[2]};
-  overflow-y: auto;
+  gap: ${themeCssVariables.spacing[3]};
+  min-height: 0;
+  width: 100%;
 `;
 
 export const StyledFooter = styled.div`
@@ -141,15 +130,13 @@ export const StyledFooter = styled.div`
   background-color: ${themeCssVariables.background.noisy};
   border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
-  justify-content: flex-end;
-  gap: ${themeCssVariables.spacing[3]};
-  /* padding: ${themeCssVariables.spacing[2]}; */
-  width: 100%;
   flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[3]};
+  justify-content: flex-end;
+  margin-top: ${themeCssVariables.spacing[4]};
+  padding-top: ${themeCssVariables.spacing[3]};
+  width: 100%;
   z-index: 1;
-  /* position: sticky; */
-  height: 0;
-  bottom: 0;
 `;
 
 export const StyledDropzoneArea = styled.div`
@@ -157,15 +144,18 @@ export const StyledDropzoneArea = styled.div`
   background-color: ${themeCssVariables.background.secondary};
   border: 2px dashed ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
+  gap: ${themeCssVariables.spacing[3]};
   justify-content: center;
-  min-height: 80%;
-  padding: ${themeCssVariables.spacing[4]};
-  width: 95%;
+  min-height: 160px;
+  padding: ${themeCssVariables.spacing[6]};
+  text-align: center;
+  width: 100%;
+
   &:hover {
-    background-color: ${themeCssVariables.background.tertiary};
+    background-color: ${themeCssVariables.background.transparent.light};
     cursor: pointer;
   }
 `;
@@ -211,7 +201,6 @@ export const StyledFullWidthField = styled(StyledFieldGroup)`
   margin-bottom: ${themeCssVariables.spacing[6]};
 `;
 
-// Section styling components
 export const StyledSectionHeader = styled.div`
   align-items: center;
   color: ${themeCssVariables.font.color.primary};

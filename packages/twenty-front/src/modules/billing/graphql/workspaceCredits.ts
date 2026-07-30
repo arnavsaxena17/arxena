@@ -5,6 +5,7 @@ export const WORKSPACE_CREDITS = gql`
     workspaceCredits {
       orgChartCredits
       revealCredits
+      apiCredits
       revealCreditsAsEmailEquivalent
       revealCreditsAsPhoneEquivalent
       emailRevealCost

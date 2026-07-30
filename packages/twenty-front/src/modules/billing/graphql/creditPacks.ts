@@ -19,6 +19,9 @@ export const CREDIT_PACKS = gql`
       includedEmailCredits
       includedPhoneCredits
       creditsDisplay
+      kind
+      aiCredits
+      apiCredits
       pricesSubunitsJson
     }
   }

@@ -4,9 +4,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-  type ImportedRow,
-  type ImportedStructuredRow,
+    type ImportedRow,
+    type ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
+import { isValidUuidString } from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { findUnmatchedRequiredFields } from '@/spreadsheet-import/utils/findUnmatchedRequiredFields';
 import { normalizeTableData } from '@/spreadsheet-import/utils/normalizeTableData';
 import { setColumn } from '@/spreadsheet-import/utils/setColumn';
@@ -16,6 +17,10 @@ import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogMa
 
 import { ModalContent } from 'twenty-ui/surfaces';
 
+import {
+    projectIdAtom,
+    projectsState,
+} from '@/candidate-table/states/states';
 import { DO_NOT_IMPORT_OPTION_KEY } from '@/spreadsheet-import/constants/DoNotImportOptionKey';
 import { ColumnGrid } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid';
 import { TemplateColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/TemplateColumn';
@@ -28,9 +33,11 @@ import { type SpreadsheetColumn } from '@/spreadsheet-import/types/SpreadsheetCo
 import { SpreadsheetColumnType } from '@/spreadsheet-import/types/SpreadsheetColumnType';
 import { type SpreadsheetColumns } from '@/spreadsheet-import/types/SpreadsheetColumns';
 import { type SpreadsheetImportField } from '@/spreadsheet-import/types/SpreadsheetImportField';
-import { useAtomFamilySelectorState } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorState';
 import { ScrollWrapper } from '@/ui/utilities/scroll/components/ScrollWrapper';
+import { useAtomFamilySelectorState } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { isDefined } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledColumnsContainer = styled.div`
@@ -75,7 +82,10 @@ export const MatchColumnsStep = ({
 }: MatchColumnsStepProps) => {
   const { enqueueDialog } = useDialogManager();
   const dataExample = data.slice(0, 2);
-  const { spreadsheetImportFields: fields } = useSpreadsheetImportInternal();
+  const {
+    spreadsheetImportFields: fields,
+    enableUploadProgressSseWhileOpen,
+  } = useSpreadsheetImportInternal();
   const [isLoading, setIsLoading] = useState(false);
   const [columns, setColumns] = useAtomFamilySelectorState(
     initialComputedColumnsSelector,
@@ -83,8 +93,53 @@ export const MatchColumnsStep = ({
   );
 
   const { matchColumnsStepHook } = useSpreadsheetImportInternal();
+  const projectIdFromAtom = useAtomStateValue(projectIdAtom);
+  const projects = useAtomStateValue(projectsState);
+  const currentProject = useMemo(
+    () => projects.find((project) => project.id === projectIdFromAtom) ?? null,
+    [projects, projectIdFromAtom],
+  );
 
   const { t } = useLingui();
+
+  const injectCurrentProjectIntoRows = useCallback(
+    (rows: ImportedStructuredRow[]): ImportedStructuredRow[] => {
+      if (
+        enableUploadProgressSseWhileOpen !== true ||
+        !isDefined(currentProject) ||
+        !projectIdFromAtom ||
+        projectIdFromAtom === 'project-id'
+      ) {
+        return rows;
+      }
+
+      return rows.map((row) => {
+        const existingProjectValue = (row as Record<string, unknown>).projects;
+        const existingJobsValue = (row as Record<string, unknown>).jobs;
+
+        if (
+          (typeof existingProjectValue === 'string' &&
+            isValidUuidString(existingProjectValue)) ||
+          (typeof existingJobsValue === 'string' &&
+            isValidUuidString(existingJobsValue))
+        ) {
+          return row;
+        }
+
+        return {
+          ...row,
+          projects: currentProject.id,
+          jobs: currentProject.id,
+          jobTitle:
+            typeof (row as Record<string, unknown>).jobTitle === 'string'
+              ? ((row as Record<string, unknown>).jobTitle as string)
+              : currentProject.name,
+          'Default Job Name': currentProject.name,
+        } as ImportedStructuredRow;
+      });
+    },
+    [currentProject, enableUploadProgressSseWhileOpen, projectIdFromAtom],
+  );
 
   const onIgnore = useCallback(
     (columnIndex: number) => {
@@ -147,7 +202,12 @@ export const MatchColumnsStep = ({
     ) => {
       try {
         setIsLoading(true);
-        const data = await matchColumnsStepHook(values, rawData, columns);
+        const valuesWithProject = injectCurrentProjectIntoRows(values);
+        const data = await matchColumnsStepHook(
+          valuesWithProject,
+          rawData,
+          columns,
+        );
         setCurrentStepState({
           type: SpreadsheetImportStepType.validateData,
           data,
@@ -162,6 +222,7 @@ export const MatchColumnsStep = ({
     [
       onError,
       matchColumnsStepHook,
+      injectCurrentProjectIntoRows,
       nextStep,
       setPreviousStepState,
       setCurrentStepState,

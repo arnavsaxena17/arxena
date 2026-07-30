@@ -66,6 +66,9 @@ type CreditPack = {
   includedEmailCredits?: number;
   includedPhoneCredits?: number;
   creditsDisplay?: string;
+  kind?: string;
+  aiCredits?: number;
+  apiCredits?: number;
   pricesSubunitsJson?: string;
 };
 
@@ -310,8 +313,8 @@ export const SettingsBillingRazorpayCatalog = () => {
   );
 
   const handleSubscribePlan = useCallback(
-    async (razorpayPlanId: string, quantity = 1) => {
-      setSubscribingPlanId(razorpayPlanId);
+    async (razorpayPlanId?: string, quantity = 1, skuKey?: string) => {
+      setSubscribingPlanId(skuKey ?? razorpayPlanId ?? 'subscribe');
 
       try {
         const billingPath = getSettingsPath(SettingsPath.Billing);
@@ -322,8 +325,9 @@ export const SettingsBillingRazorpayCatalog = () => {
             successReturnUrl: `${window.location.origin}${billingPath}`,
             plan: BillingPlanKey.PRO,
             requirePaymentMethod: true,
-            razorpayPlanId,
+            razorpayPlanId: razorpayPlanId || undefined,
             quantity: Math.max(1, quantity),
+            skuKey,
           },
         });
         const session = (
@@ -478,12 +482,57 @@ export const SettingsBillingRazorpayCatalog = () => {
     [enqueueErrorSnackBar, enqueueSuccessSnackBar, requestInvoiceMutation, t],
   );
 
-  if (engagementPlans.length === 0 && creditPacks.length === 0) {
+  const subscriptionSkus = creditPacks.filter(
+    (pack) => pack.kind === 'subscription',
+  );
+  const oneTimePacks = creditPacks.filter(
+    (pack) => pack.kind !== 'subscription',
+  );
+
+  if (
+    engagementPlans.length === 0 &&
+    creditPacks.length === 0 &&
+    subscriptionSkus.length === 0
+  ) {
     return null;
   }
 
   return (
     <>
+      {subscriptionSkus.length > 0 && (
+        <Section>
+          <H2Title
+            title={t`Subscribe (monthly)`}
+            description={t`Monthly map, reveal, API, and AI allowances. You can still buy one-time top-ups.`}
+          />
+          <StyledPlansGrid>
+            {subscriptionSkus.map((sku) => (
+              <StyledPlanCard key={sku.key}>
+                <StyledPlanName>{sku.name}</StyledPlanName>
+                <StyledPlanMeta>{sku.creditsDisplay}</StyledPlanMeta>
+                <StyledPlanMeta>
+                  {sku.mapsCount ?? 0} maps · {sku.credits} reveals ·{' '}
+                  {sku.apiCredits ?? 0} API · {sku.aiCredits ?? 0} AI
+                </StyledPlanMeta>
+                <Button
+                  title={t`Subscribe`}
+                  variant="secondary"
+                  fullWidth
+                  onClick={() =>
+                    void handleSubscribePlan(
+                      engagementPlans[0]?.id,
+                      1,
+                      sku.key,
+                    )
+                  }
+                  disabled={subscribingPlanId !== null}
+                />
+              </StyledPlanCard>
+            ))}
+          </StyledPlansGrid>
+        </Section>
+      )}
+
       {engagementPlans.length > 0 && (
         <Section>
           <H2Title
@@ -547,9 +596,9 @@ export const SettingsBillingRazorpayCatalog = () => {
         </Section>
       )}
 
-      {creditPacks.length > 0 && (
+      {oneTimePacks.length > 0 && (
         <SettingsBillingPricing
-          creditPacks={creditPacks}
+          creditPacks={oneTimePacks}
           displayCurrency={displayCurrency}
           selectedMapsByPlan={selectedMapsByPlan}
           setSelectedMapsByPlan={setSelectedMapsByPlan}

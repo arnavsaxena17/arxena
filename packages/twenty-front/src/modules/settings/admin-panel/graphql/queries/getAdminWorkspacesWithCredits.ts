@@ -9,6 +9,7 @@ export const GET_ADMIN_WORKSPACES_WITH_CREDITS = gql`
       workspaceCreatorEmail
       orgChartCredits
       revealCredits
+      apiCredits
     }
   }
 `;

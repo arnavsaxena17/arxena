@@ -10,6 +10,7 @@ type CreateSubscriptionLinkParams = {
   quantity?: number;
   totalCount?: number;
   expireBy?: number;
+  skuKey?: string;
 };
 
 type RazorpaySubscriptionResponse = {
@@ -47,6 +48,7 @@ export class RazorpayCheckoutService {
       customer_notify: true,
       notes: {
         workspaceId: params.workspaceId,
+        ...(params.skuKey ? { skuKey: params.skuKey } : {}),
       },
       ...(params.expireBy && { expire_by: params.expireBy }),
     };

@@ -1,13 +1,14 @@
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { read, type WorkBook } from 'xlsx-ugnis';
 
 import { useNumberFormat } from '@/localization/hooks/useNumberFormat';
 import { SPREADSHEET_MAX_RECORD_IMPORT_CAPACITY } from '@/spreadsheet-import/constants/SpreadsheetMaxRecordImportCapacity';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import { useDownloadFakeRecords } from '@/spreadsheet-import/steps/components/UploadStep/hooks/useDownloadFakeRecords';
+import { isResumeUploadFile } from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { readFileAsync } from '@/spreadsheet-import/utils/readFilesAsync';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -107,13 +108,15 @@ const StyledButtonsContainer = styled.div`
 `;
 
 type DropZoneProps = {
-  onContinue: (data: WorkBook, file: File) => void;
+  onContinue: (workbook: WorkBook | null, files: File[]) => void;
   isLoading: boolean;
 };
 
 export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
-  const { maxFileSize, dateFormat, parseRaw } = useSpreadsheetImportInternal();
+  const { maxFileSize, dateFormat, parseRaw, enableUploadProgressSseWhileOpen } =
+    useSpreadsheetImportInternal();
   const { formatNumber } = useNumberFormat();
+  const { t } = useLingui();
 
   const [loading, setLoading] = useState(false);
 
@@ -121,18 +124,32 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
 
   const { downloadSample } = useDownloadFakeRecords();
 
+  const allowResumeUploads = enableUploadProgressSseWhileOpen === true;
+
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     noClick: true,
     noKeyboard: true,
-    maxFiles: 1,
+    maxFiles: allowResumeUploads ? 10 : 1,
     maxSize: maxFileSize,
-    accept: {
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
-        '.xlsx',
-      ],
-      'text/csv': ['.csv'],
-    },
+    accept: allowResumeUploads
+      ? {
+          'application/vnd.ms-excel': ['.xls'],
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+            '.xlsx',
+          ],
+          'text/csv': ['.csv'],
+          'application/pdf': ['.pdf'],
+          'application/msword': ['.doc'],
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            ['.docx'],
+        }
+      : {
+          'application/vnd.ms-excel': ['.xls'],
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+            '.xlsx',
+          ],
+          'text/csv': ['.csv'],
+        },
     onDropRejected: (fileRejections) => {
       setLoading(false);
       fileRejections.forEach((fileRejection) => {
@@ -145,22 +162,29 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
         });
       });
     },
-    onDropAccepted: async ([file]) => {
+    onDropAccepted: async (acceptedFiles) => {
       setLoading(true);
+
+      const resumeFiles = acceptedFiles.filter(isResumeUploadFile);
+      if (resumeFiles.length > 0 && allowResumeUploads) {
+        setLoading(false);
+        onContinue(null, resumeFiles);
+        return;
+      }
+
+      const file = acceptedFiles[0];
       const arrayBuffer = await readFileAsync(file);
       const workbook = read(arrayBuffer, {
         cellDates: true,
-        codepage: 65001, // UTF-8 codepage
+        codepage: 65001,
         dateNF: dateFormat,
         raw: parseRaw,
         dense: true,
       });
       setLoading(false);
-      onContinue(workbook, file);
+      onContinue(workbook, [file]);
     },
   });
-
-  const { t } = useLingui();
 
   const formatSpreadsheetMaxRecordImportCapacity = formatNumber(
     SPREADSHEET_MAX_RECORD_IMPORT_CAPACITY,
@@ -187,7 +211,13 @@ export const DropZone = ({ onContinue, isLoading }: DropZoneProps) => {
       ) : (
         <>
           <StyledText>
-            <Trans>Upload .xlsx, .xls or .csv file</Trans>
+            {allowResumeUploads ? (
+              <Trans>
+                Upload .xlsx, .xls, .csv, or resume files (.pdf, .doc, .docx)
+              </Trans>
+            ) : (
+              <Trans>Upload .xlsx, .xls or .csv file</Trans>
+            )}
           </StyledText>
           <StyledButtonsContainer>
             <MainButton onClick={open} title={t`Select file`} fullWidth />
