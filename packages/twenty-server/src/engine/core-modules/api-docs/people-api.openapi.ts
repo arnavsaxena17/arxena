@@ -6,8 +6,45 @@ const dataSourceEnum = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
 );
 
+export const PEOPLE_API_PRODUCTION_SERVER_URL = 'https://app.arxena.com';
+export const PEOPLE_API_LOCAL_SERVER_URL = 'http://localhost:3000';
+
+export type PeopleApiOpenApiServer = {
+  url: string;
+  description: string;
+};
+
+export const PEOPLE_API_DOCS_SERVERS: PeopleApiOpenApiServer[] = [
+  {
+    url: PEOPLE_API_PRODUCTION_SERVER_URL,
+    description: 'Production',
+  },
+  {
+    url: PEOPLE_API_LOCAL_SERVER_URL,
+    description: 'Local development',
+  },
+];
+
+const resolveServers = (
+  servers: string | PeopleApiOpenApiServer[],
+): OpenAPIV3_1.ServerObject[] => {
+  if (typeof servers === 'string') {
+    return [
+      {
+        url: servers,
+        description: 'Arxena server',
+      },
+    ];
+  }
+
+  return servers.map((server) => ({
+    url: server.url,
+    description: server.description,
+  }));
+};
+
 export const buildPeopleApiOpenApiDocument = (
-  serverUrl: string,
+  servers: string | PeopleApiOpenApiServer[] = PEOPLE_API_DOCS_SERVERS,
 ): OpenAPIV3_1.Document => ({
   openapi: '3.1.1',
   info: {
@@ -19,12 +56,7 @@ export const buildPeopleApiOpenApiDocument = (
       email: 'felix@arxena.com',
     },
   },
-  servers: [
-    {
-      url: serverUrl,
-      description: 'Arxena server',
-    },
-  ],
+  servers: resolveServers(servers),
   tags: [
     { name: 'Data sources', description: 'Configured people data source aliases' },
     { name: 'Taxonomy', description: 'Public constants and auth-gated label lists' },

@@ -34,9 +34,10 @@
     "openapi": [
       "openapi/people-api.json"
     ],
+    "url": "full",
     "playground": {
       "display": "interactive",
-      "proxy": true
+      "proxy": false
     },
     "examples": {
       "languages": [

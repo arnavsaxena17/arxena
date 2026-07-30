@@ -199,8 +199,9 @@ if ! build_step TWENTY_MCP_SERVER npx nx run twenty-mcp-server:build; then
 fi
 
 echo "Building twenty-docs package"
-cd ~/twenty/
-build_step TWENTY_DOCS_GENERATE yarn docs:generate
+# Skip yarn docs:generate — it rebuilds docs.json from the full Twenty
+# base-structure × all locales (~2300 pages) and OOMs mintlify export.
+# Arxena ships a curated English-only docs.json (API / Cookbooks / Changelog).
 cd ~/twenty/packages/twenty-docs/
 build_step TWENTY_DOCS yarn export:brands
 

@@ -1,4 +1,9 @@
-import { buildPeopleApiOpenApiDocument } from '../people-api.openapi';
+import {
+  buildPeopleApiOpenApiDocument,
+  PEOPLE_API_DOCS_SERVERS,
+  PEOPLE_API_LOCAL_SERVER_URL,
+  PEOPLE_API_PRODUCTION_SERVER_URL,
+} from '../people-api.openapi';
 
 describe('buildPeopleApiOpenApiDocument', () => {
   it('documents people search and taxonomy paths', () => {
@@ -20,5 +25,13 @@ describe('buildPeopleApiOpenApiDocument', () => {
     );
 
     console.log('[people-api.openapi] paths', paths);
+  });
+
+  it('includes production and local servers by default', () => {
+    const doc = buildPeopleApiOpenApiDocument();
+
+    expect(doc.servers).toEqual(PEOPLE_API_DOCS_SERVERS);
+    expect(doc.servers?.[0]?.url).toBe(PEOPLE_API_PRODUCTION_SERVER_URL);
+    expect(doc.servers?.[1]?.url).toBe(PEOPLE_API_LOCAL_SERVER_URL);
   });
 });

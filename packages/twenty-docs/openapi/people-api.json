@@ -11,7 +11,11 @@
   "servers": [
     {
       "url": "https://app.arxena.com",
-      "description": "Arxena server"
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
     }
   ],
   "tags": [
