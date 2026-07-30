@@ -10,5 +10,26 @@ l/*/user-guide/
 developers/
 l/*/developers/
 
+# twenty-ui section (not built / published)
+twenty-ui/
+l/*/twenty-ui/
+
+# All Crowdin locale trees (Arxena ships English-only docs)
+l/
+
+# Unused media from upstream Twenty docs
+images/docs/
+images/lab/
+images/releases/
+images/user-guide/
+
+# Navigation source / generated helpers (not pages)
+navigation/
+docs.developers.nav.json
+docs.getting-started.nav.json
+docs.user-guide.nav.json
+scripts/
+
 # Internal IP / contributor notes (not published)
 TAXONOMY-IP.md
+MIGRATION.md

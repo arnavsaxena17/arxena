@@ -203,7 +203,7 @@ echo "Building twenty-docs package"
 # base-structure × all locales (~2300 pages) and OOMs mintlify export.
 # Arxena ships a curated English-only docs.json (API / Cookbooks / Changelog).
 cd ~/twenty/packages/twenty-docs/
-build_step TWENTY_DOCS yarn export:brands
+build_step TWENTY_DOCS env NODE_OPTIONS="--max-old-space-size=8192" yarn export:brands
 
 required_builds=(
   TWENTY_SERVER
