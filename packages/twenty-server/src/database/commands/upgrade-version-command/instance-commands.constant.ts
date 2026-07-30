@@ -133,6 +133,8 @@ import { AddOrgChartClientIpRuleFastInstanceCommand } from './2-25/2-25-instance
 import { CreateWorkspaceMcpServerCoreTableFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000004-create-workspace-mcp-server-core-table';
 import { AddArxWorkspaceIntegrationColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000005-add-arx-workspace-integration-columns';
 import { EnsureRazorpayBaseProductMetadataFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000008-ensure-razorpay-base-product-metadata';
+import { AddWorkspaceCreditFulfillmentModeFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000009-add-workspace-credit-fulfillment-mode';
+import { AddWorkspaceApiCreditsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000010-add-workspace-api-credits';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -268,4 +270,6 @@ export const INSTANCE_COMMANDS = [
   CreateWorkspaceMcpServerCoreTableFastInstanceCommand,
   AddArxWorkspaceIntegrationColumnsFastInstanceCommand,
   EnsureRazorpayBaseProductMetadataFastInstanceCommand,
+  AddWorkspaceCreditFulfillmentModeFastInstanceCommand,
+  AddWorkspaceApiCreditsFastInstanceCommand,
 ];

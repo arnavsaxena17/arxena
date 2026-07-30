@@ -194,6 +194,67 @@ describe('DatabaseToolProvider', () => {
     );
   });
 
+  it('omits all CRUD tools for objects with databaseCrudToolAccess none', async () => {
+    const descriptorNames = await generateDescriptorNames([
+      createFlatObject({
+        nameSingular: 'videoInterview',
+        namePlural: 'videoInterviews',
+      }),
+      createFlatObject({
+        nameSingular: 'videoInterviewTemplate',
+        namePlural: 'videoInterviewTemplates',
+      }),
+      createFlatObject({
+        nameSingular: 'person',
+        namePlural: 'people',
+      }),
+    ]);
+
+    expect(descriptorNames).toEqual(
+      expect.arrayContaining(['find_many_people', 'create_one_person']),
+    );
+
+    expect(descriptorNames).toEqual(
+      expect.not.arrayContaining([
+        'find_many_video_interviews',
+        'find_one_video_interview',
+        'create_one_video_interview',
+        'delete_one_video_interview',
+        'find_many_video_interview_templates',
+        'create_one_video_interview_template',
+      ]),
+    );
+  });
+
+  it('advertises only read CRUD tools for orgChart', async () => {
+    const descriptorNames = await generateDescriptorNames([
+      createFlatObject({
+        nameSingular: 'orgChart',
+        namePlural: 'orgCharts',
+      }),
+    ]);
+
+    expect(descriptorNames).toEqual(
+      expect.arrayContaining([
+        'find_many_org_charts',
+        'find_one_org_chart',
+        'group_by_org_charts',
+      ]),
+    );
+
+    expect(descriptorNames).toEqual(
+      expect.not.arrayContaining([
+        'create_one_org_chart',
+        'create_many_org_charts',
+        'update_one_org_chart',
+        'update_many_org_charts',
+        'upsert_many_org_charts',
+        'delete_one_org_chart',
+        'delete_many_org_charts',
+      ]),
+    );
+  });
+
   it('generates labels from operation verb and object metadata labels', async () => {
     const descriptors = await generateDescriptors([
       createFlatObject({

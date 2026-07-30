@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  canExposeDatabaseCrudReadTools,
+  canExposeDatabaseCrudWriteTools,
+} from 'twenty-shared/ai';
 import { camelToSnakeCase, isDefined } from 'twenty-shared/utils';
 import { canObjectBeManagedByAutomation } from 'twenty-shared/workflow';
 
@@ -118,14 +122,21 @@ export class DatabaseToolProvider implements ToolProvider {
       const objectMetadata = { ...flatObject, fields };
 
       const restrictedFields = permission.restrictedFields;
-      const canBeManagedByAutomation = canObjectBeManagedByAutomation({
+      const canExposeReadTools = canExposeDatabaseCrudReadTools({
         nameSingular: objectMetadata.nameSingular,
       });
+      const canExposeWriteTools =
+        canExposeDatabaseCrudWriteTools({
+          nameSingular: objectMetadata.nameSingular,
+        }) &&
+        canObjectBeManagedByAutomation({
+          nameSingular: objectMetadata.nameSingular,
+        });
 
       const shouldIncludeSchema = (name: string) =>
         includeSchemas && (!toolNames || toolNames.has(name));
 
-      if (permission.canReadObjectRecords) {
+      if (permission.canReadObjectRecords && canExposeReadTools) {
         descriptors.push({
           name: `find_many_${snakePlural}`,
           ...getCrudToolLabels(
@@ -212,7 +223,7 @@ export class DatabaseToolProvider implements ToolProvider {
         }
       }
 
-      if (permission.canUpdateObjectRecords && canBeManagedByAutomation) {
+      if (permission.canUpdateObjectRecords && canExposeWriteTools) {
         descriptors.push({
           name: `create_one_${snakeSingular}`,
           ...getCrudToolLabels(
@@ -348,7 +359,7 @@ export class DatabaseToolProvider implements ToolProvider {
         });
       }
 
-      if (permission.canSoftDeleteObjectRecords) {
+      if (permission.canSoftDeleteObjectRecords && canExposeWriteTools) {
         descriptors.push({
           name: `delete_one_${snakeSingular}`,
           ...getCrudToolLabels(

@@ -23,6 +23,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] Settings → AI → MCP servers UI
 - [x] Soft-retire `/assistant` toward Ask AI
 - [x] Selection evaluation harness + `tools_in_context` logging
+- [x] Object-level database CRUD tool access (`none` for video interview*, `read` for orgChart) via `OBJECT_DATABASE_CRUD_TOOL_ACCESS`
 
 ## Bucket B — Nest `core-modules`
 
@@ -112,7 +113,7 @@ Wave 5: `video-interview`
 
 - [x] Dual-wallet credits: Arxena `workspaceCredits` (maps + reveals + **API**) via Razorpay packs **and** upstream AI (`RESOURCE_CREDIT` / `creditBalanceMicro`) also fulfilled from Razorpay. SKUs have `kind: subscription | one_time` plus `maps` / `reveals` / `apiCredits` / `aiCredits`. People API `people/search` + `people/search-by-title` debit `apiCredits` (tag `api_search`). Subscription cycles use workspace `creditFulfillmentMode` (`reset` default, `add`, `split`). One-time packs always ADD. Free signup grants maps + API + 1 AI credit.
 - [x] Razorpay module + webhooks + GraphQL credit/pack APIs
-- [x] Instance commands for workspaceCredits (incl. `apiCredits`), creditTransactions, Razorpay columns, org_chart_client_ip_rule
+- [x] Instance commands for workspaceCredits (incl. `apiCredits`), creditTransactions, Razorpay columns, org_chart_client_ip_rule, `creditFulfillmentMode` — **fix:** `1785600000009` + `1785600000010` must be in `INSTANCE_COMMANDS` (were missing; caused prod `column creditFulfillmentMode does not exist`)
 - [x] Admin credits/IP GraphQL (already on HEAD in admin-panel-arx)
 - [x] Settings dual Billing UX (maps/reveals/API + AI)
 - [x] Website org-chart API guard + middleware

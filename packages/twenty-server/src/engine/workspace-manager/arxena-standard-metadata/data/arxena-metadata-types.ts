@@ -1,3 +1,4 @@
+import { type DatabaseCrudToolAccess } from 'twenty-shared/ai';
 import { type FieldMetadataType } from 'twenty-shared/types';
 
 export type ArxenaObjectDefinition = {
@@ -9,6 +10,9 @@ export type ArxenaObjectDefinition = {
     nameSingular: string;
     namePlural: string;
   };
+  // Documents AI CRUD catalog policy; runtime source of truth is
+  // OBJECT_DATABASE_CRUD_TOOL_ACCESS in twenty-shared/ai
+  databaseCrudToolAccess?: DatabaseCrudToolAccess;
 };
 
 export type ArxenaFieldOption = {

@@ -1,10 +1,9 @@
 /*
- * _____                    _
- *|_   _|_      _____ _ __ | |_ _   _
- *  | | \ \ /\ / / _ \ '_ \| __| | | | Auto-generated file
- *  | |  \ V  V /  __/ | | | |_| |_| | Any edits to this will be overridden
- *  |_|   \_/\_/ \___|_| |_|\__|\__, |
- *                              |___/
+ *     _
+ *    / \    _ __  __  __   ___   _ __    __ _
+ *   / _ \  | '__| \ \/ /  / _ \ | '_ \  / _` | Auto-generated file
+ *  / ___ \ | |     >  <  |  __/ | | | || (_| | Any edits to this will be overridden
+ * /_/   \_\|_|    /_/\_\  \___| |_| |_| \__,_|
  */
 
 export { AI_SDK_PACKAGE_LABELS } from './constants/ai-sdk-package-labels.const';
@@ -17,6 +16,11 @@ export type { DatabaseCrudOperation } from './constants/database-crud-operation.
 export { DATABASE_CRUD_OPERATIONS } from './constants/database-crud-operation.const';
 export type { NativeAiSdkProviderId } from './constants/native-ai-sdk-provider-ids.const';
 export { NATIVE_AI_SDK_PROVIDER_IDS } from './constants/native-ai-sdk-provider-ids.const';
+export type { DatabaseCrudToolAccess } from './constants/object-database-crud-tool-access.const';
+export {
+  DATABASE_CRUD_TOOL_ACCESS,
+  OBJECT_DATABASE_CRUD_TOOL_ACCESS,
+} from './constants/object-database-crud-tool-access.const';
 export { ToolCategory } from './constants/tool-category.const';
 export type {
   AgentResponseFormatType,
@@ -51,6 +55,11 @@ export type {
 export type { ExtendedUIMessagePart } from './types/ExtendedUIMessagePart';
 export type { ModelConfiguration } from './types/model-configuration.type';
 export type { NavigateAppToolOutput } from './types/NavigateAppToolOutput';
+export {
+  getObjectDatabaseCrudToolAccess,
+  canExposeDatabaseCrudReadTools,
+  canExposeDatabaseCrudWriteTools,
+} from './utils/get-object-database-crud-tool-access.util';
 export { inferAiSdkPackage } from './utils/infer-ai-sdk-package.util';
 export { isAiSdkPackage } from './utils/is-ai-sdk-package.util';
 export { isDataResidency } from './utils/is-data-residency.util';

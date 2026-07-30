@@ -1,3 +1,5 @@
+import { OBJECT_DATABASE_CRUD_TOOL_ACCESS } from 'twenty-shared/ai';
+
 import { type ArxenaObjectDefinition } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 
 // Default mirrors workflows `isOrgChartEnabledEnv = false` — include all objects.
@@ -169,6 +171,7 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'videoInterview',
       namePlural: 'videoInterviews',
     },
+    databaseCrudToolAccess: OBJECT_DATABASE_CRUD_TOOL_ACCESS.videoInterview,
   },
   {
     object: {
@@ -179,6 +182,8 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'videoInterviewResponse',
       namePlural: 'videoInterviewResponses',
     },
+    databaseCrudToolAccess:
+      OBJECT_DATABASE_CRUD_TOOL_ACCESS.videoInterviewResponse,
   },
   {
     object: {
@@ -189,6 +194,8 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'videoInterviewQuestion',
       namePlural: 'videoInterviewQuestions',
     },
+    databaseCrudToolAccess:
+      OBJECT_DATABASE_CRUD_TOOL_ACCESS.videoInterviewQuestion,
   },
   {
     object: {
@@ -199,6 +206,8 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'videoInterviewTemplate',
       namePlural: 'videoInterviewTemplates',
     },
+    databaseCrudToolAccess:
+      OBJECT_DATABASE_CRUD_TOOL_ACCESS.videoInterviewTemplate,
   },
   {
     object: {
@@ -209,6 +218,7 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'videoInterviewModel',
       namePlural: 'videoInterviewModels',
     },
+    databaseCrudToolAccess: OBJECT_DATABASE_CRUD_TOOL_ACCESS.videoInterviewModel,
   },
   {
     object: {
@@ -329,6 +339,7 @@ const allObjects: ArxenaObjectDefinition[] = [
       nameSingular: 'orgChart',
       namePlural: 'orgCharts',
     },
+    databaseCrudToolAccess: OBJECT_DATABASE_CRUD_TOOL_ACCESS.orgChart,
   },
 ];
 

@@ -1,10 +1,9 @@
 /*
- * _____                    _
- *|_   _|_      _____ _ __ | |_ _   _
- *  | | \ \ /\ / / _ \ '_ \| __| | | | Auto-generated file
- *  | |  \ V  V /  __/ | | | |_| |_| | Any edits to this will be overridden
- *  |_|   \_/\_/ \___|_| |_|\__|\__, |
- *                              |___/
+ *     _
+ *    / \    _ __  __  __   ___   _ __    __ _
+ *   / _ \  | '__| \ \/ /  / _ \ | '_ \  / _` | Auto-generated file
+ *  / ___ \ | |     >  <  |  __/ | | | || (_| | Any edits to this will be overridden
+ * /_/   \_\|_|    /_/\_\  \___| |_| |_| \__,_|
  */
 
 export { AdvancedSettingsToggle } from './AdvancedSettingsToggle/AdvancedSettingsToggle';

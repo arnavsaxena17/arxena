@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import {
+  canExposeDatabaseCrudReadTools,
+  canExposeDatabaseCrudWriteTools,
+} from 'twenty-shared/ai';
 import { type AggregateOperations } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
@@ -89,6 +93,35 @@ export class ToolExecutorService {
     args: Record<string, unknown>,
     context: ToolProviderContext,
   ): Promise<ToolOutput> {
+    const isReadOperation =
+      ref.operation === 'find_many' ||
+      ref.operation === 'find_one' ||
+      ref.operation === 'group_by';
+
+    if (
+      isReadOperation &&
+      !canExposeDatabaseCrudReadTools({
+        nameSingular: ref.objectNameSingular,
+      })
+    ) {
+      return {
+        success: false,
+        message: `Database CRUD tools are disabled for object "${ref.objectNameSingular}"`,
+      };
+    }
+
+    if (
+      !isReadOperation &&
+      !canExposeDatabaseCrudWriteTools({
+        nameSingular: ref.objectNameSingular,
+      })
+    ) {
+      return {
+        success: false,
+        message: `Write database CRUD tools are disabled for object "${ref.objectNameSingular}"`,
+      };
+    }
+
     const authContext =
       context.authContext ?? (await this.buildAuthContext(context));
 
