@@ -17,7 +17,7 @@ export const TableContainer = styled.div`
     height: 100%;
   }
   .handsontable .ht_clone_top {
-    z-index: 101;
+    z-index: 160;
   }
   .handsontable .wtHolder {
     overflow: auto;

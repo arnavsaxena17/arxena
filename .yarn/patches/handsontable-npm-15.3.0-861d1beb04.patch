@@ -1,0 +1,15 @@
+diff --git a/package.json b/package.json
+index af2f9b28e4a4bbed2389d521fd53e839d4512d5f..b0e27c545c023c555f391d7f38277686d3a615b0 100644
+--- a/package.json
++++ b/package.json
+@@ -105,7 +105,9 @@
+   "typings": "./index.d.ts",
+   "sideEffects": [
+     "**/*.css",
+-    "./languages/*"
++    "./languages/*",
++    "./plugins/filters/condition/**",
++    "./plugins/filters/logicalOperations/**"
+   ],
+   "exports": {
+     "./cellTypes/autocompleteType": {

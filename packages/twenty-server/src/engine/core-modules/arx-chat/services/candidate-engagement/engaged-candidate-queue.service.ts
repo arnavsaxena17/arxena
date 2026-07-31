@@ -92,13 +92,14 @@ export class EngagedCandidateQueueService {
       };
       console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateId}`);
       console.log(`Job data: ${JSON.stringify(jobData, null, 2)}`);
+      // Stable id so button + field-edit listeners do not double-queue while waiting
       await this.engagedCandidateMessageQueueService.add<EngagedCandidateJobData>(
         'EngagedCandidateProcessor',
         jobData,
         {
           priority: 1,
-          id: `engaged-candidate-${candidateId}-${Date.now()}`,
-          ...(delayMs != null && delayMs > 0 ? { delayMs } : {}),
+          id: `engaged-candidate-interim-${candidateId}-${chatControlType}`,
+          ...(delayMs != null && delayMs > 0 ? { delay: delayMs } : {}),
         },
       );
 
@@ -129,7 +130,7 @@ export class EngagedCandidateQueueService {
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType | null> {
     console.log("Processing engagement operations in queue for candidate:", candidateProfileDataNodeObj.id);
-    
+
     try {
       // Step 1: Get recruiter profile
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
@@ -165,7 +166,7 @@ export class EngagedCandidateQueueService {
             },
             select: { id: true },
           });
-          
+
           if (duplicateResult) {
             console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
             return null;
@@ -184,12 +185,12 @@ export class EngagedCandidateQueueService {
             },
             select: { id: true },
           });
-          
+
           if (duplicateResult) {
             console.log(`Message '${replyObject.chatReply}' already exists for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, skipping creation`);
             return null;
           }
-          
+
           console.log(`Message '${replyObject.chatReply}' is new for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, proceeding with creation`);
         }
       }
@@ -217,7 +218,7 @@ export class EngagedCandidateQueueService {
           this.staticGraphQLService,
           this.workspaceMemberProfileUnipileService,
         );
-        
+
         const systemPrompt = await candidateEngagement.getSystemPrompt(
           candidateProfileDataNodeObj,
           candidateJob,
@@ -238,7 +239,7 @@ export class EngagedCandidateQueueService {
       // Step 5: Determine phone numbers based on messaging channel
       // Add null checks for people and phones properties
       let phoneNumberFrom: string = '';
-      
+
       if (candidateProfileDataNodeObj.people?.phones?.primaryPhoneNumber) {
         phoneNumberFrom = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
           ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
@@ -348,30 +349,30 @@ export class EngagedCandidateQueueService {
         console.log(`Checking for duplicates for candidate ${candidateProfileData.id} (job ${candidateJob.id})`);
         console.log(`Incoming message: "${whatsappIncomingMessage.messages[0].content}"`);
         console.log(`Phone from: ${whatsappIncomingMessage.phoneNumberFrom}, Phone to: ${whatsappIncomingMessage.phoneNumberTo}`);
-        
+
         // Since each candidate record is tied to a specific job, and we already have the right candidate
         // for this job, we can check if this exact message already exists for this candidate
         const existingMessages = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
-        
+
         console.log(`Found ${existingMessages.length} existing messages for candidate ${candidateProfileData.id}`);
-        
+
         // Check if the exact same message content already exists for this candidate
         // Since candidateProfileData is already the correct candidate for the current job,
         // we just need to check for message duplication
         isDuplicate = existingMessages.some(msg => {
           const messageMatches = msg.message === whatsappIncomingMessage.messages[0].content;
           const participantsMatch = (
-            (msg.phoneFrom === whatsappIncomingMessage.phoneNumberFrom.replace("+", "") && 
+            (msg.phoneFrom === whatsappIncomingMessage.phoneNumberFrom.replace("+", "") &&
              msg.phoneTo === whatsappIncomingMessage.phoneNumberTo.replace("+", "")) ||
-            (msg.phoneFrom === whatsappIncomingMessage.phoneNumberTo.replace("+", "") && 
+            (msg.phoneFrom === whatsappIncomingMessage.phoneNumberTo.replace("+", "") &&
              msg.phoneTo === whatsappIncomingMessage.phoneNumberFrom.replace("+", ""))
           );
           return messageMatches && participantsMatch;
         });
-        
+
         console.log(`Duplicate check for candidate ${candidateProfileData.id} (job ${candidateJob.id}): isDuplicate=${isDuplicate}`);
         console.log(`Message content: "${whatsappIncomingMessage.messages[0].content}", existing messages count: ${existingMessages.length}`);
       } else {
@@ -407,23 +408,23 @@ export class EngagedCandidateQueueService {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
-      
+
       // Check if the exact same message content already exists for this candidate
       const isDuplicate = existingMessages.some(msg => {
         const messageMatches = msg.message === messageContent;
         const participantsMatch = (
-          (msg.phoneFrom === phoneNumberFrom.replace("+", "") && 
+          (msg.phoneFrom === phoneNumberFrom.replace("+", "") &&
            msg.phoneTo === phoneNumberTo.replace("+", "")) ||
-          (msg.phoneFrom === phoneNumberTo.replace("+", "") && 
+          (msg.phoneFrom === phoneNumberTo.replace("+", "") &&
            msg.phoneTo === phoneNumberFrom.replace("+", ""))
         );
-        
+
         return messageMatches && participantsMatch;
       });
-      
+
       console.log(`Duplicate check for candidate ${candidateProfileData.id} (job ${candidateJob.id}): isDuplicate=${isDuplicate}`);
       console.log(`Message content: "${messageContent}", existing messages count: ${existingMessages.length}`);
-      
+
       return isDuplicate;
     } catch (error) {
       console.error('Error checking message duplicate for candidate:', error);
@@ -531,7 +532,7 @@ export class EngagedCandidateQueueService {
 
     try {
       const searchName = `Arxena-${candidateJob.name || 'Candidates'}`;
-      
+
       // Get existing phone numbers to avoid duplicates
       let existingPhoneNumbers: Set<string> = new Set();
       try {
@@ -544,7 +545,7 @@ export class EngagedCandidateQueueService {
       } catch (error) {
         console.warn('Failed to fetch existing phone numbers, proceeding without duplicate check:', error);
       }
-      
+
       // Prepare contacts for batch creation, filtering out duplicates
       const contactsToCreate = candidateProfileDataList
         .filter(candidate => {
@@ -553,14 +554,14 @@ export class EngagedCandidateQueueService {
             console.warn(`Skipping candidate ${candidate.id} - no phone number or email available`);
             return false;
           }
-          
+
           // Check if phone number already exists
           const phoneNumber = candidate.people?.phones?.primaryPhoneNumber;
           if (phoneNumber && existingPhoneNumbers.has(phoneNumber)) {
             console.log(`Skipping candidate ${candidate.id} - phone number ${phoneNumber} already exists in Google Contacts`);
             return false;
           }
-          
+
           return true;
         })
         .map(candidate => {

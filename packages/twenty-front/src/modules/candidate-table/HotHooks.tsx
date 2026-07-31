@@ -33,10 +33,10 @@ export const isUUID = (id: string): boolean => {
 // Helper function to normalize LinkedIn URLs for comparison
 const normalizeLinkedInUrl = (url: string | undefined | null | any): string | null => {
   if (!url) return null;
-  
+
   // Ensure url is a string - handle objects that might have url properties
   let urlString: string | null = null;
-  
+
   if (typeof url === 'string') {
     urlString = url.trim();
   } else if (url && typeof url === 'object') {
@@ -51,13 +51,13 @@ const normalizeLinkedInUrl = (url: string | undefined | null | any): string | nu
     }
     // If none of the above worked, don't try String(url) as it will give [object Object]
   }
-  
+
   // Validate we have a non-empty string
-  if (!urlString || typeof urlString !== 'string' || urlString.length === 0 || 
+  if (!urlString || typeof urlString !== 'string' || urlString.length === 0 ||
       urlString === 'undefined' || urlString === 'null' || urlString === '[object Object]') {
     return null;
   }
-  
+
   try {
     // Remove query parameters and fragments
     const urlObj = new URL(urlString);
@@ -105,7 +105,7 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
     const matchingCandidate = rawData.find((candidate: any) => {
       return candidate?.peopleId === rowData.personId;
     });
-    
+
     if (matchingCandidate?.id && isUUID(String(matchingCandidate.id))) {
       return String(matchingCandidate.id);
     }
@@ -116,7 +116,7 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
     const matchingCandidate = rawData.find((candidate: any) => {
       return candidate?.name === rowData.name;
     });
-    
+
     if (matchingCandidate?.id && isUUID(String(matchingCandidate.id))) {
       return String(matchingCandidate.id);
     }
@@ -231,19 +231,27 @@ export const afterSelectionEnd = (
 ) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
+
+  // Header clicks (filter caret / sort) use row === -1. Updating React state
+  // here re-renders HotTable, which calls updateSettings and destroys the
+  // DropdownMenu plugin mid-open — filters appear broken.
+  if (row < 0 || row2 < 0) {
+    return;
+  }
+
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
   try {
     const selectedIds = hot.getSelected();
     console.log("selectedIds in afterSelectionEnd", selectedIds);
-    
+
     // Handle chat drawer opening (name column only; not other cells / ranges)
     if (selectedIds.length === 1 && row === row2 && isSingleCellNameColumn(hot, column, column2)) {
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
       console.log("selectedRow in afterSelectionEnd", selectedRow);
-      
+
       if (selectedRow?.id) {
         // Use getPermanentId to get UUID if available, otherwise use the LinkedIn ID
         // This ensures we can find the candidate in processedData
@@ -263,7 +271,7 @@ export const afterSelectionEnd = (
 
     // Handle row selection for both checkbox and regular cell selection
     const selectedRows: string[] = [];
-    
+
     if (column === 0) {
       console.log("column is 0");
       // For checkbox column, toggle the selected state of the clicked row
@@ -271,16 +279,16 @@ export const afterSelectionEnd = (
       const rowData = hot.getSourceDataAtRow(physicalRow);
       let updatedSelection: string[] = [];
       let currentSelectedIds: string[] = [];
-      
+
       // Get permanent ID - check if LinkedIn candidate has been saved to database
       const candidateId = getPermanentId(rowData, rawData || []);
       console.log('afterSelectionEnd: rowData.id =', rowData?.id, 'rowData.tempId =', rowData?.tempId, 'candidateId =', candidateId);
-      
+
       if (rowData && candidateId) {
         setTableState((prev: any) => {
           currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
           const rowId = candidateId;
-          
+
           const index = currentSelectedIds.indexOf(rowId);
           if (index > -1) {
             currentSelectedIds.splice(index, 1);
@@ -309,16 +317,16 @@ export const afterSelectionEnd = (
         console.log("physicalRow::", physicalRow);
         const rowData = hot.getSourceDataAtRow(physicalRow);
         console.log("rowData::", rowData);
-        
+
         // Get permanent ID - check if LinkedIn candidate has been saved to database
         const candidateId = getPermanentId(rowData, rawData || []);
-        
+
         if (rowData && candidateId) {
           selectedRows.push(candidateId);
         }
       }
       console.log("selectedRows::", selectedRows);
-      
+
       setTableState((prev: any) => ({
         ...prev,
         selectedRowIds: selectedRows
@@ -330,7 +338,7 @@ export const afterSelectionEnd = (
         mode: 'selection',
         selectedRecordIds: selectedRows,
       });
-      
+
       // Note: Checkbox values will be automatically synced via mutatableData
       // which recalculates when selectedRowIds changes in state
     }
@@ -389,16 +397,16 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   setTableState((prev: any) => {
     const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
     console.log("currentSelectedIds::", currentSelectedIds);
-    
+
     // Get permanent ID - check if LinkedIn candidate has been saved to database
     const candidateId = getPermanentId(rowData, rawData || []);
     console.log("candidateId selected of rowData::", candidateId);
-    
+
     if (candidateId === undefined) {
       nextSelectedIds = currentSelectedIds;
       return prev;
     }
-    
+
     if (newValue === true && !currentSelectedIds.includes(candidateId)) {
       nextSelectedIds = [...currentSelectedIds, candidateId];
       return {
@@ -456,7 +464,7 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
 
     if (index >= 0) {
       const currentRow = updatedRawData[index];
-      
+
       // Special handling for phone: ProcessedData reads phoneNumber.primaryPhoneNumber
       if (prop === 'phone') {
         const currentPhoneValue = currentRow.phoneNumber?.primaryPhoneNumber ?? currentRow.people?.phones?.primaryPhoneNumber;
@@ -584,7 +592,7 @@ const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, s
 };
 
 const processBackendUpdate = async (
-  update: PendingUpdate, 
+  update: PendingUpdate,
   getLatestToken: () => string | undefined,
   setTableState: any,
   tableRef: React.RefObject<any>,
@@ -597,14 +605,14 @@ const processBackendUpdate = async (
     console.log(`Skipping backend update for fetched candidate ${rowData.id} - no personId`);
     return;
   }
-  
+
   // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
   const candidateId = getPermanentId(rowData, rawData || []);
   if (!candidateId || !isUUID(candidateId)) {
     console.log(`Skipping backend update for candidate ${rowData.id} - no valid UUID found (candidateId: ${candidateId})`);
     return;
   }
-  
+
   try {
     const latestToken = getLatestToken();
     if (!latestToken) {
@@ -616,7 +624,7 @@ const processBackendUpdate = async (
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${latestToken}` },
       body: JSON.stringify({ candidateId, fieldName: prop, value: newValue, personId: rowData.personId })
     });
-    
+
     if (!response.ok) {
       console.error('Update failed:', await response.text());
       revertTableState(rowData, prop, oldValue, tableRef.current?.hotInstance, setTableState);
@@ -687,20 +695,20 @@ export const afterChange = async (
   // Track updates
   const updatedRows = new Set();
   const pendingUpdates: PendingUpdate[] = [];
-  
+
   for (const [visualRow, prop, oldValue, newValue] of changes) {
     if (oldValue === newValue) continue;
-    
+
     console.log("oldValue in afterChange::", oldValue);
     console.log("newValue in afterChange::", newValue);
 
     // Convert visual row to physical row
     const physicalRow = hot.toPhysicalRow(visualRow);
     const rowData = hot.getSourceDataAtRow(physicalRow);
-    
+
     console.log("rowData in afterChange::", rowData);
     if (!rowData || !rowData.id) continue;
-    
+
     // Handle checkbox changes
     if (prop === 'checkbox') {
       handleCheckboxChange(rowData, newValue, setTableState, setSelectedCandidateId, rawData);
@@ -709,17 +717,17 @@ export const afterChange = async (
 
     const isDirectField = DIRECT_TABLE_FIELDS.has(prop);
     console.log(`Updating field: ${prop}, isDirectField: ${isDirectField}`);
-    
+
     // Check if this is a saved candidate (has personId) or fetched candidate (no personId)
     const isSavedCandidate = !!rowData.personId;
     console.log(`Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`);
-    
+
     // Update UI immediately (optimistic update)
     updateTableState(rowData, prop, newValue, setTableState, hot);
 
     // Only queue backend updates for saved candidates
     if (isSavedCandidate) {
-      const endpoint = isDirectField 
+      const endpoint = isDirectField
         ? `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`
         : `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field-value`;
 
@@ -736,7 +744,7 @@ export const afterChange = async (
     } else {
       console.log(`Skipping backend update for fetched candidate ${rowData.id} - changes are local only`);
     }
-    
+
     updatedRows.add(rowData.id);
   }
 

@@ -15,6 +15,25 @@ import svgr from 'vite-plugin-svgr';
 
 import { createWywProfilingPlugin } from 'twenty-shared/vite';
 
+// Vite 8 / Rolldown tree-shakes Handsontable filter condition modules because
+// handsontable package.json only marks CSS/languages as sideEffects. Those
+// modules call registerCondition() at import time — without them, opening a
+// column filter throws: Filter condition "eq" does not exist.
+// https://github.com/handsontable/handsontable/issues/12165
+const HANDSONTABLE_FILTER_SIDE_EFFECT_PATTERN =
+  /[/\\]handsontable[/\\]plugins[/\\]filters[/\\](condition|logicalOperations)[/\\]/;
+
+const preserveHandsontableFilterSideEffects = (): PluginOption => ({
+  name: 'preserve-handsontable-filter-side-effects',
+  transform(code, id) {
+    if (!HANDSONTABLE_FILTER_SIDE_EFFECT_PATTERN.test(id)) {
+      return null;
+    }
+
+    return { code, map: null, moduleSideEffects: 'no-treeshake' };
+  },
+});
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
 
@@ -70,6 +89,7 @@ export default defineConfig(({ mode }) => {
     },
 
     plugins: [
+      preserveHandsontableFilterSideEffects(),
       react({
         plugins: [['@lingui/swc-plugin', {}]],
       }),
@@ -142,6 +162,10 @@ export default defineConfig(({ mode }) => {
       // makes Vite discover the dep mid-render, triggering a re-optimize + page
       // reload that 404s every in-flight story import in browser-mode Storybook
       // tests (vite 8 / rolldown).
+      // Handsontable must stay prebundled (raw source uses require()). Filter
+      // condition registration is preserved via yarn patch of HOT sideEffects
+      // + preserveHandsontableFilterSideEffects plugin (Vite 8 tree-shake fix;
+      // workflows used Vite 5.4 where this did not break).
       include: [
         'react',
         'react-dom',
@@ -154,6 +178,9 @@ export default defineConfig(({ mode }) => {
         '@nivo/arcs',
         '@react-spring/web',
         'd3-shape',
+        'handsontable',
+        'handsontable/registry',
+        '@handsontable/react-wrapper',
       ],
     },
 

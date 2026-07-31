@@ -33122,7 +33122,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"handsontable@npm:^15.2.0":
+"handsontable@npm:15.3.0":
   version: 15.3.0
   resolution: "handsontable@npm:15.3.0"
   dependencies:
@@ -33136,6 +33136,23 @@ __metadata:
     hyperformula:
       optional: true
   checksum: 10c0/40ed1470c8fd36e09d57cf1362185b16563f4387695d6119fd3a47b7995940f54486c3dd430c3e619250b6a4addcb73b668d1038b3d1a480c9e006a1157df480
+  languageName: node
+  linkType: hard
+
+"handsontable@patch:handsontable@npm%3A15.3.0#~/.yarn/patches/handsontable-npm-15.3.0-861d1beb04.patch":
+  version: 15.3.0
+  resolution: "handsontable@patch:handsontable@npm%3A15.3.0#~/.yarn/patches/handsontable-npm-15.3.0-861d1beb04.patch::version=15.3.0&hash=fc62c6"
+  dependencies:
+    "@handsontable/pikaday": "npm:^1.0.0"
+    core-js: "npm:^3.37.0"
+    dompurify: "npm:^3.1.7"
+    hyperformula: "npm:^3.0.0"
+    moment: "npm:2.30.1"
+    numbro: "npm:2.5.0"
+  dependenciesMeta:
+    hyperformula:
+      optional: true
+  checksum: 10c0/09fda27c563a1f5dc6f4e941857eb3f5ea9d09ec3f787c15f6f34357e22e628dada66689e3b494befcb720958a544b1d7e3f3d53c1b09e1eb1517b32c0e13e8b
   languageName: node
   linkType: hard
 
@@ -50755,7 +50772,7 @@ __metadata:
     graphql: "npm:16.8.1"
     graphql-sse: "npm:^2.5.4"
     graphql-tag: "npm:^2.12.6"
-    handsontable: "npm:^15.2.0"
+    handsontable: "patch:handsontable@npm%3A15.3.0#~/.yarn/patches/handsontable-npm-15.3.0-861d1beb04.patch"
     idb-keyval: "npm:^6.2.5"
     immer: "npm:^10.1.1"
     input-otp: "npm:^1.4.2"

@@ -101,7 +101,7 @@
     "graphql": "16.8.1",
     "graphql-sse": "^2.5.4",
     "graphql-tag": "^2.12.6",
-    "handsontable": "^15.2.0",
+    "handsontable": "patch:handsontable@npm%3A15.3.0#~/.yarn/patches/handsontable-npm-15.3.0-861d1beb04.patch",
     "idb-keyval": "^6.2.5",
     "immer": "^10.1.1",
     "input-otp": "^1.4.2",

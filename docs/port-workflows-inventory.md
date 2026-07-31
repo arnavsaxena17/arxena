@@ -42,7 +42,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 
 ### Hub / chat (wave 3)
 
-- [x] `arx-chat`
+- [x] `arx-chat` — includes `CandidateChatControlListener`: candidate field flips (`startChat` / video / meeting scheduling → true) from Handsontable or CRM record edit queue the same interim-chat start as the Start Chat button; `stopChat` remains flag-only
 - [x] `warm-paths`
 - [x] `assistant`
 - [x] `autonomous-recruiter`
@@ -94,6 +94,7 @@ Wave 2: `orgchart`, `candidate-table`, `candidate-search`, `arx-jd-upload`
 - Record selection actions: workflows `action-menu` configs/hooks → `EngineComponentKey` + `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*`; HotTable bottom bar + All Actions → side panel (migration track §2.11). Needs workspace metadata sync for new CMIs.
 - Import candidates: `useDownloadFakeRecords` no longer requires ContextStore (ProjectPage mounts SpreadsheetImport outside that provider) — migration track §0/§9.2
 - Candidate Excel/CV import parity with workflows: project auto-assign, `upload-profiles` (`spreadsheet_import`), ARX `CandidateImportFields`, resume PDF/DOC via `UploadResumesStep` + SSE — migration track §0/§9.2
+- Project Handsontable top bar: restored workflows toolbar (search, status toggle, filter chips, clear/sort/import/stats/bulk/AI/validate/batch actions) in `ProjectTopBar` — migration track §0; drip-campaign still deferred
 
 Wave 3: `assistant`, `arx-ai-filtering`
 

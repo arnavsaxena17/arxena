@@ -30,6 +30,7 @@ import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTabl
 import { projectIdAtom, projectsState } from "@/candidate-table/states/states";
 import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
 import { useObjectMetadataItems } from "@/object-metadata/hooks/useObjectMetadataItems";
+import { useCheckDataIntegrityOfProject } from '@/object-record/hooks/useCheckDataIntegrityOfProject';
 import { RecordIndexContextProvider } from "@/object-record/record-index/contexts/RecordIndexContext";
 import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
 import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
@@ -469,11 +470,21 @@ export const ProjectPage: React.FC = () => {
 
   const handleRedirectToObject = useCallback(() => {
     if (!projectId) {
-      alert('No job selected');
+      alert('No project selected');
       return;
     }
-    navigate(`/object/job/${projectId}`);
+    navigate(`/object/project/${projectId}`);
   }, [projectId, navigate]);
+
+  const { checkDataIntegrityOfProject } = useCheckDataIntegrityOfProject({});
+
+  const handleValidateJobData = useCallback(() => {
+    if (!projectId) {
+      alert('No project selected');
+      return;
+    }
+    void checkDataIntegrityOfProject([projectId]);
+  }, [projectId, checkDataIntegrityOfProject]);
 
   // Filter management functions
   const handleRemoveFilter = useCallback((columnIndex: number) => {
@@ -627,6 +638,14 @@ export const ProjectPage: React.FC = () => {
     [],
   );
 
+  const selectedFetchedCandidates = useMemo(
+    () =>
+      searchResults.filter((candidate) =>
+        tableState.selectedRowIds.includes(candidate?.id || ''),
+      ),
+    [searchResults, tableState.selectedRowIds],
+  );
+
   const recordIndexContextValue = {
     indexIdentifierUrl: (recordId: string) =>
       `/project/${projectId}/${recordId}` || '',
@@ -707,6 +726,41 @@ export const ProjectPage: React.FC = () => {
                     void handleRefresh();
                   }}
                   isRefreshing={isRefreshing}
+                  showSearch={true}
+                  showSorting={true}
+                  handleSorting={handleSorting}
+                  showEnrichment={true}
+                  handleEnrichment={handleEnrichment}
+                  showAddJob={true}
+                  handleEngagement={handleEngagement}
+                  showImportCandidates={true}
+                  handleImportCandidates={handleImportCandidates}
+                  showStatistics={true}
+                  handleStatistics={handleStatistics}
+                  handleBulkMessage={handleBulkMessage}
+                  showValidateJobData={true}
+                  handleValidateJobData={handleValidateJobData}
+                  isJobActive={isJobActive}
+                  onJobStatusToggle={toggleJobStatus}
+                  showJobStatusToggle={true}
+                  handleRedirectToObject={handleRedirectToObject}
+                  showRedirectToObject={true}
+                  onRemoveFilter={handleRemoveFilter}
+                  onClearAllFilters={handleClearAllFilters}
+                  showFilterChips={true}
+                  onClearAll={handleClearAll}
+                  showClearAll={true}
+                  selectedCandidates={selectedFetchedCandidates}
+                  onSelectAll={() => {
+                    console.log('Select all clicked');
+                  }}
+                  onSelectTop={(count) => {
+                    console.log(`Select top ${count} clicked`);
+                  }}
+                  onSaveSelected={handleSaveSelected}
+                  onDiscardAll={handleDiscardSelected}
+                  onLoadMore={dataTableRef.current?.loadMoreCandidates}
+                  showBatchActions={isNewSearchUIEnabled}
                 />
               </ViewComponentInstanceContext.Provider>
             </RecordIndexContextProvider>

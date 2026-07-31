@@ -55,8 +55,8 @@ const StyledTableContainer = styled.div`
   }
 
   .handsontable .ht_clone_top {
-    /* Keep header above table content but below right drawer (z-index: 30) */
-    z-index: 20;
+    /* Handsontable default header clone stacking (do not lower — breaks filter menu) */
+    z-index: 160;
   }
 
   /* Hide scrollbar only in header's wtHolder */
@@ -982,7 +982,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       };
     }, [setDataTableRefreshFunction, setDataTableApplySortsFunction]);
 
-    const afterSelectionEndHandler = (row: number, column: number, row2: number, column2: number, selectionLayerLevel: number) => {
+    const afterSelectionEndHandler = useCallback((
+      row: number,
+      column: number,
+      row2: number,
+      column2: number,
+      _selectionLayerLevel: number,
+    ) => {
       console.log("row in afterSelectionEndHandler", row);
       afterSelectionEnd(
         tableRef,
@@ -999,7 +1005,28 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         tokenPair,
         tableState.rawData
       );
-    }
+    }, [
+      setTableState,
+      setSelectedCandidateId,
+      setUnreadMessagesCounts,
+      setContextStoreNumberOfSelectedRecords,
+      setContextStoreTargetedRecordsRule,
+      openRightDrawer,
+      tokenPair,
+      tableState.rawData,
+    ]);
+
+    const dropdownMenuItems = useMemo(
+      () => [
+        'undo',
+        'redo',
+        '---------',
+        'filter_by_condition',
+        'filter_action_bar',
+        'filter_by_value',
+      ],
+      [],
+    );
 
     const loadData = useCallback(async () => {
       if (!projectId || projectId === 'project-id' || projectId === '__search__') {
@@ -1478,7 +1505,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             manualColumnResize={true}
             manualColumnMove={true}
             filters={true}
-            dropdownMenu={['undo', 'redo','---------', 'filter_by_condition', 'filter_action_bar', 'filter_by_value']}
+            dropdownMenu={dropdownMenuItems}
             fixedColumnsLeft={2}
             customBorders={true}
             outsideClickDeselects={false}

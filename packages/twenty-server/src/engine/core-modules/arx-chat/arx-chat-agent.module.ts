@@ -100,6 +100,7 @@ import { ExtensionUnipileConnectionStatusService } from './services/candidate-en
 import { GmailDraftShortlistQueueProcessor } from './services/candidate-engagement/gmail-draft-shortlist-queue.job';
 import { GmailDraftShortlistQueueService } from './services/candidate-engagement/gmail-draft-shortlist-queue.service';
 import { UpdateChat } from './services/candidate-engagement/update-chat';
+import { CandidateChatControlListener } from './listeners/candidate-chat-control.listener';
 import { LinkedInUnipileMonitoringService } from './services/linkedin-unipile-monitoring.service';
 import { LinkedinUnipileRequestService } from './services/linkedin-unipile-request.service';
 import { MemberLinkedinUnipileConnectionService } from './services/member-linkedin-unipile-connection.service';
@@ -194,6 +195,7 @@ const conditionalImports = isWorker
     VoiceCallService,
     CandidateDataProcessorService,
     UpdateChat,
+    CandidateChatControlListener,
     MessagingControls,
     DataSourceTransformerFactoryService,
     ResdexNaukriTransformerService,

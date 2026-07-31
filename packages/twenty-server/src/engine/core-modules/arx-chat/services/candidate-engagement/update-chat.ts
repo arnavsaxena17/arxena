@@ -38,6 +38,12 @@ import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 import type { UnipileSyncMessageItem } from '../whatsapp-unipile/whatsapp-unipile-sync.service';
 
+export const CANDIDATE_CHAT_START_CONTROL_FIELDS = new Set([
+  'startChat',
+  'startVideoInterviewChat',
+  'startMeetingSchedulingChat',
+]);
+
 @Injectable()
 export class UpdateChat {
   constructor(
@@ -64,7 +70,7 @@ export class UpdateChat {
 
 
   async updateMeetingStatusAfterCompletion(
-    candidate: CandidateNode, 
+    candidate: CandidateNode,
     apiToken: string,
   ): Promise<void> {
     try {
@@ -83,10 +89,10 @@ export class UpdateChat {
       const updatedCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
 
       console.log('updatedCandidateResponse::', updatedCandidateResponse);
-      const candidates = updatedCandidateResponse?.data?.data?.candidates as { 
+      const candidates = updatedCandidateResponse?.data?.data?.candidates as {
         edges: CandidatesEdge[];
         pageInfo: PageInfo;
-      } | undefined;  
+      } | undefined;
 
 
 
@@ -377,13 +383,13 @@ export class UpdateChat {
     let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
     let messageTo = recruiterProfile.phoneNumber || '';
     let messageType = 'string';
-    
+
     if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
       messageTo = recruiterProfile.linkedinUrl || '';
       messageType = 'linkedin';
     }
-    
+
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: messageFrom,
       phoneNumberTo: messageTo,
@@ -425,7 +431,7 @@ export class UpdateChat {
     interimChat: string,
     candidateId: string,
     apiToken: string,
-    options?: { delayMs?: number },
+    options?: { delayMs?: number; chatControlType?: string },
   ) {
     console.log('📨 INTERIM CHAT QUEUE REQUEST:');
     try {
@@ -434,6 +440,11 @@ export class UpdateChat {
         this.staticGraphQLService,
       ).getCandidateDetailsById(candidateId, apiToken);
       const slidingWindowDelayMinutes = candidate?.projects?.engagementProcessingDelayMinutes;
+      const chatControlType =
+        options?.chatControlType ??
+        (CANDIDATE_CHAT_START_CONTROL_FIELDS.has(interimChat)
+          ? interimChat
+          : 'startChat');
 
       // Queue the candidate for engagement processing with the interim chat data
       // All heavy operations including getWorkspaceIdFromToken and createChatControl will be moved to the worker
@@ -441,7 +452,7 @@ export class UpdateChat {
         candidateId,
         interimChat,
         apiToken,
-        'startChat', // chatControlType
+        chatControlType,
         true,
         slidingWindowDelayMinutes,
         options?.delayMs,
@@ -468,7 +479,7 @@ export class UpdateChat {
     console.log('Interim Chat:', interimChat);
     console.log('Chat Control Type:', chatControlType);
     console.log('EngagedCandidateQueueService available:', !!this.engagedCandidateQueueService);
-    
+
     if (!this.engagedCandidateQueueService) {
       console.warn('❌ EngagedCandidateQueueService not available, falling back to direct processing');
       // Fallback to direct processing if queue service is not available
@@ -508,10 +519,10 @@ export class UpdateChat {
         variables: { filter: { id: { in: candidateIds } } },
       });
       const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { in: candidateIds } } }, apiToken);
-      const candidates = response?.data?.data?.candidates as { 
+      const candidates = response?.data?.data?.candidates as {
         edges: CandidatesEdge[];
         pageInfo: PageInfo;
-      } | undefined;  
+      } | undefined;
       const currentCandidates = candidates?.edges || [];
 
       console.log('Number of current Candidates:', currentCandidates.length);
@@ -566,7 +577,7 @@ export class UpdateChat {
     try {
       const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
       const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByRecruiterId(recruiterId, apiToken);
-      
+
       // Send socket notification to the recruiter
       if (recruiterId) {
         this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'openai_credits_status', {
@@ -611,7 +622,7 @@ export class UpdateChat {
     console.log('candidate Ids::', candidateIds);
     let allCandidates = await new CandidateEngagementArx(
       this.workspaceQueryService,
-      this.staticGraphQLService,   
+      this.staticGraphQLService,
     ).fetchAllCandidatesWithAllChatControls(
       'allStartedAndStoppedChats',
     apiToken,
@@ -1026,7 +1037,7 @@ export class UpdateChat {
     apiToken: string,
   ): Promise<{ synced: number; skipped: number; errors: number }> {
     console.log(`🔄 Syncing ${baileysMessages.length} Baileys messages with database for candidate: ${candidateId}`);
-    
+
     let synced = 0;
     let skipped = 0;
     let errors = 0;
@@ -1073,10 +1084,10 @@ export class UpdateChat {
           // Create WhatsApp message object
           const whatsappMessageObj: whatappUpdateMessageObjType = {
             id: baileysMessage.id,
-            phoneNumberFrom: isFromMe 
+            phoneNumberFrom: isFromMe
               ? candidate.phoneNumber?.primaryPhoneNumber || ''
               : baileysMessage.phoneFrom || '',
-            phoneNumberTo: isFromMe 
+            phoneNumberTo: isFromMe
               ? baileysMessage.phoneTo || ''
               : candidate.phoneNumber?.primaryPhoneNumber || '',
             messageType: isFromMe ? 'botMessage' : 'userMessage',
@@ -1162,7 +1173,7 @@ export class UpdateChat {
     if (baileysMessage.message?.contactMessage) {
       return '[Contact]';
     }
-    
+
     return '[Unsupported Message Type]';
   }
 
@@ -1422,7 +1433,7 @@ export class UpdateChat {
     baileysMessages: any[]
   ): Promise<{ synced: number; skipped: number; errors: number }> {
     console.log(`🔄 Syncing messages for phone number: ${phoneNumber}, candidate: ${candidateId}`);
-    
+
     try {
       console.log("baileysMessages in syncMessagesForPhoneNumber:", baileysMessages);
       // Filter messages for this specific phone number
