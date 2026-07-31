@@ -13,6 +13,7 @@ import {
   getRevealCost,
 } from 'twenty-shared';
 
+import { WorkspaceCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/workspace-credits.output';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingCreditService } from 'src/engine/core-modules/billing/services/billing-credit.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
@@ -102,6 +103,31 @@ export class WorkspaceCreditsService {
     }
 
     return row;
+  }
+
+  // Shared view used by GraphQL workspaceCredits and GET /people-api/credits
+  async getCreditsView(workspaceId: string): Promise<WorkspaceCreditsOutput> {
+    const row = await this.workspaceCreditsRepository.findOne({
+      where: { workspaceId },
+    });
+
+    const orgChartCredits = row?.orgChartCredits ?? 0;
+    const revealCredits = row?.revealCredits ?? 0;
+    const apiCredits = row?.apiCredits ?? 0;
+    const emailRevealCost = getRevealCost('email');
+    const phoneRevealCost = getRevealCost('phone');
+
+    return {
+      orgChartCredits,
+      revealCredits,
+      apiCredits,
+      revealCreditsAsEmailEquivalent:
+        emailRevealCost > 0 ? Math.floor(revealCredits / emailRevealCost) : 0,
+      revealCreditsAsPhoneEquivalent:
+        phoneRevealCost > 0 ? Math.floor(revealCredits / phoneRevealCost) : 0,
+      emailRevealCost,
+      phoneRevealCost,
+    };
   }
 
   // ---------------------------------------------------------------------------

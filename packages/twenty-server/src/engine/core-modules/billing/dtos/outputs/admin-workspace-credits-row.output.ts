@@ -24,4 +24,8 @@ export class AdminWorkspaceCreditsRowOutput {
 
   @Field()
   apiCredits: number;
+
+  // Display AI credits from billingCustomer.creditBalanceMicro
+  @Field()
+  aiCredits: number;
 }

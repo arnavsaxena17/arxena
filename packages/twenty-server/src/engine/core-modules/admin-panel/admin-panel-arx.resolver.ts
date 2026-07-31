@@ -2,7 +2,7 @@ import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
 import { Args, Context, Mutation, Query } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { PermissionFlagType } from 'twenty-shared/constants';
+import { AI_CREDIT_MICRO_FACTOR, PermissionFlagType } from 'twenty-shared/constants';
 import { IsNull, type Repository } from 'typeorm';
 
 import { AdminResolver } from 'src/engine/api/graphql/graphql-config/decorators/admin-resolver.decorator';
@@ -27,6 +27,7 @@ import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filt
 import { AdminAdjustWorkspaceCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-adjust-workspace-credits.input';
 import { AdminSetCreditFulfillmentModeInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-set-credit-fulfillment-mode.input';
 import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/dtos/outputs/admin-workspace-credits-row.output';
+import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { CreditFulfillmentMode } from 'src/engine/core-modules/billing/enums/credit-fulfillment-mode.enum';
 import { EntitlementFulfillmentService } from 'src/engine/core-modules/billing/services/entitlement-fulfillment.service';
@@ -83,6 +84,8 @@ export class AdminPanelArxResolver {
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
     @InjectRepository(WorkspaceCredits)
     private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
+    @InjectRepository(BillingCustomerEntity)
+    private readonly billingCustomerRepository: Repository<BillingCustomerEntity>,
   ) {}
 
   @UseGuards(AdminPanelGuard)
@@ -253,6 +256,18 @@ export class AdminPanelArxResolver {
     const creditsByWorkspaceId = new Map<string, WorkspaceCredits>(
       creditsRows.map((row) => [row.workspaceId, row]),
     );
+    const billingCustomers = await this.billingCustomerRepository.find({
+      select: ['workspaceId', 'creditBalanceMicro'],
+    });
+    const aiCreditsByWorkspaceId = new Map<string, number>(
+      billingCustomers.map((customer) => [
+        customer.workspaceId,
+        Math.max(
+          0,
+          Math.round(customer.creditBalanceMicro / AI_CREDIT_MICRO_FACTOR),
+        ),
+      ]),
+    );
 
     return workspaces.map((workspace): AdminWorkspaceCreditsRowOutput => {
       const credits = creditsByWorkspaceId.get(workspace.id);
@@ -266,6 +281,7 @@ export class AdminPanelArxResolver {
         orgChartCredits: credits?.orgChartCredits ?? 0,
         revealCredits: credits?.revealCredits ?? 0,
         apiCredits: credits?.apiCredits ?? 0,
+        aiCredits: aiCreditsByWorkspaceId.get(workspace.id) ?? 0,
       };
     });
   }

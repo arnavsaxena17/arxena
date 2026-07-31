@@ -54,6 +54,21 @@ export class PeopleApiController {
     return this.peopleApiService.getDataSourcesStatus();
   }
 
+  @Get('credits')
+  @UseGuards(JwtAuthGuard)
+  async getCredits(@Req() request: Request) {
+    const workspaceId = request.workspace?.id;
+
+    if (!isDefined(workspaceId)) {
+      throw new HttpException(
+        'Workspace context required for People API credits',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    return this.workspaceCreditsService.getCreditsView(workspaceId);
+  }
+
   // Public nouns only — flat constants, no classify, no trees.
   @Get('taxonomy/constants')
   getTaxonomyConstants() {

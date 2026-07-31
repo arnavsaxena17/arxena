@@ -61,6 +61,10 @@ export const buildPeopleApiOpenApiDocument = (
     { name: 'Data sources', description: 'Configured people data source aliases' },
     { name: 'Taxonomy', description: 'Public constants and auth-gated label lists' },
     { name: 'People', description: 'People search' },
+    {
+      name: 'Credits',
+      description: 'Workspace credit balances for org chart, reveal, and API usage',
+    },
   ],
   components: {
     securitySchemes: {
@@ -442,6 +446,66 @@ export const buildPeopleApiOpenApiDocument = (
           ],
         },
       },
+      WorkspaceCreditsResponse: {
+        type: 'object',
+        properties: {
+          orgChartCredits: {
+            type: 'number',
+            description: 'Remaining org chart credits',
+            example: 12,
+          },
+          revealCredits: {
+            type: 'number',
+            description: 'Remaining reveal credit balance (raw units)',
+            example: 100,
+          },
+          apiCredits: {
+            type: 'number',
+            description: 'Remaining People API search credits',
+            example: 250,
+          },
+          revealCreditsAsEmailEquivalent: {
+            type: 'number',
+            description:
+              'How many email reveals the current reveal balance covers',
+            example: 10,
+          },
+          revealCreditsAsPhoneEquivalent: {
+            type: 'number',
+            description:
+              'How many phone reveals the current reveal balance covers',
+            example: 5,
+          },
+          emailRevealCost: {
+            type: 'number',
+            description: 'Reveal credits charged per email reveal',
+            example: 10,
+          },
+          phoneRevealCost: {
+            type: 'number',
+            description: 'Reveal credits charged per phone reveal',
+            example: 20,
+          },
+        },
+        required: [
+          'orgChartCredits',
+          'revealCredits',
+          'apiCredits',
+          'revealCreditsAsEmailEquivalent',
+          'revealCreditsAsPhoneEquivalent',
+          'emailRevealCost',
+          'phoneRevealCost',
+        ],
+        example: {
+          orgChartCredits: 12,
+          revealCredits: 100,
+          apiCredits: 250,
+          revealCreditsAsEmailEquivalent: 10,
+          revealCreditsAsPhoneEquivalent: 5,
+          emailRevealCost: 10,
+          phoneRevealCost: 20,
+        },
+      },
     },
   },
   security: [{ bearerAuth: [] }],
@@ -499,6 +563,42 @@ export const buildPeopleApiOpenApiDocument = (
               },
             },
           },
+        },
+      },
+    },
+    '/people-api/credits': {
+      get: {
+        tags: ['Credits'],
+        summary: 'Get workspace credits',
+        description:
+          'Returns remaining org chart, reveal, and API credit balances for the authenticated workspace, plus reveal cost equivalents.',
+        operationId: 'getWorkspaceCredits',
+        responses: {
+          '200': {
+            description: 'Workspace credit balances',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/WorkspaceCreditsResponse',
+                },
+                examples: {
+                  balances: {
+                    summary: 'Typical balances',
+                    value: {
+                      orgChartCredits: 12,
+                      revealCredits: 100,
+                      apiCredits: 250,
+                      revealCreditsAsEmailEquivalent: 10,
+                      revealCreditsAsPhoneEquivalent: 5,
+                      emailRevealCost: 10,
+                      phoneRevealCost: 20,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '401': { description: 'Unauthorized' },
         },
       },
     },

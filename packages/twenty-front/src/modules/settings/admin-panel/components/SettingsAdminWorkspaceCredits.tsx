@@ -32,9 +32,12 @@ type WorkspaceCreditsRow = {
   orgChartCredits: number;
   revealCredits: number;
   apiCredits: number;
+  aiCredits: number;
 };
 
 type CreditType = 'ORG_CHART' | 'REVEAL' | 'AI' | 'API';
+
+type CreditFulfillmentModeOption = 'RESET' | 'ADD' | 'SPLIT';
 
 type RowCreditEdit = {
   creditType: CreditType;
@@ -174,7 +177,7 @@ const StyledMobileSelect = styled(StyledSelect)`
 `;
 
 const TABLE_GRID =
-  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
+  'minmax(40px, auto) minmax(96px, 1fr) minmax(104px, 0.9fr) minmax(120px, 1.2fr) minmax(140px, 1.4fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(72px, 0.55fr) minmax(260px, 1.4fr)';
 
 const BULK_DELETE_WORKSPACES_MODAL_ID =
   'settings-admin-workspace-credits-bulk-delete';
@@ -349,7 +352,7 @@ export const SettingsAdminWorkspaceCredits = () => {
 
   const handleSetFulfillmentMode = async (
     workspaceId: string,
-    mode: 'reset' | 'add' | 'split',
+    mode: CreditFulfillmentModeOption,
   ) => {
     try {
       await setFulfillmentMode({
@@ -525,6 +528,9 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledMobileCreditItem>
                       {t`API`}: {row.apiCredits}
                     </StyledMobileCreditItem>
+                    <StyledMobileCreditItem>
+                      {t`AI`}: {row.aiCredits}
+                    </StyledMobileCreditItem>
                   </StyledMobileCreditsRow>
                   <StyledMobileActionsColumn>
                     <StyledMobileSelect
@@ -543,18 +549,18 @@ export const SettingsAdminWorkspaceCredits = () => {
                       <option value="AI">{t`AI`}</option>
                     </StyledMobileSelect>
                     <StyledMobileSelect
-                      defaultValue="reset"
+                      defaultValue="RESET"
                       onChange={(e) =>
                         void handleSetFulfillmentMode(
                           row.workspaceId,
-                          e.target.value as 'reset' | 'add' | 'split',
+                          e.target.value as CreditFulfillmentModeOption,
                         )
                       }
                       aria-label={t`Fulfillment mode`}
                     >
-                      <option value="reset">{t`Mode: reset`}</option>
-                      <option value="add">{t`Mode: add`}</option>
-                      <option value="split">{t`Mode: split`}</option>
+                      <option value="RESET">{t`Mode: reset`}</option>
+                      <option value="ADD">{t`Mode: add`}</option>
+                      <option value="SPLIT">{t`Mode: split`}</option>
                     </StyledMobileSelect>
                     <TextInput
                       value={rowCreditEdit.delta}
@@ -597,6 +603,7 @@ export const SettingsAdminWorkspaceCredits = () => {
                 <TableHeader align="right">{t`Org chart`}</TableHeader>
                 <TableHeader align="right">{t`Reveal`}</TableHeader>
                 <TableHeader align="right">{t`API`}</TableHeader>
+                <TableHeader align="right">{t`AI`}</TableHeader>
                 <TableHeader>{t`Actions`}</TableHeader>
               </TableRow>
               {rows.map((row) => {
@@ -639,6 +646,9 @@ export const SettingsAdminWorkspaceCredits = () => {
                     <StyledTableCell align="right">
                       {row.apiCredits}
                     </StyledTableCell>
+                    <StyledTableCell align="right">
+                      {row.aiCredits}
+                    </StyledTableCell>
                     <StyledTableCell>
                       <StyledActionsControlsRow>
                         <StyledSelect
@@ -657,18 +667,18 @@ export const SettingsAdminWorkspaceCredits = () => {
                           <option value="AI">{t`AI`}</option>
                         </StyledSelect>
                         <StyledSelect
-                          defaultValue="reset"
+                          defaultValue="RESET"
                           onChange={(e) =>
                             void handleSetFulfillmentMode(
                               row.workspaceId,
-                              e.target.value as 'reset' | 'add' | 'split',
+                              e.target.value as CreditFulfillmentModeOption,
                             )
                           }
                           aria-label={t`Fulfillment mode`}
                         >
-                          <option value="reset">{t`Mode: reset`}</option>
-                          <option value="add">{t`Mode: add`}</option>
-                          <option value="split">{t`Mode: split`}</option>
+                          <option value="RESET">{t`Mode: reset`}</option>
+                          <option value="ADD">{t`Mode: add`}</option>
+                          <option value="SPLIT">{t`Mode: split`}</option>
                         </StyledSelect>
                         <StyledAmountInputWrap>
                           <TextInput

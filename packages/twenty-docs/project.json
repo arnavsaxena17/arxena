@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "mintlify dev"
+        "command": "rm -rf .mintlify/exports && NODE_OPTIONS='--max-old-space-size=8192' mintlify dev --port 3003"
       }
     },
     "export-people-openapi": {

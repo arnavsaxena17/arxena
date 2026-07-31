@@ -6,7 +6,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { type Request } from 'express';
 import { PermissionFlagType } from 'twenty-shared/constants';
-import { getRevealCost } from 'twenty-shared';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { type Repository } from 'typeorm';
 
@@ -35,7 +34,6 @@ import { RazorpayOrderOutput } from 'src/engine/core-modules/billing/dtos/output
 import { RequestInvoiceForCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/request-invoice-for-credits.output';
 import { WorkspaceCreditsOutput } from 'src/engine/core-modules/billing/dtos/outputs/workspace-credits.output';
 import { BillingPriceEntity } from 'src/engine/core-modules/billing/entities/billing-price.entity';
-import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingPlanKey } from 'src/engine/core-modules/billing/enums/billing-plan-key.enum';
 import { SubscriptionInterval } from 'src/engine/core-modules/billing/enums/billing-subscription-interval.enum';
 import { RAZORPAY_CREDIT_PACKS } from 'src/engine/core-modules/billing/razorpay/constants/credit-packs.constant';
@@ -49,6 +47,7 @@ import { BillingService } from 'src/engine/core-modules/billing/services/billing
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { InvoiceRequestService } from 'src/engine/core-modules/billing/services/invoice-request.service';
 import { PricingCurrencyService } from 'src/engine/core-modules/billing/services/pricing-currency.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { formatBillingDatabaseProductToGraphqlDTO } from 'src/engine/core-modules/billing/utils/format-database-product-to-graphql-dto.util';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { PreventNestToAutoLogGraphqlErrorsFilter } from 'src/engine/core-modules/graphql/filters/prevent-nest-to-auto-log-graphql-errors.filter';
@@ -93,8 +92,7 @@ export class BillingResolver {
     private readonly invoiceRequestService: InvoiceRequestService,
     private readonly pricingCurrencyService: PricingCurrencyService,
     private readonly creditTransactionService: CreditTransactionService,
-    @InjectRepository(WorkspaceCredits)
-    private readonly workspaceCreditsRepository: Repository<WorkspaceCredits>,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectRepository(BillingPriceEntity)
     private readonly billingPriceRepository: Repository<BillingPriceEntity>,
   ) {}
@@ -579,27 +577,7 @@ export class BillingResolver {
   async workspaceCredits(
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<WorkspaceCreditsOutput> {
-    const row = await this.workspaceCreditsRepository.findOne({
-      where: { workspaceId: workspace.id },
-    });
-
-    const orgChartCredits = row?.orgChartCredits ?? 0;
-    const revealCredits = row?.revealCredits ?? 0;
-    const apiCredits = row?.apiCredits ?? 0;
-    const emailRevealCost = getRevealCost('email');
-    const phoneRevealCost = getRevealCost('phone');
-
-    return {
-      orgChartCredits,
-      revealCredits,
-      apiCredits,
-      revealCreditsAsEmailEquivalent:
-        emailRevealCost > 0 ? Math.floor(revealCredits / emailRevealCost) : 0,
-      revealCreditsAsPhoneEquivalent:
-        phoneRevealCost > 0 ? Math.floor(revealCredits / phoneRevealCost) : 0,
-      emailRevealCost,
-      phoneRevealCost,
-    };
+    return this.workspaceCreditsService.getCreditsView(workspace.id);
   }
 
   @Mutation(() => RazorpayOrderOutput)

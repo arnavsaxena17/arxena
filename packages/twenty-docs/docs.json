@@ -81,6 +81,12 @@
                 ]
               },
               {
+                "group": "Credits",
+                "pages": [
+                  "api-reference/credits/get-workspace-credits"
+                ]
+              },
+              {
                 "group": "People",
                 "pages": [
                   "api-reference/data-sources/list-people-data-source-categories",

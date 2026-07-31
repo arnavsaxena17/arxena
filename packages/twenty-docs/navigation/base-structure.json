@@ -42,6 +42,13 @@
           ]
         },
         {
+          "key": "apiReferenceCredits",
+          "label": "Credits",
+          "pages": [
+            "api-reference/credits/get-workspace-credits"
+          ]
+        },
+        {
           "key": "apiReferencePeople",
           "label": "People",
           "pages": [

@@ -13,6 +13,7 @@ describe('buildPeopleApiOpenApiDocument', () => {
     expect(paths).toEqual(
       expect.arrayContaining([
         '/people-api/data-sources',
+        '/people-api/credits',
         '/people-api/taxonomy/constants',
         '/people-api/taxonomy/function-roots',
         '/people-api/taxonomy/functions',

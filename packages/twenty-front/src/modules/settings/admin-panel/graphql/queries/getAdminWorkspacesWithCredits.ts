@@ -10,6 +10,7 @@ export const GET_ADMIN_WORKSPACES_WITH_CREDITS = gql`
       orgChartCredits
       revealCredits
       apiCredits
+      aiCredits
     }
   }
 `;
