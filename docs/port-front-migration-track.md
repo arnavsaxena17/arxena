@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Create `metadata.unipile_accounts` | Ported workflows TypeORM `174070`/`174080` as fast instance cmd `1785600000011` (also `CREATE SCHEMA IF NOT EXISTS metadata`). Fixes pool `touchLastActive` after org-chart / Sales Nav estimates. Other ARX workflows TypeORM migs already covered by `1785600000001`–`0010`. | `2-25-instance-command-fast-1785600000011-create-unipile-accounts-table.ts`, `instance-commands.constant.ts` |
 | Register missing credit instance cmds | `1785600000009` (`creditFulfillmentMode`) + `1785600000010` (`apiCredits`) existed on disk but were omitted from `INSTANCE_COMMANDS` — prod GraphQL failed with missing column. Registered both so upgrade applies them. | `instance-commands.constant.ts` |
 | AI CRUD tool access by object | `OBJECT_DATABASE_CRUD_TOOL_ACCESS` (`all`/`read`/`none`); video interview objects `none`, `orgChart` `read-only`; wired in `DatabaseToolProvider` + `ToolExecutorService`; flags on Arxena `objects-data` | `object-database-crud-tool-access.const.ts`, `database-tool.provider.ts`, `objects-data.ts` |
 | GetResourceCreditUsage on Razorpay | Return `[]` when no Stripe RESOURCE_CREDIT item / no subscription (was throwing `BILLING_SUBSCRIPTION_ITEM_NOT_FOUND`); front skips Stripe credits UI + AI chip when empty | `billing-usage.service.ts`, `useGetResourceCreditUsage.ts`, `SettingsBillingContent.tsx`, `CandidateTablePageHeader.tsx` |

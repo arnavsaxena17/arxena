@@ -114,6 +114,7 @@ Wave 5: `video-interview`
 - [x] Dual-wallet credits: Arxena `workspaceCredits` (maps + reveals + **API**) via Razorpay packs **and** upstream AI (`RESOURCE_CREDIT` / `creditBalanceMicro`) also fulfilled from Razorpay. SKUs have `kind: subscription | one_time` plus `maps` / `reveals` / `apiCredits` / `aiCredits`. People API `people/search` + `people/search-by-title` debit `apiCredits` (tag `api_search`). Subscription cycles use workspace `creditFulfillmentMode` (`reset` default, `add`, `split`). One-time packs always ADD. Free signup grants maps + API + 1 AI credit.
 - [x] Razorpay module + webhooks + GraphQL credit/pack APIs
 - [x] Instance commands for workspaceCredits (incl. `apiCredits`), creditTransactions, Razorpay columns, org_chart_client_ip_rule, `creditFulfillmentMode` — **fix:** `1785600000009` + `1785600000010` must be in `INSTANCE_COMMANDS` (were missing; caused prod `column creditFulfillmentMode does not exist`)
+- [x] Instance command `1785600000011` creates `metadata.unipile_accounts` (+ indexes) — port of workflows TypeORM `1740700000000` / `1740800000000`. Without it, Unipile pool `touchLastActive` fails with `relation "metadata.unipile_accounts" does not exist` after successful Sales Nav searches. Optionally backfill with `unipile-backfill-member-mappings`.
 - [x] Admin credits/IP GraphQL (already on HEAD in admin-panel-arx)
 - [x] Settings dual Billing UX (maps/reveals/API + AI)
 - [x] Website org-chart API guard + middleware
