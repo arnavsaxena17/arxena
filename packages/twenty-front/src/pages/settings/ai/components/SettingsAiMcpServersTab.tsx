@@ -1,10 +1,11 @@
-import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
+import { TextArea } from '@/ui/input/components/TextArea';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
-import { useState } from 'react';
-import { IconPlus, IconRefresh, IconTrash } from 'twenty-ui/icon';
+import { useEffect, useState } from 'react';
+import { IconDeviceFloppy, IconRefresh, IconTrash } from 'twenty-ui/icon';
 import { Button, Toggle } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { H2Title } from 'twenty-ui/typography';
@@ -17,6 +18,10 @@ import {
   UPDATE_WORKSPACE_MCP_SERVER,
   WORKSPACE_MCP_SERVERS,
 } from '~/pages/settings/ai/graphql/workspaceMcpServers';
+import {
+  MCP_SERVERS_CONFIG_PLACEHOLDER,
+  parseMcpServersConfig,
+} from '~/pages/settings/ai/utils/parseMcpServersConfig';
 
 type WorkspaceMcpServer = {
   id: string;
@@ -69,49 +74,155 @@ const StyledMeta = styled.span`
   font-size: ${themeCssVariables.font.size.sm};
 `;
 
+const StyledCodeArea = styled.div`
+  font-family: ${themeCssVariables.code.font.family};
+  width: 100%;
+
+  textarea {
+    font-family: ${themeCssVariables.code.font.family};
+    font-size: ${themeCssVariables.font.size.sm};
+    line-height: 1.5;
+    min-height: 280px;
+  }
+`;
+
+const buildConfigFromServers = (servers: WorkspaceMcpServer[]): string => {
+  if (servers.length === 0) {
+    return MCP_SERVERS_CONFIG_PLACEHOLDER;
+  }
+
+  const mcpServers: Record<string, { url: string; headers?: Record<string, string> }> =
+    {};
+
+  for (const server of servers) {
+    const entry: { url: string; headers?: Record<string, string> } = {
+      url: server.url,
+    };
+
+    if (server.hasAuthToken) {
+      entry.headers = {
+        [server.authHeaderName || 'Authorization']:
+          '<configured — paste to rotate>',
+      };
+    }
+
+    mcpServers[server.label] = entry;
+  }
+
+  return JSON.stringify({ mcpServers }, null, 2);
+};
+
 export const SettingsAiMcpServersTab = () => {
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
+  // MCP federation resolvers live on core (/graphql), not /metadata
+  const apolloCoreClient = useApolloCoreClient();
   const { data, loading, refetch } = useQuery<{
     workspaceMcpServers: WorkspaceMcpServer[];
-  }>(WORKSPACE_MCP_SERVERS);
+  }>(WORKSPACE_MCP_SERVERS, { client: apolloCoreClient });
 
-  const [createServer, { loading: creating }] = useMutation(
-    CREATE_WORKSPACE_MCP_SERVER,
-  );
-  const [updateServer] = useMutation(UPDATE_WORKSPACE_MCP_SERVER);
-  const [deleteServer] = useMutation(DELETE_WORKSPACE_MCP_SERVER);
-  const [syncServer] = useMutation(SYNC_WORKSPACE_MCP_SERVER_TOOLS);
-
-  const [label, setLabel] = useState('');
-  const [url, setUrl] = useState('');
-  const [authToken, setAuthToken] = useState('');
-  const [authHeaderName, setAuthHeaderName] = useState('Authorization');
+  const [createServer] = useMutation(CREATE_WORKSPACE_MCP_SERVER, {
+    client: apolloCoreClient,
+  });
+  const [updateServer] = useMutation(UPDATE_WORKSPACE_MCP_SERVER, {
+    client: apolloCoreClient,
+  });
+  const [deleteServer] = useMutation(DELETE_WORKSPACE_MCP_SERVER, {
+    client: apolloCoreClient,
+  });
+  const [syncServer] = useMutation(SYNC_WORKSPACE_MCP_SERVER_TOOLS, {
+    client: apolloCoreClient,
+  });
 
   const servers = data?.workspaceMcpServers ?? [];
+  const [configText, setConfigText] = useState(MCP_SERVERS_CONFIG_PLACEHOLDER);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasHydratedConfig, setHasHydratedConfig] = useState(false);
 
-  const handleCreate = async () => {
+  useEffect(() => {
+    if (loading || hasHydratedConfig) {
+      return;
+    }
+
+    setConfigText(buildConfigFromServers(servers));
+    setHasHydratedConfig(true);
+  }, [loading, servers, hasHydratedConfig]);
+
+  const handleSaveConfig = async () => {
+    const { servers: parsedServers, errors } =
+      parseMcpServersConfig(configText);
+
+    if (errors.length > 0) {
+      enqueueErrorSnackBar({ message: errors[0] });
+      return;
+    }
+
+    if (parsedServers.length === 0) {
+      enqueueErrorSnackBar({ message: t`No MCP servers found in config` });
+      return;
+    }
+
+    setIsSaving(true);
+
     try {
-      await createServer({
-        variables: {
-          input: {
-            label,
-            url,
-            authToken: authToken || undefined,
-            authHeaderName: authHeaderName || undefined,
-            enabled: true,
-          },
-        },
+      let createdCount = 0;
+      let updatedCount = 0;
+
+      for (const parsedServer of parsedServers) {
+        const existing = servers.find(
+          (server) => server.slug === parsedServer.slug,
+        );
+        const isPlaceholderToken =
+          parsedServer.authToken?.includes('<configured') === true;
+
+        if (existing) {
+          await updateServer({
+            variables: {
+              input: {
+                id: existing.id,
+                label: parsedServer.label,
+                url: parsedServer.url,
+                authHeaderName: parsedServer.authHeaderName,
+                authToken: isPlaceholderToken
+                  ? undefined
+                  : parsedServer.authToken,
+                enabled: true,
+              },
+            },
+          });
+          updatedCount += 1;
+        } else {
+          await createServer({
+            variables: {
+              input: {
+                label: parsedServer.label,
+                slug: parsedServer.slug,
+                url: parsedServer.url,
+                authHeaderName: parsedServer.authHeaderName,
+                authToken: isPlaceholderToken
+                  ? undefined
+                  : parsedServer.authToken,
+                enabled: true,
+              },
+            },
+          });
+          createdCount += 1;
+        }
+      }
+
+      enqueueSuccessSnackBar({
+        message: t`Saved MCP servers (${createdCount} added, ${updatedCount} updated)`,
       });
-      setLabel('');
-      setUrl('');
-      setAuthToken('');
-      enqueueSuccessSnackBar({ message: t`MCP server added and synced` });
+      setHasHydratedConfig(false);
       await refetch();
     } catch (error) {
       enqueueErrorSnackBar({
         message:
-          error instanceof Error ? error.message : t`Failed to add MCP server`,
+          error instanceof Error
+            ? error.message
+            : t`Failed to save MCP servers`,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -138,6 +249,7 @@ export const SettingsAiMcpServersTab = () => {
   const handleDelete = async (id: string) => {
     await deleteServer({ variables: { id } });
     enqueueSuccessSnackBar({ message: t`MCP server removed` });
+    setHasHydratedConfig(false);
     await refetch();
   };
 
@@ -145,10 +257,40 @@ export const SettingsAiMcpServersTab = () => {
     <Section>
       <H2Title
         title={t`MCP servers`}
-        description={t`Connect remote MCP servers. Their tools appear in Ask AI via learn_tools / execute_tool (namespaced as slug__tool).`}
+        description={t`Paste a Cursor-style mcp.json. Remote HTTP and mcp-remote servers sync into Ask AI as slug__tool via learn_tools / execute_tool.`}
       />
+
+      <StyledForm>
+        <H2Title
+          title={t`mcp.json`}
+          description={t`Use url + headers, or command/args with mcp-remote. Save creates or updates by server name.`}
+        />
+        <StyledCodeArea>
+          <TextArea
+            textAreaId="workspace-mcp-servers-config"
+            value={configText}
+            onChange={setConfigText}
+            minRows={14}
+            maxRows={40}
+            placeholder={MCP_SERVERS_CONFIG_PLACEHOLDER}
+          />
+        </StyledCodeArea>
+        <Button
+          Icon={IconDeviceFloppy}
+          title={t`Save MCP servers`}
+          accent="blue"
+          disabled={isSaving || configText.trim() === ''}
+          onClick={() => {
+            void handleSaveConfig();
+          }}
+        />
+      </StyledForm>
+
       <StyledList>
         {loading && <StyledMeta>{t`Loading…`}</StyledMeta>}
+        {!loading && servers.length === 0 && (
+          <StyledMeta>{t`No MCP servers configured yet`}</StyledMeta>
+        )}
         {servers.map((server) => (
           <StyledCard key={server.id}>
             <StyledRow>
@@ -197,48 +339,6 @@ export const SettingsAiMcpServersTab = () => {
           </StyledCard>
         ))}
       </StyledList>
-
-      <StyledForm>
-        <H2Title title={t`Add MCP server`} description={t`HTTP Streamable MCP URL`} />
-        <SettingsTextInput
-          instanceId="mcp-server-label"
-          value={label}
-          onChange={setLabel}
-          placeholder={t`Label (e.g. Apollo)`}
-          fullWidth
-        />
-        <SettingsTextInput
-          instanceId="mcp-server-url"
-          value={url}
-          onChange={setUrl}
-          placeholder="https://mcp.example.com/mcp"
-          fullWidth
-        />
-        <SettingsTextInput
-          instanceId="mcp-server-auth-header"
-          value={authHeaderName}
-          onChange={setAuthHeaderName}
-          placeholder="Authorization"
-          fullWidth
-        />
-        <SettingsTextInput
-          instanceId="mcp-server-auth-token"
-          value={authToken}
-          onChange={setAuthToken}
-          type="password"
-          placeholder={t`API token (optional)`}
-          fullWidth
-        />
-        <Button
-          Icon={IconPlus}
-          title={t`Add server`}
-          accent="blue"
-          disabled={!label || !url || creating}
-          onClick={() => {
-            void handleCreate();
-          }}
-        />
-      </StyledForm>
     </Section>
   );
 };

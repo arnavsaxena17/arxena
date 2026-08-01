@@ -64,6 +64,55 @@ export class DownstreamMcpConnectionManager {
     });
   }
 
+  // Plain token → single auth header. JSON object string → multi-header map
+  // (e.g. providers that require x-api-key + x-api-host together).
+  private buildRequestHeaders(
+    options: DownstreamMcpConnectOptions,
+  ): Record<string, string> {
+    const headers: Record<string, string> = {};
+
+    if (!isDefined(options.authToken) || options.authToken === '') {
+      return headers;
+    }
+
+    const trimmedToken = options.authToken.trim();
+
+    if (trimmedToken.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmedToken) as unknown;
+
+        if (
+          isDefined(parsed) &&
+          typeof parsed === 'object' &&
+          !Array.isArray(parsed)
+        ) {
+          for (const [headerName, headerValue] of Object.entries(
+            parsed as Record<string, unknown>,
+          )) {
+            if (typeof headerValue === 'string' && headerValue !== '') {
+              headers[headerName] = headerValue;
+            }
+          }
+
+          return headers;
+        }
+      } catch {
+        // Fall through to single-header mode
+      }
+    }
+
+    const headerName = options.authHeaderName ?? 'Authorization';
+    const value =
+      headerName.toLowerCase() === 'authorization' &&
+      !trimmedToken.toLowerCase().startsWith('bearer ')
+        ? `Bearer ${trimmedToken}`
+        : trimmedToken;
+
+    headers[headerName] = value;
+
+    return headers;
+  }
+
   private async withClient<T>(
     options: DownstreamMcpConnectOptions,
     fn: (client: Client) => Promise<T>,
@@ -73,18 +122,7 @@ export class DownstreamMcpConnectionManager {
       version: '1.0.0',
     });
 
-    const headers: Record<string, string> = {};
-
-    if (isDefined(options.authToken) && options.authToken !== '') {
-      const headerName = options.authHeaderName ?? 'Authorization';
-      const value =
-        headerName.toLowerCase() === 'authorization' &&
-        !options.authToken.toLowerCase().startsWith('bearer ')
-          ? `Bearer ${options.authToken}`
-          : options.authToken;
-
-      headers[headerName] = value;
-    }
+    const headers = this.buildRequestHeaders(options);
 
     const transport = new StreamableHTTPClientTransport(new URL(options.url), {
       requestInit: { headers },
