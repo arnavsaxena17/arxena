@@ -6,16 +6,17 @@ const sharedInputStyles = `
   padding: 0.5rem 1rem;
   font-size: 1rem;
   font-weight: 500;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   outline: none;
   font-family: inherit;
   transition: all 0.2s;
 
   &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: ${themeCssVariables.color.blue};
+    box-shadow: 0 0 0 2px ${themeCssVariables.background.transparent.blue};
   }
 `;
 
@@ -78,14 +79,14 @@ export const FieldCard = styled.div`
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   font-family: inherit;
   border-radius: 0.5rem;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #d1d5db;
+    border-color: ${themeCssVariables.border.color.strong};
   }
 `;
 
@@ -101,28 +102,29 @@ export const FieldHeader = styled.div`
 
 export const FieldName = styled.span`
   font-weight: 500;
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 export const FieldType = styled.span`
-  color: #6b7280;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.875rem;
 `;
 
 export const RequiredBadge = styled.span`
-  color: #ef4444;
+  color: ${themeCssVariables.color.red};
   font-size: 0.75rem;
 `;
 
 export const FieldDescription = styled.p`
-  color: #4b5563;
+  color: ${themeCssVariables.font.color.secondary};
   font-size: 0.875rem;
   margin-top: 0.25rem;
 `;
 
 export const AddFieldForm = styled.div`
   padding: 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -140,8 +142,9 @@ export const CheckboxContainer = styled.div`
 `;
 
 export const CodeBlock = styled.div`
-  background: #1f2937;
-  color: white;
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   padding: 1rem;
   border-radius: 0.5rem;
   width: 400px;
@@ -159,10 +162,10 @@ export const ErrorAlert = styled.div`
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
+  background: ${themeCssVariables.tag.background.red};
+  border: 1px solid ${themeCssVariables.border.color.danger};
   border-radius: 0.5rem;
-  color: #dc2626;
+  color: ${themeCssVariables.tag.text.red};
 `;
 
 export const ButtonGroup = styled.div`
@@ -184,7 +187,8 @@ export const SelectedFieldsContainer = styled.div`
 `;
 
 export const SelectedFieldTag = styled.div`
-  background: #f3f4f6;
+  background: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.primary};
   padding: 0.5rem;
   border-radius: 0.25rem;
   display: flex;
@@ -210,6 +214,7 @@ export const SelectLabel = styled.label`
   margin-bottom: 0.5rem;
   align-self: flex-start;
   display: block;
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 export const ModelCodeDisplay = styled.div<{ show: boolean }>`
@@ -224,14 +229,14 @@ export const LoadingIndicator = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  color: #6b7280;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.875rem;
 `;
 
 export const FieldsLoadingContainer = styled.div`
   width: 400px;
   min-height: 80px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
@@ -240,7 +245,7 @@ export const FieldsLoadingContainer = styled.div`
 
 export const CheckboxFieldsContainer = styled.div`
   width: 400px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   max-height: 200px;
   overflow-y: auto;
@@ -255,9 +260,10 @@ export const CheckboxField = styled.div`
   gap: 0.5rem;
   cursor: pointer;
   transition: background-color 0.2s;
+  color: ${themeCssVariables.font.color.primary};
 
   &:hover {
-    background-color: #f3f4f6;
+    background-color: ${themeCssVariables.background.tertiary};
   }
 
   input[type='checkbox'] {

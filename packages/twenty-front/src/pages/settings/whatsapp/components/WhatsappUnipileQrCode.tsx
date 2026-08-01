@@ -2,13 +2,15 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { styled } from '@linaria/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 
 const Card = styled.div`
-  background: white;
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.light};
   max-width: 600px;
   margin: 2rem auto;
   padding: 1.5rem;
@@ -19,7 +21,7 @@ const CardHeader = styled.div`
 `;
 
 const CardTitle = styled.h2`
-  color: #1a1a1a;
+  color: ${themeCssVariables.font.color.primary};
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
@@ -34,21 +36,21 @@ const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
     switch (props.variant) {
       case 'error':
         return `
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          color: #dc2626;
+          background: ${themeCssVariables.background.transparent.danger};
+          border: 1px solid ${themeCssVariables.border.color.danger};
+          color: ${themeCssVariables.font.color.danger};
         `;
       case 'success':
         return `
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          color: #16a34a;
+          background: ${themeCssVariables.background.transparent.success};
+          border: 1px solid ${themeCssVariables.color.green};
+          color: ${themeCssVariables.color.green};
         `;
       default:
         return `
-          background: #f8f9fa;
-          border: 1px solid #e9ecef;
-          color: #4a5568;
+          background: ${themeCssVariables.background.tertiary};
+          border: 1px solid ${themeCssVariables.border.color.medium};
+          color: ${themeCssVariables.font.color.secondary};
         `;
     }
   }}
@@ -66,7 +68,7 @@ const QrCodeContainer = styled.div`
   align-items: center;
   gap: 1rem;
   padding: 2rem;
-  background: #f8f9fa;
+  background: ${themeCssVariables.background.tertiary};
   border-radius: 8px;
   margin: 1.5rem 0;
 `;
@@ -75,12 +77,12 @@ const QrCodeWrapper = styled.div`
   background: white;
   padding: 1rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.light};
 `;
 
 const Instructions = styled.div`
   text-align: center;
-  color: #6b7280;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.875rem;
   line-height: 1.6;
 `;
@@ -94,18 +96,23 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
   background-color: ${({ variant }) =>
-    variant === 'primary' ? '#25d366' : '#f8fafc'};
-  color: ${({ variant }) => (variant === 'primary' ? 'white' : '#475569')};
+    variant === 'primary' ? '#25d366' : themeCssVariables.background.tertiary};
+  color: ${({ variant }) =>
+    variant === 'primary' ? 'white' : themeCssVariables.font.color.primary};
   border: ${({ variant }) =>
-    variant === 'primary' ? 'none' : '1px solid #d1d5db'};
+    variant === 'primary'
+      ? 'none'
+      : `1px solid ${themeCssVariables.border.color.medium}`};
 
   &:hover {
     background-color: ${({ variant }) =>
-      variant === 'primary' ? '#128c7e' : '#f1f5f9'};
+      variant === 'primary'
+        ? '#128c7e'
+        : themeCssVariables.background.quaternary};
   }
 
   &:disabled {
-    background-color: #94a3b8;
+    background-color: ${themeCssVariables.background.quaternary};
     cursor: not-allowed;
   }
 

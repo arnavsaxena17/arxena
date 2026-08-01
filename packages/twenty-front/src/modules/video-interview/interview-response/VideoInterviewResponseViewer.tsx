@@ -1,17 +1,17 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import React, { useEffect, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import React, { useEffect, useState } from 'react';
 import type { InterviewDataJobTemplate, VideoInterviewResponseViewerProps } from 'twenty-shared/arx';
 import { queryByvideoInterview } from 'twenty-shared/graphql';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import VideoDownloaderPlayer from './VideoDownloaderPlayer';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledContainer = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.primary};
   width: 100%;
   padding: 20px;
   height: 100vh; // Set a specific height
@@ -20,7 +20,7 @@ const StyledContainer = styled.div`
 
 
 const TranscriptContainer = styled.div`
-  background-color: #f5f5f5;
+  background-color: ${themeCssVariables.background.tertiary};
   padding: 15px;
   border-radius: 4px;
   margin-top: 10px;
@@ -31,13 +31,13 @@ const TranscriptHeading = styled.h4`
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #333;
+  color: ${themeCssVariables.font.color.primary};
 `;
 
 const TranscriptText = styled.p`
   font-size: 14px;
   line-height: 1.5;
-  color: #444;
+  color: ${themeCssVariables.font.color.secondary};
   white-space: pre-wrap;
 `;
 
@@ -202,7 +202,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         videoInterviewQuestions: {
           edges: videoInterview.videoInterviewTemplate.videoInterviewQuestions.edges.map((questionEdge: { node: any }) => {
             const questionResponses = responses.filter(
-              (responseEdge: { node: any }) => 
+              (responseEdge: { node: any }) =>
                 responseEdge.node.videoInterviewQuestionId === questionEdge.node.id
             );
             return {
@@ -228,9 +228,9 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     };
     return transformedData;
   }
-  
 
- 
+
+
 
 
   useEffect(() => {
@@ -311,7 +311,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
             <QuestionText>
               Question {index + 1}: {question.questionValue}
             </QuestionText>
-      
+
             {matchingResponses.map(({ node: response }) => {
                 const videoAttachment = response.attachments.edges.find(
                 (edge) => isVideoAttachmentNode(edge.node),
@@ -320,9 +320,9 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
                 console.log("videoUrl::", videoUrl);
               return videoAttachment ? (
                 <VideoContainer key={response.id}>
-                  <VideoDownloaderPlayer 
-                    // videoUrl={`${REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`} 
-                    videoUrl={`${videoUrl}`} 
+                  <VideoDownloaderPlayer
+                    // videoUrl={`${REACT_APP_SERVER_BASE_URL}/files/${videoAttachment.node.fullPath}`}
+                    videoUrl={`${videoUrl}`}
                   />
                   {response.transcript && (
                     <TranscriptContainer>
@@ -339,6 +339,6 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     </StyledContainer>
   );
 }
-  
-  
+
+
   export default VideoInterviewResponseViewer

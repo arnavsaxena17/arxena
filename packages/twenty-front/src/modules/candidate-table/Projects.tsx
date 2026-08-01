@@ -1,14 +1,14 @@
-import { IconDatabase } from 'twenty-ui/icon';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { styled } from '@linaria/react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { IconDatabase } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
-import { AppPath } from 'twenty-shared/types';
 import { useQuery } from '@apollo/client/react';
+import { AppPath } from 'twenty-shared/types';
 
 import { Mixpanel } from '~/mixpanel';
 
@@ -92,7 +92,7 @@ const StyledTopBar = styled(TopBar)`
     position: sticky;
     top: 0;
     z-index: 10;
-    background: white;
+    background: ${themeCssVariables.background.primary};
   }
 `;
 

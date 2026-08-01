@@ -1,15 +1,16 @@
 import { styled } from '@linaria/react';
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import type {
-  WhatsAppEmbeddedSignupProps,
-  WhatsAppEmbeddedSignupMessage,
-  FacebookLoginResponse
+    WhatsAppEmbeddedSignupMessage,
+    WhatsAppEmbeddedSignupProps
 } from './types/whatsappEmbeddedSignUpTypes';
 
 const Card = styled.div`
-  background: white;
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.light};
   max-width: 400px;
   margin: 2rem auto;
   padding: 1.5rem;
@@ -20,22 +21,22 @@ const CardHeader = styled.div`
 `;
 
 const CardTitle = styled.h2`
-  color: #1a1a1a;
+  color: ${themeCssVariables.font.color.primary};
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
 `;
 
 const Alert = styled.div`
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: ${themeCssVariables.background.tertiary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
   padding: 1rem;
   margin-bottom: 1.5rem;
 `;
 
 const AlertDescription = styled.p`
-  color: #4a5568;
+  color: ${themeCssVariables.font.color.secondary};
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -64,7 +65,7 @@ const Button = styled.button`
   }
 
   &:disabled {
-    background-color: #e4e6eb;
+    background-color: ${themeCssVariables.background.quaternary};
     cursor: not-allowed;
   }
 `;
@@ -96,16 +97,16 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
       script.async = true;
       script.defer = true;
       script.crossOrigin = "anonymous";
-      
+
       script.onload = () => {
         setSdkLoaded(true);
       };
-      
+
       script.onerror = (error) => {
         setInitError(new Error('Failed to load Facebook SDK'));
         onSignupError?.(new Error('Failed to load Facebook SDK'));
       };
-      
+
       document.body.appendChild(script);
     };
 
@@ -152,10 +153,10 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") return;
-    
+
     try {
       const data = JSON.parse(event.data) as WhatsAppEmbeddedSignupMessage;
-      
+
       if (data.type === 'WA_EMBEDDED_SIGNUP') {
         if (data.event === 'FINISH') {
           onSignupComplete?.({
@@ -178,18 +179,18 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
 
   const handleLogin = useCallback(() => {
     console.log("Initiating login process");
-    
+
     if (!sdkInitialized || !window.FB) {
       console.error("SDK not initialized");
       onSignupError?.(new Error('Facebook SDK not ready'));
       return;
     }
-  
+
     try {
       // First check login status
       window.FB.getLoginStatus((statusResponse) => {
         console.log("Current login status:", statusResponse);
-  
+
         if (!window.FB) {
           console.log("Facebook SDK not loaded");
           onSignupError?.(new Error('Facebook SDK not loaded'));
@@ -198,7 +199,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
         window.FB.login(
           (response) => {
             console.log("Login response:", response);
-            
+
             if (response.status === 'connected') {
               if (response.authResponse?.code) {
                 console.log("Successfully authenticated with code");
@@ -237,7 +238,7 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
       onSignupError?.(error instanceof Error ? error : new Error('Failed to initiate login'));
     }
   }, [configId, onSignupComplete, onSignupError, sdkInitialized]);
-  
+
   return (
     <Card>
       <CardHeader>
@@ -257,8 +258,8 @@ export const WhatsAppEmbeddedSignup: React.FC<WhatsAppEmbeddedSignupProps> = ({
               Connect your business to the WhatsApp Business Platform to start messaging with your customers.
             </AlertDescription>
           </Alert>
-          <Button 
-            onClick={handleLogin} 
+          <Button
+            onClick={handleLogin}
             disabled={!sdkInitialized || isLoading}
           >
             {isLoading ? 'Loading...' : 'Login with Facebook'}

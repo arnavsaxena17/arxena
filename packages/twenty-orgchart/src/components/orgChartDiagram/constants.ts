@@ -1,7 +1,66 @@
 import * as go from 'gojs';
 import type { OrgChartNodeData } from 'twenty-shared/utils';
 
-export const ORG_CHART_CTX_MENU = {
+export type OrgChartColorScheme = 'light' | 'dark';
+
+export type OrgChartNodePalette = {
+  cardFill: string;
+  cardStroke: string;
+  textPrimary: string;
+  textSecondary: string;
+  textTertiary: string;
+  tooltipFill: string;
+  tooltipStroke: string;
+  tooltipText: string;
+  tooltipMuted: string;
+  clipFill: string;
+};
+
+const ORG_CHART_NODE_PALETTE_LIGHT: OrgChartNodePalette = {
+  cardFill: '#ffffff',
+  cardStroke: 'rgb(150,150,150)',
+  textPrimary: '#0f172a',
+  textSecondary: 'rgb(150,150,150)',
+  textTertiary: '#64748b',
+  tooltipFill: '#ffffff',
+  tooltipStroke: '#e2e8f0',
+  tooltipText: '#334155',
+  tooltipMuted: '#64748b',
+  clipFill: '#ffffff',
+};
+
+const ORG_CHART_NODE_PALETTE_DARK: OrgChartNodePalette = {
+  cardFill: '#171717',
+  cardStroke: '#333333',
+  textPrimary: '#ebebeb',
+  textSecondary: '#b3b3b3',
+  textTertiary: '#818181',
+  tooltipFill: '#1b1b1b',
+  tooltipStroke: '#292929',
+  tooltipText: '#b3b3b3',
+  tooltipMuted: '#818181',
+  clipFill: '#171717',
+};
+
+export const getOrgChartNodePalette = (
+  colorScheme: OrgChartColorScheme = 'light',
+): OrgChartNodePalette =>
+  colorScheme === 'dark'
+    ? ORG_CHART_NODE_PALETTE_DARK
+    : ORG_CHART_NODE_PALETTE_LIGHT;
+
+export type OrgChartCtxMenuColors = {
+  fill: string;
+  stroke: string;
+  label: string;
+  text: string;
+  sep: string;
+  fontItem: string;
+  fontLabel: string;
+  corner: number;
+};
+
+const ORG_CHART_CTX_MENU_LIGHT: OrgChartCtxMenuColors = {
   fill: '#ffffff',
   stroke: '#e2e8f0',
   label: '#64748b',
@@ -10,7 +69,26 @@ export const ORG_CHART_CTX_MENU = {
   fontItem: '13px system-ui, -apple-system, "Segoe UI", sans-serif',
   fontLabel: '600 10px system-ui, -apple-system, "Segoe UI", sans-serif',
   corner: 8,
-} as const;
+};
+
+const ORG_CHART_CTX_MENU_DARK: OrgChartCtxMenuColors = {
+  fill: '#171717',
+  stroke: '#292929',
+  label: '#818181',
+  text: '#ebebeb',
+  sep: '#292929',
+  fontItem: ORG_CHART_CTX_MENU_LIGHT.fontItem,
+  fontLabel: ORG_CHART_CTX_MENU_LIGHT.fontLabel,
+  corner: 8,
+};
+
+export const getOrgChartCtxMenu = (
+  colorScheme: OrgChartColorScheme = 'light',
+): OrgChartCtxMenuColors =>
+  colorScheme === 'dark' ? ORG_CHART_CTX_MENU_DARK : ORG_CHART_CTX_MENU_LIGHT;
+
+/** @deprecated Prefer getOrgChartCtxMenu(colorScheme) */
+export const ORG_CHART_CTX_MENU = ORG_CHART_CTX_MENU_LIGHT;
 
 export const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
@@ -75,4 +153,3 @@ export const orgChartNodeHasM7kqMatchIds = (
     return typeof id === 'string' && id.trim().length > 0;
   });
 };
-

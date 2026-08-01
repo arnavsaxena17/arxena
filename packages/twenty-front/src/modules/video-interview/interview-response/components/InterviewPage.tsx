@@ -1,28 +1,28 @@
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { Button, ButtonGroup } from 'twenty-ui/input';
 import { v4 as uuid } from 'uuid';
 import {
-  SnapScrollContainer,
-  StyledError,
-  StyledLeftPanel,
-  StyledLeftPanelContentBox,
-  StyledMessage,
-  StyledRightPanel,
-  StyledTextLeftPanelTextHeadline,
-  StyledTextLeftPaneldisplay,
-  StyledTimer,
+    SnapScrollContainer,
+    StyledError,
+    StyledLeftPanel,
+    StyledLeftPanelContentBox,
+    StyledMessage,
+    StyledRightPanel,
+    StyledTextLeftPanelTextHeadline,
+    StyledTextLeftPaneldisplay,
+    StyledTimer,
 } from '../StyledComponentsInterviewResponse';
 import VideoContainer from '../VideoContainer';
 import { VideoPlayer } from '../utils/videoPlaybackUtils';
 
-import { IconArrowBackUp, IconCommand } from 'twenty-ui/icon';
 import type { InterviewPageProps } from 'twenty-shared/arx';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
+import { IconArrowBackUp, IconCommand } from 'twenty-ui/icon';
 import { Mixpanel } from '~/mixpanel';
 
 const ffmpeg = createFFmpeg({
@@ -33,11 +33,11 @@ const ffmpeg = createFFmpeg({
 });
 
 const PreviewContainer = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
   border-radius: 12px;
   border-radius: 50%;
 
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.light};
   height: 80%;
   margin: 16px 0;
   padding: 24px;

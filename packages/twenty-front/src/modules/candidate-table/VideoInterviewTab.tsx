@@ -5,7 +5,7 @@ import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.primary};
   width: 100%;
   height: 100%;
   overflow-y: auto;

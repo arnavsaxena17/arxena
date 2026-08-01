@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const TableContainer = styled.div`
   display: flex;
@@ -33,8 +34,8 @@ export const PanelContainer = styled.div<{ isOpen: boolean }>`
   top: 80px;
   right: ${props => (props.isOpen ? '0' : '-40%')};
   width: 40%;
-  background-color: #f5f5f5;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  background-color: ${themeCssVariables.background.secondary};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   transition: right 0.3s ease-in-out;
   overflow-y: auto;
   z-index: 1000;
@@ -58,28 +59,23 @@ export const NavIconButton = styled.button`
   justify-content: center;
   padding: 0.75rem;
   border-radius: 50%;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: none;
+  background-color: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  box-shadow: ${themeCssVariables.boxShadow.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   cursor: pointer;
   transition: all 0.2s;
 
-  &:hover {
-    background-color: #f3f4f6;
+  &:hover:not(:disabled) {
+    background-color: ${themeCssVariables.background.tertiary};
     transform: scale(1.05);
+    box-shadow: ${themeCssVariables.boxShadow.strong};
   }
 
   &:disabled {
-    background-color: #e5e7eb;
+    background-color: ${themeCssVariables.background.quaternary};
     cursor: not-allowed;
     opacity: 0.7;
     transform: none;
-  }
-
-  color: #374151;
-  background-color: white;
-
-  &:hover:not(:disabled) {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 `;

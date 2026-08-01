@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useStream } from '../StreamManager';
 import { ButtonText, StyledControlsOverlay, StyledCountdownOverlay, StyledRecordButton, StyledVideoContainer } from './StyledComponentsInterviewResponse';
@@ -49,10 +49,10 @@ const LoadingOverlay = styled.div`
 `;
 
 const LoaderCard = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
   padding: 32px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +72,7 @@ const Spinner = styled.div`
   border-top: 4px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  
+
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -104,10 +104,10 @@ const ErrorOverlay = styled.div`
 `;
 
 const ErrorMessage = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   color: #dc2626;
   font-size: 16px;
   font-weight: 500;
@@ -126,7 +126,7 @@ const TimerContainer = styled.div`
 `;
 
 const TimerBox = styled.div`
-  background-color: #f3f4f6;
+  background-color: ${themeCssVariables.background.tertiary};
   padding: 8px 16px;
   border-radius: 8px;
   display: flex;
@@ -136,13 +136,13 @@ const TimerBox = styled.div`
 
 const TimerValue = styled.span`
   font-weight: 600;
-  color: ${props => props.color || '#374151'};
+  color: ${props => props.color || themeCssVariables.font.color.primary};
 `;
 
 export const StyledIcon = styled.div`
   width: 20px;
   height: 20px;
-  background-color: white;
+  background-color: ${themeCssVariables.background.primary};
 `;
 
 const formatTime = (seconds: number) => {
@@ -156,9 +156,9 @@ export const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
 
 export const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
 
-const VideoContainer: React.FC<VideoContainerProps> = ({ 
-  answerTimer, 
-  isRecording, 
+const VideoContainer: React.FC<VideoContainerProps> = ({
+  answerTimer,
+  isRecording,
   onRecordingClick,
   setIsPlaying,
   countdown,
@@ -235,13 +235,13 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
   // useEffect(() => {
   //   if (stream && webcamRef.current && !isRecorderInitialized) {
   //     webcamRef.current.video!.srcObject = stream;
-      
+
   //     try {
   //       mediaRecorderRef.current = new MediaRecorder(stream, {
   //         mimeType: 'video/webm',
   //         videoBitsPerSecond: 1000000
   //       });
-        
+
   //       setIsRecorderInitialized(true);
   //     } catch (error) {
   //       console.error('Failed to initialize MediaRecorder:', error);
@@ -282,12 +282,12 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
           mediaRecorderRef.current = new MediaRecorder(webcamRef.current.stream, {
             mimeType: 'video/webm'
           });
-          
+
           // Add basic event handlers
           mediaRecorderRef.current.addEventListener('error', (error) => {
             console.error('MediaRecorder error:', error);
           });
-          
+
           setIsStreamInitialized(true);
         } catch (error) {
           console.error('Failed to initialize MediaRecorder:', error);
@@ -313,7 +313,7 @@ const VideoContainer: React.FC<VideoContainerProps> = ({
       setIsPlaying(false);
       console.log("isRecording:", isRecording)
     }
-    
+
   }, [isRecording, setIsPlaying]);
 
   // const handleRecordingClick = () => {

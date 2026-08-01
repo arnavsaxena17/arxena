@@ -10,6 +10,7 @@ import React, {
     useState,
 } from 'react';
 import type { UnipileLinkedinAccount } from 'twenty-shared/arx';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Mixpanel } from '~/mixpanel';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
@@ -29,13 +30,13 @@ const AccountsContainer = styled.div`
 const AccountsTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: ${themeCssVariables.font.color.primary};
   margin: 0 0 1rem 0;
 `;
 
 const AccountCard = styled.div`
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -70,7 +71,7 @@ const AccountDetails = styled.div`
 
 const AccountName = styled.span`
   font-weight: 600;
-  color: #1a1a1a;
+  color: ${themeCssVariables.font.color.primary};
   font-size: 0.9rem;
 `;
 
@@ -84,19 +85,19 @@ const AccountStatus = styled.span<{ status: string }>`
     switch (props.status) {
       case 'connected':
         return `
-          color: #059669;
+          color: ${themeCssVariables.color.green};
         `;
       case 'disconnected':
         return `
-          color: #dc2626;
+          color: ${themeCssVariables.color.red};
         `;
       case 'pending':
         return `
-          color: #d97706;
+          color: ${themeCssVariables.color.orange};
         `;
       default:
         return `
-          color: #6b7280;
+          color: ${themeCssVariables.font.color.tertiary};
         `;
     }
   }}
@@ -104,9 +105,9 @@ const AccountStatus = styled.span<{ status: string }>`
 
 const AccountId = styled.span`
   font-size: 0.75rem;
-  color: #6b7280;
+  color: ${themeCssVariables.font.color.tertiary};
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  background-color: #f3f4f6;
+  background-color: ${themeCssVariables.background.tertiary};
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   margin-top: 0.25rem;
@@ -133,12 +134,14 @@ const ActionButton = styled.button<{
       return '#0077b5';
     }
     if (variant === 'danger') {
-      return '#dc2626';
+      return themeCssVariables.color.red;
     }
-    return '#f3f4f6';
+    return themeCssVariables.background.tertiary;
   }};
   color: ${({ variant }) =>
-    variant === 'primary' || variant === 'danger' ? 'white' : '#374151'};
+    variant === 'primary' || variant === 'danger'
+      ? 'white'
+      : themeCssVariables.font.color.primary};
 
   &:hover {
     background-color: ${({ variant }) => {
@@ -146,9 +149,9 @@ const ActionButton = styled.button<{
         return '#005885';
       }
       if (variant === 'danger') {
-        return '#b91c1c';
+        return themeCssVariables.tag.background.red;
       }
-      return '#e5e7eb';
+      return themeCssVariables.background.quaternary;
     }};
   }
 `;
@@ -156,17 +159,17 @@ const ActionButton = styled.button<{
 const EmptyState = styled.div`
   text-align: center;
   padding: 2rem;
-  color: #6b7280;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.9rem;
 `;
 
 const ErrorContainer = styled.div`
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: ${themeCssVariables.background.transparent.danger};
+  border: 1px solid ${themeCssVariables.border.color.danger};
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
-  color: #dc2626;
+  color: ${themeCssVariables.font.color.danger};
   font-size: 0.875rem;
 `;
 

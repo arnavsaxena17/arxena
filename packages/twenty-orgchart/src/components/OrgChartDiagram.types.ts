@@ -49,6 +49,8 @@ export type OrgChartDiagramProps = {
   iconUrls?: OrgChartDiagramIconUrls;
   /** URL for default avatar when node has no image. Use local path (e.g. /img/default-avatar.jpg) to avoid external requests from crawlers. */
   defaultAvatarUrl?: string;
+  /** GoJS paints cannot use CSS vars — pass resolved app scheme for node/tooltip/menu fills. */
+  colorScheme?: 'light' | 'dark';
   onDiagramReady?: (handle: OrgChartDiagramHandle) => void;
   onNodeContextAction?: (
     action: OrgChartContextAction,

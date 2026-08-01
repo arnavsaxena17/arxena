@@ -1,11 +1,15 @@
 import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+    CANDIDATE_CONVERSATION_STATUS_LABELS,
+    MESSAGING_CHANNEL_OPTIONS,
+    STATUS_LABELS,
+} from '@/candidate-table/constants/candidate-status-labels';
+import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import Handsontable from "handsontable";
+import Handsontable from 'handsontable';
 import type { TransformedCandidateForTable } from 'twenty-shared/arx';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
-
-// Import STATUS_LABELS from CandidateInfoHeader
 
 // Type for processed data items
 export type ProcessedDataItem = {
@@ -55,39 +59,8 @@ type ColumnRenderer = (
 
 const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
 const excludedFields = ['id', 'checkbox', 'people','attachments','emailMessages','whatsappMessages','videoInterview','tempId','_isFetched','whatsappProvider','location','company','campaign','name','profileUrl', 'uniqueId','hasCv','fullName','title','firstName','lastName','jobName','candidateReminders','dataSources','education','emailAddresses','experienceStats','jobProcessEvents','jobs','lastSeen','linkedinSpecificData','otherFields','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
-export const STATUS_LABELS: Record<string, string> = {
-  NOT_INTERESTED: 'Not Interested',
-  INTERESTED: 'Interested',
-  CV_RECEIVED: 'CV Received',
-  NOT_FIT: 'Not Fit',
-  SCREENING: 'Screening',
-  RECRUITER_INTERVIEW: 'Recruiter Interview',
-  CV_SENT: 'CV Sent',
-  CLIENT_INTERVIEW: 'Client Interview',
-  NEGOTIATION: 'Negotiation',
-};
-export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
-  'ONLY_ADDED_NO_CONVERSATION': 'No Conversation',
-  'CONVERSATION_STARTED_HAS_NOT_RESPONDED': 'Started, No Response',
-  'SHARED_JD_HAS_NOT_RESPONDED': 'Shared JD, No Response',
-  'CANDIDATE_REFUSES_TO_RELOCATE': 'Refuses Relocation',
-  'STOPPED_RESPONDING_ON_QUESTIONS': 'Stopped Responding',
-  'CANDIDATE_SALARY_OUT_OF_RANGE': 'Salary Out of Range',
-  'CANDIDATE_IS_KEEN_TO_CHAT': 'Keen to Chat',
-  'CANDIDATE_DECLINED_OPPORTUNITY': 'Declined Opportunity',
-  'CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT': 'Followed Up',
-  'CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION': 'Reluctant on Compensation',
-  'CONVERSATION_CLOSED_TO_BE_CONTACTED': 'Closed to Contact'
-};
 
 const CV_AVAILABILITY_OPTIONS = ['CV Available', 'CV Not found'] as const;
-
-export const MESSAGING_CHANNEL_OPTIONS = [
-  'baileys',
-  'whatsapp-unipile',
-  'linkedin',
-  'linkedin-sock'
-];
 
 /** Fits longest option (whatsapp-unipile) on one line with dropdown padding */
 const MESSAGING_CHANNEL_COLUMN_WIDTH = 190;
@@ -99,16 +72,6 @@ const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
 
 const getColumnTitle = (key: string) =>
   COLUMN_TITLE_OVERRIDES[key] ?? (key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim());
-
-
-// Function to check if a field is an enrichment field
-export const isAiFilterField = (fieldName: string, aiFilters: Enrichment[]) => {
-  // Check if fieldName matches any output field from AI filter configs
-  const enrichments = aiFilters;
-  return enrichments.some(enrichment => 
-    enrichment?.fields?.some((field: any) => field.name === fieldName)
-  );
-};
 
 /** True when value is safe to show in a grid cell (not object/array/JSON blob). Allows string, boolean, number, Date, nullish. */
 const isScalarTableCellValue = (value: unknown): boolean => {
@@ -140,13 +103,13 @@ const columnHasOnlyScalarValues = (columnName: string, processedData: CandidateD
 // Function to check if a column has all empty or 'N/A' values
 const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[]): boolean => {
   if (!processedData.length) return true;
-  
+
   // Special cases: always show these columns even if they have default values
   const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'cvAvailability', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
-  
+
   return processedData.every(item => {
     const value = item[columnName];
     // For boolean values, we should show the column even if all values are false
@@ -169,17 +132,17 @@ const enrichmentFieldStyle = {
   position: 'relative'
 };
 
-export const TableColumns = ({ 
-  processedData, 
-  selectAllChecked, 
-  selectAllIndeterminate, 
+export const TableColumns = ({
+  processedData,
+  selectAllChecked,
+  selectAllIndeterminate,
   onSelectAllChange,
   unreadMessagesCounts = {},
   enrichments = []
-}: { 
-  processedData: CandidateDataItem[], 
-  selectAllChecked?: boolean, 
-  selectAllIndeterminate?: boolean, 
+}: {
+  processedData: CandidateDataItem[],
+  selectAllChecked?: boolean,
+  selectAllIndeterminate?: boolean,
   onSelectAllChange?: (checked: boolean) => void,
   unreadMessagesCounts?: Record<string, number>,
   enrichments?: Enrichment[]
@@ -203,7 +166,7 @@ export const TableColumns = ({
     checkbox.checked = value || false;
     checkbox.className = 'row-checkbox';
     td.style.textAlign = 'center';
-    
+
     const rowElement = td.parentElement;
     if (rowElement) {
       if (value) {
@@ -212,7 +175,7 @@ export const TableColumns = ({
         rowElement.classList.remove('selected-row');
       }
     }
-    
+
     checkbox.addEventListener('click', (e) => {
       e.stopPropagation();
       // Use physical row index when setting data
@@ -221,7 +184,7 @@ export const TableColumns = ({
         rowElement.classList.toggle('selected-row');
       }
     });
-    
+
     td.appendChild(checkbox);
     return td;
   };
@@ -246,7 +209,7 @@ export const TableColumns = ({
     // Apply enrichment field styling if the field is from enrichments
     if (isAiFilterField(String(prop), enrichments)) {
       Object.assign(td.style, enrichmentFieldStyle);
-      
+
       // Add an indicator dot
       const indicator = document.createElement('div');
       indicator.style.position = 'absolute';
@@ -267,11 +230,11 @@ export const TableColumns = ({
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    
+
     if (value !== undefined && value !== null && typeof value === 'number') {
       const percentage = Math.round(value * 100);
       div.textContent = `${percentage}%`;
-      
+
       // Color coding based on score
       if (value >= 0.8) {
         div.style.color = '#10b981'; // Green for highly relevant
@@ -285,7 +248,7 @@ export const TableColumns = ({
       div.textContent = 'N/A';
       div.style.color = '#9ca3af'; // Gray for N/A
     }
-    
+
     td.appendChild(div);
     return td;
   };
@@ -295,16 +258,16 @@ export const TableColumns = ({
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    
+
     const labelMap: Record<string, string> = {
       'highly_relevant': 'Highly Relevant',
       'somewhat_relevant': 'Somewhat Relevant',
       'less_relevant': 'Less Relevant'
     };
-    
+
     if (value && typeof value === 'string' && labelMap[value]) {
       div.textContent = labelMap[value];
-      
+
       // Color coding based on label
       if (value === 'highly_relevant') {
         div.style.color = '#10b981';
@@ -318,7 +281,7 @@ export const TableColumns = ({
       div.textContent = 'N/A';
       div.style.color = '#9ca3af';
     }
-    
+
     td.appendChild(div);
     return td;
   };
@@ -328,7 +291,7 @@ export const TableColumns = ({
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    
+
     if (Array.isArray(value) && value.length > 0) {
       div.textContent = value.join(', ');
       div.title = value.join('\n'); // Show full list on hover
@@ -336,7 +299,7 @@ export const TableColumns = ({
       div.textContent = 'N/A';
       div.style.color = '#9ca3af';
     }
-    
+
     td.appendChild(div);
     return td;
   };
@@ -346,7 +309,7 @@ export const TableColumns = ({
     td.innerHTML = '';
     // Get physical row index for proper data access after sorting/filtering
     const physicalRow = instance.toPhysicalRow(row);
-    const rowData = instance.getSourceDataAtRow(physicalRow) as { 
+    const rowData = instance.getSourceDataAtRow(physicalRow) as {
       id?: string;
       name?: string;
       hasCv?: boolean;
@@ -356,7 +319,7 @@ export const TableColumns = ({
       linkedinUrl?: string | { primaryLinkUrl?: string };
     };
 
-    
+
     const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
     const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
     const hasCv = rowData?.hasCv;
@@ -372,56 +335,56 @@ export const TableColumns = ({
       return '';
     };
 
-    const profileUrl = 
+    const profileUrl =
       getUrlValue(rowData?.hiringNaukriUrl) ||
       getUrlValue(rowData?.resdexNaukriUrl) ||
       getUrlValue(rowData?.linkedinUrl) ||
       '';
-    
+
     const container = document.createElement('div');
     container.style.display = 'flex';
     container.style.alignItems = 'center';
     container.style.cursor = 'pointer';
     container.style.borderRadius = '4px';
-    container.style.backgroundColor = '#f5f5f5';
+    container.style.backgroundColor = themeCssVariables.background.tertiary;
     container.style.transition = 'background-color 0.2s ease';
     container.onmouseover = () => {
-      container.style.backgroundColor = '#e0e0e0';
+      container.style.backgroundColor = themeCssVariables.background.quaternary;
     };
     container.onmouseout = () => {
-      container.style.backgroundColor = '#f5f5f5';
+      container.style.backgroundColor = themeCssVariables.background.tertiary;
     };
-    
+
     const nameDiv = document.createElement('div');
     Object.assign(nameDiv.style, truncatedCellStyle);
     const originalName = rowData.name !== undefined && rowData.name !== null ? String(rowData.name) : 'N/A';
-    
+
     // Check if this is a LinkedIn Member and transform to "Out of Network Profile"
     const isLinkedInMember = originalName === 'Linkedin Member' || originalName === 'LinkedIn Member';
     const displayName = isLinkedInMember ? 'Out of Network Profile' : originalName;
-    
+
     // Special styling for "Out of Network Profile"
     if (isLinkedInMember) {
       nameDiv.style.fontStyle = 'italic';
-      nameDiv.style.color = '#6b7280'; // Muted gray color
+      nameDiv.style.color = themeCssVariables.font.color.tertiary;
       nameDiv.style.display = 'flex';
       nameDiv.style.alignItems = 'center';
       nameDiv.style.gap = '6px';
-      
+
       // Add lock icon to indicate restricted access
       const iconSvg = document.createElement('span');
-      iconSvg.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#6b7280" style="flex-shrink: 0;"><path d="M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10A2,2 0 0,1 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/></svg>';
+      iconSvg.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="${themeCssVariables.font.color.tertiary}" style="flex-shrink: 0;"><path d="M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10A2,2 0 0,1 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z"/></svg>`;
       nameDiv.appendChild(iconSvg);
-      
+
       const textSpan = document.createElement('span');
       textSpan.textContent = displayName;
       nameDiv.appendChild(textSpan);
-      
+
       nameDiv.title = 'LinkedIn profile is out of your network';
     } else {
       nameDiv.textContent = displayName;
     }
-    
+
     container.appendChild(nameDiv);
 
     // Add CV availability icon
@@ -433,7 +396,7 @@ export const TableColumns = ({
     cvIcon.style.marginRight = '8px';
     cvIcon.style.width = '16px';
     cvIcon.style.height = '16px';
-    cvIcon.innerHTML = hasCv 
+    cvIcon.innerHTML = hasCv
       ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="green"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>'
       : '<svg viewBox="0 0 24 24" width="16" height="16" fill="gray"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>';
     cvIcon.title = hasCv ? 'CV Available' : 'No CV Available';
@@ -487,7 +450,7 @@ export const TableColumns = ({
       });
       container.appendChild(linkIcon);
     }
-    
+
     if (unreadCount > 0) {
       const badge = document.createElement('div');
       badge.textContent = String(unreadCount);
@@ -505,7 +468,7 @@ export const TableColumns = ({
       badge.style.flexShrink = '0';
       container.appendChild(badge);
     }
-    
+
     td.appendChild(container);
     return td;
   };
@@ -519,46 +482,46 @@ export const TableColumns = ({
       td.appendChild(div);
       return td;
     }
-    
+
     // Format URL if needed (make sure it has http/https prefix)
     let url = value;
     if (typeof url === 'string' && !url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://' + url;
     }
-    
+
     // Create hyperlink element
     const link = document.createElement('a');
     link.href = url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = value;
-    
+
     Object.assign(link.style, truncatedCellStyle);
     link.style.color = '#1976d2';
     link.style.textDecoration = 'none';
-    
+
     link.onmouseover = () => {
       link.style.textDecoration = 'underline';
     };
     link.onmouseout = () => {
       link.style.textDecoration = 'none';
     };
-    
+
     link.addEventListener('click', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
     });
-    
+
     link.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
     });
-    
+
     link.addEventListener('mouseup', (e) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
     });
-    
+
     td.appendChild(link);
     return td;
   };
@@ -567,7 +530,7 @@ export const TableColumns = ({
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    
+
     // Check if value is a valid date string or Date object
     if (value && (typeof value === 'string' || value instanceof Date)) {
       try {
@@ -589,7 +552,7 @@ export const TableColumns = ({
       }
       div.textContent = 'N/A';
     }
-    
+
     td.appendChild(div);
     return td;
   };
@@ -601,17 +564,17 @@ export const TableColumns = ({
     container.style.justifyContent = 'center';
     container.style.alignItems = 'center';
     container.style.cursor = 'pointer';
-    
+
     const icon = document.createElement('span');
     icon.textContent = value ? '✓' : '✗';
     icon.style.fontSize = '16px';
     icon.style.color = value ? '#2E7D32' : '#D32F2F';
-    
+
     container.addEventListener('click', (e) => {
       e.stopPropagation();
       instance.setDataAtRowProp(row, String(prop), !value);
     });
-    
+
     container.appendChild(icon);
     td.appendChild(container);
     return td;
@@ -628,7 +591,7 @@ export const TableColumns = ({
   ];
 
   // Status mapping
-   
+
   const columns: Handsontable.ColumnSettings[] = [];
 
   columns.push({
@@ -653,7 +616,7 @@ export const TableColumns = ({
   const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     // First call the dropdown renderer to maintain dropdown functionality
     Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
-    
+
     // Then update the displayed text to show the friendly label
     if (value) {
       if (prop === 'candConversationStatus' && CANDIDATE_CONVERSATION_STATUS_LABELS[value]) {
@@ -681,7 +644,7 @@ export const TableColumns = ({
   // First, add enrichment columns before common columns
   // Only include enrichment fields that actually exist in the data and are not empty
   const aiFilterFields = Array.from(allKeys).filter(key =>
-    !excludedFields.includes(key) && 
+    !excludedFields.includes(key) &&
     !hasAllEmptyValues(key, processedData) &&
     columnHasOnlyScalarValues(key, processedData) &&
     isAiFilterField(key, enrichments)
@@ -707,17 +670,17 @@ export const TableColumns = ({
     if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
       const isStatusField = column === 'status' || column === 'candConversationStatus';
       const isMessagingChannelField = column === 'messagingChannel';
-      
+
       columns.push({
         data: column,
         title: getColumnTitle(column),
         width: isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH : 150,
-        renderer: column === 'lastMessage' ? dateRenderer : 
+        renderer: column === 'lastMessage' ? dateRenderer :
                  isStatusField ? statusRenderer :
-                 isMessagingChannelField ? messagingChannelRenderer : 
+                 isMessagingChannelField ? messagingChannelRenderer :
                  simpleRenderer,
         type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
-        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] : 
+        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] :
                 column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
                 isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
         editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
@@ -733,7 +696,7 @@ export const TableColumns = ({
       const isRelevanceScoreField = column === 'relevanceScore';
       const isRelevanceLabelField = column === 'relevanceLabel';
       const isArrayField = column === 'matchReasons' || column === 'mismatchReasons';
-      
+
       columns.push({
         data: column,
         title: getColumnTitle(column),
@@ -764,7 +727,7 @@ export const TableColumns = ({
       const isStatusField = key === 'candConversationStatus' || key === 'status';
       const isMessagingChannelField = key === 'messagingChannel';
       const isCvAvailabilityField = key === 'cvAvailability';
-      
+
       // Relevance score fields
       const isRelevanceScoreField = key === 'relevanceScore';
       const isRelevanceLabelField = key === 'relevanceLabel';
@@ -773,7 +736,7 @@ export const TableColumns = ({
       // Check if the field contains arrays or objects that shouldn't use dateRenderer
       const sampleValue = processedData.find(item => item[key] !== undefined && item[key] !== null)?.[key];
       const isArrayOrObject = Array.isArray(sampleValue) || (sampleValue && typeof sampleValue === 'object' && !(sampleValue instanceof Date));
-      
+
       // Don't use dateRenderer for arrays or objects
       const shouldUseDateRenderer = isDateField && !isArrayOrObject;
 
@@ -787,7 +750,7 @@ export const TableColumns = ({
         const val = item[key];
         return val !== undefined && val !== null && (Array.isArray(val) || (typeof val === 'object' && !(val instanceof Date)));
       });
-      
+
       const finalShouldUseDateRenderer = shouldUseDateRenderer && !hasArrayOrObjectValues;
 
       // Determine the appropriate renderer
@@ -815,7 +778,7 @@ export const TableColumns = ({
       columns.push({
         data: key,
         title: getColumnTitle(key),
-        width: isChatField ? 40 : 
+        width: isChatField ? 40 :
                isRelevanceScoreField ? 100 :
                isRelevanceLabelField ? 140 :
                isArrayField ? 200 :
@@ -824,8 +787,8 @@ export const TableColumns = ({
                smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
         type: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : 'text',
-        source: isStatusField ? (key === 'candConversationStatus' ? 
-          Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] : 
+        source: isStatusField ? (key === 'candConversationStatus' ?
+          Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
           Object.values(STATUS_LABELS) as string[]) :
           isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS :
           isCvAvailabilityField ? [...CV_AVAILABILITY_OPTIONS] :

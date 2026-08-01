@@ -1,42 +1,42 @@
 import { styled } from '@linaria/react';
 import {
-  memo,
-  type ChangeEvent,
-  type ReactNode,
-  useCallback,
-  useId,
-  useMemo,
-  useState,
+    type ChangeEvent,
+    type ReactNode,
+    memo,
+    useCallback,
+    useId,
+    useMemo,
+    useState,
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  type IconComponent,
-  IconArrowsVertical,
-  IconBriefcase,
-  IconChartCandle,
-  IconCheck,
-  IconDatabase,
-  IconExternalLink,
-  IconFileImport,
-  IconFilterCog,
-  IconMessage,
-  IconRefresh,
-  IconSearch,
-  IconTrash,
-  IconX,
+    type IconComponent,
+    IconArrowsVertical,
+    IconBriefcase,
+    IconChartCandle,
+    IconCheck,
+    IconDatabase,
+    IconExternalLink,
+    IconFileImport,
+    IconFilterCog,
+    IconMessage,
+    IconRefresh,
+    IconSearch,
+    IconTrash,
+    IconX,
 } from 'twenty-ui/icon';
 import { IconButton } from 'twenty-ui/input';
 import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import {
-  searchMetadataState,
-  searchResultsState,
+    searchMetadataState,
+    searchResultsState,
 } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import {
-  columnsSelector,
-  tableStateAtom,
+    columnsSelector,
+    tableStateAtom,
 } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -137,13 +137,19 @@ const StyledSearchContainer = styled.div`
 `;
 
 const StyledSearchInput = styled.input`
-  border: 1px solid ${themeCssVariables.border.color.light};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   height: 28px;
   padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1]}
     ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[5]};
   width: 100%;
+
+  &::placeholder {
+    color: ${themeCssVariables.font.color.light};
+  }
 
   &:focus {
     border-color: ${themeCssVariables.color.blue};

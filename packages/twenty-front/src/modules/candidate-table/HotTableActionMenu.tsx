@@ -103,7 +103,8 @@ const HotTableAllActionsButton = ({ tableId }: { tableId: string }) => {
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
 
-  // Side panel Command Menu reads MAIN context store, not the HotTable instance
+  // Side panel Command Menu reads MAIN; HotTableContextStoreEffect keeps MAIN
+  // in sync, but re-apply immediately before open as a safety net
   const handleOpenAllActions = useCallback(() => {
     setMainTargetedRecordsRule(targetedRecordsRule);
     setMainNumberOfSelectedRecords(numberOfSelectedRecords);

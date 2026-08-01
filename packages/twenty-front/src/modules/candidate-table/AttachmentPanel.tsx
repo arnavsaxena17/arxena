@@ -8,12 +8,12 @@ import axios from 'axios';
 import DOMPurify from 'dompurify';
 import mammoth from 'mammoth';
 import React, {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
+    lazy,
+    Suspense,
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
 } from 'react';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -167,17 +167,17 @@ const AttachmentPdfViewer = lazy(() =>
 // `;
 const DocViewer = styled.div`
   padding: 24px;
-  background: white;
+  background: ${themeCssVariables.background.primary};
   border-radius: 4px;
   font-family: 'Calibri', 'Arial', sans-serif;
   line-height: 1.6;
-  color: #333;
+  color: ${themeCssVariables.font.color.primary};
 
   h1 {
     font-size: 24px;
     font-weight: bold;
     margin: 16px 0 8px;
-    color: #2c3e50;
+    color: ${themeCssVariables.font.color.primary};
   }
 
   h2 {
@@ -217,12 +217,12 @@ const DocViewer = styled.div`
   }
 
   td, th {
-    border: 1px solid #ddd;
+    border: 1px solid ${themeCssVariables.border.color.medium};
     padding: 8px;
   }
 
   th {
-    background-color: #f5f5f5;
+    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
@@ -232,8 +232,8 @@ const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
   right: ${(props) => (props.isOpen ? '0' : '-40%')};
   width: 40%;
   height: 100vh;
-  background-color: #f5f5f5;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  background-color: ${themeCssVariables.background.secondary};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   transition: right 0.3s ease-in-out;
   overflow-y: auto;
   z-index: 1000;

@@ -1,4 +1,7 @@
-import { CANDIDATE_CONVERSATION_STATUS_LABELS, STATUS_LABELS } from '../TableColumns';
+import {
+    CANDIDATE_CONVERSATION_STATUS_LABELS,
+    STATUS_LABELS,
+} from '../constants/candidate-status-labels';
 
 // Define the priority order for status values based on their dictionary order
 const STATUS_PRIORITY: Record<string, number> = {};
@@ -18,18 +21,18 @@ export const statusSortFunction = (sortOrder: 'asc' | 'desc') => {
     // Handle null/undefined values
     if (value === null || value === undefined) value = '';
     if (nextValue === null || nextValue === undefined) nextValue = '';
-    
+
     // Convert to string for comparison
     const strValue = String(value);
     const strNextValue = String(nextValue);
-    
+
     // Get priority values (higher number = lower priority)
     const priorityA = STATUS_PRIORITY[strValue] ?? Number.MAX_SAFE_INTEGER;
     const priorityB = STATUS_PRIORITY[strNextValue] ?? Number.MAX_SAFE_INTEGER;
-    
+
     // Compare based on priority
     const comparison = priorityA - priorityB;
-    
+
     // Apply sort order
     return sortOrder === 'desc' ? -comparison : comparison;
   };
@@ -41,18 +44,18 @@ export const conversationStatusSortFunction = (sortOrder: 'asc' | 'desc') => {
     // Handle null/undefined values
     if (value === null || value === undefined) value = '';
     if (nextValue === null || nextValue === undefined) nextValue = '';
-    
+
     // Convert to string for comparison
     const strValue = String(value);
     const strNextValue = String(nextValue);
-    
+
     // Get priority values (higher number = lower priority)
     const priorityA = CONVERSATION_STATUS_PRIORITY[strValue] ?? Number.MAX_SAFE_INTEGER;
     const priorityB = CONVERSATION_STATUS_PRIORITY[strNextValue] ?? Number.MAX_SAFE_INTEGER;
-    
+
     // Compare based on priority
     const comparison = priorityA - priorityB;
-    
+
     // Apply sort order
     return sortOrder === 'desc' ? -comparison : comparison;
   };

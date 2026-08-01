@@ -1,7 +1,7 @@
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { IconBuildingSkyscraper, IconCalendar, IconCurrencyRupee, IconMail, IconMap, IconPhone, IconUser } from 'twenty-ui/icon';
 import { getCandidateCustomField } from 'twenty-shared/utils';
+import { IconBuildingSkyscraper, IconCalendar, IconCurrencyRupee, IconMail, IconMap, IconPhone, IconUser } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 type CandidateProfileTabProps = {
   candidateData: any;
@@ -152,7 +152,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
       {/* Basic Information */}
       <StyledSection>
         <StyledSectionTitle>Basic Information</StyledSectionTitle>
-        
+
         <StyledField>
           <StyledIconWrapper>
             <IconUser size={16} />
@@ -162,8 +162,8 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         </StyledField>
 
         {(() => {
-          const phoneValue = typeof candidateData.phone === 'string' 
-            ? candidateData.phone 
+          const phoneValue = typeof candidateData.phone === 'string'
+            ? candidateData.phone
             : candidateData.phone?.primaryPhoneNumber || '';
           return phoneValue && (
             <StyledField>
@@ -177,8 +177,8 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         })()}
 
         {(() => {
-          const emailValue = typeof candidateData.email === 'string' 
-            ? candidateData.email 
+          const emailValue = typeof candidateData.email === 'string'
+            ? candidateData.email
             : candidateData.email?.primaryEmail || '';
           return emailValue && (
             <StyledField>
@@ -236,14 +236,14 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
       {getFieldValue('profile_title') && (
         <StyledSection>
           <StyledSectionTitle>Profile Summary</StyledSectionTitle>
-          <div style={{ 
-            padding: '16px', 
-            backgroundColor: '#f8f9fa', 
+          <div style={{
+            padding: '16px',
+            backgroundColor: 'var(--t-background-tertiary)',
             borderRadius: '8px',
-            border: '1px solid #e9ecef',
+            border: '1px solid var(--t-border-color-medium)',
             fontSize: '14px',
             lineHeight: '1.5',
-            color: '#495057'
+            color: 'var(--t-font-color-secondary)'
           }}>
             {getFieldValue('profile_title')}
           </div>
@@ -264,7 +264,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
                 {exp.company?.location?.locality && ` • ${exp.company.location.locality}`}
               </div>
               <div style={{ color: '#6c757d', fontSize: '13px' }}>
-                {exp.start_date && exp.end_date 
+                {exp.start_date && exp.end_date
                   ? `${exp.start_date} - ${exp.end_date}`
                   : exp.start_date || 'Current'
                 }
@@ -295,7 +295,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
                 {edu.institute?.location && ` • ${edu.institute.location}`}
               </div>
               <div style={{ color: '#6c757d', fontSize: '13px' }}>
-                {edu.start_date && edu.end_date 
+                {edu.start_date && edu.end_date
                   ? `${edu.start_date} - ${edu.end_date}`
                   : edu.end_date || 'Graduated'
                 }
@@ -322,7 +322,7 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
       {/* Additional Information */}
       <StyledSection>
         <StyledSectionTitle>Additional Information</StyledSectionTitle>
-        
+
         {getFieldValue('notice_period') && (
           <StyledField>
             <StyledFieldLabel>Notice Period:</StyledFieldLabel>

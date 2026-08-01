@@ -63,6 +63,7 @@ export const OrgChartDiagram = forwardRef<
       m7kqContactMode = false,
       showLinkedInUrlOnNodes = false,
       onLockedContactChannelClick,
+      colorScheme = 'light',
     },
     ref,
   ) => {
@@ -99,6 +100,7 @@ export const OrgChartDiagram = forwardRef<
         m7kqContactMode,
         showLinkedInUrlOnNodes,
         onLockedContactChannelClick,
+        colorScheme,
       });
     }, [
       defaultAvatarUrl,
@@ -113,6 +115,7 @@ export const OrgChartDiagram = forwardRef<
       m7kqContactMode,
       showLinkedInUrlOnNodes,
       onLockedContactChannelClick,
+      colorScheme,
     ]);
 
     const initDiagram = useCallback((): go.Diagram => {
@@ -122,6 +125,7 @@ export const OrgChartDiagram = forwardRef<
         showNodeCapabilitiesHoverHint,
         m7kqContactMode,
         showLinkedInUrlOnNodes,
+        colorScheme,
       });
     }, [
       createNodeTemplateFactory,
@@ -129,6 +133,7 @@ export const OrgChartDiagram = forwardRef<
       showNodeCapabilitiesHoverHint,
       m7kqContactMode,
       showLinkedInUrlOnNodes,
+      colorScheme,
     ]);
 
     const getDiagram = useCallback((): go.Diagram | null => {

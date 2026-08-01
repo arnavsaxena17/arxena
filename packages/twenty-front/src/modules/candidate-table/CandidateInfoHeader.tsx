@@ -1,24 +1,26 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import {
+    CANDIDATE_CONVERSATION_STATUS_LABELS,
+    STATUS_LABELS,
+} from '@/candidate-table/constants/candidate-status-labels';
 import { getPermanentId, isUUID } from '@/candidate-table/HotHooks';
 import { processedDataSelector, selectedCandidateIdState, tableStateAtom } from '@/candidate-table/states/states';
 import { useStartChats } from '@/object-record/hooks/useStartChats';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconPhone, IconUserCircle, IconX } from 'twenty-ui/icon';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared/graphql';
 import { getCandidateCustomField } from 'twenty-shared/utils';
 import { Status } from 'twenty-ui/data-display';
+import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconPhone, IconUserCircle, IconX } from 'twenty-ui/icon';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { getCandidateProfileUrl } from './utils/getCandidateProfileUrl';
-import { STATUS_LABELS } from './TableColumns';
-import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -33,21 +35,6 @@ const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "
   CV_SENT: 'sky',
   CLIENT_INTERVIEW: 'blue',
   NEGOTIATION: 'purple',
-};
-
-// Conversation status labels mapping
-const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
-  ONLY_ADDED_NO_CONVERSATION: 'No Conversation',
-  CONVERSATION_STARTED_HAS_NOT_RESPONDED: 'Started, No Response',
-  SHARED_JD_HAS_NOT_RESPONDED: 'Shared JD, No Response',
-  CANDIDATE_REFUSES_TO_RELOCATE: 'Refuses Relocation',
-  STOPPED_RESPONDING_ON_QUESTIONS: 'Stopped Responding',
-  CANDIDATE_SALARY_OUT_OF_RANGE: 'Salary Out of Range',
-  CANDIDATE_IS_KEEN_TO_CHAT: 'Keen to Chat',
-  CANDIDATE_DECLINED_OPPORTUNITY: 'Declined Opportunity',
-  CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 'Followed Up',
-  CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'Reluctant on Compensation',
-  CONVERSATION_CLOSED_TO_BE_CONTACTED: 'Closed to Contact'
 };
 
 // Conversation status colors mapping
@@ -124,7 +111,7 @@ const StyledInfoItem = styled.div`
   border-radius: ${themeCssVariables.border.radius.sm};
   padding: ${themeCssVariables.spacing[1]};
   cursor: pointer;
-  
+
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
   }
@@ -150,7 +137,7 @@ const StyledActionButton = styled.button`
   transition: all 0.2s ease;
   font-size: ${themeCssVariables.font.size.sm};
   white-space: nowrap;
-  
+
   &:hover {
     background-color: ${themeCssVariables.background.quaternary};
   }
@@ -171,7 +158,7 @@ const StyledSelect = styled.select`
   border-radius: ${themeCssVariables.border.radius.md};
   font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
-  
+
   &:focus {
     outline: none;
     border-color: ${themeCssVariables.border.color.strong};
@@ -182,7 +169,7 @@ const StyledIconWrapper = styled.div`
   cursor: pointer;
   display: flex;
   align-items: center;
-  
+
   &:hover {
     opacity: 0.8;
   }
@@ -205,13 +192,13 @@ type CandidateInfoHeaderProps = {
 const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: CandidateInfoHeaderProps) => {
   const prevData = prevProps.candidateData;
   const nextData = nextProps.candidateData;
-  
+
   // If both are undefined/null, they're equal
   if (!prevData && !nextData) return true;
-  
+
   // If one is undefined/null and the other isn't, they're different
   if (!prevData || !nextData) return false;
-  
+
   // Compare key fields that affect the UI
   return (
     prevData.id === nextData.id &&
@@ -256,7 +243,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
     // First, try exact match by ID
     let candidateData = allCandidates.find((row) => row.id === candidateId);
-    
+
     // If not found, try to find using getPermanentId logic
     if (!candidateData && tableState.rawData && Array.isArray(tableState.rawData)) {
       // Try to find a row that matches the candidateId
@@ -268,15 +255,15 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
           break;
         }
       }
-      
+
       // If still not found, try to find in rawData directly
       if (!candidateData) {
         const rawCandidate = tableState.rawData.find((row: any) => {
-          return row.id === candidateId || 
+          return row.id === candidateId ||
                  row.tempId === candidateId ||
                  getPermanentId(row, tableState.rawData) === candidateId;
         });
-        
+
         // If found in rawData, try to find corresponding entry in allCandidates
         if (rawCandidate) {
           const rawCandidateId = getPermanentId(rawCandidate as any, tableState.rawData) || rawCandidate.id;
@@ -287,24 +274,24 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
         }
       }
     }
-    
+
     // Last resort: if candidateId is a LinkedIn ID, try to find by matching LinkedIn ID or tempId
     if (!candidateData && candidateId && !isUUID(candidateId)) {
       candidateData = allCandidates.find((row) => {
-        return row.tempId === candidateId || 
+        return row.tempId === candidateId ||
                row.id === candidateId ||
                (row.linkedinUrl && typeof row.linkedinUrl === 'string' && row.linkedinUrl.includes(candidateId)) ||
                (row.linkedinUrl && typeof row.linkedinUrl === 'object' && row.linkedinUrl.primaryLinkUrl && row.linkedinUrl.primaryLinkUrl.includes(candidateId));
       });
     }
-    
+
     return candidateData;
   };
 
   // Find the candidate data - use prop data if available, otherwise fall back to table data
   const candidateData = propCandidateData || findCandidateInTableData();
   const activeCandidateId = candidateId || candidateData?.id;
-  
+
   if (!candidateData || !activeCandidateId) {
     return (
       <StyledContainer>
@@ -320,7 +307,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
   const handleStatusUpdate = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = event.target.value;
-    
+
     try {
       const response = await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/graphql`,
@@ -339,7 +326,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
           },
         }
       );
-      
+
       enqueueSuccessSnackBar({ message: 'Status updated successfully', options: { duration: 3000, } });
     } catch (error) {
       console.error('Error updating status:', error);
@@ -367,9 +354,9 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
             headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
           }
         );
-        
+
         enqueueSuccessSnackBar({ message: 'Interim chat started successfully', options: { duration: 3000, } });
-        
+
         setSelectedInterimChat('');
       }
     } catch (error) {
@@ -387,7 +374,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
           headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         }
       );
-      
+
       enqueueSuccessSnackBar({ message: 'Chat stopped successfully', options: { duration: 3000, } });
     } catch (error) {
       console.error('Error stopping chat:', error);
@@ -431,12 +418,12 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
   const industry = getFieldValue(candidateData, 'industry') || '';
 
   // Extract phone and email values safely
-  const phoneValue = typeof candidateData.phone === 'string' 
-    ? candidateData.phone 
+  const phoneValue = typeof candidateData.phone === 'string'
+    ? candidateData.phone
     : candidateData.phone?.primaryPhoneNumber || '';
-  
-  const emailValue = typeof candidateData.email === 'string' 
-    ? candidateData.email 
+
+  const emailValue = typeof candidateData.email === 'string'
+    ? candidateData.email
     : candidateData.email?.primaryEmail || '';
 
   return (
@@ -445,14 +432,14 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
         <StyledName>{candidateData.name}</StyledName>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {candidateData.status && (
-            <Status 
-              color={getStatusColor(typeof candidateData.status === 'string' ? candidateData.status : '')} 
+            <Status
+              color={getStatusColor(typeof candidateData.status === 'string' ? candidateData.status : '')}
               text={typeof candidateData.status === 'string' ? (STATUS_LABELS[candidateData.status] || candidateData.status) : ''}
             />
           )}
           {candidateData.candConversationStatus && (
-            <Status 
-              color={getConversationStatusColor(typeof candidateData.candConversationStatus === 'string' ? candidateData.candConversationStatus : '')} 
+            <Status
+              color={getConversationStatusColor(typeof candidateData.candConversationStatus === 'string' ? candidateData.candConversationStatus : '')}
               text={typeof candidateData.candConversationStatus === 'string' ? (CANDIDATE_CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus) : ''}
             />
           )}
@@ -469,7 +456,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
             <IconCopy size={14} />
           </StyledIconWrapper>
         </StyledInfoItem>
-        
+
         {phoneValue && (
           <StyledInfoItem onClick={() => handleCopy(phoneValue, 'Phone number')}>
             <IconPhone size={16} />
@@ -488,8 +475,8 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
         {jobTitle && (
           <StyledInfoItem>
-            <span 
-              style={{ 
+            <span
+              style={{
                 fontWeight: '500',
                 maxWidth: '200px',
                 overflow: 'hidden',
@@ -536,9 +523,9 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
         {getProfileUrl(candidateData) && (
           <StyledInfoItem>
-            <a 
-              href={getProfileUrl(candidateData)} 
-              target="_blank" 
+            <a
+              href={getProfileUrl(candidateData)}
+              target="_blank"
               rel="noopener noreferrer"
               style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}
             >
@@ -551,8 +538,8 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
       <StyledActionsRow>
         <StyledDropdownContainer>
-          <StyledSelect 
-            value={candidateData.status as string || ''} 
+          <StyledSelect
+            value={candidateData.status as string || ''}
             onChange={handleStatusUpdate}
           >
             <option value="" disabled>Update Status</option>
@@ -590,4 +577,4 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
       </StyledActionsRow>
     </StyledContainer>
   );
-}, arePropsEqual); 
+}, arePropsEqual);

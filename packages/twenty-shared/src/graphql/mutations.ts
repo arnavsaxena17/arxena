@@ -476,7 +476,6 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
 export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: UUID!, $input: PersonUpdateInput!) {
   updatePerson(id: $idToUpdate, data: $input) {
     __typename
-    city
     name{
       firstName
       lastName

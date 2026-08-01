@@ -12,7 +12,12 @@ import {
 } from 'twenty-shared/utils';
 
 import type { OrgChartDiagramProps } from '../OrgChartDiagram.types';
-import { ORG_CHART_CTX_MENU, orgChartNodeHasM7kqMatchIds } from './constants';
+import {
+  getOrgChartCtxMenu,
+  orgChartNodeHasM7kqMatchIds,
+  type OrgChartColorScheme,
+  type OrgChartCtxMenuColors,
+} from './constants';
 
 type OrgChartGraphObjectMake = typeof go.GraphObject.make;
 
@@ -42,32 +47,37 @@ const orgChartGetDiagramSelectedNodes = (
 
 const orgChartContextItemText = (
   $: OrgChartGraphObjectMake,
+  menu: OrgChartCtxMenuColors,
   text: string,
 ): go.TextBlock =>
   $(
     go.TextBlock,
     {
       text,
-      stroke: ORG_CHART_CTX_MENU.text,
-      font: ORG_CHART_CTX_MENU.fontItem,
+      stroke: menu.text,
+      font: menu.fontItem,
     },
   );
 
 const orgChartContextSectionLabel = (
   $: OrgChartGraphObjectMake,
+  menu: OrgChartCtxMenuColors,
   title: string,
 ): go.TextBlock =>
   $(
     go.TextBlock,
     {
       text: title.toUpperCase(),
-      stroke: ORG_CHART_CTX_MENU.label,
-      font: ORG_CHART_CTX_MENU.fontLabel,
+      stroke: menu.label,
+      font: menu.fontLabel,
       margin: new go.Margin(6, 12, 4, 12),
     },
   );
 
-const orgChartContextColumnSeparator = ($: OrgChartGraphObjectMake): go.Shape =>
+const orgChartContextColumnSeparator = (
+  $: OrgChartGraphObjectMake,
+  menu: OrgChartCtxMenuColors,
+): go.Shape =>
   $(
     go.Shape,
     'Rectangle',
@@ -75,7 +85,7 @@ const orgChartContextColumnSeparator = ($: OrgChartGraphObjectMake): go.Shape =>
       width: 1,
       stretch: go.GraphObject.Vertical,
       minSize: new go.Size(1, 48),
-      fill: ORG_CHART_CTX_MENU.sep,
+      fill: menu.sep,
       stroke: null,
       margin: new go.Margin(6, 0, 6, 0),
     },
@@ -97,6 +107,7 @@ const orgChartContextMenuColumn = (
 
 const orgChartContextMenuShell = (
   $: OrgChartGraphObjectMake,
+  menu: OrgChartCtxMenuColors,
   ...columns: go.GraphObject[]
 ): go.Adornment =>
   $(
@@ -115,10 +126,10 @@ const orgChartContextMenuShell = (
         go.Shape,
         'RoundedRectangle',
         {
-          fill: ORG_CHART_CTX_MENU.fill,
-          stroke: ORG_CHART_CTX_MENU.stroke,
+          fill: menu.fill,
+          stroke: menu.stroke,
           strokeWidth: 1,
-          parameter1: ORG_CHART_CTX_MENU.corner,
+          parameter1: menu.corner,
         },
       ),
       $(
@@ -139,7 +150,9 @@ export const buildOrgChartNodeContextMenu = (
   onNodeContextAction: NonNullable<OrgChartDiagramProps['onNodeContextAction']>,
   m7kqContactMode: boolean,
   onLockedContactChannelClick?: OrgChartDiagramProps['onLockedContactChannelClick'],
+  colorScheme: OrgChartColorScheme = 'light',
 ): go.Adornment => {
+  const menu = getOrgChartCtxMenu(colorScheme);
   const lockedContactClick =
     (channel: 'email' | 'phone' | 'linkedin') =>
     (_e: go.InputEvent, obj: go.GraphObject) => {
@@ -151,10 +164,10 @@ export const buildOrgChartNodeContextMenu = (
 
   const colPosition = orgChartContextMenuColumn(
     $,
-    orgChartContextSectionLabel($, 'Position'),
+    orgChartContextSectionLabel($, menu, 'Position'),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get people in this position'),
+      orgChartContextItemText($, menu, 'Get people in this position'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -169,7 +182,7 @@ export const buildOrgChartNodeContextMenu = (
       ? [
           $(
             'ContextMenuButton',
-            orgChartContextItemText($, 'Fetch email + phone'),
+            orgChartContextItemText($, menu, 'Fetch email + phone'),
             {
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
@@ -183,7 +196,7 @@ export const buildOrgChartNodeContextMenu = (
           ),
           $(
             'ContextMenuButton',
-            orgChartContextItemText($, 'Fetch phone'),
+            orgChartContextItemText($, menu, 'Fetch phone'),
             {
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
@@ -197,7 +210,7 @@ export const buildOrgChartNodeContextMenu = (
           ),
           $(
             'ContextMenuButton',
-            orgChartContextItemText($, 'Fetch email'),
+            orgChartContextItemText($, menu, 'Fetch email'),
             {
               click: (_e: go.InputEvent, obj: go.GraphObject) => {
                 const data = orgChartContextNodeData(obj);
@@ -213,7 +226,7 @@ export const buildOrgChartNodeContextMenu = (
       : []),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get all selected positions'),
+      orgChartContextItemText($, menu, 'Get all selected positions'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -229,10 +242,10 @@ export const buildOrgChartNodeContextMenu = (
 
   const colLists = orgChartContextMenuColumn(
     $,
-    orgChartContextSectionLabel($, 'Lists & search'),
+    orgChartContextSectionLabel($, menu, 'Lists & search'),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get boolean keywords string'),
+      orgChartContextItemText($, menu, 'Get boolean keywords string'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -245,7 +258,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get all leadership in this company'),
+      orgChartContextItemText($, menu, 'Get all leadership in this company'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -258,7 +271,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get all names in this company'),
+      orgChartContextItemText($, menu, 'Get all names in this company'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -271,7 +284,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get all names in this function'),
+      orgChartContextItemText($, menu, 'Get all names in this function'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -284,7 +297,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Get similar names in similar companies'),
+      orgChartContextItemText($, menu, 'Get similar names in similar companies'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -299,10 +312,10 @@ export const buildOrgChartNodeContextMenu = (
 
   const colJob = orgChartContextMenuColumn(
     $,
-    orgChartContextSectionLabel($, 'Add to job'),
+    orgChartContextSectionLabel($, menu, 'Add to job'),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Add to job and send invite'),
+      orgChartContextItemText($, menu, 'Add to job and send invite'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -315,7 +328,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Add to job and invite to job'),
+      orgChartContextItemText($, menu, 'Add to job and invite to job'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -330,10 +343,10 @@ export const buildOrgChartNodeContextMenu = (
 
   const colOutreach = orgChartContextMenuColumn(
     $,
-    orgChartContextSectionLabel($, 'Outreach'),
+    orgChartContextSectionLabel($, menu, 'Outreach'),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'LinkedIn: connection request'),
+      orgChartContextItemText($, menu, 'LinkedIn: connection request'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -351,7 +364,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'LinkedIn: connection request (locked)'),
+      orgChartContextItemText($, menu, 'LinkedIn: connection request (locked)'),
       { click: lockedContactClick('linkedin') },
       new go.Binding(
         'visible',
@@ -361,7 +374,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Send WhatsApp message'),
+      orgChartContextItemText($, menu, 'Send WhatsApp message'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -379,7 +392,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Send WhatsApp message (locked)'),
+      orgChartContextItemText($, menu, 'Send WhatsApp message (locked)'),
       { click: lockedContactClick('phone') },
       new go.Binding(
         'visible',
@@ -389,7 +402,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Add to Google Contacts'),
+      orgChartContextItemText($, menu, 'Add to Google Contacts'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -407,7 +420,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Add to Google Contacts (locked)'),
+      orgChartContextItemText($, menu, 'Add to Google Contacts (locked)'),
       { click: lockedContactClick('email') },
       new go.Binding(
         'visible',
@@ -417,7 +430,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Send email'),
+      orgChartContextItemText($, menu, 'Send email'),
       {
         click: (_: go.InputEvent, obj: go.GraphObject) => {
           const data = orgChartContextNodeData(obj);
@@ -435,7 +448,7 @@ export const buildOrgChartNodeContextMenu = (
     ),
     $(
       'ContextMenuButton',
-      orgChartContextItemText($, 'Send email (locked)'),
+      orgChartContextItemText($, menu, 'Send email (locked)'),
       { click: lockedContactClick('email') },
       new go.Binding(
         'visible',
@@ -445,14 +458,12 @@ export const buildOrgChartNodeContextMenu = (
     ),
   );
 
-  return orgChartContextMenuShell(
-    $,
-    colPosition,
-    orgChartContextColumnSeparator($),
+  return orgChartContextMenuShell($, menu, colPosition,
+    orgChartContextColumnSeparator($, menu),
     colLists,
-    orgChartContextColumnSeparator($),
+    orgChartContextColumnSeparator($, menu),
     colJob,
-    orgChartContextColumnSeparator($),
+    orgChartContextColumnSeparator($, menu),
     colOutreach,
   );
 };
@@ -462,35 +473,38 @@ export const buildOrgChartBackgroundContextMenu = (
   onBackgroundContextAction: NonNullable<
     OrgChartDiagramProps['onBackgroundContextAction']
   >,
-): go.Adornment =>
-  orgChartContextMenuShell(
+  colorScheme: OrgChartColorScheme = 'light',
+): go.Adornment => {
+  const menu = getOrgChartCtxMenu(colorScheme);
+  return orgChartContextMenuShell(
     $,
+    menu,
     orgChartContextMenuColumn(
       $,
-      orgChartContextSectionLabel($, 'Company'),
+      orgChartContextSectionLabel($, menu, 'Company'),
       $(
         'ContextMenuButton',
-        orgChartContextItemText($, 'Get all names in this company'),
+        orgChartContextItemText($, menu, 'Get all names in this company'),
         { click: () => onBackgroundContextAction('entire_company') },
       ),
       $(
         'ContextMenuButton',
-        orgChartContextItemText($, 'Get all leadership in this company'),
+        orgChartContextItemText($, menu, 'Get all leadership in this company'),
         { click: () => onBackgroundContextAction('leadership') },
       ),
     ),
-    orgChartContextColumnSeparator($),
+    orgChartContextColumnSeparator($, menu),
     orgChartContextMenuColumn(
       $,
-      orgChartContextSectionLabel($, 'Org chart data'),
+      orgChartContextSectionLabel($, menu, 'Org chart data'),
       $(
         'ContextMenuButton',
-        orgChartContextItemText($, 'Delete saved org chart cache'),
+        orgChartContextItemText($, menu, 'Delete saved org chart cache'),
         { click: () => onBackgroundContextAction('delete_company_cache') },
       ),
       $(
         'ContextMenuButton',
-        orgChartContextItemText($, 'Rebuild Org Chart Using Saved People'),
+        orgChartContextItemText($, menu, 'Rebuild Org Chart Using Saved People'),
         {
           click: () =>
             onBackgroundContextAction('rebuild_orgchart_using_saved_people'),
@@ -498,11 +512,12 @@ export const buildOrgChartBackgroundContextMenu = (
       ),
       $(
         'ContextMenuButton',
-        orgChartContextItemText($, 'Reload Org Intelligence'),
+        orgChartContextItemText($, menu, 'Reload Org Intelligence'),
         {
           click: () => onBackgroundContextAction('reload_apify_org_intelligence'),
         },
       ),
     ),
   );
+};
 

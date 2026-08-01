@@ -1857,7 +1857,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
             primaryEmail
         }
         salary
-        city
         jobTitle
         id
         uniqueStringKey
@@ -3158,13 +3157,8 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
 export const findOnePersonQuery = `
   query FindOnePerson($objectRecordId: UUID!) {
     person(filter: { id: { eq: $objectRecordId } }) {
-      xLink {
-        primaryLinkLabel
-        primaryLinkUrl
-      }
       id
       createdAt
-      city
       jobTitle
       name {
         firstName
@@ -3281,7 +3275,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
           secondaryLinks
         }
         salary
-        city
         jobTitle
         id
         uniqueStringKey

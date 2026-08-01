@@ -1,9 +1,12 @@
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { HotTable } from '@handsontable/react-wrapper';
 import '@/candidate-table/initHandsontable';
+import { HotTable } from '@handsontable/react-wrapper';
+import { styled } from '@linaria/react';
 import Handsontable from 'handsontable';
 import { useMemo } from 'react';
+import {
+    themeCssVariables,
+    useThemeColorScheme,
+} from 'twenty-ui/theme-constants';
 
 const StyledTableWrapper = styled.div`
   width: 100%;
@@ -90,6 +93,7 @@ export const AssistantDetailsTable = ({
   selectedRowIndex,
   onSelectRow,
 }: AssistantDetailsTableProps) => {
+  const colorScheme = useThemeColorScheme();
   const { columns, data: tableData } = useMemo(() => {
     if (!data.rows?.length || !data.columns?.length) {
       return { columns: [], data: [] };
@@ -127,7 +131,9 @@ export const AssistantDetailsTable = ({
         colHeaders={columns.map((c) => c.title)}
         rowHeaders={true}
         height={Math.min(maxHeight, 30 * tableData.length + 30)}
-        themeName="ht-theme-main"
+        themeName={
+          colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'
+        }
         licenseKey="non-commercial-and-evaluation"
         stretchH="all"
         readOnly={true}

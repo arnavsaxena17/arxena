@@ -26,6 +26,7 @@ import {
     useOrgChartFilterOptions,
 } from 'twenty-orgchart';
 import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartNodeData, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared/utils';
+import { useThemeColorScheme } from 'twenty-ui/theme-constants';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
@@ -187,6 +188,7 @@ export const ArxOrgChartContainer = ({
   const diagramHandleRef = useRef<OrgChartDiagramHandle | null>(null);
   const skipNextRefetchRef = useRef(false);
   const prevCompanyIdForFiltersRef = useRef<string | null>(null);
+  const colorScheme = useThemeColorScheme();
 
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
@@ -1875,8 +1877,9 @@ export const ArxOrgChartContainer = ({
         showContextProgressBanner={showContextProgressBanner}
         isContextLoading={actions.isContextLoading}
         diagramHandleRef={diagramHandleRef}
-        diagramRemountKey={companyId}
+        diagramRemountKey={`${companyId}-${colorScheme}`}
         diagramProps={{
+          colorScheme,
           m7kqContactMode: isM7kqOrgChartSource,
           showLinkedInUrlOnNodes: orgChartLinkedinCandidateSource === 'apify',
           onLockedContactChannelClick: handleM7kqLockedContactClick,

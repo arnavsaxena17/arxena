@@ -18,6 +18,7 @@ import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/gra
 import { IconArrowsSplit2, IconFileText, IconMessage, IconUser, IconVideo } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
+import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import { CandidateProfileTab } from './CandidateProfileTab';
@@ -52,7 +53,7 @@ const StyledInlineAttachmentContainer = styled.div<{ isOpen: boolean }>`
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #f5f5f5;
+  background-color: ${themeCssVariables.background.secondary};
   overflow-y: auto;
 `;
 
@@ -87,9 +88,12 @@ const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
     if (props.deliveryFailed && props.isSent) {
       return '#1e40af';
     }
-    return props.isSent ? '#2563eb' : '#f3f4f6';
+    return props.isSent
+      ? themeCssVariables.color.blue
+      : themeCssVariables.background.tertiary;
   }};
-  color: ${props => props.isSent ? 'white' : 'inherit'};
+  color: ${props =>
+    props.isSent ? 'white' : themeCssVariables.font.color.primary};
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -307,20 +311,6 @@ const DoNotRespondBubble = styled.div`
   border: 1px dashed ${props => themeCssVariables.border.color.medium};
   font-style: italic;
 `;
-
-const CONVERSATION_STATUS_LABELS: Record<string, string> = {
-  ONLY_ADDED_NO_CONVERSATION: 'No Conversation',
-  CONVERSATION_STARTED_HAS_NOT_RESPONDED: 'Started, No Response',
-  SHARED_JD_HAS_NOT_RESPONDED: 'Shared JD, No Response',
-  CANDIDATE_REFUSES_TO_RELOCATE: 'Refuses Relocation',
-  STOPPED_RESPONDING_ON_QUESTIONS: 'Stopped Responding',
-  CANDIDATE_SALARY_OUT_OF_RANGE: 'Salary Out of Range',
-  CANDIDATE_IS_KEEN_TO_CHAT: 'Keen to Chat',
-  CANDIDATE_DECLINED_OPPORTUNITY: 'Declined Opportunity',
-  CANDIDATE_HAS_FOLLOWED_UP_TO_SETUP_CHAT: 'Followed Up',
-  CANDIDATE_IS_RELUCTANT_TO_DISCUSS_COMPENSATION: 'Reluctant on Compensation',
-  CONVERSATION_CLOSED_TO_BE_CONTACTED: 'Closed to Contact',
-};
 
 function isDoNotRespondMessage(content: string | undefined): boolean {
   if (!content || typeof content !== 'string') return false;
@@ -893,7 +883,7 @@ export const CandidateChatDrawer = React.memo(() => {
   };
 
   const conversationStatusLabel = candidateData?.candConversationStatus
-    ? (CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus)
+    ? (CANDIDATE_CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus)
     : null;
 
   const conversationStatusChanged =

@@ -10,12 +10,14 @@ export const initOrgChartDiagram = ({
   showNodeCapabilitiesHoverHint,
   m7kqContactMode,
   showLinkedInUrlOnNodes = false,
+  colorScheme = 'light',
 }: {
   createNodeTemplate: () => go.Node;
   onBackgroundContextAction?: OrgChartDiagramProps['onBackgroundContextAction'];
   showNodeCapabilitiesHoverHint: boolean;
   m7kqContactMode: boolean;
   showLinkedInUrlOnNodes?: boolean;
+  colorScheme?: OrgChartDiagramProps['colorScheme'];
 }): go.Diagram => {
   const $ = go.GraphObject.make;
 
@@ -112,6 +114,7 @@ export const initOrgChartDiagram = ({
     diagram.contextMenu = buildOrgChartBackgroundContextMenu(
       $c,
       onBackgroundContextAction,
+      colorScheme,
     );
   }
 

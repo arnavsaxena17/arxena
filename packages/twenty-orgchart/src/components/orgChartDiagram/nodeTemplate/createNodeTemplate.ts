@@ -11,6 +11,8 @@ import {
     DEFAULT_SIMILAR_ITEMS_ICON,
     NODE_CAPABILITIES_BULLETS,
     getOrgChartDataFromToolTipObject,
+    getOrgChartNodePalette,
+    type OrgChartColorScheme,
 } from '../constants';
 import { buildOrgChartNodeContextMenu } from '../contextMenus';
 
@@ -27,6 +29,7 @@ export const createNodeTemplate = ({
   m7kqContactMode,
   showLinkedInUrlOnNodes = false,
   onLockedContactChannelClick,
+  colorScheme = 'light',
 }: {
   defaultAvatarUrl: string;
   iconUrls?: OrgChartDiagramProps['iconUrls'];
@@ -40,7 +43,9 @@ export const createNodeTemplate = ({
   m7kqContactMode: boolean;
   showLinkedInUrlOnNodes?: boolean;
   onLockedContactChannelClick?: OrgChartDiagramProps['onLockedContactChannelClick'];
+  colorScheme?: OrgChartColorScheme;
 }): go.Node => {
+  const palette = getOrgChartNodePalette(colorScheme);
   const LOCK_ICON_URL = iconUrls?.lock ?? DEFAULT_LOCK_ICON;
   const LINKEDIN_ICON_URL = iconUrls?.linkedin ?? DEFAULT_LINKEDIN_ICON;
   const DOWNLOAD_ICON_URL = iconUrls?.download ?? DEFAULT_DOWNLOAD_ICON;
@@ -104,8 +109,8 @@ export const createNodeTemplate = ({
     {
       isShadowed: true,
       shadowOffset: new go.Point(0, 3),
-      'Border.fill': '#ffffff',
-      'Border.stroke': '#e2e8f0',
+      'Border.fill': palette.tooltipFill,
+      'Border.stroke': palette.tooltipStroke,
       'Border.strokeWidth': 1,
     },
     $(
@@ -113,7 +118,7 @@ export const createNodeTemplate = ({
       {
         margin: new go.Margin(10, 12, 10, 12),
         font: '11pt system-ui, Segoe UI, sans-serif',
-        stroke: '#334155',
+        stroke: palette.tooltipText,
         wrap: go.TextBlock.WrapFit,
         maxSize: new go.Size(280, NaN),
         textAlign: 'left',
@@ -130,8 +135,8 @@ export const createNodeTemplate = ({
       {
         isShadowed: true,
         shadowOffset: new go.Point(0, 3),
-        'Border.fill': '#ffffff',
-        'Border.stroke': '#cbd5e1',
+        'Border.fill': palette.tooltipFill,
+        'Border.stroke': palette.tooltipStroke,
         'Border.strokeWidth': 1,
       },
       content,
@@ -237,19 +242,19 @@ export const createNodeTemplate = ({
     const m7kqEmailStatusDot = (
       d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
-      if (!d) return { text: '·', stroke: '#e2e8f0' };
+      if (!d) return { text: '·', stroke: palette.tooltipStroke };
       const ev = slotEmail(d);
       if (ev) return { text: '●', stroke: '#22c55e' };
       const h = d[`has_email_${idx}`];
       if (h === true) return { text: '●', stroke: '#f97316' };
       if (h === false) return { text: '◦', stroke: '#cbd5e1' };
-      return { text: '·', stroke: '#e2e8f0' };
+      return { text: '·', stroke: palette.tooltipStroke };
     };
 
     const m7kqPhoneStatusDot = (
       d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
-      if (!d) return { text: '·', stroke: '#e2e8f0' };
+      if (!d) return { text: '·', stroke: palette.tooltipStroke };
       const pv = slotPhone(d);
       if (pv) return { text: '●', stroke: '#22c55e' };
       if (d[`has_direct_phone_${idx}`] === true || d[`has_org_phone_${idx}`] === true) {
@@ -258,13 +263,13 @@ export const createNodeTemplate = ({
       if (d[`has_direct_phone_${idx}`] === false && d[`has_org_phone_${idx}`] === false) {
         return { text: '◦', stroke: '#cbd5e1' };
       }
-      return { text: '·', stroke: '#e2e8f0' };
+      return { text: '·', stroke: palette.tooltipStroke };
     };
 
     const m7kqLinkedInStatusDot = (
       d: OrgChartDataMap | undefined,
     ): { text: string; stroke: string } => {
-      if (!d) return { text: '·', stroke: '#e2e8f0' };
+      if (!d) return { text: '·', stroke: palette.tooltipStroke };
       const url = slotLinkedInUrl(d);
       if (isValidLinkedInProfileUrl(url)) return { text: '●', stroke: '#22c55e' };
       return { text: '◦', stroke: '#cbd5e1' };
@@ -311,7 +316,7 @@ export const createNodeTemplate = ({
                 {
                   margin: new go.Margin(8, 10, 8, 10),
                   font: '11pt system-ui, Segoe UI, sans-serif',
-                  stroke: '#0f172a',
+                  stroke: palette.textPrimary,
                   wrap: go.TextBlock.WrapFit,
                   maxSize: new go.Size(300, NaN),
                   textAlign: 'left',
@@ -404,7 +409,7 @@ export const createNodeTemplate = ({
                 {
                   margin: new go.Margin(8, 10, 8, 10),
                   font: '11pt system-ui, Segoe UI, sans-serif',
-                  stroke: '#0f172a',
+                  stroke: palette.textPrimary,
                   wrap: go.TextBlock.WrapFit,
                   maxSize: new go.Size(300, NaN),
                   textAlign: 'left',
@@ -518,7 +523,7 @@ export const createNodeTemplate = ({
                 {
                   margin: new go.Margin(8, 10, 8, 10),
                   font: '11pt system-ui, Segoe UI, sans-serif',
-                  stroke: '#0f172a',
+                  stroke: palette.textPrimary,
                   wrap: go.TextBlock.WrapFit,
                   maxSize: new go.Size(300, NaN),
                   textAlign: 'left',
@@ -587,7 +592,7 @@ export const createNodeTemplate = ({
           wrap: go.TextBlock.WrapFit,
           maxSize: new go.Size(380, NaN),
           textAlign: 'left',
-          stroke: '#0f172a',
+          stroke: palette.textPrimary,
         },
         new go.Binding(
           'text',
@@ -651,7 +656,7 @@ export const createNodeTemplate = ({
               width: 10,
               click: classicLinkedInOpenClick,
             },
-            $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+            $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: palette.clipFill }),
             classicLinkedInIconPicture,
           ),
           $(
@@ -706,7 +711,7 @@ export const createNodeTemplate = ({
             (url: string | undefined) =>
               isValidLinkedInProfileUrl(typeof url === 'string' ? url : undefined),
           ),
-          $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: 'white' }),
+          $(go.Shape, 'Circle', { width: 10, height: 10, strokeWidth: 0, fill: palette.clipFill }),
           classicLinkedInIconPicture,
         );
 
@@ -767,6 +772,7 @@ export const createNodeTemplate = ({
           go.TextBlock,
           {
             font: '12pt Segoe UI,sans-serif',
+            stroke: palette.textPrimary,
             wrap: go.TextBlock.WrapFit,
             isMultiline: true,
             maxLines: 1,
@@ -788,8 +794,8 @@ export const createNodeTemplate = ({
               {
                 isShadowed: true,
                 shadowOffset: new go.Point(0, 2),
-                'Border.fill': '#ffffff',
-                'Border.stroke': '#e2e8f0',
+                'Border.fill': palette.tooltipFill,
+                'Border.stroke': palette.tooltipStroke,
                 'Border.strokeWidth': 1,
               },
               $(
@@ -797,7 +803,7 @@ export const createNodeTemplate = ({
                 {
                   margin: new go.Margin(8, 10, 8, 10),
                   font: '10pt system-ui, Segoe UI, sans-serif',
-                  stroke: '#334155',
+                  stroke: palette.tooltipText,
                   wrap: go.TextBlock.WrapFit,
                   maxSize: new go.Size(260, NaN),
                   textAlign: 'left',
@@ -832,7 +838,7 @@ export const createNodeTemplate = ({
             'stroke',
             `org_chart_company_tenure_${idx}` as const,
             (t: unknown) =>
-              t === 'current' ? '#16a34a' : t === 'past' ? '#64748b' : '#cbd5e1',
+              t === 'current' ? '#16a34a' : t === 'past' ? palette.textTertiary : palette.tooltipStroke,
           ),
         ),
       ),
@@ -847,7 +853,7 @@ export const createNodeTemplate = ({
           overflow: go.TextBlock.OverflowEllipsis,
           editable: false,
           isMultiline: true,
-          stroke: 'rgb(150,150,150)',
+          stroke: palette.textSecondary,
           minSize: new go.Size(10, 14),
           margin: new go.Margin(0, 0, 0, 0),
           width: nameColWidth,
@@ -871,8 +877,8 @@ export const createNodeTemplate = ({
         {
           isShadowed: true,
           shadowOffset: new go.Point(0, 3),
-          'Border.fill': '#ffffff',
-          'Border.stroke': '#e2e8f0',
+          'Border.fill': palette.tooltipFill,
+          'Border.stroke': palette.tooltipStroke,
           'Border.strokeWidth': 1,
         },
         $(
@@ -901,7 +907,7 @@ export const createNodeTemplate = ({
               go.TextBlock,
               {
                 font: '600 12.5pt system-ui, Segoe UI, sans-serif',
-                stroke: '#0f172a',
+                stroke: palette.textPrimary,
                 wrap: go.TextBlock.WrapFit,
                 maxSize: new go.Size(292, NaN),
                 textAlign: 'left',
@@ -914,7 +920,7 @@ export const createNodeTemplate = ({
               {
                 height: 1,
                 stretch: go.Stretch.Horizontal,
-                fill: '#e2e8f0',
+                fill: palette.tooltipStroke,
                 strokeWidth: 0,
                 margin: new go.Margin(12, 0, 10, 0),
               },
@@ -924,7 +930,7 @@ export const createNodeTemplate = ({
               {
                 text: 'With Arxena you can',
                 font: '600 9.5pt system-ui, Segoe UI, sans-serif',
-                stroke: '#64748b',
+                stroke: palette.tooltipMuted,
                 margin: new go.Margin(0, 0, 6, 0),
               },
             ),
@@ -933,7 +939,7 @@ export const createNodeTemplate = ({
               {
                 text: NODE_CAPABILITIES_BULLETS,
                 font: '10.5pt system-ui, Segoe UI, sans-serif',
-                stroke: '#334155',
+                stroke: palette.tooltipText,
                 wrap: go.TextBlock.WrapFit,
                 maxSize: new go.Size(292, NaN),
                 textAlign: 'left',
@@ -991,9 +997,9 @@ export const createNodeTemplate = ({
         'RoundedRectangle',
         {
           name: 'SHAPE',
-          fill: 'white',
+          fill: palette.cardFill,
           strokeWidth: 1,
-          stroke: 'rgb(150,150,150)',
+          stroke: palette.cardStroke,
           cursor: 'pointer',
           width: m7kqContactMode ? 248 : 230,
           portId: '',
@@ -1001,7 +1007,7 @@ export const createNodeTemplate = ({
           toLinkable: true,
         },
         new go.Binding('stroke', 'isHighlighted', (h: boolean) =>
-          h ? 'blue' : 'rgb(150,150,150)',
+          h ? 'blue' : palette.cardStroke,
         ).ofObject(),
         new go.Binding('strokeWidth', 'isHighlighted', (h: boolean) =>
           h ? 5 : 1,
@@ -1062,6 +1068,7 @@ export const createNodeTemplate = ({
             row: 2,
             column: 0,
             font: 'bold 12pt Segoe UI,sans-serif',
+            stroke: palette.textPrimary,
             editable: false,
             isMultiline: false,
             minSize: new go.Size(10, 14),
@@ -1146,7 +1153,7 @@ export const createNodeTemplate = ({
                 isMultiline: false,
                 minSize: new go.Size(10, 14),
                 margin: new go.Margin(0, 8, 0, 0),
-                stroke: 'rgb(150,150,150)',
+                stroke: palette.textSecondary,
                 cursor: 'pointer',
               },
               new go.Binding('text', 'total_people', textSeeMore),
@@ -1164,6 +1171,7 @@ export const createNodeTemplate = ({
       onNodeContextAction,
       m7kqContactMode,
       onLockedContactChannelClick,
+      colorScheme,
     );
   }
 

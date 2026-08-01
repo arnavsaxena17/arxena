@@ -1,7 +1,7 @@
-import axios from 'axios';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { EndInterviewPage } from './EndInterviewPage';
 import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary component
 import { StartInterviewPage } from './StartInterviewPage';
@@ -28,10 +28,10 @@ const LoaderOverlay = styled.div`
 `;
 
 const LoaderCard = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
   padding: 32px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,7 +115,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       const video = document.createElement('video');
       video.preload = 'auto';
       video.src = url;
-      
+
       video.oncanplaythrough = () => {
         setVideoLoadingStatus(prev => ({
           ...prev,
@@ -123,7 +123,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
         }));
         resolve(true);
       };
-      
+
       video.load();
     });
   };
@@ -232,7 +232,7 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     console.log('Currnet question  index in handle Next Question:', currentQuestionIndex);
     try {
       console.log('Going to handle next question, let sed if this submists');
-      
+
       setCurrentQuestionIndex(prevIndex => {
         const nextIndex = prevIndex + 1;
         if (nextIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0)) {
@@ -321,9 +321,9 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
           </ErrorBoundary>
         );
         case 'end':
-          return <EndInterviewPage 
-            interviewData={interviewData} 
-            onSubmit={handleSubmitFeedback} 
+          return <EndInterviewPage
+            interviewData={interviewData}
+            onSubmit={handleSubmitFeedback}
             submissionComplete={finalSubmissionComplete}
           />;
             default:

@@ -29,7 +29,7 @@ describe('PrivacyConsentService', () => {
       providers: [
         PrivacyConsentService,
         {
-          provide: getRepositoryToken(PrivacyConsentEventEntity, 'core'),
+          provide: getRepositoryToken(PrivacyConsentEventEntity),
           useValue: repository,
         },
       ],

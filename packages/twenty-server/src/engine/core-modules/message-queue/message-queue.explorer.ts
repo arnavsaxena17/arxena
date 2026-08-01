@@ -104,6 +104,7 @@ export class MessageQueueExplorer implements OnModuleInit {
         processorGroupCollection,
         messageQueueService,
         MESSAGE_QUEUE_WORKER_CONFIG[queueName].workerOptions,
+        queueName,
       );
     }
   }
@@ -182,10 +183,23 @@ export class MessageQueueExplorer implements OnModuleInit {
     processorGroupCollection: ProcessorGroup[],
     queue: MessageQueueService,
     options: MessageQueueWorkerOptions,
+    queueName: MessageQueue,
   ) {
     queue.work(async (job) => {
+      let handledByProcessor = false;
+
       for (const processorGroup of processorGroupCollection) {
-        await this.handleProcessor(processorGroup, job);
+        const didHandle = await this.handleProcessor(processorGroup, job);
+
+        if (didHandle) {
+          handledByProcessor = true;
+        }
+      }
+
+      if (!handledByProcessor) {
+        this.logger.warn(
+          `No @Process handler matched job name "${job.name}" on queue "${queueName}". Job completed as a no-op.`,
+        );
       }
     }, options);
   }
@@ -193,7 +207,7 @@ export class MessageQueueExplorer implements OnModuleInit {
   private async handleProcessor(
     { instance, host, processMethodNames, isRequestScoped }: ProcessorGroup,
     job: MessageQueueJob<MessageQueueJobData>,
-  ) {
+  ): Promise<boolean> {
     const filteredProcessMethodNames = processMethodNames.filter(
       (processMethodName) => {
         const metadata = this.metadataAccessor.getProcessMetadata(
@@ -207,7 +221,7 @@ export class MessageQueueExplorer implements OnModuleInit {
 
     // Return early if no matching methods found
     if (filteredProcessMethodNames.length === 0) {
-      return;
+      return false;
     }
 
     if (isRequestScoped) {
@@ -244,6 +258,8 @@ export class MessageQueueExplorer implements OnModuleInit {
         job,
       );
     }
+
+    return true;
   }
 
   private async invokeProcessMethods(

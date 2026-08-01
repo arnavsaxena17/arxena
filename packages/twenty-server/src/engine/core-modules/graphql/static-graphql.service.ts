@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ContextIdFactory, ModuleRef } from '@nestjs/core';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 import { isDefined } from 'twenty-shared/utils';
@@ -22,7 +22,16 @@ type WorkspaceScopedTokenPayload = {
 
 @Injectable()
 export class StaticGraphQLService {
-  constructor(private moduleRef: ModuleRef) {}
+  constructor(
+    private readonly moduleRef: ModuleRef,
+    private readonly jwtWrapperService: JwtWrapperService,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(WorkspaceEntity)
+    private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    @InjectRepository(UserWorkspaceEntity)
+    private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+  ) {}
 
   async executeGraphQL(
     query: string,
@@ -41,18 +50,14 @@ export class StaticGraphQLService {
   }
 
   async getCurrentUser(apiToken: string): Promise<unknown> {
-    const jwtWrapperService = this.moduleRef.get(JwtWrapperService, {
-      strict: false,
-    });
-
     let payload: WorkspaceScopedTokenPayload;
 
     try {
-      payload = (await jwtWrapperService.verifyJwtToken(
+      payload = (await this.jwtWrapperService.verifyJwtToken(
         apiToken,
       )) as JwtPayload & WorkspaceScopedTokenPayload;
     } catch {
-      payload = (jwtWrapperService.decode(apiToken, {
+      payload = (this.jwtWrapperService.decode(apiToken, {
         json: true,
       }) ?? {}) as WorkspaceScopedTokenPayload;
     }
@@ -69,40 +74,52 @@ export class StaticGraphQLService {
       return null;
     }
 
-    const userRepository = this.moduleRef.get<Repository<UserEntity>>(
-      getRepositoryToken(UserEntity, 'core'),
-      { strict: false },
-    );
-    const workspaceRepository = this.moduleRef.get<
-      Repository<WorkspaceEntity>
-    >(getRepositoryToken(WorkspaceEntity, 'core'), { strict: false });
-    const userWorkspaceRepository = this.moduleRef.get<
-      Repository<UserWorkspaceEntity>
-    >(getRepositoryToken(UserWorkspaceEntity, 'core'), { strict: false });
+    // Default connection (no name) — schema is "core", connection is not named "core"
+    try {
+      const [user, workspace, userWorkspaces] = await Promise.all([
+        this.userRepository.findOne({ where: { id: userId } }),
+        this.workspaceRepository.findOne({ where: { id: workspaceId } }),
+        this.userWorkspaceRepository.find({
+          where: { userId },
+          relations: ['workspace'],
+        }),
+      ]);
 
-    const [user, workspace, userWorkspaces] = await Promise.all([
-      userRepository.findOne({ where: { id: userId } }),
-      workspaceRepository.findOne({ where: { id: workspaceId } }),
-      userWorkspaceRepository.find({
-        where: { userId },
-        relations: ['workspace'],
-      }),
-    ]);
+      return {
+        id: userId,
+        firstName: user?.firstName ?? '',
+        lastName: user?.lastName ?? '',
+        email: user?.email ?? '',
+        workspaceMember: { id: workspaceMemberId },
+        currentWorkspace: {
+          id: workspaceId,
+          subdomain: workspace?.subdomain ?? '',
+          displayName: workspace?.displayName ?? '',
+        },
+        workspaces: userWorkspaces.map((userWorkspace) => ({
+          workspace: userWorkspace.workspace,
+        })),
+      };
+    } catch (error) {
+      // Keep chrome-extension get_user_obj working even if TypeORM DI is broken
+      console.error(
+        '[StaticGraphQLService] getCurrentUser repository lookup failed, using JWT payload only:',
+        error,
+      );
 
-    return {
-      id: userId,
-      firstName: user?.firstName ?? '',
-      lastName: user?.lastName ?? '',
-      email: user?.email ?? '',
-      workspaceMember: { id: workspaceMemberId },
-      currentWorkspace: {
-        id: workspaceId,
-        subdomain: workspace?.subdomain ?? '',
-        displayName: workspace?.displayName ?? '',
-      },
-      workspaces: userWorkspaces.map((userWorkspace) => ({
-        workspace: userWorkspace.workspace,
-      })),
-    };
+      return {
+        id: userId,
+        firstName: '',
+        lastName: '',
+        email: '',
+        workspaceMember: { id: workspaceMemberId },
+        currentWorkspace: {
+          id: workspaceId,
+          subdomain: '',
+          displayName: '',
+        },
+        workspaces: [],
+      };
+    }
   }
 }

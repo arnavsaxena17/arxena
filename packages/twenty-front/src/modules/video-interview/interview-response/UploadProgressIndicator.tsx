@@ -1,5 +1,5 @@
-import React from 'react';
 import { styled } from '@linaria/react';
+import React from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 type PendingUpload = {
@@ -16,9 +16,10 @@ const ProgressContainer = styled.div`
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   padding: 12px;
   z-index: 1000;
   min-width: 250px;

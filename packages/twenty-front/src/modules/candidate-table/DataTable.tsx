@@ -1,35 +1,38 @@
-import { Loader } from 'twenty-ui/feedback';
-import { IconPlus, IconX } from 'twenty-ui/icon';
 import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
-import '@/candidate-table/initHandsontable';
-import { CANDIDATE_CONVERSATION_STATUS_LABELS, isAiFilterField } from '@/candidate-table/TableColumns';
 import { NaukriQueueStatusEffect } from '@/candidate-table/components/NaukriQueueStatusEffect';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
+import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
+import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import '@/candidate-table/initHandsontable';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
+import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
-import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
-import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { HotTable } from '@handsontable/react-wrapper';
-import axios from 'axios';
-import Handsontable from 'handsontable';
-import { type CellChange, type ChangeSource } from 'handsontable';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
+import { HotTable } from '@handsontable/react-wrapper';
+import { styled } from '@linaria/react';
+import axios from 'axios';
+import Handsontable, { type CellChange, type ChangeSource } from 'handsontable';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { Loader } from 'twenty-ui/feedback';
+import { IconPlus, IconX } from 'twenty-ui/icon';
+import {
+    themeCssVariables,
+    useThemeColorScheme,
+} from 'twenty-ui/theme-constants';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -225,6 +228,7 @@ type ColumnRenderer = (
 ) => HTMLTableCellElement;
 
 export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ projectId, onImportCandidatesClick }, ref) => {
+    const colorScheme = useThemeColorScheme();
     const tableRef = useRef<any>(null);
     const tableState = useAtomStateValue(tableStateAtom);
     const setTableState = useSetAtomState(tableStateAtom);
@@ -1485,7 +1489,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
             height="100%"
-            themeName="ht-theme-main"
+            themeName={
+              colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'
+            }
             licenseKey="non-commercial-and-evaluation"
             stretchH="all"
             readOnly={false}

@@ -20,7 +20,10 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import type { AutonomousRecruiterJobData } from './autonomous-recruiter.processor';
+import {
+  AutonomousRecruiterProcessor,
+  type AutonomousRecruiterJobData,
+} from './autonomous-recruiter.processor';
 
 type StartDemoBody = {
   threadId?: string;
@@ -416,7 +419,7 @@ export class AutonomousRecruiterController {
     };
 
     await this.messageQueueService.add<AutonomousRecruiterJobData>(
-      MessageQueue.autonomousRecruiterQueue,
+      AutonomousRecruiterProcessor.name,
       jobData,
       { id: `autonomous-recruiter-${workspaceId}-${runId}` },
     );

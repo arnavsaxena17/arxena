@@ -26,6 +26,12 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Org chart Unipile build no-op | Estimate OK but build stuck on "Waiting for worker pickup": `@Process({ jobName, concurrency })` stored the whole object as `jobName`, so explorer never matched handlers and BullMQ completed jobs in ~0.17ms. Fixed `Process` to accept string \| options; warn when a job matches no handler. Affects all orgchart-* processors + Unipile webhook + TheOrg enrich. Restart **twenty-worker**. | `process.decorator.ts`, `message-queue.explorer.ts` |
+| ARX worker processor audit | Same object-form `@Process` hit 9 ARX processors (covered by decorator fix). Additional: `AutonomousRecruiterModule` missing from `JobsModule` (worker never loaded handler) + manual heartbeat enqueued queue name as job name. Wired module into `JobsModule`; controller now uses `AutonomousRecruiterProcessor.name`. Leftovers: orphan `CronProcessesModule`, dead `@nestjs/bull` `google-contacts.processor.ts`, Process `concurrency` ignored (queue config wins). | `jobs.module.ts`, `autonomous-recruiter.controller.ts` |
+| setChromeExtensionId + Person.city GraphQL | `StaticGraphQLService.getCurrentUser` used `getRepositoryToken(Entity, 'core')` → Nest looked for `core_UserEntityRepository` (connection is unnamed/default; schema `"core"` ≠ connection name). Switched to `@InjectRepository` constructor DI + `TypeOrmModule.forFeature` on `GraphQLExecutionModule`; `VideoInterviewModule` now imports that module instead of re-providing the service. Removed obsolete `Person.city` / `xLink` from shared Person queries/mutations. Rebuild `twenty-shared` + **redeploy/restart nest on the host** (`/home/ubuntu/twenty` logs are still old dist). | `static-graphql.service.ts`, `graphql-execution.module.ts`, `video-interview.module.ts`, `twenty-shared/src/graphql/{queries,mutations}.ts`, §2.10 |
+| TypeORM `'core'` connection sweep | Sibling sweep of workflows → current for `getRepositoryToken(X, 'core')` / `@InjectRepository(X, 'core')` / `forFeature([...], 'core')`. **Only runtime leftover was** `StaticGraphQLService` (fixed above + JWT fallback). Spec: `privacy-consent.service.spec.ts` dropped `'core'`. Ported ARX modules (`arx-chat`, `candidate-sourcing`, `org-chart-client-ip`, `whiskeysocket-baileys`) already use default connection. Workflows still has many old `'core'` hits (legacy named connection); current WT is clean. | `static-graphql.service.ts`, `privacy-consent.service.spec.ts`, §2.10 |
+| HotTable selection → command menu | Side panel / Cmd+K missed ARX candidate actions: HotTable wrote selection to project-scoped context store only (MAIN synced on All Actions click), and never upserted rows into the record store so `noneDefined(selectedRecords, "deletedAt")` failed. `HotTableContextStoreEffect` now continuously syncs selection + candidate object/pageType to MAIN and upserts selected HotTable/search rows (with `deletedAt: null`). | `HotTableContextStoreEffect.tsx`, §2.11 |
+| Dark mode: ARX hardcoded light colors | Handsontable switched via `useThemeColorScheme` → `ht-theme-main-dark`; AI Filtering inputs/cards, WhatsApp/LinkedIn account cards + signup/QR, candidate-table chrome, chat drawer, video-interview shells remapped to `themeCssVariables`. Org chart GoJS nodes/tooltips/menus via `colorScheme` + light/dark palette (remount on scheme change). See §2.12 + §6 leftovers. | `DataTable.tsx`, `AssistantDetailsTable.tsx`, `arx-ai-filtering/.../StyledComponents.tsx`, `Connected*Accounts.tsx`, LinkedIn/WhatsApp signup, `video-interview/interview-response/*`, `twenty-orgchart` node template + `ArxOrgChartContainer` |
 | Direct startChat/stopChat cell edits | Flipping `startChat` / `startVideoInterviewChat` / `startMeetingSchedulingChat` to true on Handsontable or CRM object-record now queues the same interim-chat flow as the Start Chat button (`CandidateChatControlListener` on candidate UPDATED). `stopChat=true` already matched the stop endpoint (flag only). Stable BullMQ job id prevents button+listener double-queue. | `candidate-chat-control.listener.ts`, `update-chat.ts`, `engaged-candidate-queue.service.ts`, `arx-chat-agent.module.ts` |
 | HOT column filter caret broken | Root cause: Vite 8 tree-shakes Handsontable `registerCondition()` side effects (`Filter condition "eq" does not exist`). Workflows used Vite 5.4 where this did not happen; same `initHandsontable` / HOT 15.x. Fix: yarn patch HOT `sideEffects` + vite `optimizeDeps.exclude` + preserve plugin. Also skip header `afterSelectionEnd` state updates. | `handsontable-npm-15.3.0-*.patch`, `vite.config.ts`, `HotHooks.tsx`, `DataTable.tsx` |
 | Project Handsontable top bar | Restored workflows job-page toolbar into `ProjectTopBar`: search input, Active/Inactive toggle, Handsontable filter chips, clear-all filters/sorts, refresh, view object, import, statistics, bulk messages, modify project, AI filtering, multi-column sorting, validate data, fetched-candidate batch actions (All/Top20/Save/Discard + load more). Wired from `ProjectPage`. Skipped drip-campaign (inventory defer). Twenty `ObjectFilterDropdownButton` no longer exists upstream — see §6. | `ProjectTopBar.tsx`, `ProjectPage.tsx` |
@@ -39,7 +45,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 | API credits (People API) | New `workspaceCredits.apiCredits` pool; gate `people/search` + `search-by-title`; SKU `apiCredits` + `topup_api`; fulfillment/UI/admin/banners; debit tag `api_search` | `api-search-costs.constant.ts`, `people-api.controller.ts`, `1785600000010`, Settings Billing, menu |
 | Unify Razorpay credits | Dual fulfillment: packs + subscriptions grant maps/reveals/AI; `creditFulfillmentMode`; UI rename + three-line menu; Arxena exhaustion banners | `entitlement-fulfillment.service.ts`, `credit-packs.constant.ts`, Settings Billing, CandidateTable menu |
 | EC2 / Chatwoot ops scripts from workflows | Restored `build_app_in_new_instance.sh`, remote build script, Chatwoot builder + deploy compose/systemd scripts, e2e-on-EC2, `git_pull_all` / commit helpers, `tools/chatwoot-local` compose+branding, `docs/chatwoot-production-deploy.md`. Adapted defaults to `port/arxena-modules` and added `twenty-client-sdk` to app build/deploy. | `build*.sh`, `script_to_*.sh`, `scripts/deploy-chatwoot*.sh`, `build.config`, inventory “Ops / EC2 build scripts” |
-| ARX record actions → command-menu-items | Ported workflows action-menu bulk actions to `EngineComponentKey` + seeded CMIs + headless commands; HotTable bottom bar pins + All Actions → side panel (syncs selection to MAIN). **Existing workspaces need** `upgrade:2-25:add-arxena-record-action-command-menu-items` (CMIs are not auto-synced). | `arxena-standard-command-menu-item.constant.ts`, `command-menu-item/engine-command/record/arx/`, `HotTableActionMenu.tsx`, `2-25-workspace-command-1785600000007-…` |
+| ARX record actions → command-menu-items | Ported workflows action-menu bulk actions to `EngineComponentKey` + seeded CMIs + headless commands; HotTable bottom bar pins + continuous MAIN sync + record-store upsert for selection filters. **Existing workspaces need** `upgrade:2-25:add-arxena-record-action-command-menu-items` (CMIs are not auto-synced). | `arxena-standard-command-menu-item.constant.ts`, `command-menu-item/engine-command/record/arx/`, `HotTableActionMenu.tsx`, `HotTableContextStoreEffect.tsx`, `2-25-workspace-command-1785600000007-…` |
 | Legacy attachment download 404 | AttachmentPanel resolves legacy `fullPath` (`attachment/<uuid>.pdf`) to `/files/...`. Added workspace-scoped server compatibility route `GET /files/*path` to stream `workspace-${workspaceId}/${fullPath}` directly from storage for imported legacy rows while `attachment.file` is still null. New FILES-field attachments still use `/file/:folder/:id`. | `AttachmentPanel.tsx`, `file.controller.ts`; skill `attachment-files-field-migration`; S3 `arx-server-storage-940813655147` |
 | Legacy DB import (local) | Nest CLI `workspace:import-legacy`; local dump → `arxena_legacy_local` → current `default` (activate + `_job`→`_project` ETL) | `packages/twenty-server/src/database/commands/workspace-import-legacy/` |
 | Legacy DB import (app.arxanalytics) | Prod dump `arxena-prod-twenty40-default-20260724-115532.dump` → side DB `arxena_legacy_prod` on staging EC2 `i-0f294090da1d0956b` → ETL into `default`. 23/24 workspaces imported (`brave-wolf` skipped: no source `workspaceMember`). Projects/candidates match; some people/companies skipped on unique indexes. Seed subdomains renamed to free `arxena`. Pre-import backup: `~/backups/arxanalytics-default-pre-import-20260728-053443.dump`. | same CLI; host `3.234.178.51` |
@@ -178,6 +184,23 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `@/object-metadata/types/CoreObjectNameSingular` | `CoreObjectNameSingular` from `twenty-shared/types` |
 | `NavigationDrawerItem` with `to` + side-effect-only `onClick` | `to` alone, **or** `onClick` that calls `navigate(...)` (hook skips `navigate(to)` when `onClick` is set) |
 
+### 2.12 Dark mode / theme tokens (ARX)
+
+| Broken | Correct |
+| --- | --- |
+| Handsontable `themeName="ht-theme-main"` | `useThemeColorScheme()` → `ht-theme-main-dark` when dark (not `ht-theme-main-dark-auto` — that follows OS, not app setting) |
+| Org chart GoJS node `fill: 'white'` / black text | Pass `colorScheme` into `OrgChartDiagram` / `createNodeTemplate`; use `getOrgChartNodePalette` / `getOrgChartCtxMenu` (canvas cannot use CSS vars). Remount diagram key with `${companyId}-${colorScheme}` |
+| `background: white` / `#fff` / `#f5f5f5` / `#f3f4f6` / `#f8f9fa` | `themeCssVariables.background.primary` / `.secondary` / `.tertiary` / `.quaternary` |
+| `color: #1a1a1a` / `#374151` / `#6b7280` | `themeCssVariables.font.color.primary` / `.secondary` / `.tertiary` |
+| `border: 1px solid #e5e7eb` / `#d1d5db` | `themeCssVariables.border.color.medium` |
+| Imperative DOM colors (`el.style.backgroundColor = '#f5f5f5'`) | Same CSS var strings (`themeCssVariables.*`) — they resolve at runtime under `html.dark` |
+| Brand accents (WhatsApp `#25d366`, LinkedIn `#0077b5`, FB `#1877f2`) | Keep as brand accents |
+
+**Grep for leftovers:**
+```bash
+rg -n "background:\\s*white|background-color:\\s*white|#1a1a1a|#f5f5f5|#f3f4f6|#f8f9fa|#e5e7eb" packages/twenty-front/src/modules packages/twenty-front/src/pages/settings
+```
+
 ### 2.3 Dropdown path moves
 
 | Broken | Correct |
@@ -309,6 +332,7 @@ Fixed: `billing/components/CreditHistoryModal.tsx` (sibling sweep: only hit).
 | `$objectRecordId: ID!` / `$idToUpdate: ID!` / `$idToDelete: ID!` / `$id: ID!` | `UUID!` (workspace + metadata id args) |
 | `response.data.data.job` after `FindOneProject` | `response.data.data.project` (optional `?? job` fallback) |
 | Metadata `Field`/`Object`.`isCustom` | removed — use `isSystem` (or omit); also drop `Object.dataSourceId` + `Field.relationDefinition` → `relation` in metadata SDL strings |
+| `Person.city` / `Person.xLink` in shared queries | drop — `city` removed from standard Person; never in ARX `fields-data`. Also drop `xLink` from `findOnePersonQuery` |
 
 Skill: [`.cursor/skills/attachment-files-field-migration/SKILL.md`](../.cursor/skills/attachment-files-field-migration/SKILL.md)
 
@@ -322,9 +346,13 @@ rg -n 'isCustom|dataSourceId|relationDefinition' packages/twenty-shared/src/grap
 rg -n 'uploadFile|FileFolder\.Attachment|fileFolder:\s*"Attachment"' packages/twenty-{front,server}/src
 rg -n 'filter:\s*\{\s*(candidateId|projectId)\s*:' packages/twenty-front/src/modules/{candidate-table,arx-jd-upload,candidate-search}
 rg -n 'attachment\.fullPath|getAttachmentDownloadUrl' packages/twenty-{front,server}/src
+rg -n 'getRepositoryToken\([^)]+, [\'"]core[\'"]\)' packages/twenty-server/src
+rg -n '^\s+city\s*$' packages/twenty-shared/src/graphql
 ```
 
-**Symptom log (GraphQLExecutionService):** `Cannot query field "fields" on CandidateEnrichment`, `authorId`/`type` on `Attachment`, `Variable "$objectRecordId" of type "ID!" used in position expecting type "UUID"` — fix shared queries, rebuild `twenty-shared`, **restart nest** (module cache).
+**Symptom log (GraphQLExecutionService):** `Cannot query field "fields" on CandidateEnrichment`, `authorId`/`type` on `Attachment`, `Variable "$objectRecordId" of type "ID!" used in position expecting type "UUID"`, `Cannot query field "city" on type "Person"` — fix shared queries, rebuild `twenty-shared`, **restart nest** (module cache).
+
+**Symptom log (setChromeExtensionId):** `Nest could not find core_UserEntityRepository` — do not pass `'core'` as TypeORM connection name to `getRepositoryToken` (schema ≠ connection).
 
 **Legacy dump ETL (`workspace:import-legacy`):** morph FKs on `attachment` / `noteTarget` / `taskTarget` / `timelineActivity` auto-map `fooId`→`targetFooId` (plus `jobId`→`targetProjectId`, `type`→`fileCategory`, `authorId`→`createdByWorkspaceMemberId`). Without this, attachment rows copy but `targetCandidateId` stays null. Enum labels also accept camelCase (`TextDocument`→`TEXT_DOCUMENT`).
 
@@ -335,7 +363,7 @@ rg -n 'attachment\.fullPath|getAttachmentDownloadUrl' packages/twenty-{front,ser
 | `action-menu` Recoil registry + `getActionConfig` | Metadata `command-menu-item` + `EngineComponentKey` headless commands |
 | `CandidateActionsConfig` / `TableCandidateActionsConfig` / `JobActionsConfig` / `PeopleActionsConfig` | `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*` |
 | `HotTableActionMenu` bottom bar via `actionMenuEntries` | `HotTableActionMenu` via `CommandMenuContextProvider` + pinned CMIs + All Actions |
-| `RightDrawerPages.CandidateActions` | `SidePanelPages.CommandMenuDisplay` (HotTable syncs selection to MAIN first) |
+| `RightDrawerPages.CandidateActions` | `SidePanelPages.CommandMenuDisplay` (HotTable continuously syncs selection + candidate object to MAIN; upserts selected rows into record store so `noneDefined(selectedRecords, "deletedAt")` passes) |
 | Job-scoped actions | `project` via `objectMetadataItem.nameSingular == "project"` |
 
 ```bash
@@ -478,13 +506,17 @@ Tracked from current tree greps — fix then tick §7.
 
 | Issue | Locations (as of 2026-07-25) |
 | --- | --- |
+| ARX worker: orphan `CronProcessesModule` | Never imported → `CandidateEngagementCronService` never enqueues; `CandidateEngagementProcessor` exists in CandidateSourcing but cron producer is dead |
+| Dead `@nestjs/bull` `GoogleContactsProcessor` | `google-contacts.processor.ts` uses empty `@Process()` from `@nestjs/bull`; not in any module. Live path is `GoogleContactsQueueProcessor` |
+| `@Process({ concurrency })` ignored | Accepted by decorator but discarded; real concurrency is `MESSAGE_QUEUE_WORKER_CONFIG` (e.g. Apollo decorator says 2, orgchart queue is 1) |
 | Twenty `ObjectFilterDropdownButton` / old Filter+Sort ViewBar buttons | workflows `JobPage`/`Projects` passed Filter+Sort dropdowns as `rightComponent`; component removed upstream. Project page uses Handsontable filter chips + multi-column sort button instead (`ProjectTopBar`). `Projects.tsx` still has commented-out ViewBar Filter/Sort. Revisit if CRM view filters needed on Handsontable. |
 | `process.env.REACT_APP_SERVER_BASE_URL` (→ `/undefined/…`) | **done** — re-swept 2026-07-26 after CMI port; `rg` in `src/modules` clean (§2.8). Codegen/scripts may still use `process.env` (Node). |
 | `enqueueSnackBar` still used | `orgchart/hooks/useOrgChartSnackBar.ts`, `useOrgChartActions.ts`, several `OrgChart*Modal*.tsx`, `ArxJDUploadDropzone.tsx` |
-| `useRightDrawer` still used | **partial** — `useRightDrawer` opens `SidePanelPages.CandidateChat` and `CommandMenuDisplay` (was CandidateActions); call sites still go through shim (`DataTable`/`HotHooks`/`useOpenCandidateChatDrawer`). HotTable All Actions uses `openSidePanelMenu` after syncing selection to MAIN |
+| `useRightDrawer` still used | **partial** — `useRightDrawer` opens `SidePanelPages.CandidateChat` and `CommandMenuDisplay` (was CandidateActions); call sites still go through shim (`DataTable`/`HotHooks`/`useOpenCandidateChatDrawer`). HotTable selection continuously syncs to MAIN via `HotTableContextStoreEffect` (All Actions still re-syncs before open) |
 | `Button` from `twenty-ui` root (prefer `twenty-ui/input`) | e.g. `OrgChartResultsAddToProjectPanel.tsx` |
 | Recoil→Jotai | **done** for ARX module set listed in §7 (no `from 'recoil'`) |
 | Emotion leftovers in ARX modules | **done** (no `@emotion/styled` in those paths) |
+| Hardcoded light palette in ARX dark mode | **partial** — fixed datatable HOT theme, AI Filtering form, WhatsApp/LinkedIn cards+signup, candidate-table chrome, chat drawer, video-interview shells (§2.12). Still open: remaining video-interview control knobs (`ControlsOverlay` white thumb), `orgchart/App.css`, some `TableColumns` score/link hex colors, QR `QrCodeWrapper` (keep white for scan contrast) |
 | Apollo React hooks from `@apollo/client` (v4) | **done** — only `CreditHistoryModal` had `useQuery` from `@apollo/client`; remapped to `@apollo/client/react` (§2.9) |
 | Attachment `authorId`/`type` + enrichment `fields` | **done** for shared queries + ARX create/read paths (§2.10); SQL index builders in `object-apis-creation.ts` still reference legacy `authorId`/`type` columns |
 | Attachment FILES upload + morph FKs + URL reads | **done** — front UploadCV/AttachmentPanel/JD/AI/video + server hub + CV/WhatsApp/video/email paths; skill `attachment-files-field-migration`. Rebuild `twenty-shared` + restart nest. Transitional replicate may still write deprecated `fullPath` when legacy rows lack `file[]` |

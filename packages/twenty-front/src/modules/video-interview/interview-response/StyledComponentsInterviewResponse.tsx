@@ -4,11 +4,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 export const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  // background-color: ${themeCssVariables.background.tertiary};
   max-width: 100%;
   overflow-x: hidden;
   min-height: 100%;
-  background-color: white;
+  background-color: ${themeCssVariables.background.primary};
   @media (min-width: 768px) {
     flex-direction: row;
   }
@@ -16,11 +15,10 @@ export const StyledContainer = styled.div`
 export const EndInterviewStyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  // background-color: ${themeCssVariables.background.tertiary};
   max-width: 100%;
   overflow-x: hidden;
   min-height: 100%;
-  background-color: white;
+  background-color: ${themeCssVariables.background.primary};
   @media (min-width: 768px) {
     flex-direction: row;
   }
@@ -455,7 +453,7 @@ export const EndInterviewStyledRightPanel = styled.div`
 `;
 
 export const StyledVideoContainer = styled.div`
-  background-color: white;
+  background-color: ${themeCssVariables.background.secondary};
   border-radius: 30px;
   margin-bottom: 20px;
   overflow: hidden;
