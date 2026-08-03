@@ -149,17 +149,18 @@ export class WorkspaceQueryService {
       return null;
     }
     try {
-      const profileRepository =
-        await this.getObjectRepository<{ id: string; workspaceMemberId: string }>(
-          workspaceId,
-          'workspaceMemberProfile',
-        );
-      const profile = await profileRepository.findOne({
-        where: { workspaceMemberId },
-        select: { id: true },
-      });
+      return await this.executeInWorkspaceContext(workspaceId, async () => {
+        const profileRepository = await this.getObjectRepository<{
+          id: string;
+          workspaceMemberId: string;
+        }>(workspaceId, 'workspaceMemberProfile');
+        const profile = await profileRepository.findOne({
+          where: { workspaceMemberId },
+          select: { id: true },
+        });
 
-      return profile?.id ?? null;
+        return profile?.id ?? null;
+      });
     } catch (error) {
       console.error(
         'getWorkspaceMemberProfileIdForMember: query failed',

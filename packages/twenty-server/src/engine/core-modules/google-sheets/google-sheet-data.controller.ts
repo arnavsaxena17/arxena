@@ -98,33 +98,41 @@ export class GoogleSheetsDataController {
     const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
       async (workspaceId, _dataSourceSchema, _transactionManager) => {
         console.log("workspaceId:", workspaceId);
-        const projectRepository =
-          await this.workspaceQueryService.getObjectRepository<{
-            id: string;
-            googleSheetId?: string;
-          }>(workspaceId, 'project');
-        const sheetIntegration = await projectRepository.find({
-          where: { googleSheetId: spreadsheetId },
-        });
-        if (sheetIntegration.length > 0) {
-          // Get API keys for the workspace
-          const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId,
-          );
-          if (apiKeys && apiKeys.length > 0) {
-            // Generate token using the first available API key
-            const apiKeyToken = await this.workspaceQueryService.accessTokenService.generateAccessToken(
-              workspaceId,
-              apiKeys[0].id,
-            );
-            return apiKeyToken ? {
-              token: apiKeyToken.token,
-              workspaceId,
-              integrationId: sheetIntegration[0].id
-            } : null;
-          }
-        }
-        return null;
+        return this.workspaceQueryService.executeInWorkspaceContext(
+          workspaceId,
+          async () => {
+            const projectRepository =
+              await this.workspaceQueryService.getObjectRepository<{
+                id: string;
+                googleSheetId?: string;
+              }>(workspaceId, 'project');
+            const sheetIntegration = await projectRepository.find({
+              where: { googleSheetId: spreadsheetId },
+            });
+            if (sheetIntegration.length > 0) {
+              // Get API keys for the workspace
+              const apiKeys = await this.workspaceQueryService.getApiKeys(
+                workspaceId,
+              );
+              if (apiKeys && apiKeys.length > 0) {
+                // Generate token using the first available API key
+                const apiKeyToken =
+                  await this.workspaceQueryService.accessTokenService.generateAccessToken(
+                    workspaceId,
+                    apiKeys[0].id,
+                  );
+                return apiKeyToken
+                  ? {
+                      token: apiKeyToken.token,
+                      workspaceId,
+                      integrationId: sheetIntegration[0].id,
+                    }
+                  : null;
+              }
+            }
+            return null;
+          },
+        );
       }
     );
 

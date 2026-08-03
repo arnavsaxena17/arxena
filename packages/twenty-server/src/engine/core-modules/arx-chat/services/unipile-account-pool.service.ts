@@ -418,14 +418,19 @@ export class UnipileAccountPoolService {
       type === 'linkedin' ? 'linkedinUnipileAccountId' : 'whatsappUnipileAccountId';
 
     try {
-      const profileRepository =
-        await this.workspaceQueryService.getObjectRepository<
-          Record<string, unknown>
-        >(workspaceId, 'workspaceMemberProfile');
+      await this.workspaceQueryService.executeInWorkspaceContext(
+        workspaceId,
+        async () => {
+          const profileRepository =
+            await this.workspaceQueryService.getObjectRepository<
+              Record<string, unknown>
+            >(workspaceId, 'workspaceMemberProfile');
 
-      await profileRepository.update(
-        { workspaceMemberId },
-        { [fieldName]: null },
+          await profileRepository.update(
+            { workspaceMemberId },
+            { [fieldName]: null },
+          );
+        },
       );
     } catch (err) {
       this.logger.warn(

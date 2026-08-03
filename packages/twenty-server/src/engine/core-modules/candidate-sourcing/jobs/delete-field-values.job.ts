@@ -64,23 +64,28 @@ export class DeleteFieldValuesQueueProcessor {
 
       while (retryCount < MAX_RETRIES && !success) {
         try {
-          const candidateFieldValueRepository =
-            await this.workspaceQueryService.getObjectRepository<{
-              id: string;
-              candidateId: string;
-            }>(workspaceId, 'candidateFieldValue');
-          const candidateRepository =
-            await this.workspaceQueryService.getObjectRepository<{
-              id: string;
-              otherFields?: unknown;
-            }>(workspaceId, 'candidate');
+          await this.workspaceQueryService.executeInWorkspaceContext(
+            workspaceId,
+            async () => {
+              const candidateFieldValueRepository =
+                await this.workspaceQueryService.getObjectRepository<{
+                  id: string;
+                  candidateId: string;
+                }>(workspaceId, 'candidateFieldValue');
+              const candidateRepository =
+                await this.workspaceQueryService.getObjectRepository<{
+                  id: string;
+                  otherFields?: unknown;
+                }>(workspaceId, 'candidate');
 
-          await candidateFieldValueRepository.delete({
-            candidateId: subBatch[0],
-          });
-          await candidateRepository.update(
-            { id: subBatch[0] },
-            { otherFields: {} },
+              await candidateFieldValueRepository.delete({
+                candidateId: subBatch[0],
+              });
+              await candidateRepository.update(
+                { id: subBatch[0] },
+                { otherFields: {} },
+              );
+            },
           );
           console.log(
             `Successfully deleted field values for candidate ${subBatch[0]} (${Math.floor(i / SUB_BATCH_SIZE) + 1}/${candidateIds.length})`,
