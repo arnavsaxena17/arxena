@@ -331,68 +331,162 @@ export class FilterCandidates {
       console.log('Error in fetching interviews:: ', error);
     }
   }
+  // Nested people→candidates→whatsappMessages is rejected by TOO_COMPLEX_QUERY;
+  // hydrate messages with a separate root-level whatsappMessages query instead.
+  private async attachWhatsappMessagesToCandidateEdges(
+    candidateEdges: CandidatesEdge[],
+    apiToken: string,
+  ): Promise<void> {
+    const edgesWithIds = candidateEdges.filter(
+      (edge) => edge?.node?.id,
+    );
+
+    await Promise.all(
+      edgesWithIds.map(async (edge) => {
+        const candidateId = edge.node.id;
+        try {
+          const response = await this.staticGraphQLService.executeGraphQL(
+            graphQlToFetchWhatsappMessages,
+            {
+              limit: 20,
+              filter: { candidateId: { in: [candidateId] } },
+              orderBy: [{ createdAt: 'DescNullsFirst' }],
+            },
+            apiToken,
+          );
+          const whatsappMessages = response?.data?.data?.whatsappMessages as
+            | {
+                edges: WhatsAppMessagesEdge[];
+                pageInfo: PageInfo;
+              }
+            | undefined;
+
+          if (whatsappMessages) {
+            edge.node.whatsappMessages = whatsappMessages;
+          }
+        } catch (error) {
+          console.error(
+            `Failed to hydrate whatsappMessages for candidate ${candidateId}:`,
+            error,
+          );
+        }
+      }),
+    );
+  }
+
+  private async attachWhatsappMessagesToPerson(
+    personObj: PersonNode,
+    apiToken: string,
+  ): Promise<PersonNode> {
+    const candidateEdges = personObj?.candidates?.edges || [];
+
+    if (candidateEdges.length === 0) {
+      return personObj;
+    }
+
+    await this.attachWhatsappMessagesToCandidateEdges(
+      candidateEdges,
+      apiToken,
+    );
+
+    return personObj;
+  }
+
   async getPersonDetailsByPhoneNumber(phoneNumber: string, apiToken: string) {
     console.log('Trying to get person details by phone number:', phoneNumber);
 
     if (!phoneNumber || phoneNumber === '') {
       console.log('Phone number is empty and no candidate found');
-      return ;
+      return;
     }
-    if (phoneNumber.length > 10 && !phoneNumber.includes("linkedin")) {
-      console.log( 'Phone number is more than 10 digits will slice:', phoneNumber );
+    if (phoneNumber.length > 10 && !phoneNumber.includes('linkedin')) {
+      console.log(
+        'Phone number is more than 10 digits will slice:',
+        phoneNumber,
+      );
       phoneNumber = phoneNumber.slice(-10);
     }
     console.log('Phone number to search is :', phoneNumber);
 
-    let graphVariables: any;
-
-    graphVariables = {
-      filter: {
-        phones: { primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' } },
-      },
-      orderBy: { position: 'AscNullsFirst' },
-    };
-
-
-    if (phoneNumber.includes("linkedin")) {
-      graphVariables = {
-        filter: {
-          linkedinUrl: {
-            primaryLinkUrl: { like: '%' + phoneNumber + '%' },
+    const graphVariables = phoneNumber.includes('linkedin')
+      ? {
+          filter: {
+            linkedinUrl: {
+              primaryLinkUrl: { ilike: '%' + phoneNumber + '%' },
+            },
           },
-        },
-        orderBy: { position: 'AscNullsFirst' },
-      }
-    }
+          orderBy: [{ updatedAt: 'DescNullsFirst' }],
+          limit: 50,
+        }
+      : {
+          filter: {
+            phoneNumber: {
+              primaryPhoneNumber: { ilike: '%' + phoneNumber + '%' },
+            },
+          },
+          orderBy: [{ updatedAt: 'DescNullsFirst' }],
+          limit: 50,
+        };
 
     try {
-      console.log('Going to get person details by phone number');
+      console.log('Going to get person details by phone number via candidates');
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, graphVariables, apiToken);
-      const people = response?.data?.data?.people as {
-        edges: PersonEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
-      const personObj = people?.edges[0]?.node;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        graphVariables,
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | {
+            edges: CandidatesEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
+      const candidateEdges = candidates?.edges || [];
 
-      if (personObj) {
-        console.log(
-          'Personobj:',
-          personObj?.name?.firstName || '' + ' ' + personObj?.name?.lastName,
-        ) + '';
-
-        return personObj;
-      } else {
+      if (candidateEdges.length === 0) {
         console.log('Person not found in get person details by phone number');
-        return ;
+        return;
       }
+
+      const primaryCandidate = candidateEdges[0]?.node;
+      const personFromCandidate = primaryCandidate?.people;
+
+      const personObj = {
+        phones: personFromCandidate?.phones || {
+          primaryPhoneNumber:
+            primaryCandidate?.phoneNumber?.primaryPhoneNumber || '',
+        },
+        emails: personFromCandidate?.emails || {
+          primaryEmail: primaryCandidate?.email?.primaryEmail || '',
+        },
+        linkedinLink: personFromCandidate?.linkedinLink,
+        salary: personFromCandidate?.salary || '',
+        city: personFromCandidate?.city || '',
+        uniqueStringKey: personFromCandidate?.uniqueStringKey || '',
+        jobTitle: personFromCandidate?.jobTitle || '',
+        id: personFromCandidate?.id || primaryCandidate?.peopleId || '',
+        position: personFromCandidate?.position ?? 0,
+        name: personFromCandidate?.name || {
+          firstName: primaryCandidate?.name || '',
+          lastName: '',
+        },
+        candidates: { edges: candidateEdges },
+      } as PersonNode;
+
+      console.log(
+        'Personobj:',
+        personObj?.name?.firstName || '' + ' ' + personObj?.name?.lastName,
+      );
+
+      return personObj;
     } catch (error) {
       console.log(
         'Getting an error and returning empty candidate person profile objeect:',
         error,
       );
 
-      return ;
+      return;
     }
   }
 
@@ -753,6 +847,11 @@ export class FilterCandidates {
           peopleEdges[0]?.node ||
           activeJobCandidateObj.node?.people;
 
+        await this.attachWhatsappMessagesToCandidateEdges(
+          [activeJobCandidateObj],
+          apiToken,
+        );
+
         return this.buildCandidateProfileObj(
           activeJobCandidateObj,
           personWithActiveJob,
@@ -862,6 +961,12 @@ export class FilterCandidates {
       pageInfo: PageInfo;
     } | undefined;
     console.log('personDataobjs:', personDataObjs);
-    return personDataObjs?.edges[0]?.node as PersonNode;
+    const personObj = personDataObjs?.edges[0]?.node as PersonNode;
+
+    if (!personObj) {
+      return personObj;
+    }
+
+    return this.attachWhatsappMessagesToPerson(personObj, apiToken);
   }
 }

@@ -1818,26 +1818,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     status
                     updatedAt
                     stopChat
-                    whatsappMessages {
-                      edges {
-                        node {
-                          recruiterId
-                          message
-                          candidateId
-                          projectsId
-                          position
-                          phoneTo
-                          messageObj
-                          updatedAt
-                          createdAt
-                          lastEngagementChatControl
-                          id
-                          name
-                          phoneFrom
-                          whatsappDeliveryStatus
-                        }
-                      }
-                    }
                 }
             }
         }
@@ -3210,16 +3190,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                         descriptionOneliner
                       }
                     }
-                    aIInterviewStatus{
-                      edges{
-                          node{
-                              id
-                              interviewLink{
-                                url
-                              }
-                          }
-                      }
-                    }
                     engagementStatus
                     startChat
                     startChatCompleted
@@ -3230,36 +3200,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                     startVideoInterviewChatCompleted
                     status
                     stopChat
-                    candidateReminders{
-                      edges{
-                          node{
-                              remindCandidateAtTimestamp
-                              remindCandidateDuration
-                              isReminderActive
-                              name
-                          }
-                      }
-                    }
-                    whatsappMessages {
-                      edges {
-                        node {
-                          recruiterId
-                          message
-                          candidateId
-                          projectsId
-                          messageObj
-                          position
-                          phoneTo
-                          updatedAt
-                          createdAt
-                          lastEngagementChatControl
-                          id
-                          name
-                          phoneFrom
-                          whatsappDeliveryStatus
-                        }
-                      }
-                    }
                 }
             }
         }

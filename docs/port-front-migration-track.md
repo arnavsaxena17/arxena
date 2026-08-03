@@ -26,6 +26,10 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| People findMany TOO_COMPLEX_QUERY | Phone lookup no longer uses `graphqlQueryToFindManyPeople` (nested `people→candidates→whatsappMessages` → `TOO_COMPLEX_QUERY`). `getPersonDetailsByPhoneNumber` now uses `graphqlToFetchAllCandidateData` (findManyCandidates) and synthesizes a PersonNode with `candidates.edges`. Shared people query also stripped nested 1-to-manys for other callers; messages hydrated separately where needed. Phone status `candidate.jobs` → `projects`. | `filter-candidates.ts`, `queries.ts`, `get-phone-number-status` |
+| StaticGraphQL `updatedBy` actor | `setChromeExtensionId` → `StaticGraphQLService.executeGraphQL` uses **system** auth ALS. `UpdatedByUpdateOnePreQueryHook` called `ActorFromAuthContextService`, which only handled user/apiKey/application → threw `Unable to build actor metadata`. Added `buildCreatedByFromSystem` + `isSystemAuthContext` branch (same pattern for all StaticGraphQL / job writes with actor fields). **Redeploy/restart nest** on host — `/home/ubuntu/twenty` dist still old. | `actor-from-auth-context.service.ts`, `build-created-by-from-system.util.ts` |
+| Apollo wrong-client sibling sweep | After fixing `useCheckDataIntegrityOfProject`, grepped ARX/migrated modules for `useQuery`/`useLazyQuery`/`useMutation` + `twenty-shared/graphql` without `useApolloCoreClient` or raw `/graphql`. **No further wrong-client call sites.** Intentional `/metadata`: `WORKSPACE_CREDITS`, billing `CREDIT_TRANSACTIONS`. Latent footgun: commented `FIND_MANY_VIDEO_INTERVIEW_MODELS` in `InterviewCreationModal` (hardcoded models today). | §5, §6 |
+| Project page FindManyProjects → `/metadata` | `useCheckDataIntegrityOfProject` (runs on ProjectPage load / validate) used default Apollo client → `Unknown type "ProjectFilterInput"` / `Cannot query field "projects"`. Wired `useApolloCoreClient` (`/graphql`). Sibling JD upload paths already fixed. | `useCheckDataIntegrityOfProject.ts`, §5 |
 | Org chart Unipile build no-op | Estimate OK but build stuck on "Waiting for worker pickup": `@Process({ jobName, concurrency })` stored the whole object as `jobName`, so explorer never matched handlers and BullMQ completed jobs in ~0.17ms. Fixed `Process` to accept string \| options; warn when a job matches no handler. Affects all orgchart-* processors + Unipile webhook + TheOrg enrich. Restart **twenty-worker**. | `process.decorator.ts`, `message-queue.explorer.ts` |
 | ARX worker processor audit | Same object-form `@Process` hit 9 ARX processors (covered by decorator fix). Additional: `AutonomousRecruiterModule` missing from `JobsModule` (worker never loaded handler) + manual heartbeat enqueued queue name as job name. Wired module into `JobsModule`; controller now uses `AutonomousRecruiterProcessor.name`. Leftovers: orphan `CronProcessesModule`, dead `@nestjs/bull` `google-contacts.processor.ts`, Process `concurrency` ignored (queue config wins). | `jobs.module.ts`, `autonomous-recruiter.controller.ts` |
 | setChromeExtensionId + Person.city GraphQL | `StaticGraphQLService.getCurrentUser` used `getRepositoryToken(Entity, 'core')` → Nest looked for `core_UserEntityRepository` (connection is unnamed/default; schema `"core"` ≠ connection name). Switched to `@InjectRepository` constructor DI + `TypeOrmModule.forFeature` on `GraphQLExecutionModule`; `VideoInterviewModule` now imports that module instead of re-providing the service. Removed obsolete `Person.city` / `xLink` from shared Person queries/mutations. Rebuild `twenty-shared` + **redeploy/restart nest on the host** (`/home/ubuntu/twenty` logs are still old dist). | `static-graphql.service.ts`, `graphql-execution.module.ts`, `video-interview.module.ts`, `twenty-shared/src/graphql/{queries,mutations}.ts`, §2.10 |
@@ -333,6 +337,7 @@ Fixed: `billing/components/CreditHistoryModal.tsx` (sibling sweep: only hit).
 | `response.data.data.job` after `FindOneProject` | `response.data.data.project` (optional `?? job` fallback) |
 | Metadata `Field`/`Object`.`isCustom` | removed — use `isSystem` (or omit); also drop `Object.dataSourceId` + `Field.relationDefinition` → `relation` in metadata SDL strings |
 | `Person.city` / `Person.xLink` in shared queries | drop — `city` removed from standard Person; never in ARX `fields-data`. Also drop `xLink` from `findOnePersonQuery` |
+| Nested 1-to-many under people findMany (`candidates { whatsappMessages {…} }`) | Forbidden (`TOO_COMPLEX_QUERY`). Keep `candidates` only; hydrate messages with root `whatsappMessages(filter: { candidateId })` |
 
 Skill: [`.cursor/skills/attachment-files-field-migration/SKILL.md`](../.cursor/skills/attachment-files-field-migration/SKILL.md)
 
@@ -479,6 +484,7 @@ Status: `fixed` = `useApolloCoreClient` wired; `ok-http` = already posts to `/gr
 
 | Date | File | Operation | Status |
 | --- | --- | --- | --- |
+| 2026-08-03 | `object-record/hooks/useCheckDataIntegrityOfProject.ts` | `FindManyProjects` (validate on ProjectPage) | fixed |
 | 2026-07-25 | `unipile/…/WorkspaceMemberProfileUnipileSyncEffect.tsx` | `findWorkspaceMemberProfiles` | fixed |
 | 2026-07-25 | `unipile/…/LinkedinStoredProfileUnipileActions.tsx` | refetch profiles | fixed |
 | 2026-07-25 | `arx-jd-upload/…/ProjectDetailsForm.tsx` | find projects + update profile | fixed |
@@ -497,6 +503,8 @@ Status: `fixed` = `useApolloCoreClient` wired; `ok-http` = already posts to `/gr
 | — | `arx-jd-upload/…/ChatQuestionsSection.tsx` | `FindOneProject` | ok-http |
 | — | `video-interview/…/VideoInterviewResponseViewer.tsx` | query by interview | ok-http |
 | — | `candidate-table/Projects.tsx` / `ProjectPage.tsx` | `WORKSPACE_CREDITS` | ok-metadata |
+| — | `billing/…/CreditHistoryModal.tsx` | `CREDIT_TRANSACTIONS` | ok-metadata |
+| — | `video-interview/…/InterviewCreationModal.tsx` | `FIND_MANY_VIDEO_INTERVIEW_MODELS` (commented; uses hardcoded models) | latent — if restored must use core client |
 
 ---
 
@@ -506,6 +514,7 @@ Tracked from current tree greps — fix then tick §7.
 
 | Issue | Locations (as of 2026-07-25) |
 | --- | --- |
+| Apollo wrong client (workspace ops → `/metadata`) | **done** as of 2026-08-03 sweep — only remaining were intentional metadata (`WORKSPACE_CREDITS`, billing) + commented video-model query |
 | ARX worker: orphan `CronProcessesModule` | Never imported → `CandidateEngagementCronService` never enqueues; `CandidateEngagementProcessor` exists in CandidateSourcing but cron producer is dead |
 | Dead `@nestjs/bull` `GoogleContactsProcessor` | `google-contacts.processor.ts` uses empty `@Process()` from `@nestjs/bull`; not in any module. Live path is `GoogleContactsQueueProcessor` |
 | `@Process({ concurrency })` ignored | Accepted by decorator but discarded; real concurrency is `MESSAGE_QUEUE_WORKER_CONFIG` (e.g. Apollo decorator says 2, orgchart queue is 1) |
@@ -565,11 +574,11 @@ Mark as you clear each wave.
 | `orgchart` | [x] | [x] | [ ] | [x] | [x] | snackbar helpers still old API; route via `OrgChartRoute` |
 | `unipile` | [x] | [x] | [x]? | [x] | n/a | providers wired |
 | `video-interview` | [x] | [x] | [x]? | [x] | n/a | create hooks fixed |
-| `candidate-search` | [x] | [x] | [x]? | [ ] | [x] | `ProjectFilters`; `useArxJDUpload('project')` |
-| `assistant` | [x] | [x] | [x]? | [ ] | [x] | JD section + chat column metadata → project |
-| `arx-ai-filtering` | [x] | [x] | [x]? | [ ] | n/a | |
-| `linkedin-unipile` | [x] | [ ] | [ ] | [ ] | n/a | |
-| `whatsapp-unipile` | [x] | [ ] | [ ] | [ ] | n/a | |
+| `candidate-search` | [x] | [x] | [x]? | n/a | [x] | REST/`fetch` to candidate-search; no Apollo workspace GQL |
+| `assistant` | [x] | [x] | [x]? | n/a | [x] | No Apollo GQL; uses `useProjectRefetch` REST |
+| `arx-ai-filtering` | [x] | [x] | [x]? | n/a | n/a | No Apollo GQL in module |
+| `linkedin-unipile` | [x] | [ ] | [ ] | n/a | n/a | types/state only; Unipile GQL via `unipile` module |
+| `whatsapp-unipile` | [x] | [ ] | [ ] | n/a | n/a | types/state only |
 | `chrome-extension*` | [x] | [x] | [x]? | [x] | n/a | AuthBridge + Sidecar + client-config ID wired |
 | `websocket-context` | [x] | [ ] | [ ] | [ ] | n/a | |
 | `baileys` | [x] | [ ] | [ ] | n/a | n/a | provider wired |

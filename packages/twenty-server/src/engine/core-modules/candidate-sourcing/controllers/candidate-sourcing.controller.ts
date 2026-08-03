@@ -1735,11 +1735,11 @@ export class CandidateSourcingController {
       ).getPersonDetailsByPhoneNumber(String(phoneNumber), apiToken);
 
       const candidateNode = personObj?.candidates?.edges?.[0]?.node;
-      const jobInfo = candidateNode?.jobs;
+      const projectInfo = candidateNode?.projects;
 
-      if (!candidateNode || !jobInfo) {
+      if (!candidateNode || !projectInfo) {
         console.log(
-          'No candidate/job found for phone number, returning empty status payload',
+          'No candidate/project found for phone number, returning empty status payload',
         );
         return {
           status: 'success',
@@ -1753,8 +1753,8 @@ export class CandidateSourcingController {
 
       const responseObj = {
         status: 'success',
-        job_name: jobInfo?.name || '',
-        job_id: jobInfo?.id || '',
+        job_name: projectInfo?.name || '',
+        job_id: projectInfo?.id || '',
         job_status: candidateNode?.status || '',
         candidate_id: candidateNode?.id || '',
         person_id: personObj?.id || '',

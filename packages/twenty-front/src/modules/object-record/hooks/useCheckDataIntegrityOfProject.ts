@@ -2,11 +2,13 @@ import { useCallback } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification';
 import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
-import { graphqlToFindManyProjectsWithCandidateValues, isDefined } from 'twenty-shared';
+import { graphqlToFindManyProjectsWithCandidateValues } from 'twenty-shared/graphql';
+import { isDefined } from 'twenty-shared/utils';
 
 
 type UseCheckDataIntegrityOfProjectProps = {
@@ -26,10 +28,11 @@ export const useCheckDataIntegrityOfProject = ({
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar, enqueueInfoSnackBar } = useSnackBar();
   // const { keys: apiKeys } = useApiKeys();
   const apiKeys = useAtomStateValue(apiKeysState);
-  // Removed console.log to prevent unnecessary re-renders
+  // Workspace project records are on /graphql, not the default /metadata client
+  const apolloCoreClient = useApolloCoreClient();
   const [executeQuery] = useLazyQuery(gql`
     ${graphqlToFindManyProjectsWithCandidateValues}
-  `);
+  `, { client: apolloCoreClient });
 
   const checkDataIntegrityOfProject = useCallback(
     async (
