@@ -58,7 +58,7 @@ export const useWarmPathResolve = (
       const result = await resolveWarmPaths(baseUrl, accessToken, {
         targetLinkedinUrl: linkedinUrl,
         maxBridges: 15,
-        expandViewerConnectors: true,
+        expandViewerConnectors: false,
       });
       setData(result);
     } catch (resolveError) {

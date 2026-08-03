@@ -127,7 +127,7 @@ export class WarmPathResolverService {
       }
     }
 
-    const expandConnectors = params.expandViewerConnectors !== false;
+    const expandConnectors = params.expandViewerConnectors === true;
     const bridges = await this.buildRankedBridges(
       bridgeItems,
       targetHeadline,
