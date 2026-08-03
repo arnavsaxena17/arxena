@@ -286,6 +286,8 @@ export const MergeProjectsModal = ({
       const body = {
         candidates: candidatesPayload,
         data_source: 'linkedin_premium',
+        projectId,
+        twenty_job_id: projectId,
         job_id: projectId,
         job_name: jobName,
         recruiterId: currentWorkspaceMember?.id,

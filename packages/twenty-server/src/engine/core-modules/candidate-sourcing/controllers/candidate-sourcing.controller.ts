@@ -63,11 +63,7 @@ import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { createJobIdErrorResponse, validateAndExtractJobId } from 'src/engine/core-modules/candidate-sourcing/utils/job-id.utils';
-import {
-  createProjectIdErrorResponse,
-  validateAndExtractProjectId,
-} from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
+import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -76,19 +72,34 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 /**
- * `graphqlToFetchAllCandidateData` returns nested `jobs { id }`, not top-level `jobsId`.
- * Some code paths still expose `jobsId` / `jobId` on the node — support both.
+ * Candidate GraphQL may expose `projectsId` / nested `projects`, or legacy
+ * `jobsId` / `jobs` / `jobId` — support all.
  */
-const getCandidateJobIdForByLinkedInUrls = (
+const getCandidateProjectIdForByLinkedInUrls = (
   candidate: Record<string, unknown>,
 ): string | undefined => {
+  const projectsId = candidate['projectsId'];
+  if (typeof projectsId === 'string' && projectsId.trim()) {
+    return projectsId.trim();
+  }
   const jobsId = candidate['jobsId'];
   if (typeof jobsId === 'string' && jobsId.trim()) {
     return jobsId.trim();
   }
+  const projectId = candidate['projectId'];
+  if (typeof projectId === 'string' && projectId.trim()) {
+    return projectId.trim();
+  }
   const jobId = candidate['jobId'];
   if (typeof jobId === 'string' && jobId.trim()) {
     return jobId.trim();
+  }
+  const projects = candidate['projects'];
+  if (projects && typeof projects === 'object' && projects !== null && 'id' in projects) {
+    const id = (projects as { id?: unknown }).id;
+    if (typeof id === 'string' && id.trim()) {
+      return id.trim();
+    }
   }
   const jobs = candidate['jobs'];
   if (jobs && typeof jobs === 'object' && jobs !== null && 'id' in jobs) {
@@ -238,9 +249,10 @@ export class CandidateSourcingController {
       const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
-      const jobIdValidation = validateAndExtractJobId(request.body.jobId);
-      if (!jobIdValidation.isValid) {
-        return createJobIdErrorResponse(jobIdValidation.error!);
+      const projectId = request.body.projectId ?? request.body.jobId;
+      const projectIdValidation = validateAndExtractProjectId(projectId);
+      if (!projectIdValidation.isValid) {
+        return createProjectIdErrorResponse(projectIdValidation.error!);
       }
 
       const aiFiltersRequest = {
@@ -250,7 +262,7 @@ export class CandidateSourcingController {
         availableFilterDefinitions: request?.body?.availableFilterDefinitions || [],
         objectRecordId: request?.body?.objectRecordId,
         selectedRecordIds: request?.body?.selectedRecordIds,
-        jobId: jobIdValidation.jobId!,
+        projectId: projectIdValidation.projectId!,
       };
 
       await this.processAiFiltersService.send(
@@ -262,7 +274,8 @@ export class CandidateSourcingController {
       return {
         status: 'success',
         message: 'AI filter processing queued successfully',
-        jobId: aiFiltersRequest.jobId,
+        projectId: aiFiltersRequest.projectId,
+        jobId: aiFiltersRequest.projectId,
       };
     } catch (err) {
       console.error('Error in process AI filters controller:', err);
@@ -676,6 +689,27 @@ export class CandidateSourcingController {
       let jobName = '';
       let recruiterId = '';
 
+      // Prefer projectId / twenty_job_id; keep legacy job_id for CRX/site
+      const resolveUploadProjectId = (payload: Record<string, any>): string =>
+        payload.projectId ||
+        payload.twenty_job_id ||
+        payload.popup_data?.twenty_job_id ||
+        payload.popup_data?.projectId ||
+        payload.job?.id ||
+        payload.popup_data?.job_id ||
+        payload.job?.job_id ||
+        payload.job_id ||
+        '';
+
+      const resolveUploadProjectName = (payload: Record<string, any>): string =>
+        payload.projectName ||
+        payload.job_name ||
+        payload.popup_data?.projectName ||
+        payload.popup_data?.job_name ||
+        payload.job?.name ||
+        payload.job?.job_name ||
+        '';
+
       if (data.csv_excel_data) {
         // Handle CSV/Excel data upload
         console.log('Processing CSV/Excel data upload');
@@ -687,38 +721,36 @@ export class CandidateSourcingController {
         // Handle spreadsheet import
         candidates = data.candidates || [];
         dataSource = data.popup_data.job_data_source;
-        // Try multiple sources for job information - prioritize twenty_job_id over job_id
-        jobId = data.popup_data.twenty_job_id || data.job?.id || data.popup_data.job_id || data.job?.job_id || '';
-        jobName = data.popup_data.job_name || data.job?.job_name || data.job?.name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.popup_data.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else if (data.candidates) {
         // Handle general candidates upload
         candidates = data.candidates;
         dataSource = data.data_source || '';
-        // Try multiple sources for job information
-        jobId = data.popup_data?.job_id || data.job?.job_id || data.job?.id || data.job_id || '';
-        jobName = data.popup_data?.job_name || data.job?.job_name || data.job?.name || data.job_name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else if (data.resdex_profile_data) {
         // Handle Resdex profile data
         candidates = JSON.parse(data.resdex_profile_data);
         dataSource = 'profile_data_naukri';
-        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
-        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
       } else if (data.linkedin_premium_profile_data) {
         // Handle LinkedIn Premium profile data
         candidates = [data.linkedin_premium_profile_data];
         dataSource = 'linkedin_premium';
-        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
-        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
       } else if (data.linkedin_search_results) {
         // Handle LinkedIn search results
         candidates = data.linkedin_search_results;
         dataSource = 'linkedin_search';
-        jobId = data.job_id || data.job?.job_id || data.job?.id || '';
-        jobName = data.job_name || data.job?.job_name || data.job?.name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
         console.log(`Processing ${candidates.length} LinkedIn search results`);
       } else if (data.json_data) {
@@ -747,9 +779,8 @@ export class CandidateSourcingController {
         }
 
         dataSource = data.data_source || '';
-        // Try multiple sources for job information
-        jobId = data.popup_data?.job_id || data.job?.job_id || data.job?.id || data.job_id || '';
-        jobName = data.popup_data?.job_name || data.job?.job_name || data.job?.name || data.job_name || '';
+        jobId = resolveUploadProjectId(data);
+        jobName = resolveUploadProjectName(data);
         recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
       } else {
         return {
@@ -1169,17 +1200,18 @@ export class CandidateSourcingController {
   async updateChatQuestions(@Req() request: any) {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { jobId, chatQuestions, previousQuestions } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
+      const { chatQuestions, previousQuestions } = request.body;
 
-      if (!jobId || !Array.isArray(chatQuestions)) {
+      if (!projectId || !Array.isArray(chatQuestions)) {
         return {
           status: 'Failed',
-          message: 'jobId and chatQuestions are required',
+          message: 'projectId and chatQuestions are required',
         };
       }
 
       await this.otherFieldsService.updateJobChatQuestions(
-        jobId,
+        projectId,
         chatQuestions,
         apiToken,
         Array.isArray(previousQuestions) ? previousQuestions : [],
@@ -1477,7 +1509,7 @@ export class CandidateSourcingController {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const aiFilters = request.body.aiFilters ?? request.body.enrichments;
       const selectedRecordIds = request.body.selectedRecordIds;
-      const jobId = request.body.jobId;
+      const projectId = request.body.projectId ?? request.body.jobId;
 
       if (!aiFilters) {
         return {
@@ -1486,15 +1518,15 @@ export class CandidateSourcingController {
         };
       }
 
-      const jobIdValidation = validateAndExtractJobId(jobId);
-      if (!jobIdValidation.isValid) {
-        return createJobIdErrorResponse(jobIdValidation.error!);
+      const projectIdValidation = validateAndExtractProjectId(projectId);
+      if (!projectIdValidation.isValid) {
+        return createProjectIdErrorResponse(projectIdValidation.error!);
       }
 
       const aiFiltersRequest = {
         aiFilters,
         selectedRecordIds,
-        jobId: jobIdValidation.jobId!,
+        projectId: projectIdValidation.projectId!,
         objectNameSingular: '',
         availableSortDefinitions: [],
         availableFilterDefinitions: [],
@@ -2215,21 +2247,23 @@ export class CandidateSourcingController {
     }
   }
 
-  // One-time repair: group candidates sharing an identity (email / phone / uniqueStringKey) and
-  // ensure each has all of the group's CVs. Pass { "dryRun": true } first to preview counts without
-  // writing. Pass { "jobId": "<id>" } to scope the WRITES to a single job's candidates (CVs are
-  // still sourced from cross-job siblings); omit jobId to repair the whole workspace.
+  // Pass { "projectId": "<id>" } (or legacy "jobId") to scope writes to one project.
   @Post('bulk-backfill-cv-attachments')
   @UseGuards(JwtAuthGuard)
   async bulkBackfillCvAttachments(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
       const dryRun = request.body?.dryRun === true;
-      const jobId = request.body?.jobId || undefined;
+      const projectId =
+        request.body?.projectId ?? request.body?.jobId ?? undefined;
 
-      const result = await this.candidateService.bulkBackfillCvAttachments(apiToken, dryRun, jobId);
+      const result = await this.candidateService.bulkBackfillCvAttachments(
+        apiToken,
+        dryRun,
+        projectId,
+      );
 
-      const scope = jobId ? `job ${jobId}` : 'the whole workspace';
+      const scope = projectId ? `project ${projectId}` : 'the whole workspace';
       return {
         status: 'success',
         message: dryRun
@@ -2730,7 +2764,8 @@ export class CandidateSourcingController {
   async updateContactFromEnrichment(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { linkedinUrl, emails, phones, jobId, jobName, candidateId } = request.body;
+      const { linkedinUrl, emails, phones, candidateId } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
 
       if (!linkedinUrl) {
         return {
@@ -2739,34 +2774,31 @@ export class CandidateSourcingController {
         };
       }
 
-      // Note: jobId/jobName is optional - required for org chart, optional for DataTable/Chrome Extension
+      // projectId/jobName optional — required for org chart, optional for DataTable/CRX
 
-      // Find candidates by profile URL, scoped to jobId if provided
       let candidates: any[] = [];
       if (candidateId) {
-        // If candidateId is provided directly, use it
-        // Note: getCandidateDetails may not exist, so we'll use findCandidatesByProfileUrl
         const foundCandidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
         if (foundCandidates.length > 0) {
           const foundCandidate = foundCandidates.find((c: any) => c.id === candidateId);
           candidates = foundCandidate ? [foundCandidate] : [];
         }
       } else {
-        // Find by profile URL within the job
         candidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
 
-        // Filter by jobId if provided
-        if (jobId && candidates.length > 0) {
-          // Get job details to verify candidates belong to this job
-          const job = await this.candidateWorkspaceGraphQLService.getJobDetails(jobId, '', apiToken);
-          if (job) {
-            // Filter candidates that belong to this job
-            // Note: This assumes candidates have a jobsId field or similar
-            // You may need to adjust this based on your data model
-            candidates = candidates.filter((c: any) => {
-              // Check if candidate belongs to the job
-              // This is a simplified check - adjust based on your schema
-              return true; // For now, accept all candidates found
+        if (projectId && candidates.length > 0) {
+          const project = await this.candidateWorkspaceGraphQLService.getJobDetails(
+            projectId,
+            '',
+            apiToken,
+          );
+          if (project) {
+            candidates = candidates.filter((candidate: any) => {
+              return (
+                getCandidateProjectIdForByLinkedInUrls(
+                  candidate as Record<string, unknown>,
+                ) === projectId
+              );
             });
           }
         }
@@ -2829,7 +2861,8 @@ export class CandidateSourcingController {
 
   /**
    * Check which LinkedIn URLs have saved candidates.
-   * GET /candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=...&jobId=...
+   * GET /candidate-sourcing/candidates/by-linkedin-urls?linkedinUrls=...&projectId=...
+   * Legacy query param `jobId` is still accepted.
    */
   @Get('candidates/by-linkedin-urls')
   @UseGuards(JwtAuthGuard)
@@ -2841,7 +2874,7 @@ export class CandidateSourcingController {
             ? request.query.linkedinUrls
             : request.query.linkedinUrls.split(','))
         : [];
-      const jobId = request.query.jobId;
+      const projectId = request.query.projectId ?? request.query.jobId;
 
       if (!linkedinUrls || linkedinUrls.length === 0) {
         return {
@@ -2850,7 +2883,15 @@ export class CandidateSourcingController {
         };
       }
 
-      const results: Record<string, { saved: boolean; candidateIds?: string[]; jobIds?: string[] }> = {};
+      const results: Record<
+        string,
+        {
+          saved: boolean;
+          candidateIds?: string[];
+          projectIds?: string[];
+          jobIds?: string[];
+        }
+      > = {};
       const isNonEmptyString = (value: unknown): value is string =>
         typeof value === 'string' && value.length > 0;
 
@@ -2863,37 +2904,45 @@ export class CandidateSourcingController {
 
           if (candidates && candidates.length > 0) {
             const candidateIds = candidates.map((c: any) => c.id);
-            // Extract job IDs from candidates if available
-            const jobIds = candidates
-              .map((c: any) => getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>))
+            const projectIds = candidates
+              .map((c: any) =>
+                getCandidateProjectIdForByLinkedInUrls(
+                  c as Record<string, unknown>,
+                ),
+              )
               .filter(isNonEmptyString);
 
-            // Filter by jobId if provided
-            if (jobId) {
+            if (projectId) {
               const filteredCandidates = candidates.filter(
                 (c: any) =>
-                  getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>) === jobId,
+                  getCandidateProjectIdForByLinkedInUrls(
+                    c as Record<string, unknown>,
+                  ) === projectId,
               );
+              const filteredProjectIds = filteredCandidates
+                .map((c: any) =>
+                  getCandidateProjectIdForByLinkedInUrls(
+                    c as Record<string, unknown>,
+                  ),
+                )
+                .filter(isNonEmptyString);
               results[linkedinUrl] = {
                 saved: filteredCandidates.length > 0,
                 candidateIds:
                   filteredCandidates.length > 0
                     ? filteredCandidates.map((c: any) => c.id)
                     : undefined,
+                projectIds:
+                  filteredProjectIds.length > 0 ? filteredProjectIds : undefined,
                 jobIds:
-                  filteredCandidates.length > 0
-                    ? filteredCandidates
-                        .map((c: any) =>
-                          getCandidateJobIdForByLinkedInUrls(c as Record<string, unknown>),
-                        )
-                        .filter(isNonEmptyString)
-                    : undefined,
+                  filteredProjectIds.length > 0 ? filteredProjectIds : undefined,
               };
             } else {
               results[linkedinUrl] = {
                 saved: true,
                 candidateIds,
-                jobIds: jobIds.length > 0 ? jobIds : undefined,
+                projectIds: projectIds.length > 0 ? projectIds : undefined,
+                jobIds: projectIds.length > 0 ? projectIds : undefined,
               };
             }
           } else {
@@ -3278,12 +3327,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async uploadJD(@Req() request: any) {
     try {
-      const { jobId, attachmentUrl } = request.body;
-      if (!jobId || !attachmentUrl) {
-        throw new HttpException('Missing jobId or attachmentUrl', HttpStatus.BAD_REQUEST);
+      const projectId = request.body.projectId ?? request.body.jobId;
+      const { attachmentUrl } = request.body;
+      if (!projectId || !attachmentUrl) {
+        throw new HttpException(
+          'Missing projectId or attachmentUrl',
+          HttpStatus.BAD_REQUEST,
+        );
       }
       const authToken = request.headers.authorization.split(' ')[1];
-      const result = await this.jdParserService.processJDFromAttachmentUrl(jobId, attachmentUrl, authToken);
+      const result = await this.jdParserService.processJDFromAttachmentUrl(
+        projectId,
+        attachmentUrl,
+        authToken,
+      );
       return result;
     } catch (error) {
       throw new HttpException(
@@ -3333,15 +3390,20 @@ export class CandidateSourcingController {
   async createPrompts(@Req() request: any): Promise<object> {
     try {
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const jobId = request.body.jobId;
-      const jobIdValidation = validateAndExtractJobId(jobId);
-      if (!jobIdValidation.isValid) {
-        return createJobIdErrorResponse(jobIdValidation.error!);
+      const projectId = request.body.projectId ?? request.body.jobId;
+      const projectIdValidation = validateAndExtractProjectId(projectId);
+      if (!projectIdValidation.isValid) {
+        return createProjectIdErrorResponse(projectIdValidation.error!);
       }
-      const actualJobId = jobIdValidation.jobId!;
+      const actualProjectId = projectIdValidation.projectId!;
       for (const prompt of prompts) {
         await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
-          input: { name: prompt.name, prompt: prompt.prompt, position: 'first', jobId: actualJobId },
+          input: {
+            name: prompt.name,
+            prompt: prompt.prompt,
+            position: 'first',
+            projectId: actualProjectId,
+          },
         }, apiToken);
       }
       return { status: 'Success' };

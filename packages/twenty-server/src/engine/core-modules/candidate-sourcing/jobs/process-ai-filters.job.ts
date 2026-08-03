@@ -25,7 +25,7 @@ export class AiFiltersQueueProcessor {
         availableFilterDefinitions: jobData.availableFilterDefinitions,
         objectRecordId: jobData.objectRecordId,
         selectedRecordIds: jobData.selectedRecordIds,
-        jobId: jobData.jobId,
+        projectId: jobData.projectId,
       };
 
       const result = await this.aiFilteringService.processAiFilters(

@@ -17,34 +17,35 @@ export const useCreateInterviewVideos = ({
   const [error, setError] = useState<Error | null>(null);
   const tokenPair = useAtomStateValue(tokenPairState);
 
-  const createVideosForJobs = async (jobIds: string[]) => {
+  const createVideosForProjects = async (projectIds: string[]) => {
     setLoading(true);
     setError(null);
     try {
       const results = await Promise.all(
-        jobIds.map((jobId) =>
+        projectIds.map((projectId) =>
           axios.post(
-            REACT_APP_SERVER_BASE_URL+'/arx-delivery/create-interview-videos',
-            { jobId },
+            REACT_APP_SERVER_BASE_URL +
+              '/arx-delivery/create-interview-videos',
+            { projectId },
             {
               headers: {
                 Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
                 'Content-Type': 'application/json',
               },
-            }
-          )
-        )
+            },
+          ),
+        ),
       );
 
-      const successfulJobs = results.filter(
-        (result) => result.data.status === 'Success'
+      const successfulProjects = results.filter(
+        (result) => result.data.status === 'Success',
       );
 
-      if (successfulJobs.length === jobIds.length) {
+      if (successfulProjects.length === projectIds.length) {
         onSuccess?.();
       } else {
         throw new Error(
-          `Failed to create videos for some jobs. ${successfulJobs.length} of ${jobIds.length} were successful.`
+          `Failed to create videos for some projects. ${successfulProjects.length} of ${projectIds.length} were successful.`,
         );
       }
 
@@ -54,19 +55,20 @@ export const useCreateInterviewVideos = ({
         err instanceof Error
           ? err.message
           : 'Failed to create interview videos';
-      const error = new Error(errorMessage);
-      setError(error);
-      onError?.(error);
-      throw error;
+      const nextError = new Error(errorMessage);
+      setError(nextError);
+      onError?.(nextError);
+      throw nextError;
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    createVideosForJobs,
+    createVideosForProjects,
+    // Legacy alias used by older call sites
+    createVideosForJobs: createVideosForProjects,
     loading,
     error,
   };
 };
-

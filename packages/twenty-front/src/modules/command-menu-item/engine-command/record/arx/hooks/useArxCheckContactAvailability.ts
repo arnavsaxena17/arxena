@@ -60,7 +60,7 @@ export const useArxCheckContactAvailability = () => {
       const projectId = getProjectIdFromPathname(location.pathname);
 
       const response = await fetch(
-        `${baseUrl}/candidate-sourcing/get-candidates-by-job-id`,
+        `${baseUrl}/candidate-sourcing/get-candidates-by-project-id`,
         {
           method: 'POST',
           headers: {
@@ -68,7 +68,7 @@ export const useArxCheckContactAvailability = () => {
             Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
           body: JSON.stringify({
-            jobId: projectId,
+            projectId,
             candidateIds: selectedIds,
           }),
         },

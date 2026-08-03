@@ -4,7 +4,7 @@ import {
   Req,
   UseGuards
 } from '@nestjs/common';
-  
+
   import {
   createManyShortlistsMutation,
   createShortlistMutation,
@@ -16,7 +16,7 @@ import {
 
   updateOneShortlistMutation
 } from 'twenty-shared';
-  
+
   import { CandidateDataProcessorService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-data-processor.service';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { DocumentTemplateService } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/document-template.service';
@@ -30,7 +30,7 @@ import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/e
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-  
+
   @Controller('arx-delivery')
   export class ArxDeliveryEndpoint {
     constructor(
@@ -44,17 +44,17 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
       private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
       private readonly updateChat: UpdateChat,
     ) {}
-  
 
 
-  
+
+
     @Post('create-shortlist-document')
     @UseGuards(JwtAuthGuard)
     async createShortlistDocument(@Req() request: any): Promise<object> {
       try {
         const { candidateIds } = request.body;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         console.log(
           'going to refresh chat counts by candidate Ids',
           candidateIds,
@@ -66,11 +66,11 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         console.log(
           'This is the response in create createShortlistDocument shortlist',
         );
-  
+
         return { status: 'Success' };
       } catch (err) {
         console.error('Error in create_gmail_draft_shortlist chats:', err);
-  
+
         return { status: 'Failed', error: err };
       }
     }
@@ -90,15 +90,15 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         console.log(
           'This is the response in create chatBasedShortlistDelivery shortlist',
         );
-  
+
         return { status: 'Success' };
       } catch (err) {
         console.error('Error in create_gmail_draft_shortlist chats:', err);
-  
+
         return { status: 'Failed', error: err };
       }
     }
-  
+
     @Post('create-gmail-draft-shortlist')
     @UseGuards(JwtAuthGuard)
     async chatGmailDraftShortlist(@Req() request: any): Promise<object> {
@@ -107,92 +107,93 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         const { candidateIds } = request.body;
         const origin = request.body.origin;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-        
+
         if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
           return { success: false, error: 'Invalid candidate IDs provided' };
         }
-  
+
         console.log('Creating Gmail draft shortlist for candidates:', candidateIds);
         console.log('Number of candidate IDs:', candidateIds.length);
-        
+
         // Queue the Gmail draft creation
         await this.gmailDraftShortlistQueueService.send(candidateIds, origin, apiToken);
-        
+
         console.log('Successfully queued Gmail draft shortlist creation');
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: 'Gmail draft shortlist creation queued successfully',
           status: 'queued'
         };
       } catch (err) {
         console.error('Error in create gmail draft shortlist:', err);
-        return { 
-          success: false, 
-          error: err.message || 'Failed to create Gmail draft shortlist' 
+        return {
+          success: false,
+          error: err.message || 'Failed to create Gmail draft shortlist'
         };
       }
     }
-  
+
     @Post('create-shortlist-candidates')
     @UseGuards(JwtAuthGuard)
     async createShortlistCandidates(@Req() request: any): Promise<object> {
       try {
         console.log('Create shortlist candidates called');
-        const { candidateIds, projectId } = request.body;
+        const { candidateIds } = request.body;
+        const projectId = request.body.projectId ?? request.body.jobId;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
           return { success: false, error: 'Invalid candidate IDs provided' };
         }
-  
+
         if (!projectId) {
           return { success: false, error: 'Project ID is required' };
         }
-  
+
         console.log('Processing candidates for shortlist:', candidateIds);
         console.log('Project ID:', projectId);
-  
+
         // Get job data
         const jobResponse = await this.staticGraphQLService.executeGraphQL(
           graphqlToFindManyProjects,
           { filter: { id: { eq: projectId } } },
           apiToken,
         );
-  
+
         const job = jobResponse?.data?.data?.projects?.edges?.[0]?.node;
         if (!job) {
           return { success: false, error: 'Project not found' };
         }
-  
+
         // Fetch candidate details
         const candidatesResponse = await this.staticGraphQLService.executeGraphQL(
           graphqlToFetchAllCandidateData,
           { filter: { id: { in: candidateIds } } },
           apiToken,
         );
-  
+
         const candidates = candidatesResponse?.data?.data?.candidates?.edges?.map((edge: any) => edge.node) || [];
         if (candidates.length === 0) {
           return { success: false, error: 'No candidates found' };
         }
-  
+
         // Process candidates with LLM using CandidateDataProcessorService
         const candidateDataProcessor = new CandidateDataProcessorService(
           this.workspaceQueryService,
           this.staticGraphQLService,
           this.resumeReadParseUploadService,
         );
-  
+
         const processedCandidates = await candidateDataProcessor.processCandidates(
           candidates,
           job,
           apiToken,
         );
-  
+
         if (processedCandidates.length === 0) {
           return { success: false, error: 'No candidates processed successfully' };
         }
-  
+
         // Create shortlist entries using ShortlistDocumentService
         const documentTemplateService = new DocumentTemplateService();
         const shortlistDocumentService = new ShortlistDocumentService(
@@ -201,7 +202,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
           candidateDataProcessor,
           documentTemplateService,
         );
-  
+
         // Create shortlist document (this will also create shortlist entries)
         const result = await shortlistDocumentService.createShortlistDocument(
           job,
@@ -221,9 +222,9 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
           job.id,
           apiToken,
         );
-  
+
         console.log('Successfully created shortlist candidates:', processedCandidates.length);
-  
+
         return {
           success: true,
           message: `Successfully processed ${processedCandidates.length} candidates`,
@@ -237,7 +238,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         };
       }
     }
-  
+
     @Post('create-shortlist')
     @UseGuards(JwtAuthGuard)
     async createShortlist(@Req() request: any): Promise<object> {
@@ -245,57 +246,58 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         console.log('Create shortlist called');
         const { candidateIds } = request.body;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         await this.updateChat.createShortlist(
           candidateIds,
           apiToken,
         );
-  
+
         return { status: 'Success' };
       } catch (err) {
         console.error('Error creating shortlist:', err);
-  
+
         return { status: 'Failed', error: err };
       }
     }
-  
+
     @Post('create-interview-videos')
     @UseGuards(JwtAuthGuard)
     async createInterviewVideos(@Req() request: any): Promise<object> {
       try {
         console.log('Create video interview called');
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-        const projectId = request.body.projectId;
-  
+        const projectId = request.body.projectId ?? request.body.jobId;
+
         const projectIdValidation = validateAndExtractProjectId(projectId);
         if (!projectIdValidation.isValid) {
           return createProjectIdErrorResponse(projectIdValidation.error!);
         }
-  
+
         const actualProjectId = projectIdValidation.projectId!;
-  
+
         await this.updateChat.createInterviewVideos(
           actualProjectId,
           apiToken,
         );
-  
+
         return { status: 'Success' };
       } catch (err) {
         console.log('Error creating interview videos:', err);
-  
+
         return { status: 'Failed', error: err };
       }
     }
-  
- 
-  
+
+
+
     @Post('get-shortlists-by-candidate-ids')
     @UseGuards(JwtAuthGuard)
     async getShortlistsByCandidateIds(@Req() request: any): Promise<object> {
       try {
-        const { candidateIds, projectId } = request.body;
+        const { candidateIds } = request.body;
+        const projectId = request.body.projectId ?? request.body.jobId;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
           return { success: false, error: 'Invalid candidate IDs provided' };
         }
@@ -305,7 +307,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         const response = await this.staticGraphQLService.executeGraphQL(
           findManyShortlistsquery,
           {
-            filter: { 
+            filter: {
               candidateId: { in: candidateIds },
               projectId: { eq: projectId }
             },
@@ -315,12 +317,12 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         );
         console.log('Shortlists response from server:', response.data);
         const shortlists = response?.data?.data?.shortlists?.edges?.map((edge: any) => edge.node) || [];
-        
+
         // Get candidate IDs that already have shortlists
         const existingCandidateIds = shortlists.map((shortlist: any) => shortlist.candidateId);
         console.log('Existing candidate IDs:', existingCandidateIds);
         // Find candidate IDs that don't have shortlists
-        const candidatesWithoutShortlists = candidateIds.filter((candidateId: string) => 
+        const candidatesWithoutShortlists = candidateIds.filter((candidateId: string) =>
           !existingCandidateIds.includes(candidateId)
         );
         console.log('Candidates without shortlists:', candidatesWithoutShortlists);
@@ -330,7 +332,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
           console.log('Project ID:', projectId);
           // Get candidate data for candidates without shortlists
           const candidates = await this.candidateEngagementArx.fetchAllCandidatesWithAllChatControlsByProjectId(projectId, apiToken);
-          const filteredCandidates = candidates.filter((candidate: any) => 
+          const filteredCandidates = candidates.filter((candidate: any) =>
             candidatesWithoutShortlists.includes(candidate.id)
           );
           console.log('Filtered candidates:', filteredCandidates);
@@ -369,13 +371,13 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
             console.log('Created shortlists:', createResponse.data);
             const createdShortlists = createResponse?.data?.data?.createShortlists || [];
             console.log('Created shortlists for candidates:', createdShortlists.length);
-            
+
             // Add newly created shortlists to the existing ones
             shortlists.push(...createdShortlists);
           }
         }
         console.log('Shortlists:', shortlists);
-        
+
         return {
           success: true,
           shortlists,
@@ -388,19 +390,20 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         };
       }
     }
-  
+
     @Post('save-shortlist-data')
     @UseGuards(JwtAuthGuard)
     async saveShortlistData(@Req() request: any): Promise<object> {
       try {
-        const { shortlistData, projectId } = request.body;
+        const { shortlistData } = request.body;
+        const projectId = request.body.projectId ?? request.body.jobId;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         if (!shortlistData || !Array.isArray(shortlistData)) {
           return { success: false, error: 'Invalid shortlist data provided' };
         }
         console.log('Shortlist data:', shortlistData);
-  
+
         // Process each shortlist entry
         for (const shortlist of shortlistData) {
           if (shortlist.id) {
@@ -460,7 +463,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
             );
           }
         }
-  
+
         return {
           success: true,
           message: 'Shortlist data saved successfully',
@@ -473,18 +476,19 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         };
       }
     }
-  
+
     @Post('download-shortlist-excel')
     @UseGuards(JwtAuthGuard)
     async downloadShortlistExcel(@Req() request: any): Promise<object> {
       try {
-        const { shortlistData, projectId } = request.body;
+        const { shortlistData } = request.body;
+        const projectId = request.body.projectId ?? request.body.jobId;
         const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-  
+
         if (!shortlistData || !Array.isArray(shortlistData)) {
           return { success: false, error: 'Invalid shortlist data provided' };
         }
-  
+
         // Create Excel file using the shortlist document service
         const shortlistDocumentService = new ShortlistDocumentService(
           this.workspaceQueryService,
@@ -492,19 +496,19 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
           new CandidateDataProcessorService(this.workspaceQueryService, this.staticGraphQLService, this.resumeReadParseUploadService ),
           new DocumentTemplateService(),
         );
-  
+
         // Get job data
         const jobResponse = await this.staticGraphQLService.executeGraphQL(
           queries.graphqlToFindManyProjects,
           { filter: { id: { eq: projectId } } },
           apiToken,
         );
-  
+
         const job = jobResponse?.data?.data?.projects?.edges?.[0]?.node;
         if (!job) {
           return { success: false, error: 'Project not found' };
         }
-  
+
         // Create Excel file using the public method
         const result = await shortlistDocumentService.createShortlistDocument(
           job,
@@ -513,17 +517,17 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
           request.headers.origin || 'localhost',
           true, // Create Excel file
         );
-  
+
         if (!result.success || !result.excel_path) {
           return { success: false, error: 'Failed to create Excel file' };
         }
-  
+
         const excelPath = result.excel_path;
-  
+
         // Read and return the file
         const fs = require('fs');
         const fileBuffer = fs.readFileSync(excelPath);
-  
+
         return {
           success: true,
           fileBuffer: fileBuffer.toString('base64'),
@@ -537,12 +541,13 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
         };
       }
     }
-  
+
   @Post('download-shortlist-document')
   @UseGuards(JwtAuthGuard)
   async downloadShortlistDocument(@Req() request: any): Promise<object> {
     try {
-      const { candidateIds, projectId } = request.body;
+      const { candidateIds } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
@@ -603,7 +608,8 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
   @UseGuards(JwtAuthGuard)
   async downloadShortlistDocumentQuick(@Req() request: any): Promise<object> {
     try {
-      const { candidateIds, projectId } = request.body;
+      const { candidateIds } = request.body;
+      const projectId = request.body.projectId ?? request.body.jobId;
       const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
 
       if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
@@ -659,30 +665,30 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
   ): Promise<void> {
     try {
       console.log('Updating shortlist entries with processed data for job:', projectId);
-      
+
       for (const processedCandidate of processedCandidates) {
         try {
           // Find existing shortlist entry for this candidate and job
           const existingShortlistResponse = await this.staticGraphQLService.executeGraphQL(
             findManyShortlistsquery,
-            { 
-              filter: { 
+            {
+              filter: {
                 candidateId: { eq: processedCandidate.candidate_id },
                 projectId: { eq: projectId }
-              } 
+              }
             },
             apiToken,
           );
 
           const existingShortlist = existingShortlistResponse?.data?.data?.shortlists?.edges?.[0]?.node;
-          
+
           if (existingShortlist && processedCandidate.candidate_obj) {
             console.log(`Updating shortlist entry for candidate ${processedCandidate.candidate_id}: ${existingShortlist.id}`);
-            
+
             // Extract data from processed candidate object
             const candidateData = processedCandidate.candidate_obj;
             console.log(`Candidate data from LLM for ${processedCandidate.candidate_id}:`, candidateData);
-            
+
             // Update the shortlist entry with processed data
             // Field names now match between LLM response and shortlist schema
             const updateInput = {
@@ -702,9 +708,9 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
               expectedSalary: candidateData.expectedSalary || existingShortlist.expectedSalary,
               noticePeriod: candidateData.noticePeriod || existingShortlist.noticePeriod,
             };
-            
+
             console.log(`Update input for candidate ${processedCandidate.candidate_id}:`, updateInput);
-            
+
             await this.staticGraphQLService.executeGraphQL(
               updateOneShortlistMutation,
               {
@@ -713,7 +719,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
               },
               apiToken,
             );
-            
+
             console.log(`Successfully updated shortlist entry for candidate ${processedCandidate.candidate_id}`);
           } else {
             console.log(`No existing shortlist entry found for candidate ${processedCandidate.candidate_id}`);

@@ -28,7 +28,10 @@ export class VoiceCallController {
   ) {
     const apiToken = getApiToken(request);
     if (!apiToken) return { status: 401, error: 'Unauthorized' };
-    const { candidateId, projectId, callPurpose = 'screening', channel, whatsappUserId } = body;
+    const { candidateId, callPurpose = 'screening', channel, whatsappUserId } =
+      body;
+    const projectId =
+      body.projectId ?? (body as { jobId?: string }).jobId;
     if (!candidateId || !projectId) {
       return { status: 400, error: 'candidateId and projectId required' };
     }

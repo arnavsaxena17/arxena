@@ -26,6 +26,9 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Queue/processor + delivery `jobId`→`projectId` | Controllers were aliasing HTTP `projectId` then still passing `{ jobId }` into services/queues that expect `projectId` (AI filters, compute-tokens). Processors `process-candidates` / `process-resume-uploads` / `process-ai-filters` read `jobData.jobId` while shared types enqueue `projectId`. Front `useCreateInterviewVideos` posted `{ jobId }` to project-only delivery endpoint. Fixed handoffs + shortlist/voice/cache/resume-upload aliases; upload-profiles accepts `projectName`. | `process-*-*.ts`, `candidate-sourcing.controller`, `arx-delivery.controller`, `useCreateInterviewVideos`, `candidate-search.controller`, `resume-upload.controller`, `voice-call.controller` |
+| Candidate-sourcing `projectId` body/query sweep | Front already sent `projectId` for upload-jd / create-prompts / update-chat-questions / compute-tokens / process-ai-filters / by-linkedin-urls; server still required `jobId`. Accepted `projectId ?? jobId` on those handlers + enrichment; create-prompts GraphQL input `projectId`; by-linkedin-urls returns `projectIds` (+ `jobIds` alias). Front command-menu hooks → `get-candidates-by-project-id` + `projectId`. CRX/front upload-profiles also send `projectId`/`twenty_job_id` (legacy `job_id` kept). | `candidate-sourcing.controller.ts`, `useArxCheckContactAvailability`, `useArxFetchContactDetails`, `orgChartUtils`, `ProjectPage`, `MergeProjectsModal`, `ValidationStep`, `CandidateSearchModal`, CRX `initialize.{store,internal}.ts` |
+| `upload-jd` body still required `jobId` | Front/MCP send `projectId`; controller only read `jobId` → 400 `Missing jobId or attachmentUrl`. Now accepts `projectId ?? jobId`. | `candidate-sourcing.controller.ts` `uploadJD` |
 | Start chats false “OpenAI key missing” | `apiKeysState` only hydrated when `ApiKeysProvider` mounted (Settings General / JD modal). Project page start-chat read empty atom even when key was saved. Mount provider once in `WorkspaceAppProviders`; drop nested wrappers; gate start/validate on `apiKeysLoadingState`. | `WorkspaceAppProviders.tsx`, `useStartChats.ts`, `useCheckDataIntegrityOfProject.ts`, `SettingsGeneral.tsx`, `ProjectPage.tsx`, `Projects.tsx` |
 | People findMany TOO_COMPLEX_QUERY | Phone lookup no longer uses `graphqlQueryToFindManyPeople` (nested `people→candidates→whatsappMessages` → `TOO_COMPLEX_QUERY`). `getPersonDetailsByPhoneNumber` now uses `graphqlToFetchAllCandidateData` (findManyCandidates) and synthesizes a PersonNode with `candidates.edges`. Shared people query also stripped nested 1-to-manys for other callers; messages hydrated separately where needed. Phone status `candidate.jobs` → `projects`. | `filter-candidates.ts`, `queries.ts`, `get-phone-number-status` |
 | StaticGraphQL `updatedBy` actor | `setChromeExtensionId` → `StaticGraphQLService.executeGraphQL` uses **system** auth ALS. `UpdatedByUpdateOnePreQueryHook` called `ActorFromAuthContextService`, which only handled user/apiKey/application → threw `Unable to build actor metadata`. Added `buildCreatedByFromSystem` + `isSystemAuthContext` branch (same pattern for all StaticGraphQL / job writes with actor fields). **Redeploy/restart nest** on host — `/home/ubuntu/twenty` dist still old. | `actor-from-auth-context.service.ts`, `build-created-by-from-system.util.ts` |
@@ -431,6 +434,12 @@ Front calls **project** paths; server keeps **job** aliases for site/CRX.
 
 | Front / preferred | Legacy alias | Notes |
 | --- | --- | --- |
+| `POST …/upload-jd` | (same path) | Body `projectId` (+ legacy `jobId` accepted) + `attachmentUrl` |
+| `POST …/create-prompts` | (same path) | Body `projectId` (+ legacy `jobId`); GraphQL input `projectId` |
+| `POST …/update-chat-questions` | (same path) | Body `projectId` (+ legacy `jobId`) |
+| `POST …/compute-tokens` / `process-ai-filters` | (same path) | Body `projectId` (+ legacy `jobId`) |
+| `POST …/update-contact-from-enrichment` | (same path) | Body `projectId` (+ legacy `jobId`) |
+| `GET …/candidates/by-linkedin-urls` | (same path) | Query `projectId` (+ legacy `jobId`); response `projectIds` (+ `jobIds`) |
 | `POST …/get-all-projects` | `get-all-jobs` | Response `{ projects }` (+ `jobs` alias) |
 | `POST …/arx-chat/move-candidates-to-project` | `move-candidates-to-job` | Body `projectId` (+ legacy `jobId` accepted) |
 | `POST …/get-project-by-id` | `get-job-by-id` | Body `projectId` (or `jobId`); response `{ project }` (+ `job`) |
@@ -515,6 +524,7 @@ Tracked from current tree greps — fix then tick §7.
 
 | Issue | Locations (as of 2026-07-25) |
 | --- | --- |
+| Candidate-sourcing body still `jobId`-only (no `projectId ?? jobId`) | **done** for HTTP handlers + queue processors + delivery shortlist/interview-videos + search cache + resume-upload + voice (2026-08-03). Remaining naming-only: CRX/site snake_case `job_id`/`job_name` on upload-profiles / create-project-in-arxena (intentional dual contract); shared job payloads still use field `jobName` (display name). |
 | Apollo wrong client (workspace ops → `/metadata`) | **done** as of 2026-08-03 sweep — only remaining were intentional metadata (`WORKSPACE_CREDITS`, billing) + commented video-model query |
 | ARX worker: orphan `CronProcessesModule` | Never imported → `CandidateEngagementCronService` never enqueues; `CandidateEngagementProcessor` exists in CandidateSourcing but cron producer is dead |
 | Dead `@nestjs/bull` `GoogleContactsProcessor` | `google-contacts.processor.ts` uses empty `@Process()` from `@nestjs/bull`; not in any module. Live path is `GoogleContactsQueueProcessor` |

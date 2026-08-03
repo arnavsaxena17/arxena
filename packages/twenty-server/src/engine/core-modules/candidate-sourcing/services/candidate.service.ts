@@ -2177,7 +2177,11 @@ export class CandidateService {
 
       // Extract job information from contactData
       const popupData = contactData.popup_data || {};
-      let targetProjectId = popupData.twenty_job_id || popupData.job_id || '';
+      let targetProjectId =
+        popupData.projectId ||
+        popupData.twenty_job_id ||
+        popupData.job_id ||
+        '';
       const targetJobName = popupData.job_name || '';
 
       // If we have jobName but no projectId, try to find the job by name
@@ -2331,8 +2335,12 @@ export class CandidateService {
 
       // Extract job information from contactData
       const popupData = contactData.popup_data || {};
-      let projectId = popupData.twenty_job_id || popupData.job_id || '';
-      let jobName = popupData.job_name || '';
+      let projectId =
+        popupData.projectId ||
+        popupData.twenty_job_id ||
+        popupData.job_id ||
+        '';
+      let jobName = popupData.projectName || popupData.job_name || '';
       const recruiterId = popupData.recruiterId || '';
 
       // If we have jobName but no projectId, try to find the job by name

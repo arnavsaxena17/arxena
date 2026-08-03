@@ -16,10 +16,13 @@ export class ResumeUploadQueueProcessor {
     private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
   ) {}
-  
+
   @Process(ResumeUploadQueueProcessor.name)
   async handle(jobData: ProcessResumeUploadsJobData): Promise<void> {
-    this.logger.log(`Processing resume upload job: ${jobData.jobId} with ${jobData.filePaths.length} files`);
+    const projectId =
+      jobData.projectId ??
+      (jobData as ProcessResumeUploadsJobData & { jobId?: string }).jobId;
+    this.logger.log(`Processing resume upload job: ${projectId} with ${jobData.filePaths.length} files`);
     this.logger.log(`Resume upload job - API token length: ${jobData.apiToken?.length}`);
     this.logger.log(`Resume upload job - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
 
@@ -40,7 +43,7 @@ export class ResumeUploadQueueProcessor {
       // Process the resume files
       const result = await this.resumeReadParseUploadService.processResumeFiles(
         jobData.filePaths,
-        jobData.jobId,
+        projectId,
         jobData.jobName,
         jobData.userId,
         jobData.origin,
@@ -71,7 +74,7 @@ export class ResumeUploadQueueProcessor {
 
     } catch (error) {
       this.logger.error(`Resume upload processing failed:`, error);
-      
+
       // Publish error notification
       if (jobData.userId) {
         try {
@@ -83,7 +86,7 @@ export class ResumeUploadQueueProcessor {
           this.logger.warn('Failed to publish upload error:', progressError.message);
         }
       }
-      
+
       throw error;
     }
   }

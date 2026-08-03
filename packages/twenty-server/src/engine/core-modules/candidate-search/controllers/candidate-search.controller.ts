@@ -335,7 +335,8 @@ export class CandidateSearchController {
    */
   @Get('cache/results')
   async getSearchResultsCache(
-    @Query('projectId') projectId: string,
+    @Query('projectId') projectIdQuery: string,
+    @Query('jobId') jobIdQuery: string,
     @Req() req: any,
   ) {
     try {
@@ -343,6 +344,7 @@ export class CandidateSearchController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
+      const projectId = projectIdQuery ?? jobIdQuery;
       if (
         !projectId ||
         projectId === 'job-id' ||
@@ -402,10 +404,11 @@ export class CandidateSearchController {
       if (!apiToken) {
         throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
       }
+      const projectId = body?.projectId ?? (body as { jobId?: string })?.jobId;
       if (
-        !body?.projectId ||
-        body.projectId === 'job-id' ||
-        body.projectId === 'project-id'
+        !projectId ||
+        projectId === 'job-id' ||
+        projectId === 'project-id'
       ) {
         throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
       }
@@ -413,7 +416,7 @@ export class CandidateSearchController {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       await this.searchResultsCacheService.set(
         workspaceId,
-        body.projectId,
+        projectId,
         body.results ?? [],
         body.metadata ?? {
           totalCount: 0,

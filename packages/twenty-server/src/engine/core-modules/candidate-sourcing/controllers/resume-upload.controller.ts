@@ -47,8 +47,15 @@ export class ResumeUploadController {
       throw new HttpException('No files uploaded', HttpStatus.BAD_REQUEST);
     }
 
-    if (!body.projectId || !body.jobName) {
-      throw new HttpException('projectId and jobName are required', HttpStatus.BAD_REQUEST);
+    const projectId = body.projectId ?? (body as { jobId?: string }).jobId;
+    const jobName =
+      body.jobName ?? (body as { projectName?: string }).projectName;
+
+    if (!projectId || !jobName) {
+      throw new HttpException(
+        'projectId and jobName are required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // Validate file types
@@ -59,7 +66,7 @@ export class ResumeUploadController {
     ];
 
     const invalidFiles = files.filter(
-      file => !supportedTypes.includes(file.mimetype) && 
+      file => !supportedTypes.includes(file.mimetype) &&
       !file.originalname.match(/\.(pdf|docx|doc)$/i)
     );
 
@@ -74,18 +81,18 @@ export class ResumeUploadController {
       // Save uploaded files to temporary directory
       const filePaths = await this.resumeReadParseUploadService.saveUploadedFiles(
         files,
-        body.projectId,
+        projectId,
       );
 
       // Extract user info from request
       const userId = request.user?.id || 'unknown';
-      
+
       // Debug request headers
       this.logger.log(`Resume upload - Authorization header: ${request.headers.authorization}`);
       this.logger.log(`Resume upload - All headers keys: ${Object.keys(request.headers).join(', ')}`);
-      
+
       const apiToken = request.headers.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '') || '';
-      
+
       this.logger.log(`Resume upload - API token length: ${apiToken?.length}`);
       this.logger.log(`Resume upload - User ID: ${userId}`);
 
@@ -129,8 +136,8 @@ export class ResumeUploadController {
       // Queue the resume files for processing
       await this.processResumeUploadsService.queueResumeUpload(
         filePaths,
-        body.projectId,
-        body.jobName,
+        projectId,
+        jobName,
         workspaceMemberId, // Use workspace member ID for progress reporting
         origin,
         apiToken,

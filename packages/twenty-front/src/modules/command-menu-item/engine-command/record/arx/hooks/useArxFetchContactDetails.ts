@@ -88,7 +88,7 @@ export const useArxFetchContactDetails = () => {
           linkedinUrl,
           emails: contactResult.emails || [],
           phones: contactResult.phones || [],
-          jobId: projectId,
+          projectId,
         }),
       });
     },
@@ -117,7 +117,7 @@ export const useArxFetchContactDetails = () => {
       const projectId = getProjectIdFromPathname(location.pathname);
 
       const response = await fetch(
-        `${baseUrl}/candidate-sourcing/get-candidates-by-job-id`,
+        `${baseUrl}/candidate-sourcing/get-candidates-by-project-id`,
         {
           method: 'POST',
           headers: {
@@ -125,7 +125,7 @@ export const useArxFetchContactDetails = () => {
             Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
           },
           body: JSON.stringify({
-            jobId: projectId,
+            projectId,
             candidateIds: selectedIds,
           }),
         },

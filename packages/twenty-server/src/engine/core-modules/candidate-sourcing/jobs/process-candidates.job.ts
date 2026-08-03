@@ -25,7 +25,7 @@ export class CandidateQueueProcessor {
   ) {
     console.log('CandidateQueueProcessor initialized');
   }
-  
+
   @Process(CandidateQueueProcessor.name)
   async handle(jobData: ProcessCandidatesJobData): Promise<void> {
 
@@ -35,6 +35,10 @@ export class CandidateQueueProcessor {
 
     const batchNumber = batchInfo ? parseInt(batchInfo[1], 10) : 0;
     const totalBatches = batchInfo ? parseInt(batchInfo[2], 10) : 1;
+    const projectId =
+      jobData.projectId ??
+      (jobData as ProcessCandidatesJobData & { jobId?: string }).jobId;
+    const jobName = jobData.jobName;
 
     // Determine initial candidate count (from rawData if available, otherwise from data)
     const initialCandidateCount = jobData.rawData?.length || jobData.data.length;
@@ -44,7 +48,7 @@ export class CandidateQueueProcessor {
     );
 
     // Add job processing validation to prevent duplicate processing
-    const jobKey = `${jobData.jobId}-${jobData.dataSource || 'processed'}-batch-${batchNumber}`;
+    const jobKey = `${projectId}-${jobData.dataSource || 'processed'}-batch-${batchNumber}`;
     console.log(`Processing job with key: ${jobKey}`);
 
     try {
@@ -53,7 +57,7 @@ export class CandidateQueueProcessor {
       // If raw data is provided, transform it first
       if (jobData.rawData && jobData.rawData.length > 0 && jobData.dataSource) {
         console.log(`Transforming ${jobData.rawData.length} raw candidates from source: ${jobData.dataSource}`);
-        
+
         // Check if data source is supported
         if (!this.dataSourceTransformerFactory.isDataSourceSupported(jobData.dataSource)) {
           throw new Error(`Unsupported data source: ${jobData.dataSource}`);
@@ -61,8 +65,8 @@ export class CandidateQueueProcessor {
 
         // Transform candidates to master format
         const transformationContext = {
-          jobId: jobData.jobId,
-          jobName: jobData.jobName,
+          projectId,
+          jobName,
           userId: jobData.userId || '',
           timestamp: jobData.timestamp,
         };
@@ -80,19 +84,19 @@ export class CandidateQueueProcessor {
         'Received in CandidateQueueProcessor_batch process chunk ::',
         candidatesToProcess.map((c) => c.uniqueStringKey),
       );
-      
+
       // Publish progress update before processing
       if (jobData.userId) {
         try {
           const actualBatchSize = candidatesToProcess.length;
           const progress = Math.round((batchNumber / totalBatches) * 100);
-          
+
           // Calculate processed candidates: sum of previous batches + current batch
           // For now, we estimate based on batch number and current batch size
           // This is approximate since we don't know exact sizes of previous batches
           const estimatedProcessedCandidates = (batchNumber - 1) * actualBatchSize + actualBatchSize;
           const estimatedTotalCandidates = totalBatches * actualBatchSize;
-          
+
           await this.uploadProgressPubSubService.publishUploadProcessing(
             jobData.userId,
             progress,
@@ -105,14 +109,14 @@ export class CandidateQueueProcessor {
           console.warn('Failed to publish upload progress:', progressError.message);
         }
       }
-      
+
       console.log(`Candidate queue - API token length: ${jobData.apiToken?.length}`);
       console.log(`Candidate queue - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
 
       const createdCandidateIds = await this.candidateService.processChunk(
         candidatesToProcess,
-        jobData.jobId,
-        jobData.jobName,
+        projectId,
+        jobName,
         jobData.timestamp,
         jobData.origin,
         jobData.apiToken,
@@ -181,7 +185,7 @@ export class CandidateQueueProcessor {
         `Batch ${batchNumber}/${totalBatches} processing failed:`,
         error,
       );
-      
+
       // Publish error notification
       if (jobData.userId) {
         try {
@@ -193,7 +197,7 @@ export class CandidateQueueProcessor {
           console.warn('Failed to publish upload error:', progressError.message);
         }
       }
-      
+
       throw error;
     }
   }
@@ -202,7 +206,7 @@ export class CandidateQueueProcessor {
   //   try {
   //     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
   //     const users = await this.whitelistProcessingService.getUsersForWorkspace(workspaceId, apiToken);
-      
+
   //     for (const user of users) {
   //       try {
   //         const identifiers = await this.whitelistProcessingService.fetchCandidateIdentifiersForUser(
@@ -210,14 +214,14 @@ export class CandidateQueueProcessor {
   //           apiToken,
   //         );
   //         await this.whitelistProcessingService.redisService.loadWhitelist(user.id, identifiers);
-          
+
   //         for (const identifier of identifiers) {
   //           await this.whitelistProcessingService.redisService.createIdentifierToUserMapping(
   //             identifier,
   //             user.id,
   //           );
   //         }
-          
+
   //         console.log(`Updated whitelist with ${identifiers.length} identifiers for user ${user.id}`);
   //       } catch (userError) {
   //         console.error(

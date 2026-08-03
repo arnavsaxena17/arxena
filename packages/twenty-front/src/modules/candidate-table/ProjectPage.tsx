@@ -16,7 +16,6 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import axios from 'axios';
 import { IconCheckbox } from 'twenty-ui/icon';
 
-import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
@@ -179,7 +178,7 @@ export const ProjectPage: React.FC = () => {
 
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useAtomState(isArxUploadJDModalOpenState);
-  const [arxUploadJDModalMode, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
+  const [, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
   const { openAddJobModal } = useOpenAddProjectModal();
 
   // Check if candidate object exists before initializing the spreadsheet import hook
@@ -350,6 +349,8 @@ export const ProjectPage: React.FC = () => {
       const uploadRequestBody = {
         linkedin_search_results: candidates,
         data_source: 'linkedin_search',
+        projectId,
+        twenty_job_id: projectId,
         job_id: projectId,
         job_name: currentJob?.name || 'LinkedIn Search Results',
         recruiterId: currentWorkspaceMember?.id,
@@ -829,15 +830,6 @@ export const ProjectPage: React.FC = () => {
               <InterviewCreationModal
                 objectNameSingular="project"
                 objectRecordId={selectedRecordId || '0'}
-              />
-            ) : (
-              <></>
-            )}
-
-            {isArxUploadJDModalOpen ? (
-              <ArxJDUploadModal
-                objectNameSingular="project"
-                objectRecordId={arxUploadJDModalMode === 'edit' ? (projectId || '0') : ''}
               />
             ) : (
               <></>

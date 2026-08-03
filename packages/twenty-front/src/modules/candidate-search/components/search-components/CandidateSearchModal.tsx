@@ -672,16 +672,18 @@ export const CandidateSearchModal = () => {
     try {
       console.log('Uploading selected candidates:', searchState.selectedCandidates.length);
 
-      // Prepare the request body for upload-profiles endpoint
+      const uploadProjectId = parsedJD.id || 'standalone_search';
       const uploadRequestBody = {
         linkedin_search_results: searchState.selectedCandidates,
         data_source: 'linkedin_search',
-        job_id: parsedJD.id || 'standalone_search',
+        projectId: uploadProjectId,
+        twenty_job_id: uploadProjectId,
+        job_id: uploadProjectId,
         job_name: parsedJD.name,
         recruiterId: currentWorkspaceMember?.id,
         // Include job information for context
         job: {
-          id: parsedJD.id || 'standalone_search',
+          id: uploadProjectId,
           name: parsedJD.name,
           company: parsedJD.companyName,
           location: parsedJD.jobLocation,

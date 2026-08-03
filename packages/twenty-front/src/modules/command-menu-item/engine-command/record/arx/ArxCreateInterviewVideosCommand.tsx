@@ -6,11 +6,11 @@ export const ArxCreateInterviewVideosCommand = () => {
   const { resolveRecordIds } = useArxCandidateRecordsFromHeadlessContext({
     recordGqlFields: { id: true },
   });
-  const { createVideosForJobs } = useCreateInterviewVideos({});
+  const { createVideosForProjects } = useCreateInterviewVideos({});
 
   const handleExecute = async () => {
     const recordIds = await resolveRecordIds();
-    await createVideosForJobs(recordIds);
+    await createVideosForProjects(recordIds);
   };
 
   return (

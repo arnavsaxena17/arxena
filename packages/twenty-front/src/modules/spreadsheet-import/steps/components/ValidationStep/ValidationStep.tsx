@@ -332,6 +332,7 @@ export const ValidationStep = ({
       job_id: project?.arxenaSiteId,
       job_name: project?.name,
       twenty_job_id: project?.id,
+      projectId: project?.id,
       job_data_source: dataSource,
     };
 

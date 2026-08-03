@@ -15,7 +15,6 @@ import { Mixpanel } from '~/mixpanel';
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
-import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
@@ -787,12 +786,6 @@ export const Projects = () => {
                   objectNameSingular="project"
                   objectRecordId={candidateId}
                 />
-              ) : (
-                <></>
-              )}
-
-              {isArxUploadJDModalOpen ? (
-                <ArxJDUploadModal objectNameSingular="project" objectRecordId="" />
               ) : (
                 <></>
               )}

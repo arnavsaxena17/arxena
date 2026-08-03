@@ -7,6 +7,7 @@ import { SharedAppProviders } from '@/app/components/SharedAppProviders';
 import { GotoHotkeysEffectsProvider } from '@/app/effect-components/GotoHotkeysEffectsProvider';
 import { InitializeQueryParamStateEffect } from '@/app/effect-components/InitializeQueryParamStateEffect';
 import { PageChangeEffect } from '@/app/effect-components/PageChangeEffect';
+import { GlobalArxJDUploadModal } from '@/arx-jd-upload/components/GlobalArxJDUploadModal';
 import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { AuthProvider } from '@/auth/components/AuthProvider';
 import { SignOutOnOtherTabSignOutEffect } from '@/auth/effect-components/SignOutOnOtherTabSignOutEffect';
@@ -81,6 +82,7 @@ export const WorkspaceAppProviders = () => {
                                       <PageTitle title={pageTitle} />
                                       <PageFavicon />
                                       <Outlet />
+                                      <GlobalArxJDUploadModal />
                                       <GlobalFilePreviewModal />
                                       <CommandMenuConfirmationModalManager />
                                       <CommandRunner />

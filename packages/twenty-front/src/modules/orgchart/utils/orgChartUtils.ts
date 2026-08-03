@@ -367,6 +367,8 @@ export const uploadOrgChartCandidatesToJob = async (
   const body: Record<string, unknown> = {
     candidates: candidatesPayload,
     data_source: 'linkedin_premium',
+    projectId,
+    twenty_job_id: projectId,
     job_id: projectId,
     job_name: jobName,
     recruiterId,
