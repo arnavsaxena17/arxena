@@ -1,13 +1,41 @@
-import { zodResponseFormat } from 'openai/helpers/zod';
 import { ChatCompletionMessageParam } from 'openai/resources';
-import { ChatHistoryItem, FindManyWorkspaceMembers } from 'twenty-shared';
+import {
+  allStatusesArray,
+  ChatHistoryItem,
+  FindManyWorkspaceMembers,
+} from 'twenty-shared';
+import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
-import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
+// openai/helpers/zod zodResponseFormat still uses Zod 3 converters and
+// collapses Zod 4 object schemas to { type: 'string' }
+const conversationStageSchema = z.object({
+  stageOfTheConversation: z.enum(allStatusesArray),
+});
+
+const toOpenAiJsonSchemaResponseFormat = (
+  schema: z.ZodType,
+  name: string,
+) => {
+  const jsonSchema = z.toJSONSchema(schema, {
+    target: 'draft-7',
+  }) as Record<string, unknown>;
+
+  delete jsonSchema['$schema'];
+
+  return {
+    type: 'json_schema' as const,
+    json_schema: {
+      name,
+      strict: true,
+      schema: jsonSchema,
+    },
+  };
+};
 
 export class StageWiseClassification {
   constructor(
@@ -94,35 +122,31 @@ export class StageWiseClassification {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const llmClients =
       await this.workspaceQueryService.initializeLLMClients(workspaceId);
-    
+
     if (!llmClients || !llmClients.openAIclient) {
       console.error('OpenAI client not initialized properly');
       return 'ONLY_ADDED_NO_CONVERSATION';
     }
-    
+
     const { openAIclient } = llmClients;
-    
+
     try {
       const completion = await openAIclient.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: messagesToLLM,
-        response_format: zodResponseFormat(
-          new ToolCallingAgents(
-            this.workspaceQueryService,
-            this.staticGraphQLService,
-          )
-            .currentConversationStage,
+        response_format: toOpenAiJsonSchemaResponseFormat(
+          conversationStageSchema,
           'conversationStage',
         ),
       });
-      
+
       if (!completion || !completion.choices || !completion.choices[0]) {
         console.error('Invalid completion response from OpenAI');
         return 'ONLY_ADDED_NO_CONVERSATION';
       }
-      
+
       const content = completion.choices[0].message.content;
-      
+
       if (!content) {
         console.log('No content in completion response');
         return 'ONLY_ADDED_NO_CONVERSATION';

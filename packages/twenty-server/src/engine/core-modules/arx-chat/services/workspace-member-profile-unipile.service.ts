@@ -150,7 +150,6 @@ export class WorkspaceMemberProfileUnipileService {
       workspaceMemberProfileFilterByMemberId(workspaceMemberId),
       authToken,
     );
-    this.logger.log(`Response in FIND PROFILE NODE BY WORKSPACE MEMBER ID: ${JSON.stringify(response, null, 2)}`);
     return extractWorkspaceMemberProfileNode(response);
   }
 
