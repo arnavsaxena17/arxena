@@ -153,7 +153,7 @@ export class AiFilteringService {
         return {
           modelName: e.modelName,
           prompt: e.prompt,
-          selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
+          selectedModel: e.selectedModel || 'gpt-4o-mini',
           fields: e.fields || e.filterFields || [],
           selectedMetadataFields: selectedMetadataFields.filter(
             (field) => field !== 'resume',
@@ -337,7 +337,7 @@ export class AiFilteringService {
         return {
           modelName: e.modelName,
           prompt: e.prompt,
-          selectedModel: e.selectedModel || 'gpt-5.1-chat-latest',
+          selectedModel: e.selectedModel || 'gpt-4o-mini',
           fields: e.fields || e.filterFields || [],
           selectedMetadataFields: selectedMetadataFields.filter(
             (field) => field !== 'resume',

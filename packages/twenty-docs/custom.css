@@ -1,3 +1,8 @@
+/* Hide Mintlify's draggable "compiling..." status pill (local mintlify dev). */
+div[role='status'].cursor-grab {
+  display: none !important;
+}
+
 /* Navbar / sidebar brand mark — Windows-tile rounded plate (~14%) */
 header img[src*='logo'],
 nav img[src*='logo'],

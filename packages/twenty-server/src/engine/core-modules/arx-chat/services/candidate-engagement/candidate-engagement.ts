@@ -30,6 +30,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
 import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -74,6 +75,8 @@ export class CandidateEngagementArx {
     @Optional() private readonly updateChat?: any, // UpdateChat type to avoid circular dependency
     @Optional()
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    @Optional()
+    private readonly calendarEmailService?: CalendarEmailService,
   ) {
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
       workspaceQueryService,
@@ -296,6 +299,7 @@ export class CandidateEngagementArx {
           this.workspaceQueryService,
           this.staticGraphQLService,
           this.workspaceMemberProfileUnipileService,
+          this.calendarEmailService,
         ).createCompletion(
           mostRecentMessageArr,
           candidateJob as Project,
@@ -353,7 +357,7 @@ export class CandidateEngagementArx {
       },
     }, apiToken);
 
-    const candidates = response?.data?.data?.candidates as { 
+    const candidates = response?.data?.data?.candidates as {
       edges: CandidateEdge[];
       pageInfo: PageInfo;
     } | undefined;
@@ -399,7 +403,7 @@ export class CandidateEngagementArx {
     //   response?.data?.data?.whatsappMessages?.edges.length,
     // );
 
-    const messages = response?.data?.data?.whatsappMessages as { 
+    const messages = response?.data?.data?.whatsappMessages as {
       edges: MessageNode[];
       pageInfo: PageInfo;
     } | undefined;
@@ -555,7 +559,7 @@ export class CandidateEngagementArx {
       filter: { id: { in: candidateIds } },
     }, apiToken);
 
-    const candidates = response?.data?.data?.candidates as { 
+    const candidates = response?.data?.data?.candidates as {
       edges: CandidateEdge[];
       pageInfo: PageInfo;
     } | undefined;
@@ -611,13 +615,13 @@ export class CandidateEngagementArx {
     const graphqlVariables = {
       idToUpdate: candidateId,
       input: { [chatControl.chatControlType]: true, stopChat: false },
-    };  
+    };
     const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
     if (response.data.errors) {
       console.log('Error in startChat:', response.data.errors);
     }
-    
+
     // console.log(
     //   'Response from create ChatControl',
     //   response.data.data?.updateCandidate,
@@ -755,7 +759,7 @@ export class CandidateEngagementArx {
           graphqlToFetchAllCandidateDataWithFieldValues, { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
           apiToken,
         );
-        const candidates = response?.data?.data?.candidates as { 
+        const candidates = response?.data?.data?.candidates as {
           edges: CandidateEdge[];
           pageInfo: PageInfo;
         } | undefined;
@@ -783,7 +787,7 @@ export class CandidateEngagementArx {
     }
   }
 
-  
+
   async fetchAllCandidatesWithAllChatControls(
     chatControlType: chatControlType,
     apiToken: string,
@@ -828,7 +832,7 @@ export class CandidateEngagementArx {
             orderBy: [{ updatedAt: 'DESC' }],
           }, apiToken);
 
-        const candidates = response?.data?.data?.candidates as { 
+        const candidates = response?.data?.data?.candidates as {
           edges: CandidateEdge[];
           pageInfo: PageInfo;
         } | undefined;
@@ -938,7 +942,7 @@ export class CandidateEngagementArx {
           }
 
           const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
-          const candidates = response?.data?.data?.candidates as { 
+          const candidates = response?.data?.data?.candidates as {
             edges: CandidateEdge[];
             pageInfo: PageInfo;
           } | undefined;
@@ -1039,7 +1043,7 @@ export class CandidateEngagementArx {
         { filter: { isActive: { eq: true } } },
         apiToken,
       );
-      const activeJobs = response?.data?.data?.projects as { 
+      const activeJobs = response?.data?.data?.projects as {
         edges: ProjectEdge[];
         pageInfo: PageInfo;
       } | undefined;
@@ -1152,12 +1156,12 @@ export class CandidateEngagementArx {
 
 
     console.log("arxenaSiteBaseUrl::", arxenaSiteBaseUrl)
-    
+
     let config = {
       method: 'post',
       maxBodyLength: Infinity,
       url: arxenaSiteBaseUrl+'/get_linkedin_unread_messages',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },

@@ -90,9 +90,9 @@ export function calculateCost(
   const pricing = MODEL_PRICING[normalizedModel];
 
   if (!pricing) {
-    // Fallback to gpt-5.1-chat-latest pricing if model not found
-    console.warn(`Model ${model} not found in pricing table, using gpt-5.1-chat-latest pricing`);
-    const fallbackPricing = MODEL_PRICING['gpt-5.1-chat-latest'];
+    // Fallback to gpt-4o-mini pricing if model not found
+    console.warn(`Model ${model} not found in pricing table, using gpt-4o-mini pricing`);
+    const fallbackPricing = MODEL_PRICING['gpt-4o-mini'];
     return calculateCostWithPricing(fallbackPricing, inputTokens, outputTokens, cachedTokens, model);
   }
 
@@ -112,7 +112,7 @@ function calculateCostWithPricing(
   // Calculate costs (prices are per 1M tokens)
   const inputCost = (inputTokens / 1_000_000) * pricing.input;
   const outputCost = (outputTokens / 1_000_000) * pricing.output;
-  
+
   let cachedCost: number | undefined;
   if (cachedTokens && cachedTokens > 0 && pricing.cachedInput) {
     cachedCost = (cachedTokens / 1_000_000) * pricing.cachedInput;
@@ -157,7 +157,7 @@ function normalizeModelName(model: string): string {
     model,
     model.replace(/-latest$/, ''),
     model.replace(/-\d{4}-\d{2}-\d{2}$/, ''),
-    model.split('-').slice(0, 3).join('-'), // e.g., gpt-5.1-chat-latest -> gpt-5.1-chat
+    model.split('-').slice(0, 3).join('-'), // e.g., gpt-4o-mini-search-preview -> gpt-4o-mini
   ];
 
   for (const variation of variations) {

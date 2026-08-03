@@ -810,7 +810,27 @@ export class UpdateChat {
         'GRAPHQL WITH WHATSAPP MESSAGE:',
         createNewWhatsappMessageUpdateVariables?.input?.message,
       );
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateOneNewWhatsappMessage, createNewWhatsappMessageUpdateVariables, apiToken);
+      const response = (await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToCreateOneNewWhatsappMessage,
+        createNewWhatsappMessageUpdateVariables,
+        apiToken,
+      )) as {
+        data?: {
+          errors?: Array<{ message?: string }>;
+          data?: unknown;
+        };
+      };
+
+      const graphQLErrors = response?.data?.errors;
+      if (graphQLErrors && graphQLErrors.length > 0) {
+        console.error(
+          'createWhatsappMessage failed:',
+          graphQLErrors.map((error) => error.message).join('; '),
+        );
+
+        return undefined;
+      }
+
       const recruiterId = candidate?.projects?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
@@ -1313,8 +1333,9 @@ export class UpdateChat {
             continue;
           }
 
+          // Record id must be a UUID; Unipile ids go in whatsappMessageId for dedupe
           const whatsappMessageObj: whatappUpdateMessageObjType = {
-            id: unipileMessageId,
+            id: uuidv4(),
             phoneNumberFrom: phoneFrom,
             phoneNumberTo: phoneTo,
             messageType: isFromConnectedUser ? 'botMessage' : 'whatsapp-unipile',
@@ -1341,7 +1362,7 @@ export class UpdateChat {
             whatsappMessageType: this.determineUnipileMessageType(unipileMessage),
           };
 
-          await this.createAndUpdateWhatsappMessage(
+          const createdMessage = await this.createAndUpdateWhatsappMessage(
             candidate,
             whatsappMessageObj,
             apiToken,
@@ -1349,6 +1370,14 @@ export class UpdateChat {
               ? { createdAt: unipileMessage.timestamp }
               : undefined,
           );
+
+          if (!createdMessage) {
+            errors++;
+            console.error(
+              `❌ Failed to persist Unipile message ${unipileMessageId}`,
+            );
+            continue;
+          }
 
           existingMessageIds.add(unipileMessageId);
           if (providerId) {

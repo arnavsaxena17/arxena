@@ -11,6 +11,7 @@ import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -19,6 +20,7 @@ export class ChatControls {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly calendarEmailService?: CalendarEmailService,
   ) {}
 
   async getTools(candidateJob: Project, chatControl: ChatControlsObjType) {
@@ -27,18 +29,21 @@ export class ChatControls {
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.workspaceMemberProfileUnipileService,
+        this.calendarEmailService,
       ).getStartChatTools(candidateJob);
     } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.workspaceMemberProfileUnipileService,
+        this.calendarEmailService,
         ).getVideoInterviewTools(candidateJob);
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.workspaceMemberProfileUnipileService,
+        this.calendarEmailService,
         ).getStartMeetingSchedulingTools(candidateJob);
     }
   }

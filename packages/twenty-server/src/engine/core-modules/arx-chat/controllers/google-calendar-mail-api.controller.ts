@@ -93,6 +93,7 @@ export class GoogleControllers {
     private readonly emailService: EmailService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly calendarEmailService: CalendarEmailService,
   ) {}
 
   @Get('calendar-events')
@@ -113,7 +114,7 @@ export class GoogleControllers {
         orderBy: 'startTime',
       };
 
-      const response = await new CalendarEmailService().getCalendarEvents(
+      const response = await this.calendarEmailService.getCalendarEvents(
         calendarParams,
         apiToken,
       );
@@ -481,7 +482,7 @@ export class GoogleControllers {
         ],
       },
     };
-    const response = await new CalendarEmailService().createNewCalendarEvent(
+    const response = await this.calendarEmailService.createNewCalendarEvent(
       calendarEventObj,
       apiToken,
     );

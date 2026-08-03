@@ -39,6 +39,7 @@ export class ToolCallingAgents {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly calendarEmailService?: CalendarEmailService,
   ) {}
   currentConversationStage = z.object({
     stageOfTheConversation: z.enum(allStatusesArray),
@@ -382,7 +383,13 @@ export class ToolCallingAgents {
       },
     };
 
-    await new CalendarEmailService().createNewCalendarEvent(
+    if (!this.calendarEmailService) {
+      throw new Error(
+        'CalendarEmailService is not available for schedule_meeting',
+      );
+    }
+
+    await this.calendarEmailService.createNewCalendarEvent(
       calendarEventObj,
       apiToken,
     );

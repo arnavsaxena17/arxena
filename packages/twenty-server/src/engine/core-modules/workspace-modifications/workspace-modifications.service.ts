@@ -326,20 +326,10 @@ export class WorkspaceQueryService {
       return null;
     }
 
-    const dataSources = await this.dataSourceRepository.find({
-      where: {
-        workspaceId: In(workspaceIds),
-      },
-    });
-    const workspaceIdsWithDataSources = new Set(
-      dataSources.map((ds) => ds.workspaceId),
-    );
-
+    // Schema name is derived from workspaceId (getWorkspaceSchemaName) — do not
+    // gate on core.dataSource rows; that table can be empty after ORM migrations
+    // while tenant schemas still exist.
     for (const workspaceId of workspaceIds) {
-      if (!workspaceIdsWithDataSources.has(workspaceId)) {
-        continue;
-      }
-
       const schema = this.getDataSourceSchema(workspaceId);
       const profileTable = await this.resolveWorkspaceMemberProfileTableName(
         schema,

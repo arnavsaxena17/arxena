@@ -1,7 +1,6 @@
 import { Logger } from '@nestjs/common';
 
 import { Command, CommandRunner } from 'nest-commander';
-import { In } from 'typeorm';
 
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
@@ -30,18 +29,10 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
     let linkedinUpserts = 0;
 
     const workspaceIds = await this.workspaceQueryService.getWorkspaces();
-    const dataSources = await this.workspaceQueryService.dataSourceRepository.find(
-      {
-        where: { workspaceId: In(workspaceIds) },
-      },
-    );
-    const eligible = new Set(dataSources.map((d) => d.workspaceId));
 
+    // Iterate all workspaces; schema is derived from workspaceId. Do not require
+    // core.dataSource rows (often empty after ORM migrations).
     for (const workspaceId of workspaceIds) {
-      if (!eligible.has(workspaceId)) {
-        continue;
-      }
-
       const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
       const profileTable =
         await this.workspaceQueryService.resolveWorkspaceMemberProfileTableName(

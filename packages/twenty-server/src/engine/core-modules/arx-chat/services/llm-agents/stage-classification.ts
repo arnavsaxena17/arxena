@@ -104,7 +104,7 @@ export class StageWiseClassification {
     
     try {
       const completion = await openAIclient.chat.completions.create({
-        model: 'gpt-5.1-chat-latest',
+        model: 'gpt-4o-mini',
         messages: messagesToLLM,
         response_format: zodResponseFormat(
           new ToolCallingAgents(

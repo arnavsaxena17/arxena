@@ -50,7 +50,7 @@ export class ClassifyMessageService {
       const userPrompt = prompt.user.replace('{{message}}', message);
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-5.1-chat-latest',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },

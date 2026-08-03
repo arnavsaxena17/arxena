@@ -14,6 +14,7 @@ import { GoogleControllers } from 'src/engine/core-modules/arx-chat/controllers/
 import { MetaWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/meta-whatsapp.controller';
 import { WhatsappWebhook } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-webhook.controller';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { DataSourceEntity } from 'src/engine/metadata-modules/data-source/data-source.entity';
 // import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
@@ -177,6 +178,7 @@ const conditionalImports = isWorker
     OrgChartOutreachController,
   ],
   providers: [
+    CalendarEmailService,
     GoogleSheetsService,
     PersonService,
     CandidateService,

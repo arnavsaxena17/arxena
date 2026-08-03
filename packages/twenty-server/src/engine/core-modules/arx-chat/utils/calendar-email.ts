@@ -1,42 +1,49 @@
-import { GoogleCalendarController } from 'src/engine/core-modules/calendar-events/google-calendar.controller';
+import { Injectable } from '@nestjs/common';
+
 import { GoogleCalendarService } from 'src/engine/core-modules/calendar-events/google-calendar.service';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
 
+@Injectable()
 export class CalendarEmailService {
+  constructor(
+    private readonly googleCalendarService: GoogleCalendarService,
+  ) {}
+
   async createNewCalendarEvent(
     calendarEventData: CalendarEventType,
     apiToken: string,
   ) {
-    // Create a new calendar event
-    const googleCalendarService = new GoogleCalendarService();
-    const googleCalendarController = new GoogleCalendarController(
-      googleCalendarService,
-    );
-    const request = {
-      headers: { authorization: `Bearer ${apiToken}` },
-      body: calendarEventData,
-    };
-    const response = await googleCalendarController
-      .createEventOfController(request as any)
-      .catch(console.error);
-
-    // console.log("This is the response from the calendar event creation", calendarEventResponse.data);
-    return response;
+    try {
+      const auth = await this.googleCalendarService.authorize(apiToken);
+      return await this.googleCalendarService.createEvent(
+        auth,
+        calendarEventData,
+      );
+    } catch (error) {
+      console.error('Error creating calendar event: ', error);
+      throw error;
+    }
   }
 
-  async getCalendarEvents(params: any, apiToken: string) {
-    const googleCalendarService = new GoogleCalendarService();
-    const googleCalendarController = new GoogleCalendarController(
-      googleCalendarService,
-    );
-    const request = {
-      headers: { authorization: `Bearer ${apiToken}` },
-      query: params,
-    };
-    const response = await googleCalendarController
-      .getEventsOfController(request as any)
-      .catch(console.error);
+  async getCalendarEvents(
+    params: { timeMin?: string; timeMax?: string },
+    apiToken: string,
+  ) {
+    try {
+      const auth = await this.googleCalendarService.authorize(apiToken);
+      const events = await this.googleCalendarService.listEvents(
+        auth,
+        params?.timeMin,
+        params?.timeMax,
+      );
 
-    return response;
+      return {
+        status: 'success',
+        data: events,
+      };
+    } catch (error) {
+      console.error('Error fetching calendar events: ', error);
+      throw error;
+    }
   }
 }

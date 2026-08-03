@@ -13,6 +13,12 @@ import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTabl
 import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
+import {
+    clearPersistedTableFilters,
+    loadPersistedTableFilters,
+    mapPersistedFiltersToColumnIndexes,
+    savePersistedTableFilters,
+} from '@/candidate-table/utils/persist-table-filters';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
@@ -351,6 +357,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Guard to prevent sort/apply loops
     const isApplyingSortRef = useRef(false);
+    // Guard to prevent afterFilter from clearing persisted filters while restoring
+    const isApplyingFilterRef = useRef(false);
+    const hasRestoredFiltersRef = useRef(false);
+    const filterRestoreStartedAtRef = useRef<number | null>(null);
     // Store sortConfig in ref to avoid recreating refreshData callback
     const sortConfigRef = useRef<SortConfig[]>(tableState.sortConfig);
 
@@ -358,6 +368,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     useEffect(() => {
       sortConfigRef.current = tableState.sortConfig;
     }, [tableState.sortConfig]);
+
+    useEffect(() => {
+      hasRestoredFiltersRef.current = false;
+      filterRestoreStartedAtRef.current = null;
+    }, [projectId]);
+
+    useEffect(() => {
+      if (tableState.isLoading) {
+        hasRestoredFiltersRef.current = false;
+        filterRestoreStartedAtRef.current = null;
+      }
+    }, [tableState.isLoading]);
 
     const areSortConfigsEqual = (a?: SortConfig[] | null, b?: SortConfig[] | null) => {
       if (!a && !b) return true;
@@ -602,6 +624,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               }
             }
           }
+
+          // Filters are restored via useEffect once HotTable is mounted after load
         }, 100); // Small delay to ensure table is updated
 
         // Show notification using the new system
@@ -624,6 +648,83 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         throw error;
       }
     }, [projectId, setTableState, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCount]);
+
+    const reapplyPersistedFilters = useCallback((force = false) => {
+      if (!force && hasRestoredFiltersRef.current) {
+        return false;
+      }
+
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) {
+        return false;
+      }
+
+      const filtersPlugin = hot.getPlugin('filters');
+      if (!filtersPlugin) {
+        return false;
+      }
+
+      const columns = hot.getSettings().columns as
+        | Array<{ data?: string | number } | undefined>
+        | undefined;
+      const persistedFilters = loadPersistedTableFilters(projectId);
+
+      if (persistedFilters.length === 0) {
+        hasRestoredFiltersRef.current = true;
+        return true;
+      }
+
+      const filtersToApply = mapPersistedFiltersToColumnIndexes(
+        persistedFilters,
+        columns,
+      );
+
+      const allColumnsReady =
+        filtersToApply.length === persistedFilters.length;
+
+      if (!allColumnsReady) {
+        if (filterRestoreStartedAtRef.current === null) {
+          filterRestoreStartedAtRef.current = Date.now();
+        }
+
+        // Wait for AI/enrichment columns before giving up on unmatched keys
+        if (Date.now() - filterRestoreStartedAtRef.current < 2000) {
+          return false;
+        }
+
+        if (filtersToApply.length === 0) {
+          clearPersistedTableFilters(projectId);
+          hasRestoredFiltersRef.current = true;
+          filterRestoreStartedAtRef.current = null;
+          return true;
+        }
+      }
+
+      isApplyingFilterRef.current = true;
+      filtersPlugin.clearConditions();
+      filtersPlugin.importConditions(
+        filtersToApply.map((filter) => ({
+          column: filter.column,
+          conditions: filter.conditions,
+          operation: (filter.operation === 'disjunction'
+            ? 'disjunction'
+            : 'conjunction') as 'conjunction' | 'disjunction',
+        })),
+      );
+      filtersPlugin.filter();
+      hasRestoredFiltersRef.current = true;
+      filterRestoreStartedAtRef.current = null;
+      savePersistedTableFilters(projectId, filtersToApply, columns);
+      setTableState((prev) => ({
+        ...prev,
+        activeFilters: filtersToApply,
+      }));
+      setTimeout(() => {
+        isApplyingFilterRef.current = false;
+      }, 50);
+
+      return true;
+    }, [projectId, setTableState]);
 
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
@@ -654,10 +755,15 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const filtersPlugin = hot.getPlugin('filters');
       filtersPlugin.clearConditions();
       filtersPlugin.filter();
+      clearPersistedTableFilters(projectId);
+      setTableState((prev) => ({
+        ...prev,
+        activeFilters: [],
+      }));
       setSearchQuery('');
 
       console.log('All filters cleared');
-    }, [setSearchQuery]);
+    }, [projectId, setSearchQuery, setTableState]);
 
     // Method to clear all sorts
     const clearAllSorts = useCallback(() => {
@@ -1192,6 +1298,72 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }
     }, [filteredData]);
 
+    // Restore Handsontable filters after full data load / remount (filters are not in persistentState)
+    useEffect(() => {
+      if (tableState.isLoading) {
+        return;
+      }
+
+      if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+        return;
+      }
+
+      if (hasRestoredFiltersRef.current) {
+        return;
+      }
+
+      const timeoutId = window.setTimeout(() => {
+        reapplyPersistedFilters();
+      }, 150);
+
+      // Late retry once enrichments/columns have had time to appear
+      const lateRetryId = window.setTimeout(() => {
+        if (!hasRestoredFiltersRef.current) {
+          reapplyPersistedFilters();
+        }
+      }, 2200);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+        window.clearTimeout(lateRetryId);
+      };
+    }, [
+      tableState.isLoading,
+      filteredData.length,
+      columns,
+      projectId,
+      reapplyPersistedFilters,
+    ]);
+
+    // Keep plugin filters applied when the underlying row set changes after restore
+    const previousFilteredDataRef = useRef(filteredData);
+    useEffect(() => {
+      if (!hasRestoredFiltersRef.current) {
+        previousFilteredDataRef.current = filteredData;
+        return;
+      }
+
+      if (previousFilteredDataRef.current === filteredData) {
+        return;
+      }
+
+      previousFilteredDataRef.current = filteredData;
+
+      const hot = tableRef.current?.hotInstance;
+      const filtersPlugin = hot?.getPlugin('filters');
+      if (!filtersPlugin) {
+        return;
+      }
+
+      const exportedConditions = filtersPlugin.exportConditions?.() ?? [];
+      if (exportedConditions.length > 0) {
+        filtersPlugin.filter();
+        return;
+      }
+
+      reapplyPersistedFilters(true);
+    }, [filteredData, reapplyPersistedFilters]);
+
     // Sync checkbox values with selectedRowIds when selection changes
     useEffect(() => {
       const hot = tableRef.current?.hotInstance;
@@ -1479,6 +1651,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
         <StyledTableContainer>
           <HotTable
+            id={`candidate-table-${projectId}`}
             ref={tableRef}
             data={mutatableData}
             columns={columns.map(col => ({
@@ -1537,6 +1710,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 ...prev,
                 activeFilters
               }));
+
+              const columnsForPersist = hot.getSettings().columns as
+                | Array<{ data?: string | number } | undefined>
+                | undefined;
+              if (!isApplyingFilterRef.current) {
+                savePersistedTableFilters(
+                  projectId,
+                  activeFilters,
+                  columnsForPersist,
+                );
+              }
 
               // If there are no conditions, show total count
               if (!conditionsStack || Object.keys(conditionsStack).length === 0) {

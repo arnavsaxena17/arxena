@@ -234,7 +234,7 @@ export class CandidateSearchHandlerService {
   ) {
     const { tokenAccumulator, accumulateTokens } =
       this.createTokenAccumulator();
-    const model = 'gpt-5.1-chat-latest';
+    const model = 'gpt-4o-mini';
 
     try {
       this.throwIfAborted(abortSignal);
