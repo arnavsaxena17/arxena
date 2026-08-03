@@ -491,11 +491,16 @@ export {
 export type {
   WorkspaceMemberLinkedinCookieTokens,
   WorkspaceMemberProfileGraphqlNode,
+  WorkspaceMemberProfilesConnection,
   WorkspaceMemberProfilesGraphqlResponse,
+  WorkspaceMemberProfilesApolloData,
 } from './workspaceMemberProfileGraphql';
 export {
   workspaceMemberProfileFilterByMemberId,
+  extractWorkspaceMemberProfileFromConnection,
   extractWorkspaceMemberProfileNode,
+  extractWorkspaceMemberProfileFromApolloData,
+  extractWorkspaceMemberProfileFromRelationField,
   parseWorkspaceMemberProfileUnipileFields,
   parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
   workspaceMemberProfileUnipileAccountFieldName,

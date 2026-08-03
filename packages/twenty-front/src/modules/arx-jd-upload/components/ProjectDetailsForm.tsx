@@ -19,8 +19,17 @@ import { parsePhoneNumber } from 'libphonenumber-js';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
-import { graphQLToUpdateOneWorkspaceMemberProfile, graphqlToFindManyProjectsWithCandidateValues } from 'twenty-shared/graphql';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  findWorkspaceMemberProfiles,
+  graphQLToUpdateOneWorkspaceMemberProfile,
+  graphqlToFindManyProjectsWithCandidateValues,
+} from 'twenty-shared/graphql';
+import {
+  extractWorkspaceMemberProfileFromApolloData,
+  extractWorkspaceMemberProfileFromRelationField,
+  isDefined,
+  workspaceMemberProfileFilterByMemberId,
+} from 'twenty-shared/utils';
 
 import { v4 } from 'uuid';
 import { FormComponentProps } from '../types/FormComponentProps';
@@ -145,11 +154,8 @@ type ProjectDetailsQueryData = {
       node?: {
         recruiterId?: string;
         recruiter?: {
-          workspaceMemberProfile?: {
-            edges?: Array<{
-              node?: RecruiterProfileInfo & { id?: string };
-            }>;
-          };
+          id?: string;
+          workspaceMemberProfile?: unknown;
         };
       };
     }>;
@@ -196,9 +202,19 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
 
   const apolloCoreClient = useApolloCoreClient();
 
-  const [executeQuery, { error, data }] = useLazyQuery(gql`
-    ${graphqlToFindManyProjectsWithCandidateValues}
-  `, { client: apolloCoreClient });
+  const [executeQuery, { error, data }] = useLazyQuery(
+    gql`
+      ${graphqlToFindManyProjectsWithCandidateValues}
+    `,
+    { client: apolloCoreClient, fetchPolicy: 'network-only' },
+  );
+
+  const [executeProfileQuery] = useLazyQuery(
+    gql`
+      ${findWorkspaceMemberProfiles}
+    `,
+    { client: apolloCoreClient, fetchPolicy: 'network-only' },
+  );
 
   const [updateWorkspaceMemberProfile] = useMutation(gql`
     ${graphQLToUpdateOneWorkspaceMemberProfile}
@@ -247,14 +263,25 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
           },
         });
 
-        console.log('data in job details form::', data);
-
-        // Check if recruiter profile data exists
         const queryData = data as ProjectDetailsQueryData | undefined;
-        const recruiterProfile =
-          queryData?.projects?.edges?.[0]?.node?.recruiter?.workspaceMemberProfile
-            ?.edges?.[0]?.node;
-        console.log('recruiterProfile in job details form::', recruiterProfile);
+        const projectNode = queryData?.projects?.edges?.[0]?.node;
+        const recruiterId =
+          projectNode?.recruiterId ?? projectNode?.recruiter?.id;
+
+        let recruiterProfile =
+          extractWorkspaceMemberProfileFromRelationField(
+            projectNode?.recruiter?.workspaceMemberProfile,
+          );
+
+        // Nested relation often returns empty edges; match server RecruiterProfileService
+        if (!recruiterProfile && isDefined(recruiterId)) {
+          const { data: profileData } = await executeProfileQuery({
+            variables: workspaceMemberProfileFilterByMemberId(recruiterId),
+          });
+          recruiterProfile =
+            extractWorkspaceMemberProfileFromApolloData(profileData);
+        }
+
         setRecruiterProfile(recruiterProfile);
 
         // Check for missing recruiter profile fields
@@ -283,25 +310,47 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
         } else {
           setShowRecruiterFields(false);
         }
+      } else if (isDefined(currentWorkspaceMember?.id)) {
+        const { data: profileData } = await executeProfileQuery({
+          variables: workspaceMemberProfileFilterByMemberId(
+            currentWorkspaceMember.id,
+          ),
+        });
+        const profile =
+          extractWorkspaceMemberProfileFromApolloData(profileData);
+        setRecruiterProfile(profile);
+
+        const missingFields: RecruiterProfileInfo = {};
+        if (!profile?.name) missingFields.name = '';
+        if (!profile?.phoneNumber) missingFields.phoneNumber = '';
+        if (!profile?.companyDescription) missingFields.companyDescription = '';
+        if (!profile?.jobTitle) missingFields.jobTitle = '';
+
+        if (Object.keys(missingFields).length > 0) {
+          setMissingRecruiterInfo(missingFields);
+          setShowRecruiterFields(true);
+        } else {
+          setShowRecruiterFields(false);
+        }
       } else {
-        // For new projects(no ID), fetch current user's workspace member profile
-        // We need to create a query to get the current user's workspace member profile
-        // For now, we'll initialize with empty fields to show the recruiter form
-        const missingFields: RecruiterProfileInfo = {
+        setMissingRecruiterInfo({
           name: '',
           phoneNumber: '',
           companyDescription: '',
           jobTitle: '',
-        };
-
-        setMissingRecruiterInfo(missingFields);
+        });
         setShowRecruiterFields(true);
         setRecruiterProfile(null);
       }
     } catch (error) {
       console.error('Error fetching job details:', error);
     }
-  }, [executeQuery, parsedJD.id]);
+  }, [
+    executeQuery,
+    executeProfileQuery,
+    parsedJD.id,
+    currentWorkspaceMember?.id,
+  ]);
 
   // Check job details when the component mounts or when job ID changes
   useEffect(() => {

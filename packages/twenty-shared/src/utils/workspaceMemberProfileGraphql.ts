@@ -14,7 +14,10 @@ export type WorkspaceMemberLinkedinCookieTokens = {
 export type WorkspaceMemberProfileGraphqlNode = {
   id: string;
   workspaceMemberId?: string | null;
+  name?: string | null;
   phoneNumber?: string | null;
+  companyDescription?: string | null;
+  jobTitle?: string | null;
   linkedinUrl?: string | null;
   whatsappUnipileAccountId?: string | null;
   linkedinUnipileAccountId?: string | null;
@@ -29,14 +32,21 @@ export type WorkspaceMemberProfileGraphqlNode = {
   linkedinCookiesValidatedAt?: string | null;
 };
 
+export type WorkspaceMemberProfilesConnection = {
+  edges?: Array<{ node?: WorkspaceMemberProfileGraphqlNode | null } | null> | null;
+};
+
 export type WorkspaceMemberProfilesGraphqlResponse = {
   data?: {
     data?: {
-      workspaceMemberProfiles?: {
-        edges?: Array<{ node?: WorkspaceMemberProfileGraphqlNode | null } | null>;
-      };
+      workspaceMemberProfiles?: WorkspaceMemberProfilesConnection;
     };
   };
+};
+
+// Apollo Client useQuery/useLazyQuery shape (no nested data.data wrapper)
+export type WorkspaceMemberProfilesApolloData = {
+  workspaceMemberProfiles?: WorkspaceMemberProfilesConnection | null;
 };
 
 export const workspaceMemberProfileFilterByMemberId = (
@@ -46,10 +56,50 @@ export const workspaceMemberProfileFilterByMemberId = (
   limit: 1,
 });
 
+export const extractWorkspaceMemberProfileFromConnection = (
+  connection: WorkspaceMemberProfilesConnection | null | undefined,
+): WorkspaceMemberProfileGraphqlNode | null =>
+  connection?.edges?.[0]?.node ?? null;
+
 export const extractWorkspaceMemberProfileNode = (
   response: WorkspaceMemberProfilesGraphqlResponse | null | undefined,
 ): WorkspaceMemberProfileGraphqlNode | null =>
-  response?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node ?? null;
+  extractWorkspaceMemberProfileFromConnection(
+    response?.data?.data?.workspaceMemberProfiles,
+  );
+
+export const extractWorkspaceMemberProfileFromApolloData = (
+  data: WorkspaceMemberProfilesApolloData | null | undefined,
+): WorkspaceMemberProfileGraphqlNode | null =>
+  extractWorkspaceMemberProfileFromConnection(data?.workspaceMemberProfiles);
+
+// Nested recruiter.workspaceMemberProfile may be a connection or a direct node
+export const extractWorkspaceMemberProfileFromRelationField = (
+  relationField: unknown,
+): WorkspaceMemberProfileGraphqlNode | null => {
+  if (!relationField || typeof relationField !== 'object') {
+    return null;
+  }
+
+  const asConnection = relationField as WorkspaceMemberProfilesConnection;
+  const fromEdges = extractWorkspaceMemberProfileFromConnection(asConnection);
+
+  if (fromEdges) {
+    return fromEdges;
+  }
+
+  const asNode = relationField as WorkspaceMemberProfileGraphqlNode;
+
+  // Direct MANY_TO_ONE-style object (has profile fields, no edges)
+  if (
+    typeof asNode.id === 'string' &&
+    !Array.isArray((relationField as { edges?: unknown }).edges)
+  ) {
+    return asNode;
+  }
+
+  return null;
+};
 
 const trimOrNull = (value: string | null | undefined): string | null => {
   if (value == null) {
