@@ -1,4 +1,7 @@
-import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
+import {
+  apiKeysLoadingState,
+  apiKeysState,
+} from '@/arx-jd-upload/states/apiKeysState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import {
@@ -24,6 +27,7 @@ export const useStartChats = ({
   const [loading, setLoading] = useState(false);
   const tokenPair = useAtomStateValue(tokenPairState);
   const apiKeys = useAtomStateValue(apiKeysState);
+  const isApiKeysLoading = useAtomStateValue(apiKeysLoadingState);
   const tableState = useAtomStateValue(tableStateAtom);
   const { enqueueErrorSnackBar } = useSnackBar();
   const { checkDataIntegrityOfProject } = useCheckDataIntegrityOfProject({
@@ -45,6 +49,12 @@ export const useStartChats = ({
       setLoading(true);
 
       try {
+        if (isApiKeysLoading) {
+          throw new Error(
+            'Workspace API keys are still loading. Try starting chats again in a moment.',
+          );
+        }
+
         if (!apiKeys?.openaikey?.trim()) {
           throw new Error(
             'OpenAI API key is missing. Add it in Settings → General before starting chats.',
@@ -166,6 +176,7 @@ export const useStartChats = ({
       apiKeys?.openaikey,
       checkDataIntegrityOfProject,
       enqueueErrorSnackBar,
+      isApiKeysLoading,
       onError,
       onSuccess,
       tableState.rawData,

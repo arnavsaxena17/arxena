@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Start chats false “OpenAI key missing” | `apiKeysState` only hydrated when `ApiKeysProvider` mounted (Settings General / JD modal). Project page start-chat read empty atom even when key was saved. Mount provider once in `WorkspaceAppProviders`; drop nested wrappers; gate start/validate on `apiKeysLoadingState`. | `WorkspaceAppProviders.tsx`, `useStartChats.ts`, `useCheckDataIntegrityOfProject.ts`, `SettingsGeneral.tsx`, `ProjectPage.tsx`, `Projects.tsx` |
 | People findMany TOO_COMPLEX_QUERY | Phone lookup no longer uses `graphqlQueryToFindManyPeople` (nested `people→candidates→whatsappMessages` → `TOO_COMPLEX_QUERY`). `getPersonDetailsByPhoneNumber` now uses `graphqlToFetchAllCandidateData` (findManyCandidates) and synthesizes a PersonNode with `candidates.edges`. Shared people query also stripped nested 1-to-manys for other callers; messages hydrated separately where needed. Phone status `candidate.jobs` → `projects`. | `filter-candidates.ts`, `queries.ts`, `get-phone-number-status` |
 | StaticGraphQL `updatedBy` actor | `setChromeExtensionId` → `StaticGraphQLService.executeGraphQL` uses **system** auth ALS. `UpdatedByUpdateOnePreQueryHook` called `ActorFromAuthContextService`, which only handled user/apiKey/application → threw `Unable to build actor metadata`. Added `buildCreatedByFromSystem` + `isSystemAuthContext` branch (same pattern for all StaticGraphQL / job writes with actor fields). **Redeploy/restart nest** on host — `/home/ubuntu/twenty` dist still old. | `actor-from-auth-context.service.ts`, `build-created-by-from-system.util.ts` |
 | Apollo wrong-client sibling sweep | After fixing `useCheckDataIntegrityOfProject`, grepped ARX/migrated modules for `useQuery`/`useLazyQuery`/`useMutation` + `twenty-shared/graphql` without `useApolloCoreClient` or raw `/graphql`. **No further wrong-client call sites.** Intentional `/metadata`: `WORKSPACE_CREDITS`, billing `CREDIT_TRANSACTIONS`. Latent footgun: commented `FIND_MANY_VIDEO_INTERVIEW_MODELS` in `InterviewCreationModal` (hardcoded models today). | §5, §6 |
@@ -686,7 +687,7 @@ Edit these carefully on rebase — product integration points.
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-front/src/modules/app/components/WorkspaceAppProviders.tsx` | working · intent | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect, `ChromeExtensionAuthBridgeEffect` |
+| `packages/twenty-front/src/modules/app/components/WorkspaceAppProviders.tsx` | working · intent | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect, `ChromeExtensionAuthBridgeEffect`, `ApiKeysProvider` (workspace keys for start-chat / JD / settings) |
 | `packages/twenty-front/src/modules/app/components/RootAppProviders.tsx` | working · intent | `ChromeExtensionAuthBridgeEffect` for root/auth shell |
 | `packages/twenty-front/src/modules/app/components/SharedAppProviders.tsx` | working · intent | Chrome extension sidecar effect + provider |
 | `packages/twenty-front/src/modules/client-config/hooks/useClientConfig.ts` | working · intent | Set `chromeExtensionIdState` from `/client-config` |
@@ -694,7 +695,7 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/core-modules/client-config/client-config.entity.ts` | working · intent | `chromeExtensionId` field |
 | `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID` (ARXENA group) |
 | `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn routes |
-| `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Mount `ApiKeysProvider` + grouped workspace integration keys form |
+| `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Grouped workspace integration keys form (`ApiKeysForm`; provider now in `WorkspaceAppProviders`) |
 | `packages/twenty-front/src/modules/navigation/components/MainNavigationDrawerScrollableItems.tsx` | working · intent | Mount `ProjectsNavigationDrawerItems` + `OrgChartsNavigationDrawerItems` |
 | `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts |
 | `packages/twenty-front/src/modules/settings/admin-panel/constants/SettingsAdminTabs.ts` | working · intent | Admin tabs: credits, org-chart IPs, published charts, LinkedIn cache, WhatsApp monitoring, users |

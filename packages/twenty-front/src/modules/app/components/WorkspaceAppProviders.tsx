@@ -7,6 +7,7 @@ import { SharedAppProviders } from '@/app/components/SharedAppProviders';
 import { GotoHotkeysEffectsProvider } from '@/app/effect-components/GotoHotkeysEffectsProvider';
 import { InitializeQueryParamStateEffect } from '@/app/effect-components/InitializeQueryParamStateEffect';
 import { PageChangeEffect } from '@/app/effect-components/PageChangeEffect';
+import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { AuthProvider } from '@/auth/components/AuthProvider';
 import { SignOutOnOtherTabSignOutEffect } from '@/auth/effect-components/SignOutOnOtherTabSignOutEffect';
 import { BaileysProvider } from '@/baileys/contexts/BaileysContext';
@@ -60,36 +61,38 @@ export const WorkspaceAppProviders = () => {
                 <SSEProvider>
                   <UserThemeProviderEffect />
                   <SnackBarProvider>
-                    <ErrorMessageEffect />
-                    <WebSocketProvider>
-                      <NotificationProvider>
-                        <UnipileProvider>
-                          <BaileysProvider>
-                            <ChromeExtensionAuthBridgeEffect />
-                            <WorkspaceMemberProfileUnipileSyncEffect />
-                            <AgentChatProvider>
-                              <DialogComponentInstanceContext.Provider
-                                value={{ instanceId: 'dialog-manager' }}
-                              >
-                                <DialogManager>
-                                  <StrictMode>
-                                    <PromiseRejectionEffect />
-                                    <EndTrialAfterPaymentMethodGater />
-                                    <GotoHotkeysEffectsProvider />
-                                    <PageTitle title={pageTitle} />
-                                    <PageFavicon />
-                                    <Outlet />
-                                    <GlobalFilePreviewModal />
-                                    <CommandMenuConfirmationModalManager />
-                                    <CommandRunner />
-                                  </StrictMode>
-                                </DialogManager>
-                              </DialogComponentInstanceContext.Provider>
-                            </AgentChatProvider>
-                          </BaileysProvider>
-                        </UnipileProvider>
-                      </NotificationProvider>
-                    </WebSocketProvider>
+                    <ApiKeysProvider>
+                      <ErrorMessageEffect />
+                      <WebSocketProvider>
+                        <NotificationProvider>
+                          <UnipileProvider>
+                            <BaileysProvider>
+                              <ChromeExtensionAuthBridgeEffect />
+                              <WorkspaceMemberProfileUnipileSyncEffect />
+                              <AgentChatProvider>
+                                <DialogComponentInstanceContext.Provider
+                                  value={{ instanceId: 'dialog-manager' }}
+                                >
+                                  <DialogManager>
+                                    <StrictMode>
+                                      <PromiseRejectionEffect />
+                                      <EndTrialAfterPaymentMethodGater />
+                                      <GotoHotkeysEffectsProvider />
+                                      <PageTitle title={pageTitle} />
+                                      <PageFavicon />
+                                      <Outlet />
+                                      <GlobalFilePreviewModal />
+                                      <CommandMenuConfirmationModalManager />
+                                      <CommandRunner />
+                                    </StrictMode>
+                                  </DialogManager>
+                                </DialogComponentInstanceContext.Provider>
+                              </AgentChatProvider>
+                            </BaileysProvider>
+                          </UnipileProvider>
+                        </NotificationProvider>
+                      </WebSocketProvider>
+                    </ApiKeysProvider>
                   </SnackBarProvider>
                   <MainContextStoreProvider />
                   <SupportChatEffect />

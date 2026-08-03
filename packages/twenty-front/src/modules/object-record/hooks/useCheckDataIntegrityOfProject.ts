@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 // import { useShowNotification } from '@/notification/hooks/useShowNotification';
-import { apiKeysState } from '@/arx-jd-upload/states/apiKeysState';
+import {
+  apiKeysLoadingState,
+  apiKeysState,
+} from '@/arx-jd-upload/states/apiKeysState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
-import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
@@ -25,9 +27,10 @@ export const useCheckDataIntegrityOfProject = ({
   onSuccess,
   onError,
 }: UseCheckDataIntegrityOfProjectProps = {}) => {
-  const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar, enqueueInfoSnackBar } = useSnackBar();
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   // const { keys: apiKeys } = useApiKeys();
   const apiKeys = useAtomStateValue(apiKeysState);
+  const isApiKeysLoading = useAtomStateValue(apiKeysLoadingState);
   // Workspace project records are on /graphql, not the default /metadata client
   const apolloCoreClient = useApolloCoreClient();
   const [executeQuery] = useLazyQuery(gql`
@@ -40,6 +43,15 @@ export const useCheckDataIntegrityOfProject = ({
       options?: CheckDataIntegrityOfProjectOptions,
     ): Promise<boolean> => {
       try {
+        if (isApiKeysLoading) {
+          enqueueErrorSnackBar({
+            message:
+              'Workspace API keys are still loading. Try validating again in a moment.',
+            options: { duration: 5000 },
+          });
+          return false;
+        }
+
         const { data } = await executeQuery({
           variables: {
             filter: { id: { in: recordIds } },
@@ -134,11 +146,11 @@ export const useCheckDataIntegrityOfProject = ({
             // Interview schedule - only validate if meeting scheduling is in chat flow
             hasMeetingScheduling && !jobNode?.interviewSchedule?.edges &&
               'Interview schedule data structure is missing',
-            hasMeetingScheduling && jobNode?.interviewSchedule?.edges?.length === 0 && 
+            hasMeetingScheduling && jobNode?.interviewSchedule?.edges?.length === 0 &&
               'Interview schedule is missing',
-            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable && 
+            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable &&
               'Interview slots are not available',
-            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.meetingType && 
+            hasMeetingScheduling && !jobNode?.interviewSchedule?.edges?.[0]?.node?.meetingType &&
               'Meeting type is not specified',
 
             // Recruiter
@@ -154,9 +166,9 @@ export const useCheckDataIntegrityOfProject = ({
             // Video interview template - only validate if video interview is in chat flow
             hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges &&
               'Video interview template data structure is missing',
-            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.length === 0 && 
+            hasVideoInterview && jobNode?.videoInterviewTemplate?.edges?.length === 0 &&
               'No video interview template attached',
-            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node && 
+            hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node &&
               'Video interview template node is missing',
             hasVideoInterview && !jobNode?.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewModelId &&
               'Video interview model ID is missing',
@@ -231,7 +243,15 @@ export const useCheckDataIntegrityOfProject = ({
         return false;
       }
     },
-    [executeQuery, enqueueSuccessSnackBar, onSuccess, onError, apiKeys],
+    [
+      executeQuery,
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
+      onSuccess,
+      onError,
+      apiKeys,
+      isApiKeysLoading,
+    ],
   );
 
   return { checkDataIntegrityOfProject };

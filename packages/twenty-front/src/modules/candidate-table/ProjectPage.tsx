@@ -18,7 +18,6 @@ import { IconCheckbox } from 'twenty-ui/icon';
 
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
-import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
 import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
@@ -836,12 +835,10 @@ export const ProjectPage: React.FC = () => {
             )}
 
             {isArxUploadJDModalOpen ? (
-              <ApiKeysProvider>
-                <ArxJDUploadModal
-                  objectNameSingular="project"
-                  objectRecordId={arxUploadJDModalMode === 'edit' ? (projectId || '0') : ''}
-                />
-              </ApiKeysProvider>
+              <ArxJDUploadModal
+                objectNameSingular="project"
+                objectRecordId={arxUploadJDModalMode === 'edit' ? (projectId || '0') : ''}
+              />
             ) : (
               <></>
             )}

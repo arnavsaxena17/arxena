@@ -17,7 +17,6 @@ import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSele
 import { isArxEnrichModalOpenState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { ArxJDUploadModal } from '@/arx-jd-upload/components/ArxJDUploadModal';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
-import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
@@ -793,9 +792,7 @@ export const Projects = () => {
               )}
 
               {isArxUploadJDModalOpen ? (
-                <ApiKeysProvider>
-                  <ArxJDUploadModal objectNameSingular="project" objectRecordId="" />
-                </ApiKeysProvider>
+                <ArxJDUploadModal objectNameSingular="project" objectRecordId="" />
               ) : (
                 <></>
               )}

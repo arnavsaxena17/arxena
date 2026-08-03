@@ -1,6 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
 
-import { ApiKeysProvider } from '@/arx-jd-upload/providers/ApiKeysProvider';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
@@ -86,9 +85,7 @@ export const SettingsGeneral = () => {
             </Section>
           </>
         )}
-        <ApiKeysProvider>
-          <ApiKeysForm />
-        </ApiKeysProvider>
+        <ApiKeysForm />
         <Section>
           <DeleteWorkspace />
         </Section>
