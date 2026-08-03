@@ -147,7 +147,6 @@ export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttac
     targetProjectId
     targetPersonId
     targetCompanyId
-    cvSentId
   }
 }`;
 

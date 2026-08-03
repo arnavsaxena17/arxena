@@ -53,10 +53,12 @@ export class ToolCallsProcessing {
       )) ?? [];
 
     // console.log('Project Attachments:', jobAttachments);
-    if (!jobAttachments) {
+    const attachment = jobAttachments?.node;
+
+    if (!attachment) {
       console.log('No attachments found for this job');
+      return;
     }
-    const attachment = jobAttachments?.node ?? '';
 
     await new MessagingControls(
       this.workspaceQueryService,
@@ -185,7 +187,7 @@ export class ToolCallsProcessing {
     phoneNumberTo = recruiterProfile.phoneNumber
     }
 
-    
+
 
 
 

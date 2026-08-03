@@ -1026,14 +1026,11 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
           targetPersonId
           targetCompanyId
           targetOpportunityId
-          whatsappMessageId
-          cvSentId
-          screeningId
-          clientInterviewId
-          recruiterInterviewId
-          offerId
-          candidateFieldValueId
-          candidateFieldId
+          targetWhatsappMessageId
+          targetClientInterviewId
+          targetRecruiterInterviewId
+          targetCandidateFieldValueId
+          targetCandidateFieldId
           updatedAt
           createdAt
         }
@@ -2182,50 +2179,35 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
     attachments {
       edges {
         node {
-          clientInterviewId
-          phoneCallId
-          whatsappMessageId
-          candidateReminderId
-          videoInterviewModelId
-          name
-          videoInterviewId
-          updatedAt
-          createdBy {
-            workspaceMemberId
-            name
-            source
-          }
-          clientContactId
-          targetProjectId
-          fileCategory
           id
-          createdAt
-          textMessageId
+          name
           fullPath
+          fileCategory
           file {
             fileId
             label
             extension
             url
           }
-          videoInterviewQuestionId
-          interviewScheduleId
-          candidateEnrichmentId
-          screeningId
-          shortlistId
-          workspaceMemberProfileId
+          createdBy {
+            workspaceMemberId
+            name
+            source
+          }
+          targetProjectId
           targetCandidateId
-          promptId
-          candidateFieldId
           targetPersonId
-          videoInterviewTemplateId
-          offerId
-          cvSentId
           targetCompanyId
           targetOpportunityId
-          videoInterviewResponseId
-          candidateFieldValueId
-          recruiterInterviewId
+          targetVideoInterviewId
+          targetVideoInterviewResponseId
+          targetWhatsappMessageId
+          targetClientInterviewId
+          targetRecruiterInterviewId
+          targetCandidateFieldId
+          targetCandidateFieldValueId
+          updatedAt
+          createdAt
         }
       }
     }
