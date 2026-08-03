@@ -49,8 +49,8 @@ export const buildPeopleApiOpenApiDocument = (
   openapi: '3.1.1',
   info: {
     title: 'Arxena People API',
-    description:
-      'People search and natural-language title resolution. Public taxonomy constants are short flat label lists (Apollo-style). Classify, Boolean builders, and people search require auth. Do not scrape taxonomy endpoints to rebuild a competing ontology.',
+        description:
+      'People search and natural-language title resolution. Public taxonomy surfaces are flat grade constants plus a nested labels-only function tree. Classify, Boolean builders, and people search require auth. Do not scrape taxonomy endpoints to rebuild a competing ontology.',
     version: '1.0.0',
     contact: {
       email: 'felix@arxena.com',
@@ -114,6 +114,11 @@ export const buildPeopleApiOpenApiDocument = (
           stdFunction: {
             type: 'string',
             description: 'Standardized function (e.g. engineering, sales).',
+            example: 'engineering',
+          },
+          stdFunctionRoot: {
+            type: 'string',
+            description: 'Standardized function root (department family).',
             example: 'engineering',
           },
           stdGrade: {
@@ -340,6 +345,156 @@ export const buildPeopleApiOpenApiDocument = (
           },
         },
         required: ['id', 'label', 'description'],
+      },
+      TaxonomyTreeFunctionNode: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'software engineering' },
+          label: { type: 'string', example: 'software engineering' },
+        },
+        required: ['id', 'label'],
+      },
+      TaxonomyTreeRootNode: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'engineering' },
+          label: { type: 'string', example: 'engineering' },
+          functions: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyTreeFunctionNode' },
+          },
+        },
+        required: ['id', 'label', 'functions'],
+      },
+      TaxonomyTreeResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          gradeLevels: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyConstantItem' },
+          },
+          functionRoots: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyTreeRootNode' },
+          },
+        },
+        required: ['status', 'gradeLevels', 'functionRoots'],
+        example: {
+          status: 'ok',
+          gradeLevels: [
+            {
+              id: 'leadership',
+              label: 'Leadership',
+              description: 'Senior leaders and heads of function.',
+            },
+          ],
+          functionRoots: [
+            {
+              id: 'engineering',
+              label: 'engineering',
+              functions: [
+                { id: 'software engineering', label: 'software engineering' },
+              ],
+            },
+          ],
+        },
+      },
+      PeopleSearchByTaxonomyRequest: {
+        type: 'object',
+        properties: {
+          website: { type: 'string', example: 'stripe.com' },
+          companyId: {
+            type: 'string',
+            description: 'LinkedIn company id or slug',
+            example: 'stripe',
+          },
+          companyName: { type: 'string', example: 'Stripe' },
+          stdFunction: {
+            type: 'string',
+            description:
+              'Exactly one of stdFunction or stdFunctionRoot is required.',
+            example: 'software engineering',
+          },
+          stdFunctionRoot: {
+            type: 'string',
+            description:
+              'Exactly one of stdFunction or stdFunctionRoot is required.',
+            example: 'engineering',
+          },
+          stdGrade: {
+            type: 'string',
+            enum: ['entry', 'mid', 'leadership'],
+            description:
+              'Optional. Only valid together with stdFunction or stdFunctionRoot.',
+            example: 'leadership',
+          },
+          candidateSource: {
+            type: 'string',
+            enum: ['harvest', 'unipile'],
+            default: 'unipile',
+            example: 'unipile',
+          },
+          country: { type: 'string', example: 'United States' },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            default: 20,
+            example: 20,
+          },
+        },
+        example: {
+          website: 'stripe.com',
+          stdFunctionRoot: 'engineering',
+          stdGrade: 'leadership',
+          candidateSource: 'unipile',
+          limit: 20,
+        },
+      },
+      PeopleSearchByTaxonomyResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          dataSource: { type: 'string', enum: ['harvest', 'unipile'] },
+          query: {
+            type: 'object',
+            properties: {
+              keywords: { type: ['string', 'null'] },
+              company: {
+                type: 'object',
+                properties: {
+                  name: { type: ['string', 'null'] },
+                  slug: { type: ['string', 'null'] },
+                  linkedinUrl: { type: ['string', 'null'] },
+                },
+              },
+              stdFunction: { type: 'string' },
+              stdFunctionRoot: { type: 'string' },
+              stdGrade: { type: 'string' },
+            },
+          },
+          total: { type: 'integer' },
+          totalBeforeFilter: { type: 'integer' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: true,
+              properties: {
+                resolved: {
+                  type: 'object',
+                  properties: {
+                    stdFunction: { type: ['string', 'null'] },
+                    stdFunctionRoot: { type: ['string', 'null'] },
+                    stdGrade: { type: ['string', 'null'] },
+                    confidence: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       TaxonomyBooleanStringsResponse: {
         type: 'object',
@@ -607,7 +762,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'List taxonomy constants',
         description:
-          'Public, ungated flat label lists (grade levels, grade categories, function roots). No classification, no full function tree, no Booleans.',
+          'Public, ungated flat label lists (grade levels, grade categories, function roots). Prefer GET /people-api/taxonomy/tree for nested function selects.',
         operationId: 'listTaxonomyConstants',
         security: [],
         responses: {
@@ -617,6 +772,28 @@ export const buildPeopleApiOpenApiDocument = (
               'application/json': {
                 schema: {
                   $ref: '#/components/schemas/TaxonomyConstantsResponse',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/people-api/taxonomy/tree': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'List nested taxonomy tree',
+        description:
+          'Public nested labels-only tree: function roots → functions, plus grade level dropdown values. No Boolean operators or keyword bags.',
+        operationId: 'listTaxonomyTree',
+        security: [],
+        responses: {
+          '200': {
+            description: 'Nested taxonomy nouns',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/TaxonomyTreeResponse',
                 },
               },
             },
@@ -854,6 +1031,52 @@ export const buildPeopleApiOpenApiDocument = (
           '401': { description: 'Unauthorized' },
           '422': { description: 'Could not resolve title taxonomy' },
           '501': { description: 'Data source not implemented' },
+          '503': { description: 'Data source or taxonomy not configured' },
+        },
+      },
+    },
+    '/people-api/people/search-by-taxonomy': {
+      post: {
+        tags: ['People'],
+        summary: 'Search people by taxonomy at a company',
+        description:
+          'Requires exactly one of stdFunction or stdFunctionRoot; optional stdGrade. Validated wrapper over people/search LinkedIn sourcing (Unipile default, or Harvest): boolean keywords, search, batch title reclassify, exact taxonomy matches. Company scope: website, companyId, or companyName.',
+        operationId: 'searchPeopleByTaxonomy',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/PeopleSearchByTaxonomyRequest',
+              },
+              examples: {
+                byRootAndGrade: {
+                  summary: 'Engineering leadership at a domain',
+                  value: {
+                    website: 'stripe.com',
+                    stdFunctionRoot: 'engineering',
+                    stdGrade: 'leadership',
+                    candidateSource: 'unipile',
+                    limit: 20,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Filtered LinkedIn people matches',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/PeopleSearchByTaxonomyResponse',
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid request' },
+          '401': { description: 'Unauthorized' },
           '503': { description: 'Data source or taxonomy not configured' },
         },
       },

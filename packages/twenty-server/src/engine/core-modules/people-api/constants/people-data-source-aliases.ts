@@ -3,7 +3,8 @@ export type PeopleDataSourceAlias =
   | 'apollo'
   | 'pdl'
   | 'contactout'
-  | 'harvest';
+  | 'harvest'
+  | 'unipile';
 
 export type PeopleDataSourceCategory = {
   alias: PeopleDataSourceAlias;
@@ -47,9 +48,18 @@ export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
   {
     alias: 'harvest',
     label: 'Harvest',
-    description: 'LinkedIn lead search via Sales Navigator parameters.',
-    supportsStdFunctionFilter: false,
-    supportsStdGradeFilter: false,
+    description:
+      'LinkedIn lead search via the shared Harvest/super-impose sourcing pipeline.',
+    supportsStdFunctionFilter: true,
+    supportsStdGradeFilter: true,
+  },
+  {
+    alias: 'unipile',
+    label: 'Unipile',
+    description:
+      'LinkedIn people search via Unipile (default LinkedIn People API source).',
+    supportsStdFunctionFilter: true,
+    supportsStdGradeFilter: true,
   },
 ];
 

@@ -23,6 +23,7 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { buildPeopleApiOpenApiDocument } from '../api-docs/people-api.openapi';
 import { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
+import { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import { PeopleSearchDto } from './dto/people-search.dto';
 import { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
 import { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
@@ -69,10 +70,15 @@ export class PeopleApiController {
     return this.workspaceCreditsService.getCreditsView(workspaceId);
   }
 
-  // Public nouns only — flat constants, no classify, no trees.
+  // Public nouns only — flat constants + nested function label tree (no classify).
   @Get('taxonomy/constants')
   getTaxonomyConstants() {
     return this.peopleApiService.getTaxonomyConstants();
+  }
+
+  @Get('taxonomy/tree')
+  getTaxonomyTree() {
+    return this.peopleApiService.getTaxonomyTree();
   }
 
   @Get('taxonomy/function-roots')
@@ -181,7 +187,10 @@ export class PeopleApiController {
         dataSource: body.dataSource,
       });
 
-      return await this.peopleApiService.searchPeopleByJobTitle(body);
+      return await this.peopleApiService.searchPeopleByJobTitle(
+        body,
+        this.getAuthToken(request) ?? undefined,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -189,6 +198,41 @@ export class PeopleApiController {
       this.logger.error('People API search-by-title failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'People search by title failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('people/search-by-taxonomy')
+  @UseGuards(JwtAuthGuard)
+  async searchPeopleByTaxonomy(
+    @Req() request: Request,
+    @Body() body: PeopleSearchByTaxonomyDto,
+  ) {
+    try {
+      await this.debitApiSearchCreditOrThrow(request, {
+        endpoint: 'people/search-by-taxonomy',
+        dataSource: body.candidateSource ?? 'unipile',
+      });
+
+      const apiToken = this.getAuthToken(request);
+      if (!apiToken) {
+        throw new HttpException(
+          'Authorization token is required',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      return await this.peopleApiService.searchPeopleByTaxonomy(body, apiToken);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('People API search-by-taxonomy failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'People search by taxonomy failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -203,7 +247,10 @@ export class PeopleApiController {
         dataSource: body.dataSource,
       });
 
-      return await this.peopleApiService.searchPeople(body);
+      return await this.peopleApiService.searchPeople(
+        body,
+        this.getAuthToken(request) ?? undefined,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -214,6 +261,14 @@ export class PeopleApiController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  private getAuthToken(request: Request): string | null {
+    const authHeader = request.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      return authHeader.slice('Bearer '.length).trim() || null;
+    }
+    return null;
   }
 
   // Soft cap bulk taxonomy scraping per workspace (auth still required).

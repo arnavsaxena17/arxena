@@ -7,16 +7,17 @@ Altitude target: Apollo-style short seniority / department label lists — not G
 ## Public (safe)
 
 - Flat **constants**: function-root names, grade levels, grade-category band names (one-line definitions)
+- Nested **function label tree** (`GET /people-api/taxonomy/tree`): root → child function labels only (`id` / `label`) — no `and` / `or` / `not`, no leaf keyword bags
 - Conceptual pipeline in plain language (NL → resolve → people / chart)
 - One worked input/output example (`resolved` / `resolved_as` + redacted people)
-- Illustrative in-page HTML cards (root→function ∥ category→grade) — not the real full tree
+- Illustrative in-page HTML cards for concepts; live nested nouns come from `/taxonomy/tree`
 - Scale signals without full enumeration
 
 ## Auth-gated (integrators only; not the hero docs path)
 
 - List/classify with `?title=`
-- Full function label lists when needed for filters
-- People search / search-by-title
+- Flat function label lists when needed for filters
+- People search / search-by-title / search-by-taxonomy
 - Boolean-string builder (treat as advanced; never paste real production Booleans into conceptual docs)
 
 ## Never publish

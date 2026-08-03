@@ -1,14 +1,37 @@
 ---
 title: Search people by taxonomy
-description: Advanced — search with std codes when you already know them.
+description: Search LinkedIn or the index with std_function / std_function_root and optional std_grade.
 ---
 
-Prefer [natural-language search-by-title](/cookbooks/nl-to-people-at-company) for products and agents. Use this path only when you already hold `stdFunction` / `stdGrade` from a prior resolution.
+Prefer [natural-language search-by-title](/cookbooks/nl-to-people-at-company) for products and agents. Use explicit taxonomy when you already hold codes from the [nested taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree).
 
-## Steps
+## LinkedIn (company + taxonomy)
+
+Requires **exactly one** of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade`. Default source is Unipile. Same search engine as `POST /people-api/people/search` with `dataSource: "unipile"` / `"harvest"` — this route only adds the taxonomy input rules and LinkedIn-oriented response shape.
+
+1. Load nested selects from `GET /people-api/taxonomy/tree` (public)
+2. `POST /people-api/people/search-by-taxonomy` with company scope + taxonomy
+
+```bash
+curl -X POST \
+  -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  -H 'Content-Type: application/json' \
+  https://app.arxena.com/people-api/people/search-by-taxonomy \
+  -d '{
+    "website": "stripe.com",
+    "stdFunctionRoot": "engineering",
+    "stdGrade": "leadership",
+    "candidateSource": "unipile",
+    "limit": 20
+  }'
+```
+
+Results are batch-reclassified and filtered to the requested function/root (and grade when provided).
+
+## Index path
 
 1. Confirm `index` is configured via data sources (auth)
-2. Optionally read public [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) for valid roots / grade levels
+2. Optionally read public [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants)
 3. `POST /people-api/people/search` with `dataSource: "index"` and std filters
 
 ```bash

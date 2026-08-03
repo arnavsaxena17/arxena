@@ -13,14 +13,14 @@ The pattern is the same shape as a sector → industry hierarchy in finance — 
 <TaxonomyShapeDiagram />
 
 <Note>
-These cards are **examples**, not the full catalog. Public APIs expose flat constants (roots and grade levels), not every child node under every root.
+Public APIs expose flat grade constants and a nested **labels-only** function tree (`GET /people-api/taxonomy/tree`: root → functions). Assignment engines, Boolean generators, and raw truth-tree operators stay private.
 </Note>
 
 | Noun | Meaning | Public altitude |
 | --- | --- | --- |
-| **Function root** | Department family (e.g. human resources, engineering) | Flat label list |
-| **Function** | Role family under a root | Resolved in API responses; not a public tree dump |
-| **Grade** | Seniority (entry / mid / leadership) | Flat label list |
+| **Function root** | Department family (e.g. human resources, engineering) | Nested tree parent + flat constants |
+| **Function** | Role family under a root | Nested under roots in `/taxonomy/tree` |
+| **Grade** | Seniority (entry / mid / leadership) | Flat label list / dropdown |
 | **Grade category** | Org-chart / leadership band | Chart layout + illustrative examples — not scoring math |
 
 **Publish the nouns. Protect the verbs.** Labels and one worked NL example are the product surface. Assignment engines, full title maps, and Boolean generators stay internal.
@@ -37,19 +37,20 @@ Primary path: [Natural language to people at a company](/cookbooks/nl-to-people-
 
 ## Public constants (ungated)
 
-Short flat lists — enough to know what the system understands, not enough to rebuild it:
+Short flat lists plus a nested function label tree — enough to drive selects, not enough to rebuild the engines:
 
 ```bash
 curl https://app.arxena.com/people-api/taxonomy/constants
+curl https://app.arxena.com/people-api/taxonomy/tree
 ```
 
-See [List taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants).
+See [List taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) and [List taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree).
 
 ## What stays private
 
 | Keep internal | Why |
 | --- | --- |
-| Full trees with every mapped title | Commercial classification DB |
+| Booltree operators (`and` / `or` / `not`) | Assignment engine |
 | Boolean / keyword generation details | Paid capability + moat |
 | Scoring, thresholds, tie-breaks | Assignment engine |
 | Correction / feedback flywheel mechanics | Durable advantage |

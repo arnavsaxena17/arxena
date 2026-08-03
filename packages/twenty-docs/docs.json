@@ -91,8 +91,10 @@
                 "pages": [
                   "api-reference/data-sources/list-people-data-source-categories",
                   "api-reference/taxonomy/list-taxonomy-constants",
+                  "api-reference/taxonomy/list-taxonomy-tree",
                   "api-reference/people/resolve-job-title-and-search-people",
                   "api-reference/people/search-people",
+                  "api-reference/people/search-people-by-taxonomy",
                   "api-reference/taxonomy/list-std-function-roots",
                   "api-reference/taxonomy/list-std-grades",
                   "api-reference/taxonomy/list-std-functions",

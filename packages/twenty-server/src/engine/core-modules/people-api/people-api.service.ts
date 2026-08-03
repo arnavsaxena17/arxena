@@ -22,19 +22,29 @@ import {
   TAXONOMY_GRADE_LEVEL_CONSTANTS,
   type TaxonomyConstantsResponse,
 } from './constants/taxonomy-constants';
-import type { PeopleSearchDto } from './dto/people-search.dto';
-import type { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
 import type { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
+import type { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
+import type { PeopleSearchDto } from './dto/people-search.dto';
 import type { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
+import type { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
 import type {
   DataSourcesStatusResponse,
   ExpandJobTitlesResponse,
+  PeopleSearchByTaxonomyResponse,
   PeopleSearchByTitleResponse,
   PeopleSearchResponse,
   TaxonomyBooleanStringsResponse,
   TaxonomyItem,
+  TaxonomyTreeResponse,
 } from './people-api.types';
+import { PeopleLinkedInSourcingService } from './services/people-linkedin-sourcing.service';
+import { buildTaxonomyTreeFromFlatLists } from './utils/build-taxonomy-tree.util';
+import { extractCandidateJobTitle } from './utils/extract-candidate-job-title.util';
 import { extractTaxonomyItemValue } from './utils/extract-taxonomy-item-value.util';
+import {
+  classificationToResolvedFields,
+  matchesTaxonomyFilter,
+} from './utils/filter-people-by-taxonomy.util';
 
 @Injectable()
 export class PeopleApiService {
@@ -47,6 +57,7 @@ export class PeopleApiService {
     private readonly pdlPersonOrgMovementService: PdlPersonOrgMovementService,
     private readonly contactOutPeopleSearchService: ContactOutPeopleSearchService,
     private readonly harvestLinkedinService: HarvestLinkedinService,
+    private readonly peopleLinkedInSourcingService: PeopleLinkedInSourcingService,
   ) {}
 
   getDataSourcesStatus(): DataSourcesStatusResponse {
@@ -56,6 +67,7 @@ export class PeopleApiService {
       pdl: this.pdlPersonOrgMovementService.isConfigured(),
       contactout: this.contactOutPeopleSearchService.isConfigured(),
       harvest: this.harvestLinkedinService.isConfigured(),
+      unipile: this.peopleLinkedInSourcingService.isUnipileConfigured(),
     };
 
     return {
@@ -77,6 +89,22 @@ export class PeopleApiService {
       gradeLevels: TAXONOMY_GRADE_LEVEL_CONSTANTS,
       gradeCategories: TAXONOMY_GRADE_CATEGORY_CONSTANTS,
       functionRoots: TAXONOMY_FUNCTION_ROOT_CONSTANTS,
+    };
+  }
+
+  async getTaxonomyTree(): Promise<TaxonomyTreeResponse> {
+    const [rootsResult, functionsResult] = await Promise.all([
+      this.titleTaxonomyRemoteService.getFunctionRoots(),
+      this.titleTaxonomyRemoteService.getFunctions(),
+    ]);
+
+    const roots = Array.isArray(rootsResult) ? rootsResult : [];
+    const functions = Array.isArray(functionsResult) ? functionsResult : [];
+
+    return {
+      status: 'ok',
+      gradeLevels: TAXONOMY_GRADE_LEVEL_CONSTANTS,
+      functionRoots: buildTaxonomyTreeFromFlatLists(roots, functions),
     };
   }
 
@@ -130,6 +158,7 @@ export class PeopleApiService {
 
   async searchPeopleByJobTitle(
     body: TitleFromJobSearchDto,
+    apiToken?: string,
   ): Promise<PeopleSearchByTitleResponse> {
     const jobTitle = body.jobTitle?.trim();
     if (!jobTitle) {
@@ -175,18 +204,22 @@ export class PeopleApiService {
       `Title resolve jobTitle="${jobTitle}" stdFunction=${stdFunction ?? ''} stdGrade=${stdGrade ?? ''} stdFunctionRoot=${stdFunctionRoot ?? ''}`,
     );
 
-    const searchResult = await this.searchPeople({
-      dataSource: body.dataSource,
-      companyId: body.companyId,
-      companyName: body.companyName,
-      website: body.website,
-      country: body.country,
-      stdFunction: stdFunction ?? undefined,
-      stdGrade: stdGrade ?? undefined,
-      jobTitle,
-      limit: body.limit,
-      offset: body.offset,
-    });
+    const searchResult = await this.searchPeople(
+      {
+        dataSource: body.dataSource,
+        companyId: body.companyId,
+        companyName: body.companyName,
+        website: body.website,
+        country: body.country,
+        stdFunction: stdFunction ?? undefined,
+        stdFunctionRoot: stdFunctionRoot ?? undefined,
+        stdGrade: stdGrade ?? undefined,
+        jobTitle,
+        limit: body.limit,
+        offset: body.offset,
+      },
+      apiToken,
+    );
 
     return {
       ...searchResult,
@@ -201,7 +234,10 @@ export class PeopleApiService {
     };
   }
 
-  async searchPeople(body: PeopleSearchDto): Promise<PeopleSearchResponse> {
+  async searchPeople(
+    body: PeopleSearchDto,
+    apiToken?: string,
+  ): Promise<PeopleSearchResponse> {
     const dataSource = body.dataSource ?? 'index';
 
     this.logger.log(
@@ -227,14 +263,75 @@ export class PeopleApiService {
       );
     }
 
-    if (dataSource === 'harvest') {
-      return this.searchPeopleFromHarvest(body, dataSource);
+    if (dataSource === 'harvest' || dataSource === 'unipile') {
+      return this.searchPeopleFromLinkedIn(body, dataSource, apiToken);
     }
 
     throw new HttpException(
       `Unknown data source "${dataSource}"`,
       HttpStatus.BAD_REQUEST,
     );
+  }
+
+  async searchPeopleByTaxonomy(
+    body: PeopleSearchByTaxonomyDto,
+    apiToken: string,
+  ): Promise<PeopleSearchByTaxonomyResponse> {
+    const stdFunction = body.stdFunction?.trim() || undefined;
+    const stdFunctionRoot = body.stdFunctionRoot?.trim() || undefined;
+    const stdGrade = body.stdGrade?.trim() || undefined;
+
+    this.assertTaxonomySearchInput({
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
+      website: body.website,
+      companyId: body.companyId,
+      companyName: body.companyName,
+    });
+
+    const dataSource = body.candidateSource ?? 'unipile';
+    const searchResult = await this.searchPeople(
+      {
+        dataSource,
+        website: body.website,
+        companyId: body.companyId,
+        companyName: body.companyName,
+        stdFunction,
+        stdFunctionRoot,
+        stdGrade,
+        country: body.country,
+        limit: body.limit,
+      },
+      apiToken,
+    );
+
+    if (searchResult.dataSource !== 'harvest' && searchResult.dataSource !== 'unipile') {
+      throw new HttpException(
+        `Unexpected data source "${searchResult.dataSource}" for taxonomy search`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return {
+      status: 'ok',
+      dataSource: searchResult.dataSource,
+      query: {
+        keywords: searchResult.query?.keywords ?? null,
+        company: searchResult.query?.company ?? {
+          name: null,
+          slug: null,
+          linkedinUrl: null,
+        },
+        ...(stdFunction ? { stdFunction } : {}),
+        ...(stdFunctionRoot ? { stdFunctionRoot } : {}),
+        ...(stdGrade ? { stdGrade } : {}),
+      },
+      total: searchResult.total,
+      totalBeforeFilter:
+        searchResult.totalBeforeFilter ?? searchResult.total,
+      items: searchResult.items as PeopleSearchByTaxonomyResponse['items'],
+    };
   }
 
   private async searchPeopleFromIndex(
@@ -338,58 +435,208 @@ export class PeopleApiService {
     };
   }
 
-  private async searchPeopleFromHarvest(
+  private async searchPeopleFromLinkedIn(
     body: PeopleSearchDto,
-    dataSource: PeopleDataSourceAlias,
+    dataSource: 'harvest' | 'unipile',
+    apiToken?: string,
   ): Promise<PeopleSearchResponse> {
-    if (!this.harvestLinkedinService.isConfigured()) {
+    if (dataSource === 'harvest' && !this.harvestLinkedinService.isConfigured()) {
       throw new HttpException(
         'Harvest data source is not configured',
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-
-    // Build a keyword search string from whichever taxonomy fields are provided.
-    const searchTerms = [
-      body.stdFunction,
-      body.stdFunctionRoot,
-      body.stdGrade,
-      body.jobTitle,
-    ]
-      .map((value) => value?.trim())
-      .filter((value): value is string => !!value);
-
-    if (searchTerms.length === 0 && !body.query?.trim()) {
+    if (
+      dataSource === 'unipile' &&
+      !this.peopleLinkedInSourcingService.isUnipileConfigured()
+    ) {
       throw new HttpException(
-        'At least one of stdFunction, stdGrade, stdFunctionRoot, jobTitle, or query is required for harvest search',
+        'Unipile data source is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    if (!apiToken?.trim()) {
+      throw new HttpException(
+        'Authorization token is required for LinkedIn people search',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const hasTaxonomy =
+      !!body.stdFunction?.trim() ||
+      !!body.stdFunctionRoot?.trim() ||
+      !!body.stdGrade?.trim();
+    const hasCompany =
+      !!body.website?.trim() ||
+      !!body.companyId?.trim() ||
+      !!body.companyName?.trim();
+
+    if (!hasCompany) {
+      throw new HttpException(
+        'companyName, companyId, or website is required for LinkedIn search',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const search =
-      searchTerms.length > 0 ? searchTerms.join(' OR ') : body.query!.trim();
+    if (
+      !hasTaxonomy &&
+      !body.jobTitle?.trim() &&
+      !body.query?.trim()
+    ) {
+      throw new HttpException(
+        'At least one of stdFunction, stdFunctionRoot, stdGrade, jobTitle, or query is required for LinkedIn search',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-    const sessionId = `people-api-${Date.now()}`;
+    const stdFunction = body.stdFunction?.trim() || undefined;
+    const stdFunctionRoot = body.stdFunctionRoot?.trim() || undefined;
+    const stdGrade = body.stdGrade?.trim() || undefined;
 
-    const companyName = body.companyName?.trim();
-    const items = await this.harvestLinkedinService.fetchAllLeadsFromQueryParams(
-      {
-        params: {
-          search,
-          currentCompanies: companyName,
-          locations: body.country?.trim(),
-          sessionId,
+    const sourcingResult = await this.peopleLinkedInSourcingService.search({
+      apiToken,
+      website: body.website,
+      companyId: body.companyId,
+      companyName: body.companyName,
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
+      country: body.country,
+      candidateSource: dataSource,
+      limit: body.limit ?? 20,
+      linkedinSearchKeywords:
+        body.jobTitle?.trim() || body.query?.trim() || undefined,
+    });
+
+    const queryMeta = {
+      keywords: sourcingResult.keywords,
+      company: sourcingResult.company,
+      ...(stdFunction ? { stdFunction } : {}),
+      ...(stdFunctionRoot ? { stdFunctionRoot } : {}),
+      ...(stdGrade ? { stdGrade } : {}),
+    };
+
+    if (stdFunction || stdFunctionRoot) {
+      const filtered = await this.filterCandidatesByTaxonomy(
+        sourcingResult.items,
+        {
+          stdFunction,
+          stdFunctionRoot,
+          stdGrade,
         },
-        maxProfiles: body.limit ?? 20,
-      },
-    );
+      );
+
+      return {
+        status: 'ok',
+        dataSource,
+        total: filtered.length,
+        totalBeforeFilter: sourcingResult.items.length,
+        query: queryMeta,
+        items: filtered,
+      };
+    }
 
     return {
       status: 'ok',
       dataSource,
-      total: items.length,
-      items,
+      total: sourcingResult.items.length,
+      totalBeforeFilter: sourcingResult.items.length,
+      query: queryMeta,
+      items: sourcingResult.items,
     };
+  }
+
+  private assertTaxonomySearchInput(args: {
+    stdFunction?: string;
+    stdFunctionRoot?: string;
+    stdGrade?: string;
+    website?: string;
+    companyId?: string;
+    companyName?: string;
+  }): void {
+    const hasCompany =
+      !!args.website?.trim() ||
+      !!args.companyId?.trim() ||
+      !!args.companyName?.trim();
+    if (!hasCompany) {
+      throw new HttpException(
+        'At least one of website, companyId, or companyName is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const hasFunction = !!args.stdFunction?.trim();
+    const hasRoot = !!args.stdFunctionRoot?.trim();
+    if (hasFunction === hasRoot) {
+      throw new HttpException(
+        'Provide exactly one of stdFunction or stdFunctionRoot',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (args.stdGrade?.trim() && !hasFunction && !hasRoot) {
+      throw new HttpException(
+        'stdGrade requires stdFunction or stdFunctionRoot',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async filterCandidatesByTaxonomy(
+    items: Array<Record<string, unknown>>,
+    criteria: {
+      stdFunction?: string;
+      stdFunctionRoot?: string;
+      stdGrade?: string;
+    },
+  ): Promise<
+    Array<
+      Record<string, unknown> & {
+        resolved: {
+          stdFunction: string | null;
+          stdFunctionRoot: string | null;
+          stdGrade: string | null;
+          confidence: number;
+        };
+      }
+    >
+  > {
+    const titles = items.map(
+      (item) => extractCandidateJobTitle(item) ?? '',
+    );
+    const classifications =
+      await this.titleTaxonomyRemoteService.classifyTitles(titles);
+
+    if (!classifications) {
+      throw new HttpException(
+        'Title taxonomy service is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    return items.reduce<
+      Array<
+        Record<string, unknown> & {
+          resolved: {
+            stdFunction: string | null;
+            stdFunctionRoot: string | null;
+            stdGrade: string | null;
+            confidence: number;
+          };
+        }
+      >
+    >((accumulator, item, index) => {
+      const resolved = classificationToResolvedFields(classifications[index]);
+      if (!matchesTaxonomyFilter(resolved, criteria)) {
+        return accumulator;
+      }
+      accumulator.push({
+        ...item,
+        resolved,
+      });
+      return accumulator;
+    }, []);
   }
 
   async expandJobTitles(

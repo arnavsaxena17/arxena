@@ -11,6 +11,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 
 import { PeopleApiController } from './people-api.controller';
 import { PeopleApiService } from './people-api.service';
+import { PeopleLinkedInSourcingService } from './services/people-linkedin-sourcing.service';
 
 @Module({
   imports: [
@@ -23,7 +24,11 @@ import { PeopleApiService } from './people-api.service';
     TwentyConfigModule,
   ],
   controllers: [PeopleApiController],
-  providers: [PeopleApiService, JwtAuthGuard],
+  providers: [
+    PeopleApiService,
+    PeopleLinkedInSourcingService,
+    JwtAuthGuard,
+  ],
   exports: [PeopleApiService],
 })
 export class PeopleApiModule {}

@@ -12,6 +12,7 @@ describe('people-data-source-aliases', () => {
       'pdl',
       'contactout',
       'harvest',
+      'unipile',
     ]);
     for (const category of PEOPLE_DATA_SOURCE_CATEGORIES) {
       expect(category.label.toLowerCase()).not.toContain('people data labs');

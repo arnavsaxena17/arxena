@@ -1,0 +1,11 @@
+---
+title: 'Search people by taxonomy'
+description: Company-scoped LinkedIn search with std_function or std_function_root and optional std_grade.
+openapi: 'openapi/people-api.json POST /people-api/people/search-by-taxonomy'
+---
+
+Requires exactly one of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade` (`entry` | `mid` | `leadership`). Default LinkedIn source is `unipile` (`candidateSource: harvest` also supported).
+
+Thin validated wrapper over the shared `people/search` LinkedIn path (`dataSource: unipile|harvest`): company → boolean keywords → source → batch title reclassify → exact taxonomy matches.
+
+Input helpers: [List taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree) for nested function selects; grades from `gradeLevels` on that response.

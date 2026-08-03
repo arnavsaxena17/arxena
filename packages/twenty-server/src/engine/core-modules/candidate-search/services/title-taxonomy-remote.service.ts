@@ -143,6 +143,40 @@ export class TitleTaxonomyRemoteService {
     );
   }
 
+  async classifyTitles(
+    titles: string[],
+  ): Promise<TitleTaxonomyClassifyResponse[] | null> {
+    const url = `${this.getBaseUrl()}/api/title-taxonomy/classify-titles`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ titles }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `Title taxonomy classify-titles returned ${response.status}: ${text}`,
+        );
+        return null;
+      }
+      const json = (await response.json()) as {
+        items?: TitleTaxonomyClassifyResponse[];
+      };
+      return Array.isArray(json.items) ? json.items : [];
+    } catch (error) {
+      this.logger.warn(
+        `Title taxonomy classify-titles failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
   /**
    * POST /api/title-taxonomy/search-keywords — deterministic truth-table terms (Python).
    * Optional `resolvedIntent` passes Nest-structured fields; LLM intent stays in Nest only.
