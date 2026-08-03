@@ -146,52 +146,67 @@ export class EngagedCandidateQueueService {
 
       // Step 3: Check for duplicate messages for this specific candidate and job context
       if (replyObject.whatsappMessageId && replyObject.chatReply) {
-        const whatsappMessageRepository =
-          await this.workspaceQueryService.getObjectRepository<{
-            id: string;
-            whatsappMessageId?: string;
-            message?: string;
-            phoneFrom?: string;
-            phoneTo?: string;
-            candidateId?: string;
-            projectsId?: string;
-          }>(workspaceId, 'whatsappMessage');
+        const duplicateResult =
+          await this.workspaceQueryService.executeInWorkspaceContext(
+            workspaceId,
+            async () => {
+              const whatsappMessageRepository =
+                await this.workspaceQueryService.getObjectRepository<{
+                  id: string;
+                  whatsappMessageId?: string;
+                  message?: string;
+                  phoneFrom?: string;
+                  phoneTo?: string;
+                  candidateId?: string;
+                  projectsId?: string;
+                }>(workspaceId, 'whatsappMessage');
 
-        // For messages with actual WhatsApp message IDs (not 'NA'), check by message ID
-        if (replyObject.whatsappMessageId !== 'NA') {
-          const duplicateResult = await whatsappMessageRepository.findOne({
-            where: {
-              whatsappMessageId: replyObject.whatsappMessageId,
-              message: replyObject.chatReply,
+              // For messages with actual WhatsApp message IDs (not 'NA'), check by message ID
+              if (replyObject.whatsappMessageId !== 'NA') {
+                return whatsappMessageRepository.findOne({
+                  where: {
+                    whatsappMessageId: replyObject.whatsappMessageId,
+                    message: replyObject.chatReply,
+                  },
+                  select: { id: true },
+                });
+              }
+
+              // For interim messages (like 'startChat'), check by candidate ID, job ID, and message content
+              return whatsappMessageRepository.findOne({
+                where: {
+                  message: replyObject.chatReply,
+                  phoneFrom: replyObject.phoneNumberFrom,
+                  phoneTo:
+                    candidateProfileDataNodeObj.people?.phones
+                      ?.primaryPhoneNumber || '',
+                  candidateId: candidateProfileDataNodeObj.id,
+                  projectsId: candidateJob.id,
+                },
+                select: { id: true },
+              });
             },
-            select: { id: true },
-          });
+          );
 
-          if (duplicateResult) {
-            console.log('Message already exists in database, skipping creation. Message ID:', replyObject.whatsappMessageId);
-            return null;
-          }
-        } else {
-          // For interim messages (like 'startChat'), check by candidate ID, job ID, and message content
-          const duplicateResult = await whatsappMessageRepository.findOne({
-            where: {
-              message: replyObject.chatReply,
-              phoneFrom: replyObject.phoneNumberFrom,
-              phoneTo:
-                candidateProfileDataNodeObj.people?.phones
-                  ?.primaryPhoneNumber || '',
-              candidateId: candidateProfileDataNodeObj.id,
-              projectsId: candidateJob.id,
-            },
-            select: { id: true },
-          });
-
-          if (duplicateResult) {
-            console.log(`Message '${replyObject.chatReply}' already exists for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, skipping creation`);
-            return null;
+        if (duplicateResult) {
+          if (replyObject.whatsappMessageId !== 'NA') {
+            console.log(
+              'Message already exists in database, skipping creation. Message ID:',
+              replyObject.whatsappMessageId,
+            );
+          } else {
+            console.log(
+              `Message '${replyObject.chatReply}' already exists for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, skipping creation`,
+            );
           }
 
-          console.log(`Message '${replyObject.chatReply}' is new for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, proceeding with creation`);
+          return null;
+        }
+
+        if (replyObject.whatsappMessageId === 'NA') {
+          console.log(
+            `Message '${replyObject.chatReply}' is new for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, proceeding with creation`,
+          );
         }
       }
 

@@ -233,6 +233,19 @@ export class WorkspaceQueryService {
     );
   }
 
+  // WorkspaceRepository ops read AsyncLocalStorage — wrap all find/save/update/delete.
+  async executeInWorkspaceContext<T>(
+    workspaceId: string,
+    fn: () => T | Promise<T>,
+  ): Promise<T> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      fn,
+      authContext,
+    );
+  }
+
   // Workspace-schema SQL for system/jobs when repository APIs are awkward (joins, DDL, bulk).
   async executeWorkspaceRawQuery<T = unknown>(
     query: string,
@@ -245,19 +258,14 @@ export class WorkspaceQueryService {
       );
     }
 
-    const authContext = buildSystemAuthContext(workspaceId);
+    return this.executeInWorkspaceContext(workspaceId, async () => {
+      const dataSource =
+        await this.globalWorkspaceOrmManager.getGlobalWorkspaceDataSource();
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const dataSource =
-          await this.globalWorkspaceOrmManager.getGlobalWorkspaceDataSource();
-
-        return dataSource.query(query, parameters, undefined, {
-          shouldBypassPermissionChecks: true,
-        }) as Promise<T>;
-      },
-      authContext,
-    );
+      return dataSource.query(query, parameters, undefined, {
+        shouldBypassPermissionChecks: true,
+      }) as Promise<T>;
+    });
   }
 
   /**
