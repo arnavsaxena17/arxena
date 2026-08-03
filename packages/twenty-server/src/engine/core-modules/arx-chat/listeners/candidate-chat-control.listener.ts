@@ -121,9 +121,7 @@ export class CandidateChatControlListener {
   ): Promise<string | null> {
     try {
       const schema =
-        this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-          workspaceId,
-        );
+        this.workspaceQueryService.getDataSourceSchema(workspaceId);
       const apiKeys = await this.workspaceQueryService.getApiKeys(
         workspaceId,
         schema,

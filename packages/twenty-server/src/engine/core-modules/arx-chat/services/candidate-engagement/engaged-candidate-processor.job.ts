@@ -362,7 +362,7 @@ export class EngagedCandidateProcessor {
 
       const processingPromise = async () => {
         // Get API keys for the workspace
-        const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+        const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
         const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId, schema);
 
         if (!apiKeys || !apiKeys.length) {

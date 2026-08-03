@@ -53,7 +53,7 @@ export class AutonomousRecruiterCronService {
       });
       const uniqueWorkspaces = Array.from(new Set(dataSources.map((ds) => ds.workspaceId))).map((id) => ({
         id,
-        schema: this.workspaceQueryService.workspaceDataSourceService.getSchemaName(id),
+        schema: this.workspaceQueryService.getDataSourceSchema(id),
       }));
       const filtered = this.filterWorkspaces(uniqueWorkspaces);
       for (const workspace of filtered) {

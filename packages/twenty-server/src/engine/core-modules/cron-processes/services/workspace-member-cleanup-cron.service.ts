@@ -62,7 +62,7 @@ export class WorkspaceMemberCleanupCronService {
       const validMemberIds = new Set<string>();
       for (const workspaceId of workspaceIds) {
         try {
-          const schema = this.workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+          const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
           const query = `SELECT id FROM ${schema}."workspaceMember"`;
           const members = await this.workspaceQueryService.executeRawQuery(query, [], workspaceId);
           members.forEach((member: { id: string }) => validMemberIds.add(member.id));
@@ -124,4 +124,4 @@ export class WorkspaceMemberCleanupCronService {
       this.logger.log('Ending workspace member cleanup cycle');
     }
   }
-} 
+}

@@ -111,9 +111,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
 
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema =
-      this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-        workspaceId,
-      );
+      this.workspaceQueryService.getDataSourceSchema(workspaceId);
     const apiKeys = await this.workspaceQueryService.getApiKeys(
       workspaceId,
       schema,

@@ -23,12 +23,12 @@ export class SharedCronOperationsService {
     try {
       isProcessingRef.current = true;
       console.log('Starting cycle');
-      
+
       const workspaces = await this.getFilteredWorkspaces();
       console.log(`Processing ${workspaces.length} workspaces`);
 
       await this.processConcurrently(workspaces, callback);
-      
+
     } catch (error) {
       console.log('Error in job', error);
     } finally {
@@ -42,7 +42,7 @@ export class SharedCronOperationsService {
     callback: (token: string) => Promise<void>,
   ) {
     const semaphore = new Semaphore(this.maxConcurrency);
-    
+
     const processWorkspace = async (workspaceId: string) => {
       await semaphore.acquire();
       try {
@@ -72,9 +72,7 @@ export class SharedCronOperationsService {
 
   private async getWorkspaceToken(workspaceId: string): Promise<string | null> {
     const schema =
-      this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-        workspaceId,
-      );
+      this.workspaceQueryService.getDataSourceSchema(workspaceId);
     const apiKeys = await this.workspaceQueryService.getApiKeys(
       workspaceId,
       schema,
@@ -87,4 +85,4 @@ export class SharedCronOperationsService {
       );
     return token?.token || null;
   }
-} 
+}

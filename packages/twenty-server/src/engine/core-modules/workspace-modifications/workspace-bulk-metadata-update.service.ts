@@ -46,9 +46,7 @@ export class WorkspaceBulkMetadataUpdateService {
 
     for (const workspaceId of uniqueWorkspaceIds) {
       const schema =
-        this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-          workspaceId,
-        );
+        this.workspaceQueryService.getDataSourceSchema(workspaceId);
       const apiKeys = await this.workspaceQueryService.getApiKeys(
         workspaceId,
         schema,

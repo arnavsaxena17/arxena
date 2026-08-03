@@ -56,10 +56,10 @@ export class CronDriveService {
       const filteredWorkspaceIds = Array.from(
         workspaceIdsWithDataSources,
       );
-      
+
       for (const workspaceId of filteredWorkspaceIds) {
         const schema =
-          CronDriveService.instance.workspaceQueryService.workspaceDataSourceService.getSchemaName(
+          CronDriveService.instance.workspaceQueryService.getDataSourceSchema(
             workspaceId,
           );
         const apiKeys = await CronDriveService.instance.workspaceQueryService.getApiKeys(
@@ -135,9 +135,7 @@ export class CronDriveService {
       await this.driveService.loadSavedCredentialsIfExist(apiKeyToken);
 
     const dataSourceSchema =
-      this.workspaceQueryService.workspaceDataSourceService.getSchemaName(
-        workspaceId,
-      );
+      this.workspaceQueryService.getDataSourceSchema(workspaceId);
 
     // Get data folders from workspace config/settings
     const callsFolder = await this.getWorkspaceCallsFolder(

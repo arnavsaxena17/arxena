@@ -41,7 +41,7 @@ export class CandidateEngagementCronService {
   private isProcessing = false;
   private currentWorkspaceIndex = 0; // Track current position in workspace rotation
   private readonly logger = new Logger(CandidateEngagementCronService.name);
-  
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -69,7 +69,7 @@ export class CandidateEngagementCronService {
 
   private getWorkspacesForCurrentRun(allWorkspaces: Array<{ id: string; schema: string }>): Array<{ id: string; schema: string }> {
     const { workspacesPerRun } = TimeManagement.workspaceSpreading;
-    
+
     if (allWorkspaces.length === 0) {
       return [];
     }
@@ -77,10 +77,10 @@ export class CandidateEngagementCronService {
     // Calculate the subset of workspaces to process in this run
     const startIndex = this.currentWorkspaceIndex;
     const endIndex = Math.min(startIndex + workspacesPerRun, allWorkspaces.length);
-    
+
     // Get workspaces for current run (handle wrap-around)
     let workspacesForRun: Array<{ id: string; schema: string }> = [];
-    
+
     if (endIndex > startIndex) {
       // Normal case: get workspaces from startIndex to endIndex
       workspacesForRun = allWorkspaces.slice(startIndex, endIndex);
@@ -94,9 +94,9 @@ export class CandidateEngagementCronService {
 
     // Update the index for next run
     this.currentWorkspaceIndex = (this.currentWorkspaceIndex + workspacesPerRun) % allWorkspaces.length;
-    
+
     this.logger.log(`Processing workspaces ${startIndex + 1}-${Math.min(startIndex + workspacesPerRun, allWorkspaces.length)} of ${allWorkspaces.length} (round-robin position: ${this.currentWorkspaceIndex})`);
-    
+
     return workspacesForRun;
   }
 
@@ -118,14 +118,14 @@ export class CandidateEngagementCronService {
       console.log(`Adding job to queue with name: ${CandidateEngagementProcessor.name}`);
       console.log(`Job data:`, jobData);
       console.log(`Queue options:`, queueOptions);
-      
+
       await this.messageQueueService.add<CandidateEngagementJobData>(
         CandidateEngagementProcessor.name,
         jobData,
         queueOptions,
       );
       this.logger.log(`Queued workspace ${workspace.id} for processing`);
-      
+
       // Add delay between queue jobs to spread out processing
       await new Promise((resolve) => setTimeout(resolve, TimeManagement.queueSettings.queueJobDelayMs));
     } catch (error) {
@@ -146,23 +146,23 @@ export class CandidateEngagementCronService {
       this.isProcessing = true;
       const overallStartTime = Date.now();
       const runId = `run-${Date.now()}`;
-      
+
       this.logger.log('Starting candidate engagement cycle');
-      
+
       const workspaceIds = await this.workspaceQueryService.getWorkspaces();
       console.log("These are all the workspaces::", workspaceIds);
-      
+
       const dataSources = await this.workspaceQueryService.dataSourceRepository.find({
         where: { workspaceId: In(workspaceIds) },
       });
-      
+
       const uniqueWorkspaces = Array.from(
         new Set(dataSources.map((ds) => ds.workspaceId)),
       ).map((id) => ({
         id,
-        schema: this.workspaceQueryService.workspaceDataSourceService.getSchemaName(id),
+        schema: this.workspaceQueryService.getDataSourceSchema(id),
       }));
-      
+
       const filteredWorkspaces = this.filterWorkspaces(uniqueWorkspaces);
       if (filteredWorkspaces.length === 0) {
         this.logger.warn('No workspaces to process after filtering');
@@ -171,26 +171,26 @@ export class CandidateEngagementCronService {
 
       // Get only a subset of workspaces for this run
       const workspacesForCurrentRun = this.getWorkspacesForCurrentRun(filteredWorkspaces);
-      
+
       if (workspacesForCurrentRun.length === 0) {
         this.logger.warn('No workspaces selected for current run');
         return;
       }
 
       this.logger.log(`Will queue ${workspacesForCurrentRun.length} workspaces out of ${filteredWorkspaces.length} total workspaces for processing`);
-      
+
       // Queue each workspace for individual processing
-      const queuePromises = workspacesForCurrentRun.map(workspace => 
+      const queuePromises = workspacesForCurrentRun.map(workspace =>
         this.queueWorkspaceForProcessing(workspace, runId)
       );
-      
+
       await Promise.all(queuePromises);
-      
+
       const overallEndTime = Date.now();
       const overallProcessingTime = overallEndTime - overallStartTime;
       console.log(`Total queueing time for current run: ${overallProcessingTime}ms`);
       this.logger.log(`Successfully queued ${workspacesForCurrentRun.length} workspaces for processing`);
-      
+
     } catch (error) {
       this.logger.error('Error in candidate engagement job:', error);
     } finally {

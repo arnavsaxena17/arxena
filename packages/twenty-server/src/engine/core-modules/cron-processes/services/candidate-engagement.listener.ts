@@ -17,9 +17,9 @@ export class CandidateEngagementListener {
     const { workspaceId, workspaceQueryService, staticGraphQLService } = payload;
 
     try {
-      const schema = workspaceQueryService.workspaceDataSourceService.getSchemaName(workspaceId);
+      const schema = workspaceQueryService.getDataSourceSchema(workspaceId);
       const apiKeys = await workspaceQueryService.getApiKeys(workspaceId, schema);
-      
+
       if (!apiKeys || !apiKeys.length) {
         return;
       }
@@ -38,4 +38,4 @@ export class CandidateEngagementListener {
       this.logger.error(`Error processing workspace ${workspaceId}:`, error);
     }
   }
-} 
+}
