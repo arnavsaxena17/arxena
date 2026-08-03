@@ -77,7 +77,7 @@ export class VoiceCallService {
       apiToken,
     );
     const edges = res?.data?.data?.candidates?.edges;
-    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Project }) | undefined;
+    const candidateNode = edges?.[0]?.node as CandidateNode | undefined;
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }
@@ -165,7 +165,7 @@ export class VoiceCallService {
       apiToken,
     );
     const edges = res?.data?.data?.candidates?.edges;
-    const candidateNode = edges?.[0]?.node as (CandidateNode & { jobs?: Project }) | undefined;
+    const candidateNode = edges?.[0]?.node as CandidateNode | undefined;
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }

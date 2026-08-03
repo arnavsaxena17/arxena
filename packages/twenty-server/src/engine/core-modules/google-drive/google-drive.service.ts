@@ -1,59 +1,24 @@
 // google-drive.service.ts
 import { Injectable } from "@nestjs/common";
-import axios from "axios";
 import { google } from "googleapis";
+import { GoogleConnectedAccountAuthService } from "src/engine/core-modules/google-auth/google-connected-account-auth.service";
 
 @Injectable()
 export class GoogleDriveService {
-  private oauth2Client;
-
-  constructor() {
-    this.oauth2Client = new google.auth.OAuth2(
-      process.env.AUTH_GOOGLE_CLIENT_ID,
-      process.env.AUTH_GOOGLE_CLIENT_SECRET,
-      process.env.AUTH_GOOGLE_CALLBACK_URL
-    );
-  }
+  constructor(
+    private readonly googleConnectedAccountAuthService: GoogleConnectedAccountAuthService,
+  ) {}
 
   async loadSavedCredentialsIfExist(twenty_token: string) {
-    console.log("loadSavedCredentialsIfExist");
-    const connectedAccountsResponse = await axios.request({
-      method: "get",
-      url: "http://localhost:3000/rest/connectedAccounts",
-      headers: {
-        authorization: "Bearer " + twenty_token,
-        "content-type": "application/json",
-      },
-    });
-
-    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts
-        .filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
-      const refreshToken = connectedAccountToUse?.refreshToken;
-      
-      if (!refreshToken) return null;
-
-      try {
-        const credentials = {
-          type: "authorized_user",
-          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
-          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        };
-        return google.auth.fromJSON(credentials);
-      } catch (err) {
-        console.error("Error loading credentials:", err);
-        return null;
-      }
-    }
-    else{
-        console.log("No connected accounts found");
-    }
+    return this.googleConnectedAccountAuthService.loadGoogleOAuth2ClientFromToken(
+      twenty_token,
+      process.env.EMAIL_SMTP_USER,
+    );
   }
 
   async listFiles(auth, folderId?: string, pageSize?: number) {
     const drive = google.drive({ version: 'v3', auth });
-    
+
     // Only include pageSize in params if it's a valid number
     const params: any = {
         fields: 'nextPageToken, files(id, name, mimeType, createdTime, modifiedTime, size, parents)',
@@ -84,7 +49,7 @@ export class GoogleDriveService {
     folderId?: string
   }) {
     const drive = google.drive({ version: 'v3', auth });
-    
+
     const fileMetadata = {
       name: fileData.name,
       parents: fileData.folderId ? [fileData.folderId] : undefined
@@ -109,7 +74,7 @@ export class GoogleDriveService {
     parentFolderId?: string
   }) {
     const drive = google.drive({ version: 'v3', auth });
-    
+
     const fileMetadata = {
       name: folderData.name,
       mimeType: 'application/vnd.google-apps.folder',
@@ -126,7 +91,7 @@ export class GoogleDriveService {
 
   async copyFile(auth, fileId: string, destinationFolderId?: string) {
     const drive = google.drive({ version: 'v3', auth });
-    
+
     const fileMetadata = destinationFolderId ? {
       parents: [destinationFolderId]
     } : {};

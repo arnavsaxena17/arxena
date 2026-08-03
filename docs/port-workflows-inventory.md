@@ -42,7 +42,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 
 ### Hub / chat (wave 3)
 
-- [x] `arx-chat` — includes `CandidateChatControlListener`: candidate field flips (`startChat` / video / meeting scheduling → true) from Handsontable or CRM record edit queue the same interim-chat start as the Start Chat button; `stopChat` remains flag-only
+- [x] `arx-chat` — includes `CandidateChatControlListener`: candidate field flips (`startChat` / video / meeting scheduling → true) from Handsontable or CRM record edit queue the same interim-chat start as the Start Chat button; `stopChat` remains flag-only. 2026-08-03: interim start-chat path fixed (`candidate.jobs` → `projects` in EngagedCandidateProcessor / queue service)
 - [x] `warm-paths`
 - [x] `assistant`
 - [x] `autonomous-recruiter`

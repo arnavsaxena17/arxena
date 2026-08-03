@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import axios from "axios";
 import { google } from "googleapis";
 import { graphqlToFetchAllCandidateData } from "twenty-shared";
+import { GoogleConnectedAccountAuthService } from "src/engine/core-modules/google-auth/google-connected-account-auth.service";
 import { StaticGraphQLService } from "../graphql/static-graphql.service";
 
 type AddCandidatesToGoogleContactsResult = {
@@ -16,15 +16,10 @@ type AddCandidatesToGoogleContactsResult = {
 
 @Injectable()
 export class GoogleContactsService {
-  private oauth2Client;
-
-  constructor(private readonly staticGraphQLService: StaticGraphQLService) {
-    this.oauth2Client = new google.auth.OAuth2(
-      process.env.AUTH_GOOGLE_CLIENT_ID,
-      process.env.AUTH_GOOGLE_CLIENT_SECRET,
-      process.env.AUTH_GOOGLE_CALLBACK_URL
-    );
-  }
+  constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly googleConnectedAccountAuthService: GoogleConnectedAccountAuthService,
+  ) {}
 
   /**
    * Check if Google Contacts service is available and properly configured
@@ -38,47 +33,15 @@ export class GoogleContactsService {
   }
 
   async loadSavedCredentialsIfExist(twenty_token: string) {
-    const connectedAccountsResponse = await axios.request({
-      method: "get", 
-      url: "http://localhost:3000/rest/connectedAccounts",
-      headers: {
-        authorization: "Bearer " + twenty_token,
-        "content-type": "application/json",
-      },
-    });
-
-    const connectedAccounts =
-      connectedAccountsResponse?.data?.data?.connectedAccounts ?? [];
-
-    if (connectedAccounts.length > 0) {
-      const connectedAccountToUse = connectedAccounts.find(
-        (account) => account.provider?.toLowerCase() === 'google',
-      );
-      const refreshToken = connectedAccountToUse?.refreshToken;
-      
-      if (!refreshToken) {
-        return null;
-      }
-
-      try {
-        const credentials = {
-          type: "authorized_user",
-          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
-          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        };
-
-        return google.auth.fromJSON(credentials);
-      } catch (err) {
-        return null;
-      }
-    }
+    return this.googleConnectedAccountAuthService.loadGoogleOAuth2ClientFromToken(
+      twenty_token,
+    );
   }
 
   async createOrGetContactGroup(auth, groupName: string) {
     try {
       const people = google.people({ version: 'v1', auth });
-      
+
       // List existing groups
       const results = await people.contactGroups.list();
       const contactGroups = results.data.contactGroups || [];
@@ -110,7 +73,7 @@ export class GoogleContactsService {
   async batchCreateContacts(auth, contacts: any[], searchName: string) {
     try {
       const people = google.people({ version: 'v1', auth });
-      
+
       const groupResourceName = await this.createOrGetContactGroup(auth, searchName);
       if (!groupResourceName) {
         throw new Error("Failed to create contact group");
@@ -119,7 +82,7 @@ export class GoogleContactsService {
       const batchSize = 200;
       for (let i = 0; i < contacts.length; i += batchSize) {
         const batch = contacts.slice(i, i + batchSize);
-        
+
         const body = {
           contacts: batch.map(contact => ({
             contactPerson: {
@@ -176,7 +139,7 @@ export class GoogleContactsService {
         });
 
         const connections = response.data.connections || [];
-        
+
         for (const person of connections) {
           const phoneNumbers = person.phoneNumbers || [];
           for (const phone of phoneNumbers) {

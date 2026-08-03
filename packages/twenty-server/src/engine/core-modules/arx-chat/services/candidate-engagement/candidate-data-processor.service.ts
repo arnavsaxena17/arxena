@@ -26,7 +26,7 @@ export interface CandidateData {
     email?: string;
     uniqueStringKey?: string;
   };
-  jobs?: {
+  projects?: {
     id: string;
     name: string;
     recruiterId?: string;
@@ -132,7 +132,7 @@ export class CandidateDataProcessorService {
     apiToken: string,
   ): Promise<ProcessedCandidate[]> {
     console.log(`Processing ${candidates.length} candidates with LLM`);
-    
+
     const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
     );
@@ -178,7 +178,7 @@ export class CandidateDataProcessorService {
           });
 
           const candidateDataString = completion.choices[0].message.content;
-          
+
           if (!candidateDataString) {
             console.log(`No candidate data extracted for: ${candidate.name}`);
             return null;
@@ -208,7 +208,7 @@ export class CandidateDataProcessorService {
 
       // Wait for current batch to complete
       const batchResults = await Promise.all(batchPromises);
-      
+
       // Filter out null results and add to processed candidates
       const validResults = batchResults.filter((result): result is ProcessedCandidate => result !== null);
       processedCandidates.push(...validResults);
@@ -356,7 +356,7 @@ export class CandidateDataProcessorService {
       }
 
       const messages = await response.json();
-      const sortedMessages = messages.sort((a: any, b: any) => 
+      const sortedMessages = messages.sort((a: any, b: any) =>
         new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
       );
 
@@ -522,7 +522,7 @@ export class CandidateDataProcessorService {
   ): Promise<Record<string, any>[]> {
     try {
       console.log(`Fetching all candidate data from databases for job: ${job.name}`);
-      
+
       let dfAll: Record<string, any>[] = [];
 
       // Try to read from input file first
@@ -675,34 +675,34 @@ export class CandidateDataProcessorService {
       try {
         if (candidateEmail) {
           // Try to find by Email ID first
-          candidateRow = dfAll.find(row => 
+          candidateRow = dfAll.find(row =>
             row['Email ID'] && row['Email ID'].includes(candidateEmail)
           ) || null;
 
           if (!candidateRow) {
             // Try to find by Email
-            candidateRow = dfAll.find(row => 
+            candidateRow = dfAll.find(row =>
               row['Email'] && row['Email'].includes(candidateEmail)
             ) || null;
           }
 
           if (!candidateRow) {
             console.log(`No row found for email: ${candidateEmail}, trying unique string key`);
-            candidateRow = dfAll.find(row => 
-              row['uniqueStringKey'] && 
+            candidateRow = dfAll.find(row =>
+              row['uniqueStringKey'] &&
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
             ) || null;
           }
         } else if (candidateUniqueStringKey) {
           // Try different unique key column names
           if (availableColumns.includes('uniqueStringKey')) {
-            candidateRow = dfAll.find(row => 
-              row['uniqueStringKey'] && 
+            candidateRow = dfAll.find(row =>
+              row['uniqueStringKey'] &&
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
             ) || null;
           } else if (availableColumns.includes('uniqueStringKey')) {
-            candidateRow = dfAll.find(row => 
-              row['uniqueStringKey'] && 
+            candidateRow = dfAll.find(row =>
+              row['uniqueStringKey'] &&
               row['uniqueStringKey'].includes(candidateUniqueStringKey)
             ) || null;
           }
@@ -715,7 +715,7 @@ export class CandidateDataProcessorService {
 
         // Extract user input from the candidate's row
         const userInput = this.extractUserInputFromRow(candidateRow, allColumnsToProcess);
-        
+
         console.log(`Received user input for candidate: ${candidateName}, length: ${userInput.length}`);
         return userInput;
 
@@ -758,27 +758,27 @@ export class CandidateDataProcessorService {
     if (value === null || value === undefined) {
       return '';
     }
-    
+
     if (typeof value === 'string') {
       return value.trim();
     }
-    
+
     if (typeof value === 'number') {
       return value.toString();
     }
-    
+
     if (typeof value === 'boolean') {
       return value.toString();
     }
-    
+
     if (Array.isArray(value)) {
       return value.join(', ');
     }
-    
+
     if (typeof value === 'object') {
       return JSON.stringify(value);
     }
-    
+
     return String(value);
   }
 
@@ -837,18 +837,18 @@ export class CandidateDataProcessorService {
       }
 
       const fileBuffer = await response.arrayBuffer();
-      
+
       // Create a temporary file to store the downloaded resume
       const tempDir = path.join(process.cwd(), 'temp');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      
+
       const tempFilePath = path.join(tempDir, `${candidateId}_${fileName}`);
       fs.writeFileSync(tempFilePath, new Uint8Array(fileBuffer));
-      
+
       console.log(`Downloaded resume file: ${fileName} for candidate: ${candidateName}`);
-      
+
       // Check if the file format is supported
       if (!this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)) {
         console.log(`Unsupported resume format: ${fileName} for candidate: ${candidateName}`);
@@ -856,18 +856,18 @@ export class CandidateDataProcessorService {
         fs.unlinkSync(tempFilePath);
         return `[Unsupported resume format: ${fileName}]`;
       }
-      
+
       // Use ResumeReaderService to extract text content
       const resumeContent = await this.resumeReadParseUploadService.readResumeFile(tempFilePath);
-      
+
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
-      
+
       console.log(`Successfully processed resume: ${fileName} for candidate: ${candidateName}`);
       return resumeContent.text;
     } catch (error) {
       console.error(`Error downloading and processing resume for ${candidateName}:`, error);
-      
+
       // Clean up temp file if it exists
       try {
         const tempFilePath = path.join(process.cwd(), 'temp', `${candidateId}_${fileName}`);
@@ -877,7 +877,7 @@ export class CandidateDataProcessorService {
       } catch (cleanupError) {
         console.error('Error cleaning up temp file:', cleanupError);
       }
-      
+
       return '';
     }
   }

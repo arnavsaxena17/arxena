@@ -255,7 +255,7 @@ export class VideoInterviewController {
           transcript: transcript,
           completedResponse: true,
           candidateId:interviewData.candidate.id,
-          jobId: interviewData.candidate.jobs.id,
+          projectId: interviewData.candidate.projects.id,
           peopleId: interviewData.candidate.peopleId,
           timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
         },
@@ -541,7 +541,7 @@ export class VideoInterviewController {
         videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id;
 
         console.log("responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node", responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node);
-        const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.jobs?.recruiterId;
+        const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.projects?.recruiterId;
 
         const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
         recruiterProfile = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;

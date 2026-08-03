@@ -129,7 +129,6 @@ export const MatchColumnsStep = ({
         return {
           ...row,
           projects: currentProject.id,
-          jobs: currentProject.id,
           jobTitle:
             typeof (row as Record<string, unknown>).jobTitle === 'string'
               ? ((row as Record<string, unknown>).jobTitle as string)

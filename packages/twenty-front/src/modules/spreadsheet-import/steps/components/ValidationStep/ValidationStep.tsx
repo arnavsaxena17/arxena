@@ -144,7 +144,6 @@ const assignCurrentProjectToRows = <T extends ImportedStructuredRow>({
     return {
       ...row,
       projects: projectId,
-      jobs: projectId,
       __projectMatch: {
         matchedId: projectId,
         matchedName: projectName ?? '',
@@ -424,7 +423,6 @@ export const ValidationStep = ({
             const projectMatch = (row as any).__projectMatch;
             if (isDefined(projectMatch.matchedId)) {
               cleanRow.projects = projectMatch.matchedId;
-              cleanRow.jobs = projectMatch.matchedId;
               cleanRow['Job Applied For'] = projectMatch.matchedName;
             }
           }

@@ -1,10 +1,10 @@
 // google-sheets.service.ts
 import { Injectable } from '@nestjs/common';
-import axios from 'axios';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { columnDefinitions, Project, UpdateOneProject, UserProfile } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
+import { GoogleConnectedAccountAuthService } from '../google-auth/google-connected-account-auth.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 
 const rowDataValues = [
@@ -27,12 +27,10 @@ const rowDataValues = [
 
 @Injectable()
 export class GoogleSheetsService {
-  private oauth2Client;
     constructor(
     private readonly staticGraphQLService: StaticGraphQLService,
-  ) {
-    this.oauth2Client = new google.auth.OAuth2(process.env.AUTH_GOOGLE_CLIENT_ID, process.env.AUTH_GOOGLE_CLIENT_SECRET, process.env.AUTH_GOOGLE_CALLBACK_URL);
-  }
+    private readonly googleConnectedAccountAuthService: GoogleConnectedAccountAuthService,
+  ) {}
 
   private getColumnLetter(index: number): string {
     let columnLetter = '';
@@ -97,7 +95,7 @@ export class GoogleSheetsService {
           const candConversationStatusIndex = headers.findIndex(h => h === 'candConversationStatus');
           console.log("This is the headers:::", headers);
 
-          // Prepare batch updates  
+          // Prepare batch updates
           const batchUpdates: Array<{ range: string; values: string[][] }> = updates.flatMap(update => {
             const rowIndex = existingData?.values?.findIndex(row => row[candidateIdIndex] === update.candidateId);
             if (rowIndex === -1) return [];
@@ -619,20 +617,20 @@ export class GoogleSheetsService {
     // console.log("existingData.values::", existingData.values);
     const uniqueStringKeyIndex = existingData?.values[0].indexOf('uniqueStringKey');
     // console.log("uniqueStringKey is at index:", uniqueStringKeyIndex);
-    
+
     const existingKeys = new Set(
       existingData?.values
         ?.slice(1)  // Skip header row
         ?.map(row => {
-          console.log("Row uniqueStringKey:", row[uniqueStringKeyIndex]); 
+          console.log("Row uniqueStringKey:", row[uniqueStringKeyIndex]);
           return row[uniqueStringKeyIndex];
         })
         ?.filter(key => key) || []
     );
-    
+
     // console.log("Sample candidate unique key:", batch[0]?.uniqueStringKey);
 
-    
+
     // const existingKeys = new Set(
     //   existingData?.values
     //     ?.slice(1)
@@ -840,11 +838,11 @@ export class GoogleSheetsService {
     if (typeof response.data.sheets?.[0]?.properties?.sheetId !== 'number') {
       throw new Error('Sheet ID not found in response');
     }
-    
+
     return response.data.sheets[0].properties.sheetId;
   }
-  
-  
+
+
 
   async createSpreadsheetForJob(jobName: string, twentyToken: string): Promise<any> {
     const auth = await this.loadSavedCredentialsIfExist(twentyToken);
@@ -955,39 +953,9 @@ export class GoogleSheetsService {
   }
 
   async loadSavedCredentialsIfExist(twenty_token: string) {
-    const connectedAccountsResponse = await axios.request({
-      method: 'get',
-      url: 'http://localhost:3000/rest/connectedAccounts',
-      headers: {
-        authorization: 'Bearer ' + twenty_token,
-        'content-type': 'application/json',
-      },
-    });
-
-    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      // const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
-      const connectedAccountToUse = connectedAccountsResponse.data.data.connectedAccounts[0];
-      const refreshToken = connectedAccountToUse?.refreshToken;
-      console.log("This Connected account found", refreshToken);
-      console.log("This Connected account connectedAccountToUse", connectedAccountToUse);
-      if (!refreshToken) return null;
-
-      try {
-        const credentials = {
-          type: 'authorized_user',
-          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
-          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
-          refresh_token: refreshToken,
-          // accountOwner: connectedAccountToUse?.accountOwner,
-        };
-        return google.auth.fromJSON(credentials);
-      } catch (err) {
-        console.log('Error loading credentials:', err);
-      }
-    }
-    else{
-      console.log("No connected accounts found");
-    }
+    return this.googleConnectedAccountAuthService.loadGoogleOAuth2ClientFromToken(
+      twenty_token,
+    );
   }
 
   async updateValues(auth, spreadsheetId: string, range: string, values: any[][], twenty_token: string) {
@@ -1020,7 +988,7 @@ export class GoogleSheetsService {
           values: update.values,
         })),
       };
-  
+
       const formatRequest = {
         requests: [{
           updateDimensionProperties: {
@@ -1037,7 +1005,7 @@ export class GoogleSheetsService {
           }
         }]
       };
-  
+
       await Promise.all([
         sheets.spreadsheets.values.batchUpdate({
           spreadsheetId,

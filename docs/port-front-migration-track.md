@@ -26,6 +26,8 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Google `/rest/connectedAccounts` 400 | ConnectedAccount left workspace REST; axios GET returned `object 'connectedAccounts' not found`. New `GoogleConnectedAccountAuthService` uses core `ConnectedAccountEntity` + `GoogleOAuth2ClientProvider` (encrypted refresh tokens). Wired into google-contacts, sheets, drive, calendar, gmail-sender. | `google-auth/google-connected-account-auth.*`, those five Google modules |
+| Start-chat interim queue crash (`candidate.jobs`) | EngagedCandidateProcessor still read `candidate.jobs` after Job→Project → `candidateJob` undefined → TypeError on `.id` and start chat never sent. Remapped to `projects` + `Project` type; null-guard when project missing. Sibling: video-interview response create `jobId`/`candidate.jobs` → `projectId`/`projects`; WhatsApp command + spreadsheet dual-write + voice-call casts. | `engaged-candidate-processor.job.ts`, `engaged-candidate-queue.service.ts`, `video-interview.controller.ts`, `ArxSendToWhatsappCommand.tsx` |
 | Org chart build UI stuck on preview | Sales Nav/Unipile builds wrote Redis under `sales_navigator`, but GET only read `classic` → blank preview after success. GET now checks classic/sales_navigator/recruiter. Also: WS `sendToUser` emits to member room; front refetches + polls during queued build and promotes non-blank cache hits. | `org-chart.service.ts` `loadCachedOrgChartAmongAliases`, `websocket.service.ts`, `useOrgChartActions.ts`, `ArxOrgChartContainer.tsx` |
 | Clear org chart cache missed Sales Nav | Context-menu `/org-chart/company-cache/clear` only deleted `…:classic:…` Redis keys, so `sales_navigator` HIT still served after “clear”. Invalidate now deletes classic/sales_navigator/recruiter (+ apify source tag) and pattern-flushes function-grade keys. | `orgchart-cache.service.ts`, `org-chart.service.ts` |
 | Org chart ctx menu dark mode | GoJS `ContextMenuButton` kept default white `ButtonBorder.fill` while dark palette used light text → invisible items. Themed button fill/hover/pressed via `getOrgChartCtxMenu` + `orgChartContextMenuButton` helper. | `twenty-orgchart/.../constants.ts`, `contextMenus.ts`, §2.12 |
@@ -430,6 +432,7 @@ CRM “Job” object became **Project**. Script: `node packages/twenty-utils/ren
 | --- | --- |
 | MCP `job-tools` | `project-tools` |
 | GraphQL `jobs` / `JobFilterInput` | `projects` / `ProjectFilterInput` |
+| Candidate relation field `candidate.jobs` | `candidate.projects` (runtime GraphQL + TS `CandidateNode`) |
 | Redis search-results payload `jobId` | `projectId` (read accepts either; write uses `projectId`) |
 
 ### Candidate-sourcing HTTP paths (dual-mounted)
@@ -473,6 +476,7 @@ rg "candidate-sourcing/get-all-" packages/twenty-front/src/modules
 ```bash
 rg -n "AppPath\\.Jobs\\b|MergeJobsModal|useJobRefetch|useOpenAddJobModal|sendCreateJobToArxena|OrgChartAddToJob|@/candidate-table/Jobs\\b" packages/twenty-front packages/twenty-shared
 rg -n "objectNameSingular[=:]\\s*['\"]job['\"]|useArxJDUpload\\(['\"]job['\"]\\)|nameSingular === ['\"]job['\"]|targetObjectNameSingular:\\s*['\"]job['\"]" packages/twenty-front/src/modules
+rg -n "candidate\\.jobs|candidate\\?\\.jobs|node\\?\\.jobs|ProfileData\\.jobs" packages/twenty-server/src/engine/core-modules
 ```
 
 ---
@@ -553,6 +557,7 @@ Tracked from current tree greps — fix then tick §7.
 | `response.data.data is not iterable` (sample enrichments) | **done** — front Array.isArray guards + controller `?? []` |
 | Stale server: `getCandidateFieldsByJobId is not a function` | **ops** — dist already has `getCandidateFieldsByProjectId`; restart `twenty-server` if process predates rebuild |
 | Stale nest `twenty-shared` GraphQL strings | **ops** — after `nx build twenty-shared`, restart nest (watch does not invalidate `require` cache) |
+| Google Contacts `/rest/connectedAccounts` 400 | **done** — core ConnectedAccount + OAuth2 provider via `GoogleConnectedAccountAuthService` (2026-08-03) |
 | OrgChart lazy import fail during Vite reconnect | **mitigated** — `OrgChartRoute` retries dynamic import once; hard-refresh if HMR thrash persists |
 | OrgChart Linaria `styled(Icon*)` ENOENT | **done** — wrapper + size props in `twenty-orgchart` (§0 / §2.2) |
 | Billing Linaria invalid spacing keys | **done** — `spacing[220]` → `880px`, `spacing[2.5]` → `10px` in `SettingsBillingPricing.tsx` |

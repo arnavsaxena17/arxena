@@ -1,14 +1,12 @@
-// google-calendar.service.ts
-
 import { Injectable } from "@nestjs/common";
 import moment from "moment";
 
 import { authenticate } from "@google-cloud/local-auth";
-import axios from "axios";
 import { promises as fs } from "fs";
 import { google } from "googleapis";
 import process from "process";
 import { CalendarEventType } from "src/engine/core-modules/calendar-events/services/calendar-data-objects-types";
+import { GoogleConnectedAccountAuthService } from "src/engine/core-modules/google-auth/google-connected-account-auth.service";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ["https://www.googleapis.com/auth/calendar","https://www.googleapis.com/auth/contacts"];
@@ -20,15 +18,9 @@ const CREDENTIALS_PATH = process.cwd() + "/credentials.json";
 
 @Injectable()
 export class GoogleCalendarService {
-  private oauth2Client;
-
-  constructor() {
-    this.oauth2Client = new google.auth.OAuth2(
-      process.env.AUTH_GOOGLE_CLIENT_ID,
-      process.env.AUTH_GOOGLE_CLIENT_SECRET,
-      process.env.AUTH_GOOGLE_CALLBACK_URL
-    );
-  }
+  constructor(
+    private readonly googleConnectedAccountAuthService: GoogleConnectedAccountAuthService,
+  ) {}
 
   /**
    * Reads previously authorized credentials from the save file.
@@ -36,39 +28,11 @@ export class GoogleCalendarService {
    * @return {Promise<OAuth2Client|null>}
    */
   async loadSavedCredentialsIfExist(twenty_token: string) {
-
-    const connectedAccountsResponse = await axios.request({
-      method: "get",
-      url: "http://localhost:3000/rest/connectedAccounts",
-      headers: {
-        authorization: "Bearer " + twenty_token,
-        "content-type": "application/json",
-      },
-    });
-    // console.log("connectedAccountsResponse::::", connectedAccountsResponse.data.data.connectedAccounts);
-    // console.log("process.env.EMAIL_SMTP_USER::::", process.env.EMAIL_SMTP_USER);
-
-    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts.filter(x => x.handle === process.env.EMAIL_SMTP_USER)[0];
-      const refreshToken = connectedAccountToUse ?.refreshToken;
-      if (!refreshToken) {
-        return null;
-      }
-
-      try {
-        const credentials = {
-          type: "authorized_user",
-          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
-          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        };
-
-        return google.auth.fromJSON(credentials);
-      } catch (err) {
-        return null;
-      }
-    }
-    }
+    return this.googleConnectedAccountAuthService.loadGoogleOAuth2ClientFromToken(
+      twenty_token,
+      process.env.EMAIL_SMTP_USER,
+    );
+  }
 
   /**
    * Serializes credentials to a file compatible with GoogleAuth.fromJSON.

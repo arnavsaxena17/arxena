@@ -13,6 +13,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 
 import { GoogleCalendarController } from './google-calendar.controller';
 import { GoogleCalendarService } from './google-calendar.service';
+import { GoogleConnectedAccountAuthModule } from 'src/engine/core-modules/google-auth/google-connected-account-auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { GoogleCalendarService } from './google-calendar.service';
     WorkspaceCacheStorageModule,
     JwtModule,
     TypeORMModule,
+    GoogleConnectedAccountAuthModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
     TypeOrmModule.forFeature([DataSourceEntity]),
     TypeOrmModule.forFeature([UserEntity]),

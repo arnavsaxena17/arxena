@@ -9,7 +9,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   CandidateNode,
-  Job,
+  Project,
   chatMessageType,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -126,7 +126,7 @@ export class EngagedCandidateQueueService {
       messageType?: string;
     },
     candidateProfileDataNodeObj: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType | null> {
     console.log("Processing engagement operations in queue for candidate:", candidateProfileDataNodeObj.id);
@@ -254,7 +254,7 @@ export class EngagedCandidateQueueService {
       }
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate?.node?.jobs?.id === candidateJob.id,
+        (candidate) => candidate?.node?.projects?.id === candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
@@ -262,7 +262,7 @@ export class EngagedCandidateQueueService {
       let phoneNumberTo: string = recruiterProfile?.phoneNumber || '';
 
       if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate?.node?.jobs?.id === candidateJob.id,
+        (candidate) => candidate?.node?.projects?.id === candidateJob.id,
       )[0]?.node?.messagingChannel == 'linkedin') {
         phoneNumberTo = recruiterProfile?.linkedinUrl || '';
       }
@@ -329,7 +329,7 @@ export class EngagedCandidateQueueService {
   async getCandidateInformationWithDuplicateCheck(
     whatsappIncomingMessage: chatMessageType,
     apiToken: string,
-  ): Promise<{ candidateProfileData: CandidateNode; candidateJob: Job; isDuplicate: boolean }> {
+  ): Promise<{ candidateProfileData: CandidateNode; candidateJob: Project; isDuplicate: boolean }> {
     try {
       console.log('This is the whatsappIncomingMessage in getCandidateInformationWithDuplicateCheck::', whatsappIncomingMessage);
       // Get candidate information
@@ -338,7 +338,7 @@ export class EngagedCandidateQueueService {
         this.staticGraphQLService,
       ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
-      const candidateJob: Job = candidateProfileData.jobs;
+      const candidateJob: Project = candidateProfileData.projects;
 
       // Check for duplicate messages - but only for this specific candidate and job combination
       let isDuplicate = false;
@@ -392,7 +392,7 @@ export class EngagedCandidateQueueService {
    */
   async checkMessageDuplicateForCandidate(
     candidateProfileData: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     messageContent: string,
     phoneNumberFrom: string,
     phoneNumberTo: string,
@@ -437,7 +437,7 @@ export class EngagedCandidateQueueService {
    */
   async queueCandidateForGoogleContacts(
     candidateProfileData: CandidateNode,
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<void> {
     if (!this.googleContactsMessageQueueService || !this.googleContactsService) {
@@ -516,7 +516,7 @@ export class EngagedCandidateQueueService {
    */
   async queueCandidatesForGoogleContacts(
     candidateProfileDataList: CandidateNode[],
-    candidateJob: Job,
+    candidateJob: Project,
     apiToken: string,
   ): Promise<void> {
     if (!this.googleContactsMessageQueueService || !this.googleContactsService) {

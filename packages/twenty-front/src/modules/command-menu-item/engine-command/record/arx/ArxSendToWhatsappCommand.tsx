@@ -69,7 +69,7 @@ export const ArxSendToWhatsappCommand = () => {
     }
 
     const transformedRecords = selectedRecords.map((record) => {
-      const jobs = record.jobs as
+      const project = record.projects as
         | {
             company?: { name?: string };
             pathPosition?: string;
@@ -88,16 +88,16 @@ export const ArxSendToWhatsappCommand = () => {
       return [
         null,
         (record.name as string) || '',
-        jobs?.company?.name || '',
+        project?.company?.name || '',
         people?.jobTitle || '',
-        jobs?.pathPosition || 'unclassified',
-        jobs?.grade || 'entry',
+        project?.pathPosition || 'unclassified',
+        project?.grade || 'entry',
         (record.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)
           ?.primaryLinkUrl
           ? `<a href='${(record.resdexNaukriUrl as { primaryLinkUrl: string }).primaryLinkUrl}' target='_blank'>Naukri</a>`
           : '',
         (record.candConversationStatus as string) || 'Sourced',
-        jobs?.pathPosition || '',
+        project?.pathPosition || '',
         null,
         people?.skills || '',
         null,
@@ -109,7 +109,7 @@ export const ArxSendToWhatsappCommand = () => {
         '10',
         4,
         null,
-        jobs?.jobLocation?.split(',')[0] || '',
+        project?.jobLocation?.split(',')[0] || '',
         '',
         '0',
         null,

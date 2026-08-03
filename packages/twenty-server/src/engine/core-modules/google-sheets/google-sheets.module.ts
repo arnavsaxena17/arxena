@@ -38,6 +38,7 @@ import { CandidateService } from '../candidate-sourcing/services/candidate.servi
 import { ChatService } from '../candidate-sourcing/services/chat.service';
 import { FilterDescriptionProcessorService } from '../candidate-sourcing/services/filter-description-processor.service';
 import { PersonService } from '../candidate-sourcing/services/person.service';
+import { GoogleConnectedAccountAuthModule } from '../google-auth/google-connected-account-auth.module';
 import { UserEntity } from '../user/user.entity';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
 import { WorkspaceEntity } from '../workspace/workspace.entity';
@@ -57,6 +58,7 @@ import { GoogleSheetsController } from './google-sheets.controller';
     AuthModule,
     WorkspaceModificationsModule,
     GraphQLExecutionModule,
+    GoogleConnectedAccountAuthModule,
 
     JwtModule,
     TypeORMModule,

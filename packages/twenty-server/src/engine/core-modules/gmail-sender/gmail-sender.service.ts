@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import moment from "moment";
 
 import { authenticate } from "@google-cloud/local-auth";
 import axios from "axios";
@@ -8,6 +7,7 @@ import { google } from "googleapis";
 import JSZip from 'jszip'; // If using TypeScript
 import * as mime from "mime-types";
 import process from "process";
+import { GoogleConnectedAccountAuthService } from "src/engine/core-modules/google-auth/google-connected-account-auth.service";
 import * as gmailSenderTypes from "./services/gmail-sender-objects-types";
 
 // If modifying these scopes, delete token.json.
@@ -27,24 +27,10 @@ const CREDENTIALS_PATH = process.cwd() + "/credentials.json";
 @Injectable()
 export class MailerService {
   private transporter;
-  private oauth2Client;
 
-  constructor() {
-    this.oauth2Client = new google.auth.OAuth2(
-      process.env.AUTH_GOOGLE_CLIENT_ID,
-      process.env.AUTH_GOOGLE_CLIENT_SECRET,
-      process.env.AUTH_GOOGLE_CALLBACK_URL
-    );
-    this.oauth2Client.setCredentials({
-      access_token: "YOUR_ACCESS_TOKEN",
-      refresh_token: "YOUR_REFRESH_TOKEN",
-      scope:SCOPES,
-      token_type: "Bearer",
-
-      //@ts-expect-error
-      expiry_date: moment().add(1, "hour").unix(),
-    });
-  }
+  constructor(
+    private readonly googleConnectedAccountAuthService: GoogleConnectedAccountAuthService,
+  ) {}
 
   /**
    * Reads previously authorized credentials from the save file.
@@ -52,37 +38,9 @@ export class MailerService {
    * @return {Promise<OAuth2Client|null>}
    */
   async loadSavedCredentialsIfExist(twenty_token) {
-    const connectedAccountsResponse = await axios.request({
-      method: "get",
-      url: "http://localhost:3000/rest/connectedAccounts",
-      headers: {
-        authorization: "Bearer " + twenty_token,
-        "content-type": "application/json",
-      },
-    });
-    
-    if (connectedAccountsResponse?.data?.data?.connectedAccounts?.length > 0) {
-      const connectedAccountToUse = connectedAccountsResponse?.data?.data?.connectedAccounts[0];
-      const refreshToken = connectedAccountToUse ?.refreshToken;
-      if (!refreshToken) {
-        console.log("No refresh token found in the connected account");
-        return null;
-      }
-
-      try {
-        const credentials = {
-          type: "authorized_user",
-          client_id: process.env.AUTH_GOOGLE_CLIENT_ID,
-          client_secret: process.env.AUTH_GOOGLE_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        };
-        console.log("This is the credentials:", credentials)
-
-        return google.auth.fromJSON(credentials);
-      } catch (err) {
-        return null;
-      }
-    }
+    return this.googleConnectedAccountAuthService.loadGoogleOAuth2ClientFromToken(
+      twenty_token,
+    );
   }
 
   /**
@@ -169,15 +127,15 @@ export class MailerService {
     console.log("This is the name without the special characters:", name);
     // name = name.toLowerCase();
     console.log("This is the name without the special characters and in lower case:", name);
-    
+
     return name;
  }
- 
+
  async createDraftWithAttachments(auth, gmailMessageData: gmailSenderTypes.GmailMessageData) {
   console.log("This is the auth in the create draft with attachments, ", auth)
   const gmail = google.gmail({ version: "v1", auth });
   const boundary = "boundary" + Date.now().toString();
-  
+
   const emailHeaders = [
     `From: "${gmailMessageData.sendEmailNameFrom}" <${gmailMessageData.sendEmailFrom}>`,
     `To: ${gmailMessageData.sendEmailTo}`,
@@ -237,7 +195,7 @@ export class MailerService {
           type: 'nodebuffer',
           compression: 'DEFLATE'
         });
-        
+
         const zipFilename = 'Attachments.zip';
         emailHeaders.push(`--${boundary}`);
         emailHeaders.push('Content-Type: application/zip');
@@ -252,7 +210,7 @@ export class MailerService {
   }
 
   emailHeaders.push(`--${boundary}--`);
-  
+
   const email = emailHeaders.join("\r\n").trim();
   const base64Email = Buffer.from(email).toString("base64")
     .replace(/\+/g, '-')
@@ -312,17 +270,17 @@ export class MailerService {
           // const url = process.env.SERVER_BASE_URL +'/files/'+attachment.path
           // const url =  attachment.path
 
-          console.log("This is the attachment.path:", attachment.path);          
+          console.log("This is the attachment.path:", attachment.path);
           const url = this.fixUrl(attachment.path)
 
           // const url = attachment.path.replace(/\?token=([^?]+)\?token=/, '?token=');
           console.log("This is the url:", url);
           const fileContent = attachment.path.includes('attachment')
-          
+
             ? await axios.get(url, { responseType: 'arraybuffer' }).then(res => Buffer.from(res.data))
             : await fs.readFile(attachment.path);
           const mimeType = mime.lookup(attachment.path) || 'application/octet-stream';
-          
+
           emailHeaders.push(`--${boundary}`);
           emailHeaders.push(`Content-Type: ${mimeType}`);
           emailHeaders.push('Content-Transfer-Encoding: base64');
@@ -380,7 +338,7 @@ export class GoogleAuthService {
   async handleAuthCallback(code: string): Promise<void> {
     try {
       const { tokens } = await this.oauth2Client.getToken(code);
-      
+
       // Create token.json with the exact format Google expects
       const tokenData = {
         type: "authorized_user",
@@ -393,7 +351,7 @@ export class GoogleAuthService {
 
       await fs.writeFile('token.json', JSON.stringify(tokenData, null, 2));
       console.log('Token saved successfully to token.json');
-      
+
       // Also save the full token response for debugging
       await fs.writeFile('token-full.json', JSON.stringify(tokens, null, 2));
       console.log('Full token response saved to token-full.json');

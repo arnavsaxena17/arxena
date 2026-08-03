@@ -12,6 +12,7 @@ import { AuthModule } from '../auth/auth.module';
 import { FeatureFlagEntity } from '../feature-flag/feature-flag.entity';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
+import { GoogleConnectedAccountAuthModule } from '../google-auth/google-connected-account-auth.module';
 import { WorkspaceEntity } from '../workspace/workspace.entity';
 import { CallAndSMSProcessingService } from './call-sms-processing';
 import { GoogleDriveController } from './google-drive.controller';
@@ -24,6 +25,7 @@ import { GoogleDriveService } from './google-drive.service';
     DataSourceModule,
     TypeORMModule,
     GraphQLExecutionModule,
+    GoogleConnectedAccountAuthModule,
     TypeOrmModule.forFeature([WorkspaceEntity, FeatureFlagEntity]),
     TypeOrmModule.forFeature([DataSourceEntity])
   ],
