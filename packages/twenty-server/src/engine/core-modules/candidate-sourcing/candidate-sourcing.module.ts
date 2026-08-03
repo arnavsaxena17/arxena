@@ -43,6 +43,7 @@ import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/s
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
+import { GoogleConnectedAccountAuthModule } from 'src/engine/core-modules/google-auth/google-connected-account-auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -93,6 +94,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     AuthModule,
     GraphQLExecutionModule,
     WorkspaceModificationsModule,
+    GoogleConnectedAccountAuthModule,
     CoreGraphQLApiModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
     TypeOrmModule.forFeature([DataSourceEntity]),

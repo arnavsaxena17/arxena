@@ -68,6 +68,7 @@ import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { GoogleContactsModule } from 'src/engine/core-modules/google-contacts/google-contacts.module';
+import { GoogleConnectedAccountAuthModule } from 'src/engine/core-modules/google-auth/google-connected-account-auth.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
@@ -128,6 +129,7 @@ const conditionalImports = isWorker
     ApiKeyModule,
     GoogleCalendarModule,
     GoogleContactsModule,
+    GoogleConnectedAccountAuthModule,
     CoreGraphQLApiModule,
     WebSocketModule,
     DataSourceModule,
