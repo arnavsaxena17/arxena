@@ -102,7 +102,7 @@ describeLive('org-chart search live E2E (Unipile + cache + S3)', () => {
   });
 
   it('returns queued=true for a cold Unipile org-chart search', async () => {
-    await orgChartCache.invalidateEntireCompanyClassicCaches({
+    await orgChartCache.invalidateEntireCompanyCaches({
       companyName,
       companyId: undefined,
     });

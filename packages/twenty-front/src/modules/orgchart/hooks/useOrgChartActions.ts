@@ -95,6 +95,12 @@ export type UseOrgChartActionsParams = {
    * (per-call wins). Enables context-menu and background actions to use the same intent as header.
    */
   businessDivisionRawQuery?: string;
+  /**
+   * After a queued Unipile/Apify/x-ray build completes (websocket), reload the chart
+   * from GET /org-chart/:id so Redis/S3 cache is applied even if the socket payload
+   * omitted the full orgChart blob.
+   */
+  onQueuedOrgChartComplete?: () => void;
 };
 
 type OrgChartSearchProgressEvent = {
@@ -440,6 +446,7 @@ export const useOrgChartActions = ({
   linkedinCompanyUrl,
   linkedinUnipileAccountId,
   businessDivisionRawQuery: businessDivisionRawQueryFromToolbar,
+  onQueuedOrgChartComplete,
 }: UseOrgChartActionsParams) => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
@@ -463,6 +470,8 @@ export const useOrgChartActions = ({
   const { triggerOrgChartsRefetch } = useOrgChartsRefetch();
   const triggerOrgChartsRefetchRef = useRef(triggerOrgChartsRefetch);
   triggerOrgChartsRefetchRef.current = triggerOrgChartsRefetch;
+  const onQueuedOrgChartCompleteRef = useRef(onQueuedOrgChartComplete);
+  onQueuedOrgChartCompleteRef.current = onQueuedOrgChartComplete;
   const [isContextModalOpen, setIsContextModalOpen] = useState(false);
   const [contextModalTitle, setContextModalTitle] = useState('');
   const [contextModalMode, setContextModalMode] =
@@ -476,6 +485,8 @@ export const useOrgChartActions = ({
   const [activeOrgChartRequestId, setActiveOrgChartRequestId] = useState<
     string | null
   >(null);
+  const activeOrgChartRequestIdRef = useRef<string | null>(null);
+  activeOrgChartRequestIdRef.current = activeOrgChartRequestId;
   const orgchartAbortControllerRef = useRef<AbortController | null>(null);
   const progressUpdateTimeoutRef = useRef<number | null>(null);
   const progressStaleWarningTimeoutRef = useRef<number | null>(null);
@@ -636,10 +647,11 @@ export const useOrgChartActions = ({
   useWebSocketEvent<OrgChartSearchProgressEvent>(
     'orgchart-search-progress',
     (payload) => {
-      if (
-        !payload?.requestId ||
-        payload.requestId !== activeOrgChartRequestId
-      ) {
+      if (!payload?.requestId) {
+        return;
+      }
+      // Prefer ref so HMR / re-subscribe races do not drop the matching complete event
+      if (payload.requestId !== activeOrgChartRequestIdRef.current) {
         return;
       }
 
@@ -835,6 +847,10 @@ export const useOrgChartActions = ({
         // pattern in JobsNavigationDrawerItems).
         triggerOrgChartsRefetchRef.current();
 
+        // Always reload from GET cache/S3 — socket payloads may omit orgChart
+        // (size limits) and Sales Nav builds were previously invisible to classic-only GET.
+        onQueuedOrgChartCompleteRef.current?.();
+
         if (
           (payload.mode === 'entire_company' ||
             payload.mode === 'super_impose') &&
@@ -861,7 +877,6 @@ export const useOrgChartActions = ({
       }
     },
     [
-      activeOrgChartRequestId,
       armProgressTimers,
       clearProgressTimers,
       companyId,
@@ -2611,6 +2626,22 @@ export const useOrgChartActions = ({
     [],
   );
 
+  // Used when GET poll finds a built chart before/without the websocket complete event
+  const acknowledgeQueuedOrgChartFromCache = useCallback(
+    (chart: Record<string, unknown>) => {
+      setLatestOrgChart(chart);
+      setContextError(null);
+      setContextProgressMessage(null);
+      setIsContextLoading(false);
+      clearProgressTimers();
+      if (companyId) {
+        closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
+      }
+      triggerOrgChartsRefetchRef.current();
+    },
+    [clearProgressTimers, closeSnackBarByDedupeKey, companyId],
+  );
+
   const downloadContextResultsAsCsv = () => {
     if (!contextResults.length) return;
     exportContextResultsToCsv(contextResults, 'orgchart-candidates.csv');
@@ -2726,6 +2757,7 @@ export const useOrgChartActions = ({
     closeContextModal,
     clearLatestOrgChart,
     applyOrgChartOverride,
+    acknowledgeQueuedOrgChartFromCache,
     downloadContextResultsAsCsv,
     executeOrgchartSearch,
     estimateOrgchartLinkedInSearch,

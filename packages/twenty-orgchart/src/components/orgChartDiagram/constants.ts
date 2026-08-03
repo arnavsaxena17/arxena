@@ -55,6 +55,11 @@ export type OrgChartCtxMenuColors = {
   label: string;
   text: string;
   sep: string;
+  // GoJS ContextMenuButton defaults to white ButtonBorder — override for dark mode
+  buttonFill: string;
+  buttonFillOver: string;
+  buttonFillPressed: string;
+  buttonStroke: string;
   fontItem: string;
   fontLabel: string;
   corner: number;
@@ -66,6 +71,10 @@ const ORG_CHART_CTX_MENU_LIGHT: OrgChartCtxMenuColors = {
   label: '#64748b',
   text: '#0f172a',
   sep: '#e2e8f0',
+  buttonFill: '#ffffff',
+  buttonFillOver: '#f1f5f9',
+  buttonFillPressed: '#e2e8f0',
+  buttonStroke: 'transparent',
   fontItem: '13px system-ui, -apple-system, "Segoe UI", sans-serif',
   fontLabel: '600 10px system-ui, -apple-system, "Segoe UI", sans-serif',
   corner: 8,
@@ -77,6 +86,10 @@ const ORG_CHART_CTX_MENU_DARK: OrgChartCtxMenuColors = {
   label: '#818181',
   text: '#ebebeb',
   sep: '#292929',
+  buttonFill: '#171717',
+  buttonFillOver: '#262626',
+  buttonFillPressed: '#333333',
+  buttonStroke: 'transparent',
   fontItem: ORG_CHART_CTX_MENU_LIGHT.fontItem,
   fontLabel: ORG_CHART_CTX_MENU_LIGHT.fontLabel,
   corner: 8,

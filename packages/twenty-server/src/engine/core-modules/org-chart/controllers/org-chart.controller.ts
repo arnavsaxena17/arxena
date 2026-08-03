@@ -3017,7 +3017,7 @@ export class OrgChartController {
   }
 
   /**
-   * Clears Redis org-chart keys and S3 persisted folder for the company (authenticated user).
+   * Clears Redis org-chart keys (all search types) and S3 persisted folder for the company (authenticated user).
    */
   @Post('company-cache/clear')
   async clearCompanyOrgChartCache(

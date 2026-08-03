@@ -137,18 +137,21 @@ export class WebSocketService {
       return;
     }
 
+    // Clients join a room named after workspaceMemberId in WebSocketGateway —
+    // emit to the room so delivery does not depend on a possibly-stale socket id map.
+    this.server.to(userId).emit(event, payload);
+
     const socketIds = this.connectedClients.get(userId);
     if (!socketIds || socketIds.size === 0) {
-      console.warn(`No connected sockets found for user ${userId}`);
+      console.warn(
+        `Emitted "${event}" to room ${userId} (no connectedClients map entries)`,
+      );
       return;
     }
 
-    console.log(`Found ${socketIds.size} connected sockets for user ${userId}`);
-
-    for (const socketId of socketIds) {
-      console.log(`Emitting to socket ${socketId}`);
-      this.server.to(socketId).emit(event, payload);
-    }
+    console.log(
+      `Emitted "${event}" to room ${userId} (${socketIds.size} tracked socket(s))`,
+    );
   }
 
   private async publishUserEventToRedis(

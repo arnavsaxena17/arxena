@@ -363,6 +363,8 @@ export const ArxOrgChartContainer = ({
     extractCompanyDomainFromWebsite(fallbackCompanyInfo?.website) ||
     undefined;
 
+  const fetchOrgChartAfterQueuedBuildRef = useRef<() => void>(() => {});
+
   const actions = useOrgChartActions({
     companyId,
     companyName: effectiveCompanyName,
@@ -378,6 +380,9 @@ export const ArxOrgChartContainer = ({
     businessDivisionRawQuery: businessDivisionQuery.trim() || undefined,
     onPreviewNodePeopleRequest: (node) =>
       setPendingPreviewNodePeopleChoice(node),
+    onQueuedOrgChartComplete: () => {
+      fetchOrgChartAfterQueuedBuildRef.current();
+    },
   });
 
   const { applyOrgChartOverride } = actions;
@@ -417,6 +422,10 @@ export const ArxOrgChartContainer = ({
     ? jobOrgChartHook.fetchOrgChart
     : classicOrgChartHook.fetchOrgChart;
   const resetOrgChartData = classicOrgChartHook.reset;
+
+  fetchOrgChartAfterQueuedBuildRef.current = () => {
+    void fetchOrgChart();
+  };
   const orgChartEsTransportError = classicOrgChartHook.orgChartEsTransportError;
   const firstSourceRequested = classicOrgChartHook.firstSourceRequested;
   const firstSourceUsed = classicOrgChartHook.firstSourceUsed;
@@ -621,6 +630,20 @@ export const ArxOrgChartContainer = ({
       'boolean' &&
     (orgSource as Record<string, unknown>).is_blank_template === true;
 
+  const queuedBuildStartedFromBlankRef = useRef(false);
+  const wasContextLoadingRef = useRef(false);
+
+  useEffect(() => {
+    const isLoadingNow = actions.isContextLoading === true;
+    if (isLoadingNow && !wasContextLoadingRef.current) {
+      queuedBuildStartedFromBlankRef.current = isBlankTemplate;
+    }
+    if (!isLoadingNow) {
+      queuedBuildStartedFromBlankRef.current = false;
+    }
+    wasContextLoadingRef.current = isLoadingNow;
+  }, [actions.isContextLoading, isBlankTemplate]);
+
   useEffect(() => {
     if (!apolloQueued || isJobMode) {
       setApolloQueuePollAttempts(0);
@@ -663,6 +686,46 @@ export const ArxOrgChartContainer = ({
     apolloQueuePollingTimedOut,
     fetchOrgChart,
     firstSourceUsed,
+    isJobMode,
+  ]);
+
+  // While a queued LinkedIn/Unipile (or similar) full-company build is in flight,
+  // poll GET /org-chart so the diagram swaps off the blank preview as soon as
+  // Redis/S3 has the built chart — even if the websocket complete event is dropped.
+  useEffect(() => {
+    if (isJobMode || actions.isContextLoading !== true) {
+      return;
+    }
+
+    void fetchOrgChart();
+    const interval = window.setInterval(() => {
+      void fetchOrgChart();
+    }, APOLLO_QUEUE_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [actions.isContextLoading, fetchOrgChart, isJobMode]);
+
+  // Promote a polled non-blank chart only when the build started from the blank
+  // preview (avoids treating an existing ES/SEO chart as "build complete").
+  useEffect(() => {
+    if (
+      isJobMode ||
+      actions.isContextLoading !== true ||
+      !queuedBuildStartedFromBlankRef.current ||
+      !data
+    ) {
+      return;
+    }
+    if (data.is_blank_template === true) {
+      return;
+    }
+    actions.acknowledgeQueuedOrgChartFromCache(data);
+  }, [
+    actions.acknowledgeQueuedOrgChartFromCache,
+    actions.isContextLoading,
+    data,
     isJobMode,
   ]);
 

@@ -91,14 +91,15 @@ export class OrgChartService {
   ) {}
 
   /**
-   * Clears Redis keys for full-company classic org chart + candidate list caches,
-   * and deletes the persisted org-charts/{company}/ folder in object storage.
+   * Clears Redis keys for full-company org chart + candidate list caches
+   * (all search types), and deletes the persisted org-charts/{company}/ folder
+   * in object storage.
    */
   async clearCompanyOrgChartCaches(input: {
     companyId?: string;
     companyName?: string;
   }): Promise<void> {
-    await this.orgChartCacheService.invalidateEntireCompanyClassicCaches(input);
+    await this.orgChartCacheService.invalidateEntireCompanyCaches(input);
     const resolvedNameForS3 =
       (input.companyName ?? '').trim() || (input.companyId ?? '');
     const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
@@ -119,24 +120,36 @@ export class OrgChartService {
         orgChart?: Record<string, unknown>;
         cachedAt?: string;
         itemCount?: number;
+        cacheKey: string;
+        searchType: 'classic' | 'sales_navigator' | 'recruiter';
       }
     | undefined
   > {
-    for (const aliasCompanyId of input.companyIds) {
-      const cacheKey = buildCompanyOrgChartLogicalCacheKey(
-        input.companyName,
-        aliasCompanyId,
-        'entire_company',
-        'classic',
-      );
-      const cached = await this.orgChartCacheStorageService.get<{
-        orgChart?: Record<string, unknown>;
-        cachedAt?: string;
-        itemCount?: number;
-      }>(cacheKey);
+    // Unipile/Sales Nav builds write under sales_navigator; GET must find them
+    // (classic-only lookup left the page on the blank preview after a successful build).
+    const searchTypes = [
+      'classic',
+      'sales_navigator',
+      'recruiter',
+    ] as const;
 
-      if (cached?.orgChart) {
-        return cached;
+    for (const aliasCompanyId of input.companyIds) {
+      for (const searchType of searchTypes) {
+        const cacheKey = buildCompanyOrgChartLogicalCacheKey(
+          input.companyName,
+          aliasCompanyId,
+          'entire_company',
+          searchType,
+        );
+        const cached = await this.orgChartCacheStorageService.get<{
+          orgChart?: Record<string, unknown>;
+          cachedAt?: string;
+          itemCount?: number;
+        }>(cacheKey);
+
+        if (cached?.orgChart) {
+          return { ...cached, cacheKey, searchType };
+        }
       }
     }
 
@@ -386,17 +399,10 @@ export class OrgChartService {
       );
     }
 
-    const cacheKey = buildCompanyOrgChartLogicalCacheKey(
-      undefined,
-      companyId,
-      'entire_company',
-      'classic',
-    );
-    const cachedOrgChartPayload = await this.orgChartCacheStorageService.get<{
-      orgChart?: Record<string, unknown>;
-      cachedAt?: string;
-      itemCount?: number;
-    }>(cacheKey);
+    const cachedOrgChartPayload = await this.loadCachedOrgChartAmongAliases({
+      companyName: input.companyName,
+      companyIds: [companyId],
+    });
 
     let orgChart: Record<string, unknown> | null =
       cachedOrgChartPayload?.orgChart ?? null;
@@ -480,12 +486,22 @@ export class OrgChartService {
     const persistedTo: Array<'redis' | 's3'> = [];
 
     // Write-through to Redis cache (same key read by /org-chart/:companyId).
+    const redisCacheKey =
+      cachedOrgChartPayload?.cacheKey ??
+      buildCompanyOrgChartLogicalCacheKey(
+        input.companyName,
+        companyId,
+        'entire_company',
+        'classic',
+      );
     await this.orgChartCacheStorageService.set(
-      cacheKey,
+      redisCacheKey,
       {
-        ...(cachedOrgChartPayload ?? {}),
         orgChart: updatedOrgChart,
         cachedAt: new Date().toISOString(),
+        ...(typeof cachedOrgChartPayload?.itemCount === 'number'
+          ? { itemCount: cachedOrgChartPayload.itemCount }
+          : {}),
       },
       toOrgChartCacheTtlMs(60 * 60 * 24 * 90),
     );

@@ -8,6 +8,8 @@ import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate
 
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 import {
+    ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX,
+    ORG_CHART_COMPANY_CACHE_KEY_PREFIX,
     buildCompanyOrgChartCandidateListLogicalCacheKey,
     buildCompanyOrgChartLogicalCacheKey,
 } from '../utils/orgchart-cache-keys.util';
@@ -313,30 +315,85 @@ export class OrgChartCacheService {
   }
 
   /**
-   * Deletes Redis keys for full-company classic org chart + candidate list caches.
-   * Used by live E2E and ops to force a cold fetch from Unipile / Python.
+   * Deletes Redis keys for full-company org chart + candidate list caches for
+   * every search type (classic / sales_navigator / recruiter) and known source
+   * tags. Also flushes function-grade keys for the company when Redis is available.
+   * Used by context-menu clear, rebuild-saved-people, live E2E, and ops.
    */
+  async invalidateEntireCompanyCaches(input: {
+    companyName?: string;
+    companyId?: string;
+  }): Promise<void> {
+    const searchTypes = [
+      'classic',
+      'sales_navigator',
+      'recruiter',
+    ] as const;
+    // undefined → "default" in key builder; apify tagged builds use a separate key
+    const sourceTags: Array<string | undefined> = [
+      undefined,
+      'apify-org-intelligence',
+    ];
+    const keysToDelete: string[] = [];
+
+    for (const searchType of searchTypes) {
+      for (const sourceTag of sourceTags) {
+        keysToDelete.push(
+          buildCompanyOrgChartLogicalCacheKey(
+            input.companyName,
+            input.companyId,
+            'entire_company',
+            searchType,
+            sourceTag,
+          ),
+          buildCompanyOrgChartCandidateListLogicalCacheKey(
+            input.companyName,
+            input.companyId,
+            'entire_company',
+            searchType,
+            sourceTag,
+          ),
+        );
+      }
+    }
+
+    await this.orgChartCacheStorageService.mdel(keysToDelete);
+
+    const normalizedCompanyId = normalizeCompanyId(
+      input.companyId,
+      normalizeCompanyName(input.companyName),
+    );
+
+    // Catch any extra source-tag / function-grade variants Redis may hold
+    try {
+      await this.orgChartCacheStorageService.flushByPattern(
+        `${ORG_CHART_COMPANY_CACHE_KEY_PREFIX}:${normalizedCompanyId}:*`,
+      );
+      await this.orgChartCacheStorageService.flushByPattern(
+        `${ORG_CHART_COMPANY_CANDIDATE_LIST_CACHE_KEY_PREFIX}:${normalizedCompanyId}:*`,
+      );
+      await this.orgChartCacheStorageService.flushByPattern(
+        `${ORG_CHART_FUNCTION_GRADE_CACHE_KEY_PREFIX}:${normalizedCompanyId}:*`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Orgchart cache pattern flush skipped for companyId=${normalizedCompanyId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    this.logger.log(
+      `Orgchart cache INVALIDATE: companyId=${normalizedCompanyId}, keys=${keysToDelete.length} (+ pattern flush)`,
+    );
+  }
+
+  /** @deprecated Prefer {@link invalidateEntireCompanyCaches}; kept for call-site compatibility. */
   async invalidateEntireCompanyClassicCaches(input: {
     companyName?: string;
     companyId?: string;
   }): Promise<void> {
-    const orgChartKey = buildCompanyOrgChartLogicalCacheKey(
-      input.companyName,
-      input.companyId,
-      'entire_company',
-      'classic',
-    );
-    const candidateListKey = buildCompanyOrgChartCandidateListLogicalCacheKey(
-      input.companyName,
-      input.companyId,
-      'entire_company',
-      'classic',
-    );
-    await this.orgChartCacheStorageService.del(orgChartKey);
-    await this.orgChartCacheStorageService.del(candidateListKey);
-    this.logger.log(
-      `Orgchart cache INVALIDATE: orgChartKey=${orgChartKey}, candidateListKey=${candidateListKey}`,
-    );
+    await this.invalidateEntireCompanyCaches(input);
   }
 
   async getCachedFunctionGradeSearch(input: {

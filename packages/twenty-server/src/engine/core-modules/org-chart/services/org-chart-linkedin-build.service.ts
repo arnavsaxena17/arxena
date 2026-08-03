@@ -242,7 +242,7 @@ export class OrgChartLinkedInBuildService {
       );
     }
 
-    await this.orgChartCacheService.invalidateEntireCompanyClassicCaches({
+    await this.orgChartCacheService.invalidateEntireCompanyCaches({
       companyName: resolvedCompanyName,
       companyId: resolvedCompanyId,
     });

@@ -13,7 +13,7 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
         getCachedCompanyCandidateList: jest.fn(async () => ({
           items: savedItems,
         })),
-        invalidateEntireCompanyClassicCaches: jest.fn(async () => {
+        invalidateEntireCompanyCaches: jest.fn(async () => {
           events.push('cache-cleared');
         }),
         setCachedCompanyCandidateList: jest.fn(async () => undefined),
