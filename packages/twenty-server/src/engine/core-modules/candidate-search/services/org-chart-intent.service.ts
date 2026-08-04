@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 
 import { OrgChartParsed, OrgChartParsedSchema } from 'src/engine/core-modules/candidate-search/schemas/org-chart.schema';
 import {
@@ -44,7 +44,7 @@ export class OrgChartIntentService {
             },
             { role: 'user' as const, content: userPrompt },
           ],
-          zodResponseFormat(
+          toOpenAiJsonSchemaResponseFormat(
             OrgChartParsedSchema,
             'orgChartIntent',
           ),

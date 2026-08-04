@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { z } from 'zod';
 
 import { StreamProcessingService } from 'src/engine/core-modules/candidate-search/services/stream-processing.service';
@@ -730,7 +730,7 @@ export class LinkedinQueryGenerationService {
             temperature,
             messages,
             stream: true,
-            response_format: zodResponseFormat(schema, name),
+            response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
           });
 
         const { content: accumulatedContent } =
@@ -760,7 +760,7 @@ export class LinkedinQueryGenerationService {
         temperature,
         messages,
         stream: true,
-        response_format: zodResponseFormat(schema, name),
+        response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
       });
       let accumulatedContent = '';
       for await (const chunk of stream) {
@@ -795,9 +795,9 @@ export class LinkedinQueryGenerationService {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: zodResponseFormat(schema, name)
+      response_format: toOpenAiJsonSchemaResponseFormat(schema, name)
       // ...(supportsStructuredOutputs
-      //   ? { response_format: zodResponseFormat(schema, name) }
+      //   ? { response_format: toOpenAiJsonSchemaResponseFormat(schema, name) }
       //   : {}),
     });
 

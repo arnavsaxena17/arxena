@@ -52,6 +52,10 @@ const VARIABLE_CONSUMING_ACTION_TYPES = new Set<WorkflowActionType>([
   WorkflowActionType.CODE,
   WorkflowActionType.LOGIC_FUNCTION,
   WorkflowActionType.SEND_EMAIL,
+  WorkflowActionType.SEND_LINKEDIN_CONNECTION_REQUEST,
+  WorkflowActionType.SEND_LINKEDIN_INMAIL,
+  WorkflowActionType.SEND_LINKEDIN_MESSAGE,
+  WorkflowActionType.SEND_WHATSAPP_MESSAGE,
   ...RECORD_CRUD_ACTION_TYPES,
 ]);
 

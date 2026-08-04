@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import {
   getQueryConstructorUserPrompt,
   QUERY_CONSTRUCTOR_SYSTEM_PROMPT,
@@ -51,7 +51,7 @@ export class QueryConstructorService {
         this.streamProcessingService.createStreamingCompletion(
           openaiClient,
           messages,
-          zodResponseFormat(queryConstructorSchema, 'queryConstructor'),
+          toOpenAiJsonSchemaResponseFormat(queryConstructorSchema, 'queryConstructor'),
         ),
       { sendEvent, maxRetries: 2 },
     );

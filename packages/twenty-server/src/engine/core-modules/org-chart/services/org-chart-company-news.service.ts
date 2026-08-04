@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
 
+import { toOpenAiResponsesJsonSchemaFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import {
   COMPANY_NEWS_DEVELOPER_PROMPT,
   buildCompanyNewsUserPrompt,
@@ -137,7 +137,10 @@ export class OrgChartCompanyNewsService {
         },
       ],
       text: {
-        format: zodTextFormat(companyNewsLlmResultSchema, 'company_news'),
+        format: toOpenAiResponsesJsonSchemaFormat(
+          companyNewsLlmResultSchema,
+          'company_news',
+        ),
       },
       store: true,
     });

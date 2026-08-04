@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { QueryCleanupPrompts } from '../prompts/query-cleanup-prompts';
@@ -36,7 +36,7 @@ export class CleanupService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        response_format: zodResponseFormat(queryCleanupSchema, 'queryCleanup'),
+        response_format: toOpenAiJsonSchemaResponseFormat(queryCleanupSchema, 'queryCleanup'),
       });
 
       const content = completion.choices[0].message.content;

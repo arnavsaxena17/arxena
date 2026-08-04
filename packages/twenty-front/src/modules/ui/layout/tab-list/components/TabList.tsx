@@ -198,6 +198,7 @@ export const TabList = ({
                     activeTabId={activeTabId || ''}
                     onTabSelect={handleTabSelectFromDropdown}
                     loading={loading}
+                    isDropdownInModal={!!isInSidePanel}
                   />
                 </StyledDropdownContainer>
               )}

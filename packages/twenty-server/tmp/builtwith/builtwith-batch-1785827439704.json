@@ -1,0 +1,296 @@
+{
+  "fetchedAt": "2026-08-04T07:10:39.704Z",
+  "zone": "web_unlocker1",
+  "domains": [
+    "adani.com",
+    "google.com",
+    "zoominfo.com",
+    "lusha.com",
+    "arxena.com",
+    "microsoft.com",
+    "amazon.com",
+    "salesforce.com",
+    "hubspot.com",
+    "linkedin.com",
+    "apollo.io",
+    "twenty.com"
+  ],
+  "results": [
+    {
+      "domain": "adani.com",
+      "profileUrl": "https://builtwith.com/adani.com",
+      "detailedUrl": "https://builtwith.com/detailed/adani.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:23.928Z",
+      "errors": [
+        "Challenge/empty page for profile \"adani.com\" (len=12015)"
+      ]
+    },
+    {
+      "domain": "google.com",
+      "profileUrl": "https://builtwith.com/google.com",
+      "detailedUrl": "https://builtwith.com/detailed/google.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:24.375Z",
+      "errors": [
+        "Challenge/empty page for profile \"google.com\" (len=12016)"
+      ]
+    },
+    {
+      "domain": "zoominfo.com",
+      "profileUrl": "https://builtwith.com/zoominfo.com",
+      "detailedUrl": "https://builtwith.com/detailed/zoominfo.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:23.002Z",
+      "errors": [
+        "Challenge/empty page for profile \"zoominfo.com\" (len=12018)"
+      ]
+    },
+    {
+      "domain": "lusha.com",
+      "profileUrl": "https://builtwith.com/lusha.com",
+      "detailedUrl": "https://builtwith.com/detailed/lusha.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:24.212Z",
+      "errors": [
+        "Challenge/empty page for profile \"lusha.com\" (len=12015)"
+      ]
+    },
+    {
+      "domain": "arxena.com",
+      "profileUrl": "https://builtwith.com/arxena.com",
+      "detailedUrl": "https://builtwith.com/detailed/arxena.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:27.136Z",
+      "errors": [
+        "Challenge/empty page for profile \"arxena.com\" (len=12016)"
+      ]
+    },
+    {
+      "domain": "microsoft.com",
+      "profileUrl": "https://builtwith.com/microsoft.com",
+      "detailedUrl": "https://builtwith.com/detailed/microsoft.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:25.687Z",
+      "errors": [
+        "Challenge/empty page for profile \"microsoft.com\" (len=12019)"
+      ]
+    },
+    {
+      "domain": "amazon.com",
+      "profileUrl": "https://builtwith.com/amazon.com",
+      "detailedUrl": "https://builtwith.com/detailed/amazon.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:26.689Z",
+      "errors": [
+        "Challenge/empty page for profile \"amazon.com\" (len=12016)"
+      ]
+    },
+    {
+      "domain": "salesforce.com",
+      "profileUrl": "https://builtwith.com/salesforce.com",
+      "detailedUrl": "https://builtwith.com/detailed/salesforce.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:29.329Z",
+      "errors": [
+        "Challenge/empty page for profile \"salesforce.com\" (len=12020)"
+      ]
+    },
+    {
+      "domain": "hubspot.com",
+      "profileUrl": "https://builtwith.com/hubspot.com",
+      "detailedUrl": "https://builtwith.com/detailed/hubspot.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:30.023Z",
+      "errors": [
+        "Challenge/empty page for profile \"hubspot.com\" (len=12017)"
+      ]
+    },
+    {
+      "domain": "linkedin.com",
+      "profileUrl": "https://builtwith.com/linkedin.com",
+      "detailedUrl": "https://builtwith.com/detailed/linkedin.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:30.267Z",
+      "errors": [
+        "Challenge/empty page for profile \"linkedin.com\" (len=12018)"
+      ]
+    },
+    {
+      "domain": "apollo.io",
+      "profileUrl": "https://builtwith.com/apollo.io",
+      "detailedUrl": "https://builtwith.com/detailed/apollo.io",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:34.871Z",
+      "errors": [
+        "Challenge/empty page for profile \"apollo.io\" (len=12015)"
+      ]
+    },
+    {
+      "domain": "twenty.com",
+      "profileUrl": "https://builtwith.com/twenty.com",
+      "detailedUrl": "https://builtwith.com/detailed/twenty.com",
+      "title": null,
+      "meta": {
+        "liveTechnologiesCount": null,
+        "lastTechnologyDetected": null,
+        "siteAgeLabel": null,
+        "topSiteRank": null,
+        "aiIndex": {
+          "score": null,
+          "label": null
+        },
+        "technologySpend": null
+      },
+      "categories": [],
+      "detailedTechnologies": [],
+      "fetchedAt": "2026-08-04T07:10:39.704Z",
+      "errors": [
+        "Challenge/empty page for profile \"twenty.com\" (len=12016)"
+      ]
+    }
+  ]
+}

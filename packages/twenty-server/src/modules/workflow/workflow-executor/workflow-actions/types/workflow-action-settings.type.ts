@@ -18,6 +18,10 @@ import {
   type WorkflowUpdateRecordActionSettings,
   type WorkflowUpsertRecordActionSettings,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/types/workflow-record-crud-action-settings.type';
+import { type WorkflowSendLinkedinConnectionRequestActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-connection-request-action-settings.type';
+import { type WorkflowSendLinkedinInmailActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-inmail-action-settings.type';
+import { type WorkflowSendLinkedinMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-message-action-settings.type';
+import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 
 export type BaseWorkflowActionSettings = {
   outputSchema: OutputSchema;
@@ -50,6 +54,10 @@ export type WorkflowActionSettings =
   | WorkflowFilterActionSettings
   | WorkflowIfElseActionSettings
   | WorkflowHttpRequestActionSettings
+  | WorkflowSendLinkedinConnectionRequestActionSettings
+  | WorkflowSendLinkedinInmailActionSettings
+  | WorkflowSendLinkedinMessageActionSettings
+  | WorkflowSendWhatsappMessageActionSettings
   | WorkflowAiAgentActionSettings
   | WorkflowDelayActionSettings
   | WorkflowIteratorActionSettings;

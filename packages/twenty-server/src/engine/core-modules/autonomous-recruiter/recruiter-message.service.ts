@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { z } from 'zod';
 import { AssistantThreadService } from '../assistant/assistant-thread.service';
 import {
@@ -238,7 +238,7 @@ export class RecruiterMessageService {
             },
             { role: 'user' as const, content: this.buildUserPrompt(userMessage, conversationSummaryParts) },
           ],
-          zodResponseFormat(this.plannerSchema, 'recruiterPlanner'),
+          toOpenAiJsonSchemaResponseFormat(this.plannerSchema, 'recruiterPlanner'),
           'gpt-4o-mini',
         ),
       {

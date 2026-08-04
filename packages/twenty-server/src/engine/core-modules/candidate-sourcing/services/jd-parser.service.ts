@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as fs from 'fs';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import * as os from 'os';
 import * as path from 'path';
 import { z } from 'zod';
@@ -251,7 +251,7 @@ export class JDParserService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: enrichedJdText },
         ],
-        response_format: zodResponseFormat(
+        response_format: toOpenAiJsonSchemaResponseFormat(
           jobDetailsSchema,
           'jobDetails',
         ),

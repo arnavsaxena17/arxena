@@ -22,6 +22,10 @@ import { WorkflowEditActionIfElse } from '@/workflow/workflow-steps/workflow-act
 import { WorkflowEditActionIterator } from '@/workflow/workflow-steps/workflow-actions/iterator-action/components/WorkflowEditActionIterator';
 import { WorkflowEditActionPickRecord } from '@/workflow/workflow-steps/workflow-actions/pick-record-action/components/WorkflowEditActionPickRecord';
 import { WorkflowEditActionLogicFunction } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/components/WorkflowEditActionLogicFunction';
+import { WorkflowEditActionSendLinkedinConnectionRequest } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest';
+import { WorkflowEditActionSendLinkedinInmail } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinInmail';
+import { WorkflowEditActionSendLinkedinMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinMessage';
+import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
 import { WorkflowEditTriggerDatabaseEventForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerDatabaseEventForm';
 import { WorkflowEditTriggerManual } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerManual';
@@ -241,6 +245,50 @@ export const WorkflowRunStepNodeDetail = ({
         case 'HTTP_REQUEST': {
           return (
             <WorkflowEditActionHttpRequest
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'SEND_LINKEDIN_CONNECTION_REQUEST': {
+          return (
+            <WorkflowEditActionSendLinkedinConnectionRequest
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'SEND_LINKEDIN_INMAIL': {
+          return (
+            <WorkflowEditActionSendLinkedinInmail
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'SEND_LINKEDIN_MESSAGE': {
+          return (
+            <WorkflowEditActionSendLinkedinMessage
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'SEND_WHATSAPP_MESSAGE': {
+          return (
+            <WorkflowEditActionSendWhatsappMessage
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={{

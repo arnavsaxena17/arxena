@@ -110,12 +110,31 @@ const createCalendarEventStepLogDetailsSchema = z.object({
   durationMs: z.number(),
 });
 
+const unipileMessagingStepLogDetailsSchema = z.object({
+  type: z.literal('UNIPILE_MESSAGING'),
+  channel: z.enum([
+    'LINKEDIN_CONNECTION_REQUEST',
+    'LINKEDIN_INMAIL',
+    'LINKEDIN_MESSAGE',
+    'WHATSAPP_MESSAGE',
+  ]),
+  status: z.enum(['SUCCESS', 'ERROR']),
+  workspaceMemberId: z.string().optional(),
+  unipileAccountId: z.string().optional(),
+  recipient: z.string().optional(),
+  subject: z.string().optional(),
+  bodyPreview: z.string().optional(),
+  error: z.string().optional(),
+  durationMs: z.number(),
+});
+
 const stepLogDetailsSchema = z.discriminatedUnion('type', [
   aiAgentStepLogDetailsSchema,
   codeStepLogDetailsSchema,
   httpRequestStepLogDetailsSchema,
   emailStepLogDetailsSchema,
   createCalendarEventStepLogDetailsSchema,
+  unipileMessagingStepLogDetailsSchema,
 ]);
 
 export const workflowRunStepLogSchema = z.object({

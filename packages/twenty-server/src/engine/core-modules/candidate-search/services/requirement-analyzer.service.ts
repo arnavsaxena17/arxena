@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 
 import {
   getRequirementAnalyzerUserPrompt,
@@ -35,7 +35,7 @@ export class RequirementAnalyzerService {
             { role: 'system' as const, content: REQUIREMENT_ANALYZER_SYSTEM_PROMPT },
             { role: 'user' as const, content: userPrompt },
           ],
-          zodResponseFormat(parsedRequirementSchema, 'parsedRequirement'),
+          toOpenAiJsonSchemaResponseFormat(parsedRequirementSchema, 'parsedRequirement'),
         ),
       { sendEvent, maxRetries: 2 },
     );

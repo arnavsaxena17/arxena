@@ -1,0 +1,128 @@
+{
+  "source": "tmp/builtwith/builtwith-batch-1785828575958.json",
+  "fetchedAt": "2026-08-04T07:29:35.958Z",
+  "transport": "bright-data-residential-proxy",
+  "successCount": 10,
+  "domains": [
+    {
+      "domain": "adani.com",
+      "ok": true,
+      "techCount": 169,
+      "live": 91,
+      "spend": "$37,728+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "google.com",
+      "ok": false,
+      "techCount": 0,
+      "live": 0,
+      "spend": null,
+      "errors": [
+        "Detailed page failed status=404 challenge=false notFound=true len=315364"
+      ]
+    },
+    {
+      "domain": "zoominfo.com",
+      "ok": true,
+      "techCount": 295,
+      "live": 163,
+      "spend": "$32,418+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "lusha.com",
+      "ok": true,
+      "techCount": 195,
+      "live": 122,
+      "spend": "$20,144+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "arxena.com",
+      "ok": true,
+      "techCount": 66,
+      "live": 31,
+      "spend": "$3,607+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "microsoft.com",
+      "ok": false,
+      "techCount": 0,
+      "live": 0,
+      "spend": null,
+      "errors": [
+        "Detailed page failed status=404 challenge=false notFound=true len=315363"
+      ]
+    },
+    {
+      "domain": "hubspot.com",
+      "ok": true,
+      "techCount": 236,
+      "live": 183,
+      "spend": "$63,324+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "linkedin.com",
+      "ok": true,
+      "techCount": 292,
+      "live": 262,
+      "spend": "$104,147+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "apollo.io",
+      "ok": true,
+      "techCount": 203,
+      "live": 128,
+      "spend": "$31,102+ / month",
+      "errors": [
+        "Profile skipped status=502 challenge=false"
+      ]
+    },
+    {
+      "domain": "twenty.com",
+      "ok": true,
+      "techCount": 82,
+      "live": 44,
+      "spend": "$111+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "stripe.com",
+      "ok": true,
+      "techCount": 232,
+      "live": 178,
+      "spend": "$86,493+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    },
+    {
+      "domain": "notion.so",
+      "ok": true,
+      "techCount": 152,
+      "live": 65,
+      "spend": "$8,197+ / month",
+      "errors": [
+        "Profile skipped status=202 challenge=true"
+      ]
+    }
+  ]
+}

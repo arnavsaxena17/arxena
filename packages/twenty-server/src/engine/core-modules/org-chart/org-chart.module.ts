@@ -13,6 +13,7 @@ import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
+import { BuiltWithModule } from 'src/engine/core-modules/builtwith/builtwith.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -50,6 +51,7 @@ import { OrgChartIncrementalBuildCacheService } from './services/orgchart-increm
 import { OrgChartPublishedAdminService } from './services/org-chart-published-admin.service';
 import { OrgChartPublishedSlugService } from './services/org-chart-published-slug.service';
 import { OrgChartCompanyNewsService } from './services/org-chart-company-news.service';
+import { OrgChartCompanyTechnologyService } from './services/org-chart-company-technology.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
@@ -76,6 +78,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     LinkedinXrayModule,
     TheOrgModule,
     TheOfficialBoardModule,
+    BuiltWithModule,
     WorkspaceModificationsModule,
     WorkspaceCacheStorageModule,
     forwardRef(() => CandidateSearchModule),
@@ -107,6 +110,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     PythonOrgChartService,
     OrgChartS3Service,
     OrgChartCompanyNewsService,
+    OrgChartCompanyTechnologyService,
     OrgChartCacheService,
     OrgchartCancelRegistryService,
     OrgChartIncrementalBuildCacheService,

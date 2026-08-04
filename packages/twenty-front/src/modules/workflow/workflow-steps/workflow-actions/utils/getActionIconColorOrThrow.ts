@@ -12,6 +12,10 @@ export const getActionIconColorOrThrow = (
     case 'SEND_EMAIL':
     case 'DRAFT_EMAIL':
     case 'CREATE_CALENDAR_EVENT':
+    case 'SEND_LINKEDIN_CONNECTION_REQUEST':
+    case 'SEND_LINKEDIN_INMAIL':
+    case 'SEND_LINKEDIN_MESSAGE':
+    case 'SEND_WHATSAPP_MESSAGE':
       return themeCssVariables.color.red;
     case 'CREATE_RECORD':
     case 'UPDATE_RECORD':

@@ -25,6 +25,10 @@ import { FindRecordsWorkflowAction } from 'src/modules/workflow/workflow-executo
 import { PickRecordWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/pick-record.workflow-action';
 import { UpdateRecordWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/update-record.workflow-action';
 import { UpsertRecordWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/upsert-record.workflow-action';
+import { SendLinkedinConnectionRequestWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-connection-request.workflow-action';
+import { SendLinkedinInmailWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-inmail.workflow-action';
+import { SendLinkedinMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-message.workflow-action';
+import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-whatsapp-message.workflow-action';
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
 @Injectable()
@@ -46,6 +50,10 @@ export class WorkflowActionFactory {
     private readonly sendEmailWorkflowAction: SendEmailWorkflowAction,
     private readonly draftEmailWorkflowAction: DraftEmailWorkflowAction,
     private readonly createCalendarEventWorkflowAction: CreateCalendarEventWorkflowAction,
+    private readonly sendLinkedinConnectionRequestWorkflowAction: SendLinkedinConnectionRequestWorkflowAction,
+    private readonly sendLinkedinInmailWorkflowAction: SendLinkedinInmailWorkflowAction,
+    private readonly sendLinkedinMessageWorkflowAction: SendLinkedinMessageWorkflowAction,
+    private readonly sendWhatsappMessageWorkflowAction: SendWhatsappMessageWorkflowAction,
     private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
     private readonly emptyWorkflowAction: EmptyWorkflowAction,
     private readonly delayWorkflowAction: DelayWorkflowAction,
@@ -85,6 +93,14 @@ export class WorkflowActionFactory {
         return this.iteratorWorkflowAction;
       case WorkflowActionType.HTTP_REQUEST:
         return this.httpRequestWorkflowAction;
+      case WorkflowActionType.SEND_LINKEDIN_CONNECTION_REQUEST:
+        return this.sendLinkedinConnectionRequestWorkflowAction;
+      case WorkflowActionType.SEND_LINKEDIN_INMAIL:
+        return this.sendLinkedinInmailWorkflowAction;
+      case WorkflowActionType.SEND_LINKEDIN_MESSAGE:
+        return this.sendLinkedinMessageWorkflowAction;
+      case WorkflowActionType.SEND_WHATSAPP_MESSAGE:
+        return this.sendWhatsappMessageWorkflowAction;
       case WorkflowActionType.AI_AGENT:
         return this.aiAgentWorkflowAction;
       case WorkflowActionType.EMPTY:

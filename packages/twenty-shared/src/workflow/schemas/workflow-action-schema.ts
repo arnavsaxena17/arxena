@@ -15,6 +15,10 @@ import { workflowIteratorActionSchema } from './iterator-action-schema';
 import { workflowLogicFunctionActionSchema } from './logic-function-action-schema';
 import { workflowPickRecordActionSchema } from './pick-record-action-schema';
 import { workflowSendEmailActionSchema } from './send-email-action-schema';
+import { workflowSendLinkedinConnectionRequestActionSchema } from './send-linkedin-connection-request-action-schema';
+import { workflowSendLinkedinInmailActionSchema } from './send-linkedin-inmail-action-schema';
+import { workflowSendLinkedinMessageActionSchema } from './send-linkedin-message-action-schema';
+import { workflowSendWhatsappMessageActionSchema } from './send-whatsapp-message-action-schema';
 import { workflowUpdateRecordActionSchema } from './update-record-action-schema';
 import { workflowUpsertRecordActionSchema } from './upsert-record-action-schema';
 import { workflowDelayActionSchema } from './workflow-delay-action-schema';
@@ -33,6 +37,10 @@ export const workflowActionSchema = z.discriminatedUnion('type', [
   workflowPickRecordActionSchema,
   workflowFormActionSchema,
   workflowHttpRequestActionSchema,
+  workflowSendLinkedinConnectionRequestActionSchema,
+  workflowSendLinkedinInmailActionSchema,
+  workflowSendLinkedinMessageActionSchema,
+  workflowSendWhatsappMessageActionSchema,
   workflowAiAgentActionSchema,
   workflowFilterActionSchema,
   workflowIfElseActionSchema,

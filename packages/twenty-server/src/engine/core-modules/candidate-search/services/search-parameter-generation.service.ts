@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { inspect } from 'util';
 import {
   LinkedInClassicCompaniesSearchRequest,
@@ -102,7 +102,7 @@ export class SearchParameterGenerationService {
             { role: 'system' as const, content: systemPrompt },
             { role: 'user' as const, content: enhancedUserPrompt },
           ],
-          zodResponseFormat(schema, schemaName),
+          toOpenAiJsonSchemaResponseFormat(schema, schemaName),
         ),
       { sendEvent, maxRetries: 2 },
     );
@@ -164,7 +164,7 @@ export class SearchParameterGenerationService {
             { role: 'system' as const, content: systemPrompt },
             { role: 'user' as const, content: enhancedUserPrompt },
           ],
-          zodResponseFormat(
+          toOpenAiJsonSchemaResponseFormat(
             classicJobsSearchSchema,
             'classicJobsSearch',
           ),

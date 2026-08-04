@@ -61,6 +61,7 @@ import { OrgChartSuperImposeService } from '../services/org-chart-super-impose.s
 import { OrgChartTheOrgEnrichmentService } from '../services/org-chart-theorg-enrichment.service';
 import { OrgChartPublishedSlugService } from '../services/org-chart-published-slug.service';
 import { OrgChartCompanyNewsService } from '../services/org-chart-company-news.service';
+import { OrgChartCompanyTechnologyService } from '../services/org-chart-company-technology.service';
 import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import type { SuperImposeInputs } from '../types/super-impose.types';
@@ -125,6 +126,7 @@ export class OrgChartController {
     private readonly apiKeyService: ApiKeyService,
     private readonly orgChartS3Service: OrgChartS3Service,
     private readonly orgChartCompanyNewsService: OrgChartCompanyNewsService,
+    private readonly orgChartCompanyTechnologyService: OrgChartCompanyTechnologyService,
     private readonly orgChartPublishedSlugService: OrgChartPublishedSlugService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
@@ -2020,6 +2022,112 @@ export class OrgChartController {
         error instanceof Error
           ? error.message
           : 'Failed to fetch company news',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * GET /org-chart/:companyId/company-technology
+   *
+   * Returns persisted BuiltWith technology data from S3 (if any).
+   */
+  @Get(':companyId/company-technology')
+  async getOrgChartCompanyTechnology(@Param('companyId') companyId: string) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const storage =
+      await this.orgChartCompanyTechnologyService.getStoredCompanyTechnology(
+        normalizedCompanyId,
+      );
+
+    return {
+      status: 'ok' as const,
+      result: storage
+        ? {
+            ...storage,
+            latestResult:
+              this.orgChartCompanyTechnologyService.getLatestTechnologyResult(
+                storage,
+              ),
+          }
+        : null,
+    };
+  }
+
+  /**
+   * POST /org-chart/:companyId/company-technology/fetch
+   *
+   * Fetches BuiltWith technology details and appends to S3.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post(':companyId/company-technology/fetch')
+  async fetchOrgChartCompanyTechnology(
+    @Param('companyId') companyId: string,
+    @Body()
+    body: {
+      companyName?: string;
+      domain?: string;
+      website?: string;
+    },
+    @Req() req: Request,
+  ) {
+    if (!companyId || companyId.includes('/') || companyId.includes('..')) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
+
+    const authToken = this.getAuthToken(req);
+    if (!authToken || !(req as { user?: unknown }).user) {
+      throw new HttpException(
+        'Authentication required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const normalizedCompanyId = this.normalizeCompanyId(companyId);
+    const companyName =
+      (body?.companyName ?? '').trim() || normalizedCompanyId;
+    const domainInput = (body?.domain ?? body?.website ?? '').trim();
+
+    if (!domainInput) {
+      throw new HttpException(
+        'domain or website is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const storage =
+        await this.orgChartCompanyTechnologyService.fetchAndStoreCompanyTechnology(
+          {
+            companyId: normalizedCompanyId,
+            companyName,
+            domain: domainInput,
+          },
+        );
+
+      return {
+        status: 'ok' as const,
+        result: {
+          ...storage,
+          latestResult:
+            this.orgChartCompanyTechnologyService.getLatestTechnologyResult(
+              storage,
+            ),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Fetch company technology failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch company technology',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { TokenUsage } from '../utils/token-tracking.util';
 
 export type StreamProcessingResult = {
@@ -144,7 +144,7 @@ export class StreamProcessingService {
   async createStreamingCompletion(
     openaiClient: OpenAI,
     messages: Array<{ role: 'system' | 'user'; content: string }>,
-    responseFormat: ReturnType<typeof zodResponseFormat>,
+    responseFormat: ReturnType<typeof toOpenAiJsonSchemaResponseFormat>,
     model: string = 'gpt-4o-mini',
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     return openaiClient.chat.completions.create({

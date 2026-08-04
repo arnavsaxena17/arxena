@@ -129,6 +129,7 @@ export class BrightDataUnlockerService {
   async requestRaw(input: {
     url: string;
     country?: string;
+    render?: boolean | string;
   }): Promise<BrightDataUnlockerResponse> {
     const zone = await this.resolveUnlockerZoneName();
 
@@ -143,6 +144,16 @@ export class BrightDataUnlockerService {
       url: input.url,
       format: 'raw',
       ...(input.country ? { country: input.country } : {}),
+      ...(input.render !== undefined
+        ? {
+            render:
+              typeof input.render === 'boolean'
+                ? input.render
+                  ? 'true'
+                  : 'false'
+                : input.render,
+          }
+        : {}),
     });
 
     return {

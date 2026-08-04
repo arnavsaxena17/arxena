@@ -1,5 +1,5 @@
 // import { Injectable, Logger } from '@nestjs/common';
-// import { zodResponseFormat } from 'openai/helpers/zod';
+// import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 // import { z } from 'zod';
 // import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 // import { AiFilteringPrompts } from '../prompts/ai-filtering-prompts';
@@ -256,7 +256,7 @@
 //           { role: 'user', content: userPrompt }
 //         ],
 //         temperature: 0.7,
-//         response_format: zodResponseFormat(
+//         response_format: toOpenAiJsonSchemaResponseFormat(
 //           enrichmentsResponseSchema,
 //           'enrichmentsResponse',
 //         ),
@@ -312,7 +312,7 @@
 //           { role: 'user', content: userPrompt }
 //         ],
 //         temperature: 0.7,
-//         response_format: zodResponseFormat(
+//         response_format: toOpenAiJsonSchemaResponseFormat(
 //           filtersResponseSchema,
 //           'filtersResponse',
 //         ),
@@ -369,7 +369,7 @@
 //           { role: 'user', content: userPrompt }
 //         ],
 //         temperature: 0.7,
-//         response_format: zodResponseFormat(
+//         response_format: toOpenAiJsonSchemaResponseFormat(
 //           sortsResponseSchema,
 //           'sortsResponse',
 //         ),

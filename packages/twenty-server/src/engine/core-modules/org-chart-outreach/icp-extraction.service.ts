@@ -1,7 +1,6 @@
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
@@ -15,6 +14,7 @@ import type {
   LinkedInSearchResult,
 } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
+import { toOpenAiResponsesJsonSchemaFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import type {
   ExtractIcpFromResumeParams,
   ExtractIcpFromResumeResponse,
@@ -675,7 +675,7 @@ export class IcpExtractionService {
         },
       ],
       text: {
-        format: zodTextFormat(
+        format: toOpenAiResponsesJsonSchemaFormat(
           companyWebsearchLlmResultSchema,
           'company_websearch',
         ),

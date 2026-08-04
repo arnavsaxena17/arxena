@@ -5,9 +5,12 @@ import { IconX } from 'twenty-ui/icon';
 import { IconBrandLinkedin, IconWorld } from 'twenty-ui/icon';
 import { useEffect, useMemo, useState } from 'react';
 
+import { RootStackingContextZIndices } from '@/ui/layout/constants/RootStackingContextZIndices';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared/utils';
 
 import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
@@ -19,7 +22,7 @@ const StyledDrawerBackdrop = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.25);
-  z-index: 50;
+  z-index: ${RootStackingContextZIndices.RootModalBackDrop};
   animation: fadeIn 0.2s ease-out;
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -35,7 +38,7 @@ const StyledDrawer = styled.div`
   width: min(420px, 100vw);
   background: ${themeCssVariables.background.primary};
   box-shadow: -4px 0 24px rgba(15, 23, 42, 0.15);
-  z-index: 51;
+  z-index: ${RootStackingContextZIndices.RootModal};
   display: flex;
   flex-direction: column;
   animation: slideIn 0.25s ease-out;
@@ -297,6 +300,66 @@ const StyledNewsNotes = styled.div`
   line-height: 1.4;
 `;
 
+const StyledTechCategory = styled.details`
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.secondary};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
+`;
+
+const StyledTechCategorySummary = styled.summary`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${themeCssVariables.spacing[1]};
+  font-weight: 600;
+  color: ${themeCssVariables.font.color.primary};
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const StyledTechList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+  margin-top: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledTechRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: ${themeCssVariables.spacing[1]};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+`;
+
+const StyledTechName = styled.div`
+  color: ${themeCssVariables.font.color.primary};
+  font-weight: 500;
+`;
+
+const StyledTechMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[1]};
+  font-size: ${themeCssVariables.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+`;
+
+const StyledTechBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 0 ${themeCssVariables.spacing[1]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  background: ${themeCssVariables.background.tertiary};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+`;
+
 const StyledCacheSection = styled(StyledSection)`
   margin-top: auto;
 `;
@@ -342,6 +405,48 @@ type CompanyNewsStorageResult = {
   mergedNewsItems?: CompanyNewsItem[];
 };
 
+type BuiltWithDetailedTechnology = {
+  category: string;
+  name: string;
+  slug: string;
+  trendCategory: string;
+  firstDetected: string | null;
+  lastDetected: string | null;
+  isHistorical: boolean;
+  dataTypes: string[];
+};
+
+type BuiltWithDomainResult = {
+  domain: string;
+  profileUrl: string;
+  detailedUrl: string;
+  title: string | null;
+  meta: {
+    liveTechnologiesCount: number | null;
+    lastTechnologyDetected: string | null;
+    siteAgeLabel: string | null;
+    topSiteRank: number | null;
+    aiIndex: { score: string | null; label: string | null };
+    technologySpend: string | null;
+  };
+  detailedTechnologies: BuiltWithDetailedTechnology[];
+  fetchedAt: string;
+  errors: string[];
+  message?: string;
+};
+
+type CompanyTechnologyStorageResult = {
+  companyId: string;
+  companyName: string;
+  domain: string;
+  updatedAt: string;
+  fetches: Array<{
+    fetchedAt: string;
+    result: BuiltWithDomainResult;
+  }>;
+  latestResult?: BuiltWithDomainResult | null;
+};
+
 export const OrgChartCompanyDrawer = ({
   companyName,
   website,
@@ -362,6 +467,10 @@ export const OrgChartCompanyDrawer = ({
   timelineProfilesOptions,
 }: OrgChartCompanyDrawerProps) => {
   const [logoError, setLogoError] = useState(false);
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken =
+    timelineProfilesOptions?.accessToken ??
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const timelineTabListInstanceId = 'orgchart-company-drawer-timeline-tabs';
   const activeTabId = useAtomComponentStateValue(
     activeTabIdComponentState,
@@ -369,7 +478,7 @@ export const OrgChartCompanyDrawer = ({
   );
   const activeTab = (
     activeTabId ?? 'company'
-  ) as 'company' | 'joined' | 'left' | 'current' | 'past' | 'news';
+  ) as 'company' | 'joined' | 'left' | 'current' | 'past' | 'news' | 'technology';
   const [activeWindow, setActiveWindow] = useState<'1m' | '3m' | '6m' | '1y'>(
     '1m',
   );
@@ -379,7 +488,13 @@ export const OrgChartCompanyDrawer = ({
   const [isCompanyNewsLoading, setIsCompanyNewsLoading] = useState(false);
   const [isCompanyNewsFetching, setIsCompanyNewsFetching] = useState(false);
   const [companyNewsError, setCompanyNewsError] = useState<string | null>(null);
-
+  const [companyTechnology, setCompanyTechnology] =
+    useState<CompanyTechnologyStorageResult | null>(null);
+  const [isTechnologyLoading, setIsTechnologyLoading] = useState(false);
+  const [isTechnologyFetching, setIsTechnologyFetching] = useState(false);
+  const [technologyError, setTechnologyError] = useState<string | null>(null);
+  const [showHistoricalTechnologies, setShowHistoricalTechnologies] =
+    useState(false);
   const getLogoUrl = (site?: string): string | null => {
     if (!site?.trim()) return null;
     const base = REACT_APP_SERVER_BASE_URL ?? '';
@@ -424,6 +539,7 @@ export const OrgChartCompanyDrawer = ({
     activeTab === 'past';
 
   const shouldLoadCompanyNews = activeTab === 'news';
+  const shouldLoadCompanyTechnology = activeTab === 'technology';
 
   const formatDateTime = (value?: string): string => {
     if (!value?.trim()) return '—';
@@ -485,6 +601,64 @@ export const OrgChartCompanyDrawer = ({
     };
   }, [shouldLoadCompanyNews, timelineProfilesOptions]);
 
+  useEffect(() => {
+    if (
+      !shouldLoadCompanyTechnology ||
+      !timelineProfilesOptions?.baseUrl?.trim()
+    ) {
+      setCompanyTechnology(null);
+      setTechnologyError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const run = async () => {
+      setIsTechnologyLoading(true);
+      setTechnologyError(null);
+      try {
+        const url = `${timelineProfilesOptions.baseUrl.replace(
+          /\/$/,
+          '',
+        )}/org-chart/${encodeURIComponent(
+          timelineProfilesOptions.companyId,
+        )}/company-technology`;
+        const res = await fetch(url, {
+          headers: {
+            ...(accessToken
+              ? { Authorization: `Bearer ${accessToken}` }
+              : {}),
+          },
+        });
+        const json = (await res.json()) as {
+          result?: CompanyTechnologyStorageResult | null;
+          message?: string;
+        };
+        if (!cancelled) {
+          if (!res.ok) {
+            setCompanyTechnology(null);
+            setTechnologyError(
+              json.message ?? 'Failed to load company technology',
+            );
+            return;
+          }
+          setCompanyTechnology(json.result ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCompanyTechnology(null);
+          setTechnologyError('Failed to load company technology');
+        }
+      } finally {
+        if (!cancelled) setIsTechnologyLoading(false);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, shouldLoadCompanyTechnology, timelineProfilesOptions]);
+
   const handleFetchCompanyNews = async () => {
     if (!timelineProfilesOptions?.baseUrl?.trim()) return;
 
@@ -525,6 +699,100 @@ export const OrgChartCompanyDrawer = ({
       setIsCompanyNewsFetching(false);
     }
   };
+
+  const handleFetchTechnologyDetails = async () => {
+    if (!timelineProfilesOptions?.baseUrl?.trim()) {
+      setTechnologyError('Server URL is not configured.');
+      return;
+    }
+
+    const domain = websiteDomain?.trim();
+    if (!domain) {
+      setTechnologyError(
+        'No company website/domain available to look up technologies.',
+      );
+      return;
+    }
+
+    setIsTechnologyFetching(true);
+    setTechnologyError(null);
+
+    try {
+      const url = `${timelineProfilesOptions.baseUrl.replace(
+        /\/$/,
+        '',
+      )}/org-chart/${encodeURIComponent(
+        timelineProfilesOptions.companyId,
+      )}/company-technology/fetch`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          companyName: displayCompanyName || companyName,
+          domain,
+          website: website ?? domain,
+        }),
+      });
+      const json = (await res.json()) as {
+        result?: CompanyTechnologyStorageResult;
+        message?: string | string[];
+      };
+
+      if (!res.ok) {
+        const message = Array.isArray(json.message)
+          ? json.message.join(', ')
+          : json.message;
+        setTechnologyError(message ?? 'Failed to fetch technology details');
+        return;
+      }
+
+      setCompanyTechnology(json.result ?? null);
+    } catch {
+      setTechnologyError('Failed to fetch technology details');
+    } finally {
+      setIsTechnologyFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    setCompanyTechnology(null);
+    setTechnologyError(null);
+    setShowHistoricalTechnologies(false);
+  }, [websiteDomain, companyName, timelineProfilesOptions?.companyId]);
+
+  const technologyResult = useMemo(() => {
+    if (companyTechnology?.latestResult) {
+      return companyTechnology.latestResult;
+    }
+    const latestFetch =
+      companyTechnology?.fetches?.[companyTechnology.fetches.length - 1];
+    return latestFetch?.result ?? null;
+  }, [companyTechnology]);
+
+  const technologyGroups = useMemo(() => {
+    const technologies = technologyResult?.detailedTechnologies ?? [];
+    const filtered = showHistoricalTechnologies
+      ? technologies
+      : technologies.filter((technology) => !technology.isHistorical);
+    const groups = new Map<string, BuiltWithDetailedTechnology[]>();
+
+    for (const technology of filtered) {
+      const category = technology.category?.trim() || 'Other';
+      const current = groups.get(category) ?? [];
+      current.push(technology);
+      groups.set(category, current);
+    }
+
+    return Array.from(groups.entries()).map(([category, items]) => ({
+      category,
+      items,
+    }));
+  }, [showHistoricalTechnologies, technologyResult]);
 
   const companyNewsItems = useMemo(() => {
     if (companyNews?.mergedNewsItems?.length) {
@@ -801,13 +1069,16 @@ export const OrgChartCompanyDrawer = ({
               tabs={[
                 { id: 'company', title: 'Company info' },
                 { id: 'news', title: 'News' },
+                { id: 'technology', title: 'Technology' },
                 { id: 'joined', title: 'Who joined' },
                 { id: 'left', title: 'Who left' },
                 { id: 'current', title: 'Current' },
                 { id: 'past', title: 'Past' },
               ]}
             />
-            {activeTab !== 'company' && activeTab !== 'news' && (
+            {activeTab !== 'company' &&
+              activeTab !== 'news' &&
+              activeTab !== 'technology' && (
               <StyledTabsRow>
                 {(['1m', '3m', '6m', '1y'] as const).map((w) => (
                   <StyledWindowButton
@@ -822,8 +1093,9 @@ export const OrgChartCompanyDrawer = ({
             )}
           </StyledSection>
 
-          {timelineMetrics && activeTab !== 'news' && (
-            <StyledSection>
+          {timelineMetrics &&
+            activeTab !== 'news' &&
+            activeTab !== 'technology' && (            <StyledSection>
               <StyledSectionTitle>Timeline metrics</StyledSectionTitle>
               <StyledSectionContent>
                 <StyledMetaGrid>
@@ -927,6 +1199,196 @@ export const OrgChartCompanyDrawer = ({
                 {latestCompanyNewsNotes && (
                   <StyledNewsNotes>{latestCompanyNewsNotes}</StyledNewsNotes>
                 )}
+              </StyledSectionContent>
+            </StyledSection>
+          )}
+
+          {activeTab === 'technology' && (
+            <StyledSection>
+              <StyledSectionTitle>Technology</StyledSectionTitle>
+              <StyledActionsRow>
+                <Button
+                  title={
+                    isTechnologyFetching
+                      ? 'Fetching technology details…'
+                      : 'Fetch technology details'
+                  }
+                  variant="primary"
+                  size="small"
+                  onClick={() => void handleFetchTechnologyDetails()}
+                  disabled={
+                    isTechnologyFetching ||
+                    !websiteDomain?.trim() ||
+                    !timelineProfilesOptions?.baseUrl?.trim()
+                  }
+                />
+                {technologyResult && (
+                  <Button
+                    title={
+                      showHistoricalTechnologies
+                        ? 'Hide historical'
+                        : 'Show historical'
+                    }
+                    variant="secondary"
+                    size="small"
+                    onClick={() =>
+                      setShowHistoricalTechnologies((current) => !current)
+                    }
+                  />
+                )}
+              </StyledActionsRow>
+              <StyledSectionContent>
+                {!websiteDomain?.trim() && (
+                  <div>
+                    Add a company website to look up BuiltWith technology
+                    details.
+                  </div>
+                )}
+                {companyTechnology?.updatedAt && (
+                  <StyledMetaRow>
+                    <StyledMetaLabel>Last updated</StyledMetaLabel>
+                    <StyledMetaValue>
+                      {formatDateTime(companyTechnology.updatedAt)}
+                    </StyledMetaValue>
+                  </StyledMetaRow>
+                )}
+                {isTechnologyLoading && <div>Loading saved technology…</div>}
+                {technologyError && <div>{technologyError}</div>}
+                {isTechnologyFetching && <div>Fetching technology stack…</div>}
+                {technologyResult && (
+                  <>
+                    <StyledMetaGrid>
+                      <StyledMetaRow>
+                        <StyledMetaLabel>Domain</StyledMetaLabel>
+                        <StyledMetaValue>
+                          {technologyResult.domain}
+                        </StyledMetaValue>
+                      </StyledMetaRow>
+                      {technologyResult.meta.technologySpend && (
+                        <StyledMetaRow>
+                          <StyledMetaLabel>Tech spend</StyledMetaLabel>
+                          <StyledMetaValue>
+                            {technologyResult.meta.technologySpend}
+                          </StyledMetaValue>
+                        </StyledMetaRow>
+                      )}
+                      <StyledMetaRow>
+                        <StyledMetaLabel>Technologies</StyledMetaLabel>
+                        <StyledMetaValue>
+                          {
+                            technologyResult.detailedTechnologies.filter(
+                              (technology) => !technology.isHistorical,
+                            ).length
+                          }{' '}
+                          live
+                          {showHistoricalTechnologies
+                            ? ` · ${
+                                technologyResult.detailedTechnologies.filter(
+                                  (technology) => technology.isHistorical,
+                                ).length
+                              } historical`
+                            : ''}
+                        </StyledMetaValue>
+                      </StyledMetaRow>
+                      {technologyResult.meta.aiIndex.score && (
+                        <StyledMetaRow>
+                          <StyledMetaLabel>AI index</StyledMetaLabel>
+                          <StyledMetaValue>
+                            {technologyResult.meta.aiIndex.score}
+                            {technologyResult.meta.aiIndex.label
+                              ? ` (${technologyResult.meta.aiIndex.label})`
+                              : ''}
+                          </StyledMetaValue>
+                        </StyledMetaRow>
+                      )}
+                      <StyledMetaRow>
+                        <StyledMetaLabel>Fetched</StyledMetaLabel>
+                        <StyledMetaValue>
+                          {formatDateTime(technologyResult.fetchedAt)}
+                        </StyledMetaValue>
+                      </StyledMetaRow>
+                      {technologyResult.detailedUrl && (
+                        <StyledMetaRow>
+                          <StyledMetaLabel>Source</StyledMetaLabel>
+                          <StyledMetaValue>
+                            <StyledNewsLink
+                              href={technologyResult.detailedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              BuiltWith detailed
+                            </StyledNewsLink>
+                          </StyledMetaValue>
+                        </StyledMetaRow>
+                      )}
+                    </StyledMetaGrid>
+
+                    {technologyGroups.length === 0 ? (
+                      <div>No technologies found for this domain.</div>
+                    ) : (
+                      <StyledNewsList>
+                        {technologyGroups.map((group, groupIndex) => (
+                          <StyledTechCategory
+                            key={group.category}
+                            open={groupIndex < 3}
+                          >
+                            <StyledTechCategorySummary>
+                              <span>{group.category}</span>
+                              <StyledTechBadge>
+                                {group.items.length}
+                              </StyledTechBadge>
+                            </StyledTechCategorySummary>
+                            <StyledTechList>
+                              {group.items.map((technology) => (
+                                <StyledTechRow
+                                  key={`${technology.category}-${technology.slug}-${technology.firstDetected}-${technology.lastDetected}`}
+                                >
+                                  <StyledTechName>
+                                    {technology.name}
+                                    {technology.isHistorical
+                                      ? ' (historical)'
+                                      : ''}
+                                  </StyledTechName>
+                                  <StyledTechMeta>
+                                    {technology.firstDetected && (
+                                      <span>
+                                        First {technology.firstDetected}
+                                      </span>
+                                    )}
+                                    {technology.lastDetected && (
+                                      <span>
+                                        Last {technology.lastDetected}
+                                      </span>
+                                    )}
+                                    {technology.dataTypes
+                                      .filter((dataType) => dataType !== 'hist')
+                                      .slice(0, 3)
+                                      .map((dataType) => (
+                                        <StyledTechBadge key={dataType}>
+                                          {dataType}
+                                        </StyledTechBadge>
+                                      ))}
+                                  </StyledTechMeta>
+                                </StyledTechRow>
+                              ))}
+                            </StyledTechList>
+                          </StyledTechCategory>
+                        ))}
+                      </StyledNewsList>
+                    )}
+                  </>
+                )}
+                {!isTechnologyLoading &&
+                  !isTechnologyFetching &&
+                  !technologyResult &&
+                  !technologyError &&
+                  websiteDomain?.trim() && (
+                    <div>
+                      No saved technology yet. Fetch technology details for{' '}
+                      {websiteDomain} from BuiltWith to store it for this org
+                      chart.
+                    </div>
+                  )}
               </StyledSectionContent>
             </StyledSection>
           )}

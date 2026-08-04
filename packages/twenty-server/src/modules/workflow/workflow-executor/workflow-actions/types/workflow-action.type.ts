@@ -20,6 +20,10 @@ import {
   type WorkflowUpsertRecordActionSettings,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/types/workflow-record-crud-action-settings.type';
 import { type WorkflowActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action-settings.type';
+import { type WorkflowSendLinkedinConnectionRequestActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-connection-request-action-settings.type';
+import { type WorkflowSendLinkedinInmailActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-inmail-action-settings.type';
+import { type WorkflowSendLinkedinMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-message-action-settings.type';
+import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 
 type BaseWorkflowAction = {
   id: string;
@@ -109,6 +113,26 @@ export type WorkflowHttpRequestAction = BaseWorkflowAction & {
   settings: WorkflowHttpRequestActionSettings;
 };
 
+export type WorkflowSendLinkedinConnectionRequestAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_LINKEDIN_CONNECTION_REQUEST;
+  settings: WorkflowSendLinkedinConnectionRequestActionSettings;
+};
+
+export type WorkflowSendLinkedinInmailAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_LINKEDIN_INMAIL;
+  settings: WorkflowSendLinkedinInmailActionSettings;
+};
+
+export type WorkflowSendLinkedinMessageAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_LINKEDIN_MESSAGE;
+  settings: WorkflowSendLinkedinMessageActionSettings;
+};
+
+export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_WHATSAPP_MESSAGE;
+  settings: WorkflowSendWhatsappMessageActionSettings;
+};
+
 export type WorkflowAiAgentAction = BaseWorkflowAction & {
   type: WorkflowActionType.AI_AGENT;
   settings: WorkflowAiAgentActionSettings;
@@ -144,6 +168,10 @@ export type WorkflowAction =
   | WorkflowFilterAction
   | WorkflowIfElseAction
   | WorkflowHttpRequestAction
+  | WorkflowSendLinkedinConnectionRequestAction
+  | WorkflowSendLinkedinInmailAction
+  | WorkflowSendLinkedinMessageAction
+  | WorkflowSendWhatsappMessageAction
   | WorkflowAiAgentAction
   | WorkflowIteratorAction
   | WorkflowEmptyAction

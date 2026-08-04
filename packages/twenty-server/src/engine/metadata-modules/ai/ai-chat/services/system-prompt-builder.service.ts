@@ -172,11 +172,11 @@ export class SystemPromptBuilderService {
 
   buildWorkspaceInstructionsSection(instructions: string): string {
     return `
-## Workspace Instructions
+    ## Workspace Instructions
 
-The following are custom instructions provided by the workspace administrator:
+    The following are custom instructions provided by the workspace administrator:
 
-${instructions}`;
+    ${instructions}`;
   }
 
   buildUserContextSection(userContext: UserContext): string {
@@ -194,9 +194,9 @@ ${instructions}`;
     parts.push(`Current date: ${this.formatCurrentDate(userContext.timezone)}`);
 
     return `
-## User Context
+    ## User Context
 
-${parts.join('\n')}`;
+    ${parts.join('\n')}`;
   }
 
   private formatCurrentDate(timezone: string | null): string {
@@ -219,18 +219,18 @@ ${parts.join('\n')}`;
     );
 
     return `
-## Uploaded Files
+    ## Uploaded Files
 
-The user has uploaded the following files:
-${fileList}
+    The user has uploaded the following files:
+    ${fileList}
 
-**IMPORTANT**: Use the \`code_interpreter\` tool to analyze these files.
-When calling code_interpreter, include the files parameter with these values (use fileId to reference uploaded files):
-\`\`\`json
-${filesJson}
-\`\`\`
+    **IMPORTANT**: Use the \`code_interpreter\` tool to analyze these files.
+    When calling code_interpreter, include the files parameter with these values (use fileId to reference uploaded files):
+    \`\`\`json
+    ${filesJson}
+    \`\`\`
 
-In your Python code, access files at \`/home/user/{filename}\`.`;
+    In your Python code, access files at \`/home/user/{filename}\`.`;
   }
 
   buildSkillCatalogSection(skillCatalog: FlatSkill[]): string {
@@ -245,12 +245,12 @@ In your Python code, access files at \`/home/user/{filename}\`.`;
       .join('\n');
 
     return `
-## Available Skills
+    ## Available Skills
 
-Skills provide detailed expertise for specialized tasks. Load a skill before attempting complex operations.
-To load a skill, call \`${LOAD_SKILL_TOOL_NAME}\` with the skill name(s).
+    Skills provide detailed expertise for specialized tasks. Load a skill before attempting complex operations.
+    To load a skill, call \`${LOAD_SKILL_TOOL_NAME}\` with the skill name(s).
 
-${skillsList}`;
+    ${skillsList}`;
   }
 
   buildToolCatalogSection(

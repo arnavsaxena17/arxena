@@ -17,6 +17,7 @@ type TabListDropdownProps = {
   activeTabId: string | null;
   onTabSelect: (tabId: string) => void;
   loading?: boolean;
+  isDropdownInModal?: boolean;
 };
 
 export const TabListDropdown = ({
@@ -27,6 +28,7 @@ export const TabListDropdown = ({
   activeTabId,
   onTabSelect,
   loading,
+  isDropdownInModal = false,
 }: TabListDropdownProps) => {
   return (
     <Dropdown
@@ -34,6 +36,7 @@ export const TabListDropdown = ({
       dropdownPlacement="bottom-end"
       onClickOutside={onClose}
       dropdownOffset={{ x: 0, y: 8 }}
+      isDropdownInModal={isDropdownInModal}
       clickableComponent={
         <TabMoreButton
           hiddenTabsCount={overflow.hiddenTabsCount}

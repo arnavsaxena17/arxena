@@ -539,6 +539,75 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.SEND_LINKEDIN_CONNECTION_REQUEST: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Send LinkedIn Connection Request',
+            type: WorkflowActionType.SEND_LINKEDIN_CONNECTION_REQUEST,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                message: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.SEND_LINKEDIN_INMAIL: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Send LinkedIn InMail',
+            type: WorkflowActionType.SEND_LINKEDIN_INMAIL,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                subject: '',
+                body: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.SEND_LINKEDIN_MESSAGE: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Send LinkedIn Message',
+            type: WorkflowActionType.SEND_LINKEDIN_MESSAGE,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                body: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.SEND_WHATSAPP_MESSAGE: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Send WhatsApp Message',
+            type: WorkflowActionType.SEND_WHATSAPP_MESSAGE,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                phone: '',
+                body: '',
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.AI_AGENT: {
         const newAgent = await this.agentService.createOneAgent(
           {

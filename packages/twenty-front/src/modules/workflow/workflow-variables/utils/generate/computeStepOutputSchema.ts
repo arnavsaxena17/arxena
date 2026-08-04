@@ -287,6 +287,26 @@ export const computeStepOutputSchema = ({
       };
     }
 
+    case 'SEND_LINKEDIN_CONNECTION_REQUEST':
+    case 'SEND_LINKEDIN_INMAIL':
+    case 'SEND_LINKEDIN_MESSAGE':
+    case 'SEND_WHATSAPP_MESSAGE': {
+      return {
+        success: {
+          isLeaf: true,
+          type: FieldMetadataType.BOOLEAN,
+          label: 'Success',
+          value: true,
+        },
+        message: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Message',
+          value: '',
+        },
+      };
+    }
+
     case 'FILTER':
     case 'DELAY':
     case 'EMPTY': {

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import * as path from 'path';
 import { SearchParametersPrompts } from 'src/engine/core-modules/candidate-search/prompts/search-parameters-prompts';
 import { findManyAttachmentsQuery, getAttachmentDownloadUrl, getAttachmentTargetFieldIdName } from 'twenty-shared';
@@ -79,7 +79,7 @@ export class JobDescriptionService {
           { role: 'system', content: prompt.system },
           { role: 'user', content: prompt.user },
         ],
-        response_format: zodResponseFormat(
+        response_format: toOpenAiJsonSchemaResponseFormat(
           parsedJobDescriptionSchema,
           'parsedJobDescription',
         ),

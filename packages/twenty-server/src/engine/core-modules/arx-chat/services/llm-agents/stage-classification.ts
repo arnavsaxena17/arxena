@@ -9,33 +9,12 @@ import { z } from 'zod';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-// openai/helpers/zod zodResponseFormat still uses Zod 3 converters and
-// collapses Zod 4 object schemas to { type: 'string' }
 const conversationStageSchema = z.object({
   stageOfTheConversation: z.enum(allStatusesArray),
 });
-
-const toOpenAiJsonSchemaResponseFormat = (
-  schema: z.ZodType,
-  name: string,
-) => {
-  const jsonSchema = z.toJSONSchema(schema, {
-    target: 'draft-7',
-  }) as Record<string, unknown>;
-
-  delete jsonSchema['$schema'];
-
-  return {
-    type: 'json_schema' as const,
-    json_schema: {
-      name,
-      strict: true,
-      schema: jsonSchema,
-    },
-  };
-};
 
 export class StageWiseClassification {
   constructor(

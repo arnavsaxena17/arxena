@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Sema } from 'async-sema';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { z } from 'zod';
 
 // Available input fields that candidates can have
@@ -132,7 +132,7 @@ Guidelines:
           const completion = await this.openai.chat.completions.parse({
             model: 'gpt-4o-mini',
             messages,
-            response_format: zodResponseFormat(AIFilterModelSchema, 'ai_filter_model'),
+            response_format: toOpenAiJsonSchemaResponseFormat(AIFilterModelSchema, 'ai_filter_model'),
             // max_tokens: 2000,
             temperature: 0,
           });

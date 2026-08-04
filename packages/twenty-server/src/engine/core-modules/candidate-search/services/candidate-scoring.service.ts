@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
 import {
@@ -90,7 +90,7 @@ export class CandidateScoringService {
                 this.streamProcessingService.createStreamingCompletion(
                   openaiClient,
                   scoringPrompt,
-                  zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
+                  toOpenAiJsonSchemaResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
                 ),
               {
                 candidateIndex,
@@ -106,7 +106,7 @@ export class CandidateScoringService {
                 this.streamProcessingService.createStreamingCompletion(
                   openaiClient,
                   scoringPrompt,
-                  zodResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
+                  toOpenAiJsonSchemaResponseFormat(candidateRelevanceScoringSchema, 'candidateRelevanceScoring'),
                 ),
               { sendEvent, timeoutMs: 60000, maxRetries: 2 },
             );

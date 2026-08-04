@@ -163,10 +163,15 @@ export class CronRegisterAllCommand extends CommandRunner {
       {
         name: 'CleanSuspendedWorkspaces',
         command: this.cleanSuspendedWorkspacesCronCommand,
+        isEnabled: false,
+
       },
       {
         name: 'CleanOnboardingWorkspaces',
         command: this.cleanOnboardingWorkspacesCronCommand,
+        // Disabled: incorrectly soft-deleted production ACTIVE workspaces that
+        // were still marked CREATED (>7 days), which locked out real accounts.
+        isEnabled: false,
       },
       {
         name: 'TrashCleanup',

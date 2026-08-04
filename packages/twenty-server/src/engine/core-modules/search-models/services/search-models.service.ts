@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { ZodSchema } from 'zod';
 
 import { EvaluateShortlistDto } from '../dto/evaluate-shortlist.dto';
@@ -319,7 +319,7 @@ export class SearchModelsService {
         { role: 'system', content: prompt.system },
         { role: 'user', content: prompt.user },
       ],
-      response_format: zodResponseFormat(schema, schemaName),
+      response_format: toOpenAiJsonSchemaResponseFormat(schema, schemaName),
     });
 
     const raw = completion.choices[0]?.message?.content?.trim();

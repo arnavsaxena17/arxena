@@ -76,6 +76,14 @@ export {
   workflowEmailFilesSchema,
   workflowSendEmailActionSettingsSchema,
 } from './schemas/send-email-action-settings-schema';
+export { workflowSendLinkedinConnectionRequestActionSchema } from './schemas/send-linkedin-connection-request-action-schema';
+export { workflowSendLinkedinConnectionRequestActionSettingsSchema } from './schemas/send-linkedin-connection-request-action-settings-schema';
+export { workflowSendLinkedinInmailActionSchema } from './schemas/send-linkedin-inmail-action-schema';
+export { workflowSendLinkedinInmailActionSettingsSchema } from './schemas/send-linkedin-inmail-action-settings-schema';
+export { workflowSendLinkedinMessageActionSchema } from './schemas/send-linkedin-message-action-schema';
+export { workflowSendLinkedinMessageActionSettingsSchema } from './schemas/send-linkedin-message-action-settings-schema';
+export { workflowSendWhatsappMessageActionSchema } from './schemas/send-whatsapp-message-action-schema';
+export { workflowSendWhatsappMessageActionSettingsSchema } from './schemas/send-whatsapp-message-action-settings-schema';
 export { stepFilterGroupSchema } from './schemas/step-filter-group-schema';
 export { stepFilterSchema } from './schemas/step-filter-schema';
 export { workflowUpdateRecordActionSchema } from './schemas/update-record-action-schema';

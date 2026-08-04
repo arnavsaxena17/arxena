@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { LinkedInSearchResult } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { SearchParametersPrompts } from '../prompts/search-parameters-prompts';
@@ -74,7 +74,7 @@ export class ResultValidationService {
           this.streamProcessingService.createStreamingCompletion(
             openaiClient,
             validationPrompt,
-            zodResponseFormat(resultValidationSchema, 'resultValidation'),
+            toOpenAiJsonSchemaResponseFormat(resultValidationSchema, 'resultValidation'),
           ),
         { sendEvent, maxRetries: 2 },
       );
@@ -188,7 +188,7 @@ export class ResultValidationService {
           this.streamProcessingService.createStreamingCompletion(
             openaiClient,
             validationPrompt,
-            zodResponseFormat(resultValidationSchema, 'resultValidation'),
+            toOpenAiJsonSchemaResponseFormat(resultValidationSchema, 'resultValidation'),
           ),
         { sendEvent, maxRetries: 2 },
       );

@@ -80,6 +80,7 @@ import { SearchModelsModule } from 'src/engine/core-modules/search-models/search
 import { SearchModule } from 'src/engine/core-modules/search/search.module';
 import { WorkspaceSSOModule } from 'src/engine/core-modules/sso/sso.module';
 import { TelemetryModule } from 'src/engine/core-modules/telemetry/telemetry.module';
+import { BuiltWithModule } from 'src/engine/core-modules/builtwith/builtwith.module';
 import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
@@ -213,6 +214,7 @@ import { FileModule } from './file/file.module';
     SearchModelsModule,
     TheOrgModule,
     TheOfficialBoardModule,
+    BuiltWithModule,
     LinkedinQueryGenerationModule,
     SerpCompanySearchModule,
     LinkedInSearchModule,

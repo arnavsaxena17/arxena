@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import {
   getJobTitleExpanderUserPrompt,
@@ -34,7 +34,7 @@ export class JobTitleExpanderService {
             { role: 'system' as const, content: JOB_TITLE_EXPANDER_SYSTEM_PROMPT },
             { role: 'user' as const, content: userPrompt },
           ],
-          zodResponseFormat(jobTitleExpanderSchema, 'titleAnalysis'),
+          toOpenAiJsonSchemaResponseFormat(jobTitleExpanderSchema, 'titleAnalysis'),
         ),
       { sendEvent, maxRetries: 2 },
     );
