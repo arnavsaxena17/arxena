@@ -8,7 +8,9 @@ export const CodeInterpreterInputZodSchema = z.object({
         filename: z.string().describe('Name of the file'),
         fileId: z
           .string()
-          .describe('ID of the uploaded file (from user attachments)'),
+          .describe(
+            'AgentChat file id to mount at /home/user/{filename}: user attachments, code_interpreter outputs, or spilled tool-output fileIds (outputRef.fileId when a prior tool result was too large to inline).',
+          ),
       }),
     )
     .optional()

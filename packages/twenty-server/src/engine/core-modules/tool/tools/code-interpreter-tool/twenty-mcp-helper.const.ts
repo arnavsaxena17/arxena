@@ -64,7 +64,11 @@ class ArxenaMCP:
             Tool result as parsed JSON
 
         Example:
-            companies = arxena.call_tool('find_many_companies', {'limit': 5})
+            companies = arxena.call_tool('find_many_companies', {
+                'name': {'ilike': '%Acme%'},
+                'limit': 5,
+                'select': ['id', 'name'],
+            })
             # companies == {'records': [...], 'count': '5'}
         """
         if not self._available:

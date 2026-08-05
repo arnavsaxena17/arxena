@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
+import {
+  buildCompactLearnToolsEntry,
+  type CompactLearnToolsResultEntry,
+} from 'src/engine/core-modules/tool-provider/utils/build-compact-learn-tools-entry.util';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 
 export const LEARN_TOOLS_TOOL_NAME = 'learn_tools';
@@ -32,10 +36,13 @@ export type LearnToolsResultEntry = {
   name: string;
   description?: string;
   inputSchema?: object;
+  inputArgKeys?: string[];
+  compositeFilterHints?: Record<string, string>;
+  schemaNote?: string;
 };
 
 export type LearnToolsResult = {
-  tools: LearnToolsResultEntry[];
+  tools: Array<LearnToolsResultEntry | CompactLearnToolsResultEntry>;
   notFound: string[];
   suggestions?: Record<string, string[]>;
   message: string;
@@ -135,9 +142,11 @@ export const createLearnToolsTool = (
       return learnToolsResult;
     }
 
+    // Keep compact inline summaries so the agent still sees arg names and
+    // composite filter shapes after the full schemas are spilled to a file.
     return {
       ...learnToolsResult,
-      tools: [],
+      tools: learnToolsResult.tools.map(buildCompactLearnToolsEntry),
       ...(isDefined(spillOutcome.result) && {
         spilledTools: spillOutcome.result,
       }),

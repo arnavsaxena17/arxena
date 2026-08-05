@@ -7,11 +7,13 @@ import { ThinkingStepsDisplay } from '@/ai/components/ThinkingStepsDisplay';
 import { AiChatQuestionStatusRenderer } from '@/ai/components/AiChatQuestionStatusRenderer';
 import { LazyMarkdownRenderer } from '@/ai/components/LazyMarkdownRenderer';
 import { ToolStepRenderer } from '@/ai/components/ToolStepRenderer';
+import { getCodeExecutionDisplayPropsFromToolPart } from '@/ai/utils/getCodeExecutionDisplayPropsFromToolPart';
 import { groupContiguousThinkingStepParts } from '@/ai/utils/groupContiguousThinkingStepParts';
 import { isCodeInterpreterToolPart } from '@/ai/utils/isCodeInterpreterToolPart';
 import { styled } from '@linaria/react';
 import { getToolName, isToolUIPart } from 'ai';
 import { ASK_QUESTIONS_TOOL_NAME, type ExtendedUIMessagePart } from 'twenty-shared/ai';
+import { isDefined } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledMessagePartsContainer = styled.div`
@@ -56,6 +58,15 @@ const MessagePartRenderer = ({
               isStreaming={isStreaming}
             />
           );
+        }
+
+        if (isCodeInterpreterToolPart(part)) {
+          const codeExecutionProps =
+            getCodeExecutionDisplayPropsFromToolPart(part);
+
+          if (isDefined(codeExecutionProps)) {
+            return <CodeExecutionDisplay {...codeExecutionProps} />;
+          }
         }
 
         return <ToolStepRenderer toolPart={part} isStreaming={isStreaming} />;

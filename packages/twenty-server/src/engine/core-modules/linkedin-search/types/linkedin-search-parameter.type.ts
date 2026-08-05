@@ -1,4 +1,4 @@
-export type LinkedInSearchParameterType = 
+export type LinkedInSearchParameterType =
   // Common parameters
   | 'LOCATION'
   | 'PEOPLE'
@@ -14,6 +14,7 @@ export type LinkedInSearchParameterType =
   // Sales navigator specifics
   | 'GROUPS'
   | 'SALES_INDUSTRY'
+  | 'REGION'
   | 'DEPARTMENT'
   | 'PERSONA'
   | 'ACCOUNT_LISTS'
@@ -33,7 +34,7 @@ export type LinkedInSearchCategoryType = 'people' | 'companies' | 'posts' | 'job
 
 export type LinkedInNetworkDistanceType = 1 | 2 | 3 | 'GROUP';
 
-export type LinkedInSeniorityType = 
+export type LinkedInSeniorityType =
   | 'owner/partner'
   | 'cxo'
   | 'vice_president'
@@ -45,7 +46,7 @@ export type LinkedInSeniorityType =
   | 'entry_level'
   | 'in_training';
 
-export type LinkedInJobType = 
+export type LinkedInJobType =
   | 'full_time'
   | 'part_time'
   | 'contract'
@@ -56,7 +57,7 @@ export type LinkedInJobType =
 
 export type LinkedInPresenceType = 'on_site' | 'hybrid' | 'remote';
 
-export type LinkedInContentType = 
+export type LinkedInContentType =
   | 'videos'
   | 'images'
   | 'live_videos'
@@ -67,7 +68,7 @@ export type LinkedInSortByType = 'relevance' | 'date';
 
 export type LinkedInDatePostedType = 'past_day' | 'past_week' | 'past_month';
 
-export type LinkedInCompanyType = 
+export type LinkedInCompanyType =
   | 'public_company'
   | 'privately_held'
   | 'non_profit'
@@ -79,7 +80,7 @@ export type LinkedInCompanyType =
 
 export type LinkedInOpenToType = 'proBono' | 'boardMember';
 
-export type LinkedInBenefitType = 
+export type LinkedInBenefitType =
   | 'medical_insurance'
   | 'vision_insurance'
   | 'dental_insurance'
@@ -92,18 +93,18 @@ export type LinkedInBenefitType =
   | 'student_loan_assistance'
   | 'tuition_assistance';
 
-export type LinkedInCommitmentType = 
+export type LinkedInCommitmentType =
   | 'career_growth_and_learning'
   | 'diversity_equity_and_inclusion'
   | 'environmental_sustainability'
   | 'social_impact'
   | 'work_life_balance';
 
-export type LinkedInRecentActivityType = 
+export type LinkedInRecentActivityType =
   | 'senior_leadership_changes'
   | 'funding_events';
 
-export type LinkedInSpotlightType = 
+export type LinkedInSpotlightType =
   | 'OPEN_TO_WORK'
   | 'ACTIVE_TALENT'
   | 'REDISCOVERED_CANDIDATES'
@@ -111,7 +112,7 @@ export type LinkedInSpotlightType =
   | 'INTERESTED_IN_YOUR_COMPANY'
   | 'HAVE_COMPANY_CONNECTIONS';
 
-export type LinkedInRecruitingActivityType = 
+export type LinkedInRecruitingActivityType =
   | 'messages'
   | 'tags'
   | 'notes'
@@ -119,7 +120,7 @@ export type LinkedInRecruitingActivityType =
   | 'resumes'
   | 'reviews';
 
-export type LinkedInLanguageScopeType = 
+export type LinkedInLanguageScopeType =
   | 'ELEMENTARY'
   | 'LIMITED_WORKING'
   | 'PROFESSIONAL_WORKING'
@@ -128,7 +129,7 @@ export type LinkedInLanguageScopeType =
 
 export type LinkedInPriorityType = 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE';
 
-export type LinkedInScopeType = 
+export type LinkedInScopeType =
   | 'CURRENT_OR_PAST'
   | 'CURRENT'
   | 'PAST'
@@ -137,7 +138,7 @@ export type LinkedInScopeType =
   | 'OPEN_TO_RELOCATE_ONLY'
   | 'CURRENT_OR_OPEN_TO_RELOCATE';
 
-export type LinkedInLocaleType = 
+export type LinkedInLocaleType =
   | 'arabic'
   | 'bangla'
   | 'czech'

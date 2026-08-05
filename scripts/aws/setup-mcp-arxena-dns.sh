@@ -5,15 +5,16 @@
 set -euo pipefail
 
 export AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
-HOSTED_ZONE_ID="${ARXENA_HOSTED_ZONE_ID:-Z05402123EAOTC6U2NR1N}"
+# arxena.com public hosted zone (not the old analytics zone)
+HOSTED_ZONE_ID="${ARXENA_HOSTED_ZONE_ID:-Z07810821LEDHY49LZU73}"
 RECORD_NAME="mcp.arxena.com"
 TTL=300
 
 if [ -n "${1:-}" ]; then
   TARGET_IP="$1"
 else
-  # Default to new arxmukti app EIP until DNS cutover; override via arg or env.
-  TARGET_IP="${ARXENA_APP_EIP:-44.221.212.4}"
+  # Production arxena-app public IP (mcp runs on this host via PM2 :3005)
+  TARGET_IP="${ARXENA_APP_EIP:-3.234.178.51}"
 fi
 
 if [ -z "$TARGET_IP" ]; then

@@ -385,7 +385,7 @@ export const SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
 /** Descriptor for search_linkedin_people tool input. */
 export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
-  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object (optional if query provided)', required: false },
+  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters. Classic: flat ID arrays (location/industry). Sales Navigator: include/exclude objects; use role (not job_title) for titles. Recruiter: role/location as object arrays.', required: false },
   { key: 'query', type: 'string', description: 'Natural language query for full search flow (optional if searchParameters provided)', required: false },
   { key: 'assistantThreadId', type: 'string', description: 'Assistant thread ID for conversation context (required if using query)', required: false },
   { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional, used with query)', required: false },
@@ -448,7 +448,7 @@ export const SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR: readonly McpInputFieldDe
 
 /** Descriptor for search_linkedin_parameters tool input. */
 export const SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'parameterType', type: 'string', description: 'Type of parameter to fetch: locations, industries, companies, schools, job-titles, skills, saved-searches, recent-searches', required: true },
+  { key: 'parameterType', type: 'string', description: 'Facet type: LOCATION, REGION (Sales Nav geography), INDUSTRY, SALES_INDUSTRY, COMPANY, SCHOOL, JOB_TITLE, SKILL, SAVED_SEARCHES, RECENT_SEARCHES (aliases like locations, job-titles also work)', required: true },
   { key: 'keywords', type: 'string', description: 'Keywords to filter parameters', required: true },
   { key: 'limit', type: 'number', description: 'Maximum number of parameters to return', required: false },
 ] as const;
@@ -523,10 +523,10 @@ export const CHECK_CONTACT_AVAILABILITY_FROM_ARXENA_INPUT_DESCRIPTOR: readonly M
 ] as const;
 
 /** Descriptor for check_contact_availability_from_pdl tool input. */
-export const CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'linkedinUrl', type: 'string', description: 'Single LinkedIn profile URL', required: false },
-  { key: 'linkedinUrls', type: 'object', description: 'Array of LinkedIn profile URLs', required: false },
-] as const;
+// export const CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+//   { key: 'linkedinUrl', type: 'string', description: 'Single LinkedIn profile URL', required: false },
+//   { key: 'linkedinUrls', type: 'object', description: 'Array of LinkedIn profile URLs', required: false },
+// ] as const;
 
 /** Descriptor for check_contact_availability_from_contactout tool input. */
 export const CHECK_CONTACT_AVAILABILITY_FROM_CONTACTOUT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
@@ -563,12 +563,12 @@ export const FETCH_CONTACTS_FROM_ARXENA_INPUT_DESCRIPTOR: readonly McpInputField
 ] as const;
 
 /** Descriptor for fetch_contacts_from_pdl tool input. */
-export const FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
-  { key: 'linkedinUrl', type: 'string', description: 'Single LinkedIn profile URL', required: false },
-  { key: 'linkedinUrls', type: 'object', description: 'Array of LinkedIn profile URLs', required: false },
-  { key: 'wantEmail', type: 'boolean', description: 'Whether to fetch email addresses', required: false },
-  { key: 'wantPhone', type: 'boolean', description: 'Whether to fetch phone numbers', required: false },
-] as const;
+// export const FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+//   { key: 'linkedinUrl', type: 'string', description: 'Single LinkedIn profile URL', required: false },
+//   { key: 'linkedinUrls', type: 'object', description: 'Array of LinkedIn profile URLs', required: false },
+//   { key: 'wantEmail', type: 'boolean', description: 'Whether to fetch email addresses', required: false },
+//   { key: 'wantPhone', type: 'boolean', description: 'Whether to fetch phone numbers', required: false },
+// ] as const;
 
 /** Descriptor for fetch_contacts_from_contactout tool input. */
 export const FETCH_CONTACTS_FROM_CONTACTOUT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [

@@ -101,7 +101,7 @@ export class ToolOutputSpillService {
         },
       });
 
-      const hint = `Output too large to inline (${formatBytes(sizeBytes)}). "preview" is a truncated sample (first items, all keys). To read the full data, call learn_tools with extract_json_paths (for json objects) or search_output (for text), then invoke it through execute_tool with this fileId; or use code_interpreter for analysis. These are registry tools, not directly callable.`;
+      const hint = `Output too large to inline (${formatBytes(sizeBytes)}). "preview" is a truncated sample (first items, all keys). To analyze or export CSV/Excel from the full JSON, call code_interpreter with files:[{fileId: outputRef.fileId, filename}] and parse /home/user/{filename} — never paste the JSON into the code string. For path peeks only, use extract_json_paths; for text/regex grep use search_output (requires pattern; not for CSV export). Learn those tools via learn_tools then execute_tool. These are registry tools, not directly callable.`;
 
       return {
         success: output.success,

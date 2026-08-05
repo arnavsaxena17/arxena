@@ -56,7 +56,7 @@ export const Footer = ({ i18n }: FooterProps) => {
         <>
           {i18n._('Arxena, Inc.')}
           <br />
-          {i18n._('San Francisco / Paris')}
+          {i18n._('San Francisco / Mumbai')}
         </>
       </ShadowText>
     </Container>

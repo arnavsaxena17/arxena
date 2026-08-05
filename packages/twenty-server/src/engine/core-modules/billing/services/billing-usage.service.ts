@@ -172,17 +172,13 @@ export class BillingUsageService {
     workspaceId: string;
     currentPeriodStart: Date | string;
   }): Promise<number> {
-    const subscription = await this.billingSubscriptionRepository.findOne(
-      workspaceId,
-      {
-        where: { currentPeriodStart: new Date(currentPeriodStart) },
-        relations: [
-          'billingSubscriptionItems',
-          'billingSubscriptionItems.billingProduct',
-          'billingSubscriptionItems.billingProduct.billingPrices',
-        ],
-      },
-    );
+    // Look up by workspace, not exact currentPeriodStart. Cached period starts
+    // are JSON-serialized Dates (ms truncated), which do not match Postgres
+    // timestamptz equality and previously threw BILLING_SUBSCRIPTION_NOT_FOUND.
+    const subscription =
+      await this.billingSubscriptionService.getCurrentBillingSubscription({
+        workspaceId,
+      });
 
     if (!isDefined(subscription)) {
       throw new BillingException(
@@ -191,7 +187,24 @@ export class BillingUsageService {
       );
     }
 
-    const resourceUsageCap = this.getResourceUsageCap(subscription);
+    const subscriptionWithPrices =
+      await this.billingSubscriptionRepository.findOne(workspaceId, {
+        where: { id: subscription.id },
+        relations: [
+          'billingSubscriptionItems',
+          'billingSubscriptionItems.billingProduct',
+          'billingSubscriptionItems.billingProduct.billingPrices',
+        ],
+      });
+
+    if (!isDefined(subscriptionWithPrices)) {
+      throw new BillingException(
+        `Subscription not found for workspace ${workspaceId}`,
+        BillingExceptionCode.BILLING_SUBSCRIPTION_NOT_FOUND,
+      );
+    }
+
+    const resourceUsageCap = this.getResourceUsageCap(subscriptionWithPrices);
 
     const { creditBalanceMicro: creditBalance } =
       await this.billingCustomerRepository.findOneOrFail(workspaceId, {
@@ -200,8 +213,8 @@ export class BillingUsageService {
       });
 
     const usage = await this.getCurrentPeriodCreditsUsed(
-      subscription.workspaceId,
-      subscription.currentPeriodStart,
+      subscriptionWithPrices.workspaceId,
+      new Date(currentPeriodStart),
     );
 
     return resourceUsageCap + creditBalance - usage;

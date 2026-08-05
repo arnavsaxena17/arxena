@@ -24,6 +24,7 @@ export type AgentActorContext = {
   roleId: string;
   userId: string;
   userWorkspaceId: string;
+  workspaceMemberId: string;
   userContext: UserContext;
 };
 
@@ -108,6 +109,7 @@ export class AgentActorContextService {
       roleId,
       userId: userWorkspace.userId,
       userWorkspaceId,
+      workspaceMemberId: workspaceMember.id,
       userContext,
     };
   }

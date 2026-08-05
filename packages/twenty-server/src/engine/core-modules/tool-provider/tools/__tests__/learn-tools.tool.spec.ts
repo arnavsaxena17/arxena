@@ -166,7 +166,7 @@ describe('createLearnToolsTool', () => {
     expect(result.warnings).toBeUndefined();
   });
 
-  it('spills bulky schemas while keeping message, notFound and suggestions inline', async () => {
+  it('spills bulky schemas while keeping compact tool summaries inline', async () => {
     const spillEnvelope = {
       spilled: true,
       outputRef: {
@@ -182,11 +182,35 @@ describe('createLearnToolsTool', () => {
       result: spillEnvelope,
     });
     const toolRegistry = {
-      getToolInfo: jest
-        .fn()
-        .mockResolvedValue([
-          { name: 'find_many_people', inputSchema: { type: 'object' } },
-        ]),
+      getToolInfo: jest.fn().mockResolvedValue([
+        {
+          name: 'find_many_people',
+          description: 'Search people',
+          inputSchema: {
+            type: 'object',
+            $defs: {
+              fullName: {
+                type: 'object',
+                properties: {
+                  firstName: {
+                    type: 'object',
+                    properties: { ilike: { type: 'string' } },
+                  },
+                  lastName: {
+                    type: 'object',
+                    properties: { ilike: { type: 'string' } },
+                  },
+                },
+              },
+            },
+            properties: {
+              limit: { type: 'number' },
+              select: { type: 'array' },
+              name: { $ref: '#/$defs/fullName' },
+            },
+          },
+        },
+      ]),
       suggestSimilarToolNames: jest
         .fn()
         .mockResolvedValue({ group_by_person: ['group_by_people'] }),
@@ -202,7 +226,18 @@ describe('createLearnToolsTool', () => {
       aspects: ['description', 'schema'],
     });
 
-    expect(result.tools).toEqual([]);
+    expect(result.tools).toEqual([
+      {
+        name: 'find_many_people',
+        description: 'Search people',
+        inputArgKeys: ['limit', 'select', 'name'],
+        compositeFilterHints: {
+          name: expect.stringContaining('firstName|lastName'),
+        },
+        schemaNote: expect.stringContaining('Full inputSchema spilled'),
+      },
+    ]);
+    expect(result.tools[0]).not.toHaveProperty('inputSchema');
     expect(result.spilledTools).toEqual(spillEnvelope);
     expect(result.notFound).toEqual(['group_by_person']);
     expect(result.suggestions).toEqual({
@@ -240,7 +275,12 @@ describe('createLearnToolsTool', () => {
       aspects: ['schema'],
     });
 
-    expect(result.tools).toEqual([]);
+    expect(result.tools).toEqual([
+      {
+        name: 'find_many_people',
+        schemaNote: expect.stringContaining('Full inputSchema spilled'),
+      },
+    ]);
     expect(result.spilledTools).toEqual({
       truncated: true,
       originalSizeBytes: 90000,

@@ -1,4 +1,7 @@
 import { TerminalOutput } from '@/ai/components/TerminalOutput';
+import { getFileCategoryFromExtension } from '@/object-record/record-field/ui/utils/getFileCategoryFromExtension';
+import { filePreviewState } from '@/ui/field/display/states/filePreviewState';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
 import { useContext, useState } from 'react';
 import { useLingui } from '@lingui/react/macro';
@@ -120,12 +123,20 @@ const StyledFilesGrid = styled.div`
   padding: ${themeCssVariables.spacing[3]};
 `;
 
-const StyledFileCard = styled.div`
+const StyledFileCard = styled.div<{ clickable: boolean }>`
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
+  cursor: ${({ clickable }) => (clickable ? 'pointer' : 'default')};
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  &:hover {
+    border-color: ${({ clickable }) =>
+      clickable
+        ? themeCssVariables.border.color.medium
+        : themeCssVariables.border.color.light};
+  }
 `;
 
 const StyledFilePreview = styled.div`
@@ -133,6 +144,8 @@ const StyledFilePreview = styled.div`
   aspect-ratio: 16 / 9;
   background: ${themeCssVariables.background.tertiary};
   display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
   justify-content: center;
   overflow: hidden;
 `;
@@ -141,6 +154,11 @@ const StyledPreviewImage = styled.img`
   height: 100%;
   object-fit: contain;
   width: 100%;
+`;
+
+const StyledPreviewHint = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 const StyledFileInfo = styled.div`
@@ -184,13 +202,23 @@ type CodeExecutionDisplayProps = {
   isRunning?: boolean;
 };
 
-const isPreviewableMimeType = (mimeType?: string): boolean => {
+const isPreviewableImageMimeType = (mimeType?: string): boolean => {
   if (!mimeType) {
     return false;
   }
 
   return ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(
     mimeType,
+  );
+};
+
+const isCsvGeneratedFile = (filename: string, mimeType?: string): boolean => {
+  const lowerFilename = filename.toLowerCase();
+
+  return (
+    mimeType === 'text/csv' ||
+    mimeType === 'application/csv' ||
+    lowerFilename.endsWith('.csv')
   );
 };
 
@@ -205,6 +233,7 @@ export const CodeExecutionDisplay = ({
   const { theme } = useContext(ThemeContext);
   const { t } = useLingui();
   const { copyToClipboard } = useCopyToClipboard();
+  const setFilePreview = useSetAtomState(filePreviewState);
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
   const [isOutputExpanded, setIsOutputExpanded] = useState(true);
   const [isFilesExpanded, setIsFilesExpanded] = useState(true);
@@ -230,6 +259,22 @@ export const CodeExecutionDisplay = ({
 
   const hasOutput = stdout || stderr;
   const hasFiles = files.length > 0;
+
+  const handlePreviewFile = (file: {
+    fileId: string;
+    filename: string;
+    url: string;
+  }) => {
+    const extension = file.filename.split('.').pop() ?? '';
+
+    setFilePreview({
+      fileId: file.fileId,
+      label: file.filename,
+      extension,
+      url: file.url,
+      fileCategory: getFileCategoryFromExtension(extension),
+    });
+  };
 
   return (
     <StyledContainer>
@@ -336,18 +381,41 @@ export const CodeExecutionDisplay = ({
             <StyledFilesGrid>
               {files.map((file) => {
                 const filename = file.filename;
+                const canPreviewCsv = isCsvGeneratedFile(
+                  filename,
+                  file.mimeType,
+                );
 
                 return (
-                  <StyledFileCard key={file.fileId}>
+                  <StyledFileCard
+                    key={file.fileId}
+                    clickable={canPreviewCsv}
+                    onClick={
+                      canPreviewCsv
+                        ? () => handlePreviewFile(file)
+                        : undefined
+                    }
+                    title={
+                      canPreviewCsv ? t`Preview ${filename}` : undefined
+                    }
+                  >
                     <StyledFilePreview>
-                      {isPreviewableMimeType(file.mimeType) ? (
+                      {isPreviewableImageMimeType(file.mimeType) ? (
                         <StyledPreviewImage
                           src={file.url}
                           alt={filename}
                           loading="lazy"
                         />
                       ) : (
-                        <IconFile size={48} color={theme.font.color.tertiary} />
+                        <>
+                          <IconFile
+                            size={48}
+                            color={theme.font.color.tertiary}
+                          />
+                          {canPreviewCsv && (
+                            <StyledPreviewHint>{t`Click to preview`}</StyledPreviewHint>
+                          )}
+                        </>
                       )}
                     </StyledFilePreview>
                     <StyledFileInfo>
@@ -360,6 +428,7 @@ export const CodeExecutionDisplay = ({
                         title={t`Download ${filename}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(event) => event.stopPropagation()}
                       >
                         <IconDownload size={theme.icon.size.sm} />
                       </StyledDownloadLink>

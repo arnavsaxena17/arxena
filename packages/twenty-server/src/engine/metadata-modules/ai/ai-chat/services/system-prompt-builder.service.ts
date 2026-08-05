@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import {
   assertUnreachable,
   getValidTimeZoneOrUndefined,
 } from 'twenty-shared/utils';
 
+import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolCategory } from 'twenty-shared/ai';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
@@ -14,6 +15,7 @@ import {
   LOAD_SKILL_TOOL_NAME,
 } from 'src/engine/core-modules/tool-provider/tools';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   AgentActorContextService,
   type UserContext,
@@ -33,15 +35,27 @@ export type SystemPromptPreview = {
   estimatedTokenCount: number;
 };
 
+export type LinkedinConnectedAccountsContext = {
+  connected: boolean;
+  accountId: string | null;
+  inferredSearchType: 'classic' | 'sales_navigator' | 'recruiter' | null;
+  salesNavigatorAvailable: boolean;
+  recruiterAvailable: boolean;
+};
+
 // ~4 characters per token for mixed English/code content
 const estimateTokenCount = (text: string): number => Math.ceil(text.length / 4);
 
 @Injectable()
 export class SystemPromptBuilderService {
+  private readonly logger = new Logger(SystemPromptBuilderService.name);
+
   constructor(
     private readonly toolRegistry: ToolRegistryService,
     private readonly skillService: SkillService,
     private readonly agentActorContextService: AgentActorContextService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
   ) {}
 
   async buildPreview(
@@ -49,7 +63,7 @@ export class SystemPromptBuilderService {
     userWorkspaceId: string,
     workspaceInstructions?: string,
   ): Promise<SystemPromptPreview> {
-    const { roleId, userId, userContext } =
+    const { roleId, userId, userContext, workspaceMemberId } =
       await this.agentActorContextService.buildUserAndAgentActorContext(
         userWorkspaceId,
         workspaceId,
@@ -62,6 +76,11 @@ export class SystemPromptBuilderService {
     );
 
     const skillCatalog = await this.skillService.findAllFlatSkills(workspaceId);
+    const connectedAccountsContext =
+      await this.resolveLinkedinConnectedAccountsContext(
+        workspaceId,
+        workspaceMemberId,
+      );
 
     const sections: SystemPromptSection[] = [];
 
@@ -102,6 +121,16 @@ export class SystemPromptBuilderService {
         estimatedTokenCount: estimateTokenCount(userSection),
       });
     }
+
+    const connectedAccountsSection = this.buildConnectedAccountsSection(
+      connectedAccountsContext,
+    );
+
+    sections.push({
+      title: 'Connected Accounts',
+      content: connectedAccountsSection,
+      estimatedTokenCount: estimateTokenCount(connectedAccountsSection),
+    });
 
     const toolSection = this.buildToolCatalogSection(
       toolCatalog,
@@ -145,6 +174,7 @@ export class SystemPromptBuilderService {
     }>,
     workspaceInstructions?: string,
     userContext?: UserContext,
+    connectedAccountsContext?: LinkedinConnectedAccountsContext,
   ): string {
     const parts: string[] = [
       CHAT_SYSTEM_PROMPTS.BASE,
@@ -160,6 +190,10 @@ export class SystemPromptBuilderService {
       parts.push(this.buildUserContextSection(userContext));
     }
 
+    if (connectedAccountsContext) {
+      parts.push(this.buildConnectedAccountsSection(connectedAccountsContext));
+    }
+
     parts.push(this.buildToolCatalogSection(toolCatalog, preloadedTools));
     parts.push(this.buildSkillCatalogSection(skillCatalog));
 
@@ -168,6 +202,65 @@ export class SystemPromptBuilderService {
     }
 
     return parts.join('\n');
+  }
+
+  async resolveLinkedinConnectedAccountsContext(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<LinkedinConnectedAccountsContext> {
+    const disconnected: LinkedinConnectedAccountsContext = {
+      connected: false,
+      accountId: null,
+      inferredSearchType: null,
+      salesNavigatorAvailable: false,
+      recruiterAvailable: false,
+    };
+
+    try {
+      const accountId =
+        await this.workspaceQueryService.getWorkspaceMemberLinkedinUnipileAccountId(
+          workspaceId,
+          workspaceMemberId,
+        );
+
+      if (!accountId) {
+        return disconnected;
+      }
+
+      const account =
+        await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
+          accountId,
+        );
+
+      if (!account) {
+        return {
+          ...disconnected,
+          accountId,
+        };
+      }
+
+      const capabilities =
+        await this.linkedinUnipileRequestService.inferLinkedinSearchTypeForAccount(
+          accountId,
+        );
+
+      return {
+        connected: true,
+        accountId,
+        inferredSearchType: capabilities?.inferredSearchType ?? 'classic',
+        salesNavigatorAvailable:
+          capabilities?.salesNavigatorAvailable ?? false,
+        recruiterAvailable: capabilities?.recruiterAvailable ?? false,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve LinkedIn connected accounts for workspaceMemberId=${workspaceMemberId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return disconnected;
+    }
   }
 
   buildWorkspaceInstructionsSection(instructions: string): string {
@@ -197,6 +290,45 @@ export class SystemPromptBuilderService {
     ## User Context
 
     ${parts.join('\n')}`;
+  }
+
+  buildConnectedAccountsSection(
+    connectedAccountsContext: LinkedinConnectedAccountsContext,
+  ): string {
+    const availableSearchTypes = ['classic'];
+
+    if (connectedAccountsContext.salesNavigatorAvailable) {
+      availableSearchTypes.push('sales_navigator');
+    }
+
+    if (connectedAccountsContext.recruiterAvailable) {
+      availableSearchTypes.push('recruiter');
+    }
+
+    const lines = connectedAccountsContext.connected
+      ? [
+          `- LinkedIn (Unipile): connected (account_id=${connectedAccountsContext.accountId})`,
+          `- Preferred searchType: ${connectedAccountsContext.inferredSearchType ?? 'classic'}`,
+          `- Search types available: ${availableSearchTypes.join(', ')}`,
+          `- Sales Navigator: ${connectedAccountsContext.salesNavigatorAvailable ? 'available' : 'not available'}`,
+          `- Recruiter: ${connectedAccountsContext.recruiterAvailable ? 'available' : 'not available'}`,
+          `- Only use searchType values listed as available. If the user asks for Sales Nav or Recruiter and it is not available, explain that and fall back to classic or Harvest.`,
+        ]
+      : [
+          `- LinkedIn (Unipile): not connected${
+            connectedAccountsContext.accountId
+              ? ` (stale account_id=${connectedAccountsContext.accountId})`
+              : ''
+          }`,
+          `- Search types available: none via Unipile`,
+          `- Do not call search_linkedin_* tools until the user connects LinkedIn. Prefer Harvest People API (dataSource: "harvest") when appropriate, or ask the user to connect LinkedIn.`,
+        ];
+
+    return `
+    ## Connected Accounts
+
+    Runtime LinkedIn connection status for the current user. Read this before choosing Unipile searchType.
+    ${lines.join('\n')}`;
   }
 
   private formatCurrentDate(timezone: string | null): string {

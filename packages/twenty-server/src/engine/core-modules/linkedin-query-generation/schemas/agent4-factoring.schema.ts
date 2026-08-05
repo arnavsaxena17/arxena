@@ -15,7 +15,7 @@ export const agent4FactoringSchema = z.object({
   ),
   term_counts: termCountsSchema.describe('Term counts after factoring'),
   needs_splitting: z.boolean().describe('True if still over limits after factoring'),
-  splitting_reason: z.string().nullable().optional(),
+  splitting_reason: z.string().nullable(),
   recommended_strategy: strategySchema.describe(
     'A: no split, B: split by keywords, C: split by job titles, D: split by seniority/companies',
   ),

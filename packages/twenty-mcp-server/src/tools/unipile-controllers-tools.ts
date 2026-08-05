@@ -287,32 +287,32 @@ export const unipileControllersTools: McpTool[] = [
     'whatsapp-unipile',
     'qr-code',
   ),
-  {
-    definition: {
-      name: 'whatsapp_unipile_check_account_status',
-      description: 'Poll WhatsApp Unipile account connection status by account ID.',
-      inputSchema: descriptorToInputSchema([
-        {
-          key: 'accountId',
-          type: 'string',
-          description: 'WhatsApp Unipile account ID',
-          required: true,
-        },
-      ]),
-    },
-    handler: async (args, config) => {
-      const accountId = String(args.accountId ?? '').trim();
-      if (!accountId) {
-        throw new Error('accountId is required');
-      }
-      return callRestAPIGet(
-        config.baseUrl,
-        config.apiToken,
-        'whatsapp-unipile',
-        `accounts/${accountId}/status`,
-      );
-    },
-  },
+  // {
+  //   definition: {
+  //     name: 'whatsapp_unipile_check_account_status',
+  //     description: 'Poll WhatsApp Unipile account connection status by account ID.',
+  //     inputSchema: descriptorToInputSchema([
+  //       {
+  //         key: 'accountId',
+  //         type: 'string',
+  //         description: 'WhatsApp Unipile account ID',
+  //         required: true,
+  //       },
+  //     ]),
+  //   },
+  //   handler: async (args, config) => {
+  //     const accountId = String(args.accountId ?? '').trim();
+  //     if (!accountId) {
+  //       throw new Error('accountId is required');
+  //     }
+  //     return callRestAPIGet(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'whatsapp-unipile',
+  //       `accounts/${accountId}/status`,
+  //     );
+  //   },
+  // },
   postUnipileTool(
     'whatsapp_unipile_list_accounts',
     'List all WhatsApp accounts connected via Unipile for this workspace.',

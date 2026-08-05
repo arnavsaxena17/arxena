@@ -14,12 +14,44 @@ describe('getWidgetCardVariant', () => {
       PageLayoutType.STANDALONE_PAGE,
       PageLayoutType.DASHBOARD,
       PageLayoutType.RECORD_INDEX,
-    ])("returns 'solo' regardless of pageLayoutType (%s)", (pageLayoutType) => {
+    ])(
+      "returns 'solo' on wide layout regardless of pageLayoutType (%s)",
+      (pageLayoutType) => {
+        expect(
+          getWidgetCardVariant({
+            ...baseParams,
+            presentation: 'solo',
+            pageLayoutType,
+          }),
+        ).toBe('solo');
+      },
+    );
+
+    it.each([
+      ['isInPinnedTab', { isInPinnedTab: true }],
+      ['isMobile', { isMobile: true }],
+      ['isInSidePanel', { isInSidePanel: true }],
+    ])(
+      "returns 'side-column' for record pages when %s is true",
+      (_label, override) => {
+        expect(
+          getWidgetCardVariant({
+            ...baseParams,
+            ...override,
+            presentation: 'solo',
+            pageLayoutType: PageLayoutType.RECORD_PAGE,
+          }),
+        ).toBe('side-column');
+      },
+    );
+
+    it("keeps 'solo' for dashboard even in side panel", () => {
       expect(
         getWidgetCardVariant({
           ...baseParams,
+          isInSidePanel: true,
           presentation: 'solo',
-          pageLayoutType,
+          pageLayoutType: PageLayoutType.DASHBOARD,
         }),
       ).toBe('solo');
     });

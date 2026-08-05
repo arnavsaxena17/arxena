@@ -10,7 +10,7 @@ const primaryQuerySchema = z.object({
   query: searchQuerySchema.describe('Full query using all terms from master lists'),
   term_counts: termCountsSchema.describe('Discrete term counts for keywords, job_title, combined'),
   needs_splitting: z.boolean().describe('True if keywords >6 OR job_title >6 OR combined >10'),
-  splitting_reason: z.string().nullable().optional(),
+  splitting_reason: z.string().nullable(),
   recommended_strategy: strategySchema.describe(
     'A: no split, B: split by keywords, C: split by job titles, D: split by seniority/companies',
   ),

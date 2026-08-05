@@ -17,11 +17,23 @@ export const getWidgetCardVariant = ({
   isMobile,
   isInSidePanel,
 }: GetWidgetCardVariantParams): WidgetCardVariant => {
+  const isSideColumnContext = isInPinnedTab || isMobile || isInSidePanel;
+
+  // Solo is full-bleed on wide record pages, but in a narrow side column
+  // (side panel / mobile / pinned tab) it needs the same inset as stacked
+  // widgets so field values are not flush against the edge.
   if (presentation === 'solo') {
+    const isRecordPageLayout =
+      pageLayoutType === PageLayoutType.RECORD_PAGE ||
+      pageLayoutType === PageLayoutType.RECORD_INDEX ||
+      pageLayoutType === null;
+
+    if (isSideColumnContext && isRecordPageLayout) {
+      return 'side-column';
+    }
+
     return 'solo';
   }
-
-  const isSideColumnContext = isInPinnedTab || isMobile || isInSidePanel;
 
   switch (pageLayoutType) {
     case PageLayoutType.DASHBOARD:

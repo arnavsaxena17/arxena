@@ -1,0 +1,391 @@
+{
+  "type": "object",
+  "$defs": {
+    "__schema0": {
+      "enum": [
+        "AscNullsFirst",
+        "AscNullsLast",
+        "DescNullsFirst",
+        "DescNullsLast"
+      ],
+      "type": "string"
+    },
+    "__schema1": {
+      "type": "object",
+      "properties": {
+        "lastName": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "string",
+              "description": "Equals"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            },
+            "neq": {
+              "type": "string",
+              "description": "Not equals"
+            },
+            "like": {
+              "type": "string",
+              "description": "LIKE (% wildcard)"
+            },
+            "ilike": {
+              "type": "string",
+              "description": "ILIKE (% wildcard, case-insensitive)"
+            },
+            "endsWith": {
+              "type": "string",
+              "description": "Ends with"
+            },
+            "startsWith": {
+              "type": "string",
+              "description": "Starts with"
+            }
+          }
+        },
+        "firstName": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "string",
+              "description": "Equals"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            },
+            "neq": {
+              "type": "string",
+              "description": "Not equals"
+            },
+            "like": {
+              "type": "string",
+              "description": "LIKE (% wildcard)"
+            },
+            "ilike": {
+              "type": "string",
+              "description": "ILIKE (% wildcard, case-insensitive)"
+            },
+            "endsWith": {
+              "type": "string",
+              "description": "Ends with"
+            },
+            "startsWith": {
+              "type": "string",
+              "description": "Starts with"
+            }
+          }
+        }
+      }
+    },
+    "__schema2": {
+      "enum": [
+        "NULL",
+        "NOT_NULL"
+      ],
+      "type": "string",
+      "description": "Is null or not null"
+    },
+    "__schema3": {
+      "type": "object",
+      "properties": {
+        "primaryEmail": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "string",
+              "format": "email",
+              "description": "Equals"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            },
+            "neq": {
+              "type": "string",
+              "format": "email",
+              "description": "Not equals"
+            },
+            "like": {
+              "type": "string",
+              "description": "LIKE (% wildcard)"
+            },
+            "ilike": {
+              "type": "string",
+              "description": "ILIKE (% wildcard, case-insensitive)"
+            }
+          }
+        }
+      }
+    },
+    "__schema4": {
+      "type": "object",
+      "properties": {
+        "primaryLinkUrl": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "string",
+              "format": "uri",
+              "description": "Equals"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            },
+            "neq": {
+              "type": "string",
+              "format": "uri",
+              "description": "Not equals"
+            },
+            "like": {
+              "type": "string",
+              "description": "LIKE (% wildcard)"
+            },
+            "ilike": {
+              "type": "string",
+              "description": "ILIKE (% wildcard, case-insensitive)"
+            }
+          }
+        }
+      }
+    },
+    "__schema5": {
+      "type": "object",
+      "properties": {
+        "eq": {
+          "type": "string",
+          "description": "Equals"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "In array"
+        },
+        "is": {
+          "$ref": "#/$defs/__schema2"
+        },
+        "neq": {
+          "type": "string",
+          "description": "Not equals"
+        },
+        "like": {
+          "type": "string",
+          "description": "LIKE (% wildcard)"
+        },
+        "ilike": {
+          "type": "string",
+          "description": "ILIKE (% wildcard, case-insensitive)"
+        },
+        "endsWith": {
+          "type": "string",
+          "description": "Ends with"
+        },
+        "startsWith": {
+          "type": "string",
+          "description": "Starts with"
+        }
+      }
+    },
+    "__schema6": {
+      "type": "object",
+      "properties": {
+        "primaryPhoneNumber": {
+          "type": "object",
+          "properties": {
+            "eq": {
+              "type": "string",
+              "description": "Equals"
+            },
+            "is": {
+              "$ref": "#/$defs/__schema2"
+            },
+            "neq": {
+              "type": "string",
+              "description": "Not equals"
+            },
+            "like": {
+              "type": "string",
+              "description": "LIKE (% wildcard)"
+            },
+            "ilike": {
+              "type": "string",
+              "description": "ILIKE (% wildcard, case-insensitive)"
+            }
+          }
+        }
+      }
+    },
+    "__schema7": {
+      "type": "object",
+      "properties": {
+        "eq": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Equals"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "In array of values"
+        },
+        "is": {
+          "$ref": "#/$defs/__schema2"
+        },
+        "neq": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Not equals"
+        }
+      }
+    },
+    "__schema8": {
+      "type": "object",
+      "properties": {
+        "or": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          },
+          "description": "OR condition - matches if ANY of the filters match"
+        },
+        "and": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema8"
+          },
+          "description": "AND condition - matches if ALL filters match"
+        },
+        "not": {
+          "$ref": "#/$defs/__schema8",
+          "description": "NOT condition - matches if the filter does NOT match"
+        },
+        "name": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "emails": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "phones": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "salary": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "jobTitle": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "companyId": {
+          "$ref": "#/$defs/__schema7"
+        },
+        "linkedinLink": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "displayPicture": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "uniqueStringKey": {
+          "$ref": "#/$defs/__schema5"
+        }
+      }
+    }
+  },
+  "required": [
+    "select"
+  ],
+  "properties": {
+    "or": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema8"
+      },
+      "description": "OR condition - matches if ANY of the filters match"
+    },
+    "and": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/__schema8"
+      },
+      "description": "AND condition - matches if ALL filters match"
+    },
+    "not": {
+      "$ref": "#/$defs/__schema8",
+      "description": "NOT condition - matches if the filter does NOT match"
+    },
+    "name": {
+      "$ref": "#/$defs/__schema1"
+    },
+    "limit": {
+      "type": "integer",
+      "default": 10,
+      "description": "Maximum number of records to return (default: 10, max: 100). Start small and increase only if needed.",
+      "exclusiveMinimum": 0
+    },
+    "emails": {
+      "$ref": "#/$defs/__schema3"
+    },
+    "offset": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of records to skip (default: 0)"
+    },
+    "phones": {
+      "$ref": "#/$defs/__schema6"
+    },
+    "salary": {
+      "$ref": "#/$defs/__schema5"
+    },
+    "select": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Fields to include in the response. Required. Use '*' to return all fields, or list specific field names. MANY_TO_ONE relations are referenced by their FK column (e.g. 'companyId'). "
+    },
+    "orderBy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {},
+        "description": "Object with exactly ONE property. For scalar fields use a direction string: {\"employees\": \"DescNullsLast\"}. For composite fields (e.g. name, address, currency) use a nested object with the sub-field: {\"name\": {\"firstName\": \"AscNullsFirst\"}}. Never use dot-notation keys like \"name.firstName\".",
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/__schema0"
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          ]
+        }
+      },
+      "description": "Sort by field(s). Scalar fields: [{fieldName: \"DescNullsLast\"}]. Composite fields (name, address, currency, \u2026): [{fieldName: {subFieldName: \"AscNullsFirst\"}}] \u2014 e.g. [{\"name\": {\"firstName\": \"AscNullsFirst\"}}]. Never use dot-notation keys like \"name.firstName\". Use DescNullsLast for top/largest, AscNullsFirst for bottom/smallest."
+    },
+    "jobTitle": {
+      "$ref": "#/$defs/__schema5"
+    },
+    "companyId": {
+      "$ref": "#/$defs/__schema7"
+    },
+    "linkedinLink": {
+      "$ref": "#/$defs/__schema4"
+    },
+    "displayPicture": {
+      "$ref": "#/$defs/__schema4"
+    },
+    "uniqueStringKey": {
+      "$ref": "#/$defs/__schema5"
+    }
+  }
+}

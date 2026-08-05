@@ -470,6 +470,7 @@ export { isValidVariable } from './validation/isValidVariable';
 export { normalizeLocale } from './validation/normalizeLocale';
 export { getCountryCodesForCallingCode } from './validation/phones-value/getCountryCodesForCallingCode';
 export { isValidCountryCode } from './validation/phones-value/isValidCountryCode';
+export { normalizePhonesFieldInput } from './validation/phones-value/normalize-phones-field-input';
 export { resolveInput } from './variable-resolver';
 export {
   isVerifiedGooglebot,

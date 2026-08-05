@@ -106,6 +106,8 @@ describe('ToolOutputSpillService', () => {
     );
     expect(envelope.preview).toBeDefined();
     expect(envelope.hint).toContain('extract_json_paths');
+    expect(envelope.hint).toContain('code_interpreter');
+    expect(envelope.hint).toContain('never paste');
   });
 
   it.each(['extract_json_paths', 'search_output'])(

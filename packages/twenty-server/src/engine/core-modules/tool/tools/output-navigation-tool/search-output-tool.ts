@@ -18,7 +18,7 @@ export class SearchOutputTool implements Tool {
   private readonly logger = new Logger(SearchOutputTool.name);
 
   description =
-    'Search (grep -o style) within a large spilled tool output for a text or regex pattern, returning every occurrence with surrounding characters of context. Works on raw text of any shape (CSV, HTML, stringified JSON, plain text), including single-line content. Supports stateless pagination via offset. Use this to locate an error message or key in a file too large to inline.';
+    'Search (grep -o style) within a large spilled tool output for a required text or regex `pattern`, returning every occurrence with surrounding characters of context. Works on raw text of any shape (CSV, HTML, stringified JSON, plain text), including single-line content. Supports stateless pagination via offset. Use this to locate an error message or key in a file too large to inline. Requires `pattern` — this tool does not export CSV. For JSON sub-trees use extract_json_paths; to build a CSV from spilled JSON, mount the fileId in code_interpreter.';
 
   inputSchema = SearchOutputInputZodSchema;
 

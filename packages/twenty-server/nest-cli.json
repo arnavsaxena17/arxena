@@ -63,6 +63,10 @@
       {
         "include": "engine/core-modules/dpa/constants/subprocessors.json",
         "outDir": "dist"
+      },
+      {
+        "include": "engine/workspace-manager/twenty-standard-application/utils/skill-metadata/contents/**/*.md",
+        "outDir": "dist"
       }
     ]
   },

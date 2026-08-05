@@ -3,13 +3,13 @@ import {
     CHECK_CONTACT_AVAILABILITY_FROM_ARXENA_INPUT_DESCRIPTOR,
     CHECK_CONTACT_AVAILABILITY_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
     CHECK_CONTACT_AVAILABILITY_FROM_LUSHA_INPUT_DESCRIPTOR,
-    CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR,
+    // CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR,
     CHECK_CONTACT_AVAILABILITY_INPUT_DESCRIPTOR,
     FETCH_CONTACTS_FROM_APOLLO_INPUT_DESCRIPTOR,
     FETCH_CONTACTS_FROM_ARXENA_INPUT_DESCRIPTOR,
     FETCH_CONTACTS_FROM_CONTACTOUT_INPUT_DESCRIPTOR,
     FETCH_CONTACTS_FROM_LUSHA_INPUT_DESCRIPTOR,
-    FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR,
+    // FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR,
     FETCH_CONTACTS_INPUT_DESCRIPTOR,
     GENERATE_LINKEDIN_QUERY_AGENT1_INPUT_DESCRIPTOR,
     GENERATE_LINKEDIN_QUERY_AGENT2_INPUT_DESCRIPTOR,
@@ -37,9 +37,15 @@ const LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
   LOCATION: 'LOCATION',
   locations: 'LOCATION',
   location: 'LOCATION',
+  REGION: 'REGION',
+  regions: 'REGION',
+  region: 'REGION',
   INDUSTRY: 'INDUSTRY',
   industries: 'INDUSTRY',
   industry: 'INDUSTRY',
+  SALES_INDUSTRY: 'SALES_INDUSTRY',
+  'sales-industry': 'SALES_INDUSTRY',
+  sales_industry: 'SALES_INDUSTRY',
   COMPANY: 'COMPANY',
   companies: 'COMPANY',
   company: 'COMPANY',
@@ -134,12 +140,12 @@ export const linkedinSearchTools: McpTool[] = [
   //     );
   //   },
   // },
-  
+
   {
     definition: {
       name: 'search_linkedin_people',
       description:
-        'Search LinkedIn profiles (people) via Unipile. Use search_linkedin_parameters first to resolve facet IDs. Supports classic, sales_navigator, and recruiter. Pass searchParameters for direct search, or query + assistantThreadId for the full candidate-search flow. Use search_linkedin_continue for the next page.',
+        'Search LinkedIn profiles (people) via Unipile. Use search_linkedin_parameters first to resolve facet IDs. Supports classic, sales_navigator, and recruiter. For sales_navigator use include/exclude objects (role/industry/location) — never classic flat arrays or job_title. Pass searchParameters for direct search, or query + assistantThreadId for the full candidate-search flow. Use search_linkedin_continue for the next page.',
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR);
         return {
@@ -397,7 +403,9 @@ export const linkedinSearchTools: McpTool[] = [
               ...baseSchema.properties.parameterType,
               enum: [
                 'LOCATION',
+                'REGION',
                 'INDUSTRY',
+                'SALES_INDUSTRY',
                 'COMPANY',
                 'SCHOOL',
                 'JOB_TITLE',
@@ -405,6 +413,7 @@ export const linkedinSearchTools: McpTool[] = [
                 'SAVED_SEARCHES',
                 'RECENT_SEARCHES',
                 'locations',
+                'regions',
                 'industries',
                 'companies',
                 'schools',
@@ -697,21 +706,6 @@ export const linkedinSearchTools: McpTool[] = [
         body.linkedinUrls = linkedinUrls;
       }
 
-      // Try POST first, fallback to GET if single URL
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
-      }
-
       return callRestAPI(config.baseUrl, config.apiToken, 'contact-enrichment', 'availability', body);
     },
   },
@@ -753,20 +747,6 @@ export const linkedinSearchTools: McpTool[] = [
         body.linkedinUrls = linkedinUrls;
       }
 
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability/arxena',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
-      }
-
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
@@ -777,66 +757,66 @@ export const linkedinSearchTools: McpTool[] = [
     },
   },
 
-  {
-    definition: {
-      name: 'check_contact_availability_from_pdl',
-      description: 'Check contact availability using only PDL provider.',
-      inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR);
-        return {
-          ...baseSchema,
-          properties: {
-            ...baseSchema.properties,
-            linkedinUrls: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of LinkedIn profile URLs',
-            },
-          },
-        };
-      })(),
-    },
-    handler: async (args, config) => {
-      const { linkedinUrl, linkedinUrls } = args as {
-        linkedinUrl?: string;
-        linkedinUrls?: string[];
-      };
+  // {
+  //   definition: {
+  //     name: 'check_contact_availability_from_pdl',
+  //     description: 'Check contact availability using only PDL provider.',
+  //     inputSchema: (() => {
+  //       const baseSchema = descriptorToInputSchema(CHECK_CONTACT_AVAILABILITY_FROM_PDL_INPUT_DESCRIPTOR);
+  //       return {
+  //         ...baseSchema,
+  //         properties: {
+  //           ...baseSchema.properties,
+  //           linkedinUrls: {
+  //             type: 'array',
+  //             items: { type: 'string' },
+  //             description: 'Array of LinkedIn profile URLs',
+  //           },
+  //         },
+  //       };
+  //     })(),
+  //   },
+  //   handler: async (args, config) => {
+  //     const { linkedinUrl, linkedinUrls } = args as {
+  //       linkedinUrl?: string;
+  //       linkedinUrls?: string[];
+  //     };
 
-      if (!linkedinUrl && !linkedinUrls) {
-        throw new Error('Either linkedinUrl or linkedinUrls must be provided');
-      }
+  //     if (!linkedinUrl && !linkedinUrls) {
+  //       throw new Error('Either linkedinUrl or linkedinUrls must be provided');
+  //     }
 
-      const body: Record<string, unknown> = {};
-      if (linkedinUrl) {
-        body.linkedinUrl = linkedinUrl;
-      }
-      if (linkedinUrls) {
-        body.linkedinUrls = linkedinUrls;
-      }
+  //     const body: Record<string, unknown> = {};
+  //     if (linkedinUrl) {
+  //       body.linkedinUrl = linkedinUrl;
+  //     }
+  //     if (linkedinUrls) {
+  //       body.linkedinUrls = linkedinUrls;
+  //     }
 
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability/pdl',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
-      }
+  //     if (linkedinUrl && !linkedinUrls) {
+  //       try {
+  //         return callRestAPIGet(
+  //           config.baseUrl,
+  //           config.apiToken,
+  //           'contact-enrichment',
+  //           'availability/pdl',
+  //           { linkedinUrl },
+  //         );
+  //       } catch {
+  //         // Fallback to POST
+  //       }
+  //     }
 
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'contact-enrichment',
-        'availability/pdl',
-        body,
-      );
-    },
-  },
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'contact-enrichment',
+  //       'availability/pdl',
+  //       body,
+  //     );
+  //   },
+  // },
 
   {
     definition: {
@@ -873,20 +853,6 @@ export const linkedinSearchTools: McpTool[] = [
       }
       if (linkedinUrls) {
         body.linkedinUrls = linkedinUrls;
-      }
-
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability/contactout',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
       }
 
       return callRestAPI(
@@ -936,20 +902,6 @@ export const linkedinSearchTools: McpTool[] = [
         body.linkedinUrls = linkedinUrls;
       }
 
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability/lusha',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
-      }
-
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
@@ -995,20 +947,6 @@ export const linkedinSearchTools: McpTool[] = [
       }
       if (linkedinUrls) {
         body.linkedinUrls = linkedinUrls;
-      }
-
-      if (linkedinUrl && !linkedinUrls) {
-        try {
-          return callRestAPIGet(
-            config.baseUrl,
-            config.apiToken,
-            'contact-enrichment',
-            'availability/apollo',
-            { linkedinUrl },
-          );
-        } catch {
-          // Fallback to POST
-        }
       }
 
       return callRestAPI(
@@ -1126,60 +1064,60 @@ export const linkedinSearchTools: McpTool[] = [
     },
   },
 
-  {
-    definition: {
-      name: 'fetch_contacts_from_pdl',
-      description: 'Fetch contacts using only PDL provider.',
-      inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR);
-        return {
-          ...baseSchema,
-          properties: {
-            ...baseSchema.properties,
-            linkedinUrls: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Array of LinkedIn profile URLs',
-            },
-          },
-        };
-      })(),
-    },
-    handler: async (args, config) => {
-      const { linkedinUrl, linkedinUrls, wantEmail, wantPhone } = args as {
-        linkedinUrl?: string;
-        linkedinUrls?: string[];
-        wantEmail?: boolean;
-        wantPhone?: boolean;
-      };
+  // {
+  //   definition: {
+  //     name: 'fetch_contacts_from_pdl',
+  //     description: 'Fetch contacts using only PDL provider.',
+  //     inputSchema: (() => {
+  //       const baseSchema = descriptorToInputSchema(FETCH_CONTACTS_FROM_PDL_INPUT_DESCRIPTOR);
+  //       return {
+  //         ...baseSchema,
+  //         properties: {
+  //           ...baseSchema.properties,
+  //           linkedinUrls: {
+  //             type: 'array',
+  //             items: { type: 'string' },
+  //             description: 'Array of LinkedIn profile URLs',
+  //           },
+  //         },
+  //       };
+  //     })(),
+  //   },
+  //   handler: async (args, config) => {
+  //     const { linkedinUrl, linkedinUrls, wantEmail, wantPhone } = args as {
+  //       linkedinUrl?: string;
+  //       linkedinUrls?: string[];
+  //       wantEmail?: boolean;
+  //       wantPhone?: boolean;
+  //     };
 
-      if (!linkedinUrl && !linkedinUrls) {
-        throw new Error('Either linkedinUrl or linkedinUrls must be provided');
-      }
+  //     if (!linkedinUrl && !linkedinUrls) {
+  //       throw new Error('Either linkedinUrl or linkedinUrls must be provided');
+  //     }
 
-      const body: Record<string, unknown> = {};
-      if (linkedinUrl) {
-        body.linkedinUrl = linkedinUrl;
-      }
-      if (linkedinUrls) {
-        body.linkedinUrls = linkedinUrls;
-      }
-      if (wantEmail !== undefined) {
-        body.wantEmail = wantEmail;
-      }
-      if (wantPhone !== undefined) {
-        body.wantPhone = wantPhone;
-      }
+  //     const body: Record<string, unknown> = {};
+  //     if (linkedinUrl) {
+  //       body.linkedinUrl = linkedinUrl;
+  //     }
+  //     if (linkedinUrls) {
+  //       body.linkedinUrls = linkedinUrls;
+  //     }
+  //     if (wantEmail !== undefined) {
+  //       body.wantEmail = wantEmail;
+  //     }
+  //     if (wantPhone !== undefined) {
+  //       body.wantPhone = wantPhone;
+  //     }
 
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'contact-enrichment',
-        'fetch/pdl',
-        body,
-      );
-    },
-  },
+  //     return callRestAPI(
+  //       config.baseUrl,
+  //       config.apiToken,
+  //       'contact-enrichment',
+  //       'fetch/pdl',
+  //       body,
+  //     );
+  //   },
+  // },
 
   {
     definition: {

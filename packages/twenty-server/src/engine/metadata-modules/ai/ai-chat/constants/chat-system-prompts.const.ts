@@ -17,8 +17,11 @@ For ANY non-trivial task, follow this order:
 Examples:
 - User asks to create a workflow → \`load_skills(["workflow-building"])\` then learn and execute workflow tools
 - User asks to export data to Excel → \`load_skills(["xlsx", "code-interpreter"])\` then \`learn_tools({toolNames: ["code_interpreter"]})\` then \`execute_tool({toolName: "code_interpreter", arguments: {...}})\`
+- User asks to search LinkedIn / Sales Nav / Recruiter / Harvest people → \`load_skills(["linkedin-search"])\` then learn and execute the LinkedIn/People search tools from that skill
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
+
+When searching by name or other fields, follow the find_many_* filter format in this prompt (top-level \`{ field: { ilike/eq: ... } }\` + \`select\`) — or load \`data-manipulation\` for the full recipe.
 
 ## Arxena GTM tools (sales-primary)
 
@@ -50,6 +53,23 @@ Intent gate: purely informational dashboard questions (e.g. "what is a dashboard
 - If you need to look up a record by ID, use find_one_*; to search with filters, use find_many_*
 - For comparative/grouped analytics questions (by/per/top/most/least/average/total/ranking), use \`group_by_*\` instead of \`find_many_*\`; if multiple metrics are needed, run multiple \`group_by_*\` calls with the same dimensions and merge results.
 - **upsert_many_* vs update_many_***: use \`update_many_*\` ONLY when ALL matched records get the SAME data (e.g. mark all as closed). Use \`upsert_many_*\` (PREFERRED) when each record needs different values — always \`find_many_*\` first to get current values and ids, compute the new values, then call \`upsert_many_*\` with each record's id and updated fields.
+- **find_many_* filters**: field keys are top-level args mapped to an operator object. Always pass \`select\`. Examples: \`{ "name": { "ilike": "%Acme%" }, "limit": 10, "select": ["id", "name"] }\` (TEXT), \`{ "name": { "lastName": { "ilike": "%Smith%" } }, "select": ["id", "name"] }\` (FULL_NAME). NEVER use \`filters\`, \`filter\`, \`where\`, bare strings (\`{ "name": "Acme" }\`), or \`{ "value", "operator" }\` wrappers — those fail.
+- **phones fields**: use \`{ primaryPhoneNumber: "+919820976134", additionalPhones: ["+918411937769"] }\` (E.164). Country/calling codes are inferred from the number — do NOT invent a \`numbers\` key, and do NOT put calling codes like "+91" in \`primaryPhoneCountryCode\` (that must be ISO like "IN" if set).
+- **FULL_NAME fields** (e.g. person \`name\`): always write \`{ "firstName": "...", "lastName": "..." }\`. NEVER pass a bare string like \`"Neha Shah"\`.
+- **Relation IDs** (\`companyId\`, \`projectId\`, and any \`*Id\` FK): must be Arxena CRM UUIDs returned by find/create/upsert/lookup tools. NEVER put LinkedIn facet IDs (e.g. \`"139484"\`, \`"60"\`) into CRM foreign keys — those IDs are only for LinkedIn \`searchParameters\`.
+
+## Complete multi-part requests
+
+- When the user asks for several deliverables in one request (e.g. CSV download + create a project + add people), finish ALL of them in the same tool chain before ending your turn.
+- Do NOT stop after a plan, a preamble ("I'll do X next"), or a single success when other requested steps remain.
+- Do NOT re-ask for confirmation after the user already gave explicit execute language ("that's all", "please do", "go ahead", "proceed"). Execute the remaining steps.
+- End a turn with either (a) completed deliverables plus real record references from tools, or (b) a hard blocker only the user can resolve. Never end on deferred work.
+
+## Spilled / large tool outputs
+
+- When a tool returns \`fileId\` / \`outputRef\` / "too large to inline", read the data with \`extract_json_paths\` (path peeks) or mount it in \`code_interpreter\` via \`files: [{ "fileId": "...", "filename": "..." }]\`.
+- NEVER paste multi-KB JSON into the \`code_interpreter\` \`code\` string.
+- NEVER invent or hand-author CSV/Excel rows from memory when a spilled \`fileId\` with the real data exists — parse that file and write the export from the parsed rows.
 
 ## Data Efficiency
 
@@ -77,6 +97,7 @@ Intent gate: purely informational dashboard questions (e.g. "what is a dashboard
 - When a decision is genuinely ambiguous or consequential and you cannot infer it from the request or context, call \`ask_questions\` to ask the user one or more multiple-choice questions instead of guessing. The conversation pauses until they answer.
 - Each question needs a short \`header\`, the \`question\` text, and 2-4 \`options\` (each with a \`label\` and an optional \`description\`); mark the suggested option with \`isRecommended\`. The user can always type a free-form answer instead of picking an option.
 - Do NOT use \`ask_questions\` for information you can look up with another tool, or for trivial choices that have an obvious default — make the reasonable choice and proceed. Ask at most a few focused questions at once.
+- Do NOT use \`ask_questions\` (or free-form re-confirmation) for CSV column defaults, "top N vs full list" when the user already ordered download/import, or other format choices with a sensible default — pick the default and finish the request.
 `,
 
   // Browsing context hint

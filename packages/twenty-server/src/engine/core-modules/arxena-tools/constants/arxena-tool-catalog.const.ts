@@ -255,41 +255,41 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     description:
       'Send Shortlist To Client (outreach pack). Use for GTM outreach workflows.',
   },
-  {
-    name: 'list_companies',
-    pack: 'accounts',
-    label: 'List Companies',
-    description:
-      'List Companies (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'get_company_by_id',
-    pack: 'accounts',
-    label: 'Get Company By Id',
-    description:
-      'Get Company By Id (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'find_company_by_name',
-    pack: 'accounts',
-    label: 'Find Company By Name',
-    description:
-      'Find Company By Name (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'find_companies_by_name',
-    pack: 'accounts',
-    label: 'Find Companies By Name',
-    description:
-      'Find Companies By Name (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_company',
-    pack: 'accounts',
-    label: 'Create Company',
-    description:
-      'Create Company (accounts pack). Use for GTM accounts workflows.',
-  },
+  // {
+  //   name: 'list_companies',
+  //   pack: 'accounts',
+  //   label: 'List Companies',
+  //   description:
+  //     'List Companies (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'get_company_by_id',
+  //   pack: 'accounts',
+  //   label: 'Get Company By Id',
+  //   description:
+  //     'Get Company By Id (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'find_company_by_name',
+  //   pack: 'accounts',
+  //   label: 'Find Company By Name',
+  //   description:
+  //     'Find Company By Name (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'find_companies_by_name',
+  //   pack: 'accounts',
+  //   label: 'Find Companies By Name',
+  //   description:
+  //     'Find Companies By Name (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'create_company',
+  //   pack: 'accounts',
+  //   label: 'Create Company',
+  //   description:
+  //     'Create Company (accounts pack). Use for GTM accounts workflows.',
+  // },
   {
     name: 'search_people_index',
     pack: 'prospecting',
@@ -323,7 +323,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'prospecting',
     label: 'Search Linkedin People',
     description:
-      'Search LinkedIn people. Prefer when the user explicitly wants LinkedIn results.',
+      'Search LinkedIn people (classic / sales_navigator / recruiter). Sales Navigator needs include/exclude objects and role (not classic flat arrays or job_title).',
   },
   {
     name: 'search_linkedin_companies',
@@ -402,13 +402,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     description:
       'Check Contact Availability From Arxena (enrichment pack). Use for GTM enrichment workflows.',
   },
-  {
-    name: 'check_contact_availability_from_pdl',
-    pack: 'enrichment',
-    label: 'Check Contact Availability From Pdl',
-    description:
-      'Check Contact Availability From Pdl (enrichment pack). Use for GTM enrichment workflows.',
-  },
+  // {
+  //   name: 'check_contact_availability_from_pdl',
+  //   pack: 'enrichment',
+  //   label: 'Check Contact Availability From Pdl',
+  //   description:
+  //     'Check Contact Availability From Pdl (enrichment pack). Use for GTM enrichment workflows.',
+  // },
   {
     name: 'check_contact_availability_from_contactout',
     pack: 'enrichment',
@@ -444,13 +444,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     description:
       'Fetch Contacts From Arxena (enrichment pack). Use for GTM enrichment workflows.',
   },
-  {
-    name: 'fetch_contacts_from_pdl',
-    pack: 'enrichment',
-    label: 'Fetch Contacts From Pdl',
-    description:
-      'Fetch Contacts From Pdl (enrichment pack). Use for GTM enrichment workflows.',
-  },
+  // {
+  //   name: 'fetch_contacts_from_pdl',
+  //   pack: 'enrichment',
+  //   label: 'Fetch Contacts From Pdl',
+  //   description:
+  //     'Fetch Contacts From Pdl (enrichment pack). Use for GTM enrichment workflows.',
+  // },
   {
     name: 'fetch_contacts_from_contactout',
     pack: 'enrichment',
@@ -584,104 +584,104 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     description:
       'Enrich Contact From Data (enrichment pack). Use for GTM enrichment workflows.',
   },
-  {
-    name: 'list_active_projects',
-    pack: 'accounts',
-    label: 'List Active Projects',
-    description:
-      'List Active Projects (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'get_project_by_id',
-    pack: 'accounts',
-    label: 'Get Project By Id',
-    description:
-      'Get Project By Id (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'find_project_by_name',
-    pack: 'accounts',
-    label: 'Find Project By Name',
-    description:
-      'Find Project By Name (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_project',
-    pack: 'accounts',
-    label: 'Create Project',
-    description:
-      'Create Project (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_reminder',
-    pack: 'accounts',
-    label: 'Create Reminder',
-    description:
-      'Create Reminder (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'list_due_reminders',
-    pack: 'accounts',
-    label: 'List Due Reminders',
-    description:
-      'List Due Reminders (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'search',
-    pack: 'general',
-    label: 'Search',
-    description:
-      'Universal search across workspace records and org charts. Prefer when intent is unclear before specialized search tools.',
-  },
-  {
-    name: 'fetch',
-    pack: 'general',
-    label: 'Fetch',
-    description:
-      'Fetch a workspace record or org-chart resource by id returned from search.',
-  },
-  {
-    name: 'list_shortlists',
-    pack: 'accounts',
-    label: 'List Shortlists',
-    description:
-      'List Shortlists (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_shortlist',
-    pack: 'accounts',
-    label: 'Create Shortlist',
-    description:
-      'Create Shortlist (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'add_candidates_to_shortlist',
-    pack: 'accounts',
-    label: 'Add Candidates To Shortlist',
-    description:
-      'Add Candidates To Shortlist (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'list_cv_sents',
-    pack: 'accounts',
-    label: 'List Cv Sents',
-    description:
-      'List Cv Sents (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'move_candidate_to_cv_sent',
-    pack: 'accounts',
-    label: 'Move Candidate To Cv Sent',
-    description:
-      'Move Candidate To Cv Sent (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'whatsapp_unipile_check_account_status',
-    pack: 'outreach',
-    label: 'Whatsapp Unipile Check Account Status',
-    description:
-      'Whatsapp Unipile Check Account Status (outreach pack). Use for GTM outreach workflows.',
-  },
+  // {
+  //   name: 'list_active_projects',
+  //   pack: 'accounts',
+  //   label: 'List Active Projects',
+  //   description:
+  //     'List Active Projects (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'get_project_by_id',
+  //   pack: 'accounts',
+  //   label: 'Get Project By Id',
+  //   description:
+  //     'Get Project By Id (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'find_project_by_name',
+  //   pack: 'accounts',
+  //   label: 'Find Project By Name',
+  //   description:
+  //     'Find Project By Name (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'create_project',
+  //   pack: 'accounts',
+  //   label: 'Create Project',
+  //   description:
+  //     'Create Project (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'create_reminder',
+  //   pack: 'accounts',
+  //   label: 'Create Reminder',
+  //   description:
+  //     'Create Reminder (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'list_due_reminders',
+  //   pack: 'accounts',
+  //   label: 'List Due Reminders',
+  //   description:
+  //     'List Due Reminders (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'search',
+  //   pack: 'general',
+  //   label: 'Search',
+  //   description:
+  //     'Universal search across workspace records and org charts. Prefer when intent is unclear before specialized search tools.',
+  // },
+  // {
+  //   name: 'fetch',
+  //   pack: 'general',
+  //   label: 'Fetch',
+  //   description:
+  //     'Fetch a workspace record or org-chart resource by id returned from search.',
+  // },
+  // {
+  //   name: 'list_shortlists',
+  //   pack: 'accounts',
+  //   label: 'List Shortlists',
+  //   description:
+  //     'List Shortlists (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'create_shortlist',
+  //   pack: 'accounts',
+  //   label: 'Create Shortlist',
+  //   description:
+  //     'Create Shortlist (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'add_candidates_to_shortlist',
+  //   pack: 'accounts',
+  //   label: 'Add Candidates To Shortlist',
+  //   description:
+  //     'Add Candidates To Shortlist (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'list_cv_sents',
+  //   pack: 'accounts',
+  //   label: 'List Cv Sents',
+  //   description:
+  //     'List Cv Sents (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'move_candidate_to_cv_sent',
+  //   pack: 'accounts',
+  //   label: 'Move Candidate To Cv Sent',
+  //   description:
+  //     'Move Candidate To Cv Sent (accounts pack). Use for GTM accounts workflows.',
+  // },
+  // {
+  //   name: 'whatsapp_unipile_check_account_status',
+  //   pack: 'outreach',
+  //   label: 'Whatsapp Unipile Check Account Status',
+  //   description:
+  //     'Whatsapp Unipile Check Account Status (outreach pack). Use for GTM outreach workflows.',
+  // },
 ] as const;
 
 export const ARXENA_TOOL_NAMES = new Set(

@@ -173,6 +173,40 @@ export class WorkspaceQueryService {
     }
   }
 
+  async getWorkspaceMemberLinkedinUnipileAccountId(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<string | null> {
+    if (!workspaceId || !workspaceMemberId) {
+      return null;
+    }
+
+    try {
+      return await this.executeInWorkspaceContext(workspaceId, async () => {
+        const profileRepository = await this.getObjectRepository<{
+          linkedinUnipileAccountId: string | null;
+          workspaceMemberId: string;
+        }>(workspaceId, 'workspaceMemberProfile');
+        const profile = await profileRepository.findOne({
+          where: { workspaceMemberId },
+          select: { linkedinUnipileAccountId: true },
+        });
+        const accountId = profile?.linkedinUnipileAccountId?.trim();
+
+        return accountId ? accountId : null;
+      });
+    } catch (error) {
+      console.error(
+        'getWorkspaceMemberLinkedinUnipileAccountId: query failed',
+        workspaceId,
+        workspaceMemberId,
+        error,
+      );
+
+      return null;
+    }
+  }
+
   async getWorkspaceNameFromToken(apiToken: string) {
     if (!apiToken) {
       throw new Error('API token is required');

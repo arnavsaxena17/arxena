@@ -29,13 +29,35 @@ describe('validatePhonesFieldOrThrow', () => {
 
       expect(result).toEqual(phonesValue);
     });
+
+    it('should coerce a plain phone string into primaryPhoneNumber', () => {
+      const result = validatePhonesFieldOrThrow('+919820976134', 'phones');
+
+      expect(result).toEqual({
+        primaryPhoneNumber: '+919820976134',
+      });
+    });
+
+    it('should coerce a numbers alias into primary + additional phones', () => {
+      const result = validatePhonesFieldOrThrow(
+        {
+          numbers: ['+919820976134', '+918411937769'],
+        },
+        'phones',
+      );
+
+      expect(result).toEqual({
+        primaryPhoneNumber: '+919820976134',
+        additionalPhones: [{ number: '+918411937769' }],
+      });
+    });
   });
 
   describe('invalid inputs', () => {
-    it('should throw when value is not an object', () => {
-      expect(() =>
-        validatePhonesFieldOrThrow('not an object', 'testField'),
-      ).toThrow(CommonQueryRunnerException);
+    it('should throw when value is not an object after normalization', () => {
+      expect(() => validatePhonesFieldOrThrow(42, 'testField')).toThrow(
+        CommonQueryRunnerException,
+      );
     });
 
     it('should throw when value is undefined', () => {

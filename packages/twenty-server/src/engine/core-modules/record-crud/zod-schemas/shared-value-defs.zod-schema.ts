@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const UuidValueSchema = z.uuidv4();
+export const UuidValueSchema = z.uuidv4().describe(
+  'Arxena CRM record UUID (from find/create/upsert/lookup). Never use LinkedIn facet IDs or other external ids here.',
+);
 export const UuidValueOptionalSchema = UuidValueSchema.optional();
 
 export const LinksValueSchema = z.object({
@@ -35,10 +37,14 @@ export const CurrencyResponseValueSchema = z.object({
 export const CurrencyResponseValueOptionalSchema =
   CurrencyResponseValueSchema.optional();
 
-export const FullNameValueSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-});
+export const FullNameValueSchema = z
+  .object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+  })
+  .describe(
+    'FULL_NAME composite. Pass { firstName, lastName } — never a bare full-name string like "Neha Shah".',
+  );
 export const FullNameValueOptionalSchema = FullNameValueSchema.optional();
 
 export const AddressValueSchema = z.object({
@@ -59,12 +65,45 @@ export const EmailsValueSchema = z.object({
 });
 export const EmailsValueOptionalSchema = EmailsValueSchema.optional();
 
-export const PhonesValueSchema = z.object({
-  primaryPhoneNumber: z.string().optional(),
-  primaryPhoneCountryCode: z.string().optional(),
-  primaryPhoneCallingCode: z.string().optional(),
-  additionalPhones: z.array(z.string()).optional(),
-});
+const PHONES_FIELD_DESCRIPTION =
+  'Phone composite. Prefer E.164 numbers (e.g. "+919820976134") as primaryPhoneNumber — primaryPhoneCountryCode (ISO like "IN") and primaryPhoneCallingCode (like "+91") are inferred automatically from the number. Do not use a "numbers" key.';
+
+const AdditionalPhoneValueSchema = z.union([
+  z
+    .string()
+    .describe('E.164 or national phone number. Prefer +countrycode…'),
+  z.object({
+    number: z.string().describe('E.164 or national phone number'),
+    countryCode: z
+      .string()
+      .optional()
+      .describe('ISO country code like "IN" or "US". Optional for E.164.'),
+    callingCode: z
+      .string()
+      .optional()
+      .describe('Calling code like "+91". Optional for E.164.'),
+  }),
+]);
+
+export const PhonesValueSchema = z
+  .object({
+    primaryPhoneNumber: z
+      .string()
+      .optional()
+      .describe(
+        'E.164 preferred (e.g. "+919820976134"). Country and calling code are inferred when omitted.',
+      ),
+    primaryPhoneCountryCode: z
+      .string()
+      .optional()
+      .describe('ISO country code like "IN" or "US". Optional for E.164.'),
+    primaryPhoneCallingCode: z
+      .string()
+      .optional()
+      .describe('Calling code like "+91". Optional for E.164.'),
+    additionalPhones: z.array(AdditionalPhoneValueSchema).optional(),
+  })
+  .describe(PHONES_FIELD_DESCRIPTION);
 export const PhonesValueOptionalSchema = PhonesValueSchema.optional();
 
 export const RichTextValueSchema = z.object({

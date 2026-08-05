@@ -30,6 +30,23 @@ import type {
   ContactResult,
 } from '../types/contact-enrichment.types';
 
+type ContactAvailabilityResponse =
+  | ContactAvailability
+  | { jobId: string; status: string; total: number }
+  | { results: Record<string, ContactAvailability> };
+
+type ContactAvailabilityBody = {
+  linkedinUrl?: string;
+  linkedinUrls?: string[];
+};
+
+type ContactEnrichmentProviderName =
+  | 'arxena'
+  | 'pdl'
+  | 'contactout'
+  | 'lusha'
+  | 'apollo';
+
 @Controller('contact-enrichment')
 @UseGuards(JwtAuthGuard)
 export class ContactEnrichmentController {
@@ -46,23 +63,29 @@ export class ContactEnrichmentController {
     private readonly apolloProvider: ApolloProvider,
   ) {}
 
-  /**
-   * Check availability of email/phone for LinkedIn profile(s).
-   * GET /contact-enrichment/availability?linkedinUrl=... or POST with body
-   */
+  // Nest overwrites METHOD_METADATA when @Get and @Post share one method —
+  // only GET was registered. Keep separate handlers that share the same logic.
   @Get('availability')
-  @Post('availability')
-  async checkAvailability(
+  async checkAvailabilityGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailability(linkedinUrl);
+  }
+
+  @Post('availability')
+  async checkAvailabilityPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailability(linkedinUrl, body);
+  }
+
+  private async checkAvailability(
+    linkedinUrl?: string,
+    body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     const urls: string[] = [];
 
-    // Get URLs from query or body
     if (linkedinUrl) {
       urls.push(linkedinUrl);
     } else if (body?.linkedinUrl) {
@@ -75,7 +98,6 @@ export class ContactEnrichmentController {
       throw new Error('linkedinUrl or linkedinUrls must be provided');
     }
 
-    // Check if we should process async
     if (this.jobService.shouldProcessAsync(urls.length)) {
       const jobId = await this.jobService.queueBulkJob(
         urls,
@@ -88,7 +110,6 @@ export class ContactEnrichmentController {
       };
     }
 
-    // Process synchronously
     const results: Record<string, ContactAvailability> = {};
     for (const url of urls) {
       try {
@@ -102,7 +123,6 @@ export class ContactEnrichmentController {
       }
     }
 
-    // Return single result if single URL, otherwise return results object
     if (urls.length === 1) {
       return results[urls[0]];
     }
@@ -294,88 +314,78 @@ export class ContactEnrichmentController {
     return progress;
   }
 
-  /**
-   * Check availability using Arxena provider only.
-   * GET/POST /contact-enrichment/availability/arxena
-   */
   @Get('availability/arxena')
-  @Post('availability/arxena')
-  async checkAvailabilityArxena(
+  async checkAvailabilityArxenaGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailabilityForProvider('arxena', linkedinUrl);
+  }
+
+  @Post('availability/arxena')
+  async checkAvailabilityArxenaPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     return this.checkAvailabilityForProvider('arxena', linkedinUrl, body);
   }
 
-  /**
-   * Check availability using PDL provider only.
-   * GET/POST /contact-enrichment/availability/pdl
-   */
   @Get('availability/pdl')
-  @Post('availability/pdl')
-  async checkAvailabilityPdl(
+  async checkAvailabilityPdlGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailabilityForProvider('pdl', linkedinUrl);
+  }
+
+  @Post('availability/pdl')
+  async checkAvailabilityPdlPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     return this.checkAvailabilityForProvider('pdl', linkedinUrl, body);
   }
 
-  /**
-   * Check availability using ContactOut provider only.
-   * GET/POST /contact-enrichment/availability/contactout
-   */
   @Get('availability/contactout')
-  @Post('availability/contactout')
-  async checkAvailabilityContactOut(
+  async checkAvailabilityContactOutGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailabilityForProvider('contactout', linkedinUrl);
+  }
+
+  @Post('availability/contactout')
+  async checkAvailabilityContactOutPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     return this.checkAvailabilityForProvider('contactout', linkedinUrl, body);
   }
 
-  /**
-   * Check availability using Lusha provider only.
-   * GET/POST /contact-enrichment/availability/lusha
-   */
   @Get('availability/lusha')
-  @Post('availability/lusha')
-  async checkAvailabilityLusha(
+  async checkAvailabilityLushaGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailabilityForProvider('lusha', linkedinUrl);
+  }
+
+  @Post('availability/lusha')
+  async checkAvailabilityLushaPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     return this.checkAvailabilityForProvider('lusha', linkedinUrl, body);
   }
 
-  /**
-   * Check availability using Apollo provider only.
-   * GET/POST /contact-enrichment/availability/apollo
-   */
   @Get('availability/apollo')
-  @Post('availability/apollo')
-  async checkAvailabilityApollo(
+  async checkAvailabilityApolloGet(
     @Query('linkedinUrl') linkedinUrl?: string,
-    @Body() body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+  ): Promise<ContactAvailabilityResponse> {
+    return this.checkAvailabilityForProvider('apollo', linkedinUrl);
+  }
+
+  @Post('availability/apollo')
+  async checkAvailabilityApolloPost(
+    @Query('linkedinUrl') linkedinUrl?: string,
+    @Body() body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     return this.checkAvailabilityForProvider('apollo', linkedinUrl, body);
   }
 
@@ -493,14 +503,10 @@ export class ContactEnrichmentController {
    * Helper method to check availability for a specific provider.
    */
   private async checkAvailabilityForProvider(
-    providerName: 'arxena' | 'pdl' | 'contactout' | 'lusha' | 'apollo',
+    providerName: ContactEnrichmentProviderName,
     linkedinUrl?: string,
-    body?: { linkedinUrl?: string; linkedinUrls?: string[] },
-  ): Promise<
-    | ContactAvailability
-    | { jobId: string; status: string; total: number }
-    | { results: Record<string, ContactAvailability> }
-  > {
+    body?: ContactAvailabilityBody,
+  ): Promise<ContactAvailabilityResponse> {
     const urls: string[] = [];
 
     // Get URLs from query or body
@@ -568,7 +574,7 @@ export class ContactEnrichmentController {
    * Helper method to fetch contacts for a specific provider.
    */
   private async fetchContactsForProvider(
-    providerName: 'arxena' | 'pdl' | 'contactout' | 'lusha' | 'apollo',
+    providerName: ContactEnrichmentProviderName,
     req: Request & { workspaceId?: string },
     body: {
       linkedinUrl?: string;
@@ -688,7 +694,7 @@ export class ContactEnrichmentController {
    * Get provider by name.
    */
   private getProvider(
-    providerName: 'arxena' | 'pdl' | 'contactout' | 'lusha' | 'apollo',
+    providerName: ContactEnrichmentProviderName,
   ) {
     switch (providerName) {
       case 'arxena':

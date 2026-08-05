@@ -136,6 +136,11 @@ export class DatabaseToolProvider implements ToolProvider {
       const shouldIncludeSchema = (name: string) =>
         includeSchemas && (!toolNames || toolNames.has(name));
 
+      const personWriteHint =
+        objectMetadata.nameSingular === 'person'
+          ? ' Person writes: name must be { firstName, lastName } (never a bare string); companyId/projectId and other *Id fields must be Arxena CRM UUIDs (never LinkedIn facet IDs).'
+          : '';
+
       if (permission.canReadObjectRecords && canExposeReadTools) {
         descriptors.push({
           name: `find_many_${snakePlural}`,
@@ -145,7 +150,7 @@ export class DatabaseToolProvider implements ToolProvider {
             this.i18nService,
             context.locale,
           ),
-          description: `Search for ${objectMetadata.labelPlural} records using flexible filtering criteria. Supports exact matches, pattern matching, ranges, and null checks. Use limit/offset for pagination and orderBy for sorting. Filter fields are top-level arguments — pass each field as its own key (e.g. { id: { eq: "record-id" } }, or { name: { firstName: { ilike: "%ada%" } } }); do NOT wrap them in a "filter" object and do NOT place a bare operator like "ilike"/"eq" at the top level. Combine conditions with and/or/not. Returns an array of matching records with their full data.`,
+          description: `Search for ${objectMetadata.labelPlural} records using flexible filtering criteria. Supports exact matches, pattern matching, ranges, and null checks. Use limit/offset for pagination and orderBy for sorting. Filter fields are top-level arguments — pass each field as its own key with an operator object (e.g. TEXT: { name: { ilike: "%Acme%" } }, UUID: { id: { eq: "record-id" } }, FULL_NAME: { name: { firstName: { ilike: "%ada%" } } }). select is required. Do NOT use "filters", "filter", or "where" wrappers; do NOT pass a bare string like { name: "Acme" }; do NOT use { value, operator } shapes; do NOT place a bare operator like "ilike"/"eq" at the top level. Combine conditions with and/or/not. Returns an array of matching records with their full data.`,
           category: ToolCategory.DATABASE_CRUD,
           ...(shouldIncludeSchema(`find_many_${snakePlural}`) && {
             inputSchema: toToolJsonSchema(
@@ -232,7 +237,7 @@ export class DatabaseToolProvider implements ToolProvider {
             this.i18nService,
             context.locale,
           ),
-          description: `Create a new ${objectMetadata.labelSingular} record. Provide all required fields and any optional fields you want to set. The system will automatically handle timestamps and IDs. Returns the created record with all its data.`,
+          description: `Create a new ${objectMetadata.labelSingular} record. Provide all required fields and any optional fields you want to set. The system will automatically handle timestamps and IDs. Returns the created record with all its data.${personWriteHint}`,
           category: ToolCategory.DATABASE_CRUD,
           ...(shouldIncludeSchema(`create_one_${snakeSingular}`) && {
             inputSchema: toToolJsonSchema(
@@ -257,7 +262,7 @@ export class DatabaseToolProvider implements ToolProvider {
             this.i18nService,
             context.locale,
           ),
-          description: `Create multiple ${objectMetadata.labelPlural} records in a single call. Provide an array of records, each containing the required fields. Maximum 20 records per call. Returns the created records.`,
+          description: `Create multiple ${objectMetadata.labelPlural} records in a single call. Provide an array of records, each containing the required fields. Maximum 20 records per call. Returns the created records.${personWriteHint}`,
           category: ToolCategory.DATABASE_CRUD,
           ...(shouldIncludeSchema(`create_many_${snakePlural}`) && {
             inputSchema: toToolJsonSchema(
@@ -338,7 +343,7 @@ export class DatabaseToolProvider implements ToolProvider {
             this.i18nService,
             context.locale,
           ),
-          description: `Insert or update multiple ${objectMetadata.labelPlural} records in a single call, where each record has its own individual data. Use this instead of update_many_${snakePlural} when records need different field values. Existing records are matched by unique fields and updated; records with no match are created. Maximum 20 records per call. Returns the upserted records.`,
+          description: `Insert or update multiple ${objectMetadata.labelPlural} records in a single call, where each record has its own individual data. Use this instead of update_many_${snakePlural} when records need different field values. Existing records are matched by unique fields and updated; records with no match are created. Maximum 20 records per call. Returns the upserted records.${personWriteHint}`,
           category: ToolCategory.DATABASE_CRUD,
           ...(shouldIncludeSchema(`upsert_many_${snakePlural}`) && {
             inputSchema: toToolJsonSchema(

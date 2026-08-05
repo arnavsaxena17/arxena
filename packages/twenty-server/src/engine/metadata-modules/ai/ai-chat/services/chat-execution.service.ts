@@ -12,7 +12,7 @@ import {
 } from 'ai';
 import { type ExtendedUIMessage, ToolCategory } from 'twenty-shared/ai';
 import { type APP_LOCALES } from 'twenty-shared/translations';
-import { AppPath } from 'twenty-shared/types';
+import { AppPath, FileFolder } from 'twenty-shared/types';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
 
 import { AI_LATENCY_MS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/ai-latency-ms-bucket-boundaries.constant';
@@ -27,6 +27,7 @@ import { type CodeExecutionStreamEmitter } from 'src/engine/core-modules/tool-pr
 import { CodeInterpreterService } from 'src/engine/core-modules/code-interpreter/code-interpreter.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
+import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
   createExecuteToolTool,
@@ -69,6 +70,7 @@ import {
   getCallLevelProviderOptions,
   injectCacheBreakpoint,
 } from 'src/engine/metadata-modules/ai/ai-chat/utils/provider-options.util';
+import { inlineFilePartsForModel } from 'src/engine/metadata-modules/ai/ai-chat/utils/inline-file-parts-for-model.util';
 import { replaceUnsupportedFileParts } from 'src/engine/metadata-modules/ai/ai-chat/utils/replace-unsupported-file-parts.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
@@ -119,6 +121,7 @@ export class ChatExecutionService {
     private readonly nativeToolBinder: NativeToolBinderService,
     private readonly messagePruningService: MessagePruningService,
     private readonly metricsService: MetricsService,
+    private readonly fileService: FileService,
   ) {}
 
   async streamChat({
@@ -135,13 +138,27 @@ export class ChatExecutionService {
     abortSignal,
     conversationSizeTokens,
   }: ChatExecutionOptions): Promise<ChatExecutionResult> {
-    const { actorContext, roleId, userId, userContext } =
+    this.logger.log(
+      `[AI_CHAT] start workspaceId=${workspace.id} ` +
+        `userWorkspaceId=${userWorkspaceId} threadId=${threadId ?? 'none'} ` +
+        `streamId=${streamId ?? 'none'} turnId=${turnId ?? 'none'} ` +
+        `messageCount=${messages.length} conversationSizeTokens=${conversationSizeTokens} ` +
+        `modelId=${modelId ?? 'workspace.smartModel'} ` +
+        `browsingContext=${browsingContext?.type ?? 'none'}`,
+    );
+
+    const { actorContext, roleId, userId, userContext, workspaceMemberId } =
       await this.agentActorContextService.buildUserAndAgentActorContext(
         userWorkspaceId,
         workspace.id,
       );
 
     const locale = userContext.locale as keyof typeof APP_LOCALES;
+
+    this.logger.log(
+      `[AI_CHAT] actorContext roleId=${roleId} userId=${userId} ` +
+        `locale=${locale} timezone=${userContext.timezone}`,
+    );
 
     const toolContext = {
       workspaceId: workspace.id,
@@ -164,10 +181,6 @@ export class ChatExecutionService {
       workspace.id,
     );
 
-    this.logger.log(
-      `Built tool catalog with ${toolCatalog.length} tools, ${skillCatalog.length} skills available`,
-    );
-
     const arxenaCount = toolCatalog.filter(
       (entry) => entry.category === ToolCategory.ARXENA,
     ).length;
@@ -176,7 +189,10 @@ export class ChatExecutionService {
     ).length;
 
     this.logger.log(
-      `tools_in_context catalog_size=${toolCatalog.length} schemas_preloaded=${AI_CHAT_TOOL_NAMES_TO_PRELOAD.length} arxena=${arxenaCount} external_mcp=${externalMcpCount}`,
+      `[AI_CHAT] catalogs tools=${toolCatalog.length} skills=${skillCatalog.length} ` +
+        `schemas_preloaded=${AI_CHAT_TOOL_NAMES_TO_PRELOAD.length} ` +
+        `arxena=${arxenaCount} external_mcp=${externalMcpCount} ` +
+        `skillNames=[${skillCatalog.map((skill) => skill.name).join(', ')}]`,
     );
 
     const preloadedTools = await this.toolRegistry.getToolsByName(
@@ -202,6 +218,14 @@ export class ChatExecutionService {
       registeredModel.modelId,
     );
 
+    this.logger.log(
+      `[AI_CHAT] model resolvedModelId=${resolvedModelId} ` +
+        `registeredModelId=${registeredModel.modelId} ` +
+        `sdkPackage=${registeredModel.sdkPackage} ` +
+        `contextWindowTokens=${modelConfig.contextWindowTokens} ` +
+        `modalities=[${modelConfig.modalities.join(', ')}]`,
+    );
+
     // Native and action search may both be bound here; the model picks at runtime.
     const nativeCapabilities = getNativeModelCapabilities(
       registeredModel.sdkPackage,
@@ -210,6 +234,13 @@ export class ChatExecutionService {
       webSearch: nativeCapabilities?.webSearch === true,
       twitterSearch: nativeCapabilities?.twitterSearch === true,
     });
+
+    this.logger.log(
+      `[AI_CHAT] nativeCapabilities webSearch=${nativeCapabilities?.webSearch === true} ` +
+        `twitterSearch=${nativeCapabilities?.twitterSearch === true} ` +
+        `nativeTools=[${Object.keys(nativeTools).join(', ')}] ` +
+        `preloadedTools=[${Object.keys(preloadedTools).join(', ')}]`,
+    );
 
     // Tools the model can call directly: preloaded registry tools (already
     // serialized by the hydrator) plus SDK-native tools (opaque, never
@@ -253,6 +284,11 @@ export class ChatExecutionService {
       ),
     };
 
+    this.logger.log(
+      `[AI_CHAT] activeTools count=${Object.keys(activeTools).length} ` +
+        `names=[${Object.keys(activeTools).join(', ')}]`,
+    );
+
     const isCodeInterpreterEnabled = this.codeInterpreterService.isEnabled();
 
     let processedMessages: ExtendedUIMessage[] = replaceUnsupportedFileParts(
@@ -279,10 +315,20 @@ export class ChatExecutionService {
       }
     }
 
+    this.logger.log(
+      `[AI_CHAT] messages afterFileParts messageCount=${processedMessages.length} ` +
+        `codeInterpreter=${isCodeInterpreterEnabled} storedFiles=${storedFiles.length}`,
+    );
+
     if (isDefined(browsingContext)) {
       const contextString = this.buildContextFromBrowsingContext(
         workspace,
         browsingContext,
+      );
+
+      this.logger.log(
+        `[AI_CHAT] browsingContext type=${browsingContext.type} ` +
+          `contextLength=${contextString.length}`,
       );
 
       processedMessages = this.injectBrowsingContextIntoLastUserMessage(
@@ -296,6 +342,20 @@ export class ChatExecutionService {
       userContext.timezone,
     );
 
+    const connectedAccountsContext =
+      await this.systemPromptBuilder.resolveLinkedinConnectedAccountsContext(
+        workspace.id,
+        workspaceMemberId,
+      );
+
+    this.logger.log(
+      `[AI_CHAT] connectedAccounts linkedinConnected=${connectedAccountsContext.connected} ` +
+        `accountId=${connectedAccountsContext.accountId ?? 'none'} ` +
+        `inferredSearchType=${connectedAccountsContext.inferredSearchType ?? 'none'} ` +
+        `salesNavigator=${connectedAccountsContext.salesNavigatorAvailable} ` +
+        `recruiter=${connectedAccountsContext.recruiterAvailable}`,
+    );
+
     const systemPrompt = this.systemPromptBuilder.buildFullPrompt(
       toolCatalog,
       skillCatalog,
@@ -303,16 +363,22 @@ export class ChatExecutionService {
       storedFiles,
       workspace.aiAdditionalInstructions ?? undefined,
       userContext,
+      connectedAccountsContext,
     );
 
+    const providerOptions = getCacheProviderOptions(registeredModel.sdkPackage);
+
     this.logger.log(
-      `Starting chat execution with model ${registeredModel.modelId}, ${Object.keys(activeTools).length} active tools`,
+      `[AI_CHAT] promptReady systemPromptLength=${systemPrompt.length} ` +
+        `preloadedToolNames=[${preloadedToolNames.join(', ')}] ` +
+        `hasAdditionalInstructions=${isDefined(workspace.aiAdditionalInstructions)} ` +
+        `providerOptions=${JSON.stringify(providerOptions)}`,
     );
 
     const systemMessage: SystemModelMessage = {
       role: 'system',
       content: systemPrompt,
-      providerOptions: getCacheProviderOptions(registeredModel.sdkPackage),
+      providerOptions,
     };
 
     const sanitizedMessages = this.sanitizeMessagePartsForModel(
@@ -320,7 +386,24 @@ export class ChatExecutionService {
       new Set(Object.keys(activeTools)),
     );
 
-    const rawModelMessages = await convertToModelMessages(sanitizedMessages);
+    // Providers cannot fetch localhost / private signed SERVER_URL file paths
+    const messagesForModel = await inlineFilePartsForModel(
+      sanitizedMessages,
+      async (filePart) =>
+        this.fileService.getFileContentById({
+          fileId: filePart.fileId,
+          workspaceId: workspace.id,
+          fileFolder: FileFolder.AgentChat,
+        }),
+    );
+
+    const rawModelMessages = await convertToModelMessages(messagesForModel);
+
+    this.logger.log(
+      `[AI_CHAT] convertToModelMessages sanitizedCount=${messagesForModel.length} ` +
+        `rawModelMessageCount=${rawModelMessages.length} ` +
+        `roles=[${rawModelMessages.map((message) => message.role).join(', ')}]`,
+    );
 
     const pruningResult =
       this.messagePruningService.pruneIfOverContextWindowLimit(
@@ -328,6 +411,15 @@ export class ChatExecutionService {
         modelConfig.contextWindowTokens,
         conversationSizeTokens,
       );
+
+    this.logger.log(
+      `[AI_CHAT] pruning wasPruned=${pruningResult.wasPruned} ` +
+        `isStillOverLimit=${pruningResult.isStillOverLimit} ` +
+        `messagesBefore=${rawModelMessages.length} ` +
+        `messagesAfter=${pruningResult.messages.length} ` +
+        `contextWindowTokens=${modelConfig.contextWindowTokens} ` +
+        `conversationSizeTokens=${conversationSizeTokens}`,
+    );
 
     if (pruningResult.isStillOverLimit) {
       throw new AiException(
@@ -348,7 +440,16 @@ export class ChatExecutionService {
     let ttftRecorded = false;
     let stepIndex = 0;
 
+    this.logger.log(
+      `[AI_CHAT] streamText starting modelMessageCount=${modelMessages.length} ` +
+        `maxSteps=${AGENT_CONFIG.MAX_STEPS}`,
+    );
+
     const emitTurnUsageEvent = async (steps: StepResult<ToolSet>[]) => {
+      this.logger.log(
+        `[AI_CHAT] emitTurnUsageEvent stepCount=${steps.length}`,
+      );
+
       const usage = steps.reduce<LanguageModelUsage>(
         (acc, step) => ({
           inputTokens: (acc.inputTokens ?? 0) + (step.usage.inputTokens ?? 0),
@@ -389,6 +490,7 @@ export class ChatExecutionService {
       );
 
       const cacheCreationTokens = extractCacheCreationTokensFromSteps(steps);
+      const nativeWebSearchCalls = countNativeWebSearchCallsFromSteps(steps);
       const totalTokens =
         (usage.inputTokens ?? 0) +
         (usage.outputTokens ?? 0) +
@@ -400,6 +502,23 @@ export class ChatExecutionService {
       );
       const creditsUsedMicro = Math.round(
         convertDollarsToBillingCredits(costInDollars),
+      );
+
+      this.logger.log(
+        `[AI_CHAT_TURN_USAGE] model=${registeredModel.modelId} ` +
+          `steps=${steps.length} inputTokens=${usage.inputTokens ?? 0} ` +
+          `outputTokens=${usage.outputTokens ?? 0} ` +
+          `totalTokens=${usage.totalTokens ?? 0} ` +
+          `noCacheTokens=${usage.inputTokenDetails?.noCacheTokens ?? 0} ` +
+          `cacheReadTokens=${usage.inputTokenDetails?.cacheReadTokens ?? 0} ` +
+          `cacheWriteTokens=${usage.inputTokenDetails?.cacheWriteTokens ?? 0} ` +
+          `cacheCreationTokens=${cacheCreationTokens} ` +
+          `textTokens=${usage.outputTokenDetails?.textTokens ?? 0} ` +
+          `reasoningTokens=${usage.outputTokenDetails?.reasoningTokens ?? 0} ` +
+          `billedTotalTokens=${totalTokens} costInDollars=${costInDollars} ` +
+          `creditsUsedMicro=${creditsUsedMicro} ` +
+          `nativeWebSearchCalls=${nativeWebSearchCalls} ` +
+          `turnLatencyMs=${Math.round(performance.now() - streamStartedAt)}`,
       );
 
       await this.aiBillingService.emitAiTokenUsageEvent(
@@ -415,7 +534,7 @@ export class ChatExecutionService {
       // billNativeWebSearchUsage short-circuits when count <= 0, so calling
       // unconditionally is safe regardless of whether native search fired.
       void this.aiBillingService.billNativeWebSearchUsage(
-        countNativeWebSearchCallsFromSteps(steps),
+        nativeWebSearchCalls,
         workspace.id,
         registeredModel.modelId,
         userWorkspaceId,
@@ -457,10 +576,22 @@ export class ChatExecutionService {
       messages: [systemMessage, ...modelMessages],
       tools: activeTools,
       abortSignal,
-      stopWhen: (step) =>
-        stepCountIs(AGENT_CONFIG.MAX_STEPS)(step) ||
-        hasToolCall(ASK_QUESTIONS_TOOL_NAME)(step) ||
-        hasNoMoreAvailableCredits,
+      stopWhen: (step) => {
+        const hitMaxSteps = stepCountIs(AGENT_CONFIG.MAX_STEPS)(step);
+        const askedQuestions = hasToolCall(ASK_QUESTIONS_TOOL_NAME)(step);
+        const shouldStop =
+          hitMaxSteps || askedQuestions || hasNoMoreAvailableCredits;
+
+        if (shouldStop) {
+          this.logger.log(
+            `[AI_CHAT] stopWhen hitMaxSteps=${hitMaxSteps} ` +
+              `askedQuestions=${askedQuestions} ` +
+              `hasNoMoreAvailableCredits=${hasNoMoreAvailableCredits}`,
+          );
+        }
+
+        return shouldStop;
+      },
       experimental_telemetry: {
         ...AI_TELEMETRY_CONFIG,
         functionId: 'ai-chat-stream',
@@ -476,11 +607,21 @@ export class ChatExecutionService {
         providerOptions: undefined,
         promptCacheKey: threadId,
       }),
-      prepareStep: ({ messages }) => {
+      prepareStep: ({ messages: stepMessages }) => {
         stepStartedAt = performance.now();
+        const nextStepIndex = stepIndex + 1;
+
+        this.logger.log(
+          `[AI_CHAT] prepareStep #${nextStepIndex} ` +
+            `messageCount=${stepMessages.length} ` +
+            `roles=[${stepMessages.map((message) => message.role).join(', ')}]`,
+        );
 
         return {
-          messages: injectCacheBreakpoint(messages, registeredModel.sdkPackage),
+          messages: injectCacheBreakpoint(
+            stepMessages,
+            registeredModel.sdkPackage,
+          ),
         };
       },
       onChunk: ({ chunk }) => {
@@ -489,6 +630,12 @@ export class ChatExecutionService {
           (chunk.type === 'text-delta' || chunk.type === 'tool-call')
         ) {
           ttftRecorded = true;
+          const ttftMs = Math.round(performance.now() - streamStartedAt);
+
+          this.logger.log(
+            `[AI_CHAT] ttftMs=${ttftMs} firstChunkType=${chunk.type}`,
+          );
+
           this.metricsService.recordHistogram({
             key: MetricsKeys.AiChatTtftMs,
             value: performance.now() - streamStartedAt,
@@ -499,6 +646,12 @@ export class ChatExecutionService {
         }
       },
       experimental_onToolCallFinish: (event) => {
+        this.logger.log(
+          `[AI_CHAT] toolCallFinish tool=${event.toolCall.toolName} ` +
+            `toolCallId=${event.toolCall.toolCallId} ` +
+            `durationMs=${event.durationMs}`,
+        );
+
         this.metricsService.recordHistogram({
           key: MetricsKeys.AiChatToolExecutionDurationMs,
           value: event.durationMs,
@@ -511,6 +664,15 @@ export class ChatExecutionService {
         });
       },
       onStepFinish: async (step) => {
+        const currentStepIndex = ++stepIndex;
+        const stepLatencyMs = Math.round(performance.now() - stepStartedAt);
+        const toolNames = step.toolCalls.map(
+          (toolCall) => toolCall.toolName,
+        );
+        const cacheCreationTokens = extractCacheCreationTokens(
+          step.providerMetadata,
+        );
+
         this.metricsService.recordHistogram({
           key: MetricsKeys.AiChatStepLatencyMs,
           value: performance.now() - stepStartedAt,
@@ -519,33 +681,42 @@ export class ChatExecutionService {
           bucketBoundaries: AI_LATENCY_MS_BUCKET_BOUNDARIES,
         });
 
+        this.logger.log(
+          `[AI_CHAT_STEP] #${currentStepIndex} finishReason=${step.finishReason} ` +
+            `latencyMs=${stepLatencyMs} toolNames=[${toolNames.join(', ')}] ` +
+            `toolCallIds=[${step.toolCalls.map((toolCall) => toolCall.toolCallId).join(', ')}] ` +
+            `contentPartTypes=[${step.content.map((part) => part.type).join(', ')}]`,
+        );
+
+        this.logger.log(
+          `[AI_CHAT_TOKENS] step #${currentStepIndex} — ` +
+            `outputTokens=${step.usage.outputTokens ?? 0}, ` +
+            `reasoningTokens=${step.usage.outputTokenDetails?.reasoningTokens ?? 0}, ` +
+            `textTokens=${step.usage.outputTokenDetails?.textTokens ?? 0}, ` +
+            `inputTokens(fullContext)=${step.usage.inputTokens ?? 0}, ` +
+            `noCacheTokens=${step.usage.inputTokenDetails?.noCacheTokens ?? 0}, ` +
+            `cacheReadTokens=${step.usage.inputTokenDetails?.cacheReadTokens ?? 0}, ` +
+            `cacheWriteTokens=${step.usage.inputTokenDetails?.cacheWriteTokens ?? 0}, ` +
+            `cacheCreationTokens=${cacheCreationTokens}, ` +
+            `totalTokens=${step.usage.totalTokens ?? 0}`,
+        );
+
         const { hasNoMoreAvailableCredits: stepHasNoMoreAvailableCredits } =
           await this.aiBillingService.decrementAndCheckAvailableCredits(
             registeredModel.modelId,
             {
               usage: step.usage,
-              cacheCreationTokens: extractCacheCreationTokens(
-                step.providerMetadata,
-              ),
+              cacheCreationTokens,
             },
             workspace.id,
           );
 
         if (stepHasNoMoreAvailableCredits) {
           hasNoMoreAvailableCredits = true;
+          this.logger.warn(
+            `[AI_CHAT] step #${currentStepIndex} no more available credits`,
+          );
         }
-
-        this.logger.log(
-          `[AI_CHAT_TOKENS] step #${++stepIndex} — ` +
-            `toolCallIds=[${step.toolCalls.map((toolCall) => toolCall.toolCallId).join(', ')}]: ` +
-            `outputTokens=${step.usage.outputTokens ?? 0}, ` +
-            `reasoningTokens=${step.usage.outputTokenDetails?.reasoningTokens ?? 0}, ` +
-            `inputTokens(fullContext)=${step.usage.inputTokens ?? 0}, ` +
-            `cacheReadTokens=${step.usage.inputTokenDetails?.cacheReadTokens ?? 0}, ` +
-            `cacheWriteTokens=${step.usage.inputTokenDetails?.cacheWriteTokens ?? 0}, ` +
-            `cacheCreationTokens=${extractCacheCreationTokens(step.providerMetadata)}, ` +
-            `totalTokens=${step.usage.totalTokens ?? 0}`,
-        );
 
         for (const part of step.content) {
           if (part.type !== 'tool-result' && part.type !== 'tool-error') {
@@ -559,9 +730,17 @@ export class ChatExecutionService {
             part.type === 'tool-result' ? part.output : part.error,
           );
 
+          const resolvedName = resolveToolName(part);
+
+          this.logger.log(
+            `[AI_CHAT] toolResult step=#${currentStepIndex} ` +
+              `tool=${resolvedName} type=${part.type} succeeded=${succeeded} ` +
+              `outputTokens≈${outputTokens}`,
+          );
+
           const executionAttributes = {
             model: registeredModel.modelId,
-            tool: getToolMetricName(resolveToolName(part)),
+            tool: getToolMetricName(resolvedName),
           };
 
           this.metricsService.incrementCounterBy({
@@ -582,6 +761,9 @@ export class ChatExecutionService {
         }
       },
       onAbort: async ({ steps }) => {
+        this.logger.warn(
+          `[AI_CHAT] stream aborted after ${steps.length} steps`,
+        );
         await emitTurnUsageEvent(steps);
       },
       experimental_repairToolCall: async ({
@@ -590,6 +772,11 @@ export class ChatExecutionService {
         inputSchema,
         error,
       }) => {
+        this.logger.warn(
+          `[AI_CHAT] repairToolCall tool=${toolCall.toolName} ` +
+            `toolCallId=${toolCall.toolCallId} error=${error.message}`,
+        );
+
         return repairToolCall({
           toolCall,
           tools: toolsForRepair,
@@ -609,12 +796,19 @@ export class ChatExecutionService {
 
     Promise.all([stream.usage, stream.steps])
       .then(async ([, steps]) => {
+        this.logger.log(
+          `[AI_CHAT] stream completed steps=${steps.length}`,
+        );
         await emitTurnUsageEvent(steps);
       })
       .catch((error) => {
         if (error?.name === 'AbortError') {
+          this.logger.warn('[AI_CHAT] stream promise aborted');
           return;
         }
+        this.logger.error(
+          `[AI_CHAT] stream promise failed: ${error?.message ?? error}`,
+        );
         this.exceptionHandlerService.captureExceptions([error]);
       });
 

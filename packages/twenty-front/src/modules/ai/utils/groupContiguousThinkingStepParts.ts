@@ -2,6 +2,7 @@ import { type ExtendedUIMessagePart } from 'twenty-shared/ai';
 
 import { type AssistantMessageRenderItem } from '@/ai/utils/assistantMessageRenderItem';
 import { isAskQuestionsToolPart } from '@/ai/utils/isAskQuestionsToolPart';
+import { isCodeInterpreterToolPart } from '@/ai/utils/isCodeInterpreterToolPart';
 import { isThinkingStepPart } from '@/ai/utils/isThinkingStepPart';
 import { type ThinkingStepPart } from '@/ai/utils/thinkingStepPart';
 
@@ -26,7 +27,13 @@ export const groupContiguousThinkingStepParts = (
       continue;
     }
 
-    if (isThinkingStepPart(part) && !isAskQuestionsToolPart(part)) {
+    // Keep ask_questions and code_interpreter out of the JsonTree thinking group
+    // so their dedicated UIs (questions / Generated Files) stay visible after refetch.
+    if (
+      isThinkingStepPart(part) &&
+      !isAskQuestionsToolPart(part) &&
+      !isCodeInterpreterToolPart(part)
+    ) {
       currentThinkingParts.push(part);
       continue;
     }

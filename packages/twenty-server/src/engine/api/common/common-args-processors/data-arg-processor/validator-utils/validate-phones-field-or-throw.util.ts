@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import { isNull } from '@sniptt/guards';
+import { normalizePhonesFieldInput } from 'twenty-shared/utils';
 
 import { validateRawJsonFieldOrThrow } from 'src/engine/api/common/common-args-processors/data-arg-processor/validator-utils/validate-raw-json-field-or-throw.util';
 import { validateTextFieldOrThrow } from 'src/engine/api/common/common-args-processors/data-arg-processor/validator-utils/validate-text-field-or-throw.util';
@@ -13,7 +14,11 @@ export const validatePhonesFieldOrThrow = (
   value: unknown,
   fieldName: string,
 ): PhonesFieldGraphQLInput => {
-  const preValidatedValue = validateRawJsonFieldOrThrow(value, fieldName);
+  const normalizedValue = normalizePhonesFieldInput(value);
+  const preValidatedValue = validateRawJsonFieldOrThrow(
+    normalizedValue,
+    fieldName,
+  );
 
   if (isNull(preValidatedValue)) return null;
 
@@ -41,5 +46,5 @@ export const validatePhonesFieldOrThrow = (
     }
   }
 
-  return value as PhonesFieldGraphQLInput;
+  return preValidatedValue as PhonesFieldGraphQLInput;
 };

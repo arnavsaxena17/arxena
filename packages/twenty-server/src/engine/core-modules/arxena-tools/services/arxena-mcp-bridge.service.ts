@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { existsSync } from 'fs';
 import * as path from 'path';
 
 import { isDefined } from 'twenty-shared/utils';
@@ -24,13 +25,50 @@ export class ArxenaMcpBridgeService {
       return process.env.MCP_SERVER_SCRIPT_PATH;
     }
 
-    return path.join(
-      process.cwd(),
-      'packages',
-      'twenty-mcp-server',
-      'dist',
-      'index.js',
+    // nx start runs with cwd=packages/twenty-server; monorepo root also works.
+    // __dirname fallback: dist/.../arxena-tools/services → packages/
+    const candidates = [
+      path.join(
+        process.cwd(),
+        'packages',
+        'twenty-mcp-server',
+        'dist',
+        'index.js',
+      ),
+      path.join(
+        process.cwd(),
+        '..',
+        'twenty-mcp-server',
+        'dist',
+        'index.js',
+      ),
+      path.resolve(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        '..',
+        '..',
+        'twenty-mcp-server',
+        'dist',
+        'index.js',
+      ),
+    ];
+
+    const existingPath = candidates.find((candidatePath) =>
+      existsSync(candidatePath),
     );
+
+    if (!isDefined(existingPath)) {
+      this.logger.warn(
+        `MCP server script not found. Tried: ${candidates.join(', ')}`,
+      );
+
+      return candidates[0];
+    }
+
+    return existingPath;
   }
 
   private resolveServerBaseUrl(): string {

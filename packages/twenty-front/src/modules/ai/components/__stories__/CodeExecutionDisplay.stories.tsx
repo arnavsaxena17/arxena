@@ -164,6 +164,8 @@ print("Files exported successfully!")`,
     // Filenames may be truncated, check by title attribute
     expect(await canvas.findByTitle('report.csv')).toBeInTheDocument();
     expect(await canvas.findByTitle('data.json')).toBeInTheDocument();
+    expect(await canvas.findByText('Click to preview')).toBeInTheDocument();
+    expect(await canvas.findByTitle('Preview report.csv')).toBeInTheDocument();
   },
 };
 
