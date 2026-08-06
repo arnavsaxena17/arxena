@@ -304,22 +304,37 @@ export class UnipileWebhookService {
   private async handleMessageWebhook(payload: UnipileMessageWebhook): Promise<void> {
     const { account_id, account_type, event, chat_id, message_id, message, sender, timestamp } = payload;
 
+    // Cache message content for deletion tracking on receipt. Runs for all
+    // messages, including group chats, so a later-deleted group message can be
+    // recovered with its original body.
     if (event === 'message_received' && message?.trim()) {
       await this.attachmentStorage.cacheMessageContentForDeletionTracking(
         payload,
       );
     }
 
-    // WhatsApp group chats: Unipile lists every participant in `attendees`; more than four means a group — skip logging and CRM processing.
-    if (
+    // WhatsApp group chats: Unipile lists every participant in `attendees`;
+    // more than four means a group. We still log the event and cache content
+    // above, but skip the heavier CRM ingestion below to avoid noise.
+    const isGroupMessage =
       event === 'message_received' &&
       account_type === 'WHATSAPP' &&
-      payload.attendees.length > 4
-    ) {
+      (payload.attendees?.length ?? 0) > 4;
+
+    this.logger.log(
+      `Message event: ${event} in chat ${chat_id} from ${sender.attendee_name}${isGroupMessage ? ' (group)' : ''}`,
+    );
+
+    if (isGroupMessage) {
+      if (message?.trim()) {
+        this.logger.log(
+          `Group message received from ${sender.attendee_name}: "${message.substring(0, 200)}"`,
+        );
+      }
+      // Group messages are logged and cached for deletion tracking, but not
+      // ingested into the CRM pipeline.
       return;
     }
-
-    this.logger.log(`Message event: ${event} in chat ${chat_id} from ${sender.attendee_name}`);
 
     // TODO: Process message based on event type
     // This would typically involve:
@@ -816,13 +831,22 @@ export class UnipileWebhookService {
       is_group,
       attendees,
     } = payload;
-    
-    this.logger.log(`Message deleted: ${message_id}, message: ${message}, sender: ${sender.attendee_name}, timestamp: ${timestamp}, account_type: ${account_type}, chat_id: ${chat_id}, account_id: ${account_id}, provider_chat_id: ${provider_chat_id}, is_group: ${is_group}, attachments: ${attachments}`);
-    
+
     try {
+      // Recover the original body from the content cache when the delete
+      // webhook carries no text (common for group chats).
+      const cache = this.attachmentStorage.readDeletedMessageContentCacheForRecovery();
+      const cachedEntry = cache[message_id] ?? null;
+      const recoveredMessage =
+        message?.trim() || cachedEntry?.message?.trim() || '';
+
+      this.logger.log(
+        `Message deleted: ${message_id}, message: ${recoveredMessage}, sender: ${sender.attendee_name}, timestamp: ${timestamp}, account_type: ${account_type}, chat_id: ${chat_id}, account_id: ${account_id}, provider_chat_id: ${provider_chat_id}, is_group: ${is_group}, attachments: ${attachments}`,
+      );
+
       await this.attachmentStorage.saveDeletedMessage({
         message_id,
-        message: message || null,
+        message: recoveredMessage || message || null,
         sender,
         timestamp,
         account_type,
@@ -835,10 +859,14 @@ export class UnipileWebhookService {
         attendees,
       });
 
-      const attachmentInfo = attachments 
-        ? (Array.isArray(attachments) ? `${attachments.length} attachment(s)` : '1 attachment')
+      const attachmentInfo = attachments
+        ? Array.isArray(attachments)
+          ? `${attachments.length} attachment(s)`
+          : '1 attachment'
         : 'no attachments';
-      this.logger.log(`Saved deleted message entry for: ${message_id} (${attachmentInfo})`);
+      this.logger.log(
+        `Saved deleted message entry for: ${message_id} (${attachmentInfo})`,
+      );
     } catch (error) {
       this.logger.error(`Error saving deleted message ${message_id}:`, error);
     }

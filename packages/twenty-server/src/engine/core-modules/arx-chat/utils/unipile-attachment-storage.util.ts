@@ -86,6 +86,18 @@ export class UnipileAttachmentStorageUtil {
   }
 
   /**
+   * Read the cached message content store for deletion recovery.
+   * Used by the delete handler to recover a group message body that the
+   * delete webhook did not include.
+   */
+  readDeletedMessageContentCacheForRecovery(): Record<
+    string,
+    DeletedMessageContentCacheEntry
+  > {
+    return this.readDeletedMessageContentCache();
+  }
+
+  /**
    * Cache message content so delete webhooks with empty bodies can still be recovered.
    */
   async cacheMessageContentForDeletionTracking(
