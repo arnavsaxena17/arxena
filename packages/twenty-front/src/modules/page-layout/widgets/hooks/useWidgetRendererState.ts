@@ -109,6 +109,7 @@ export const useWidgetRendererState = (widget: PageLayoutWidget) => {
     pageLayoutType: currentPageLayout.type,
     isMobile,
     isInSidePanel,
+    widgetType: widget.type,
   });
 
   const isInVerticalListTab =

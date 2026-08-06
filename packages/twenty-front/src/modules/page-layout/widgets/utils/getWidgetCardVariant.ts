@@ -1,5 +1,5 @@
 import { type TabPresentation } from '@/page-layout/types/TabPresentation';
-import { PageLayoutType } from '~/generated-metadata/graphql';
+import { PageLayoutType, WidgetType } from '~/generated-metadata/graphql';
 import { type WidgetCardVariant } from '~/modules/page-layout/widgets/types/WidgetCardVariant';
 
 type GetWidgetCardVariantParams = {
@@ -8,6 +8,7 @@ type GetWidgetCardVariantParams = {
   pageLayoutType: PageLayoutType | null;
   isMobile: boolean;
   isInSidePanel: boolean;
+  widgetType?: WidgetType;
 };
 
 export const getWidgetCardVariant = ({
@@ -16,12 +17,14 @@ export const getWidgetCardVariant = ({
   pageLayoutType,
   isMobile,
   isInSidePanel,
+  widgetType,
 }: GetWidgetCardVariantParams): WidgetCardVariant => {
   const isSideColumnContext = isInPinnedTab || isMobile || isInSidePanel;
 
-  // Solo is full-bleed on wide record pages, but in a narrow side column
-  // (side panel / mobile / pinned tab) it needs the same inset as stacked
-  // widgets so field values are not flush against the edge.
+  // Solo is full-bleed on wide record pages for canvas-like widgets
+  // (Timeline, Tasks, …). Fields have no internal horizontal padding, so
+  // solo Fields need an inset variant or values sit flush against the edge.
+  // Same inset applies in a narrow side column (side panel / mobile / pinned).
   if (presentation === 'solo') {
     const isRecordPageLayout =
       pageLayoutType === PageLayoutType.RECORD_PAGE ||
@@ -30,6 +33,10 @@ export const getWidgetCardVariant = ({
 
     if (isSideColumnContext && isRecordPageLayout) {
       return 'side-column';
+    }
+
+    if (isRecordPageLayout && widgetType === WidgetType.FIELDS) {
+      return 'record-page';
     }
 
     return 'solo';

@@ -1,5 +1,5 @@
 import { getWidgetCardVariant } from '@/page-layout/widgets/utils/getWidgetCardVariant';
-import { PageLayoutType } from '~/generated-metadata/graphql';
+import { PageLayoutType, WidgetType } from '~/generated-metadata/graphql';
 
 const baseParams = {
   isInPinnedTab: false,
@@ -44,6 +44,28 @@ describe('getWidgetCardVariant', () => {
         ).toBe('side-column');
       },
     );
+
+    it("returns 'record-page' for solo Fields on wide record pages", () => {
+      expect(
+        getWidgetCardVariant({
+          ...baseParams,
+          presentation: 'solo',
+          pageLayoutType: PageLayoutType.RECORD_PAGE,
+          widgetType: WidgetType.FIELDS,
+        }),
+      ).toBe('record-page');
+    });
+
+    it("keeps 'solo' for non-Fields widgets on wide record pages", () => {
+      expect(
+        getWidgetCardVariant({
+          ...baseParams,
+          presentation: 'solo',
+          pageLayoutType: PageLayoutType.RECORD_PAGE,
+          widgetType: WidgetType.TIMELINE,
+        }),
+      ).toBe('solo');
+    });
 
     it("keeps 'solo' for dashboard even in side panel", () => {
       expect(
