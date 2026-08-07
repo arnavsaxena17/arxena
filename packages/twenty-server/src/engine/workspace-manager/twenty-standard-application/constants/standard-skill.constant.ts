@@ -44,6 +44,9 @@ export const STANDARD_SKILL = {
   'linkedin-search': {
     universalIdentifier: '20202020-c4e8-4f7a-9b2d-1e6a0c8f5d3b',
   },
+  'gtm-icp-onboarding': {
+    universalIdentifier: '20202020-a7c3-4e91-8b5f-2d6e9f1a4c80',
+  },
 } as const satisfies Record<
   string,
   {

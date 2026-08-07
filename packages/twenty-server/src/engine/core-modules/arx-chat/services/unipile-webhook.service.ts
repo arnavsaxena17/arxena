@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
 import { graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
@@ -37,6 +38,7 @@ export class UnipileWebhookService {
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
+    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.unipileWebhookQueue)
     private readonly unipileWebhookQueueService?: MessageQueueService,
@@ -145,7 +147,7 @@ export class UnipileWebhookService {
         await this.handleAccountStatusWebhook(payload as UnipileAccountStatusWebhook);
       } else if ('event' in payload) {
         const eventPayload = payload as UnipileMessageWebhook | UnipileEmailWebhook | UnipileTrackingEmailWebhook | UnipileNewRelationWebhook;
-        
+
         switch (eventPayload.event) {
           case 'message_received':
           case 'message_reaction':
@@ -155,22 +157,22 @@ export class UnipileWebhookService {
           case 'message_delivered':
             await this.handleMessageWebhook(eventPayload as UnipileMessageWebhook);
             break;
-          
+
           case 'email_received':
           case 'email_sent':
           case 'email_read':
             await this.handleEmailWebhook(eventPayload as UnipileEmailWebhook);
             break;
-          
+
           case 'email_opened':
           case 'email_clicked':
             await this.handleTrackingEmailWebhook(eventPayload as UnipileTrackingEmailWebhook);
             break;
-          
+
           case 'new_relation':
             await this.handleNewRelationWebhook(eventPayload as UnipileNewRelationWebhook);
             break;
-          
+
           default:
             this.logger.warn(`Unknown webhook event type: ${(eventPayload as any).event}`);
         }
@@ -188,7 +190,7 @@ export class UnipileWebhookService {
    */
   validateWebhookAuth(authHeader: string): boolean {
     const expectedAuth = process.env.UNIPILE_WEBHOOK_SECRET;
-    
+
     if (!expectedAuth) {
       this.logger.warn('UNIPILE_WEBHOOK_SECRET not configured, skipping authentication');
       return true;
@@ -217,7 +219,7 @@ export class UnipileWebhookService {
   } {
     // Use the configured webhook URL or generate one based on the server URL
     const webhookUrl = config.request_url || `${process.env.SERVER_URL}/linkedin-unipile/webhook`;
-    
+
     // Default headers for webhook authentication and content type
     const defaultHeaders = [
       {
@@ -246,7 +248,7 @@ export class UnipileWebhookService {
    */
   private async handleAccountStatusWebhook(payload: UnipileAccountStatusWebhook): Promise<void> {
     const { account_id, account_type, message: status, name } = payload.AccountStatus;
-    
+
     this.logger.log(`Account status update: ${account_id} (${account_type}) - ${status} for name ${name}`);
 
     // TODO: Update account status in database
@@ -254,45 +256,45 @@ export class UnipileWebhookService {
     // 1. Finding the connected account by account_id
     // 2. Updating the status in the database
     // 3. Triggering notifications if needed (e.g., for CREDENTIALS status)
-    
+
     switch (status) {
       case 'OK':
         this.logger.log(`Account ${account_id} is working properly`);
         await this.onAccountStatusOK(account_id, account_type);
         break;
-      
+
       case 'CREDENTIALS':
         this.logger.warn(`Account ${account_id} requires credential update for name ${name}`);
         await this.onAccountCredentialsRequired(account_id, account_type);
         break;
-      
+
       case 'ERROR':
       case 'STOPPED':
         this.logger.error(`Account ${account_id} has stopped working: ${status} for name ${name}`);
         await this.onAccountError(account_id, account_type, status);
         break;
-      
+
       case 'CREATION_SUCCESS':
       case 'RECONNECTED':
         this.logger.log(`Account ${account_id} successfully connected: ${status} for name ${name}`);
         await this.onAccountConnected(account_id, account_type, status, name);
         break;
-      
+
       case 'SYNC_SUCCESS':
         this.logger.log(`Account ${account_id} synchronization completed for name ${name}`);
         await this.onAccountSyncCompleted(account_id, account_type);
         break;
-      
+
       case 'CONNECTING':
         this.logger.log(`Account ${account_id} is attempting to connect for name ${name}`);
         await this.onAccountConnecting(account_id, account_type);
         break;
-      
+
       case 'DELETED':
         this.logger.log(`Account ${account_id} has been deleted for name ${name}`);
         await this.onAccountDeleted(account_id, account_type);
         break;
-      
+
       default:
         this.logger.warn(`Unknown account status: ${status} for account ${account_id}`);
     }
@@ -348,30 +350,30 @@ export class UnipileWebhookService {
         // Check if message is from connected account or external contact
         const isFromConnectedUser = payload.account_info?.user_id === sender.attendee_provider_id;
         this.logger.log(`New message ${isFromConnectedUser ? 'sent' : 'received'}: "${message?.substring(0, 100)}..."`);
-        
+
         await this.onMessageReceived(payload, isFromConnectedUser);
         break;
-      
+
       case 'message_reaction':
         this.logger.log(`Message reaction: ${payload.reaction} on message ${message_id}`);
         await this.onMessageReaction(payload);
         break;
-      
+
       case 'message_read':
         this.logger.log(`Message read: ${message_id}`);
         await this.onMessageRead(payload);
         break;
-      
+
       case 'message_edited':
         this.logger.log(`Message edited: ${message_id}`);
         await this.onMessageEdited(payload);
         break;
-      
+
       case 'message_deleted':
         this.logger.log(`Message deleted: ${message_id}`);
         await this.onMessageDeleted(payload);
         break;
-      
+
       case 'message_delivered':
         this.logger.log(`Message delivered: ${message_id}`);
         await this.onMessageDelivered(payload);
@@ -384,7 +386,7 @@ export class UnipileWebhookService {
    */
   private async handleEmailWebhook(payload: UnipileEmailWebhook): Promise<void> {
     const { account_id, account_type, event, email_id, subject, from, to } = payload;
-    
+
     this.logger.log(`Email event: ${event} - "${subject}" from ${from} to ${to.join(', ')}`);
 
     // TODO: Process email based on event type
@@ -398,12 +400,12 @@ export class UnipileWebhookService {
         this.logger.log(`New email received: ${email_id}`);
         await this.onEmailReceived(payload);
         break;
-      
+
       case 'email_sent':
         this.logger.log(`Email sent: ${email_id}`);
         await this.onEmailSent(payload);
         break;
-      
+
       case 'email_read':
         this.logger.log(`Email read: ${email_id}`);
         await this.onEmailRead(payload);
@@ -416,7 +418,7 @@ export class UnipileWebhookService {
    */
   private async handleTrackingEmailWebhook(payload: UnipileTrackingEmailWebhook): Promise<void> {
     const { account_id, event, email_id, tracking_data } = payload;
-    
+
     this.logger.log(`Email tracking event: ${event} for email ${email_id}`);
 
     // TODO: Update email tracking data
@@ -430,7 +432,7 @@ export class UnipileWebhookService {
         this.logger.log(`Email opened: ${email_id} from IP ${tracking_data.ip_address}`);
         await this.onEmailOpened(payload);
         break;
-      
+
       case 'email_clicked':
         this.logger.log(`Email clicked: ${email_id}`);
         await this.onEmailClicked(payload);
@@ -600,7 +602,7 @@ export class UnipileWebhookService {
   // Message event handlers
   private async onMessageReceived(payload: UnipileMessageWebhook, isFromConnectedUser: boolean): Promise<void> {
     const { account_type, attachments } = payload;
-    
+
     try {
       // Handle attachments if present
       if (attachments) {
@@ -636,14 +638,14 @@ export class UnipileWebhookService {
   private async handleAttachments(payload: UnipileMessageWebhook): Promise<void> {
     try {
       const { attachments, sender, account_type, message_id, timestamp, account_id } = payload;
-      
+
       if (!attachments) {
         return;
       }
 
       // Normalize attachments to array
-      const attachmentsArray: UnipileWebhookAttachment[] = Array.isArray(attachments) 
-        ? attachments 
+      const attachmentsArray: UnipileWebhookAttachment[] = Array.isArray(attachments)
+        ? attachments
         : [attachments];
 
       if (attachmentsArray.length === 0) {
@@ -700,7 +702,7 @@ export class UnipileWebhookService {
 
   private async onMessageRead(payload: UnipileMessageWebhook): Promise<void> {
     const { message_id, account_type } = payload;
-    
+
     this.logger.log(`Processing message read status for message: ${message_id} (${account_type})`);
 
     try {
@@ -874,7 +876,7 @@ export class UnipileWebhookService {
 
   private async onMessageDelivered(payload: UnipileMessageWebhook): Promise<void> {
     const { message_id, account_type } = payload;
-    
+
     this.logger.log(`Processing message delivered status for message: ${message_id} (${account_type})`);
 
     try {
@@ -1056,6 +1058,16 @@ export class UnipileWebhookService {
       );
       await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(syntheticMessagePayload);
       this.logger.log(`Processed new relation as "Yes, I'm keen" for ${name}`);
+
+      const apiToken = await this.resolveWorkspaceApiToken(workspaceId);
+      if (apiToken) {
+        await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+          linkedinUrl: profileUrl,
+          event: 'connection_accepted',
+          apiToken,
+          messagingChannel: 'linkedin-connect',
+        });
+      }
     } catch (error) {
       this.logger.error(`Error processing new relation for ${name}:`, error);
       throw error;
@@ -1063,6 +1075,64 @@ export class UnipileWebhookService {
   }
 
   private async onConnectionIgnored(payload: UnipileNewRelationWebhook): Promise<void> {
-    // No action for ignored connections
+    const { account_id, user_profile_url, relation } = payload;
+    const profileUrl = user_profile_url ?? relation?.profile_url;
+
+    if (!profileUrl) {
+      return;
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId(
+        account_id,
+      );
+
+    if (!workspaceId) {
+      return;
+    }
+
+    const apiToken = await this.resolveWorkspaceApiToken(workspaceId);
+
+    if (!apiToken) {
+      return;
+    }
+
+    await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+      linkedinUrl: profileUrl,
+      event: 'connection_ignored',
+      apiToken,
+      messagingChannel: 'linkedin-connect',
+    });
+  }
+
+  private async resolveWorkspaceApiToken(
+    workspaceId: string,
+  ): Promise<string | null> {
+    try {
+      const apiKeys =
+        await this.workspaceQueryService.apiKeyService.findActiveByWorkspaceId(
+          workspaceId,
+        );
+
+      if (!apiKeys?.length) {
+        return null;
+      }
+
+      const tokenResult =
+        await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+          workspaceId,
+          apiKeys[0].id,
+        );
+
+      return tokenResult?.token ?? null;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve workspace API token for GTM materialize: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return null;
+    }
   }
 }

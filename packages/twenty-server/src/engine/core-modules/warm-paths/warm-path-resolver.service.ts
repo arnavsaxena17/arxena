@@ -11,6 +11,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInNetworkDistanceType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 
 import type {
   ResolveWarmPathsParams,
@@ -41,6 +42,7 @@ export class WarmPathResolverService {
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
   ) {}
 
   async resolve(params: ResolveWarmPathsParams): Promise<WarmPathResolveResponse> {
@@ -197,6 +199,14 @@ export class WarmPathResolverService {
       clusters,
       networkDistance,
     );
+
+    if (directMutuals.length > 0 || bridges.length > 0 || paths.length > 0) {
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl: params.targetLinkedinUrl,
+        event: 'warm_path_found',
+        apiToken: params.apiToken,
+      });
+    }
 
     return {
       target: {

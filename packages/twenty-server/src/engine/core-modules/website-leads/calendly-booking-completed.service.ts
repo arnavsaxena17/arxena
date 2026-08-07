@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
+import { CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
 import { OpportunityWorkspaceEntity } from 'src/modules/opportunity/standard-objects/opportunity.workspace-entity';
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 
@@ -121,6 +122,40 @@ export class CalendlyBookingCompletedService {
       meetingScheduledAt,
       stage: 'MEETING',
     });
+
+    const companyId = opportunity.companyId ?? person.companyId;
+
+    if (companyId) {
+      try {
+        const companyRepository =
+          await this.twentyORMGlobalManager.getRepositoryForWorkspace(
+            workspaceId,
+            CompanyWorkspaceEntity,
+          );
+        const company = await companyRepository.findOne({
+          where: { id: companyId },
+        });
+        const meetingBookedAtIso = meetingScheduledAt.toISOString();
+
+        await companyRepository.update(companyId, {
+          meetingBookedAt:
+            (company as { meetingBookedAt?: string | null } | null)
+              ?.meetingBookedAt ?? meetingBookedAtIso,
+          gtmFunnelStage: 'MEETING_BOOKED',
+          gtmStatus: 'MEETING_BOOKED',
+        } as Partial<CompanyWorkspaceEntity> & {
+          meetingBookedAt: string;
+          gtmFunnelStage: string;
+          gtmStatus: string;
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Could not materialize company meeting booked for Calendly: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
 
     this.logger.log(
       `Marked opportunity ${opportunity.id} meeting scheduled for ${normalizedEmail} (event=${calendlyEventUri ?? 'n/a'}, invitee=${calendlyInviteeUri ?? 'n/a'})`,

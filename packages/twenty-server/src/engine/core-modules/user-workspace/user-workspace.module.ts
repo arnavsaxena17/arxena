@@ -10,9 +10,11 @@ import { EnterpriseModule } from 'src/engine/core-modules/enterprise/enterprise.
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { OnboardingModule } from 'src/engine/core-modules/onboarding/onboarding.module';
+import { WorkspaceMemberProfileSyncListener } from 'src/engine/core-modules/user-workspace/listeners/workspace-member-profile-sync.listener';
 import { UserWorkspaceEntityCacheProviderService } from 'src/engine/core-modules/user-workspace/services/user-workspace-entity-cache-provider.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
+import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-invitation/workspace-invitation.module';
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
@@ -45,7 +47,12 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
     FeatureFlagModule,
     CoreEntityCacheModule,
   ],
-  exports: [UserWorkspaceService],
-  providers: [UserWorkspaceService, UserWorkspaceEntityCacheProviderService],
+  exports: [UserWorkspaceService, WorkspaceMemberProfileProvisioningService],
+  providers: [
+    UserWorkspaceService,
+    UserWorkspaceEntityCacheProviderService,
+    WorkspaceMemberProfileProvisioningService,
+    WorkspaceMemberProfileSyncListener,
+  ],
 })
 export class UserWorkspaceModule {}

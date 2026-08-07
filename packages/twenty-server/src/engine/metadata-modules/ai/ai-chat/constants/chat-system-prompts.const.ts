@@ -18,6 +18,7 @@ Examples:
 - User asks to create a workflow → \`load_skills(["workflow-building"])\` then learn and execute workflow tools
 - User asks to export data to Excel → \`load_skills(["xlsx", "code-interpreter"])\` then \`learn_tools({toolNames: ["code_interpreter"]})\` then \`execute_tool({toolName: "code_interpreter", arguments: {...}})\`
 - User asks to search LinkedIn / Sales Nav / Recruiter / Harvest people → \`load_skills(["linkedin-search"])\` then learn and execute the LinkedIn/People search tools from that skill
+- User is onboarding GTM Command / defining ICP or outreach preferences → \`load_skills(["gtm-icp-onboarding"])\` then use \`ask_questions\` and update the GTM Project (\`icpSpec\`, send mode, caps)
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
 

@@ -11,6 +11,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 import { IcpExtractionService } from 'src/engine/core-modules/org-chart-outreach/icp-extraction.service';
 import type {
@@ -119,6 +120,7 @@ export class IcpOutreachMessageService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly whatsappOutboundRateLimiter: WhatsappOutboundRateLimiterService,
+    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
   ) {}
 
   private whatsappMessaging(): WhatsappUnipileMessagingService {
@@ -194,6 +196,7 @@ export class IcpOutreachMessageService {
       execution = await this.executeLinkedinInvite({
         providerId: target.providerId,
         message: composed.message,
+        linkedinUrl: resolveLinkedinProfileUrl(targetIdentifier),
         ...this.authParams(params),
       });
     }
@@ -292,6 +295,9 @@ export class IcpOutreachMessageService {
       execution = await this.executePostComment({
         postId: resolved.post.id ?? resolved.post.socialId,
         text: comments[0],
+        linkedinUrl: personIdentifier
+          ? resolveLinkedinProfileUrl(personIdentifier)
+          : undefined,
         ...this.authParams(params),
       });
     }
@@ -328,11 +334,25 @@ export class IcpOutreachMessageService {
     if (providedEmail) {
       contact = { emails: [providedEmail], source: 'provided' };
     } else {
+      const linkedinUrl = resolveLinkedinProfileUrl(params.targetIdentifier);
+
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl,
+        event: 'enrich_started',
+        apiToken: params.apiToken,
+      });
+
       const enriched = await this.contactEnrichmentWaterfallService.fetchContacts(
-        resolveLinkedinProfileUrl(params.targetIdentifier),
+        linkedinUrl,
         { wantEmail: true, wantPhone: false },
       );
       contact = { emails: enriched.emails, source: enriched.source };
+
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl,
+        event: enriched.emails.length > 0 ? 'enrich_found' : 'enrich_failed',
+        apiToken: params.apiToken,
+      });
     }
     const toEmail = providedEmail ?? contact.emails[0];
 
@@ -344,6 +364,7 @@ export class IcpOutreachMessageService {
         message: composed.message,
         apiToken: params.apiToken,
         workspaceMemberId: params.workspaceMemberId,
+        linkedinUrl: resolveLinkedinProfileUrl(params.targetIdentifier),
       });
     }
 
@@ -377,11 +398,25 @@ export class IcpOutreachMessageService {
     if (providedPhone) {
       contact = { phones: [providedPhone], source: 'provided' };
     } else {
+      const linkedinUrl = resolveLinkedinProfileUrl(params.targetIdentifier);
+
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl,
+        event: 'enrich_started',
+        apiToken: params.apiToken,
+      });
+
       const enriched = await this.contactEnrichmentWaterfallService.fetchContacts(
-        resolveLinkedinProfileUrl(params.targetIdentifier),
+        linkedinUrl,
         { wantEmail: false, wantPhone: true },
       );
       contact = { phones: enriched.phones, source: enriched.source };
+
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl,
+        event: enriched.phones.length > 0 ? 'enrich_found' : 'enrich_failed',
+        apiToken: params.apiToken,
+      });
     }
     const toPhone = providedPhone ?? contact.phones[0];
 
@@ -391,6 +426,7 @@ export class IcpOutreachMessageService {
         toPhone,
         message: composed.message,
         apiToken: params.apiToken,
+        linkedinUrl: resolveLinkedinProfileUrl(params.targetIdentifier),
       });
     }
 
@@ -676,7 +712,11 @@ export class IcpOutreachMessageService {
   }
 
   private async executeLinkedinInvite(
-    input: AuthParams & { providerId: string; message: string },
+    input: AuthParams & {
+      providerId: string;
+      message: string;
+      linkedinUrl?: string;
+    },
   ): Promise<IcpExecutionResult> {
     try {
       await this.linkedinUnipileEstimateAccountService.withOutreachLinkedinSession(
@@ -701,6 +741,16 @@ export class IcpOutreachMessageService {
       this.logger.log(
         `ICP connection request sent providerId=${input.providerId}`,
       );
+
+      if (input.linkedinUrl) {
+        await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+          linkedinUrl: input.linkedinUrl,
+          event: 'connection_sent',
+          apiToken: input.apiToken,
+          messagingChannel: 'linkedin-connect',
+        });
+      }
+
       return { attempted: true, success: true };
     } catch (error) {
       this.logger.warn(
@@ -716,7 +766,11 @@ export class IcpOutreachMessageService {
   }
 
   private async executePostComment(
-    input: AuthParams & { postId?: string; text?: string },
+    input: AuthParams & {
+      postId?: string;
+      text?: string;
+      linkedinUrl?: string;
+    },
   ): Promise<GenerateIcpCommentResponse['execution']> {
     if (!input.postId) {
       return {
@@ -739,6 +793,16 @@ export class IcpOutreachMessageService {
         text: input.text,
         ...this.authParams(input),
       });
+
+      if (result.success && input.linkedinUrl) {
+        await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+          linkedinUrl: input.linkedinUrl,
+          event: 'comment_posted',
+          apiToken: input.apiToken,
+          messagingChannel: 'comment',
+        });
+      }
+
       return {
         attempted: true,
         success: result.success,
@@ -763,6 +827,7 @@ export class IcpOutreachMessageService {
     message: string;
     apiToken: string;
     workspaceMemberId: string;
+    linkedinUrl?: string;
   }): Promise<IcpExecutionResult> {
     if (!input.toEmail) {
       return {
@@ -809,6 +874,16 @@ export class IcpOutreachMessageService {
       this.logger.log(
         `ICP email send to=${input.toEmail} success=${!sendError && Boolean(sendResponse)}`,
       );
+
+      if (!sendError && Boolean(sendResponse) && input.linkedinUrl) {
+        await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+          linkedinUrl: input.linkedinUrl,
+          event: 'outbound_message',
+          apiToken: input.apiToken,
+          messagingChannel: 'email',
+        });
+      }
+
       return {
         attempted: true,
         success: !sendError && Boolean(sendResponse),
@@ -827,6 +902,7 @@ export class IcpOutreachMessageService {
     toPhone?: string;
     message: string;
     apiToken: string;
+    linkedinUrl?: string;
   }): Promise<IcpExecutionResult> {
     if (!input.toPhone) {
       return {
@@ -845,6 +921,16 @@ export class IcpOutreachMessageService {
     this.logger.log(
       `ICP whatsapp send to=${input.toPhone} status=${result.status}`,
     );
+
+    if (result.status === 'success' && input.linkedinUrl) {
+      await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+        linkedinUrl: input.linkedinUrl,
+        event: 'outbound_message',
+        apiToken: input.apiToken,
+        messagingChannel: 'whatsapp-unipile',
+      });
+    }
+
     return {
       attempted: true,
       success: result.status === 'success',

@@ -10,6 +10,7 @@ import { CreateCalendarEventService } from 'src/modules/calendar/calendar-event-
 import { type ComposedCalendarEvent } from 'src/modules/calendar/calendar-event-creation-manager/types/composed-calendar-event.type';
 import { CalendarSaveEventsService } from 'src/modules/calendar/calendar-event-import-manager/services/calendar-save-events.service';
 import { type FetchedCalendarEvent } from 'src/modules/calendar/common/types/fetched-calendar-event';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
 const composedEvent = (
   provider: ConnectedAccountProvider,
@@ -58,6 +59,17 @@ describe('CreateCalendarEventService', () => {
           provide: CalendarSaveEventsService,
           useValue: {
             saveCalendarEventsAndEnqueueContactCreationJob: saveCalendarEvents,
+          },
+        },
+        {
+          provide: GlobalWorkspaceOrmManager,
+          useValue: {
+            executeInWorkspaceContext: jest.fn(async (fn: () => unknown) =>
+              fn(),
+            ),
+            getRepository: jest.fn().mockResolvedValue({
+              update: jest.fn(),
+            }),
           },
         },
       ],

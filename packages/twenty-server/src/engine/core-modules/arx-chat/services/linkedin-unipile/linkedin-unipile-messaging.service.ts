@@ -13,6 +13,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 /**
@@ -76,12 +77,12 @@ export class LinkedinUnipileMessagingService {
 
   async truncateLinkedInInvitationMessage(message: string, whatappUpdateMessageObj: whatappUpdateMessageObjType, candidateJob: Project, apiToken: string): Promise<string> {
     const maxLength = 300;
-    
+
     if (message.length <= maxLength) {
       return message;
     }
-  
-      
+
+
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -94,23 +95,23 @@ export class LinkedinUnipileMessagingService {
       return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
     }
 
-  
+
     // For other messages, try to preserve the key elements
     // Extract candidate name if present
     const nameMatch = message.match(/Hey (\w+),/);
     const candidateName = nameMatch ? nameMatch[1] : 'there';
-  
+
     // Create a simplified message
     const simplifiedMessage = `Hi ${candidateName}, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
-    
+
     // If still too long, use the most basic version
     if (simplifiedMessage.length > maxLength) {
       return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
     }
-  
+
     return simplifiedMessage;
   }
-  
+
   private async makeRequest<T>(
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
@@ -118,7 +119,7 @@ export class LinkedinUnipileMessagingService {
     isFormData: boolean = false,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const headers: Record<string, string> = {
       'Accept': 'application/json',
       'X-API-KEY': this.accessToken,
@@ -171,7 +172,7 @@ export class LinkedinUnipileMessagingService {
       const attendeeId = attendeesIds[i];
       const convertedId = await this.getProviderId(accountId, attendeeId);
       convertedAttendeesIds.push(convertedId);
-      
+
       // Wait 1 second before the next request (except for the last one)
       if (i < attendeesIds.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -181,23 +182,23 @@ export class LinkedinUnipileMessagingService {
     console.log("This is the converted attendees ids length!!!", convertedAttendeesIds.length);
 
     const formData = new FormData();
-    
+
     formData.append('account_id', accountId);
     formData.append('attendees_ids', convertedAttendeesIds.join(','));
     formData.append('text', message);
-    
+
     if (attachments && attachments.length > 0) {
       formData.append('attachments', JSON.stringify(attachments));
     }
-    
+
     if (voiceMessage) {
       formData.append('voice_message', voiceMessage);
     }
-    
+
     if (videoMessage) {
       formData.append('video_message', videoMessage);
     }
-    
+
     if (subject) {
       formData.append('subject', subject);
     }
@@ -241,9 +242,9 @@ export class LinkedinUnipileMessagingService {
       if (urlParts.length !== 2) {
         throw new Error('Invalid LinkedIn URL format');
       }
-      
+
       const publicIdentifier = urlParts[1].replace(/\/$/, ''); // Remove trailing slash
-      
+
       console.log('Converting LinkedIn URL to provider_id:', {
         linkedinUrl,
         publicIdentifier,
@@ -299,7 +300,7 @@ export class LinkedinUnipileMessagingService {
         `/api/v1/users/${providerIdOrUrl}?account_id=${accountId}`,
         'GET',
       );
-      
+
       if (response && (response as any).provider_id) {
         return (response as any).provider_id;
       } else {
@@ -455,16 +456,16 @@ export class LinkedinUnipileMessagingService {
   ): Promise<{ status: 'success' | 'failed'; message?: string; method?: 'message' | 'invitation' }> {
     // Convert all attendee IDs to proper provider_ids and store them for potential reuse
     const convertedAttendeesIds: string[] = [];
-    
+
     try {
       console.log("This is the account id to which we are sending the message or invitation!!!", accountId);
       console.log("This is the attendees ids to which we are sending the message or invitation!!!", attendeesIds);
-      
+
       for (let i = 0; i < attendeesIds.length; i++) {
         const attendeeId = attendeesIds[i];
         const convertedId = await this.getProviderId(accountId, attendeeId);
         convertedAttendeesIds.push(convertedId);
-        
+
         // Wait 1 second before the next request (except for the last one)
         if (i < attendeesIds.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -475,23 +476,23 @@ export class LinkedinUnipileMessagingService {
 
       // First try to send a message using the converted provider IDs
       const formData = new FormData();
-      
+
       formData.append('account_id', accountId);
       formData.append('attendees_ids', convertedAttendeesIds.join(','));
       formData.append('text', message);
-      
+
       if (attachments && attachments.length > 0) {
         formData.append('attachments', JSON.stringify(attachments));
       }
-      
+
       if (voiceMessage) {
         formData.append('voice_message', voiceMessage);
       }
-      
+
       if (videoMessage) {
         formData.append('video_message', videoMessage);
       }
-      
+
       if (subject) {
         formData.append('subject', subject);
       }
@@ -509,40 +510,40 @@ export class LinkedinUnipileMessagingService {
       return { status: 'success', method: 'message' };
     } catch (error: any) {
       console.log('LinkedIn message failed, checking for subscription error:', error.response?.data);
-      
+
       // Check if it's a subscription required error (403) or no connection error (422)
-      if ((error.response?.status === 403 && 
+      if ((error.response?.status === 403 &&
            error.response?.data?.type === 'errors/subscription_required') ||
-          (error.response?.status === 422 && 
+          (error.response?.status === 422 &&
            error.response?.data?.type === 'errors/no_connection_with_recipient')) {
-        
+
         console.log('Subscription required or no connection, sending invitation instead');
-        
+
         try {
           // Truncate message for LinkedIn invitation (max 300 characters)
           const truncatedMessage = await this.truncateLinkedInInvitationMessage(message, whatappUpdateMessageObj, candidateJob, apiToken);
-          
+
           // Send invitation to each attendee using the already converted provider IDs
           for (let i = 0; i < attendeesIds.length; i++) {
             const attendeeId = attendeesIds[i];
             const convertedId = convertedAttendeesIds[i];
             await this.sendInvitation(accountId, attendeeId, truncatedMessage, convertedId);
           }
-          
+
           console.log('LinkedIn invitations sent successfully');
           return { status: 'success', method: 'invitation' };
         } catch (inviteError: any) {
           console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
-          return { 
-            status: 'failed', 
-            message: 'Failed to send both message and invitation' 
+          return {
+            status: 'failed',
+            message: 'Failed to send both message and invitation'
           };
         }
       } else {
         console.error('LinkedIn message failed with non-subscription error:', error.response?.data || error.message);
-        return { 
-          status: 'failed', 
-          message: error.response?.data?.detail || error.message 
+        return {
+          status: 'failed',
+          message: error.response?.data?.detail || error.message
         };
       }
     }
@@ -581,14 +582,14 @@ export class LinkedinUnipileMessagingService {
 
       // Get the LinkedIn profile ID for the candidate
       const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-      
+
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
       }
 
       const messageText = whatappUpdateMessageObj.messages[0].content;
-      
+
       console.log('Sending LinkedIn message to which we are sending the message!!!', {
         accountId: linkedinAccountId,
         attendeeId: linkedinProfileId,
@@ -603,7 +604,7 @@ export class LinkedinUnipileMessagingService {
         linkedinAccountId,
         [linkedinProfileId],
         messageText,
-        
+
       );
 
       if (result.status === 'success') {
@@ -628,14 +629,38 @@ export class LinkedinUnipileMessagingService {
           apiToken,
         );
 
-        const updateCandidateStatusObj = await new UpdateChat(
+        const isInvitation = result.method === 'invitation';
+
+        await new UpdateChat(
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).updateCandidateEngagementStatus(
           candidate,
           whatappUpdateMessageObj,
           apiToken,
+          {
+            messagingChannelOverride: isInvitation
+              ? 'linkedin-connect'
+              : 'linkedin',
+            skipGtmMaterialize: isInvitation,
+          },
         );
+
+        if (isInvitation) {
+          await materializeCandidateEventWithGraphQL({
+            staticGraphQLService: this.staticGraphQLService,
+            candidateId: candidate.id,
+            event: 'connection_sent',
+            apiToken,
+            messagingChannel: 'linkedin-connect',
+            existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
+              ?.firstOutboundAt,
+            companyId:
+              candidate.projects?.companyId ??
+              (candidate.projects as { company?: { id?: string } } | undefined)
+                ?.company?.id,
+          });
+        }
       }
 
       return result;
@@ -678,14 +703,14 @@ export class LinkedinUnipileMessagingService {
 
       // Get the LinkedIn profile ID for the candidate
       const linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-      
+
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
       }
 
       const messageText = whatappUpdateMessageObj.messages[0].content;
-      
+
       console.log('Sending LinkedIn InMail:', {
         accountId: linkedinAccountId,
         attendeeId: linkedinProfileId,
@@ -736,6 +761,7 @@ export class LinkedinUnipileMessagingService {
           candidate,
           whatappUpdateMessageObj,
           apiToken,
+          { messagingChannelOverride: 'linkedin-inmail' },
         );
       }
 
@@ -785,7 +811,7 @@ export class LinkedinUnipileMessagingService {
       }
 
       linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-      
+
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
@@ -794,16 +820,16 @@ export class LinkedinUnipileMessagingService {
       // Convert LinkedIn profile ID to proper provider_id if needed
       actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
 
-      const messageText = attachmentMessage.message || 
+      const messageText = attachmentMessage.message ||
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
 
       // Create FormData for attachment
       const formData = new FormData();
-      
+
       formData.append('account_id', linkedinAccountId);
       formData.append('attendees_ids', actualProviderId);
       formData.append('text', messageText);
-      
+
       // Add the file attachment
       if (attachmentMessage.fileData.fileBuffer) {
         formData.append('attachments', attachmentMessage.fileData.fileBuffer, {
@@ -826,20 +852,20 @@ export class LinkedinUnipileMessagingService {
       return { status: 'success' };
     } catch (error: any) {
       console.log('LinkedIn attachment message failed, checking for subscription error:', error.response?.data);
-      
+
       // Check if it's a subscription required error (403) or no connection error (422)
-      if ((error.response?.status === 403 && 
+      if ((error.response?.status === 403 &&
            error.response?.data?.type === 'errors/subscription_required') ||
-          (error.response?.status === 422 && 
+          (error.response?.status === 422 &&
            error.response?.data?.type === 'errors/no_connection_with_recipient')) {
-        
+
         console.log('Subscription required or no connection, sending invitation instead');
-        
+
         try {
           // Send invitation as fallback using the already fetched provider ID
-          const messageText = attachmentMessage.message || 
+          const messageText = attachmentMessage.message ||
             `Sharing ${attachmentMessage.fileData.fileName} with you`;
-          
+
           if (linkedinAccountId && linkedinProfileId && actualProviderId) {
             await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText, actualProviderId);
             console.log('LinkedIn invitation sent successfully');
@@ -849,16 +875,16 @@ export class LinkedinUnipileMessagingService {
           }
         } catch (inviteError: any) {
           console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
-          return { 
-            status: 'failed', 
-            message: 'Failed to send both message and invitation' 
+          return {
+            status: 'failed',
+            message: 'Failed to send both message and invitation'
           };
         }
       } else {
         console.error('LinkedIn attachment message failed with non-subscription error:', error.response?.data || error.message);
-        return { 
-          status: 'failed', 
-          message: error.response?.data?.detail || error.message 
+        return {
+          status: 'failed',
+          message: error.response?.data?.detail || error.message
         };
       }
     }
@@ -903,7 +929,7 @@ export class LinkedinUnipileMessagingService {
       }
 
       linkedinProfileId = candidate.people?.linkedinLink?.primaryLinkUrl?.split('/').pop();
-      
+
       if (!linkedinProfileId) {
         console.log('LinkedIn profile ID not found for candidate');
         return { status: 'failed', message: 'LinkedIn profile not found for candidate' };
@@ -912,7 +938,7 @@ export class LinkedinUnipileMessagingService {
       // Convert LinkedIn profile ID to proper provider_id if needed
       actualProviderId = await this.getProviderId(linkedinAccountId, linkedinProfileId);
 
-      const messageText = attachmentMessage.message || 
+      const messageText = attachmentMessage.message ||
         `Sharing ${attachmentMessage.fileData.fileName} with you`;
 
       let apiType = "classic";
@@ -925,15 +951,15 @@ export class LinkedinUnipileMessagingService {
         }
       // Create FormData for InMail attachment
       const formData = new FormData();
-      
+
       formData.append('account_id', linkedinAccountId);
       formData.append('attendees_ids', actualProviderId);
       formData.append('text', messageText);
-      
+
       // Add LinkedIn InMail specific parameters
       formData.append('linkedin[api]', apiType);
       formData.append('linkedin[inmail]', 'true');
-      
+
       // Add the file attachment
       if (attachmentMessage.fileData.fileBuffer) {
         formData.append('attachments', attachmentMessage.fileData.fileBuffer, {
@@ -956,20 +982,20 @@ export class LinkedinUnipileMessagingService {
       return { status: 'success' };
     } catch (error: any) {
       console.log('LinkedIn InMail attachment message failed, checking for subscription error:', error.response?.data);
-      
+
       // Check if it's a subscription required error (403) or no connection error (422)
-      if ((error.response?.status === 403 && 
+      if ((error.response?.status === 403 &&
            error.response?.data?.type === 'errors/subscription_required') ||
-          (error.response?.status === 422 && 
+          (error.response?.status === 422 &&
            error.response?.data?.type === 'errors/no_connection_with_recipient')) {
-        
+
         console.log('Subscription required or no connection, sending invitation instead');
-        
+
         try {
           // Send invitation as fallback using the already fetched provider ID
-          const messageText = attachmentMessage.message || 
+          const messageText = attachmentMessage.message ||
             `Sharing ${attachmentMessage.fileData.fileName} with you`;
-          
+
           if (linkedinAccountId && linkedinProfileId && actualProviderId) {
             await this.sendInvitation(linkedinAccountId, linkedinProfileId, messageText, actualProviderId);
             console.log('LinkedIn invitation sent successfully');
@@ -979,16 +1005,16 @@ export class LinkedinUnipileMessagingService {
           }
         } catch (inviteError: any) {
           console.error('LinkedIn invitation failed:', inviteError.response?.data || inviteError.message);
-          return { 
-            status: 'failed', 
-            message: 'Failed to send both InMail and invitation' 
+          return {
+            status: 'failed',
+            message: 'Failed to send both InMail and invitation'
           };
         }
       } else {
         console.error('LinkedIn InMail attachment message failed with non-subscription error:', error.response?.data || error.message);
-        return { 
-          status: 'failed', 
-          message: error.response?.data?.detail || error.message 
+        return {
+          status: 'failed',
+          message: error.response?.data?.detail || error.message
         };
       }
     }

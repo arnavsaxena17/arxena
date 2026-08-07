@@ -7,6 +7,7 @@ import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -134,6 +135,12 @@ describe('IcpOutreachMessageService', () => {
         {
           provide: WhatsappOutboundRateLimiterService,
           useValue: {},
+        },
+        {
+          provide: GtmCommandMaterializeService,
+          useValue: {
+            applyEventByLinkedinUrl: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

@@ -23,6 +23,7 @@ import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.s
 import { extractFileIdFromUrl } from 'src/engine/core-modules/file/files-field/utils/extract-file-id-from-url.util';
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
 import { WorkspaceDiscoverability } from 'src/engine/core-modules/workspace/types/workspace-discoverability.type';
@@ -66,6 +67,7 @@ export class UserWorkspaceService {
     private readonly fileUrlService: FileUrlService,
     private readonly onboardingService: OnboardingService,
     private readonly coreEntityCacheService: CoreEntityCacheService,
+    private readonly workspaceMemberProfileProvisioningService: WorkspaceMemberProfileProvisioningService,
   ) {}
 
   async findById(id: string): Promise<UserWorkspaceEntity | null> {
@@ -142,6 +144,7 @@ export class UserWorkspaceService {
     >,
   ) {
     const authContext = buildSystemAuthContext(workspaceId);
+    let createdWorkspaceMember: WorkspaceMemberWorkspaceEntity | null = null;
 
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
       const workspaceMemberRepository =
@@ -188,7 +191,19 @@ export class UserWorkspaceService {
         workspaceMember?.length === 1,
         `Error while creating workspace member ${user.email} on workspace ${workspaceId}`,
       );
+
+      createdWorkspaceMember = workspaceMember[0];
     }, authContext);
+
+    // After arxena standard objects exist (workspace init) or on invite to an
+    // existing workspace, tag a recruiter workspaceMemberProfile to this member.
+    if (isDefined(createdWorkspaceMember)) {
+      await this.workspaceMemberProfileProvisioningService.ensureWorkspaceMemberProfileForNewMember(
+        workspaceId,
+        createdWorkspaceMember.id,
+        createdWorkspaceMember,
+      );
+    }
   }
 
   async addUserToWorkspaceIfUserNotInWorkspace(

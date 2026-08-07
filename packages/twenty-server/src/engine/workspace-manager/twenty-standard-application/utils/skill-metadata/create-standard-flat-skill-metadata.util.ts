@@ -137,6 +137,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Searching LinkedIn people, companies, jobs, and posts via Unipile (classic, Sales Navigator, Recruiter) and Harvest People API',
     icon: 'IconBrandLinkedin',
   }),
+  'gtm-icp-onboarding': createStandardSkillBuilder({
+    skillName: 'gtm-icp-onboarding',
+    name: 'gtm-icp-onboarding',
+    label: 'GTM ICP Onboarding',
+    description:
+      'Conversational GTM Command bootstrap: collect ICP and outreach preferences in Ask AI, persist on Project, hand off to company/people discovery',
+    icon: 'IconTargetArrow',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 
+import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { CalDavCreateEventService } from 'src/modules/calendar/calendar-event-creation-manager/drivers/caldav/services/caldav-create-event.service';
 import { GoogleCalendarCreateEventService } from 'src/modules/calendar/calendar-event-creation-manager/drivers/google-calendar/services/google-calendar-create-event.service';
 import { MicrosoftCalendarCreateEventService } from 'src/modules/calendar/calendar-event-creation-manager/drivers/microsoft-calendar/services/microsoft-calendar-create-event.service';
@@ -12,6 +14,7 @@ import {
 import { CalendarSaveEventsService } from 'src/modules/calendar/calendar-event-import-manager/services/calendar-save-events.service';
 import { type ComposedCalendarEvent } from 'src/modules/calendar/calendar-event-creation-manager/types/composed-calendar-event.type';
 import { type FetchedCalendarEvent } from 'src/modules/calendar/common/types/fetched-calendar-event';
+import { type CalendarEventWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-event.workspace-entity';
 
 @Injectable()
 export class CreateCalendarEventService {
@@ -22,6 +25,7 @@ export class CreateCalendarEventService {
     private readonly microsoftCalendarCreateEventService: MicrosoftCalendarCreateEventService,
     private readonly calDavCreateEventService: CalDavCreateEventService,
     private readonly calendarSaveEventsService: CalendarSaveEventsService,
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
 
   async createComposedCalendarEvent(
@@ -66,9 +70,53 @@ export class CreateCalendarEventService {
         data.connectedAccount,
         workspaceId,
       );
+
+      await this.markEventAsGtmSourced(createdEvent, workspaceId);
     } catch (persistenceError) {
       this.logger.warn(
         `Failed to persist created calendar event (sync will recover): ${persistenceError}`,
+      );
+    }
+  }
+
+  private async markEventAsGtmSourced(
+    createdEvent: FetchedCalendarEvent,
+    workspaceId: string,
+  ): Promise<void> {
+    if (!createdEvent.iCalUid && !createdEvent.id) {
+      return;
+    }
+
+    try {
+      const authContext = buildSystemAuthContext(workspaceId);
+
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const calendarEventRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CalendarEventWorkspaceEntity>(
+              workspaceId,
+              'calendarEvent',
+            );
+
+          const where = createdEvent.iCalUid
+            ? { iCalUid: createdEvent.iCalUid }
+            : { id: createdEvent.id };
+
+          await calendarEventRepository.update(where, {
+            gtmSourced: true,
+            meetingOutcome: 'BOOKED',
+          } as Partial<CalendarEventWorkspaceEntity> & {
+            gtmSourced: boolean;
+            meetingOutcome: string;
+          });
+        },
+        authContext,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to mark calendar event as GTM-sourced: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
     }
   }

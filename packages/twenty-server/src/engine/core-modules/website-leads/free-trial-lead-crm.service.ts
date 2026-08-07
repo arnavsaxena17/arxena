@@ -224,11 +224,32 @@ export class FreeTrialLeadCrmService {
       position: lastOpportunityPosition + 1,
       companyId: company.id,
       pointOfContactId: person.id,
+      sourcedFromGtm: true,
+      gtmRunKey: 'website-free-trial',
       createdBy: {
         source: FieldActorSource.SYSTEM,
         name: 'Website Free Trial',
       },
+    } as OpportunityWorkspaceEntity & {
+      sourcedFromGtm: boolean;
+      gtmRunKey: string;
     });
+
+    try {
+      await companyRepository.update(company.id, {
+        gtmFunnelStage: 'OPPORTUNITY',
+        gtmStatus: 'OPPORTUNITY',
+      } as Partial<CompanyWorkspaceEntity> & {
+        gtmFunnelStage: string;
+        gtmStatus: string;
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Could not bump company GTM funnel for free-trial lead: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
 
     const opportunityObjectMetadata =
       await this.objectMetadataRepository.findOne({

@@ -1404,5 +1404,50 @@
         "supportsReasoning": true
       }
     ]
+  },
+  "openrouter": {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": "openrouter",
+    "label": "OpenRouter",
+    "baseUrl": "https://api.openrouter.ai/api/v1",
+    "apiKey": "{{OPENROUTER_API_KEY}}",
+    "models": [
+      {
+        "name": "tencent/hy3:free",
+        "label": "Tencent HY3 (free)",
+        "inputCostPerMillionTokens": 0,
+        "outputCostPerMillionTokens": 0,
+        "contextWindowTokens": 131072,
+        "maxOutputTokens": 8192
+      },
+      {
+        "name": "google/gemini-2.5-flash",
+        "label": "Gemini 2.5 Flash (fallback)",
+        "modelFamily": "GEMINI",
+        "inputCostPerMillionTokens": 0.3,
+        "outputCostPerMillionTokens": 2.5,
+        "contextWindowTokens": 1048576,
+        "maxOutputTokens": 65536,
+        "modalities": ["image", "audio", "video", "pdf"],
+        "supportsReasoning": true
+      }
+    ]
+  },
+  "nous": {
+    "npm": "@ai-sdk/openai-compatible",
+    "name": "nous",
+    "label": "Nous",
+    "baseUrl": "https://api.nousresearch.com/v1",
+    "apiKey": "{{NOUS_API_KEY}}",
+    "models": [
+      {
+        "name": "tencent/hy3:free",
+        "label": "Tencent HY3 (free)",
+        "inputCostPerMillionTokens": 0,
+        "outputCostPerMillionTokens": 0,
+        "contextWindowTokens": 131072,
+        "maxOutputTokens": 8192
+      }
+    ]
   }
 }

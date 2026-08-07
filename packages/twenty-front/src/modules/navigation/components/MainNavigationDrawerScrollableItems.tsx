@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { NavigationDrawerOpenedSection } from '@/navigation-menu-item/display/sections/components/NavigationDrawerOpenedSection';
+import { GtmHomeNavigationDrawerItem } from '@/navigation/components/GtmHomeNavigationDrawerItem';
 import { OrgChartsNavigationDrawerItems } from '@/navigation/components/OrgChartsNavigationDrawerItems';
 import { ProjectsNavigationDrawerItems } from '@/navigation/components/ProjectsNavigationDrawerItems';
 import { NavigationDrawerWorkspaceSectionSkeletonLoader } from '@/object-metadata/components/NavigationDrawerWorkspaceSectionSkeletonLoader';
@@ -32,6 +33,7 @@ const StyledScrollableItemsContainer = styled.div`
 export const MainNavigationDrawerScrollableItems = () => {
   return (
     <StyledScrollableItemsContainer>
+      <GtmHomeNavigationDrawerItem />
       <ProjectsNavigationDrawerItems />
       <OrgChartsNavigationDrawerItems />
       <NavigationDrawerOpenedSection />

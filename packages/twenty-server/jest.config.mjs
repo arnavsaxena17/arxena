@@ -15,6 +15,7 @@ const jestConfig = {
   displayName: 'twenty-server',
   rootDir: './',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jest.env-setup.ts'],
   setupFilesAfterEnv: ['./setupTests.ts'],
   transformIgnorePatterns: [
     // jsdom 29 pulls ESM-only transitive deps (parse5, entities, tough-cookie,

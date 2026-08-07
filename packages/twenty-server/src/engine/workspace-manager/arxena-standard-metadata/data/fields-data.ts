@@ -2,6 +2,10 @@ import {
   type ArxenaFieldDefinition,
   type ArxenaFieldWithObject,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
+import {
+  getGtmCommandFieldsData,
+  GTM_MESSAGING_CHANNEL_OPTIONS,
+} from 'src/engine/workspace-manager/arxena-standard-metadata/data/gtm-command-fields.data';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
 
 export const getFieldsData = (
@@ -2030,7 +2034,8 @@ export const getFieldsData = (
         label: 'Messaging Channel',
         name: 'messagingChannel',
         objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
+        type: 'SELECT',
+        options: GTM_MESSAGING_CHANNEL_OPTIONS,
       },
     },
     {
@@ -2543,6 +2548,7 @@ export const getFieldsData = (
     //     type: 'LINKS',
     //   },
     // },
+    ...getGtmCommandFieldsData(objectsNameIdMap),
   ];
 
   return allFields

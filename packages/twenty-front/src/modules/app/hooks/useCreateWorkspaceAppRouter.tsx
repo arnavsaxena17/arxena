@@ -51,6 +51,12 @@ const AssistantPage = lazy(() =>
   })),
 );
 
+const GtmHomePage = lazy(() =>
+  import('@/gtm-home/components/GtmHomePage').then((module) => ({
+    default: module.GtmHomePage,
+  })),
+);
+
 const ClientCandidateSearchPage = lazy(() =>
   import('@/candidate-search/Search').then((module) => ({
     default: module.Search,
@@ -288,6 +294,16 @@ const createWorkspaceAppRouter = (
                   <LazyRoute>
                     <Suspense fallback={null}>
                       <AssistantPage />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.GtmHome}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <GtmHomePage />
                     </Suspense>
                   </LazyRoute>
                 }

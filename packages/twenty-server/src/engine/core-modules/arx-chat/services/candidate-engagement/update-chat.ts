@@ -33,6 +33,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { materializeCandidateTouchWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
 import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
@@ -132,6 +133,19 @@ export class UpdateChat {
       console.log(
         `Successfully updated candidate status to "Interview Completed" for candidate ${candidateId}`,
       );
+
+      await materializeCandidateTouchWithGraphQL({
+        staticGraphQLService: this.staticGraphQLService,
+        candidateId,
+        touch: 'meeting_held',
+        apiToken,
+        companyId: (candidate as { projects?: { companyId?: string; company?: { id?: string } } })
+          ?.projects?.companyId
+          ?? (candidate as { projects?: { company?: { id?: string } } })?.projects
+            ?.company?.id,
+        messagingChannel: (candidate as { messagingChannel?: string })
+          ?.messagingChannel,
+      });
     } catch (error) {
       console.error('Error updating meeting status after completion:', error);
     }
@@ -855,6 +869,10 @@ export class UpdateChat {
     candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
+    options?: {
+      messagingChannelOverride?: string | null;
+      skipGtmMaterialize?: boolean;
+    },
   ) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
 
@@ -869,6 +887,31 @@ export class UpdateChat {
     };
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
+
+      if (!options?.skipGtmMaterialize) {
+        const touch =
+          whatappUpdateMessageObj.messageType === 'botMessage'
+            ? 'outbound'
+            : 'inbound';
+
+        await materializeCandidateTouchWithGraphQL({
+          staticGraphQLService: this.staticGraphQLService,
+          candidateId: candidate?.id,
+          touch,
+          apiToken,
+          existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
+            ?.firstOutboundAt,
+          companyId:
+            (candidate as { projects?: { companyId?: string; company?: { id?: string } } })
+              ?.projects?.companyId
+            ?? (candidate as { projects?: { company?: { id?: string } } })?.projects
+              ?.company?.id,
+          messagingChannel:
+            options?.messagingChannelOverride ??
+            (candidate as { messagingChannel?: string })?.messagingChannel,
+        });
+      }
+
       return response.data;
     } catch (error) {
       console.log('Error in updating candidate status::', error);

@@ -24,6 +24,8 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] Soft-retire `/assistant` toward Ask AI
 - [x] Selection evaluation harness + `tools_in_context` logging
 - [x] Object-level database CRUD tool access (`none` for video interview*, `read` for orgChart) via `OBJECT_DATABASE_CRUD_TOOL_ACCESS`
+- [x] GTM ICP onboarding skill (`gtm-icp-onboarding`) + `/gtm-home` Ask AI kickoff
+- [x] GTM ephemeral companies (Redis `/gtm-command/cache/companies` per projectId; CRM Company on enroll only)
 
 ## Bucket B — Nest `core-modules`
 
@@ -36,6 +38,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `candidate-sourcing`
 - [x] `candidate-avatar`
 - [x] `contact-enrichment`
+- [x] `gtm-command` (materialize + outreach throttle; seed Workflow B/C via `setup-gtm-outreach-workflow.ts`)
 - [x] `workspace-modifications`
 - [x] `people-api`
 - [x] `search-models`
