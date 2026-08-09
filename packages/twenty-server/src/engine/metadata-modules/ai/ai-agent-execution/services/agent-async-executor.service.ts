@@ -237,11 +237,16 @@ export class AgentAsyncExecutorService {
 
       let hasNoMoreAvailableCredits = false;
 
+      const modelConfig = this.aiModelRegistryService.getEffectiveModelConfig(
+        registeredModel.modelId,
+      );
+
       const textResponse = await generateText({
         system: `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent ? agent.prompt : ''}`,
         tools,
         model: registeredModel.model,
         prompt: userPrompt,
+        maxOutputTokens: modelConfig.maxOutputTokens,
         stopWhen: (step) =>
           stepCountIs(AGENT_CONFIG.MAX_STEPS)(step) ||
           hasNoMoreAvailableCredits,
@@ -351,9 +356,13 @@ export class AgentAsyncExecutorService {
 
                  Please generate the structured output based on the execution results and context above.`,
           output: Output.object({ schema: jsonSchema(agentSchema) }),
+          maxOutputTokens: modelConfig.maxOutputTokens,
           providerOptions: getCallLevelProviderOptions({
             sdkPackage: registeredModel.sdkPackage,
-            providerOptions: undefined,
+            providerOptions:
+              this.aiModelConfigService.getReasoningProviderOptions(
+                registeredModel,
+              ),
             promptCacheKey: agent?.id,
           }),
           experimental_telemetry: AI_TELEMETRY_CONFIG,

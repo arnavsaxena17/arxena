@@ -17,5 +17,7 @@ export const aiProviderConfigSchema = z.object({
   accessKeyId: z.string().optional(),
   secretAccessKey: z.string().optional(),
   sessionToken: z.string().optional(),
+  // When true, openai-compatible providers send json_schema (workflow AI fields)
+  supportsStructuredOutputs: z.boolean().optional(),
   models: z.array(aiProviderModelConfigSchema).optional(),
 });

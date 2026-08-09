@@ -9,6 +9,7 @@ import {
   AI_SDK_ANTHROPIC,
   AI_SDK_BEDROCK,
   AI_SDK_OPENAI,
+  AI_SDK_OPENAI_COMPATIBLE,
   AI_SDK_XAI,
 } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-sdk-package.const';
 import {
@@ -27,6 +28,8 @@ export class AiModelConfigService {
         return this.getAnthropicProviderOptions(model);
       case AI_SDK_BEDROCK:
         return this.getBedrockProviderOptions(model);
+      case AI_SDK_OPENAI_COMPATIBLE:
+        return this.getOpenAiCompatibleReasoningProviderOptions(model);
       default:
         return {};
     }
@@ -136,6 +139,27 @@ export class AiModelConfigService {
         thinking: {
           type: 'enabled',
           budgetTokens: AGENT_CONFIG.REASONING_BUDGET_TOKENS,
+        },
+      },
+    };
+  }
+
+  // OpenRouter/Nous enable thinking by default for hy3 unless effort is set.
+  // Always send an explicit effort so short calls still return text.
+  private getOpenAiCompatibleReasoningProviderOptions(
+    model: RegisteredAiModel,
+  ): ProviderOptions {
+    if (
+      model.providerName !== 'openrouter' &&
+      model.providerName !== 'nous'
+    ) {
+      return {};
+    }
+
+    return {
+      [model.providerName]: {
+        reasoning: {
+          effort: model.supportsReasoning === true ? 'medium' : 'none',
         },
       },
     };

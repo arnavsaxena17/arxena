@@ -1,4 +1,10 @@
-import type { AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
+type AssistantTableData = {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  tableId?: string;
+  tableType?: string;
+  label?: string;
+};
 
 export type OrgChartPreview = {
   companyId: string;

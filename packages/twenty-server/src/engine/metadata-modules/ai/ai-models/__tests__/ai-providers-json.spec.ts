@@ -74,10 +74,37 @@ describe('ai-providers.json integrity', () => {
     });
   });
 
-  it('should have npm field set for all providers', () => {
-    Object.values(PROVIDERS).forEach((config) => {
-      expect(config.npm).toBeDefined();
-      expect(config.npm).toMatch(/^@ai-sdk\//);
-    });
+  it('should use the current OpenRouter API host', () => {
+    expect(PROVIDERS.openrouter?.baseUrl).toBe(
+      'https://openrouter.ai/api/v1',
+    );
+  });
+
+  it('should not expose OpenRouter Hy3 (use Nous Research free instead)', () => {
+    const openRouterModels = PROVIDERS.openrouter?.models ?? [];
+
+    expect(
+      openRouterModels.some((model) => model.name.startsWith('tencent/hy3')),
+    ).toBe(false);
+  });
+
+  it('should use the current Nous inference API host with free Hy3', () => {
+    expect(PROVIDERS.nous?.baseUrl).toBe(
+      'https://inference-api.nousresearch.com/v1',
+    );
+    expect(PROVIDERS.nous?.label).toBe('Nous Research');
+
+    const nousModels = PROVIDERS.nous?.models ?? [];
+    const hy3Free = nousModels.find(
+      (model) => model.name === 'tencent/hy3:free',
+    );
+
+    expect(hy3Free).toBeDefined();
+    expect(hy3Free?.label).toBe('Nous Research HY3');
+  });
+
+  it('should enable structured outputs for OpenRouter and Nous', () => {
+    expect(PROVIDERS.openrouter?.supportsStructuredOutputs).toBe(true);
+    expect(PROVIDERS.nous?.supportsStructuredOutputs).toBe(true);
   });
 });

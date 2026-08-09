@@ -14,11 +14,7 @@ export type GtmOutreachStage =
   | 'negotiating'
   | 'meeting_booked';
 
-export type GtmMainTab =
-  | 'companies'
-  | 'people'
-  | 'workflow'
-  | 'market_map';
+export type GtmMainTab = 'companies' | 'people' | 'workflow';
 
 export type GtmOutreachSendMode = 'AUTO' | 'APPROVAL';
 
@@ -68,13 +64,6 @@ export type GtmPersonRow = {
   doNotContact?: boolean;
   pendingChannel?: string;
   candidateId?: string;
-};
-
-export type GtmMarketSegment = {
-  id: string;
-  label: string;
-  description: string;
-  companyCount: number;
 };
 
 export type GtmProjectOption = {
@@ -151,31 +140,57 @@ export type GtmIcpOnboardingKickoffInput = {
 export const buildGtmIcpOnboardingKickoffPrompt = (
   input: GtmIcpOnboardingKickoffInput,
 ): string => {
-  const proposedIcpSummary = input.proposedIcp
-    ? JSON.stringify({
-        name: input.proposedIcp.name,
-        industries: input.proposedIcp.industries,
-        employeeRange: input.proposedIcp.employeeRange,
-        geos: input.proposedIcp.geos,
-        buyerTitles: input.proposedIcp.buyerTitles,
-        painSignals: input.proposedIcp.painSignals,
-        stdFunctions: input.proposedIcp.stdFunctions ?? [],
-        stdGrades: input.proposedIcp.stdGrades ?? [],
-      })
-    : 'none';
+  const company = input.workspaceCompany;
+  const projectLabel = input.projectName
+    ? `"${input.projectName}"`
+    : input.projectId
+      ? `this GTM run`
+      : 'a new GTM run';
+
+  const companyBlurb = [
+    `We're ${company.name} (${company.domain})`,
+    company.industry ? `in ${company.industry}` : null,
+    company.employeeRange ? `${company.employeeRange} people` : null,
+    company.hq ? `HQ ${company.hq}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const proposedIcp = input.proposedIcp;
+  const draftLines = proposedIcp
+    ? [
+        '',
+        `I already have a rough ICP draft called "${proposedIcp.name}" — feel free to challenge or refine it:`,
+        proposedIcp.industries.length > 0
+          ? `- Industries: ${proposedIcp.industries.join(', ')}`
+          : null,
+        proposedIcp.employeeRange
+          ? `- Company size: ${proposedIcp.employeeRange}`
+          : null,
+        proposedIcp.geos.length > 0
+          ? `- Geos: ${proposedIcp.geos.join(', ')}`
+          : null,
+        proposedIcp.buyerTitles.length > 0
+          ? `- Buyer titles: ${proposedIcp.buyerTitles.join(', ')}`
+          : null,
+        proposedIcp.painSignals.length > 0
+          ? `- Pain signals: ${proposedIcp.painSignals.join('; ')}`
+          : null,
+        (proposedIcp.stdFunctions?.length ?? 0) > 0
+          ? `- Functions: ${(proposedIcp.stdFunctions ?? []).join(', ')}`
+          : null,
+        (proposedIcp.stdGrades?.length ?? 0) > 0
+          ? `- Grades: ${(proposedIcp.stdGrades ?? []).join(', ')}`
+          : null,
+      ].filter(Boolean)
+    : [];
 
   return [
-    'Start GTM Command Workflow A (bootstrap) ICP onboarding in this chat.',
-    'Load skill gtm-icp-onboarding first, then interview me with ask_questions about ICP and outreach preferences.',
-    'Persist approved preferences on the active GTM Project (icpSpec, icpSegment, outreachSendMode, caps).',
-    'Companies on GTM Command stay ephemeral until people are enrolled; then upsert CRM Company + Candidate.projectsId.',
-    `projectId: ${input.projectId ?? 'none — create or select a GTM Project first'}`,
-    `projectName: ${input.projectName ?? 'none'}`,
-    `workspaceCompany: ${input.workspaceCompany.name} (${input.workspaceCompany.domain})`,
-    `industry: ${input.workspaceCompany.industry}`,
-    `summary: ${input.workspaceCompany.summary}`,
-    `size: ${input.workspaceCompany.employeeRange}`,
-    `hq: ${input.workspaceCompany.hq}`,
-    `proposedIcpDraft: ${proposedIcpSummary}`,
+    `Hey — help me set up ICP and outreach preferences for ${projectLabel} on GTM Command.`,
+    companyBlurb +
+      (company.summary ? `. ${company.summary}` : '.') +
+      (input.projectId ? ` Project id: ${input.projectId}.` : ''),
+    'Walk me through who we should sell to, buyer personas, send mode (approval vs auto), and caps — ask questions as we go, then save what we agree on to this GTM Project.',
+    ...draftLines,
   ].join('\n');
 };

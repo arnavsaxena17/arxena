@@ -4,6 +4,7 @@ import { AGENT_CONFIG } from 'src/engine/metadata-modules/ai/ai-agent/constants/
 import {
   AI_SDK_ANTHROPIC,
   AI_SDK_OPENAI,
+  AI_SDK_OPENAI_COMPATIBLE,
   AI_SDK_XAI,
 } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-sdk-package.const';
 import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
@@ -203,5 +204,62 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
     };
 
     expect(service.getReasoningProviderOptions(xaiModel)).toEqual({});
+  });
+
+  it('disables OpenRouter reasoning when the model does not support it', () => {
+    const openRouterModel: RegisteredAiModel = {
+      modelId: 'openrouter/tencent/hy3',
+      sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
+      model: {} as RegisteredAiModel['model'],
+      supportsReasoning: false,
+      providerName: 'openrouter',
+      rawProvider: {},
+    };
+
+    expect(service.getReasoningProviderOptions(openRouterModel)).toEqual({
+      openrouter: {
+        reasoning: {
+          effort: 'none',
+        },
+      },
+    });
+  });
+
+  it('enables medium OpenRouter reasoning for reasoning-capable models', () => {
+    const openRouterModel: RegisteredAiModel = {
+      modelId: 'openrouter/tencent/hy3',
+      sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
+      model: {} as RegisteredAiModel['model'],
+      supportsReasoning: true,
+      providerName: 'openrouter',
+      rawProvider: {},
+    };
+
+    expect(service.getReasoningProviderOptions(openRouterModel)).toEqual({
+      openrouter: {
+        reasoning: {
+          effort: 'medium',
+        },
+      },
+    });
+  });
+
+  it('enables medium Nous reasoning for reasoning-capable hy3:free', () => {
+    const nousModel: RegisteredAiModel = {
+      modelId: 'nous/tencent/hy3:free',
+      sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
+      model: {} as RegisteredAiModel['model'],
+      supportsReasoning: true,
+      providerName: 'nous',
+      rawProvider: {},
+    };
+
+    expect(service.getReasoningProviderOptions(nousModel)).toEqual({
+      nous: {
+        reasoning: {
+          effort: 'medium',
+        },
+      },
+    });
   });
 });

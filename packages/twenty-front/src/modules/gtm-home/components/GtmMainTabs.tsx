@@ -1,13 +1,31 @@
 import { styled } from '@linaria/react';
+import { type ReactNode } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { type GtmMainTab } from '@/gtm-home/types/gtm-home.types';
 
-const StyledTabs = styled.div`
+const StyledTabsRow = styled.div`
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: ${themeCssVariables.spacing[2]};
   padding: 0 ${themeCssVariables.spacing[4]};
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
+  min-height: 40px;
+`;
+
+const StyledTabs = styled.div`
+  display: flex;
+  gap: ${themeCssVariables.spacing[2]};
+  min-width: 0;
+`;
+
+const StyledTrailing = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${themeCssVariables.spacing[2]};
+  flex-shrink: 0;
+  margin-left: auto;
 `;
 
 const StyledTab = styled.button<{ isActive: boolean }>`
@@ -31,7 +49,6 @@ const TABS: Array<{ id: GtmMainTab; label: string }> = [
   { id: 'companies', label: 'Companies' },
   { id: 'people', label: 'People' },
   { id: 'workflow', label: 'Workflow' },
-  { id: 'market_map', label: 'Market map' },
 ];
 
 type GtmMainTabsProps = {
@@ -39,6 +56,7 @@ type GtmMainTabsProps = {
   companyCount: number;
   peopleCount: number;
   onChange: (tab: GtmMainTab) => void;
+  trailing?: ReactNode;
 };
 
 export const GtmMainTabs = ({
@@ -46,31 +64,37 @@ export const GtmMainTabs = ({
   companyCount,
   peopleCount,
   onChange,
+  trailing,
 }: GtmMainTabsProps) => {
   return (
-    <StyledTabs>
-      {TABS.map((tab) => {
-        let label = tab.label;
+    <StyledTabsRow>
+      <StyledTabs>
+        {TABS.map((tab) => {
+          let label = tab.label;
 
-        if (tab.id === 'companies' && companyCount > 0) {
-          label = `Companies (${companyCount})`;
-        }
+          if (tab.id === 'companies' && companyCount > 0) {
+            label = `Companies (${companyCount})`;
+          }
 
-        if (tab.id === 'people' && peopleCount > 0) {
-          label = `People (${peopleCount})`;
-        }
+          if (tab.id === 'people' && peopleCount > 0) {
+            label = `People (${peopleCount})`;
+          }
 
-        return (
-          <StyledTab
-            key={tab.id}
-            type="button"
-            isActive={activeTab === tab.id}
-            onClick={() => onChange(tab.id)}
-          >
-            {label}
-          </StyledTab>
-        );
-      })}
-    </StyledTabs>
+          return (
+            <StyledTab
+              key={tab.id}
+              type="button"
+              isActive={activeTab === tab.id}
+              onClick={() => onChange(tab.id)}
+            >
+              {label}
+            </StyledTab>
+          );
+        })}
+      </StyledTabs>
+      {trailing !== undefined && trailing !== null && (
+        <StyledTrailing>{trailing}</StyledTrailing>
+      )}
+    </StyledTabsRow>
   );
 };

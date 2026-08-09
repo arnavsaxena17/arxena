@@ -1,30 +1,30 @@
+import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
 import { ConnectedAccountProvider } from 'twenty-shared/types';
+import { isDefined } from 'twenty-shared/utils';
 
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import {
-  GTM_PROJECT_ID_QUERY_PARAM,
-  GTM_PROJECT_NAME_PREFIX,
+    GTM_OUTREACH_WORKFLOW_B_NAME,
+    GTM_PROJECT_ID_QUERY_PARAM,
+    GTM_PROJECT_NAME_PREFIX,
 } from '@/gtm-home/constants/gtm-command.constants';
 import { mapCrmStageToGtmOutreachStage } from '@/gtm-home/constants/gtm-outreach-stages';
 import {
-  type GtmCompanyRow,
-  type GtmMarketSegment,
-  type GtmOutreachSendMode,
-  type GtmPersonRow,
-  type GtmProjectOption,
-  type GtmProjectSettings,
-  type GtmWorkspaceCompany,
+    type GtmCompanyRow,
+    type GtmMainTab,
+    type GtmOutreachSendMode,
+    type GtmPersonRow,
+    type GtmProjectOption,
+    type GtmProjectSettings,
+    type GtmWorkspaceCompany,
 } from '@/gtm-home/types/gtm-home.types';
 import {
-  fetchGtmCompaniesCache,
-  persistGtmCompaniesCache,
+    fetchGtmCompaniesCache,
+    persistGtmCompaniesCache,
 } from '@/gtm-home/utils/gtm-companies-cache';
-import { isLinkedinUnipileConnectedSelector } from '@/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
@@ -32,7 +32,7 @@ import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { isWhatsappUnipileConnectedSelector } from '@/whatsapp-unipile/states/whatsappUnipileAccountsState';
+import { useUnipile } from '@/unipile/contexts/UnipileContext';
 
 type GtmProjectRecord = ObjectRecord & {
   name?: string;
@@ -127,12 +127,11 @@ export const useGtmLiveWorkingSet = () => {
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
   const [tokenPair] = useAtomState(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
-  const linkedinConnected = useAtomStateValue(
-    isLinkedinUnipileConnectedSelector,
-  );
-  const whatsappConnected = useAtomStateValue(
-    isWhatsappUnipileConnectedSelector,
-  );
+  // Same signal as Projects menu: accounts-list selector OR server member status.
+  // Member-bound LinkedIn skips the workspace accounts list, so the selector alone is false.
+  const { isLinkedinConnected: linkedinConnected, isWhatsappUnipileConnected } =
+    useUnipile();
+  const whatsappConnected = isWhatsappUnipileConnected;
   const { accounts: connectedAccounts } = useMyConnectedAccounts();
   const gmailConnected = connectedAccounts.some(
     (account) =>
@@ -141,16 +140,11 @@ export const useGtmLiveWorkingSet = () => {
       account.provider === ConnectedAccountProvider.IMAP_SMTP_CALDAV,
   );
 
-  const [activeTab, setActiveTab] = useState<
-    'companies' | 'people' | 'workflow' | 'market_map'
-  >('companies');
+  const [activeTab, setActiveTab] = useState<GtmMainTab>('companies');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
     null,
   );
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
-    null,
-  );
   const [ephemeralCompanies, setEphemeralCompanies] = useState<GtmCompanyRow[]>(
     [],
   );
@@ -159,7 +153,25 @@ export const useGtmLiveWorkingSet = () => {
   const { createOneRecord: createProject } = useCreateOneRecord({
     objectNameSingular: 'project',
   });
+  const { createOneRecord: createWorkflow } = useCreateOneRecord({
+    objectNameSingular: 'workflow',
+  });
   const { updateOneRecord } = useUpdateOneRecord();
+
+  const { records: defaultOutreachWorkflows } =
+    useFindManyRecords<{ id: string; name?: string }>({
+      objectNameSingular: 'workflow',
+      filter: {
+        name: {
+          eq: GTM_OUTREACH_WORKFLOW_B_NAME,
+        },
+      },
+      limit: 1,
+      recordGqlFields: {
+        id: true,
+        name: true,
+      },
+    });
 
   const { records: allProjects, loading: projectsLoading } =
     useFindManyRecords<GtmProjectRecord>({
@@ -336,6 +348,16 @@ export const useGtmLiveWorkingSet = () => {
     });
 
   const createGtmProject = useCallback(async () => {
+    let outreachWorkflowId = defaultOutreachWorkflows[0]?.id ?? null;
+
+    if (!isDefined(outreachWorkflowId)) {
+      const createdWorkflow = await createWorkflow({
+        name: GTM_OUTREACH_WORKFLOW_B_NAME,
+      });
+
+      outreachWorkflowId = createdWorkflow?.id ?? null;
+    }
+
     const created = await createProject({
       name: `${GTM_PROJECT_NAME_PREFIX} · ${new Date().toLocaleString()}`,
       isActive: true,
@@ -350,6 +372,7 @@ export const useGtmLiveWorkingSet = () => {
       maxEmailsPerDay: 50,
       complianceCopy:
         'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
+      ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),
     });
 
     if (!isDefined(created?.id)) {
@@ -368,7 +391,13 @@ export const useGtmLiveWorkingSet = () => {
     setEphemeralCompanies([]);
 
     return created.id;
-  }, [createProject, setActiveProjectId, updateOneRecord]);
+  }, [
+    createProject,
+    createWorkflow,
+    defaultOutreachWorkflows,
+    setActiveProjectId,
+    updateOneRecord,
+  ]);
 
   const companies = ephemeralCompanies;
 
@@ -398,28 +427,6 @@ export const useGtmLiveWorkingSet = () => {
       }),
     [candidateRecords],
   );
-
-  const segments: GtmMarketSegment[] = useMemo(() => {
-    const counts = companies.reduce<Record<string, number>>(
-      (accumulator, company) => {
-        const segmentLabel = isNonEmptyString(company.segment)
-          ? company.segment
-          : 'Unsegmented';
-
-        accumulator[segmentLabel] = (accumulator[segmentLabel] ?? 0) + 1;
-
-        return accumulator;
-      },
-      {},
-    );
-
-    return Object.entries(counts).map(([label, companyCount]) => ({
-      id: label.toLowerCase().replace(/\s+/g, '-'),
-      label,
-      description: `${companyCount} companies in this ICP segment`,
-      companyCount,
-    }));
-  }, [companies]);
 
   const projectSettings: GtmProjectSettings = {
     projectId: project?.id ?? null,
@@ -462,7 +469,6 @@ export const useGtmLiveWorkingSet = () => {
     workspaceCompany,
     companies,
     people,
-    segments,
     projectSettings,
     projectOptions,
     activeProjectId,
@@ -480,8 +486,6 @@ export const useGtmLiveWorkingSet = () => {
     setSelectedCompanyId,
     selectedPersonId,
     setSelectedPersonId,
-    selectedSegmentId,
-    setSelectedSegmentId,
     peopleTableInstanceId: activeProjectId
       ? `gtm-people-${activeProjectId}`
       : 'gtm-people-none',

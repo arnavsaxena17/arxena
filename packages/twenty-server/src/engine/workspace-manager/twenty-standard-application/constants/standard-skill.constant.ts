@@ -47,6 +47,12 @@ export const STANDARD_SKILL = {
   'gtm-icp-onboarding': {
     universalIdentifier: '20202020-a7c3-4e91-8b5f-2d6e9f1a4c80',
   },
+  'search-companies': {
+    universalIdentifier: '20202020-9c2b-4f1a-8d3e-6b7a0c5e2f41',
+  },
+  'search-people': {
+    universalIdentifier: '20202020-3f7d-4a9b-8c2e-1a5b0d4e7c69',
+  },
 } as const satisfies Record<
   string,
   {

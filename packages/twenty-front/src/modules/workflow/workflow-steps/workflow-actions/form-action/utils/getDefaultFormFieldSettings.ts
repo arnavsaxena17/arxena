@@ -26,6 +26,13 @@ export const getDefaultFormFieldSettings = (type: WorkflowFormFieldType) => {
         label: 'Date',
         placeholder: 'mm/dd/yyyy',
       };
+    case FieldMetadataType.BOOLEAN:
+      return {
+        id: v4(),
+        name: 'boolean',
+        label: 'Boolean',
+        placeholder: 'True / False',
+      };
     case 'RECORD':
       return {
         id: v4(),

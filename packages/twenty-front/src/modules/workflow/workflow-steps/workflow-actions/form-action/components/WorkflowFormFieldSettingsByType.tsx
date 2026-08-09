@@ -1,3 +1,4 @@
+import { WorkflowFormFieldSettingsBoolean } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormFieldSettingsBoolean';
 import { WorkflowFormFieldSettingsDate } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormFieldSettingsDate';
 import { WorkflowFormFieldSettingsRecordPicker } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormFieldSettingsRecordPicker';
 import { WorkflowFormFieldSettingsSelect } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormFieldSettingsSelect';
@@ -26,6 +27,10 @@ export const WorkflowFormFieldSettingsByType = ({
     case FieldMetadataType.DATE:
       return (
         <WorkflowFormFieldSettingsDate field={field} onChange={onChange} />
+      );
+    case FieldMetadataType.BOOLEAN:
+      return (
+        <WorkflowFormFieldSettingsBoolean field={field} onChange={onChange} />
       );
     case FieldMetadataType.SELECT:
     case FieldMetadataType.MULTI_SELECT:

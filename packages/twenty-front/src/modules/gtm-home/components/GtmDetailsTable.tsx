@@ -1,11 +1,12 @@
 import '@/candidate-table/initHandsontable';
+
 import { HotTable } from '@handsontable/react-wrapper';
 import { styled } from '@linaria/react';
 import Handsontable from 'handsontable';
-import { useMemo } from 'react';
+import { type CSSProperties, useMemo } from 'react';
 import {
-    themeCssVariables,
-    useThemeColorScheme,
+  themeCssVariables,
+  useThemeColorScheme,
 } from 'twenty-ui/theme-constants';
 
 const StyledTableWrapper = styled.div`
@@ -30,7 +31,7 @@ const StyledTableWrapper = styled.div`
   }
 `;
 
-const TRUNCATED_CELL_STYLE: React.CSSProperties = {
+const TRUNCATED_CELL_STYLE: CSSProperties = {
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -70,7 +71,7 @@ const truncatedRenderer: ColumnRenderer = (
   return td;
 };
 
-export type AssistantTableData = {
+export type GtmTableData = {
   columns: string[];
   rows: Record<string, unknown>[];
   tableId?: string;
@@ -78,8 +79,8 @@ export type AssistantTableData = {
   label?: string;
 };
 
-type AssistantDetailsTableProps = {
-  data: AssistantTableData;
+type GtmDetailsTableProps = {
+  data: GtmTableData;
   maxHeight?: number;
   selectedRowIndex?: number;
   onSelectRow?: (rowIndex: number) => void;
@@ -87,50 +88,67 @@ type AssistantDetailsTableProps = {
 
 const DEFAULT_MAX_HEIGHT = 320;
 
-export const AssistantDetailsTable = ({
+const toColumnTitle = (key: string) =>
+  key.replace(/([A-Z])/g, ' $1').replace(/^./, (character) =>
+    character.toUpperCase(),
+  );
+
+export const GtmDetailsTable = ({
   data,
   maxHeight = DEFAULT_MAX_HEIGHT,
-  selectedRowIndex,
   onSelectRow,
-}: AssistantDetailsTableProps) => {
+}: GtmDetailsTableProps) => {
   const colorScheme = useThemeColorScheme();
-  const { columns, data: tableData } = useMemo(() => {
+
+  const { columns, tableRows } = useMemo(() => {
     if (!data.rows?.length || !data.columns?.length) {
-      return { columns: [], data: [] };
+      return { columns: [], tableRows: [] };
     }
-    const cols = data.columns.map((key) => ({
+
+    const mappedColumns = data.columns.map((key) => ({
       data: key,
-      title: key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase()),
+      title: toColumnTitle(key),
       readOnly: true,
       renderer: truncatedRenderer,
     }));
-    const rows = data.rows.map((row) => {
-      const out: Record<string, unknown> = {};
+
+    const mappedRows = data.rows.map((row) => {
+      const mappedRow: Record<string, unknown> = {};
+
       data.columns.forEach((key) => {
-        out[key] = row[key] ?? '';
+        mappedRow[key] = row[key] ?? '';
       });
-      return out;
+
+      return mappedRow;
     });
-    return { columns: cols, data: rows };
+
+    return { columns: mappedColumns, tableRows: mappedRows };
   }, [data]);
 
-  if (columns.length === 0 || tableData.length === 0) return null;
-
   const handleSelection = useMemo(() => {
-    if (!onSelectRow) return undefined;
+    if (!onSelectRow) {
+      return undefined;
+    }
+
     return (row: number) => {
-      if (row >= 0 && row < tableData.length) onSelectRow(row);
+      if (row >= 0 && row < tableRows.length) {
+        onSelectRow(row);
+      }
     };
-  }, [onSelectRow, tableData.length]);
+  }, [onSelectRow, tableRows.length]);
+
+  if (columns.length === 0 || tableRows.length === 0) {
+    return null;
+  }
 
   return (
     <StyledTableWrapper>
       <HotTable
-        data={tableData}
+        data={tableRows}
         columns={columns}
-        colHeaders={columns.map((c) => c.title)}
+        colHeaders={columns.map((column) => column.title)}
         rowHeaders={true}
-        height={Math.min(maxHeight, 30 * tableData.length + 30)}
+        height={Math.min(maxHeight, 30 * tableRows.length + 30)}
         themeName={
           colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'
         }
@@ -146,7 +164,7 @@ export const AssistantDetailsTable = ({
         fixedRowsTop={0}
         afterSelection={
           handleSelection
-            ? (row: number, _col: number) => handleSelection(row)
+            ? (row: number) => handleSelection(row)
             : undefined
         }
       />

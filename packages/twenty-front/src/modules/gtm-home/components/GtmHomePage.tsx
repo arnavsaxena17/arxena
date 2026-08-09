@@ -1,25 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { useEffect, useState } from 'react';
+import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useOpenAskAiPageWithPreprompt } from '@/ai/hooks/useOpenAskAiPageWithPreprompt';
+import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
+import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
+import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
+import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
+import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
 import { GtmCompaniesPanel } from '@/gtm-home/components/GtmCompaniesPanel';
 import { GtmMainTabs } from '@/gtm-home/components/GtmMainTabs';
-import { GtmMarketMapPanel } from '@/gtm-home/components/GtmMarketMapPanel';
 import { GtmNeedsConnectionBanner } from '@/gtm-home/components/GtmNeedsConnectionBanner';
 import { GtmPeoplePanel } from '@/gtm-home/components/GtmPeoplePanel';
 import { GtmRunProgressHeader } from '@/gtm-home/components/GtmRunProgressHeader';
 import { GtmWorkflowPanel } from '@/gtm-home/components/GtmWorkflowPanel';
+import { GtmWorkflowToolbar } from '@/gtm-home/components/GtmWorkflowToolbar';
 import { useGtmLiveWorkingSet } from '@/gtm-home/hooks/useGtmLiveWorkingSet';
-import { gtmCommandContextState } from '@/gtm-home/states/gtmCommandContextState';
+import {
+  type GtmWorkflowEmbedMode,
+  useGtmWorkflowEmbed,
+} from '@/gtm-home/hooks/useGtmWorkflowEmbed';
+import {
+  buildGtmCommandContextPrompt,
+  gtmCommandContextState,
+} from '@/gtm-home/states/gtmCommandContextState';
 import {
   buildGtmIcpOnboardingKickoffPrompt,
   type GtmIcpSet,
 } from '@/gtm-home/types/gtm-home.types';
+import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 const StyledMain = styled.div`
@@ -67,7 +83,6 @@ export const GtmHomePage = () => {
     workspaceCompany,
     companies,
     people,
-    segments,
     projectSettings,
     projectOptions,
     activeProjectId,
@@ -83,15 +98,73 @@ export const GtmHomePage = () => {
     setSelectedCompanyId,
     selectedPersonId,
     setSelectedPersonId,
-    selectedSegmentId,
-    setSelectedSegmentId,
     peopleTableInstanceId,
   } = useGtmLiveWorkingSet();
+  const isWorkflowTab = activeTab === 'workflow';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
   const setCommandContext = useSetAtomState(gtmCommandContextState);
+  const commandContext = useAtomStateValue(gtmCommandContextState);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+  const [workflowMode, setWorkflowMode] =
+    useState<GtmWorkflowEmbedMode>('definition');
+  const {
+    workflowId,
+    workflowRunId,
+    hasWorkflow,
+    hasWorkflowRun,
+    workflowsLoading,
+    runsLoading,
+    workflowOptions,
+    selectOutreachWorkflow,
+    isSelectingWorkflow,
+  } = useGtmWorkflowEmbed({
+    enabled: isWorkflowTab && isDefined(activeProjectId),
+  });
+  const { isExtensionInstalled, isChecking: isExtensionChecking } =
+    useChromeExtensionDetection();
+  const { data: creditsData } = useQuery(WORKSPACE_CREDITS);
+  const credits = (
+    creditsData as
+      | {
+          workspaceCredits?: {
+            orgChartCredits: number;
+            revealCredits: number;
+            apiCredits: number;
+            revealCreditsAsEmailEquivalent?: number;
+            revealCreditsAsPhoneEquivalent?: number;
+            emailRevealCost?: number;
+            phoneRevealCost?: number;
+          };
+        }
+      | undefined
+  )?.workspaceCredits;
+  const orgChartCredits = credits?.orgChartCredits ?? undefined;
+  const revealCredits = credits?.revealCredits ?? undefined;
+  const apiCredits = credits?.apiCredits ?? undefined;
+  const {
+    isGetResourceCreditUsageQueryLoaded,
+    hasResourceCreditUsage,
+    getResourceCreditUsage,
+  } = useGetResourceCreditUsage();
+  let aiCreditsDisplay: number | undefined;
+  if (isGetResourceCreditUsageQueryLoaded && hasResourceCreditUsage) {
+    try {
+      const usage = getResourceCreditUsage();
+      const available =
+        (usage.totalGrantedCredits ?? 0) - (usage.usedCredits ?? 0);
+      aiCreditsDisplay = Math.max(0, Math.round(available / 1_000_000));
+    } catch {
+      aiCreditsDisplay = undefined;
+    }
+  }
 
-  const isWorkflowTab = activeTab === 'workflow';
+  useEffect(() => {
+    if (workflowMode === 'run' && !hasWorkflowRun && hasWorkflow) {
+      setWorkflowMode('definition');
+    }
+  }, [hasWorkflow, hasWorkflowRun, workflowMode]);
 
   useEffect(() => {
     if (!activeProjectId) {
@@ -111,8 +184,9 @@ export const GtmHomePage = () => {
         }
       : null;
 
+    // Prefill only — user hits Enter to send the ICP onboarding kickoff.
     openAskAiPageWithPreprompt({
-      mode: 'SEND',
+      mode: 'PREFILL',
       text: buildGtmIcpOnboardingKickoffPrompt({
         workspaceCompany,
         projectId: projectSettings.projectId,
@@ -166,22 +240,47 @@ export const GtmHomePage = () => {
     }
   };
 
+  const handleSelectOutreachWorkflow = async (nextWorkflowId: string) => {
+    await selectOutreachWorkflow(nextWorkflowId);
+    openAskAiPageWithPreprompt({
+      mode: 'PREFILL',
+      text: buildGtmCommandContextPrompt({
+        ...commandContext,
+        outreachWorkflowId: nextWorkflowId,
+      }),
+    });
+  };
+
   return (
     <PageContainer>
-      <PageHeader title="GTM Command" />
+      <PageHeader title="GTM Command">
+        <GtmRunProgressHeader
+          projectId={projectSettings.projectId}
+          projectOptions={projectOptions}
+          onSelectProjectId={setActiveProjectId}
+          onCreateProject={handleCreateProject}
+          isCreatingProject={isCreatingProject}
+        />
+        <CandidateTableProjectsPageMenuDropdown
+          onAddJob={handleCreateProject}
+          isLinkedinConnected={linkedinConnected}
+          isWhatsappLoggedIn={whatsappConnected}
+          isExtensionInstalled={isExtensionInstalled}
+          isExtensionChecking={isExtensionChecking}
+          onDownloadClick={() => setIsDownloadModalOpen(true)}
+          mapCredits={orgChartCredits}
+          revealCredits={revealCredits}
+          apiCredits={apiCredits}
+          aiCredits={aiCreditsDisplay}
+          onCreditsClick={
+            orgChartCredits !== undefined
+              ? () => setIsCreditModalOpen(true)
+              : undefined
+          }
+        />
+      </PageHeader>
       <PageBody>
         <StyledMain>
-          <GtmRunProgressHeader
-            workspaceName={workspaceCompany.name}
-            domain={workspaceCompany.domain}
-            projectId={projectSettings.projectId}
-            projectName={projectSettings.projectName}
-            icpSegment={projectSettings.icpSegment}
-            projectOptions={projectOptions}
-            onSelectProjectId={setActiveProjectId}
-            onCreateProject={handleCreateProject}
-            isCreatingProject={isCreatingProject}
-          />
           {(!linkedinConnected || !gmailConnected) && (
             <GtmNeedsConnectionBanner
               linkedinConnected={linkedinConnected}
@@ -194,6 +293,21 @@ export const GtmHomePage = () => {
             companyCount={companies.length}
             peopleCount={people.length}
             onChange={setActiveTab}
+            trailing={
+              isWorkflowTab ? (
+                <GtmWorkflowToolbar
+                  mode={workflowMode}
+                  onModeChange={setWorkflowMode}
+                  hasWorkflowRun={hasWorkflowRun}
+                  workflowId={workflowId}
+                  workflowOptions={workflowOptions}
+                  isSelectingWorkflow={isSelectingWorkflow}
+                  onSelectWorkflow={(nextWorkflowId) => {
+                    void handleSelectOutreachWorkflow(nextWorkflowId);
+                  }}
+                />
+              ) : undefined
+            }
           />
           {loading ? (
             <StyledLoading>
@@ -201,13 +315,22 @@ export const GtmHomePage = () => {
             </StyledLoading>
           ) : !activeProjectId ? (
             <StyledEmpty>
-              No GTM Project yet. Click <strong>New GTM run</strong> to create
-              one — Companies, People, and Workflows are scoped to that Project
-              id (<code>?projectId=</code>).
+              No GTM Project yet. Click <strong>New run</strong> to create one —
+              Companies, People, and Workflows are scoped to that Project id (
+              <code>?projectId=</code>).
             </StyledEmpty>
           ) : isWorkflowTab ? (
             <StyledWorkflowContent>
-              <GtmWorkflowPanel isActive={true} />
+              <GtmWorkflowPanel
+                isActive={true}
+                mode={workflowMode}
+                workflowId={workflowId}
+                workflowRunId={workflowRunId}
+                hasWorkflow={hasWorkflow}
+                hasWorkflowRun={hasWorkflowRun}
+                workflowsLoading={workflowsLoading}
+                runsLoading={runsLoading}
+              />
             </StyledWorkflowContent>
           ) : (
             <StyledContent>
@@ -215,7 +338,6 @@ export const GtmHomePage = () => {
                 <GtmCompaniesPanel
                   companies={companies}
                   selectedCompanyId={selectedCompanyId}
-                  selectedSegmentId={selectedSegmentId}
                   onSelectCompanyId={setSelectedCompanyId}
                 />
               )}
@@ -229,21 +351,32 @@ export const GtmHomePage = () => {
                   tableInstanceId={peopleTableInstanceId}
                 />
               )}
-              {activeTab === 'market_map' && (
-                <GtmMarketMapPanel
-                  segments={segments}
-                  selectedSegmentId={selectedSegmentId}
-                  hasCompanies={companies.length > 0}
-                  onSelectSegmentId={(segmentId) => {
-                    setSelectedSegmentId(segmentId);
-                    setActiveTab('companies');
-                  }}
-                />
-              )}
             </StyledContent>
           )}
         </StyledMain>
       </PageBody>
+      <ArxDownloadModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+      />
+      {orgChartCredits !== undefined && (
+        <CreditHistoryModal
+          isOpen={isCreditModalOpen}
+          onClose={() => setIsCreditModalOpen(false)}
+          orgChartCredits={orgChartCredits}
+          revealCredits={revealCredits}
+          apiCredits={apiCredits}
+          revealCreditsAsEmailEquivalent={
+            credits?.revealCreditsAsEmailEquivalent
+          }
+          revealCreditsAsPhoneEquivalent={
+            credits?.revealCreditsAsPhoneEquivalent
+          }
+          emailRevealCost={credits?.emailRevealCost}
+          phoneRevealCost={credits?.phoneRevealCost}
+          aiCredits={aiCreditsDisplay}
+        />
+      )}
     </PageContainer>
   );
 };

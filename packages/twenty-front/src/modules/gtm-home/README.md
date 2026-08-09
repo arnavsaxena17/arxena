@@ -25,10 +25,10 @@ Workflow topology:
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Working set | `/gtm-home?projectId=` | Companies (ephemeral) / People / Workflow / Market map + Ask AI |
+| Working set | `/gtm-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
 | CRM dashboard | `/object/dashboard/:id` (**GTM Command**) | Funnel / coverage / stage / channel / speed / outcomes |
 
-On entry, Ask AI auto-sends a kickoff that loads **`gtm-icp-onboarding`**. Switch runs via the header Project picker (**New GTM run** creates a Project). Workflow tab binds **B** via `Project.outreachWorkflowId`.
+On entry, Ask AI prefills an ICP onboarding kickoff (user hits Enter to send). Chrome is two rows: **PageHeader** (`GTM Command` + run picker / New run / CRM / Menu) and **main tabs** (Companies / People / Workflow; workflow mode + outreach picker trail on the same row). Switch runs via the header Project picker (**New run** creates a Project). Workflow tab prefers / auto-creates **`GTM Outreach — Per Candidate`** and binds `Project.outreachWorkflowId` when the Project has none. The Stage B dropdown lists ACTIVE workflows only; selecting one rebinds the Project pin and prefills Ask AI with that `outreachWorkflowId` context.
 
 Optional: `?workflowId=` / `?workflowRunId=`
 
@@ -45,7 +45,7 @@ npx nx run twenty-server:command -- upgrade:2-25:backfill-gtm-icp-onboarding-ski
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
   npx tsx packages/twenty-server/scripts/setup-gtm-command-dashboard.ts
 
-# 4) Seed Workflow B + C and bind Project.outreachWorkflowId
+# 4) Optional: seed full Workflow B + C graphs (UI also auto-creates blank Stage B)
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
   GTM_DELAY_MS=1000 \
   npx tsx packages/twenty-server/scripts/setup-gtm-outreach-workflow.ts

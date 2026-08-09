@@ -1231,7 +1231,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     // Load persisted search results and metadata from backend cache on mount or when projectId changes
     useEffect(() => {
       // '__search__' is a virtual projectId used by the assistant for LinkedIn candidates;
-      // searchResultsState is populated externally (by AssistantResultsPanel), so skip here.
+      // searchResultsState is populated externally (e.g. GTM People panel), so skip here.
       if (projectId === '__search__') return;
       if (!projectId || projectId === 'project-id') {
         setSearchResults([]);

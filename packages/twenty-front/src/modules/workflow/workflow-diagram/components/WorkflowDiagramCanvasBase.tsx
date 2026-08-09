@@ -1,10 +1,6 @@
-import { CommandMenuContext } from '@/command-menu-item/contexts/CommandMenuContext';
-import { isSidePanelOpenedState } from '@/side-panel/states/isSidePanelOpenedState';
-import { sidePanelWidthState } from '@/side-panel/states/sidePanelWidthState';
 import { useListenToSidePanelClosing } from '@/ui/layout/side-panel/hooks/useListenToSidePanelClosing';
 import { useAtomComponentStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateCallbackState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { WorkflowDiagramRightClickCommandMenu } from '@/workflow/workflow-diagram/components/WorkflowDiagramRightClickCommandMenu';
 import { WORKFLOW_DIAGRAM_EMPTY_NODE_DEFINITION } from '@/workflow/workflow-diagram/constants/WorkflowDiagramEmptyNodeDefinition';
@@ -15,13 +11,13 @@ import { workflowDiagramPanOnDragComponentState } from '@/workflow/workflow-diag
 import { workflowDiagramWaitingNodesDimensionsComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramWaitingNodesDimensionsComponentState';
 import { workflowSelectedNodeComponentState } from '@/workflow/workflow-diagram/states/workflowSelectedNodeComponentState';
 import {
-  type StartNodeCreationParams,
-  type WorkflowConnection,
-  type WorkflowDiagram,
-  type WorkflowDiagramEdge,
-  type WorkflowDiagramEdgeType,
-  type WorkflowDiagramNode,
-  type WorkflowDiagramNodeType,
+    type StartNodeCreationParams,
+    type WorkflowConnection,
+    type WorkflowDiagram,
+    type WorkflowDiagramEdge,
+    type WorkflowDiagramEdgeType,
+    type WorkflowDiagramNode,
+    type WorkflowDiagramNodeType,
 } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { assertWorkflowConnectionOrThrow } from '@/workflow/workflow-diagram/utils/assertWorkflowConnectionOrThrow';
 import { WorkflowDiagramConnection } from '@/workflow/workflow-diagram/workflow-edges/components/WorkflowDiagramConnection';
@@ -35,31 +31,31 @@ import { WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID } from '@/workflow/workf
 import { workflowInsertStepIdsComponentState } from '@/workflow/workflow-steps/states/workflowInsertStepIdsComponentState';
 import { styled } from '@linaria/react';
 import {
-  Background,
-  ReactFlow,
-  applyEdgeChanges,
-  applyNodeChanges,
-  useReactFlow,
-  type Connection,
-  type EdgeChange,
-  type FitViewOptions,
-  type NodeChange,
-  type NodeProps,
-  type OnBeforeDelete,
-  type OnConnectStartParams,
-  type OnDelete,
-  type OnNodeDrag,
-  type OnReconnect,
+    Background,
+    ReactFlow,
+    applyEdgeChanges,
+    applyNodeChanges,
+    useReactFlow,
+    type Connection,
+    type EdgeChange,
+    type FitViewOptions,
+    type NodeChange,
+    type NodeProps,
+    type OnBeforeDelete,
+    type OnConnectStartParams,
+    type OnDelete,
+    type OnNodeDrag,
+    type OnReconnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useStore } from 'jotai';
 import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Tag, type TagColor } from 'twenty-ui/data-display';
@@ -98,6 +94,9 @@ const defaultFitViewOptions = {
   minZoom: 1,
   maxZoom: 1,
 } satisfies FitViewOptions;
+
+// Top padding so the Draft tag and first nodes clear the canvas chrome
+const WORKFLOW_DIAGRAM_VIEWPORT_TOP_PADDING = 150;
 
 export const WorkflowDiagramCanvasBase = ({
   nodeTypes,
@@ -255,10 +254,6 @@ export const WorkflowDiagramCanvasBase = ({
     return { nodes, edges };
   }, [workflowDiagram, workflowInsertStepIds]);
 
-  const isSidePanelOpened = useAtomStateValue(isSidePanelOpenedState);
-  const { commandMenuContextApi } = useContext(CommandMenuContext);
-  const isInSidePanel = commandMenuContextApi.isInSidePanel;
-
   const handleEdgesChange = (
     edgeChanges: Array<EdgeChange<WorkflowDiagramEdge>>,
   ) => {
@@ -283,23 +278,25 @@ export const WorkflowDiagramCanvasBase = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Center on the real container size. Side panel is a flex sibling, so
+  // offsetWidth already excludes it — do not subtract sidePanelWidth again.
+  // Include flowBounds.x/y so IF_ELSE branches with negative x stay centered.
   const setFlowViewport = useCallback(
     ({
       workflowDiagramFlowInitialized,
-      isSidePanelOpened,
       workflowDiagram,
-      isInSidePanel,
+      animate = false,
+      resetVerticalPosition = true,
     }: {
       workflowDiagramFlowInitialized: boolean;
-      isSidePanelOpened: boolean;
       workflowDiagram: WorkflowDiagram | undefined;
-      isInSidePanel: boolean;
+      animate?: boolean;
+      resetVerticalPosition?: boolean;
     }) => {
       if (!isDefined(containerRef.current) || !workflowDiagramFlowInitialized) {
         return;
       }
 
-      const currentViewport = reactflow.getViewport();
       const nodes = workflowDiagram?.nodes ?? [];
 
       const canComputeNodesBounds = nodes.every((node) =>
@@ -313,50 +310,43 @@ export const WorkflowDiagramCanvasBase = ({
 
       setWorkflowDiagramWaitingNodesDimensions(false);
 
-      const baseContainerWidth = containerRef.current.offsetWidth;
-      const hasViewportBeenMoved = currentViewport.x !== 0;
-
-      let adjustedContainerWidth = baseContainerWidth;
-
-      const sidePanelWidth = store.get(sidePanelWidthState.atom);
-
-      if (!isInSidePanel && isSidePanelOpened) {
-        adjustedContainerWidth = baseContainerWidth - sidePanelWidth;
-      } else if (!isInSidePanel && hasViewportBeenMoved) {
-        adjustedContainerWidth = baseContainerWidth + sidePanelWidth;
-      }
-
+      const currentViewport = reactflow.getViewport();
+      const containerWidth = containerRef.current.offsetWidth;
       const flowBounds = reactflow.getNodesBounds(nodes);
       const centeredXPosition =
-        adjustedContainerWidth / 2 - flowBounds.width / 2;
+        containerWidth / 2 - flowBounds.x - flowBounds.width / 2;
+      const topAlignedYPosition =
+        WORKFLOW_DIAGRAM_VIEWPORT_TOP_PADDING - flowBounds.y;
 
       reactflow.setViewport(
         {
-          ...currentViewport,
           x: centeredXPosition,
+          y: resetVerticalPosition
+            ? topAlignedYPosition
+            : currentViewport.y,
           zoom: defaultFitViewOptions.maxZoom,
         },
-        { duration: hasViewportBeenMoved ? 300 : 0 },
+        { duration: animate ? 300 : 0 },
       );
     },
-    [reactflow, setWorkflowDiagramWaitingNodesDimensions, store],
+    [reactflow, setWorkflowDiagramWaitingNodesDimensions],
   );
 
   const handleSetFlowViewportOnChange = useCallback(
     ({
       workflowDiagramFlowInitialized,
-      isSidePanelOpened,
-      isInSidePanel,
+      animate = false,
+      resetVerticalPosition = true,
     }: {
       workflowDiagramFlowInitialized: boolean;
-      isSidePanelOpened: boolean;
-      isInSidePanel: boolean;
+      animate?: boolean;
+      resetVerticalPosition?: boolean;
     }) => {
       setFlowViewport({
-        isInSidePanel,
-        isSidePanelOpened,
         workflowDiagramFlowInitialized,
         workflowDiagram: store.get(workflowDiagramCallbackState),
+        animate,
+        resetVerticalPosition,
       });
     },
     [setFlowViewport, workflowDiagramCallbackState, store],
@@ -365,15 +355,42 @@ export const WorkflowDiagramCanvasBase = ({
   useEffect(() => {
     handleSetFlowViewportOnChange({
       workflowDiagramFlowInitialized,
-      isSidePanelOpened,
-      isInSidePanel,
     });
-  }, [
-    handleSetFlowViewportOnChange,
-    isSidePanelOpened,
-    workflowDiagramFlowInitialized,
-    isInSidePanel,
-  ]);
+  }, [handleSetFlowViewportOnChange, workflowDiagramFlowInitialized]);
+
+  // Re-center horizontally when the canvas resizes (Ask AI / step editor)
+  useEffect(() => {
+    const containerElement = containerRef.current;
+
+    if (!isDefined(containerElement) || !workflowDiagramFlowInitialized) {
+      return;
+    }
+
+    let lastContainerWidth = containerElement.offsetWidth;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const nextContainerWidth = entries[0]?.contentRect.width;
+
+      if (
+        !isDefined(nextContainerWidth) ||
+        Math.abs(nextContainerWidth - lastContainerWidth) < 1
+      ) {
+        return;
+      }
+
+      lastContainerWidth = nextContainerWidth;
+      handleSetFlowViewportOnChange({
+        workflowDiagramFlowInitialized: true,
+        resetVerticalPosition: false,
+      });
+    });
+
+    resizeObserver.observe(containerElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [handleSetFlowViewportOnChange, workflowDiagramFlowInitialized]);
 
   const handleNodesChanges = useCallback(
     (changes: NodeChange<WorkflowDiagramNode>[]) => {
@@ -408,19 +425,15 @@ export const WorkflowDiagramCanvasBase = ({
       }
 
       setFlowViewport({
-        isSidePanelOpened,
         workflowDiagramFlowInitialized,
         workflowDiagram: updatedWorkflowDiagram,
-        isInSidePanel,
       });
     },
     [
-      isSidePanelOpened,
       setFlowViewport,
       workflowDiagramFlowInitialized,
       workflowDiagramCallbackState,
       workflowDiagramWaitingNodesDimensions,
-      isInSidePanel,
       store,
     ],
   );

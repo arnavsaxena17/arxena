@@ -59,6 +59,10 @@ export class AiGenerateTextController {
         workspace.id,
       );
 
+    const modelConfig = this.aiModelRegistryService.getEffectiveModelConfig(
+      registeredModel.modelId,
+    );
+
     let result: Awaited<ReturnType<typeof generateText>> | undefined;
 
     try {
@@ -66,6 +70,7 @@ export class AiGenerateTextController {
         model: registeredModel.model,
         system: body.systemPrompt,
         prompt: body.userPrompt,
+        maxOutputTokens: modelConfig.maxOutputTokens,
       });
 
       return {

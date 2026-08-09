@@ -1,17 +1,13 @@
-import { Suspense, lazy, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { Loader } from 'twenty-ui/feedback';
 import { Button } from 'twenty-ui/input';
 
-import { type AssistantTableData } from '@/assistant/components/AssistantDetailsTable';
+import {
+  GtmDetailsTable,
+  type GtmTableData,
+} from '@/gtm-home/components/GtmDetailsTable';
 import { type GtmCompanyRow } from '@/gtm-home/types/gtm-home.types';
-
-const AssistantDetailsTable = lazy(() =>
-  import('@/assistant/components/AssistantDetailsTable').then((module) => ({
-    default: module.AssistantDetailsTable,
-  })),
-);
 
 const StyledPanel = styled.div`
   display: flex;
@@ -41,31 +37,17 @@ const StyledHint = styled.div`
 type GtmCompaniesPanelProps = {
   companies: GtmCompanyRow[];
   selectedCompanyId: string | null;
-  selectedSegmentId: string | null;
   onSelectCompanyId: (companyId: string | null) => void;
 };
 
 export const GtmCompaniesPanel = ({
   companies,
   selectedCompanyId,
-  selectedSegmentId,
   onSelectCompanyId,
 }: GtmCompaniesPanelProps) => {
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
 
-  const filteredCompanies = useMemo(
-    () =>
-      selectedSegmentId
-        ? companies.filter(
-            (company) =>
-              company.segment.toLowerCase().replace(/\s+/g, '-') ===
-              selectedSegmentId,
-          )
-        : companies,
-    [companies, selectedSegmentId],
-  );
-
-  if (filteredCompanies.length === 0) {
+  if (companies.length === 0) {
     return (
       <StyledEmpty>
         No target companies in this GTM run yet. Use Ask AI to discover
@@ -75,7 +57,7 @@ export const GtmCompaniesPanel = ({
     );
   }
 
-  const tableData: AssistantTableData = {
+  const tableData: GtmTableData = {
     tableType: 'data',
     label: 'Target companies (ephemeral)',
     columns: [
@@ -87,15 +69,15 @@ export const GtmCompaniesPanel = ({
       'icpFit',
       'status',
     ],
-    rows: filteredCompanies,
+    rows: companies,
   };
 
-  const primarySelectedIndex = filteredCompanies.findIndex(
+  const primarySelectedIndex = companies.findIndex(
     (company) => company.id === selectedCompanyId,
   );
 
   const handleToggleCompany = (rowIndex: number) => {
-    const company = filteredCompanies[rowIndex];
+    const company = companies[rowIndex];
 
     if (!company) {
       return;
@@ -130,16 +112,14 @@ export const GtmCompaniesPanel = ({
           />
         )}
       </StyledActions>
-      <Suspense fallback={<Loader />}>
-        <AssistantDetailsTable
-          data={tableData}
-          maxHeight={420}
-          selectedRowIndex={
-            primarySelectedIndex >= 0 ? primarySelectedIndex : undefined
-          }
-          onSelectRow={handleToggleCompany}
-        />
-      </Suspense>
+      <GtmDetailsTable
+        data={tableData}
+        maxHeight={420}
+        selectedRowIndex={
+          primarySelectedIndex >= 0 ? primarySelectedIndex : undefined
+        }
+        onSelectRow={handleToggleCompany}
+      />
     </StyledPanel>
   );
 };

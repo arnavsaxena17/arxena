@@ -14,7 +14,10 @@ import type { Repository } from 'typeorm';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
 import { extractCacheCreationTokensFromSteps } from 'src/engine/metadata-modules/ai/ai-billing/utils/extract-cache-creation-tokens.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
+
+const TITLE_GENERATION_MAX_OUTPUT_TOKENS = 128;
 
 @Injectable()
 export class AgentTitleGenerationService {
@@ -22,6 +25,7 @@ export class AgentTitleGenerationService {
 
   constructor(
     private readonly aiModelRegistryService: AiModelRegistryService,
+    private readonly aiModelConfigService: AiModelConfigService,
     private readonly aiBillingService: AiBillingService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
@@ -57,13 +61,36 @@ export class AgentTitleGenerationService {
         workspaceId,
       );
 
+    const modelConfig = this.aiModelRegistryService.getEffectiveModelConfig(
+      registeredModel.modelId,
+    );
+
     let usage: LanguageModelUsage | undefined;
     let steps: StepResult<ToolSet>[] | undefined;
 
     try {
+      const reasoningProviderOptions =
+        this.aiModelConfigService.getReasoningProviderOptions(registeredModel);
+      // Titles must return text quickly; disable OpenRouter/Nous thinking budget.
+      const providerOptions =
+        registeredModel.providerName === 'openrouter' ||
+        registeredModel.providerName === 'nous'
+          ? {
+              ...reasoningProviderOptions,
+              [registeredModel.providerName]: {
+                reasoning: { effort: 'none' as const },
+              },
+            }
+          : reasoningProviderOptions;
+
       const result = await generateText({
         model: registeredModel.model,
         prompt: `Generate a concise, descriptive title (maximum 60 characters) for a chat thread based on the following message. The title should capture the main topic or purpose of the conversation. Return only the title, nothing else. Message: "${messageContent}"`,
+        maxOutputTokens: Math.min(
+          TITLE_GENERATION_MAX_OUTPUT_TOKENS,
+          modelConfig.maxOutputTokens,
+        ),
+        providerOptions,
         experimental_telemetry: AI_TELEMETRY_CONFIG,
       });
 

@@ -145,6 +145,22 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Conversational GTM Command bootstrap: collect ICP and outreach preferences in Ask AI, persist on Project, hand off to company/people discovery',
     icon: 'IconTargetArrow',
   }),
+  'search-companies': createStandardSkillBuilder({
+    skillName: 'search-companies',
+    name: 'search-companies',
+    label: 'Search Companies',
+    description:
+      'Sourcing companies across Arxena data providers (Apollo, LinkedIn/Unipile, Harvest, Exa) and the internal index, then deduping and saving to the CRM',
+    icon: 'IconBuildingSkyscraper',
+  }),
+  'search-people': createStandardSkillBuilder({
+    skillName: 'search-people',
+    name: 'search-people',
+    label: 'Search People',
+    description:
+      'Sourcing people/candidates across Arxena data providers (Apollo, LinkedIn/Unipile, Harvest, Exa) and the internal index, then deduping and saving to the CRM',
+    icon: 'IconUsers',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

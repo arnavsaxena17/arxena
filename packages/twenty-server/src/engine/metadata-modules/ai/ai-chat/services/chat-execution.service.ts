@@ -48,6 +48,7 @@ import { guideUncallableToolCallsToMetaTool } from 'src/engine/metadata-modules/
 import { AGENT_CONFIG } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-config.const';
 import { BrowsingContextType } from 'src/engine/metadata-modules/ai/ai-agent/types/browsingContext.type';
 import { repairToolCall } from 'src/engine/metadata-modules/ai/ai-agent/utils/repair-tool-call.util';
+import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
 import { convertDollarsToBillingCredits } from 'src/engine/metadata-modules/ai/ai-billing/utils/convert-dollars-to-billing-credits.util';
 import { countNativeWebSearchCallsFromSteps } from 'src/engine/metadata-modules/ai/ai-billing/utils/count-native-web-search-calls-from-steps.util';
@@ -112,6 +113,7 @@ export class ChatExecutionService {
     private readonly toolRegistry: ToolRegistryService,
     private readonly skillService: SkillService,
     private readonly aiModelRegistryService: AiModelRegistryService,
+    private readonly aiModelConfigService: AiModelConfigService,
     private readonly aiBillingService: AiBillingService,
     private readonly agentActorContextService: AgentActorContextService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
@@ -223,7 +225,7 @@ export class ChatExecutionService {
         `registeredModelId=${registeredModel.modelId} ` +
         `sdkPackage=${registeredModel.sdkPackage} ` +
         `contextWindowTokens=${modelConfig.contextWindowTokens} ` +
-        `modalities=[${modelConfig.modalities.join(', ')}]`,
+        `modalities=[${(modelConfig.modalities ?? []).join(', ')}]`,
     );
 
     // Native and action search may both be bound here; the model picks at runtime.
@@ -576,6 +578,7 @@ export class ChatExecutionService {
       messages: [systemMessage, ...modelMessages],
       tools: activeTools,
       abortSignal,
+      maxOutputTokens: modelConfig.maxOutputTokens,
       stopWhen: (step) => {
         const hitMaxSteps = stepCountIs(AGENT_CONFIG.MAX_STEPS)(step);
         const askedQuestions = hasToolCall(ASK_QUESTIONS_TOOL_NAME)(step);
@@ -604,7 +607,10 @@ export class ChatExecutionService {
       },
       providerOptions: getCallLevelProviderOptions({
         sdkPackage: registeredModel.sdkPackage,
-        providerOptions: undefined,
+        providerOptions:
+          this.aiModelConfigService.getReasoningProviderOptions(
+            registeredModel,
+          ),
         promptCacheKey: threadId,
       }),
       prepareStep: ({ messages: stepMessages }) => {

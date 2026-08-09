@@ -44,8 +44,6 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useLocation, useNavigate } from "react-router-dom";
 import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
-import { CandidateSearchModal } from '@/candidate-search/components/search-components/CandidateSearchModal';
-import { SearchPanel } from '@/candidate-search/components/SearchPanel/SearchPanel';
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
 import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessageModalState';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -144,9 +142,6 @@ export const ProjectPage: React.FC = () => {
   const emailRevealCost = credits?.emailRevealCost ?? undefined;
   const phoneRevealCost = credits?.phoneRevealCost ?? undefined;
 
-  // Feature flag for new search UI
-  // const { isNewSearchUIEnabled } = useNewSearchUI();
-  const isNewSearchUIEnabled = true; // TODO: Remove this once the feature flag is implemented
   const { resetJobStates } = useProjectStateReset();
   const { refetchJobs } = useProjectRefetch();
   const refetchJobsRef = useRef(refetchJobs);
@@ -760,7 +755,7 @@ export const ProjectPage: React.FC = () => {
                   onSaveSelected={handleSaveSelected}
                   onDiscardAll={handleDiscardSelected}
                   onLoadMore={dataTableRef.current?.loadMoreCandidates}
-                  showBatchActions={isNewSearchUIEnabled}
+                  showBatchActions={true}
                 />
               </ViewComponentInstanceContext.Provider>
             </RecordIndexContextProvider>
@@ -771,28 +766,6 @@ export const ProjectPage: React.FC = () => {
                 }}
               >
                 <TableContainer>
-                  {/* New Search UI Components */}
-                  {isNewSearchUIEnabled && (
-                    <>
-                      {/* <SearchPanelToggle /> */}
-                      <SearchPanel />
-
-                      {/* Context Hint Bar */}
-                      {/* <ContextHintBar
-                        onCreateEnrichment={handleEnrichment}
-                        onSaveAll={() => {
-                          // TODO: Implement save all functionality
-                          console.log('Save all clicked');
-                        }}
-                        onDiscard={() => {
-                          // TODO: Implement discard functionality
-                          console.log('Discard clicked');
-                        }}
-                      /> */}
-
-                    </>
-                  )}
-
                   <Suspense fallback={null}>
                     <DataTable
                       ref={dataTableRef}
@@ -848,10 +821,6 @@ export const ProjectPage: React.FC = () => {
 
             {isBulkMessageModalOpen && (
               <BulkMessageModal />
-            )}
-
-            { !isNewSearchUIEnabled && (
-              <CandidateSearchModal />
             )}
 
           </StyledPageBody>

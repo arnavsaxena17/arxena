@@ -1409,17 +1409,10 @@
     "npm": "@ai-sdk/openai-compatible",
     "name": "openrouter",
     "label": "OpenRouter",
-    "baseUrl": "https://api.openrouter.ai/api/v1",
+    "baseUrl": "https://openrouter.ai/api/v1",
     "apiKey": "{{OPENROUTER_API_KEY}}",
+    "supportsStructuredOutputs": true,
     "models": [
-      {
-        "name": "tencent/hy3:free",
-        "label": "Tencent HY3 (free)",
-        "inputCostPerMillionTokens": 0,
-        "outputCostPerMillionTokens": 0,
-        "contextWindowTokens": 131072,
-        "maxOutputTokens": 8192
-      },
       {
         "name": "google/gemini-2.5-flash",
         "label": "Gemini 2.5 Flash (fallback)",
@@ -1436,17 +1429,19 @@
   "nous": {
     "npm": "@ai-sdk/openai-compatible",
     "name": "nous",
-    "label": "Nous",
-    "baseUrl": "https://api.nousresearch.com/v1",
+    "label": "Nous Research",
+    "baseUrl": "https://inference-api.nousresearch.com/v1",
     "apiKey": "{{NOUS_API_KEY}}",
+    "supportsStructuredOutputs": true,
     "models": [
       {
         "name": "tencent/hy3:free",
-        "label": "Tencent HY3 (free)",
+        "label": "Nous Research HY3",
         "inputCostPerMillionTokens": 0,
         "outputCostPerMillionTokens": 0,
-        "contextWindowTokens": 131072,
-        "maxOutputTokens": 8192
+        "contextWindowTokens": 262144,
+        "maxOutputTokens": 8192,
+        "supportsReasoning": true
       }
     ]
   }

@@ -23,35 +23,83 @@ export class ProviderConfigService {
 
   getResolvedProviders(): AiProvidersConfig {
     const rawCatalog = this.defaultAiCatalogService.getDefaultAiCatalog();
-    // Only resolve {{VAR}} templates in the committed catalog — never in
-    // user-supplied custom providers, to prevent config variable exfiltration.
+    // Only resolve {{VAR}} templates that the catalog itself declares.
+    // Prevents AI_PROVIDERS from exfiltrating arbitrary config secrets
+    // (e.g. {{DATABASE_URL}}) while still allowing {{NOUS_API_KEY}}.
+    const catalogTemplateVars =
+      this.collectTemplateVariableNames(rawCatalog);
     const catalog = this.resolveTemplates(rawCatalog);
-    const custom = this.twentyConfigService.get('AI_PROVIDERS');
+    const custom = this.twentyConfigService.get('AI_PROVIDERS') ?? {};
+    const resolvedCustom = this.resolveTemplates(
+      custom,
+      catalogTemplateVars,
+    );
 
-    return { ...catalog, ...custom };
+    return this.mergeProviders(catalog, resolvedCustom);
   }
 
-  private resolveTemplates(providers: AiProvidersConfig): AiProvidersConfig {
+  private collectTemplateVariableNames(
+    providers: AiProvidersConfig,
+  ): Set<string> {
+    const names = new Set<string>();
+
+    for (const config of Object.values(providers)) {
+      for (const field of [
+        config.apiKey,
+        config.accessKeyId,
+        config.secretAccessKey,
+        config.baseUrl,
+      ]) {
+        const varName = extractConfigVariableName(field);
+
+        if (varName) {
+          names.add(varName);
+        }
+      }
+    }
+
+    return names;
+  }
+
+  private resolveTemplates(
+    providers: AiProvidersConfig,
+    allowedTemplateVars?: Set<string>,
+  ): AiProvidersConfig {
     const result: AiProvidersConfig = {};
 
     for (const [name, config] of Object.entries(providers)) {
-      result[name] = this.resolveProviderTemplates(config);
+      result[name] = this.resolveProviderTemplates(
+        config,
+        allowedTemplateVars,
+      );
     }
 
     return result;
   }
 
-  private resolveProviderTemplates(config: AiProviderConfig): AiProviderConfig {
+  private resolveProviderTemplates(
+    config: AiProviderConfig,
+    allowedTemplateVars?: Set<string>,
+  ): AiProviderConfig {
     return {
       ...config,
-      baseUrl: this.resolveTemplate(config.baseUrl),
-      apiKey: this.resolveTemplate(config.apiKey),
-      accessKeyId: this.resolveTemplate(config.accessKeyId),
-      secretAccessKey: this.resolveTemplate(config.secretAccessKey),
+      baseUrl: this.resolveTemplate(config.baseUrl, allowedTemplateVars),
+      apiKey: this.resolveTemplate(config.apiKey, allowedTemplateVars),
+      accessKeyId: this.resolveTemplate(
+        config.accessKeyId,
+        allowedTemplateVars,
+      ),
+      secretAccessKey: this.resolveTemplate(
+        config.secretAccessKey,
+        allowedTemplateVars,
+      ),
     };
   }
 
-  private resolveTemplate(value?: string): string | undefined {
+  private resolveTemplate(
+    value?: string,
+    allowedTemplateVars?: Set<string>,
+  ): string | undefined {
     if (!value) {
       return value;
     }
@@ -59,6 +107,10 @@ export class ProviderConfigService {
     const varName = extractConfigVariableName(value);
 
     if (!varName) {
+      return value;
+    }
+
+    if (allowedTemplateVars && !allowedTemplateVars.has(varName)) {
       return value;
     }
 
@@ -78,5 +130,33 @@ export class ProviderConfigService {
     }
 
     return process.env[varName] || undefined;
+  }
+
+  private mergeProviders(
+    catalog: AiProvidersConfig,
+    custom: AiProvidersConfig,
+  ): AiProvidersConfig {
+    const result: AiProvidersConfig = { ...catalog };
+
+    for (const [name, customConfig] of Object.entries(custom)) {
+      const catalogConfig = catalog[name];
+
+      if (!catalogConfig) {
+        result[name] = customConfig;
+        continue;
+      }
+
+      // Drop undefined credential fields so catalog keys survive partial overrides
+      const definedCustomEntries = Object.entries(customConfig).filter(
+        ([, value]) => value !== undefined,
+      );
+
+      result[name] = {
+        ...catalogConfig,
+        ...Object.fromEntries(definedCustomEntries),
+      };
+    }
+
+    return result;
   }
 }

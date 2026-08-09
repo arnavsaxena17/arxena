@@ -115,6 +115,8 @@ export class SdkProviderFactoryService {
       hash(config.secretAccessKey),
       config.sessionToken ? hash(config.sessionToken) : '',
       hash(config.apiKey),
+      // Match createOpenAICompatible default (true unless explicitly false)
+      config.supportsStructuredOutputs === false ? '' : 'structured',
     ].join('-');
   }
 
@@ -230,6 +232,9 @@ export class SdkProviderFactoryService {
       name: config.name ?? 'openai-compatible',
       baseURL: config.baseUrl,
       ...(config.apiKey && { apiKey: config.apiKey }),
+      // Required so Output.object schemas (workflow AI node fields) are sent
+      // as response_format.json_schema instead of bare json_object.
+      supportsStructuredOutputs: config.supportsStructuredOutputs ?? true,
     });
 
     return {

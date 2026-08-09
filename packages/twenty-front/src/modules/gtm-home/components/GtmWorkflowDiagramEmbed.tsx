@@ -14,6 +14,8 @@ export const GtmWorkflowDiagramEmbed = ({
 }: GtmWorkflowDiagramEmbedProps) => {
   return (
     <WorkflowVisualizerComponentInstanceContext.Provider
+      // Remount on switch — draft transitions otherwise merge the previous graph in.
+      key={workflowId}
       value={{
         instanceId: getWorkflowVisualizerComponentInstanceId({
           recordId: workflowId,

@@ -45,6 +45,7 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
   let toolRegistry: { getToolsByCategories: jest.Mock };
   let roleTargetRepository: { findOne: jest.Mock };
   let aiBillingService: {
+    assertHasAvailableCreditsOrThrow: jest.Mock;
     decrementAndCheckAvailableCredits: jest.Mock;
     calculateCost: jest.Mock;
     emitAiTokenUsageEvent: jest.Mock;
@@ -68,6 +69,9 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
     toolRegistry = { getToolsByCategories: jest.fn().mockResolvedValue({}) };
     roleTargetRepository = { findOne: jest.fn() };
     aiBillingService = {
+      assertHasAvailableCreditsOrThrow: jest
+        .fn()
+        .mockResolvedValue(undefined),
       decrementAndCheckAvailableCredits: jest
         .fn()
         .mockResolvedValue({ hasNoMoreAvailableCredits: false }),
@@ -85,10 +89,15 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
           provide: AiModelRegistryService,
           useValue: {
             validateModelAvailability: jest.fn(),
-            resolveModelForAgent: jest.fn().mockResolvedValue({
+            resolveModelForAgentInWorkspace: jest.fn().mockResolvedValue({
               modelId: 'openai/gpt-4.1',
               sdkPackage: '@ai-sdk/openai',
               model: {},
+              rawProvider: {},
+            }),
+            getEffectiveModelConfig: jest.fn().mockReturnValue({
+              modelId: 'openai/gpt-4.1',
+              maxOutputTokens: 4096,
             }),
           },
         },

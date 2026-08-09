@@ -8,6 +8,7 @@ import {
   IllustrationIconTag,
   IllustrationIconTags,
   IllustrationIconText,
+  IllustrationIconToggle,
 } from 'twenty-ui/icon';
 import { type SelectOption } from 'twenty-ui/input';
 
@@ -27,6 +28,11 @@ export const FORM_SELECT_FIELD_TYPE_OPTIONS: SelectOption<WorkflowFormFieldType>
       label: getDefaultFormFieldSettings(FieldMetadataType.DATE).label,
       value: FieldMetadataType.DATE,
       Icon: IllustrationIconCalendarEvent,
+    },
+    {
+      label: getDefaultFormFieldSettings(FieldMetadataType.BOOLEAN).label,
+      value: FieldMetadataType.BOOLEAN,
+      Icon: IllustrationIconToggle,
     },
     {
       label: getDefaultFormFieldSettings('RECORD').label,

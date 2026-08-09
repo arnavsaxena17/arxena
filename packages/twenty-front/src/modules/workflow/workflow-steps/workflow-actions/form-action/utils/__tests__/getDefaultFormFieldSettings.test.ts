@@ -69,6 +69,16 @@ describe('getDefaultFormFieldSettings', () => {
     });
   });
 
+  it('should return correct default settings for BOOLEAN field type', () => {
+    const result = getDefaultFormFieldSettings(FieldMetadataType.BOOLEAN);
+    expect(result).toEqual({
+      id: 'test-uuid-123',
+      name: 'boolean',
+      label: 'Boolean',
+      placeholder: 'True / False',
+    });
+  });
+
   it('should generate unique UUID for each call', () => {
     getDefaultFormFieldSettings(FieldMetadataType.TEXT);
     getDefaultFormFieldSettings(FieldMetadataType.NUMBER);

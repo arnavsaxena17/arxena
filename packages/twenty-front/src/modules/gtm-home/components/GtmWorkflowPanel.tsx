@@ -1,63 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { styled } from '@linaria/react';
-import { AppPath } from 'twenty-shared/types';
-import { getAppPath } from 'twenty-shared/utils';
+import { useEffect } from 'react';
 import { Loader } from 'twenty-ui/feedback';
-import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { useOpenAskAiPageWithPreprompt } from '@/ai/hooks/useOpenAskAiPageWithPreprompt';
 import { GtmWorkflowDiagramEmbed } from '@/gtm-home/components/GtmWorkflowDiagramEmbed';
 import { GtmWorkflowRunDiagramEmbed } from '@/gtm-home/components/GtmWorkflowRunDiagramEmbed';
-import {
-  type GtmWorkflowEmbedMode,
-  useGtmWorkflowEmbed,
-} from '@/gtm-home/hooks/useGtmWorkflowEmbed';
-import {
-  buildGtmCommandContextPrompt,
-  gtmCommandContextState,
-} from '@/gtm-home/states/gtmCommandContextState';
+import { type GtmWorkflowEmbedMode } from '@/gtm-home/hooks/useGtmWorkflowEmbed';
 import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledPanel = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[3]};
   height: 100%;
   min-height: 480px;
-`;
-
-const StyledToolbar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[2]};
-  flex-wrap: wrap;
-`;
-
-const StyledModeToggle = styled.div`
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
-`;
-
-const StyledHint = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
-  color: ${themeCssVariables.font.color.secondary};
-`;
-
-const StyledContext = styled.pre`
-  margin: 0;
-  padding: ${themeCssVariables.spacing[3]};
-  border-radius: ${themeCssVariables.border.radius.md};
-  background: ${themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.xs};
-  white-space: pre-wrap;
-  max-height: 140px;
-  overflow: auto;
 `;
 
 const StyledCanvas = styled.div`
@@ -83,32 +38,26 @@ const StyledEmpty = styled.div`
 
 type GtmWorkflowPanelProps = {
   isActive: boolean;
+  mode: GtmWorkflowEmbedMode;
+  workflowId: string | null;
+  workflowRunId: string | null;
+  hasWorkflow: boolean;
+  hasWorkflowRun: boolean;
+  workflowsLoading: boolean;
+  runsLoading: boolean;
 };
 
-export const GtmWorkflowPanel = ({ isActive }: GtmWorkflowPanelProps) => {
-  const navigate = useNavigate();
+export const GtmWorkflowPanel = ({
+  isActive,
+  mode,
+  workflowId,
+  workflowRunId,
+  hasWorkflow,
+  hasWorkflowRun,
+  workflowsLoading,
+  runsLoading,
+}: GtmWorkflowPanelProps) => {
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
-  const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
-  const commandContext = useAtomStateValue(gtmCommandContextState);
-  const {
-    workflowId,
-    workflowRunId,
-    hasWorkflow,
-    hasWorkflowRun,
-    workflowsLoading,
-    runsLoading,
-    projectOutreachWorkflowId,
-  } = useGtmWorkflowEmbed();
-
-  const [mode, setMode] = useState<GtmWorkflowEmbedMode>('definition');
-  const contextPrompt = buildGtmCommandContextPrompt(commandContext);
-
-  const openAskAiWithRunContext = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'PREFILL',
-      text: contextPrompt,
-    });
-  };
 
   useEffect(() => {
     if (!isActive) {
@@ -118,12 +67,6 @@ export const GtmWorkflowPanel = ({ isActive }: GtmWorkflowPanelProps) => {
     // Keep the existing chat thread; do not auto-send a new kickoff.
     openAskAiPage({ resetNavigationStack: true });
   }, [isActive, openAskAiPage]);
-
-  useEffect(() => {
-    if (mode === 'run' && !hasWorkflowRun && hasWorkflow) {
-      setMode('definition');
-    }
-  }, [hasWorkflow, hasWorkflowRun, mode]);
 
   if (workflowsLoading) {
     return (
@@ -136,72 +79,13 @@ export const GtmWorkflowPanel = ({ isActive }: GtmWorkflowPanelProps) => {
   if (!hasWorkflow || !workflowId) {
     return (
       <StyledEmpty>
-        No outreach workflow bound for this GTM run yet.
-        <br />
-        Seed with{' '}
-        <code>setup-gtm-outreach-workflow.ts</code> (sets Project.outreachWorkflowId),
-        open a workflow under Workflows, or pass <code>?workflowId=…</code>.
-        <br />
-        <Button
-          title="Open Workflows"
-          variant="secondary"
-          size="small"
-          onClick={() =>
-            navigate(
-              getAppPath(AppPath.RecordIndexPage, {
-                objectNamePlural: 'workflows',
-              }),
-            )
-          }
-        />
+        <Loader /> Preparing default Stage B outreach workflow…
       </StyledEmpty>
     );
   }
 
   return (
     <StyledPanel>
-      <StyledToolbar>
-        <StyledModeToggle>
-          <Button
-            title="Definition"
-            size="small"
-            variant={mode === 'definition' ? 'primary' : 'secondary'}
-            onClick={() => setMode('definition')}
-          />
-          <Button
-            title="Latest run"
-            size="small"
-            variant={mode === 'run' ? 'primary' : 'secondary'}
-            onClick={() => setMode('run')}
-            disabled={!hasWorkflowRun}
-          />
-          <Button
-            title="Ask AI"
-            size="small"
-            variant="secondary"
-            onClick={openAskAiWithRunContext}
-          />
-          <Button
-            title="Open full workflow"
-            size="small"
-            variant="secondary"
-            onClick={() =>
-              navigate(
-                getAppPath(AppPath.RecordShowPage, {
-                  objectNameSingular: 'workflow',
-                  objectRecordId: workflowId,
-                }),
-              )
-            }
-          />
-        </StyledModeToggle>
-        <StyledHint>
-          {mode === 'definition'
-            ? `Editing run graph${projectOutreachWorkflowId ? ' (Project-bound)' : ''}. Click a node to edit; Ask AI uses the context below.`
-            : 'Run status on nodes. Click a node for step input/output in the right drawer.'}
-        </StyledHint>
-      </StyledToolbar>
-      <StyledContext>{contextPrompt}</StyledContext>
       <StyledCanvas>
         {mode === 'run' && hasWorkflowRun && workflowRunId ? (
           runsLoading ? (
@@ -209,10 +93,13 @@ export const GtmWorkflowPanel = ({ isActive }: GtmWorkflowPanelProps) => {
               <Loader /> Loading run…
             </StyledEmpty>
           ) : (
-            <GtmWorkflowRunDiagramEmbed workflowRunId={workflowRunId} />
+            <GtmWorkflowRunDiagramEmbed
+              key={workflowRunId}
+              workflowRunId={workflowRunId}
+            />
           )
         ) : (
-          <GtmWorkflowDiagramEmbed workflowId={workflowId} />
+          <GtmWorkflowDiagramEmbed key={workflowId} workflowId={workflowId} />
         )}
       </StyledCanvas>
     </StyledPanel>
