@@ -103,6 +103,82 @@ export class WhatsappUnipileRequestService {
     }
   }
 
+  normalizePhoneDigits(phone: string): string {
+    return phone.replace(/[^\d]/g, '');
+  }
+
+  /**
+   * Check whether a phone number is registered on WhatsApp via Unipile
+   * GET /api/v1/users/{identifier}?account_id=...
+   * See: https://developer.unipile.com/docs/users-overview
+   * 200 = on WhatsApp; 404 = not on WhatsApp / invalid identifier.
+   */
+  async checkIfPhoneNumberOnWhatsApp(input: {
+    phoneNumber: string;
+    accountId: string;
+  }): Promise<{
+    phoneNumber: string;
+    isOnWhatsApp: boolean;
+    profile: {
+      provider?: string;
+      id?: string;
+      is_business?: boolean;
+      object?: string;
+      [key: string]: unknown;
+    } | null;
+    accountId: string;
+  }> {
+    const phoneNumber = this.normalizePhoneDigits(input.phoneNumber);
+    const accountId = input.accountId.trim();
+
+    if (!phoneNumber) {
+      throw new HttpException(
+        'phoneNumber is required (E.164 digits, e.g. 33612345678)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!accountId) {
+      throw new HttpException(
+        'accountId is required (connected WhatsApp Unipile account)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const profile = (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(phoneNumber)}?account_id=${encodeURIComponent(accountId)}`,
+      )) as {
+        provider?: string;
+        id?: string;
+        is_business?: boolean;
+        object?: string;
+        [key: string]: unknown;
+      };
+
+      return {
+        phoneNumber,
+        isOnWhatsApp: true,
+        profile,
+        accountId,
+      };
+    } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.NOT_FOUND
+      ) {
+        return {
+          phoneNumber,
+          isOnWhatsApp: false,
+          profile: null,
+          accountId,
+        };
+      }
+
+      throw error;
+    }
+  }
+
   /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
   async fetchAccountByIdIfExists(
     accountId: string,

@@ -46,7 +46,7 @@ export class WhatsappUnipileController {
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
-    
+
     // Initialize Unipile SDK client
     this.unipileClient = new UnipileClient(
       this.unipileApiUrl || '',
@@ -265,7 +265,7 @@ export class WhatsappUnipileController {
           account_id: accountId,
         };
       }
-      
+
       this.logger.error(`Failed to check account status for in whatsapp-unipile controller ${accountId}:`, error);
       throw error;
     }
@@ -303,9 +303,98 @@ export class WhatsappUnipileController {
           error: 'Account not found',
         };
       }
-      
+
       this.logger.error(`Failed to get WhatsApp account ${accountId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Check whether a phone number is registered on WhatsApp.
+   * Uses Unipile GET /api/v1/users/{identifier}?account_id=...
+   * (https://developer.unipile.com/reference/userscontroller_getprofilebyidentifier)
+   *
+   * Body: { phoneNumber: string; accountId?: string }
+   * phoneNumber: E.164 digits (e.g. 33612345678). Symbols are stripped.
+   * accountId: optional; defaults to the caller's linked WhatsApp Unipile account.
+   */
+  @Post('check-number')
+  async checkIfNumberOnWhatsApp(
+    @Body() body: { phoneNumber?: string; accountId?: string },
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Req() request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
+    const phoneNumber = body?.phoneNumber?.trim() ?? '';
+
+    if (!phoneNumber) {
+      throw new HttpException(
+        'phoneNumber is required (E.164 digits, e.g. 33612345678)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let accountId = body?.accountId?.trim() ?? '';
+
+    if (!accountId) {
+      const workspaceMemberId = request.workspaceMemberId;
+      const authToken =
+        request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+      if (!workspaceMemberId || !authToken) {
+        throw new HttpException(
+          'accountId is required when no linked WhatsApp Unipile account can be resolved',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const resolvedAccountId =
+        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+          workspaceMemberId,
+          workspace.id,
+          authToken,
+          'whatsapp',
+        );
+
+      if (!resolvedAccountId) {
+        throw new HttpException(
+          'No WhatsApp Unipile account linked to this workspace member; pass accountId or connect WhatsApp first',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      accountId = resolvedAccountId;
+    }
+
+    try {
+      this.logger.log(
+        `Checking WhatsApp presence for ${phoneNumber} via account ${accountId}`,
+      );
+
+      const result =
+        await this.unipileRequestService.checkIfPhoneNumberOnWhatsApp({
+          phoneNumber,
+          accountId,
+        });
+
+      return {
+        success: true,
+        ...result,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to check WhatsApp number:', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to check WhatsApp number',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
