@@ -204,9 +204,9 @@ export const GtmPeoplePanel = ({
   if (filteredPeople.length === 0) {
     return (
       <StyledEmpty>
-        No candidates for this GTM run yet. Add people via Ask AI / CRM, or seed
-        the dashboard. Enroll selected people to set stage{' '}
-        <code>QUEUED</code> and trigger Workflow B.
+        No target people in this GTM run yet. Use Ask AI to discover MD/CEOs or
+        buyers — they stay ephemeral (Redis) until you Add to CRM or Enroll,
+        which creates CRM Company + Candidate under this Project.
       </StyledEmpty>
     );
   }
@@ -218,8 +218,9 @@ export const GtmPeoplePanel = ({
   return (
     <StyledPanel>
       <StyledHint>
-        Candidates for this run. Add to CRM upserts shared Company (if needed) +
-        Person + Candidate. Enroll queues outreach (Workflow B).
+        Ephemeral list for this Project (Redis), merged with enrolled CRM
+        Candidates. Select rows, then Add to CRM / Enroll — Ask AI must not
+        create Candidates until you confirm.
       </StyledHint>
       <StyledActions>
         <Button

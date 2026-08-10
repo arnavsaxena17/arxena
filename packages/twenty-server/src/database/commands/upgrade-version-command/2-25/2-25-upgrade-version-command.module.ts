@@ -8,6 +8,8 @@ import { AddArxenaRecordActionCommandMenuItemsCommand } from 'src/database/comma
 import { BackfillLinkedinSearchSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000008-backfill-linkedin-search-skill.command';
 import { BackfillGtmIcpOnboardingSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000012-backfill-gtm-icp-onboarding-skill.command';
 import { SyncGtmCompanySkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000013-sync-gtm-company-skill-content.command';
+import { SyncGtmPeopleSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000014-sync-gtm-people-skill-content.command';
+import { SyncGtmOutreachWorkflowSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000015-sync-gtm-outreach-workflow-skill-content.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
@@ -32,6 +34,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     BackfillLinkedinSearchSkillCommand,
     BackfillGtmIcpOnboardingSkillCommand,
     SyncGtmCompanySkillContentCommand,
+    SyncGtmPeopleSkillContentCommand,
+    SyncGtmOutreachWorkflowSkillContentCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

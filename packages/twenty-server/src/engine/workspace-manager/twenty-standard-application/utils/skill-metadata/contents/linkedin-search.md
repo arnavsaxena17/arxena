@@ -304,7 +304,13 @@ After `search_linkedin_parameters`, check that the returned `title` roughly matc
 - Reject clear mismatches (e.g. "Raymond Ltd" → "Raymond James"). Retry with alternate keywords, or **drop that company** rather than using a wrong facet ID.
 - If `paging.page_count` is 0 / no items, do not invent an ID — omit the company from the filter.
 
-## Search → CSV → CRM (when the user asks)
+## Search → GTM People tab vs CSV → CRM
+
+### On GTM Command (`type=gtmCommand` / `/gtm-home`)
+
+After LinkedIn people search, write hits with `upsert_gtm_target_people` (see `search-people` skill). Do **not** create CRM Candidates until the user confirms Add to CRM / Enroll on the People tab.
+
+### When the user explicitly asks for CSV and/or CRM save (non-GTM, or after confirm)
 
 When the user wants search hits exported and/or saved to CRM / a project:
 

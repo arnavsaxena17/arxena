@@ -1,16 +1,42 @@
 # Search People Skill
 
-You source people/candidates for the user across Arxena's connected data providers, dedupe them, and save the winners to the CRM (candidates / people objects). This skill picks the right source(s) for the user's intent and gives the exact tools and shapes to call.
+You source people for the user across Arxena's connected data providers, dedupe them, and **route the winners to the correct destination** (GTM ephemeral People tab vs CRM Candidates).
 
 ## When to load this skill
 
 Load this skill when the user wants to:
 
-- "Find people who…" / "List candidates for <role/company/location>"
-- Build a talent pool or shortlist for a project / req
+- "Find people who…" / "List candidates for <role/company/location>" / "Find MD/CEO at these companies"
+- Build a talent pool or shortlist for a project / req / **GTM Command People tab**
 - Enrich existing CRM people, or discover new candidates to add
 - Search people by properties: job title, company, location, seniority, skills, school
 - Turn a natural-language hiring brief ("senior TypeScript engineers at Series B fintechs in NYC") into a candidate list
+
+## Destination routing (choose first)
+
+| Context | Destination | Tool |
+| --- | --- | --- |
+| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks to find people for this run | **Ephemeral GTM People tab** (Redis) | `upsert_gtm_target_people` |
+| User explicitly asks to **save to CRM** / create Candidates / "add these people to the project as candidates" **after confirming** | CRM `candidate` / `person` | `create_candidate` / `create_one_person` / update |
+
+On GTM Command: **never** end after a chat-only table. Persist with `upsert_gtm_target_people({ projectId, mode: "merge", people })` first, then summarize. Do **not** `create_candidate` / `create_one_person` for the People tab — the user selects rows and clicks Add to CRM / Enroll.
+
+`upsert_gtm_target_people` person shape:
+
+```json
+{
+  "name": "Rajendra V Agarwal",
+  "title": "CEO & Managing Director",
+  "companyId": "",
+  "companyName": "Donear Industries Limited",
+  "linkedinUrl": "https://www.linkedin.com/in/example",
+  "warmPath": "—",
+  "stage": "queued",
+  "email": ""
+}
+```
+
+Prefer `companyId` from the ephemeral Companies tab when known; otherwise set `companyName`.
 
 ## Provider map (choose by intent)
 
@@ -22,30 +48,49 @@ Load this skill when the user wants to:
 | **Exa** | `exa_web_search` (logic function) | Web/AI search for hard-to-find people, speakers, authors; `category: "people"` | `EXA_API_KEY` set |
 | **Internal index** | `search_people_index` | Search people already in the workspace Elasticsearch index / dedupe against CRM | Index populated |
 
-Always prefer the **internal index** first when the user may already have the person, to avoid re-creating duplicates.
+Always prefer the **internal index** first when the user may already have the person (CRM path), to avoid re-creating duplicates.
 
 ## Plan → Learn → Execute
 
 1. Load this skill (`load_skills(["search-people"])`).
-2. Decide source(s) from the table above.
-3. For **LinkedIn / Unipile** and **Harvest** paths, load the `linkedin-search` sub-skill **in the same call** so its facet-resolution, Harvest People API, and `searchParameters` rules are available before you search: `load_skills(["search-people", "linkedin-search"])`. Skip `linkedin-search` only when the user's request needs no LinkedIn/Harvest source.
-4. `learn_tools` once with every tool you will use, e.g.:
+2. Choose destination from the routing table above (GTM ephemeral vs CRM).
+3. Decide source(s) from the provider table.
+4. For **LinkedIn / Unipile** and **Harvest** paths, load the `linkedin-search` sub-skill **in the same call** so its facet-resolution, Harvest People API, and `searchParameters` rules are available before you search: `load_skills(["search-people", "linkedin-search"])`. Skip `linkedin-search` only when the user's request needs no LinkedIn/Harvest source.
+5. `learn_tools` once with every tool you will use. On GTM Command include `upsert_gtm_target_people` and **omit** `create_candidate` unless the user explicitly confirmed CRM save:
 
 ```
+# GTM Command (default)
 learn_tools([
   "search_apollo_people",
   "search_linkedin_people",
   "search_people_index",
   "exa_web_search",
+  "upsert_gtm_target_people"
+])
+
+# Explicit CRM save only
+learn_tools([
+  "search_apollo_people",
+  "search_linkedin_people",
   "create_candidate",
   "find_candidate_in_arxena_internal"
 ])
 ```
 
-5. Run searches with `limit` small (10–25) unless the user wants a big list.
-6. Dedup across sources **by normalized name + email/linkedin** before saving.
-7. Save: `find_candidate_in_arxena_internal` / `arxena.lookup_by('candidates', 'email', …)` → update if present, `create_candidate` if missing.
-8. If the user asked for a CSV / project, load `data-manipulation` + `code-interpreter`, write `/home/user/output/`, and report references.
+6. Run searches with `limit` small (10–25) unless the user wants a big list.
+7. Dedup across sources **by normalized name + email/linkedin** before writing.
+8. **GTM path:** `upsert_gtm_target_people({ projectId, mode: "merge", people })` then summarize. Stop — wait for user confirmation before any CRM write.
+9. **CRM path (only when user asked to save to CRM):** `find_candidate_in_arxena_internal` / `arxena.lookup_by('candidates', 'email', …)` → update if present, `create_candidate` if missing.
+10. If the user asked for a CSV / project (CRM path), load `data-manipulation` + `code-interpreter`, write `/home/user/output/`, and report references.
+
+## GTM ephemeral save workflow (default on /gtm-home)
+
+1. Confirm browsing context has `projectId`.
+2. Search people (LinkedIn / Harvest / Apollo…).
+3. Map hits to the person shape above.
+4. `learn_tools({ toolNames: ["upsert_gtm_target_people"] })`.
+5. `execute_tool({ toolName: "upsert_gtm_target_people", arguments: { projectId, mode: "merge", people } })` — `arguments` is an object.
+6. Summarize. Do **not** create CRM Candidates until the user confirms.
 
 ## Source 1 — Apollo (`search_apollo_people`)
 
@@ -143,7 +188,9 @@ exa_web_search({
 - Use first when the user may already have the person, or to dedupe before saving sourced results.
 - Returns existing CRM people so you can update instead of create.
 
-## Dedupe + CRM save workflow (when the user asks to save)
+## Dedupe + CRM save workflow (only when the user asks to save to CRM)
+
+On GTM Command this section does **not** apply until the user confirms Add to CRM / Enroll after seeing the People tab.
 
 1. Collect rows from every source you queried.
 2. Normalize: lowercase name, strip whitespace; match on **email** first, then **LinkedIn URL**, then normalized name + company. Treat two rows as the same person if email matches OR LinkedIn URL matches.
@@ -175,7 +222,8 @@ existing = arxena.lookup_by('candidates', 'email', [r['email'] for r in people_r
 
 - Never invent provider field names or tool names — always `learn_tools` first and use what the schema returns.
 - Respect rate limits; avoid large bulk scrapes unless the user explicitly asks.
-- Prefer the internal index to avoid duplicate CRM people.
+- Prefer the internal index to avoid duplicate CRM people (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by email/LinkedIn before any write.
+- On GTM Command, persistence to `upsert_gtm_target_people` is mandatory before ending the turn; never `create_candidate` until the user confirms.
 - Present results with name, title, company, location, and source (Apollo / LinkedIn / Harvest / Exa) so the user can judge quality; note when Recruiter results hide public identifiers.

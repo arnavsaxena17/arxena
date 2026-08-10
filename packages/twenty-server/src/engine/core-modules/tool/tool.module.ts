@@ -14,6 +14,7 @@ import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/dr
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { UpsertGtmTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/gtm-target-companies-tool/upsert-gtm-target-companies-tool';
+import { UpsertGtmTargetPeopleTool } from 'src/engine/core-modules/tool/tools/gtm-target-people-tool/upsert-gtm-target-people-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
@@ -64,6 +65,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     CodeInterpreterTool,
     NavigateAppTool,
     UpsertGtmTargetCompaniesTool,
+    UpsertGtmTargetPeopleTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,
@@ -83,6 +85,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     CodeInterpreterTool,
     NavigateAppTool,
     UpsertGtmTargetCompaniesTool,
+    UpsertGtmTargetPeopleTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,

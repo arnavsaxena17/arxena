@@ -12,6 +12,7 @@ export const ACTION_TOOL_IDS = [
   'code_interpreter',
   'navigate_app',
   'upsert_gtm_target_companies',
+  'upsert_gtm_target_people',
 ] as const;
 
 export type ActionToolId = (typeof ACTION_TOOL_IDS)[number];
@@ -40,5 +41,8 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   upsert_gtm_target_companies: {
     label: i18nLabel(msg`Upsert GTM Target Companies`),
+  },
+  upsert_gtm_target_people: {
+    label: i18nLabel(msg`Upsert GTM Target People`),
   },
 };

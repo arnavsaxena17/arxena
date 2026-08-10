@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash, randomUUID } from 'crypto';
 
-import { isNonEmptyString } from 'twenty-shared/utils';
+import { isNonEmptyString } from '@sniptt/guards';
 
 import {
   type GtmEphemeralCompany,

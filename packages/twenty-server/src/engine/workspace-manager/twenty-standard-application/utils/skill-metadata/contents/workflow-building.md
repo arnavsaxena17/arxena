@@ -110,3 +110,25 @@ Do NOT call `validate_workflow` after every change:
 - Ensure workflow logic remains coherent
 
 Prioritize user understanding and workflow effectiveness.
+
+## Clone / copy → edit → activate (preferred over rebuild)
+
+When the user wants a LinkedIn connection / outreach workflow and a template already exists (especially GTM Command Stage B **`GTM Outreach — Per Candidate`** or browsing context `outreachWorkflowId`):
+
+1. **Resolve** — `list_workflows` (or use `outreachWorkflowId` from `<browsing_context>`). Prefer the Project-pinned id. Do **not** create a brand-new blank workflow if a Stage B template exists.
+2. **Inspect** — `get_workflow_current_version({ workflowId })`. Note trigger, step types/ids, and which SEND_* nodes exist (`SEND_LINKEDIN_CONNECTION_REQUEST`, `SEND_LINKEDIN_MESSAGE`, `SEND_LINKEDIN_INMAIL`, FILTER, IF_ELSE, UPDATE_RECORD, FORM, DELAY).
+3. **Clone draft to edit safely** — `create_draft_from_workflow_version({ workflowId, workflowVersionIdToCopy })` so you edit a draft instead of mutating a live ACTIVE graph mid-flight. Then `update_workflow_version_step` / edge tools on **that draft** only.
+4. **Edit only what the request needs** — remap field paths, messages, filters, caps. Keep existing node topology when it already matches (candidate.created → QUEUED filter → load candidate → degree branch → connection request).
+5. **Candidate LinkedIn field** — on **Candidate**, the Links field is `linkedinUrl.primaryLinkUrl` (not `linkedinLink`). Person uses `linkedinLink`. Workflow templates that read `…linkedinLink…` from a Candidate FIND/LOAD step must use `linkedinUrl`.
+6. **Validate once** — `validate_workflow` at the end (pass `validate: false` on intermediate step updates).
+7. **Activate** — `activate_workflow_version` on the draft you edited.
+8. **Execute for GTM people** — create CRM Candidates for the selected ephemeral people with `projectsId` = Project id, `outreachSequenceStage` = `QUEUED`, and `linkedinUrl.primaryLinkUrl` set. That fires `candidate.created` → Stage B. Then `list_workflow_runs({ workflowId })` / `get_workflow_run` to confirm.
+9. **Do not** burn the turn on metadata rabbit holes or parse-glitch retries. If a large `update_workflow_version_step` payload fails validation, shrink the payload (change only `settings.input.linkedinUrl`) and retry once.
+
+### GTM Command “start LinkedIn connection outreach”
+
+Treat phrases like “start outreach”, “send connection requests”, “run the LinkedIn workflow” as **execute authorization**:
+
+1. Load this skill + ensure Stage B is pinned/activated (clone+edit only if broken).
+2. Enroll People-tab rows → Candidates (`QUEUED` + LinkedIn URL).
+3. Summarize workflow runs — do not stop after “I’ll fix the template next”.

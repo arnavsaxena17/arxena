@@ -25,6 +25,10 @@ import {
     fetchGtmCompaniesCache,
     persistGtmCompaniesCache,
 } from '@/gtm-home/utils/gtm-companies-cache';
+import {
+    fetchGtmPeopleCache,
+    persistGtmPeopleCache,
+} from '@/gtm-home/utils/gtm-people-cache';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
@@ -120,6 +124,48 @@ const dedupeCompaniesById = (companies: GtmCompanyRow[]): GtmCompanyRow[] => {
   return result;
 };
 
+const normalizePersonLinkedinKey = (linkedinUrl: string): string =>
+  linkedinUrl
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
+    .split('?')[0];
+
+const personMergeKey = (person: {
+  id: string;
+  name: string;
+  companyName: string;
+  linkedinUrl: string;
+}): string => {
+  const linkedinKey = normalizePersonLinkedinKey(person.linkedinUrl);
+
+  if (isNonEmptyString(linkedinKey)) {
+    return `linkedin:${linkedinKey}`;
+  }
+
+  return `id:${person.id}`;
+};
+
+const mergeEphemeralAndCrmPeople = (
+  ephemeralPeople: GtmPersonRow[],
+  crmPeople: GtmPersonRow[],
+): GtmPersonRow[] => {
+  const byKey = new Map<string, GtmPersonRow>();
+
+  for (const person of ephemeralPeople) {
+    byKey.set(personMergeKey(person), person);
+  }
+
+  // CRM enrolled rows win on the same LinkedIn / id key
+  for (const person of crmPeople) {
+    byKey.set(personMergeKey(person), person);
+  }
+
+  return [...byKey.values()];
+};
+
 export const useGtmLiveWorkingSet = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectIdFromQuery = searchParams.get(GTM_PROJECT_ID_QUERY_PARAM);
@@ -149,6 +195,8 @@ export const useGtmLiveWorkingSet = () => {
     [],
   );
   const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [ephemeralPeople, setEphemeralPeople] = useState<GtmPersonRow[]>([]);
+  const [peopleCacheLoading, setPeopleCacheLoading] = useState(false);
 
   const { createOneRecord: createProject } = useCreateOneRecord({
     objectNameSingular: 'project',
@@ -224,7 +272,6 @@ export const useGtmLiveWorkingSet = () => {
       setSearchParams(next, { replace: true });
       setSelectedCompanyId(null);
       setSelectedPersonId(null);
-      setSelectedSegmentId(null);
     },
     [searchParams, setSearchParams],
   );
@@ -287,6 +334,53 @@ export const useGtmLiveWorkingSet = () => {
     };
   }, [accessToken, activeProjectId]);
 
+  // Ephemeral people from Redis (per projectId) — not CRM Candidates until enroll.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+      setEphemeralPeople([]);
+
+      return;
+    }
+
+    const refreshPeople = () => {
+      fetchGtmPeopleCache(activeProjectId, accessToken)
+        .then((people) => {
+          if (!cancelled) {
+            setEphemeralPeople(
+              people.map((person) => ({
+                ...person,
+                stage: mapCrmStageToGtmOutreachStage(person.stage),
+                warmPath: person.warmPath || '—',
+                email: person.email || '',
+                companyId: person.companyId || '',
+                companyName: person.companyName || '',
+                title: person.title || '',
+                linkedinUrl: person.linkedinUrl || '',
+                candidateId: undefined,
+              })),
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setPeopleCacheLoading(false);
+          }
+        });
+    };
+
+    setPeopleCacheLoading(true);
+    refreshPeople();
+
+    const pollIntervalId = window.setInterval(refreshPeople, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollIntervalId);
+    };
+  }, [accessToken, activeProjectId]);
+
   const setCompanies = useCallback(
     async (companies: GtmCompanyRow[]) => {
       const next = dedupeCompaniesById(companies);
@@ -310,6 +404,17 @@ export const useGtmLiveWorkingSet = () => {
       await setCompanies(next);
     },
     [ephemeralCompanies, setCompanies],
+  );
+
+  const setPeople = useCallback(
+    async (people: GtmPersonRow[]) => {
+      setEphemeralPeople(people);
+
+      if (isDefined(activeProjectId) && isDefined(accessToken)) {
+        await persistGtmPeopleCache(activeProjectId, people, accessToken);
+      }
+    },
+    [accessToken, activeProjectId],
   );
 
   const candidateFilter = useMemo(() => {
@@ -397,6 +502,7 @@ export const useGtmLiveWorkingSet = () => {
 
     setActiveProjectId(created.id);
     setEphemeralCompanies([]);
+    setEphemeralPeople([]);
 
     return created.id;
   }, [
@@ -409,7 +515,7 @@ export const useGtmLiveWorkingSet = () => {
 
   const companies = ephemeralCompanies;
 
-  const people: GtmPersonRow[] = useMemo(
+  const crmPeople: GtmPersonRow[] = useMemo(
     () =>
       candidateRecords.map((candidate) => {
         const linkedinUrl =
@@ -434,6 +540,11 @@ export const useGtmLiveWorkingSet = () => {
         };
       }),
     [candidateRecords],
+  );
+
+  const people = useMemo(
+    () => mergeEphemeralAndCrmPeople(ephemeralPeople, crmPeople),
+    [crmPeople, ephemeralPeople],
   );
 
   const projectSettings: GtmProjectSettings = {
@@ -473,7 +584,11 @@ export const useGtmLiveWorkingSet = () => {
   };
 
   return {
-    loading: projectsLoading || companiesLoading || candidatesLoading,
+    loading:
+      projectsLoading ||
+      companiesLoading ||
+      peopleCacheLoading ||
+      candidatesLoading,
     workspaceCompany,
     companies,
     people,
@@ -484,6 +599,7 @@ export const useGtmLiveWorkingSet = () => {
     createGtmProject,
     setCompanies,
     appendCompanies,
+    setPeople,
     parsedIcp,
     linkedinConnected,
     gmailConnected,

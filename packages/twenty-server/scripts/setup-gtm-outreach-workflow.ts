@@ -496,7 +496,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinLink.primaryLinkUrl}}`,
+          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
           message: `{{${findCandidate.id}.result.first.pendingMessageBody}}`,
         },
         outputSchema: {},
@@ -520,7 +520,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinLink.primaryLinkUrl}}`,
+          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
           message: 'Happy to connect — would love to share how we help GTM teams.',
         },
         outputSchema: {},
@@ -651,7 +651,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinLink.primaryLinkUrl}}`,
+          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
           message:
             'Thanks for connecting — quick note on how we help teams map ICP buyers.',
         },
@@ -683,7 +683,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinLink.primaryLinkUrl}}`,
+          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
           subject: 'Quick intro',
           message: 'Sharing a short note on ICP outreach for your team.',
         },

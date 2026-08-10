@@ -7,7 +7,7 @@ Live working-set UI for the post-signup GTM loop. CRM-committed metrics live on 
 | Layer | Role |
 | --- | --- |
 | **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /gtm-command/cache/companies`) — Ask AI / discovery working set |
-| **Ephemeral people** | People DataTable / search cache (same idea as candidate-search) |
+| **Ephemeral people** | Redis cache keyed by `projectId` (`GET/PUT /gtm-command/cache/people`) via `upsert_gtm_target_people` — Ask AI search hits until user confirms CRM |
 | **Candidate** | Per-run outreach spine (`projectsId` = Project.id); Workflow B/C trigger unit |
 | **Company (CRM)** | Shared account — created **only when** people are enrolled / added to CRM |
 | **Person** | Cross-project memory (DNC, degree, etc.) |
@@ -38,8 +38,11 @@ Optional: `?workflowId=` / `?workflowRunId=`
 # 1) GTM fields on existing workspace
 npx nx run twenty-server:command -- workspace:sync-arxena-standard -w <workspaceId>
 
-# 2) Backfill Ask AI skill (existing workspaces)
+# 2) Backfill / sync Ask AI skills (existing workspaces)
 npx nx run twenty-server:command -- upgrade:2-25:backfill-gtm-icp-onboarding-skill -w <workspaceId>
+npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-company-skill-content -w <workspaceId>
+npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-people-skill-content -w <workspaceId>
+npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-outreach-workflow-skill-content -w <workspaceId>
 
 # 3) Seed dashboard + sample CRM rows (optional charts)
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
@@ -58,6 +61,7 @@ GTM_DELAY_MS=1000 GTM_SIMULATE_MODE=full GTM_PROJECT_ID=<uuid> API_TOKEN='…' \
 ## Shell actions
 
 - **Companies tab** — ephemeral Redis list per `projectId` (not CRM membership)
+- **People tab** — ephemeral Redis list per `projectId` (merged with enrolled CRM Candidates)
 - **Add selected to CRM** (People) — upsert Company + Person + Candidate under Project
 - **Enroll in outreach** — Candidate at `QUEUED` (Workflow B); also upserts Company when ephemeral company is known
 - **Promote deferred** — Deferred → Queued when under persona cap

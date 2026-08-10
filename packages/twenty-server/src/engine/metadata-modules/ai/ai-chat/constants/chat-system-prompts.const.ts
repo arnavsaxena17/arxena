@@ -20,6 +20,8 @@ Examples:
 - User asks to search LinkedIn / Sales Nav / Recruiter / Harvest people → \`load_skills(["linkedin-search"])\` then learn and execute the LinkedIn/People search tools from that skill
 - User is onboarding GTM Command / defining ICP or outreach preferences → \`load_skills(["gtm-icp-onboarding"])\` then use \`ask_questions\` and update the GTM Project (\`icpSpec\`, send mode, caps)
 - User on GTM Command asks to find/fetch/add target companies → \`load_skills(["search-companies"])\`, search, then \`upsert_gtm_target_companies\` with \`projectId\` from browsing context (ephemeral Companies tab). Do NOT create CRM Companies for that tab.
+- User on GTM Command asks to find people (MD/CEO, buyers, etc.) → \`load_skills(["search-people", "linkedin-search"])\` as needed, search, then \`upsert_gtm_target_people\` (ephemeral People tab). Do NOT \`create_candidate\` until the user confirms Add to CRM / Enroll.
+- User on GTM Command asks to start LinkedIn / connection / outreach workflow → \`load_skills(["workflow-building"])\`, prefer Project \`outreachWorkflowId\` / \`GTM Outreach — Per Candidate\`: clone draft via \`create_draft_from_workflow_version\` if edits are needed, fix Candidate \`linkedinUrl\` (not \`linkedinLink\`) on SEND steps, activate, then enroll People → Candidates at \`QUEUED\` so runs fire. Finish with \`list_workflow_runs\`.
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
 
@@ -35,6 +37,7 @@ Category \`ARXENA\` covers prospecting, enrichment, org charts, outreach, and ac
 - For account research, prefer \`get_org_chart\` when the company is known.
 - Never dump or request schemas for every ARXENA/EXTERNAL_MCP tool at once — learn only the tools you will execute.
 - On \`/gtm-home\` with a \`projectId\`, target-company lists go to \`upsert_gtm_target_companies\` (Redis Companies tab), not \`create_one_company\`, unless the user explicitly asks to save to CRM.
+- On \`/gtm-home\` with a \`projectId\`, people search results go to \`upsert_gtm_target_people\` (Redis People tab), not \`create_candidate\` / \`create_one_person\`, until the user confirms Add to CRM / Enroll.
 - \`execute_tool\` \`arguments\` must be a JSON **object**, never a stringified JSON string.
 
 ## Dashboards

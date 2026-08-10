@@ -126,7 +126,10 @@ export const buildGtmCommandContextPrompt = (
     'Target companies on /gtm-home are ephemeral (Redis per projectId), not CRM membership.',
     'When the user asks to find/fetch/add/build target companies: load_skills(["search-companies"]), search, then upsert_gtm_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
     'Do NOT create CRM Company records for the Companies tab — only when enrolling people.',
-    'When enrolling people, upsert shared CRM Company + Candidate with projectsId = this projectId.',
+    'Target people on the People tab are ephemeral (Redis per projectId) until the user selects rows and confirms Add to CRM / Enroll.',
+    'When the user asks to find/fetch/search people (MD/CEO, buyers, etc.) for this GTM run: load_skills(["search-people","linkedin-search"]) as needed, search, then upsert_gtm_target_people({ projectId, mode: "merge", people }) before ending the turn.',
+    'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes happen only after explicit user confirmation (Add to CRM / Enroll).',
+    'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectsId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
   ].join('\n');

@@ -128,10 +128,10 @@ On approval:
 Tell the user:
 
 1. ICP is saved on their GTM Project.
-2. Next on GTM Command: build target companies → find people → enroll selected into outreach (Workflow B).
+2. Next on GTM Command: build target companies → find people (ephemeral People tab) → user selects → enroll into outreach (Workflow B).
 3. They can reopen Ask AI anytime to refine ICP or edit the outreach workflow (Workflow tab uses Project `outreachWorkflowId`).
 
-Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user has selected people (or explicitly asks you to).
+Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user has selected people and confirmed Add to CRM / Enroll (or explicitly asks you to).
 
 Target companies for this run belong on the **ephemeral GTM Companies tab** (Redis per `projectId`):
 
@@ -140,6 +140,14 @@ Target companies for this run belong on the **ephemeral GTM Companies tab** (Red
 3. `learn_tools({ toolNames: ["upsert_gtm_target_companies"] })`.
 4. `execute_tool({ toolName: "upsert_gtm_target_companies", arguments: { projectId, mode: "merge", companies: [...] } })` — `arguments` must be a JSON object.
 5. Summarize what was written. Do **not** create CRM Company until people are enrolled.
+
+Target people for this run belong on the **ephemeral GTM People tab** (Redis per `projectId`):
+
+1. `load_skills(["search-people", "linkedin-search"])` as needed.
+2. Search (Unipile / Harvest / Apollo…).
+3. `learn_tools({ toolNames: ["upsert_gtm_target_people"] })`.
+4. `execute_tool({ toolName: "upsert_gtm_target_people", arguments: { projectId, mode: "merge", people: [...] } })` — `arguments` must be a JSON object.
+5. Summarize. Do **not** `create_candidate` until the user confirms.
 
 Optional next tools (only if they ask immediately):
 
