@@ -33,6 +33,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] GTM Command chrome collapse (PageHeader run controls + tabs trailing workflow modes)
 - [x] GTM Workflow tab canvas centers on open (container-bounds viewport; no side-panel double-subtract)
 - [x] GTM ephemeral companies (Redis `/gtm-command/cache/companies` per projectId; CRM Company on enroll only)
+- [x] Ask AI → GTM Companies tab: `upsert_gtm_target_companies` action tool + `/gtm-home` browsing context + skill/system-prompt routing + skill content sync cmd `1785600000013`
 
 ## Bucket B — Nest `core-modules`
 

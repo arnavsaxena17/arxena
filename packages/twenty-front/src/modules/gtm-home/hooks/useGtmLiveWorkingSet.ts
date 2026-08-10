@@ -252,6 +252,7 @@ export const useGtmLiveWorkingSet = () => {
   const legacyRunKey = project?.gtmRunKey ?? null;
 
   // Ephemeral companies from Redis (per projectId) — not CRM membership.
+  // Poll so Ask AI upserts appear on the Companies tab without a full reload.
   useEffect(() => {
     let cancelled = false;
 
@@ -261,21 +262,28 @@ export const useGtmLiveWorkingSet = () => {
       return;
     }
 
+    const refreshCompanies = () => {
+      fetchGtmCompaniesCache(activeProjectId, accessToken)
+        .then((companies) => {
+          if (!cancelled) {
+            setEphemeralCompanies(companies);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setCompaniesLoading(false);
+          }
+        });
+    };
+
     setCompaniesLoading(true);
-    fetchGtmCompaniesCache(activeProjectId, accessToken)
-      .then((companies) => {
-        if (!cancelled) {
-          setEphemeralCompanies(companies);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setCompaniesLoading(false);
-        }
-      });
+    refreshCompanies();
+
+    const pollIntervalId = window.setInterval(refreshCompanies, 5000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(pollIntervalId);
     };
   }, [accessToken, activeProjectId]);
 

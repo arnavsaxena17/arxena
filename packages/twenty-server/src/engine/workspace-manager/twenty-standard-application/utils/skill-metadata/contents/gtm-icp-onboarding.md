@@ -131,7 +131,15 @@ Tell the user:
 2. Next on GTM Command: build target companies → find people → enroll selected into outreach (Workflow B).
 3. They can reopen Ask AI anytime to refine ICP or edit the outreach workflow (Workflow tab uses Project `outreachWorkflowId`).
 
-Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user has selected people (or explicitly asks you to). Target companies discovered here belong on the ephemeral GTM companies list for `projectId` (Redis) — only create CRM Company when people are enrolled.
+Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user has selected people (or explicitly asks you to).
+
+Target companies for this run belong on the **ephemeral GTM Companies tab** (Redis per `projectId`):
+
+1. `load_skills(["search-companies"])` (and provider skills as needed).
+2. Search (Exa / Apollo / LinkedIn…).
+3. `learn_tools({ toolNames: ["upsert_gtm_target_companies"] })`.
+4. `execute_tool({ toolName: "upsert_gtm_target_companies", arguments: { projectId, mode: "merge", companies: [...] } })` — `arguments` must be a JSON object.
+5. Summarize what was written. Do **not** create CRM Company until people are enrolled.
 
 Optional next tools (only if they ask immediately):
 

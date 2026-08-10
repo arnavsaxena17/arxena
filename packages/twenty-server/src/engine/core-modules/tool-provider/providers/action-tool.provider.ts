@@ -26,6 +26,7 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
+import { UpsertGtmTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/gtm-target-companies-tool/upsert-gtm-target-companies-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
@@ -48,6 +49,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly searchHelpCenterTool: SearchHelpCenterTool,
     private readonly codeInterpreterTool: CodeInterpreterTool,
     private readonly navigateAppTool: NavigateAppTool,
+    private readonly upsertGtmTargetCompaniesTool: UpsertGtmTargetCompaniesTool,
     private readonly extractJsonPathsTool: ExtractJsonPathsTool,
     private readonly searchOutputTool: SearchOutputTool,
     private readonly codeInterpreterService: CodeInterpreterService,
@@ -62,6 +64,7 @@ export class ActionToolProvider implements ToolProvider {
       ['search_help_center', this.searchHelpCenterTool],
       ['code_interpreter', this.codeInterpreterTool],
       ['navigate_app', this.navigateAppTool],
+      ['upsert_gtm_target_companies', this.upsertGtmTargetCompaniesTool],
       ['extract_json_paths', this.extractJsonPathsTool],
       ['search_output', this.searchOutputTool],
     ]);
@@ -151,6 +154,15 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'navigate_app',
         this.navigateAppTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'upsert_gtm_target_companies',
+        this.upsertGtmTargetCompaniesTool,
         includeSchemas,
         context.locale,
       ),

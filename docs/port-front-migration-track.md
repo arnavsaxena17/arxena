@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| GTM Ask AI ephemeral company upsert | New action tool `upsert_gtm_target_companies` writes Redis Companies tab; GTM browsing context on every `/gtm-home` chat turn; `search-companies` / `gtm-icp-onboarding` / system prompt routing; coerce stringified `execute_tool.arguments`; UI polls Redis 5s. Skill sync cmd `1785600000013`. | `upsert-gtm-target-companies-tool.ts`, `useBrowsingContext.ts`, `chat-execution.service.ts`, `search-companies.md`, `chat-system-prompts.const.ts`, `useGtmLiveWorkingSet.ts` |
 | GTM Command chrome collapse | Dropped duplicate title/meta/run bars (7→2): run picker + New/CRM live in PageHeader; Definition/Latest/Open + workflow select trail on the main tabs row; panel is canvas-only. | `GtmHomePage.tsx`, `GtmRunProgressHeader.tsx`, `GtmMainTabs.tsx`, `GtmWorkflowToolbar.tsx`, `GtmWorkflowPanel.tsx` |
 | GTM workflow picker canvas remount | Dropdown updated Ask AI / pin but canvas kept prior graph: `WorkflowDiagramEffect` treats DRAFT switches as position-preserving merges. Remount embed on `workflowId`. | `GtmWorkflowDiagramEmbed.tsx`, `GtmWorkflowPanel.tsx` |
 | GTM workflow picker on Stage B | Dropdown of ACTIVE workflows next to Stage B hint; selecting rebinds `Project.outreachWorkflowId` + Ask AI context (does not overwrite an existing Project pin with the Stage B default). | `GtmWorkflowPanel.tsx`, `useGtmWorkflowEmbed.ts` |

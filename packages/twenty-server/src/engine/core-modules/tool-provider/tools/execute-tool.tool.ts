@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
+import { coerceExecuteToolArguments } from 'src/engine/core-modules/tool-provider/utils/coerce-execute-tool-arguments.util';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 
 export const EXECUTE_TOOL_TOOL_NAME = 'execute_tool';
@@ -12,7 +13,9 @@ const executeToolInputZodSchema = z.object({
   toolName: z.string().describe('Exact tool name. Do not guess.'),
   arguments: z
     .record(z.string(), z.unknown())
-    .describe('Arguments matching the schema returned by learn_tools.'),
+    .describe(
+      'Object matching the schema from learn_tools. Pass a JSON object, never a stringified JSON string.',
+    ),
 });
 
 export type ExecuteToolInput = z.infer<typeof executeToolInputZodSchema>;
@@ -30,7 +33,10 @@ export const executeToolInputSchema = jsonSchema<ExecuteToolInput>(
   },
   {
     validate: async (value) => {
-      const result = await z.safeParseAsync(executeToolInputZodSchema, value);
+      const result = await z.safeParseAsync(
+        executeToolInputZodSchema,
+        coerceExecuteToolArguments(value),
+      );
 
       return result.success
         ? { success: true, value: result.data }

@@ -110,7 +110,7 @@ export const buildGtmCommandContextPrompt = (
   context: GtmCommandContext,
 ): string => {
   return [
-    'You are editing the GTM Command outreach workflow for this Project run.',
+    'You are helping with GTM Command for this Project run.',
     `projectId: ${context.projectId ?? 'none'}`,
     `projectName: ${context.projectName ?? 'none'}`,
     `gtmRunKey: ${context.gtmRunKey ?? context.projectId ?? 'none'}`,
@@ -124,6 +124,8 @@ export const buildGtmCommandContextPrompt = (
     `icpSpec: ${context.icpSpecSummary ?? 'none'}`,
     `channels: LinkedIn=${context.linkedinConnected} Gmail=${context.gmailConnected} WhatsApp=${context.whatsappConnected}`,
     'Target companies on /gtm-home are ephemeral (Redis per projectId), not CRM membership.',
+    'When the user asks to find/fetch/add/build target companies: load_skills(["search-companies"]), search, then upsert_gtm_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
+    'Do NOT create CRM Company records for the Companies tab — only when enrolling people.',
     'When enrolling people, upsert shared CRM Company + Candidate with projectsId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',

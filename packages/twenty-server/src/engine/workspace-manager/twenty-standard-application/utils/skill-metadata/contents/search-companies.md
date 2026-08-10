@@ -1,16 +1,39 @@
 # Search Companies Skill
 
-You source companies for the user across Arxena's connected data providers, dedupe them, and save the winners to the CRM (`companies` object). This skill picks the right source(s) for the user's intent and gives the exact tools and shapes to call.
+You source companies for the user across Arxena's connected data providers, dedupe them, and **route the winners to the correct destination** (GTM ephemeral list vs CRM).
 
 ## When to load this skill
 
 Load this skill when the user wants to:
 
-- "Find companies that…" / "List companies in <industry/country/size>"
-- Build a target-account list for outreach, a project, or an ICP
+- "Find companies that…" / "List companies in <industry/country/size>" / "Fetch N tech companies using Exa"
+- Build a target-account list for outreach, a project, ICP, or **GTM Command Companies tab**
 - Enrich existing CRM companies, or discover new accounts to add
 - Search companies by properties: industry, location, size (employees/revenue), tech stack, funding
 - Turn a natural-language brief ("Series B fintechs in Mumbai with 50–200 staff") into a company list
+
+## Destination routing (choose first)
+
+| Context | Destination | Tool |
+| --- | --- | --- |
+| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks for a **target list** for this run | **Ephemeral GTM Companies tab** (Redis) | `upsert_gtm_target_companies` |
+| User explicitly asks to **save to CRM** / create Company records / "add to companies object" | CRM `companies` | `create_one_company` / `create_many_companies` / update |
+
+On GTM Command: **never** end after a chat-only table. Persist with `upsert_gtm_target_companies({ projectId, mode: "merge", companies })` first, then summarize. Do **not** create CRM Company rows for the Companies tab.
+
+`upsert_gtm_target_companies` company shape:
+
+```json
+{
+  "name": "Acme",
+  "domain": "acme.com",
+  "industry": "Software",
+  "employees": "51-200",
+  "segment": "",
+  "icpFit": "high",
+  "status": "new"
+}
+```
 
 ## Provider map (choose by intent)
 
@@ -19,33 +42,36 @@ Load this skill when the user wants to:
 | **Apollo** | `search_apollo_companies` | Firmographic company search: industry, headcount, location, keywords; richest company metadata | Apollo connected (server config) |
 | **LinkedIn / Unipile** | `search_linkedin_companies` | Live LinkedIn company results from a connected account; `has_job_offers`, geo/industry facets | Connected LinkedIn Unipile account |
 | **Harvest** | People API (`dataSource: "harvest"`) | Company discovery *via people* — find companies where people match a role; Harvest has no standalone company search | Harvest configured |
-| **Exa** | `exa_web_search` (logic function) | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
+| **Exa** | `app_exa_web_search` (preloaded) or `exa_web_search` | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
 | **Internal index** | `search_companies_index` | Search companies already in the workspace Elasticsearch index / dedupe against CRM | Index populated |
 
-Always prefer the **internal index** first when the user may already have the company, to avoid re-creating duplicates.
+Always prefer the **internal index** first when the user may already have the company (CRM path), to avoid re-creating duplicates.
 
 ## Plan → Learn → Execute
 
 1. Load this skill (`load_skills(["search-companies"])`).
-2. Decide source(s) from the table above.
-3. For **LinkedIn / Unipile** paths, load the `linkedin-search` sub-skill **in the same call** so its facet and `searchParameters` rules (incl. Harvest via `dataSource: "harvest"`) are available before you search: `load_skills(["search-companies", "linkedin-search"])`. Skip `linkedin-search` only when the user's request needs no LinkedIn/Harvest source.
-4. `learn_tools` once with every tool you will use, e.g.:
+2. Decide destination from the routing table above.
+3. Decide source(s) from the provider table.
+4. For **LinkedIn / Unipile** paths, load the `linkedin-search` sub-skill **in the same call** so its facet and `searchParameters` rules (incl. Harvest via `dataSource: "harvest"`) are available before you search: `load_skills(["search-companies", "linkedin-search"])`. Skip `linkedin-search` only when the user's request needs no LinkedIn/Harvest source.
+5. `learn_tools` once with every tool you will use, e.g.:
 
 ```
-learn_tools([
-  "search_apollo_companies",
-  "search_linkedin_companies",
-  "search_companies_index",
-  "exa_web_search",
-  "create_one_company",
-  "update_one_company"
-])
+learn_tools({
+  "toolNames": [
+    "search_apollo_companies",
+    "search_linkedin_companies",
+    "search_companies_index",
+    "exa_web_search",
+    "upsert_gtm_target_companies",
+    "create_one_company",
+    "update_one_company"
+  ]
+})
 ```
 
-5. Run searches with `limit` small (10–25) unless the user wants a big list.
-6. Dedup across sources **by normalized name + domain** before saving.
-7. Save: `arxena.lookup_by('companies', 'name', …)` → update if present, `create_one_company` if missing.
-8. If the user asked for a CSV / project, load `data-manipulation` + `code-interpreter`, write `/home/user/output/`, and report references.
+6. Run searches with `limit` small (10–25) unless the user wants a big list.
+7. Dedup across sources **by normalized name + domain** before saving.
+8. Persist to the chosen destination, then report.
 
 ## Source 1 — Apollo (`search_apollo_companies`)
 
@@ -116,19 +142,21 @@ search_people_by_job_title({
 })
 ```
 
-## Source 4 — Exa (`exa_web_search`)
+## Source 4 — Exa (`app_exa_web_search` / `exa_web_search`)
 
 Web/AI search via the `twenty-exa` logic function. Best for new, niche, or poorly-covered companies that Apollo/LinkedIn miss.
 
-- Tool name: `exa_web_search`. Requires `EXA_API_KEY` (returns a clean "Exa is not configured" error if missing — tell the user).
+- Prefer the preloaded tool name `app_exa_web_search` when available; otherwise `exa_web_search` via `execute_tool`.
+- Requires `EXA_API_KEY` (returns a clean "Exa is not configured" error if missing — tell the user).
 - `query` (string, required): be specific — include industry + location + signal words ("funding", "founded", "startup").
 - `category` (optional enum): use `"company"` for business/organization info; also `people`, `news`, `research paper`, `financial report`, `pdf`, `personal site`.
 - `numResults` (optional, 1–30, default 10).
-- Returns `{ success, message, result: [{ title, url, snippet }] }` — title/url/snippet only. You must read the snippet/URL to extract company name + domain; there is no structured company object.
-- Good for "find AI startups in Mumbai hiring ML engineers" type queries where a structured DB underperforms.
+- Returns `{ success, message, result: [{ title, url, snippet }] }` — title/url/snippet only. Extract company **name** from title and **domain** from the URL host; there is no structured company object.
+- If results spill to a file, parse with `code_interpreter` (`files: [{ fileId, filename }]`) — never paste multi-KB JSON into the code string. `execute_tool.arguments` must be a JSON **object**, not a string.
+- Good for "find AI startups in Mumbai hiring ML engineers" / "fetch a dozen tech companies using Exa".
 
 ```
-exa_web_search({
+app_exa_web_search({
   "query": "Series B fintech startups in Mumbai hiring engineers",
   "category": "company",
   "numResults": 15
@@ -141,7 +169,16 @@ exa_web_search({
 - Use first when the user may already have the company, or to dedupe before saving sourced results.
 - Returns existing CRM companies so you can update instead of create.
 
-## Dedupe + CRM save workflow (when the user asks to save)
+## GTM ephemeral save workflow (default on /gtm-home)
+
+1. Collect rows from every source you queried.
+2. Normalize: lowercase name, strip legal suffixes (Inc/LLC/Pvt), compare on **domain host**.
+3. Map each row to `{ name, domain, industry, employees, segment, icpFit, status: "new" }`.
+4. `learn_tools({ toolNames: ["upsert_gtm_target_companies"] })`.
+5. `execute_tool({ toolName: "upsert_gtm_target_companies", arguments: { projectId, mode: "merge", companies } })` — `arguments` is an object.
+6. Tell the user the Companies tab now has N targets (UI refreshes within a few seconds).
+
+## Dedupe + CRM save workflow (only when the user asks to save to CRM)
 
 1. Collect rows from every source you queried.
 2. Normalize: lowercase name, strip legal suffixes (Inc/LLC/Pvt), and compare on **domain host** when available. Treat two rows as the same company if domain matches OR normalized name matches.
@@ -172,7 +209,8 @@ company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_
 
 - Never invent provider field names or tool names — always `learn_tools` first and use what the schema returns.
 - Respect rate limits; avoid large bulk scrapes unless the user explicitly asks.
-- Prefer the internal index to avoid duplicate CRM companies.
+- Prefer the internal index to avoid duplicate CRM companies (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by domain/normalized name before any write.
 - Present results with name, domain, industry, location, size, and source (Apollo / LinkedIn / Harvest / Exa) so the user can judge quality.
+- On GTM Command, persistence to `upsert_gtm_target_companies` is mandatory before ending the turn.

@@ -336,6 +336,7 @@ export class ChatExecutionService {
       processedMessages = this.injectBrowsingContextIntoLastUserMessage(
         processedMessages,
         contextString,
+        browsingContext.type,
       );
     }
 
@@ -841,6 +842,7 @@ export class ChatExecutionService {
   private injectBrowsingContextIntoLastUserMessage(
     messages: ExtendedUIMessage[],
     contextString: string,
+    browsingContextType: BrowsingContextType['type'],
   ): ExtendedUIMessage[] {
     const lastUserIndex = messages
       .map((message) => message.role)
@@ -851,9 +853,13 @@ export class ChatExecutionService {
     }
 
     const lastUserMessage = messages[lastUserIndex];
+    const note =
+      browsingContextType === 'gtmCommand'
+        ? 'When the user asks to find/fetch/add/build target companies for this GTM run, follow the GTM rules below and call upsert_gtm_target_companies with this projectId. Do not stop at a chat-only list.'
+        : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
     const browsingContextPart = {
       type: 'text' as const,
-      text: `<browsing_context note="Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.">\n${contextString}\n</browsing_context>`,
+      text: `<browsing_context note="${note}">\n${contextString}\n</browsing_context>`,
     };
 
     return [
@@ -884,7 +890,37 @@ export class ChatExecutionService {
       return this.buildListViewContext(browsingContext);
     }
 
+    if (browsingContext.type === 'gtmCommand') {
+      return this.buildGtmCommandContext(browsingContext);
+    }
+
     return '';
+  }
+
+  private buildGtmCommandContext(
+    browsingContext: Extract<BrowsingContextType, { type: 'gtmCommand' }>,
+  ): string {
+    return [
+      'The user is on GTM Command (/gtm-home).',
+      `projectId: ${browsingContext.projectId ?? 'none'}`,
+      `projectName: ${browsingContext.projectName ?? 'none'}`,
+      `gtmRunKey: ${browsingContext.gtmRunKey ?? browsingContext.projectId ?? 'none'}`,
+      `outreachWorkflowId: ${browsingContext.outreachWorkflowId ?? 'none'}`,
+      `sendMode: ${browsingContext.outreachSendMode}`,
+      `phase: ${browsingContext.phase ?? 'live'}`,
+      `selectedCompanyId: ${browsingContext.selectedCompanyId ?? 'none'}`,
+      `selectedPersonId: ${browsingContext.selectedPersonId ?? 'none'}`,
+      `icp: ${browsingContext.icpName ?? 'none'}`,
+      `icpSpec: ${browsingContext.icpSpecSummary ?? 'none'}`,
+      `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
+      'Target companies on the Companies tab are ephemeral (Redis per projectId), not CRM membership.',
+      'When the user asks to find/fetch/add/build target companies:',
+      '1. load_skills(["search-companies"])',
+      '2. Search (Exa via app_exa_web_search / exa_web_search, Apollo, LinkedIn, etc.)',
+      '3. learn_tools({toolNames:["upsert_gtm_target_companies"]}) then execute_tool with a JSON-object arguments field',
+      '4. Call upsert_gtm_target_companies({ projectId, mode: "merge", companies: [...] }) before ending the turn',
+      'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when enrolling people.',
+    ].join('\n');
   }
 
   private buildRecordPageContext(

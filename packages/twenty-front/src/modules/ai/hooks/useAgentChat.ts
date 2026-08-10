@@ -115,9 +115,14 @@ export const useAgentChat = (
         ? browsingContext !== null
         : JSON.stringify(browsingContext) !==
           JSON.stringify(lastSentBrowsingContext);
-    const browsingContextToSend = isBrowsingContextChanged
-      ? browsingContext
-      : null;
+    // GTM context is injected server-side into the model turn only (not
+    // persisted on the user message), so re-send it every /gtm-home turn.
+    const browsingContextToSend =
+      browsingContext?.type === 'gtmCommand'
+        ? browsingContext
+        : isBrowsingContextChanged
+          ? browsingContext
+          : null;
     const messageId = v4();
     const optimisticMessageCreatedAt = new Date().toISOString();
     const rollbackOptimisticUnarchive = applyOptimisticUnarchive(
@@ -186,7 +191,7 @@ export const useAgentChat = (
         },
       });
 
-      if (isBrowsingContextChanged) {
+      if (isBrowsingContextChanged || browsingContext?.type === 'gtmCommand') {
         store.set(lastSentBrowsingContextAtom, browsingContext);
       }
 
