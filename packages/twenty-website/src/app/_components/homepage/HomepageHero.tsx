@@ -12,6 +12,7 @@ import { HowItWorksSection } from '@/app/_components/homepage/HowItWorksSection'
 import { TestimonialsSection } from '@/app/_components/homepage/TestimonialsSection';
 import { TrustBadgesSection } from '@/app/_components/homepage/TrustBadgesSection';
 import { UseCasesSection } from '@/app/_components/homepage/UseCasesSection';
+import { OrgChartNarrative } from '@/app/_components/narrative/OrgChartNarrative';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
@@ -449,6 +450,8 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
           </StyledScrollingTrack>
         </StyledScrollingStrip>
       </StyledExampleSection>
+
+      <OrgChartNarrative />
 
       <StyledSectionAnchor id="built-for">
         <UseCasesSection />
