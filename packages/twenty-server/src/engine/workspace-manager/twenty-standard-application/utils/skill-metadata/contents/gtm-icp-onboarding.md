@@ -1,6 +1,6 @@
 # GTM ICP Onboarding Skill
 
-You run **Workflow A (bootstrap)** for GTM Command inside Ask AI: learn the user's go-to-market preferences conversationally, persist them on the GTM Project, then hand off to company/people discovery.
+You run **Workflow A (bootstrap)** for GTM Command inside Ask AI: learn the user's go-to-market preferences conversationally, persist the **workspace default** ICP + search blurbs on **GTM Workspace Profile**, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
 This is preference collection + ICP approval — not outreach execution (that is Workflow B) and not LinkedIn search (load `linkedin-search` only when searching).
 
@@ -8,9 +8,10 @@ This is preference collection + ICP approval — not outreach execution (that is
 
 Load `gtm-icp-onboarding` when:
 
-- The user lands on GTM Command / onboarding and needs ICP / outreach preferences set
-- The kickoff message asks you to run GTM ICP onboarding
-- The user wants to redefine ICP, personas, send mode, or caps for a GTM run
+- The user lands on GTM Command Setup / onboarding and needs ICP / outreach preferences set
+- The kickoff message asks you to run GTM ICP onboarding or Refine ICP
+- Setup → **Regenerate** for ICP, company search blurb, or people search blurb (each is a separate turn)
+- The user wants to redefine ICP, personas, send mode, or caps
 - Phase is `bootstrapping` or `icp_review` and preferences are not yet approved
 
 Do **not** load this skill for:
@@ -18,6 +19,7 @@ Do **not** load this skill for:
 - Editing outreach Workflow B/C graphs → use `workflow-building` + run context
 - LinkedIn / Harvest people search → use `linkedin-search`
 - Dashboard widgets → use `dashboard-building`
+- Find companies / Find people SEND prompts → use `search-companies` / `search-people` (+ upsert tools)
 
 ## Plan → Skill → Learn → Execute
 
@@ -27,6 +29,10 @@ Do **not** load this skill for:
 ```
 learn_tools([
   "ask_questions",
+  "find_many_gtm_workspace_profiles",
+  "find_one_gtm_workspace_profile",
+  "create_one_gtm_workspace_profile",
+  "update_one_gtm_workspace_profile",
   "find_many_projects",
   "find_one_project",
   "update_one_project",
@@ -40,12 +46,26 @@ learn_tools([
 
 | Concern | Object | Notes |
 | --- | --- | --- |
-| Run scope, ICP, send mode, caps | **Project** (`gtmRunKey`, `icpSpec`, `icpSegment`, …) | Write preferences here |
+| Seller company + **default** ICP + blurbs | **`gtmWorkspaceProfile`** (singleton) | Shared across runs |
+| Run override ICP / blurbs (optional) | **Project** (`icpSpec`, `icpSegment`, `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`) | Only when user asks for run-specific values |
+| Send mode, caps, outreach workflow | **Project** | Stay on Project |
 | Per-campaign outreach progress | **Candidate** | Later — enroll after people found |
 | Cross-project stops / degree | **Person** | Not set during ICP onboarding |
 | Account rollups | **Company** | After targets are chosen |
 
-Idempotency for outreach is Candidate-stage based; this skill only configures the Project.
+Empty Project ICP/blurb fields mean **inherit workspace profile**. Do not clear Project fields to empty unless the user wants to drop a run override.
+
+## Setup Regenerate modes (one field group per turn)
+
+GTM Setup has **three separate Regenerate buttons**. Each SEND prompt is intentionally scoped — do **not** refresh sibling fields unless the user explicitly asks.
+
+| Mode | Update only | Do not touch |
+| --- | --- | --- |
+| Regenerate ICP | `icpSpec` (JSON string), `icpBlurb` (NL definition), `icpSegment` | `companySearchBlurb`, `peopleSearchBlurb` |
+| Regenerate company search blurb | `companySearchBlurb` | `icpSpec`, `icpBlurb`, `peopleSearchBlurb` (unless ICP empty — then draft minimal ICP first) |
+| Regenerate people search blurb | `peopleSearchBlurb` | `icpSpec`, `icpBlurb`, `companySearchBlurb` (unless ICP empty — then draft minimal ICP first) |
+
+For regenerate-only turns: skip the full preference interview when enough seller + current ICP context is in the prompt; propose the draft, then persist on approval (or immediately if the user said to regenerate/save without asking).
 
 ## Steps
 
@@ -57,9 +77,9 @@ From the kickoff / browsing context, capture:
 - `projectId` (canonical run scope — `/gtm-home?projectId=`)
 - Existing Project `gtmRunKey` (usually equals Project.id; may be a legacy slug)
 
-If `projectId` is known, `find_many_projects` / `find_one_project` and read current `icpSpec`, `icpSegment`, `outreachSendMode`, caps. Do not overwrite approved values without asking.
+Load the singleton `gtmWorkspaceProfile` (`find_many_gtm_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a run override; otherwise use profile defaults.
 
-Briefly greet the user: you will set their ICP and outreach preferences for this GTM run, then they can build company lists and find people on GTM Command.
+Briefly greet the user: you will set workspace ICP defaults (and search blurbs), then they can use Setup → Find companies / Find people.
 
 ### STEP 1 — Preference interview (`ask_questions`)
 
@@ -67,48 +87,46 @@ Ask in small batches (1–4 questions per `ask_questions` call). Cover:
 
 1. **Who they sell to** — industries / company size / geos (multi-select OK)
 2. **Buyer personas** — titles or roles (e.g. Head of Talent, VP Sales)
-3. **Taxonomy targets** — `std_function` / `std_grade` style targets when relevant (talent acquisition, people ops, etc.)
-4. **Send mode** — `APPROVAL` (review drafts) vs `AUTO` (recommended only if they explicitly want hands-off)
+3. **Taxonomy targets** — `std_function` / `std_grade` style targets when relevant
+4. **Send mode** — `APPROVAL` vs `AUTO` (Project-level)
 5. **Persona density** — max personas per company (default 2)
 6. **Channels / InMail** — LinkedIn connect + email; InMail fallback yes/no
-7. **Send window** — timezone + rough hours (default weekday business hours)
+7. **Send window** — timezone + rough hours
 
-Infer sensible defaults from their company domain when possible; only ask what you cannot infer. Mark one recommended option with `isRecommended` when helpful.
+Infer sensible defaults from their company domain when possible. If they already pasted a full ICP brief, skip redundant questions and confirm a short summary instead.
 
-If they already pasted a full ICP brief in chat, skip redundant questions and confirm a short summary instead.
+Ask whether this should be the **workspace default** (recommended) or a **run-only override**.
 
-### STEP 2 — Propose ICP summary
+Skip this step for scoped Regenerate turns that already include enough context.
 
-Present a concise ICP proposal:
+### STEP 2 — Propose ICP + blurbs
+
+Present (full onboarding) or only the fields in scope (Regenerate modes):
 
 - Name / segment label
+- **icpBlurb** — 2–4 sentence NL definition of who the ICP is and why they buy
 - Industries, employee range, geos
-- Buyer titles
-- `stdFunctions` / `stdGrades` (arrays of strings)
-- Pain signals (short bullets)
-- Outreach settings: send mode, max personas, InMail, timezone/window
+- Buyer titles, `stdFunctions` / `stdGrades`, pain signals
+- Draft **companySearchBlurb** (NL brief for target accounts) — full onboarding only, or company-blurb regenerate
+- Draft **peopleSearchBlurb** (NL brief for buyers at those accounts) — full onboarding only, or people-blurb regenerate
+- Outreach settings for this Project: send mode, max personas, InMail, timezone/window (full onboarding)
 
-Ask for Approve / Edit / Reject via `ask_questions` (or free-form edit).
+Ask for Approve / Edit / Reject (unless the user already asked to regenerate and save).
 
-### STEP 3 — Persist on Project
+### STEP 3 — Persist
 
 On approval:
 
-1. Resolve the GTM Project by `projectId` (or `gtmRunKey`). If none exists, `create_one_project` with name like `GTM Run — {domain}` and set `gtmRunKey` to the new Project id.
-2. `update_one_project` with:
+1. Ensure a GTM Project exists for `projectId` (create if needed; set `gtmRunKey` = Project.id).
+2. **Default path:** `create_one_gtm_workspace_profile` if missing, else `update_one_gtm_workspace_profile` with seller fields (if refined) and only the fields in scope for this turn.
+   - Full onboarding: `icpSegment`, `icpSpec` (JSON string), `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`.
+   - ICP regenerate: `icpSegment`, `icpSpec`, `icpBlurb` only.
+   - Company blurb regenerate: `companySearchBlurb` only.
+   - People blurb regenerate: `peopleSearchBlurb` only.
+3. **Run override path** (only if user asked): also `update_one_project` with the same scoped fields.
+4. Always `update_one_project` for outreach prefs that are run-scoped (`outreachSendMode`, caps, windows, etc.) during full onboarding.
 
-| Field | Value |
-| --- | --- |
-| `icpSegment` | Short segment label |
-| `icpSpec` | JSON **string** of the approved spec (see schema below) |
-| `outreachSendMode` | `APPROVAL` or `AUTO` |
-| `maxPersonasPerCompany` | number (default 2) |
-| `inMailFallbackEnabled` | boolean |
-| `sendTimezone` | IANA tz if known |
-| `sendWindowStart` / `sendWindowEnd` | `HH:mm` if known |
-| Caps | only if the user set them (`maxConnectsPerDay`, `maxCommentsPerDay`, `maxEmailsPerDay`) |
-
-`icpSpec` JSON shape (stringify into the TEXT field):
+`icpSpec` JSON shape (stringify into the TEXT field) — structured filters only; the NL definition lives in **`icpBlurb`**, not inside this JSON:
 
 ```json
 {
@@ -123,41 +141,23 @@ On approval:
 }
 ```
 
+`icpBlurb` example: "We sell to mid-market HR Tech / SaaS companies (50–200) in the US and UK whose talent leaders struggle with slow hiring pipelines and thin recruiter capacity."
+
 ### STEP 4 — Hand off
 
 Tell the user:
 
-1. ICP is saved on their GTM Project.
-2. Next on GTM Command: build target companies → find people (ephemeral People tab) → user selects → enroll into outreach (Workflow B).
-3. They can reopen Ask AI anytime to refine ICP or edit the outreach workflow (Workflow tab uses Project `outreachWorkflowId`).
+1. Workspace fields saved on **GTM Workspace Profile** (and Project override only if they asked).
+2. Next on GTM Command Setup: **Find companies** then **Find people** (those buttons SEND Ask AI prompts that upsert Redis tabs).
+3. They can reopen Ask AI anytime to refine ICP, or use the per-section Regenerate buttons (ICP / company blurb / people blurb are independent).
 
-Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user has selected people and confirmed Add to CRM / Enroll (or explicitly asks you to).
-
-Target companies for this run belong on the **ephemeral GTM Companies tab** (Redis per `projectId`):
-
-1. `load_skills(["search-companies"])` (and provider skills as needed).
-2. Search (Exa / Apollo / LinkedIn…).
-3. `learn_tools({ toolNames: ["upsert_gtm_target_companies"] })`.
-4. `execute_tool({ toolName: "upsert_gtm_target_companies", arguments: { projectId, mode: "merge", companies: [...] } })` — `arguments` must be a JSON object.
-5. Summarize what was written. Do **not** create CRM Company until people are enrolled.
-
-Target people for this run belong on the **ephemeral GTM People tab** (Redis per `projectId`):
-
-1. `load_skills(["search-people", "linkedin-search"])` as needed.
-2. Search (Unipile / Harvest / Apollo…).
-3. `learn_tools({ toolNames: ["upsert_gtm_target_people"] })`.
-4. `execute_tool({ toolName: "upsert_gtm_target_people", arguments: { projectId, mode: "merge", people: [...] } })` — `arguments` must be a JSON object.
-5. Summarize. Do **not** `create_candidate` until the user confirms.
-
-Optional next tools (only if they ask immediately):
-
-- Company / people discovery via Arxena GTM tools (`get_tool_catalog` / pack tools) or `linkedin-search`
-- `workflow-building` if they want to inspect Workflow B
+Do **not** start cold outreach sends from this skill. Do **not** create Candidates until the user confirms Add to CRM / Enroll.
 
 ## Guardrails
 
-- Prefer Candidate+Project execution; Person holds stop/compliance memory — do not put sequence stage on Person.
-- Never invent LinkedIn facet IDs as CRM UUIDs when creating records later.
-- Person `name` in CRM is structured (`firstName` / `lastName`), not a single string.
-- Stop-on-reply / DNC live on Person; do not disable that when setting send mode to AUTO.
-- If channels are disconnected, note it and continue ICP setup; connection is handled by GTM Command's needs-connection phase.
+- Prefer Candidate+Project execution; Person holds stop/compliance memory.
+- Never invent LinkedIn facet IDs as CRM UUIDs.
+- Person `name` in CRM is structured (`firstName` / `lastName`).
+- Stop-on-reply / DNC live on Person.
+- If channels are disconnected, note it and continue ICP setup.
+- Never bundle ICP + company blurb + people blurb updates on a Regenerate turn unless the user explicitly asked for all three.

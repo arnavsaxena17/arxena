@@ -5,8 +5,9 @@ import {
   type UnipileWhatsappAccount,
   type WorkspaceMemberProfileUnipileFields,
   findLinkedinUnipileAccountSameIdentityForProfile,
-  hasMatchingConnectedWhatsappAccount,
+  findMatchingConnectedWhatsappAccount,
   hasMatchingUsableLinkedinAccount,
+  isUnipileConnectedStatus,
   linkedinAccountIdentityMatchesWorkspaceMemberProfile,
   linkedinAccountUsableForWorkspaceMemberProfile,
   scoreLinkedinUnipileOwnerProfileCapability,
@@ -169,8 +170,8 @@ export class MemberLinkedinUnipileConnectionService {
   async withMemberLinkedinConnectLock<T>(
     workspaceMemberId: string,
     run: () => Promise<T>,
-  ): Promise<T> { 
-    this.logger.log(`With member linkedin connect lock for workspace member id: ${workspaceMemberId}`); 
+  ): Promise<T> {
+    this.logger.log(`With member linkedin connect lock for workspace member id: ${workspaceMemberId}`);
     this.logger.log(`Run in WITH MEMBER LINKEDIN CONNECT LOCK: ${run}`);
     const trimmedMemberId = workspaceMemberId.trim();
     this.logger.log(`Trimmed member id in WITH MEMBER LINKEDIN CONNECT LOCK: ${trimmedMemberId}`);
@@ -180,7 +181,7 @@ export class MemberLinkedinUnipileConnectionService {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const chain = previous.then(() => gate);  
+    const chain = previous.then(() => gate);
     this.logger.log(`Chain in WITH MEMBER LINKEDIN CONNECT LOCK: ${chain}`);
     this.connectLocks.set(trimmedMemberId, chain);
 
@@ -406,7 +407,7 @@ export class MemberLinkedinUnipileConnectionService {
       return undefined;
     }
 
-    this.logger.log(`Profile in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${JSON.stringify(profile, null, 2)}`); 
+    this.logger.log(`Profile in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${JSON.stringify(profile, null, 2)}`);
     this.logger.log(`Workspace member id in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${workspaceMemberId}`);
     this.logger.log(`Auth token in FIND USABLE LINKEDIN ACCOUNT FOR MEMBER: ${authToken}`);
     const accounts = await this.listLinkedinAccountsForMemberStatus(profile);
@@ -608,7 +609,11 @@ export class MemberLinkedinUnipileConnectionService {
 
   async isWhatsappConnectedForProfile(
     profile: WorkspaceMemberProfileUnipileFields | null,
-    workspace : WorkspaceEntity,
+    workspace: WorkspaceEntity,
+    backfill?: {
+      workspaceMemberId: string;
+      authToken: string;
+    },
   ): Promise<boolean> {
     if (!profile) {
       return false;
@@ -634,7 +639,91 @@ export class MemberLinkedinUnipileConnectionService {
       profile,
       workspace,
     );
-    return hasMatchingConnectedWhatsappAccount(accounts, profile);
+    const matchedAccount = findMatchingConnectedWhatsappAccount(
+      accounts,
+      profile,
+    );
+    if (!matchedAccount?.id?.trim()) {
+      return false;
+    }
+
+    if (backfill) {
+      await this.backfillWhatsappUnipileAccountIdIfNeeded(
+        profile,
+        matchedAccount,
+        backfill,
+      );
+    }
+
+    return true;
+  }
+
+  // Persist phone-matched connected WhatsApp Unipile account id when profile has none / stale.
+  private async backfillWhatsappUnipileAccountIdIfNeeded(
+    profile: WorkspaceMemberProfileUnipileFields,
+    matchedAccount: UnipileWhatsappAccount,
+    backfill: {
+      workspaceMemberId: string;
+      authToken: string;
+    },
+  ): Promise<void> {
+    const matchedAccountId = matchedAccount.id.trim();
+    if (!matchedAccountId || !isUnipileConnectedStatus(matchedAccount.status)) {
+      return;
+    }
+
+    const storedId = profile.whatsappUnipileAccountId?.trim();
+    if (storedId === matchedAccountId) {
+      return;
+    }
+
+    // Only auto-assign from a real phone match — never attach an arbitrary connected WA row.
+    const phoneOnlyProfile: WorkspaceMemberProfileUnipileFields = {
+      ...profile,
+      whatsappUnipileAccountId: null,
+    };
+    if (
+      !whatsappAccountMatchesWorkspaceMemberProfile(
+        phoneOnlyProfile,
+        matchedAccount,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const accountPayload =
+        await this.whatsappUnipileRequestService.fetchAccountByIdIfExists(
+          matchedAccountId,
+        );
+      if (accountPayload) {
+        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          backfill.workspaceMemberId,
+          backfill.authToken,
+          'whatsapp',
+          matchedAccountId,
+          accountPayload,
+        );
+      } else {
+        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+          backfill.workspaceMemberId,
+          backfill.authToken,
+          'whatsapp',
+          matchedAccountId,
+        );
+      }
+      profile.whatsappUnipileAccountId = matchedAccountId;
+      this.logger.log(
+        `Backfilled whatsappUnipileAccountId=${matchedAccountId} for workspaceMemberId=${backfill.workspaceMemberId} ` +
+          `(previous=${storedId ?? 'none'}, phone match)`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to backfill whatsappUnipileAccountId=${matchedAccountId} for workspaceMemberId=${backfill.workspaceMemberId}: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
+    }
   }
 
   /**

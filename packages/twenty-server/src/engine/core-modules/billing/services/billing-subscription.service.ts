@@ -39,12 +39,22 @@ import { StripeCustomerService } from 'src/engine/core-modules/billing/stripe/se
 import { StripeSubscriptionScheduleService } from 'src/engine/core-modules/billing/stripe/services/stripe-subscription-schedule.service';
 import { StripeSubscriptionService } from 'src/engine/core-modules/billing/stripe/services/stripe-subscription.service';
 import { getPlanKeyFromSubscription } from 'src/engine/core-modules/billing/utils/get-plan-key-from-subscription.util';
+import { isSyntheticStripeSubscriptionId } from 'src/engine/core-modules/billing/utils/is-synthetic-stripe-subscription-id.util';
 import { EnterprisePlanService } from 'src/engine/core-modules/enterprise/services/enterprise-plan.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+
+const isStripeResourceMissingError = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'type' in error &&
+  (error as { type?: string }).type === 'StripeInvalidRequestError' &&
+  'code' in error &&
+  (error as { code?: string }).code === 'resource_missing';
+
 @Injectable()
 // oxlint-disable-next-line twenty/inject-workspace-repository
 export class BillingSubscriptionService {
@@ -178,17 +188,56 @@ export class BillingSubscriptionService {
       workspaceId,
     });
 
-    if (!isDefined(subscription?.stripeSubscriptionId)) {
-      this.logger.log(
-        `Skipping Stripe subscription cancellation for workspace ${workspaceId} because no Stripe subscription id is stored`,
-      );
-
+    if (!isDefined(subscription)) {
       return;
     }
 
-    await this.stripeSubscriptionService.cancelSubscription(
-      subscription.stripeSubscriptionId,
+    const stripeSubscriptionId = subscription.stripeSubscriptionId;
+
+    if (
+      isDefined(stripeSubscriptionId) &&
+      !isSyntheticStripeSubscriptionId(stripeSubscriptionId)
+    ) {
+      try {
+        await this.stripeSubscriptionService.cancelSubscription(
+          stripeSubscriptionId,
+        );
+      } catch (error) {
+        // Already deleted in Stripe (or never existed) — still cancel locally
+        if (!isStripeResourceMissingError(error)) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Stripe subscription ${stripeSubscriptionId} missing for workspace ${workspaceId}; marking local subscription canceled`,
+        );
+      }
+    } else if (isDefined(stripeSubscriptionId)) {
+      this.logger.log(
+        `Skipping Stripe cancellation for synthetic subscription id ${stripeSubscriptionId} (workspace ${workspaceId})`,
+      );
+    } else {
+      this.logger.log(
+        `Skipping Stripe subscription cancellation for workspace ${workspaceId} because no Stripe subscription id is stored`,
+      );
+    }
+
+    // Local/dev and Razorpay rows never get a Stripe cancel webhook
+    const canceledAt = new Date();
+
+    await this.billingSubscriptionRepository.update(
+      workspaceId,
+      { id: subscription.id },
+      {
+        status: SubscriptionStatus.Canceled,
+        canceledAt,
+        endedAt: canceledAt,
+      },
     );
+
+    await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
+      'currentBillingSubscription',
+    ]);
   }
 
   async assertSubscriptionCanceledOrNone(workspaceId: string): Promise<void> {

@@ -46,6 +46,7 @@ const StyledTab = styled.button<{ isActive: boolean }>`
 `;
 
 const TABS: Array<{ id: GtmMainTab; label: string }> = [
+  { id: 'setup', label: 'Setup' },
   { id: 'companies', label: 'Companies' },
   { id: 'people', label: 'People' },
   { id: 'workflow', label: 'Workflow' },

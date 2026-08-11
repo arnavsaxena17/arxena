@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { type ActorMetadata } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
+import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -16,6 +18,8 @@ type WorkspaceMemberProfileRecord = ObjectLiteral & {
   lastName?: string | null;
   email?: string | null;
   phoneNumber?: string | null;
+  createdBy?: ActorMetadata;
+  updatedBy?: ActorMetadata;
 };
 
 type WorkspaceMemberProfileSource = {
@@ -67,10 +71,15 @@ export class WorkspaceMemberProfileProvisioningService {
           }
 
           const profileFields = this.buildProfileFieldsFromMember(member);
+          // Direct ORM insert skips GraphQL actor side-effects; set required
+          // createdBy/updatedBy so NOT NULL composite columns are populated.
+          const systemActor = buildCreatedByFromSystem();
 
           await profileRepository.insert({
             workspaceMemberId,
             typeWorkspaceMember: RECRUITER_TYPE_WORKSPACE_MEMBER,
+            createdBy: systemActor,
+            updatedBy: systemActor,
             ...profileFields,
           });
         },

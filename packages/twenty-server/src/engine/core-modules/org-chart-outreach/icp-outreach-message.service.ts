@@ -747,7 +747,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'connection_sent',
           apiToken: input.apiToken,
-          messagingChannel: 'linkedin-connect',
+          messagingChannel: 'LINKEDIN_CONNECT',
         });
       }
 
@@ -799,7 +799,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'comment_posted',
           apiToken: input.apiToken,
-          messagingChannel: 'comment',
+          messagingChannel: 'COMMENT',
         });
       }
 
@@ -880,7 +880,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'outbound_message',
           apiToken: input.apiToken,
-          messagingChannel: 'email',
+          messagingChannel: 'EMAIL',
         });
       }
 
@@ -927,7 +927,7 @@ export class IcpOutreachMessageService {
         linkedinUrl: input.linkedinUrl,
         event: 'outbound_message',
         apiToken: input.apiToken,
-        messagingChannel: 'whatsapp-unipile',
+        messagingChannel: 'WHATSAPP_UNIPILE',
       });
     }
 

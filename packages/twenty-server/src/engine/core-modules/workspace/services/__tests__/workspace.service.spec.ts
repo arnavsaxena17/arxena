@@ -148,6 +148,12 @@ describe('WorkspaceService', () => {
           },
         },
         {
+          provide: getQueueToken(MessageQueue.workspaceQueue),
+          useValue: {
+            add: jest.fn(),
+          },
+        },
+        {
           provide: CoreEntityCacheService,
           useValue: {
             invalidate: jest.fn(),

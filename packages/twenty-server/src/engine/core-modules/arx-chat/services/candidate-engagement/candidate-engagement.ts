@@ -31,6 +31,11 @@ import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
 import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
@@ -164,7 +169,13 @@ export class CandidateEngagementArx {
       config.defaultTemplate;
 
     let messageFrom:string = '';
-    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-sock') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_SOCK,
+      )
+    ) {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       messageFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
@@ -178,7 +189,13 @@ export class CandidateEngagementArx {
     let messageTo:string = recruiterProfile.phoneNumber;
     console.log("This is recruiter profile:", recruiterProfile)
 
-    if (candidate?.messagingChannel == 'linkedin' || candidate?.messagingChannel == 'linkedin-sock') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_SOCK,
+      )
+    ) {
       messageTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -202,7 +219,10 @@ export class CandidateEngagementArx {
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
       whatsappMessageId: 'NA',
-      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage:
+        toMessagingChannelTransportKey(candidate?.messagingChannel) ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'baileys',
     };
 
     return whatappUpdateMessageObj;
@@ -219,7 +239,14 @@ export class CandidateEngagementArx {
     console.log('Creating and updating candidate start chat messages');
 
     // For LinkedIn candidates, we should allow startChat even without phone number
-    if (!candidate?.phoneNumber?.primaryPhoneNumber && candidate.messagingChannel !== 'linkedin' && candidate.messagingChannel !== 'linkedin-premium') {
+    if (
+      !candidate?.phoneNumber?.primaryPhoneNumber &&
+      !messagingChannelEquals(
+        candidate.messagingChannel,
+        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_PREMIUM,
+      )
+    ) {
       console.log('Phone number from is empty, returning empty candidate profile object');
       return;
     }

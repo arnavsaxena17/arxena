@@ -27,6 +27,11 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -62,7 +67,12 @@ export class FilterCandidates {
 
     let phoneNumberTo: string = '';
 
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
@@ -73,7 +83,12 @@ export class FilterCandidates {
     }
 
     let phoneNumberFrom:string = recruiterProfile.phoneNumber;
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -97,7 +112,10 @@ export class FilterCandidates {
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: wamId,
       whatsappMessageType: '',
-      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage:
+        toMessagingChannelTransportKey(candidate?.messagingChannel) ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'baileys',
     };
 
     return updatedChatHistoryObj;

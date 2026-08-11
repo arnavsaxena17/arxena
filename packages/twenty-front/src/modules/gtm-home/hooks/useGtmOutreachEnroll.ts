@@ -113,7 +113,7 @@ export const useGtmOutreachEnroll = () => {
           enrichStatus: 'NOT_STARTED',
           connectionDegree: person.connectionDegree ?? null,
           personaPriorityScore: person.personaPriorityScore ?? null,
-          messagingChannel: 'linkedin',
+          messagingChannel: 'LINKEDIN',
           campaign: projectId,
           source: 'gtm-home-enroll',
         });

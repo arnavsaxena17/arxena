@@ -9,7 +9,7 @@ type ExtensionDetectionState = {
 export const useChromeExtensionDetection = () => {
   const [state, setState] = useState<ExtensionDetectionState>({
     isExtensionInstalled: false,
-    isChecking: false,
+    isChecking: true,
     error: null,
   });
 

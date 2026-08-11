@@ -411,21 +411,18 @@ export async function tryExtensionLinkedinUnipileRecovery(options: {
     accessToken,
     serverBaseUrl,
   );
-  if (
-    apiStatus &&
-    apiStatus.connectLinkedinToUnipileAutomatically === false
-  ) {
-    return { ok: false, extensionPresent: true, syncAttempted: false };
-  }
+  const connectToUnipileAutomatically =
+    apiStatus?.connectLinkedinToUnipileAutomatically !== false;
+  const cookiesOnlyMode =
+    !connectToUnipileAutomatically ||
+    apiStatus?.linkedinUnipileOnDemand === true;
 
-  if (apiStatus?.linkedinConnected && apiStatus.linkedinUnipileOnDemand !== true) {
-    return { ok: true, extensionPresent: true, syncAttempted: false };
-  }
-
-  if (
-    apiStatus?.linkedinUnipileOnDemand === true &&
-    apiStatus.linkedinCookiesStored === true
-  ) {
+  // Cookie-only / on-demand: success = cookies stored. Full auto-connect: success = Unipile linked.
+  if (cookiesOnlyMode) {
+    if (apiStatus?.linkedinCookiesStored === true) {
+      return { ok: true, extensionPresent: true, syncAttempted: false };
+    }
+  } else if (apiStatus?.linkedinConnected === true) {
     return { ok: true, extensionPresent: true, syncAttempted: false };
   }
 
@@ -434,7 +431,7 @@ export async function tryExtensionLinkedinUnipileRecovery(options: {
     return { ok: false, extensionPresent: true, syncAttempted: true };
   }
 
-  if (apiStatus?.linkedinUnipileOnDemand === true) {
+  if (cookiesOnlyMode) {
     const afterPersist = await fetchUnipileConnectionStatus(
       accessToken,
       serverBaseUrl,

@@ -25,7 +25,11 @@ export type BillingSkuKind = 'subscription' | 'one_time';
 /** Display AI credits → upstream micro-credits (1 display = $1 ≈ 1e6 micro). */
 export const AI_CREDIT_MICRO_FACTOR = 1_000_000;
 
-export const FREE_SIGNUP_AI_CREDITS = 1;
+export const FREE_SIGNUP_AI_CREDITS = 10;
+
+export const FREE_SIGNUP_ORG_CHART_CREDITS = 10;
+
+export const FREE_SIGNUP_REVEAL_CREDITS = 10;
 
 export const aiCreditsToMicro = (aiCredits: number): number =>
   Math.max(0, Math.round(aiCredits)) * AI_CREDIT_MICRO_FACTOR;

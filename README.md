@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://www.twenty.com">
-    <img src="./packages/twenty-website/public/images/core/logo.svg" width="100px" alt="Twenty logo" />
+  <a href="https://www.arxena.com">
+    <img src="./packages/twenty-website/public/images/core/logo.svg" width="100px" alt="Arxena logo" />
   </a>
 </p>
 

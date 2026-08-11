@@ -3,6 +3,10 @@ import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/service
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
     ChatControlsObjType,
@@ -199,7 +203,13 @@ export class EngagedCandidateProcessor {
       let messageTo = recruiterProfile?.phoneNumber || '';
       let messageType = 'string';
 
-      if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
+      if (
+        messagingChannelEquals(
+          candidate?.messagingChannel,
+          MessagingChannel.LINKEDIN,
+          MessagingChannel.LINKEDIN_SOCK,
+        )
+      ) {
         messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
         messageTo = recruiterProfile?.linkedinUrl || '';
         messageType = 'linkedin';

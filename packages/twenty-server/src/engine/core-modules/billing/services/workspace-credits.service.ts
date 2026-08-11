@@ -7,6 +7,8 @@ import { Repository } from 'typeorm';
 import {
   FREE_SIGNUP_AI_CREDITS,
   FREE_SIGNUP_API_CREDITS,
+  FREE_SIGNUP_ORG_CHART_CREDITS,
+  FREE_SIGNUP_REVEAL_CREDITS,
   aiCreditsToMicro,
   computeRevealCreditCost,
   getApiSearchCreditCost,
@@ -17,9 +19,6 @@ import { WorkspaceCreditsOutput } from 'src/engine/core-modules/billing/dtos/out
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { BillingCreditService } from 'src/engine/core-modules/billing/services/billing-credit.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
-
-const DEFAULT_FREE_ORG_CHART_CREDITS = 3;
-const DEFAULT_FREE_REVEAL_CREDITS = 0;
 
 export type AdminCreditPool = 'org_chart' | 'reveal' | 'ai' | 'api';
 
@@ -44,14 +43,14 @@ export class WorkspaceCreditsService {
   private getFreeOrgChartCredits(): number {
     return this.readEnvCount(
       'FREE_SIGNUP_ORG_CHART_CREDITS',
-      DEFAULT_FREE_ORG_CHART_CREDITS,
+      FREE_SIGNUP_ORG_CHART_CREDITS,
     );
   }
 
   private getFreeRevealCredits(): number {
     return this.readEnvCount(
       'FREE_SIGNUP_REVEAL_CREDITS',
-      DEFAULT_FREE_REVEAL_CREDITS,
+      FREE_SIGNUP_REVEAL_CREDITS,
     );
   }
 

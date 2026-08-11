@@ -46,17 +46,18 @@ import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/googl
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import {
+  isAllowedMessagingChannel,
+  MessagingChannel,
+  MESSAGING_CHANNEL_SELECT_VALUES,
+  messagingChannelEquals,
+  normalizeMessagingChannel,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 
-const ALLOWED_CANDIDATE_MESSAGING_CHANNELS = new Set([
-  'baileys',
-  'whatsapp-unipile',
-  'whatsapp-web',
-  'whatsapp-official',
-  'linkedin',
-  'linkedin-premium',
-  'linkedin-inmail',
-  'linkedin-sock',
-]);
+const ALLOWED_CANDIDATE_MESSAGING_CHANNELS = new Set<string>(
+  MESSAGING_CHANNEL_SELECT_VALUES,
+);
 
 @Controller('arx-chat')
 export class ArxChatEndpoint {
@@ -474,13 +475,15 @@ export class ArxChatEndpoint {
     }
 
     const channel = messagingChannel.trim();
-    if (!ALLOWED_CANDIDATE_MESSAGING_CHANNELS.has(channel)) {
+    if (!isAllowedMessagingChannel(channel, ALLOWED_CANDIDATE_MESSAGING_CHANNELS)) {
       throw new BadRequestException(
         `Invalid messagingChannel: ${channel}. Allowed: ${[
           ...ALLOWED_CANDIDATE_MESSAGING_CHANNELS,
         ].join(', ')}`,
       );
     }
+
+    const canonicalChannel = normalizeMessagingChannel(channel)!;
 
     let updated = 0;
     let failed = 0;
@@ -495,7 +498,7 @@ export class ArxChatEndpoint {
           graphQltoUpdateOneCandidate,
           {
             idToUpdate: candidateId.trim(),
-            input: { messagingChannel: channel },
+            input: { messagingChannel: canonicalChannel },
           },
           apiToken,
         );
@@ -607,7 +610,12 @@ export class ArxChatEndpoint {
     let messageTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
       ? '91' + personObj?.phones?.primaryPhoneNumber
     : personObj?.phones?.primaryPhoneNumber || '';
-    if (personObj?.candidates?.edges[0]?.node?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        personObj?.candidates?.edges[0]?.node?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       messageTo = personObj?.linkedinLink?.primaryLinkUrl || '';
     }
     else{
@@ -641,9 +649,14 @@ export class ArxChatEndpoint {
       lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
-      typeOfMessage: personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.projects.id == candidateJob?.id,
-      )[0]?.node.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage:
+        toMessagingChannelTransportKey(
+          personObj?.candidates?.edges.filter(
+            (candidate) => candidate.node.projects.id == candidateJob?.id,
+          )[0]?.node.messagingChannel,
+        ) ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'baileys',
     };
 
     // Use MessagingControls to send the message (handles all messaging channels)
@@ -670,7 +683,10 @@ export class ArxChatEndpoint {
       lastEngagementChatControl: candidateChatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
       whatsappMessageId: 'startChat',
-      typeOfMessage: candidateNode?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+      typeOfMessage:
+        toMessagingChannelTransportKey(candidateNode?.messagingChannel) ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'baileys',
     };
 
     // Use MessagingControls to send the message

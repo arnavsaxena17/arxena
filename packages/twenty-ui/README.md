@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-ui/logo.png" width="136" height="136" alt="twenty-ui logo" />
+  <img src="./logo.png" width="136" height="136" alt="Arxena logo" />
 </p>
 
 # twenty-ui

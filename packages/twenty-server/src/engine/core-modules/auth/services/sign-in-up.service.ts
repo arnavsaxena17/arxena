@@ -26,6 +26,7 @@ import {
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { BillingCreditService } from 'src/engine/core-modules/billing/services/billing-credit.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import {
   AuthException,
   AuthExceptionCode,
@@ -95,6 +96,7 @@ export class SignInUpService {
     private readonly eventLogEmitterService: EventLogEmitterService,
     private readonly billingCreditService: BillingCreditService,
     private readonly billingService: BillingService,
+    private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -727,6 +729,8 @@ export class SignInUpService {
           workspaceId: workspace.id,
           workspaceDisplayName: workspace.displayName,
         });
+        // Allot free signup pools (maps, reveals, API) + AI grant
+        await this.workspaceCreditsService.getOrCreate(workspace.id);
       }
 
       return { user, workspace };

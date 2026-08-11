@@ -1,7 +1,7 @@
 <div align="center">
-  <a href="https://twenty.com">
+  <a href="https://www.arxena.com">
     <picture>
-      <img alt="Twenty logo" src="https://raw.githubusercontent.com/twentyhq/twenty/main/packages/twenty-website/public/images/core/logo.svg" height="128">
+      <img alt="Arxena logo" src="../twenty-website/public/images/core/logo.svg" height="128">
     </picture>
   </a>
   <h1>Twenty SDK</h1>

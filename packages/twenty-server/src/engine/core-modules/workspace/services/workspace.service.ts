@@ -24,6 +24,13 @@ import { PreInstalledAppsService } from 'src/engine/core-modules/application/pre
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import {
+  GTM_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
+  type GtmWorkspaceProfileBootstrapJobData,
+} from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job-constants';
 import { DnsManagerService } from 'src/engine/core-modules/dns-manager/services/dns-manager.service';
 import { CustomDomainManagerService } from 'src/engine/core-modules/domain/custom-domain-manager/services/custom-domain-manager.service';
 import { SubdomainManagerService } from 'src/engine/core-modules/domain/subdomain-manager/services/subdomain-manager.service';
@@ -150,6 +157,8 @@ export class WorkspaceService {
     private readonly aiModelRegistryService: AiModelRegistryService,
     @InjectMessageQueue(MessageQueue.deleteCascadeQueue)
     private readonly messageQueueService: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.workspaceQueue)
+    private readonly workspaceQueueService: MessageQueueService,
     @InjectDataSource()
     private readonly coreDataSource: DataSource,
     private readonly coreEntityCacheService: CoreEntityCacheService,
@@ -430,6 +439,26 @@ export class WorkspaceService {
     } catch (error) {
       this.logger.error(
         `failed to enqueue SDK client generation jobs for workspace ${workspace.id}`,
+        error,
+      );
+      this.exceptionHandlerService.captureExceptions([error as Error]);
+    }
+
+    try {
+      await this.workspaceQueueService.add<GtmWorkspaceProfileBootstrapJobData>(
+        GTM_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
+        {
+          workspaceId: workspace.id,
+          userEmail: user.email,
+          workspaceDisplayName: workspace.displayName ?? null,
+          userFirstName: user.firstName ?? null,
+          userLastName: user.lastName ?? null,
+        },
+        { retryLimit: 2 },
+      );
+    } catch (error) {
+      this.logger.error(
+        `failed to enqueue GTM workspace profile bootstrap for workspace ${workspace.id}`,
         error,
       );
       this.exceptionHandlerService.captureExceptions([error as Error]);

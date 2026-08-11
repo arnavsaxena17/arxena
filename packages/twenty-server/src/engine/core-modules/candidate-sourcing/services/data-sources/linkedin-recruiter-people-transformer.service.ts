@@ -89,7 +89,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         startMeetingSchedulingChat: false,
         startMeetingSchedulingChatCompleted: false,
         engagementStatus: false,
-        messagingChannel: 'linkedin',
+        messagingChannel: 'LINKEDIN',
         chatCount: 0,
         lastEngagementChatControl: 'startChat',
         whatsappMessages: { edges: [] },

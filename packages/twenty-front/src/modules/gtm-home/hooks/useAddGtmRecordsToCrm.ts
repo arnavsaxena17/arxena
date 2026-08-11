@@ -379,7 +379,7 @@ export const useAddGtmRecordsToCrm = () => {
               connectionDegree: person.connectionDegree ?? null,
               personaPriorityScore: person.personaPriorityScore ?? null,
               pendingChannel: person.pendingChannel ?? null,
-              messagingChannel: 'linkedin',
+              messagingChannel: 'LINKEDIN',
               campaign: projectId,
               source: 'gtm-home',
               candConversationStatus: 'ONLY_ADDED_NO_CONVERSATION',

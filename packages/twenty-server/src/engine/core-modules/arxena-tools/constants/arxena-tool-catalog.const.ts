@@ -305,6 +305,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search Companies Index (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
+    name: 'search_wikidata_companies',
+    pack: 'prospecting',
+    label: 'Search Wikidata Companies',
+    description:
+      'Look up company details on Wikidata by official website domain (P856) or company name. Returns structured firmographics (HQ, industry, employees, executives, stock listing).',
+  },
+  {
     name: 'get_elasticsearch_index_status',
     pack: 'prospecting',
     label: 'Get Elasticsearch Index Status',

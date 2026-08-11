@@ -3,6 +3,11 @@ import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/mes
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
@@ -91,7 +96,12 @@ export class ToolCallsProcessing {
     }
 
     let phoneNumberFrom: string = '';
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
@@ -103,7 +113,12 @@ export class ToolCallsProcessing {
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
 
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -123,7 +138,10 @@ export class ToolCallsProcessing {
     messageType: status,
     messageObj: [],
     whatsappDeliveryStatus: 'updateCandidateStatus',
-    typeOfMessage: candidate?.messagingChannel ||  process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+    typeOfMessage:
+      toMessagingChannelTransportKey(candidate?.messagingChannel) ||
+      process.env.DEFAULT_WHATSAPP_CLIENT ||
+      'baileys',
     whatsappMessageId: 'updateCandidateStatus',
   };
 
@@ -168,7 +186,12 @@ export class ToolCallsProcessing {
 
 
     let phoneNumberFrom: string = '';
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
@@ -180,7 +203,12 @@ export class ToolCallsProcessing {
 
     let phoneNumberTo:string = recruiterProfile.phoneNumber;
 
-    if (candidate?.messagingChannel == 'linkedin') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+      )
+    ) {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
     }
     else{
@@ -206,7 +234,10 @@ export class ToolCallsProcessing {
       messageObj: [],
       whatsappDeliveryStatus: 'scheduleCandidateInterview',
       whatsappMessageId: 'scheduleCandidateInterview',
-      typeOfMessage: candidate?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'whatsapp-unipile',
+      typeOfMessage:
+        toMessagingChannelTransportKey(candidate?.messagingChannel) ||
+        process.env.DEFAULT_WHATSAPP_CLIENT ||
+        'whatsapp-unipile',
     };
     const updateCandidateStatusObj = await new UpdateChat(
       this.workspaceQueryService,

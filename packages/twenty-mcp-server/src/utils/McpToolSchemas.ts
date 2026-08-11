@@ -313,6 +313,30 @@ export const SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
   { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
 ] as const;
 
+/** Descriptor for search_wikidata_companies tool input. */
+export const SEARCH_WIKIDATA_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  {
+    key: 'domain',
+    type: 'string',
+    description:
+      'Company website domain or URL (e.g. "clariant.com", "https://www.dow.com"). Preferred lookup via Wikidata P856 official website.',
+    required: false,
+  },
+  {
+    key: 'name',
+    type: 'string',
+    description:
+      'Company name for wbsearchentities fallback when domain is unknown (e.g. "Dow Inc.").',
+    required: false,
+  },
+  {
+    key: 'limit',
+    type: 'number',
+    description: 'Max name-search candidates when using name (default 5)',
+    required: false,
+  },
+] as const;
+
 // ==================== People API Tools ====================
 
 /** Descriptor for search_people_by_job_title tool input. */

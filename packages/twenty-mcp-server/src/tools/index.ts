@@ -17,6 +17,7 @@ import { reminderTools } from './reminder-tools';
 import { searchFetchTools } from './search-fetch-tools';
 import { shortlistCvsentTools } from './shortlist-cvsent-tools';
 import { unipileControllersTools } from './unipile-controllers-tools';
+import { wikidataTools } from './wikidata-tools';
 
 export const publicTools: McpTool[] = [
   ...searchFetchTools,
@@ -29,6 +30,7 @@ export const publicTools: McpTool[] = [
   ...esIndexSearchTools,
   ...candidateSearchTools,
   ...linkedinSearchTools,
+  ...wikidataTools,
   ...arxChatTools,
   ...shortlistCvsentTools,
   ...clientContactInterviewTools,

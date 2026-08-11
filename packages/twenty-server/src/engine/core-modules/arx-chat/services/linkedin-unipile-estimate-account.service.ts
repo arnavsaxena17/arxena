@@ -109,6 +109,25 @@ export class LinkedinUnipileEstimateAccountService {
     );
   }
 
+  // Always picks from the shared Sales Navigator Unipile pool (ignores session/env modes).
+  async resolveSharedSalesNavigatorPoolAccountId(
+    logPrefix = 'Shared Sales Navigator pool',
+  ): Promise<string> {
+    const accountId = await this.resolveAccountIdForMode(
+      LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
+      undefined,
+      logPrefix,
+    );
+
+    if (!accountId?.trim()) {
+      throw new Error(
+        `${logPrefix}: no shared Sales Navigator Unipile pool account available`,
+      );
+    }
+
+    return accountId;
+  }
+
   private async withPooledLinkedinSession<T>(
     mode: LinkedinUnipileEstimateAccountMode,
     apiToken: string,

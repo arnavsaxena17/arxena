@@ -11,6 +11,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
+import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
@@ -227,6 +228,10 @@ export const CandidateTablePageHeader = ({
 
   return (
     <>
+      <InformationBannerChromeExtensionNotInstalled
+        isExtensionInstalled={isExtensionInstalled}
+        isChecking={isExtensionChecking}
+      />
       {/* <LinkedinUnipileOrgChartReconnectBanner
         key={
           isLinkedinConnected

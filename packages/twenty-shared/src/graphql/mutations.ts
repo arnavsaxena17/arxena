@@ -746,3 +746,58 @@ export const updateOneAssistantThread = `mutation UpdateOneAssistantThread($id: 
     updatedAt
   }
 }`;
+
+export const graphqlMutationToDeleteManyPrompts = `
+mutation DeleteManyPrompts($filter: PromptFilterInput!) {
+  deletePrompts(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const graphqlMutationToDeleteManyAttachments = `
+mutation DeleteManyAttachments($filter: AttachmentFilterInput!) {
+  deleteAttachments(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const graphqlMutationToDeleteManyCandidateFields = `
+mutation DeleteManyCandidateFields($filter: CandidateFieldFilterInput!) {
+  deleteCandidateFields(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const graphqlMutationToDeleteManyVideoInterviewTemplates = `
+mutation DeleteManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput!) {
+  deleteVideoInterviewTemplates(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const graphqlMutationToDeleteManyAssistantThreads = `
+mutation DeleteManyAssistantThreads($filter: AssistantThreadFilterInput!) {
+  deleteAssistantThreads(filter: $filter) {
+    id
+    __typename
+  }
+}
+`;
+
+export const graphqlMutationToDeleteOneProject = `
+mutation DeleteOneProject($idToDelete: UUID!) {
+  deleteProject(id: $idToDelete) {
+    id
+    deletedAt
+    __typename
+  }
+}
+`;

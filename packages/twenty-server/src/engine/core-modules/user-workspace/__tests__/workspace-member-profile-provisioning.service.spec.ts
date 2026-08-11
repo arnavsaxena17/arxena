@@ -1,7 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { FieldActorSource } from 'twenty-shared/types';
+
 import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
 describe('WorkspaceMemberProfileProvisioningService', () => {
   let service: WorkspaceMemberProfileProvisioningService;
@@ -55,6 +57,18 @@ describe('WorkspaceMemberProfileProvisioningService', () => {
     expect(profileRepository.insert).toHaveBeenCalledWith({
       workspaceMemberId: 'member-id',
       typeWorkspaceMember: 'RECRUITER_TYPE',
+      createdBy: {
+        source: FieldActorSource.SYSTEM,
+        name: 'System',
+        workspaceMemberId: null,
+        context: {},
+      },
+      updatedBy: {
+        source: FieldActorSource.SYSTEM,
+        name: 'System',
+        workspaceMemberId: null,
+        context: {},
+      },
       name: 'Jane Doe',
       firstName: 'Jane',
       lastName: 'Doe',

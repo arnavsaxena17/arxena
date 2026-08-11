@@ -63,8 +63,11 @@ export const ArxSyncChatsWithWhatsappCommand = () => {
           (record.messagingChannel as string | undefined) ||
           apiKeys.whatsapp_key ||
           'baileys';
+        const normalizedMessagingChannel = messagingChannel
+          .replace(/-/g, '_')
+          .toUpperCase();
         const usesUnipile =
-          messagingChannel === 'whatsapp-unipile' ||
+          normalizedMessagingChannel === 'WHATSAPP_UNIPILE' ||
           apiKeys.whatsapp_key === 'whatsapp-unipile';
         const syncEndpoint = usesUnipile
           ? `${REACT_APP_SERVER_BASE_URL}/whatsapp-unipile/sync-messages`

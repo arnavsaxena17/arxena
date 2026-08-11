@@ -243,7 +243,8 @@ export const mapMessagingChannelToGtmChannel = (
   if (
     normalized.includes('connect') ||
     normalized.includes('invite') ||
-    normalized === 'linkedin-connect'
+    normalized === 'linkedin-connect' ||
+    normalized === 'linkedin_connect'
   ) {
     return 'LINKEDIN_CONNECT';
   }

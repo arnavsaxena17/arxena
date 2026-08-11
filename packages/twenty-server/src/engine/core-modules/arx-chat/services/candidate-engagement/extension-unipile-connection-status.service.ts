@@ -168,6 +168,10 @@ export class ExtensionUnipileConnectionStatusService {
       await this.memberLinkedinUnipileConnectionService.isWhatsappConnectedForProfile(
         profile,
         workspace,
+        {
+          workspaceMemberId,
+          authToken: apiToken,
+        },
       );
     const storedCookies =
       await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(

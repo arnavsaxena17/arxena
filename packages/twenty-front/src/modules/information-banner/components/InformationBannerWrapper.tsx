@@ -18,6 +18,8 @@ import { hasReachedCurrentBillingPeriodCapSelector } from '@/workspace/states/ha
 
 import { InformationBannerNoMoreArxenaCredits } from '@/information-banner/components/billing/InformationBannerNoMoreArxenaCredits';
 import { InformationBannerNoMoreCredits } from '@/information-banner/components/billing/InformationBannerNoMoreCredits';
+import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
+import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
 import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
 import {
   PermissionFlagType,
@@ -44,6 +46,8 @@ export const InformationBannerWrapper = () => {
   const hasReachedCurrentBillingPeriodCap = useAtomStateValue(
     hasReachedCurrentBillingPeriodCapSelector,
   );
+  const { isExtensionInstalled, isChecking: isExtensionChecking } =
+    useChromeExtensionDetection();
 
   const { data: workspaceCreditsData } = useQuery<{
     workspaceCredits?: {
@@ -115,6 +119,10 @@ export const InformationBannerWrapper = () => {
           kinds={depletedArxenaCreditKinds}
         />
       )}
+      <InformationBannerChromeExtensionNotInstalled
+        isExtensionInstalled={isExtensionInstalled}
+        isChecking={isExtensionChecking}
+      />
     </StyledInformationBannerWrapper>
   );
 };

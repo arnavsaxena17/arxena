@@ -2,7 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 
-import { TWENTY_LOGO_MARK_PATH } from '@/cli/utilities/build/cover/assets/twenty-logo-mark-path';
+import {
+  ARXENA_LOGO_MARK_PATHS,
+  ARXENA_LOGO_MARK_VIEWBOX,
+} from '@/cli/utilities/build/cover/assets/twenty-logo-mark-path';
 
 const readHalftoneBackdropDataUri = async (): Promise<string> => {
   const backdropBuffer = await readFile(
@@ -24,8 +27,7 @@ const CENTER_Y = CANVAS_HEIGHT / 2;
 const CROSS_ARM = 19;
 const CROSS_STROKE = 8;
 const CROSS_COLOR = '#b3b3b3';
-const TWENTY_MARK_VIEWBOX = 40;
-const TWENTY_MARK_SCALE = TILE_SIZE / TWENTY_MARK_VIEWBOX;
+const ARXENA_MARK_SCALE = TILE_SIZE / ARXENA_LOGO_MARK_VIEWBOX;
 
 type GenerateCoverImageOptions = {
   logoBuffer: Buffer;
@@ -57,7 +59,7 @@ export const generateCoverImage = async ({
     '</g>',
     `<image href="${logoDataUri}" x="${LEFT_TILE_X}" y="${TILE_Y}" width="${TILE_SIZE}" height="${TILE_SIZE}" preserveAspectRatio="xMidYMid slice" clip-path="url(#leftLogoClip)" />`,
     `<rect x="${LEFT_TILE_X}" y="${TILE_Y}" width="${TILE_SIZE}" height="${TILE_SIZE}" rx="${TILE_RADIUS}" fill="none" stroke="#000000" stroke-opacity="0.08" stroke-width="1" />`,
-    `<g transform="translate(${RIGHT_TILE_X} ${TILE_Y}) scale(${TWENTY_MARK_SCALE})"><path d="${TWENTY_LOGO_MARK_PATH}" fill="#ffffff" /></g>`,
+    `<g transform="translate(${RIGHT_TILE_X} ${TILE_Y}) scale(${ARXENA_MARK_SCALE})">${ARXENA_LOGO_MARK_PATHS.map((path) => `<path d="${path}" fill="#ffffff" />`).join('')}</g>`,
     `<line x1="${CENTER_X - CROSS_ARM}" y1="${CENTER_Y - CROSS_ARM}" x2="${CENTER_X + CROSS_ARM}" y2="${CENTER_Y + CROSS_ARM}" stroke="${CROSS_COLOR}" stroke-width="${CROSS_STROKE}" stroke-linecap="round" />`,
     `<line x1="${CENTER_X - CROSS_ARM}" y1="${CENTER_Y + CROSS_ARM}" x2="${CENTER_X + CROSS_ARM}" y2="${CENTER_Y - CROSS_ARM}" stroke="${CROSS_COLOR}" stroke-width="${CROSS_STROKE}" stroke-linecap="round" />`,
     '</svg>',

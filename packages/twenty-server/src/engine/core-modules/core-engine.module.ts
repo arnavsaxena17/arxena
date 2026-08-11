@@ -54,6 +54,7 @@ import { ImapSmtpCaldavModule } from 'src/engine/core-modules/imap-smtp-caldav-c
 import { ImpersonationModule } from 'src/engine/core-modules/impersonation/impersonation.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
 import { SerpCompanySearchModule } from 'src/engine/core-modules/linkedin-company-search/linkedin-company-search.module';
+import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
 import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { LLMChatModelModule } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.module';
@@ -217,6 +218,7 @@ import { FileModule } from './file/file.module';
     BuiltWithModule,
     LinkedinQueryGenerationModule,
     SerpCompanySearchModule,
+    WikidataModule,
     LinkedInSearchModule,
     PeopleApiModule,
     ArxChatAgentModule,

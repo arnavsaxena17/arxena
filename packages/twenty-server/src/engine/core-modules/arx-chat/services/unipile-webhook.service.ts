@@ -1065,7 +1065,7 @@ export class UnipileWebhookService {
           linkedinUrl: profileUrl,
           event: 'connection_accepted',
           apiToken,
-          messagingChannel: 'linkedin-connect',
+          messagingChannel: 'LINKEDIN_CONNECT',
         });
       }
     } catch (error) {
@@ -1101,7 +1101,7 @@ export class UnipileWebhookService {
       linkedinUrl: profileUrl,
       event: 'connection_ignored',
       apiToken,
-      messagingChannel: 'linkedin-connect',
+      messagingChannel: 'LINKEDIN_CONNECT',
     });
   }
 

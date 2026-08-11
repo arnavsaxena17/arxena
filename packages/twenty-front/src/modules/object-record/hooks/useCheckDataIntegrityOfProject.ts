@@ -171,23 +171,29 @@ export const useCheckDataIntegrityOfProject = ({
         )
           ? options.messagingChannelsForKeys
           : null;
+        const normalizeMessagingChannel = (channel: string | null | undefined) =>
+          (channel ?? '').replace(/-/g, '_').toUpperCase();
         const needsWhatsappOfficialKeys =
           channelsForWhatsappKeyRules !== null
             ? channelsForWhatsappKeyRules.some(
-                (channel) => channel === 'whatsapp-official',
+                (channel) =>
+                  normalizeMessagingChannel(channel) === 'WHATSAPP_OFFICIAL',
               )
             : candidateEdges.some(
                 (edge) =>
-                  edge?.node?.messagingChannel === 'whatsapp-official',
+                  normalizeMessagingChannel(edge?.node?.messagingChannel) ===
+                  'WHATSAPP_OFFICIAL',
               );
         const needsWhatsappUnipileKey =
           channelsForWhatsappKeyRules !== null
             ? channelsForWhatsappKeyRules.some(
-                (channel) => channel === 'whatsapp-unipile',
+                (channel) =>
+                  normalizeMessagingChannel(channel) === 'WHATSAPP_UNIPILE',
               )
             : candidateEdges.some(
                 (edge) =>
-                  edge?.node?.messagingChannel === 'whatsapp-unipile',
+                  normalizeMessagingChannel(edge?.node?.messagingChannel) ===
+                  'WHATSAPP_UNIPILE',
               );
 
         const consolidatedErrorMessage = [

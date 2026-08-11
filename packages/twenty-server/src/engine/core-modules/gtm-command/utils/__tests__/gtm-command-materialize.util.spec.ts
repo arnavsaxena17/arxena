@@ -33,9 +33,20 @@ describe('gtm-command-materialize.util', () => {
     expect(mapMessagingChannelToGtmChannel('whatsapp-unipile')).toBe(
       'WHATSAPP',
     );
+    expect(mapMessagingChannelToGtmChannel('WHATSAPP_UNIPILE')).toBe(
+      'WHATSAPP',
+    );
     expect(mapMessagingChannelToGtmChannel('linkedin-inmail')).toBe('INMAIL');
+    expect(mapMessagingChannelToGtmChannel('LINKEDIN_INMAIL')).toBe('INMAIL');
     expect(mapMessagingChannelToGtmChannel('linkedin')).toBe('OTHER');
+    expect(mapMessagingChannelToGtmChannel('LINKEDIN')).toBe('OTHER');
     expect(mapMessagingChannelToGtmChannel('linkedin-connect')).toBe(
+      'LINKEDIN_CONNECT',
+    );
+    expect(mapMessagingChannelToGtmChannel('linkedin_connect')).toBe(
+      'LINKEDIN_CONNECT',
+    );
+    expect(mapMessagingChannelToGtmChannel('LINKEDIN_CONNECT')).toBe(
       'LINKEDIN_CONNECT',
     );
     expect(mapOutboundStageForChannel('whatsapp-unipile')).toBe(

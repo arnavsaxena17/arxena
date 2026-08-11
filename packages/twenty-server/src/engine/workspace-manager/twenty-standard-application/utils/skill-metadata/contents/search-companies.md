@@ -43,6 +43,7 @@ On GTM Command: **never** end after a chat-only table. Persist with `upsert_gtm_
 | **LinkedIn / Unipile** | `search_linkedin_companies` | Live LinkedIn company results from a connected account; `has_job_offers`, geo/industry facets | Connected LinkedIn Unipile account |
 | **Harvest** | People API (`dataSource: "harvest"`) | Company discovery *via people* — find companies where people match a role; Harvest has no standalone company search | Harvest configured |
 | **Exa** | `app_exa_web_search` (preloaded) or `exa_web_search` | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
+| **Wikidata** | `search_wikidata_companies` | Enrich a known domain/URL with structured facts (HQ, industry, employees, CEO, stock listing, Wikipedia) | Public Wikidata API (no key) |
 | **Internal index** | `search_companies_index` | Search companies already in the workspace Elasticsearch index / dedupe against CRM | Index populated |
 
 Always prefer the **internal index** first when the user may already have the company (CRM path), to avoid re-creating duplicates.
@@ -61,6 +62,7 @@ learn_tools({
     "search_apollo_companies",
     "search_linkedin_companies",
     "search_companies_index",
+    "search_wikidata_companies",
     "exa_web_search",
     "upsert_gtm_target_companies",
     "create_one_company",
@@ -163,7 +165,29 @@ app_exa_web_search({
 })
 ```
 
-## Source 5 — Internal company index (`search_companies_index`)
+## Source 5 — Wikidata (`search_wikidata_companies`)
+
+Structured company enrichment from Wikidata (no API key). Best when you already have a **domain** or need firmographic facts (HQ, industry, employees, CEO, stock listing, Wikipedia).
+
+- Prefer `domain` (or full website URL). Lookup uses official website claim `P856` with http/https and www variants, then ranks candidates (public parent company beats local subsidiaries sharing the same site).
+- Optional `name` via `wbsearchentities` when domain is unknown.
+- Returns ranked `companies[]` with `wikidataId`, `companyName`, `website`, `industry`, `headquarters`, `employeeCount`, `keyExecutives`, `stockListing`, `dataSources.wikidata` / `.wikipedia`.
+- Use to enrich Apollo/Exa/LinkedIn rows before CRM/GTM save — not as a broad industry crawler (for that use Apollo/Exa).
+
+```
+search_wikidata_companies({
+  "domain": "clariant.com"
+})
+```
+
+```
+search_wikidata_companies({
+  "name": "Dow Inc.",
+  "limit": 5
+})
+```
+
+## Source 6 — Internal company index (`search_companies_index`)
 
 - Searches companies already indexed in the workspace (Elasticsearch).
 - Use first when the user may already have the company, or to dedupe before saving sourced results.
@@ -212,5 +236,5 @@ company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_
 - Prefer the internal index to avoid duplicate CRM companies (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by domain/normalized name before any write.
-- Present results with name, domain, industry, location, size, and source (Apollo / LinkedIn / Harvest / Exa) so the user can judge quality.
+- Present results with name, domain, industry, location, size, and source (Apollo / LinkedIn / Harvest / Exa / Wikidata) so the user can judge quality.
 - On GTM Command, persistence to `upsert_gtm_target_companies` is mandatory before ending the turn.

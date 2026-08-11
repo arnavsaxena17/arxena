@@ -50,9 +50,10 @@ export const GtmCompaniesPanel = ({
   if (companies.length === 0) {
     return (
       <StyledEmpty>
-        No target companies in this GTM run yet. Use Ask AI to discover
-        accounts — they stay ephemeral (Redis) until you enroll people, which
-        creates CRM Company + Candidate under this Project.
+        No target companies in this GTM run yet. Use Setup → Find companies
+        (Ask AI) to discover accounts from your ICP search blurb. They stay
+        ephemeral (Redis) until you enroll people, which creates CRM Company +
+        Candidate under this Project.
       </StyledEmpty>
     );
   }

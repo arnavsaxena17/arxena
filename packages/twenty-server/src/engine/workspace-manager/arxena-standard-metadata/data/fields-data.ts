@@ -6,6 +6,7 @@ import {
   getGtmCommandFieldsData,
   GTM_MESSAGING_CHANNEL_OPTIONS,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/gtm-command-fields.data';
+import { getGtmWorkspaceProfileFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/gtm-workspace-profile-fields.data';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
 
 export const getFieldsData = (
@@ -2549,6 +2550,7 @@ export const getFieldsData = (
     //   },
     // },
     ...getGtmCommandFieldsData(objectsNameIdMap),
+    ...getGtmWorkspaceProfileFieldsData(objectsNameIdMap),
   ];
 
   return allFields

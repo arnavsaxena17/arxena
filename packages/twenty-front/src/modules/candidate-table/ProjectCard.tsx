@@ -1,22 +1,35 @@
 import { MenuItem } from 'twenty-ui/navigation';
-import { IconBriefcase, IconCalendar, IconCheck, IconDotsVertical, IconMap, IconPencil, IconX } from 'twenty-ui/icon';
+import {
+  IconBriefcase,
+  IconCalendar,
+  IconCheck,
+  IconDotsVertical,
+  IconHierarchy2,
+  IconMap,
+  IconPencil,
+  IconTrash,
+  IconTrashX,
+  IconX,
+} from 'twenty-ui/icon';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { IconHierarchy2 } from 'twenty-ui/icon';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
+import { useDeleteProject } from '@/candidate-table/hooks/useDeleteProject';
 import { useProjectStatusToggle } from '@/candidate-table/hooks/useProjectStatusToggle';
 import { projectsState } from '@/candidate-table/states/states';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
+import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
+import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
 import { navigationDrawerExpandedMemorizedState } from '@/ui/navigation/states/navigationDrawerExpandedMemorizedState';
 import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMemorizedUrlState';
@@ -249,6 +262,10 @@ export const ProjectCard = ({
     projectId: id,
     currentJobActive: isActive
   });
+  const { deleteProject, isDeleting } = useDeleteProject();
+  const { openModal } = useModal();
+  const deleteProjectModalId = `delete-project-modal-${id}`;
+  const deleteProjectWithCandidatesModalId = `delete-project-with-candidates-modal-${id}`;
   const [jobs, setJobs] = useAtomState(projectsState);
   const apolloCoreClient = useApolloCoreClient();
   const [updateProject] = useMutation(gql(UpdateOneProject), {
@@ -288,6 +305,24 @@ export const ProjectCard = ({
   const handleToggleJobStatus = () => {
     toggleJobStatus();
     closeDropdown(dropdownId);
+  };
+
+  const handleOpenDeleteProjectModal = () => {
+    closeDropdown(dropdownId);
+    openModal(deleteProjectModalId);
+  };
+
+  const handleOpenDeleteProjectWithCandidatesModal = () => {
+    closeDropdown(dropdownId);
+    openModal(deleteProjectWithCandidatesModalId);
+  };
+
+  const handleConfirmDeleteProject = () => {
+    void deleteProject(id, { deleteCandidates: false }).catch(() => undefined);
+  };
+
+  const handleConfirmDeleteProjectWithCandidates = () => {
+    void deleteProject(id, { deleteCandidates: true }).catch(() => undefined);
   };
 
   const handleSearchNameEdit = () => {
@@ -361,13 +396,25 @@ export const ProjectCard = ({
               </StyledMenuButton>
             }
             dropdownComponents={
-              <DropdownContent widthInPixels={200}>
+              <DropdownContent widthInPixels={280}>
                 <DropdownMenuItemsContainer>
                   <MenuItem
                     accent={isActive ? 'default' : 'danger'}
                     onClick={handleToggleJobStatus}
                     text={isActive ? 'Mark as Inactive' : 'Mark as Active'}
                     LeftIcon={IconBriefcase}
+                  />
+                  <MenuItem
+                    accent="danger"
+                    onClick={handleOpenDeleteProjectModal}
+                    text="Delete Project"
+                    LeftIcon={IconTrash}
+                  />
+                  <MenuItem
+                    accent="danger"
+                    onClick={handleOpenDeleteProjectWithCandidatesModal}
+                    text="Delete Project with Candidates"
+                    LeftIcon={IconTrashX}
                   />
                 </DropdownMenuItemsContainer>
               </DropdownContent>
@@ -440,6 +487,25 @@ export const ProjectCard = ({
           </StyledOrgChartButton>
         )}
       </StyledCardFooter>
+
+      <ConfirmationModal
+        modalInstanceId={deleteProjectModalId}
+        title="Delete project"
+        subtitle={`Delete "${name}" and its project dependencies (prompts, attachments, templates, etc.)? Candidates in this project will not be deleted.`}
+        onConfirmClick={handleConfirmDeleteProject}
+        confirmButtonText="Delete Project"
+        confirmButtonAccent="danger"
+        loading={isDeleting}
+      />
+      <ConfirmationModal
+        modalInstanceId={deleteProjectWithCandidatesModalId}
+        title="Delete project with candidates"
+        subtitle={`Delete "${name}", its dependencies, and soft-delete all candidates in this project? This cannot be easily undone.`}
+        onConfirmClick={handleConfirmDeleteProjectWithCandidates}
+        confirmButtonText="Delete Project with Candidates"
+        confirmButtonAccent="danger"
+        loading={isDeleting}
+      />
     </StyledCard>
   );
 };

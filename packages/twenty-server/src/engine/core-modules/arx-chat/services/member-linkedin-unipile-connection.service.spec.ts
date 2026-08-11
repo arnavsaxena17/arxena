@@ -272,4 +272,141 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       linkedinUnipileRequestService.disconnectAccountBestEffort,
     ).not.toHaveBeenCalled();
   });
+
+  describe('isWhatsappConnectedForProfile backfill', () => {
+    const workspace = { id: 'workspace-1' } as never;
+    const matchedAccountId = 'pWhQlMmoTfWsCSI_6oWkfA';
+    const profilePhone = '+918411937769';
+    const unipilePhone = '918411937769';
+
+    const createWhatsappService = () => {
+      const whatsappUnipileRequestService = {
+        fetchAccountByIdIfExists: jest.fn().mockResolvedValue({
+          id: matchedAccountId,
+          connection_params: { im: { phone_number: unipilePhone } },
+          sources: [{ status: 'OK' }],
+        }),
+        getAllAccounts: jest.fn().mockResolvedValue({
+          accounts: [
+            {
+              id: matchedAccountId,
+              connection_params: { im: { phone_number: unipilePhone } },
+              sources: [{ status: 'OK' }],
+            },
+          ],
+        }),
+        mapAccountStatus: jest.fn().mockReturnValue('connected'),
+      };
+
+      const workspaceMemberProfileUnipileService = {
+        applyUnipileAccountToWorkspaceMemberProfile: jest.fn(),
+        updateWorkspaceMemberUnipileAccountId: jest.fn(),
+      };
+
+      const service = new MemberLinkedinUnipileConnectionService(
+        {} as never,
+        whatsappUnipileRequestService as never,
+        workspaceMemberProfileUnipileService as never,
+        {} as never,
+      );
+
+      return {
+        service,
+        whatsappUnipileRequestService,
+        workspaceMemberProfileUnipileService,
+      };
+    };
+
+    it('persists whatsappUnipileAccountId when phone matches a connected account and stored id is missing', async () => {
+      const {
+        service,
+        workspaceMemberProfileUnipileService,
+        whatsappUnipileRequestService,
+      } = createWhatsappService();
+
+      const profile = {
+        phoneNumber: profilePhone,
+        linkedinUrl: null,
+        whatsappUnipileAccountId: null,
+        linkedinUnipileAccountId: null,
+      };
+
+      const connected = await service.isWhatsappConnectedForProfile(
+        profile,
+        workspace,
+        { workspaceMemberId, authToken },
+      );
+
+      expect(connected).toBe(true);
+      expect(
+        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+      ).toHaveBeenCalledWith(
+        workspaceMemberId,
+        authToken,
+        'whatsapp',
+        matchedAccountId,
+        expect.objectContaining({ id: matchedAccountId }),
+      );
+      expect(profile.whatsappUnipileAccountId).toBe(matchedAccountId);
+      expect(whatsappUnipileRequestService.getAllAccounts).toHaveBeenCalled();
+    });
+
+    it('does not persist when Unipile status is not connected', async () => {
+      const {
+        service,
+        workspaceMemberProfileUnipileService,
+        whatsappUnipileRequestService,
+      } = createWhatsappService();
+      whatsappUnipileRequestService.mapAccountStatus.mockReturnValue(
+        'connecting',
+      );
+
+      const profile = {
+        phoneNumber: profilePhone,
+        linkedinUrl: null,
+        whatsappUnipileAccountId: null,
+        linkedinUnipileAccountId: null,
+      };
+
+      const connected = await service.isWhatsappConnectedForProfile(
+        profile,
+        workspace,
+        { workspaceMemberId, authToken },
+      );
+
+      expect(connected).toBe(false);
+      expect(
+        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('does not persist when already stored correctly', async () => {
+      const {
+        service,
+        workspaceMemberProfileUnipileService,
+        whatsappUnipileRequestService,
+      } = createWhatsappService();
+
+      const profile = {
+        phoneNumber: profilePhone,
+        linkedinUrl: null,
+        whatsappUnipileAccountId: matchedAccountId,
+        linkedinUnipileAccountId: null,
+      };
+
+      const connected = await service.isWhatsappConnectedForProfile(
+        profile,
+        workspace,
+        { workspaceMemberId, authToken },
+      );
+
+      expect(connected).toBe(true);
+      expect(
+        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+      ).not.toHaveBeenCalled();
+      expect(
+        whatsappUnipileRequestService.getAllAccounts,
+      ).not.toHaveBeenCalled();
+    });
+  });
 });

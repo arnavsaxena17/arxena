@@ -1,29 +1,14 @@
 import { styled } from '@linaria/react';
-import { lazy, Suspense } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { NavigationDrawerOpenedSection } from '@/navigation-menu-item/display/sections/components/NavigationDrawerOpenedSection';
+import { FavoritesSectionDispatcher } from '@/navigation-menu-item/display/sections/favorites/components/FavoritesSectionDispatcher';
+import { WorkspaceSectionDispatcher } from '@/navigation-menu-item/display/sections/workspace/components/WorkspaceSectionDispatcher';
 import { GtmHomeNavigationDrawerItem } from '@/navigation/components/GtmHomeNavigationDrawerItem';
 import { OrgChartsNavigationDrawerItems } from '@/navigation/components/OrgChartsNavigationDrawerItems';
 import { ProjectsNavigationDrawerItems } from '@/navigation/components/ProjectsNavigationDrawerItems';
-import { NavigationDrawerWorkspaceSectionSkeletonLoader } from '@/object-metadata/components/NavigationDrawerWorkspaceSectionSkeletonLoader';
 
-const FavoritesSectionDispatcher = lazy(() =>
-  import('@/navigation-menu-item/display/sections/favorites/components/FavoritesSectionDispatcher').then(
-    (module) => ({
-      default: module.FavoritesSectionDispatcher,
-    }),
-  ),
-);
-
-const WorkspaceSectionDispatcher = lazy(() =>
-  import('@/navigation-menu-item/display/sections/workspace/components/WorkspaceSectionDispatcher').then(
-    (module) => ({
-      default: module.WorkspaceSectionDispatcher,
-    }),
-  ),
-);
-
+// Eager: lazy+Suspense for these hung on /gtm-home next to GtmHomePage lazy route
 const StyledScrollableItemsContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -37,10 +22,8 @@ export const MainNavigationDrawerScrollableItems = () => {
       <ProjectsNavigationDrawerItems />
       <OrgChartsNavigationDrawerItems />
       <NavigationDrawerOpenedSection />
-      <Suspense fallback={<NavigationDrawerWorkspaceSectionSkeletonLoader />}>
-        <FavoritesSectionDispatcher />
-        <WorkspaceSectionDispatcher />
-      </Suspense>
+      <FavoritesSectionDispatcher />
+      <WorkspaceSectionDispatcher />
     </StyledScrollableItemsContainer>
   );
 };

@@ -68,7 +68,8 @@ export const OrgChartRoute = () => {
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
-  const { isExtensionInstalled } = useChromeExtensionDetection();
+  const { isExtensionInstalled, isChecking: isExtensionChecking } =
+    useChromeExtensionDetection();
   const { data: creditsData } = useQuery<WorkspaceCreditsQuery>(WORKSPACE_CREDITS);
   const credits = creditsData?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits;
@@ -178,6 +179,7 @@ export const OrgChartRoute = () => {
         onCompanySelect={hasSelectedCompany ? handleCompanySelect : undefined}
         hasToken={!!hasToken}
         isExtensionInstalled={isExtensionInstalled}
+        isExtensionChecking={isExtensionChecking}
         onDownloadClick={handleDownloadClick}
         hasInsufficientCredits={false}
         isLinkedinConnected={isLinkedinConnected}

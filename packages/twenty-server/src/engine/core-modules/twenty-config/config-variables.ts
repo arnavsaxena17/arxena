@@ -936,7 +936,7 @@ export class ConfigVariables {
   })
   @CastToPositiveNumber()
   @IsOptional()
-  FREE_SIGNUP_ORG_CHART_CREDITS = 3;
+  FREE_SIGNUP_ORG_CHART_CREDITS = 10;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.BILLING_CONFIG,
@@ -945,7 +945,7 @@ export class ConfigVariables {
   })
   @CastToPositiveNumber()
   @IsOptional()
-  FREE_SIGNUP_REVEAL_CREDITS = 0;
+  FREE_SIGNUP_REVEAL_CREDITS = 10;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.BILLING_CONFIG,
@@ -2601,7 +2601,7 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
-      'Connect LinkedIn sessions to Unipile automatically from the extension',
+      'Create/reconnect Unipile LinkedIn accounts from the extension. Cookie persistence to the workspace member profile still runs when this is false.',
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()
@@ -2614,7 +2614,7 @@ export class ConfigVariables {
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()
-  LINKEDIN_UNIPILE_ON_DEMAND = false;
+  LINKEDIN_UNIPILE_ON_DEMAND = true;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

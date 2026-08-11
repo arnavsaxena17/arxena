@@ -341,6 +341,17 @@ const allObjects: ArxenaObjectDefinition[] = [
     },
     databaseCrudToolAccess: OBJECT_DATABASE_CRUD_TOOL_ACCESS.orgChart,
   },
+  {
+    object: {
+      description:
+        'Workspace-level seller company profile, default ICP, and GTM search blurbs shared across runs',
+      icon: 'IconTargetArrow',
+      labelPlural: 'GTM Workspace Profiles',
+      labelSingular: 'GTM Workspace Profile',
+      nameSingular: 'gtmWorkspaceProfile',
+      namePlural: 'gtmWorkspaceProfiles',
+    },
+  },
 ];
 
 const OBJECTS_TO_EXCLUDE = [

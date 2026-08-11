@@ -951,7 +951,7 @@ function WarmPathsGraphic() {
         fontFamily={FONT}
         fontWeight={700}
       >
-        Your side
+        Your team
       </text>
       <text
         x={360}
@@ -2010,9 +2010,9 @@ export const OrgChartNarrative = () => {
           stepIndex={1}
           headline={
             <>
-              Your team reaches out
+              Warm paths
               <br />
-              on your behalf.
+              mapped by your team.
             </>
           }
           body="Priya and other sales reps map warm LinkedIn paths into the buying committee — so intros land through the right first degree."

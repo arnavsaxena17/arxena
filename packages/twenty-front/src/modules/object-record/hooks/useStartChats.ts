@@ -70,20 +70,25 @@ export const useStartChats = ({
               return true;
             }
 
+            // Accept UPPER_SNAKE and legacy kebab-case CRM values
+            const normalizedChannel = messagingChannel
+              .replace(/-/g, '_')
+              .toUpperCase();
+
             if (
               [
-                'baileys',
-                'whatsapp-web',
-                'whatsapp-official',
-                'whatsapp-unipile',
-              ].includes(messagingChannel)
+                'BAILEYS',
+                'WHATSAPP_WEB',
+                'WHATSAPP_OFFICIAL',
+                'WHATSAPP_UNIPILE',
+              ].includes(normalizedChannel)
             ) {
               return !candidate?.phoneNumber?.primaryPhoneNumber;
             }
 
             if (
-              ['linkedin', 'linkedin-premium', 'linkedin-inmail'].includes(
-                messagingChannel,
+              ['LINKEDIN', 'LINKEDIN_PREMIUM', 'LINKEDIN_INMAIL'].includes(
+                normalizedChannel,
               )
             ) {
               return !candidate?.linkedinUrl;

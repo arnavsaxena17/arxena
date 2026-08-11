@@ -1,13 +1,13 @@
-/** Values accepted for candidate messagingChannel (aligned with server messaging-controls). */
+/** Values accepted for candidate messagingChannel (SELECT UPPER_SNAKE_CASE). */
 export const MESSAGING_CHANNEL_VALUES_FOR_BULK_UPDATE = [
-  'baileys',
-  'whatsapp-unipile',
-  'whatsapp-web',
-  'whatsapp-official',
-  'linkedin',
-  'linkedin-premium',
-  'linkedin-inmail',
-  'linkedin-sock',
+  'BAILEYS',
+  'WHATSAPP_UNIPILE',
+  'WHATSAPP_WEB',
+  'WHATSAPP_OFFICIAL',
+  'LINKEDIN',
+  'LINKEDIN_PREMIUM',
+  'LINKEDIN_INMAIL',
+  'LINKEDIN_SOCK',
 ] as const;
 
 export type MessagingChannelBulkUpdateValue =

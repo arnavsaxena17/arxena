@@ -25,6 +25,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { StageWiseClassification } from 'src/engine/core-modules/arx-chat/services/llm-agents/stage-classification';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
 import { Semaphore } from 'src/engine/core-modules/arx-chat/utils/semaphore';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -398,7 +402,13 @@ export class UpdateChat {
     let messageTo = recruiterProfile.phoneNumber || '';
     let messageType = 'string';
 
-    if (candidate?.messagingChannel === 'linkedin' || candidate?.messagingChannel === 'linkedin-sock') {
+    if (
+      messagingChannelEquals(
+        candidate?.messagingChannel,
+        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_SOCK,
+      )
+    ) {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
       messageTo = recruiterProfile.linkedinUrl || '';
       messageType = 'linkedin';

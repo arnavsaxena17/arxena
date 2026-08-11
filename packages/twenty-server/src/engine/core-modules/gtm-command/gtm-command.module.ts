@@ -1,27 +1,85 @@
 import { Module } from '@nestjs/common';
 
+import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
+import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
+import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
+import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GtmCommandController } from 'src/engine/core-modules/gtm-command/controllers/gtm-command.controller';
+import { GtmWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job';
+import { GtmCompaniesIndexWikiEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-companies-index-wiki-enrichment.source';
+import {
+  GTM_COMPANY_ENRICHMENT_SOURCES,
+  GtmCompanyEnrichmentCollectorService,
+} from 'src/engine/core-modules/gtm-command/services/gtm-company-enrichment-collector.service';
+import { GtmCompanyProfileSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-company-profile-summarizer.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmCompaniesCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-companies-cache.service';
-import { GtmPeopleCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
+import { GtmLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-linkedin-pool-company-enrichment.source';
 import { GtmOutreachThrottleService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
+import { GtmPeopleCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
+import { GtmWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-wikidata-company-enrichment.source';
+import { GtmWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-web-search-company-enrichment.source';
+import { GtmWorkspaceProfileProvisioningService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-profile-provisioning.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
+import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
 @Module({
-  imports: [GraphQLExecutionModule, WorkspaceModificationsModule],
+  imports: [
+    GraphQLExecutionModule,
+    WorkspaceModificationsModule,
+    CandidateSearchModule,
+    LinkedInSearchModule,
+    UnipilePoolModule,
+    EnvironmentModule,
+    WikidataModule,
+  ],
   controllers: [GtmCommandController],
   providers: [
     GtmCommandMaterializeService,
     GtmOutreachThrottleService,
     GtmCompaniesCacheService,
     GtmPeopleCacheService,
+    CompaniesEsService,
+    UnipileCompanyService,
+    GtmCompaniesIndexWikiEnrichmentSource,
+    GtmWikidataCompanyEnrichmentSource,
+    GtmLinkedInPoolCompanyEnrichmentSource,
+    GtmWebSearchCompanyEnrichmentSource,
+    {
+      provide: GTM_COMPANY_ENRICHMENT_SOURCES,
+      useFactory: (
+        linkedInPoolSource: GtmLinkedInPoolCompanyEnrichmentSource,
+        wikidataSource: GtmWikidataCompanyEnrichmentSource,
+        wikiSource: GtmCompaniesIndexWikiEnrichmentSource,
+        webSearchSource: GtmWebSearchCompanyEnrichmentSource,
+      ) => [
+        // Order: LinkedIn → Wikidata → companies ES → website web_search
+        linkedInPoolSource,
+        wikidataSource,
+        wikiSource,
+        webSearchSource,
+      ],
+      inject: [
+        GtmLinkedInPoolCompanyEnrichmentSource,
+        GtmWikidataCompanyEnrichmentSource,
+        GtmCompaniesIndexWikiEnrichmentSource,
+        GtmWebSearchCompanyEnrichmentSource,
+      ],
+    },
+    GtmCompanyEnrichmentCollectorService,
+    GtmCompanyProfileSummarizerService,
+    GtmWorkspaceProfileProvisioningService,
+    GtmWorkspaceProfileBootstrapJob,
   ],
   exports: [
     GtmCommandMaterializeService,
     GtmOutreachThrottleService,
     GtmCompaniesCacheService,
     GtmPeopleCacheService,
+    GtmWorkspaceProfileProvisioningService,
   ],
 })
 export class GtmCommandModule {}

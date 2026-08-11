@@ -13,6 +13,11 @@ import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/servic
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
@@ -145,7 +150,7 @@ export class MessagingControls {
         'Going to create whatsaappupdatemessage obj for message text::',
         messageText,
       );
-      
+
       // const candidateNode = personNode?.candidates?.edges?.find(
       //   (edge) => edge.node.projects.id == candidateJob.id,
       // )?.node;
@@ -249,26 +254,12 @@ export class MessagingControls {
       console.log('No valid whatsapp API selected');
     }
 
-    const messagingChannel = candidate?.messagingChannel || 'whatsapp-official';
+    const messagingChannel =
+      candidate?.messagingChannel || MessagingChannel.WHATSAPP_OFFICIAL;
     console.log("messagingChannel in getMessagingChannel AndWhatsappKey ::", messagingChannel);
 
-    if (messagingChannel === 'linkedin') {
-      whatsapp_key = 'linkedin';
-    } else if (messagingChannel === 'linkedin-premium') {
-      whatsapp_key = 'linkedin-premium';
-    } else if (messagingChannel === 'linkedin-inmail') {
-      whatsapp_key = 'linkedin-inmail';
-    } else if (messagingChannel === 'whatsapp-web') {
-      whatsapp_key = 'whatsapp-web';
-    } else if (messagingChannel === 'whatsapp-official') {
-      whatsapp_key = 'whatsapp-official';
-    } else if (messagingChannel === 'baileys') {
-      whatsapp_key = 'baileys';
-    } else if (messagingChannel === 'whatsapp-unipile') {
-      whatsapp_key = 'whatsapp-unipile';
-    } else {
-      whatsapp_key = 'whatsapp-official';
-    }
+    whatsapp_key =
+      toMessagingChannelTransportKey(messagingChannel) ?? 'whatsapp-official';
     console.log("whatsapp_key in getMessagingChannel And WhatsappKey ::", whatsapp_key);
 
     return { messagingChannel, whatsapp_key };
@@ -333,7 +324,7 @@ export class MessagingControls {
           chatControl,
           apiToken,
         );
-        
+
         if (response?.status === 'failed') {
           return this.failSendAndPersist(
             candidate,
@@ -400,7 +391,7 @@ export class MessagingControls {
           chatControl,
           apiToken,
         );
-        
+
         if (response?.status === 'failed') {
           return this.failSendAndPersist(
             candidate,
@@ -426,7 +417,7 @@ export class MessagingControls {
           chatControl,
           apiToken,
         );
-        
+
         if (response?.status === 'failed') {
           return this.failSendAndPersist(
             candidate,
@@ -446,7 +437,7 @@ export class MessagingControls {
           chatControl,
           apiToken,
         );
-        
+
         if (response?.status === 'failed') {
           return this.failSendAndPersist(
             candidate,
@@ -517,7 +508,7 @@ export class MessagingControls {
       candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
         ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
         : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
-    if (candidateNode?.messagingChannel === 'linkedin') {
+    if (messagingChannelEquals(candidateNode?.messagingChannel, MessagingChannel.LINKEDIN)) {
       messageTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
     } else {
       messageTo =
@@ -636,7 +627,7 @@ export class MessagingControls {
         candidateJob,
         apiToken,
       );
-      
+
       if (response?.status === 'failed') {
         return {
           status: 'failed',
@@ -713,7 +704,13 @@ export class MessagingControls {
     let phoneNumberTo: string;
     let phoneNumberFrom: string;
 
-    if (candidate.messagingChannel === 'linkedin' || candidate.messagingChannel === 'linkedin-premium') {
+    if (
+      messagingChannelEquals(
+        candidate.messagingChannel,
+        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_PREMIUM,
+      )
+    ) {
       phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
@@ -768,7 +765,7 @@ export class MessagingControls {
     console.log("Going to send attachment to ext-sock-whatsapp")
     const messagingChannel = candidate.messagingChannel;
     console.log("messagingChannel for sending attachment to ext-sock-whatsapp", messagingChannel);
-    if (messagingChannel === 'whatsapp-web') {
+    if (messagingChannelEquals(messagingChannel, MessagingChannel.WHATSAPP_WEB)) {
       try {
         console.log("attachmentMessage for sending attachment to ext-sock-whatsapp", attachmentMessage);
         const arxenaSiteBaseUrl =

@@ -1,5 +1,5 @@
 import { isNonEmptyString } from '@sniptt/guards';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -20,7 +20,9 @@ import {
     type GtmProjectOption,
     type GtmProjectSettings,
     type GtmWorkspaceCompany,
+    type GtmWorkspaceProfileRecord,
 } from '@/gtm-home/types/gtm-home.types';
+import { resolveEffectiveGtmIcp } from '@/gtm-home/utils/gtm-effective-icp.util';
 import {
     fetchGtmCompaniesCache,
     persistGtmCompaniesCache,
@@ -50,6 +52,9 @@ type GtmProjectRecord = ObjectRecord & {
   sendWindowEnd?: string | null;
   icpSegment?: string | null;
   icpSpec?: string | null;
+  icpBlurb?: string | null;
+  companySearchBlurb?: string | null;
+  peopleSearchBlurb?: string | null;
   updatedAt?: string;
 };
 
@@ -67,38 +72,6 @@ type GtmCandidateRecord = ObjectRecord & {
   linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
   email?: { primaryEmail?: string } | null;
   peopleId?: string | null;
-};
-
-const parseIcpSpec = (
-  icpSpec: string | null | undefined,
-): {
-  name?: string;
-  industries?: string[];
-  employeeRange?: string;
-  geos?: string[];
-  buyerTitles?: string[];
-  painSignals?: string[];
-  stdFunctions?: string[];
-  stdGrades?: string[];
-} | null => {
-  if (!isNonEmptyString(icpSpec)) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(icpSpec) as {
-      name?: string;
-      industries?: string[];
-      employeeRange?: string;
-      geos?: string[];
-      buyerTitles?: string[];
-      painSignals?: string[];
-      stdFunctions?: string[];
-      stdGrades?: string[];
-    };
-  } catch {
-    return null;
-  }
 };
 
 const isGtmProject = (project: GtmProjectRecord): boolean =>
@@ -186,7 +159,7 @@ export const useGtmLiveWorkingSet = () => {
       account.provider === ConnectedAccountProvider.IMAP_SMTP_CALDAV,
   );
 
-  const [activeTab, setActiveTab] = useState<GtmMainTab>('companies');
+  const [activeTab, setActiveTab] = useState<GtmMainTab>('setup');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
     null,
   );
@@ -197,6 +170,11 @@ export const useGtmLiveWorkingSet = () => {
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [ephemeralPeople, setEphemeralPeople] = useState<GtmPersonRow[]>([]);
   const [peopleCacheLoading, setPeopleCacheLoading] = useState(false);
+  const [isResolvingProject, setIsResolvingProject] = useState(false);
+  const gtmProjectCreateInFlightRef = useRef(false);
+  const createGtmProjectRef = useRef<
+    (() => Promise<string | null>) | null
+  >(null);
 
   const { createOneRecord: createProject } = useCreateOneRecord({
     objectNameSingular: 'project',
@@ -239,30 +217,49 @@ export const useGtmLiveWorkingSet = () => {
         sendWindowEnd: true,
         icpSegment: true,
         icpSpec: true,
+        icpBlurb: true,
+        companySearchBlurb: true,
+        peopleSearchBlurb: true,
         updatedAt: true,
       },
     });
 
+  const { records: workspaceProfiles, loading: workspaceProfilesLoading } =
+    useFindManyRecords<GtmWorkspaceProfileRecord>({
+      objectNameSingular: 'gtmWorkspaceProfile',
+      orderBy: [{ createdAt: 'AscNullsLast' }],
+      limit: 1,
+      recordGqlFields: {
+        id: true,
+        name: true,
+        companyName: true,
+        companyDomain: true,
+        industry: true,
+        summary: true,
+        employeeRange: true,
+        hq: true,
+        icpSegment: true,
+        icpSpec: true,
+        icpBlurb: true,
+        companySearchBlurb: true,
+        peopleSearchBlurb: true,
+      },
+    });
+
+  const workspaceProfile = workspaceProfiles[0] ?? null;
   const gtmProjects = useMemo(
     () => allProjects.filter(isGtmProject),
     [allProjects],
   );
 
-  const projectOptions: GtmProjectOption[] = useMemo(
-    () =>
-      gtmProjects.map((project) => ({
-        id: project.id,
-        name: project.name ?? 'Untitled GTM run',
-        icpSegment: project.icpSegment ?? null,
-      })),
-    [gtmProjects],
-  );
+  const hasValidProjectIdInQuery =
+    isNonEmptyString(projectIdFromQuery) &&
+    gtmProjects.some((project) => project.id === projectIdFromQuery);
 
-  const activeProjectId =
-    projectIdFromQuery &&
-    gtmProjects.some((project) => project.id === projectIdFromQuery)
-      ? projectIdFromQuery
-      : (gtmProjects[0]?.id ?? null);
+  // Deep link wins; otherwise stay null until unused-run resolve / create finishes.
+  const activeProjectId = hasValidProjectIdInQuery
+    ? projectIdFromQuery
+    : null;
 
   const setActiveProjectId = useCallback(
     (projectId: string) => {
@@ -275,21 +272,6 @@ export const useGtmLiveWorkingSet = () => {
     },
     [searchParams, setSearchParams],
   );
-
-  useEffect(() => {
-    if (!isDefined(activeProjectId)) {
-      return;
-    }
-
-    if (projectIdFromQuery === activeProjectId) {
-      return;
-    }
-
-    const next = new URLSearchParams(searchParams);
-
-    next.set(GTM_PROJECT_ID_QUERY_PARAM, activeProjectId);
-    setSearchParams(next, { replace: true });
-  }, [activeProjectId, projectIdFromQuery, searchParams, setSearchParams]);
 
   const project = gtmProjects.find(
     (candidate) => candidate.id === activeProjectId,
@@ -513,6 +495,92 @@ export const useGtmLiveWorkingSet = () => {
     updateOneRecord,
   ]);
 
+  createGtmProjectRef.current = createGtmProject;
+
+  const gtmProjectIdsKey = gtmProjects.map((project) => project.id).join(',');
+
+  // On /gtm-home without a valid ?projectId=, reuse the newest unused run
+  // (empty Redis companies + people) or create a new Project.
+  useEffect(() => {
+    if (hasValidProjectIdInQuery) {
+      setIsResolvingProject(false);
+
+      return;
+    }
+
+    if (projectsLoading || !isDefined(accessToken)) {
+      return;
+    }
+
+    let cancelled = false;
+    const projectsSnapshot = gtmProjects;
+
+    const resolveActiveProject = async () => {
+      setIsResolvingProject(true);
+
+      try {
+        const occupancyByProjectId = await Promise.all(
+          projectsSnapshot.map(async (project) => {
+            const [companies, people] = await Promise.all([
+              fetchGtmCompaniesCache(project.id, accessToken),
+              fetchGtmPeopleCache(project.id, accessToken),
+            ]);
+
+            return {
+              projectId: project.id,
+              isUnused: companies.length === 0 && people.length === 0,
+            };
+          }),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        // projectsSnapshot is updatedAt desc — first unused is the latest empty run
+        const unusedProject = occupancyByProjectId.find(
+          (occupancy) => occupancy.isUnused,
+        );
+
+        if (isDefined(unusedProject)) {
+          setActiveProjectId(unusedProject.projectId);
+
+          return;
+        }
+
+        if (cancelled || gtmProjectCreateInFlightRef.current) {
+          return;
+        }
+
+        gtmProjectCreateInFlightRef.current = true;
+
+        try {
+          await createGtmProjectRef.current?.();
+        } finally {
+          gtmProjectCreateInFlightRef.current = false;
+        }
+      } finally {
+        if (!cancelled) {
+          setIsResolvingProject(false);
+        }
+      }
+    };
+
+    void resolveActiveProject();
+
+    return () => {
+      cancelled = true;
+    };
+    // Snapshot gtmProjects when the id set changes; create via ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    accessToken,
+    gtmProjectIdsKey,
+    hasValidProjectIdInQuery,
+    projectsLoading,
+    setActiveProjectId,
+  ]);
+
   const companies = ephemeralCompanies;
 
   const crmPeople: GtmPersonRow[] = useMemo(
@@ -547,6 +615,28 @@ export const useGtmLiveWorkingSet = () => {
     [crmPeople, ephemeralPeople],
   );
 
+  const effectiveIcp = resolveEffectiveGtmIcp({
+    project,
+    workspaceProfile,
+  });
+
+  const projectOptions: GtmProjectOption[] = useMemo(
+    () =>
+      gtmProjects.map((gtmProject) => {
+        const resolved = resolveEffectiveGtmIcp({
+          project: gtmProject,
+          workspaceProfile,
+        });
+
+        return {
+          id: gtmProject.id,
+          name: gtmProject.name ?? 'Untitled GTM run',
+          icpSegment: resolved.icpSegment,
+        };
+      }),
+    [gtmProjects, workspaceProfile],
+  );
+
   const projectSettings: GtmProjectSettings = {
     projectId: project?.id ?? null,
     projectName: project?.name ?? null,
@@ -560,36 +650,48 @@ export const useGtmLiveWorkingSet = () => {
     sendWindowStart: project?.sendWindowStart ?? '09:00',
     sendWindowEnd: project?.sendWindowEnd ?? '17:00',
     whatsappConnected,
-    icpSegment: project?.icpSegment ?? null,
-    icpSpec: project?.icpSpec ?? null,
+    icpSegment: effectiveIcp.icpSegment,
+    icpSpec: effectiveIcp.icpSpec,
+    icpBlurb: effectiveIcp.icpBlurb,
+    companySearchBlurb: effectiveIcp.companySearchBlurb,
+    peopleSearchBlurb: effectiveIcp.peopleSearchBlurb,
+    isIcpRunOverride: effectiveIcp.isIcpRunOverride,
+    isIcpBlurbRunOverride: effectiveIcp.isIcpBlurbRunOverride,
+    isCompanySearchBlurbRunOverride:
+      effectiveIcp.isCompanySearchBlurbRunOverride,
+    isPeopleSearchBlurbRunOverride:
+      effectiveIcp.isPeopleSearchBlurbRunOverride,
   };
 
-  const parsedIcp = parseIcpSpec(project?.icpSpec);
+  const parsedIcp = effectiveIcp.parsedIcp;
 
   const workspaceCompany: GtmWorkspaceCompany = {
-    name: currentWorkspace?.displayName ?? 'Workspace',
-    domain:
-      currentWorkspace?.workspaceUrls?.customUrl?.replace(/^https?:\/\//, '') ??
-      currentWorkspace?.workspaceUrls?.subdomainUrl?.replace(
-        /^https?:\/\//,
-        '',
-      ) ??
-      '',
-    industry: parsedIcp?.industries?.[0] ?? '',
-    summary: isDefined(parsedIcp?.name)
-      ? `ICP: ${parsedIcp.name}`
-      : 'Use Ask AI to define ICP preferences for this GTM run.',
-    employeeRange: parsedIcp?.employeeRange ?? '',
-    hq: parsedIcp?.geos?.[0] ?? '',
+    name:
+      workspaceProfile?.companyName ??
+      currentWorkspace?.displayName ??
+      'Workspace',
+    domain: workspaceProfile?.companyDomain ?? '',
+    industry: workspaceProfile?.industry ?? parsedIcp?.industries?.[0] ?? '',
+    summary:
+      workspaceProfile?.summary ??
+      (isDefined(parsedIcp?.name)
+        ? `ICP: ${parsedIcp.name}`
+        : 'Use Setup → Refine ICP to define workspace GTM preferences.'),
+    employeeRange:
+      workspaceProfile?.employeeRange ?? parsedIcp?.employeeRange ?? '',
+    hq: workspaceProfile?.hq ?? parsedIcp?.geos?.[0] ?? '',
   };
 
   return {
     loading:
       projectsLoading ||
+      workspaceProfilesLoading ||
+      isResolvingProject ||
       companiesLoading ||
       peopleCacheLoading ||
       candidatesLoading,
     workspaceCompany,
+    workspaceProfile,
     companies,
     people,
     projectSettings,
@@ -601,6 +703,7 @@ export const useGtmLiveWorkingSet = () => {
     appendCompanies,
     setPeople,
     parsedIcp,
+    isIcpRunOverride: effectiveIcp.isIcpRunOverride,
     linkedinConnected,
     gmailConnected,
     whatsappConnected,

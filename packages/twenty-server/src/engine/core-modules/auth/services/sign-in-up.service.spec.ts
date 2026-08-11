@@ -124,6 +124,9 @@ const createSignInUpServiceForTests = () => {
       isBillingEnabled: jest.fn(),
     } as any,
     {
+      getOrCreate: jest.fn(),
+    } as any,
+    {
       createQueryRunner: jest.fn(() => queryRunnerMock),
       transaction: jest.fn(async (runInTransaction) =>
         runInTransaction({ queryRunner: queryRunnerMock }),

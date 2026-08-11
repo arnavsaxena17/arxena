@@ -114,14 +114,17 @@ export const GTM_ENRICH_STATUS_OPTIONS = [
 ];
 
 export const GTM_MESSAGING_CHANNEL_OPTIONS = [
-  selectOption('baileys', 'Baileys', 'green', 0),
-  selectOption('whatsapp-unipile', 'WhatsApp Unipile', 'green', 1),
-  selectOption('whatsapp-web', 'WhatsApp Web', 'turquoise', 2),
-  selectOption('whatsapp-official', 'WhatsApp Official', 'blue', 3),
-  selectOption('linkedin', 'LinkedIn', 'sky', 4),
-  selectOption('linkedin-premium', 'LinkedIn Premium', 'blue', 5),
-  selectOption('linkedin-inmail', 'LinkedIn InMail', 'purple', 6),
-  selectOption('linkedin-sock', 'LinkedIn Sock', 'orange', 7),
+  selectOption('BAILEYS', 'Baileys', 'green', 0),
+  selectOption('WHATSAPP_UNIPILE', 'WhatsApp Unipile', 'green', 1),
+  selectOption('WHATSAPP_WEB', 'WhatsApp Web', 'turquoise', 2),
+  selectOption('WHATSAPP_OFFICIAL', 'WhatsApp Official', 'blue', 3),
+  selectOption('LINKEDIN', 'LinkedIn', 'sky', 4),
+  selectOption('LINKEDIN_PREMIUM', 'LinkedIn Premium', 'blue', 5),
+  selectOption('LINKEDIN_INMAIL', 'LinkedIn InMail', 'purple', 6),
+  selectOption('LINKEDIN_SOCK', 'LinkedIn Sock', 'orange', 7),
+  selectOption('LINKEDIN_CONNECT', 'LinkedIn Connect', 'blue', 8),
+  selectOption('COMMENT', 'Comment', 'turquoise', 9),
+  selectOption('EMAIL', 'Email', 'purple', 10),
 ];
 
 export const GTM_MEETING_OUTCOME_OPTIONS = [

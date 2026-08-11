@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import {
+  MessagingChannel,
+  messagingChannelEquals,
+  toMessagingChannelTransportKey,
+} from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -268,17 +273,27 @@ export class EngagedCandidateQueueService {
         console.warn(`No phone number found for candidate ${candidateProfileDataNodeObj.id}, using empty string`);
       }
 
-      if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate?.node?.projects?.id === candidateJob.id,
-      )[0]?.node?.messagingChannel == 'linkedin') {
+      if (
+        messagingChannelEquals(
+          candidateProfileDataNodeObj.people?.candidates?.edges.filter(
+            (candidate) => candidate?.node?.projects?.id === candidateJob.id,
+          )[0]?.node?.messagingChannel,
+          MessagingChannel.LINKEDIN,
+        )
+      ) {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
 
       let phoneNumberTo: string = recruiterProfile?.phoneNumber || '';
 
-      if (candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-        (candidate) => candidate?.node?.projects?.id === candidateJob.id,
-      )[0]?.node?.messagingChannel == 'linkedin') {
+      if (
+        messagingChannelEquals(
+          candidateProfileDataNodeObj.people?.candidates?.edges.filter(
+            (candidate) => candidate?.node?.projects?.id === candidateJob.id,
+          )[0]?.node?.messagingChannel,
+          MessagingChannel.LINKEDIN,
+        )
+      ) {
         phoneNumberTo = recruiterProfile?.linkedinUrl || '';
       }
 
@@ -313,7 +328,12 @@ export class EngagedCandidateQueueService {
         whatsappMessageId: replyObject.whatsappMessageId,
         type: replyObject.type || 'text',
         databaseFilePath: replyObject?.databaseFilePath || '',
-        typeOfMessage: candidateProfileDataNodeObj?.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
+        typeOfMessage:
+          toMessagingChannelTransportKey(
+            candidateProfileDataNodeObj?.messagingChannel,
+          ) ||
+          process.env.DEFAULT_WHATSAPP_CLIENT ||
+          'baileys',
       };
 
       // Step 7: Update candidate engagement data in table

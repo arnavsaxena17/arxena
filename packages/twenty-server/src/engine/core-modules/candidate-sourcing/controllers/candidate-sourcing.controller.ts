@@ -20,8 +20,14 @@ import {
   CreateOneVideoInterviewTemplate,
   findWorkspaceMemberProfiles,
   getGraphqlToFindManyProjects,
+  graphqlMutationToDeleteManyAttachments,
+  graphqlMutationToDeleteManyAssistantThreads,
+  graphqlMutationToDeleteManyCandidateFields,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
+  graphqlMutationToDeleteManyPrompts,
+  graphqlMutationToDeleteManyVideoInterviewTemplates,
+  graphqlMutationToDeleteOneProject,
   graphqlQueryToFindManyPeople,
   graphqlToAddNewProject,
   graphqlToCreateOnePrompt,
@@ -3321,6 +3327,214 @@ export class CandidateSourcingController {
       return { status: 'Partial', message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`, results };
     }
     return { status: 'Success', message: `Successfully deleted ${results.succeeded.length} items`, results };
+  }
+
+  @Post('delete-project')
+  @UseGuards(JwtAuthGuard)
+  async deleteProject(@Req() request: any): Promise<object> {
+    const apiToken = request.headers.authorization
+      ?.split(' ')[1]
+      ?.replace(/[\r\n]+/g, '');
+
+    if (!apiToken) {
+      return { status: 'Failed', message: 'Missing authorization token' };
+    }
+
+    const projectId = request.body.projectId ?? request.body.jobId;
+    const deleteCandidates = request.body.deleteCandidates === true;
+    const projectIdValidation = validateAndExtractProjectId(projectId);
+
+    if (!projectIdValidation.isValid) {
+      return createProjectIdErrorResponse(projectIdValidation.error!);
+    }
+
+    const actualProjectId = projectIdValidation.projectId!;
+    const deleted: Record<string, number> = {};
+    const errors: string[] = [];
+
+    const softDeleteByFilter = async (
+      mutation: string,
+      filter: Record<string, unknown>,
+      label: string,
+    ) => {
+      try {
+        const response = await this.staticGraphQLService.executeGraphQL(
+          mutation,
+          { filter },
+          apiToken,
+        );
+        const payload = response?.data?.data ?? {};
+        const deletedRecords = Object.values(payload)[0];
+        const deletedCount = Array.isArray(deletedRecords)
+          ? deletedRecords.length
+          : 0;
+        deleted[label] = deletedCount;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : `Failed to delete ${label}`;
+        errors.push(`${label}: ${message}`);
+      }
+    };
+
+    // Soft-delete project-scoped records created with / for a project
+    await softDeleteByFilter(
+      graphqlMutationToDeleteManyPrompts,
+      { projectId: { eq: actualProjectId } },
+      'prompts',
+    );
+    await softDeleteByFilter(
+      graphqlMutationToDeleteManyAttachments,
+      { targetProjectId: { eq: actualProjectId } },
+      'attachments',
+    );
+    await softDeleteByFilter(
+      graphqlMutationToDeleteManyCandidateFields,
+      { projectsId: { eq: actualProjectId } },
+      'candidateFields',
+    );
+    await softDeleteByFilter(
+      graphqlMutationToDeleteManyVideoInterviewTemplates,
+      { projectId: { eq: actualProjectId } },
+      'videoInterviewTemplates',
+    );
+    await softDeleteByFilter(
+      graphqlMutationToDeleteManyAssistantThreads,
+      { projectId: { eq: actualProjectId } },
+      'assistantThreads',
+    );
+
+    if (deleteCandidates) {
+      const BATCH_SIZE = 100;
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const dataSourceSchema =
+        this.workspaceQueryService.getDataSourceSchema(workspaceId);
+      const candidateIds: string[] = [];
+      let hasNextPage = true;
+      let lastCursor: string | undefined;
+
+      while (hasNextPage) {
+        const candidatesResponse =
+          await this.staticGraphQLService.executeGraphQL(
+            graphqlToFetchAllCandidateData,
+            {
+              filter: { projectsId: { eq: actualProjectId } },
+              limit: BATCH_SIZE,
+              ...(lastCursor ? { lastCursor } : {}),
+            },
+            apiToken,
+          );
+        const candidates = candidatesResponse?.data?.data?.candidates as
+          | { edges: CandidateEdge[]; pageInfo: PageInfo }
+          | undefined;
+        const edges = candidates?.edges ?? [];
+        candidateIds.push(
+          ...edges
+            .map((edge) => edge?.node?.id)
+            .filter((id): id is string => Boolean(id)),
+        );
+        hasNextPage = candidates?.pageInfo?.hasNextPage === true;
+        lastCursor = candidates?.pageInfo?.endCursor ?? undefined;
+        if (edges.length === 0) {
+          hasNextPage = false;
+        }
+      }
+
+      let candidatesDeleted = 0;
+      let candidatesFailed = 0;
+
+      for (let index = 0; index < candidateIds.length; index += BATCH_SIZE) {
+        const batchCandidateIds = candidateIds.slice(
+          index,
+          index + BATCH_SIZE,
+        );
+
+        try {
+          const candidatesResponse =
+            await this.staticGraphQLService.executeGraphQL(
+              graphqlToFetchAllCandidateData,
+              { filter: { id: { in: batchCandidateIds } } },
+              apiToken,
+            );
+          const candidates = candidatesResponse?.data?.data?.candidates as
+            | { edges: CandidateEdge[]; pageInfo: PageInfo }
+            | undefined;
+          const personIdsFromCandidates = (candidates?.edges ?? [])
+            .map((edge) => edge.node?.people?.id)
+            .filter((id): id is string => Boolean(id));
+
+          await this.deleteFieldValuesService.queueDeleteFieldValues(
+            batchCandidateIds,
+            dataSourceSchema,
+            workspaceId,
+          );
+          await this.staticGraphQLService.executeGraphQL(
+            graphqlMutationToDeleteManyCandidates,
+            { filter: { id: { in: batchCandidateIds } } },
+            apiToken,
+          );
+
+          if (personIdsFromCandidates.length > 0) {
+            await this.staticGraphQLService.executeGraphQL(
+              graphqlMutationToDeleteManyPeople,
+              { filter: { id: { in: personIdsFromCandidates } } },
+              apiToken,
+            );
+          }
+
+          candidatesDeleted += batchCandidateIds.length;
+        } catch (error) {
+          candidatesFailed += batchCandidateIds.length;
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Failed to delete candidates';
+          errors.push(`candidates batch: ${message}`);
+        }
+      }
+
+      deleted.candidates = candidatesDeleted;
+      if (candidatesFailed > 0) {
+        deleted.candidatesFailed = candidatesFailed;
+      }
+    }
+
+    try {
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlMutationToDeleteOneProject,
+        { idToDelete: actualProjectId },
+        apiToken,
+      );
+      deleted.project = 1;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to delete project';
+      return {
+        status: 'Failed',
+        message,
+        deleted,
+        errors: [...errors, message],
+      };
+    }
+
+    if (errors.length > 0) {
+      return {
+        status: 'Partial',
+        message: deleteCandidates
+          ? 'Project deleted with some dependency cleanup errors'
+          : 'Project deleted with some dependency cleanup errors',
+        deleted,
+        errors,
+      };
+    }
+
+    return {
+      status: 'Success',
+      message: deleteCandidates
+        ? 'Project and its candidates deleted successfully'
+        : 'Project deleted successfully',
+      deleted,
+    };
   }
 
   @Post('upload-jd')

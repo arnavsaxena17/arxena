@@ -640,8 +640,8 @@ export class LinkedinUnipileMessagingService {
           apiToken,
           {
             messagingChannelOverride: isInvitation
-              ? 'linkedin-connect'
-              : 'linkedin',
+              ? 'LINKEDIN_CONNECT'
+              : 'LINKEDIN',
             skipGtmMaterialize: isInvitation,
           },
         );
@@ -652,7 +652,7 @@ export class LinkedinUnipileMessagingService {
             candidateId: candidate.id,
             event: 'connection_sent',
             apiToken,
-            messagingChannel: 'linkedin-connect',
+            messagingChannel: 'LINKEDIN_CONNECT',
             existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
               ?.firstOutboundAt,
             companyId:
@@ -761,7 +761,7 @@ export class LinkedinUnipileMessagingService {
           candidate,
           whatappUpdateMessageObj,
           apiToken,
-          { messagingChannelOverride: 'linkedin-inmail' },
+          { messagingChannelOverride: 'LINKEDIN_INMAIL' },
         );
       }
 

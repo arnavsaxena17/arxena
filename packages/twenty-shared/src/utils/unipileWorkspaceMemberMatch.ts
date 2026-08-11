@@ -26,7 +26,9 @@ export const isUnipileLinkedinUsableStatus = (status?: string | null): boolean =
 export const normalizePhoneDigits = (value: string): string =>
   value.replace(/\D/g, '');
 
-const phonesMatch = (a: string, b: string): boolean => {
+// Match phones regardless of leading '+' / spaces / punctuation
+// (e.g. +918411937769 === 918411937769; also last-10 fallback).
+export const phonesMatch = (a: string, b: string): boolean => {
   const da = normalizePhoneDigits(a);
   const db = normalizePhoneDigits(b);
   if (da === '' || db === '') {
@@ -39,6 +41,44 @@ const phonesMatch = (a: string, b: string): boolean => {
     return da.slice(-10) === db.slice(-10);
   }
   return false;
+};
+
+const collectWhatsappAccountPhoneCandidates = (
+  account: UnipileWhatsappAccount,
+): string[] => {
+  const fromConnectionParams =
+    typeof account.connection_params?.im?.phone_number === 'string'
+      ? account.connection_params.im.phone_number
+      : null;
+
+  const rawCandidates = [
+    account.phone_number,
+    fromConnectionParams,
+    account.username,
+    account.name,
+  ];
+
+  const unique: string[] = [];
+  for (const candidate of rawCandidates) {
+    const trimmed = candidate?.trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (!unique.includes(trimmed)) {
+      unique.push(trimmed);
+    }
+  }
+  return unique;
+};
+
+const profilePhoneMatchesWhatsappAccount = (
+  profilePhone: string,
+  account: UnipileWhatsappAccount,
+): boolean => {
+  const accountPhones = collectWhatsappAccountPhoneCandidates(account);
+  return accountPhones.some((accountPhone) =>
+    phonesMatch(profilePhone, accountPhone),
+  );
 };
 
 export const extractLinkedinSlugFromUrl = (rawUrl: string): string => {
@@ -186,9 +226,7 @@ export const whatsappAccountMatchesWorkspaceMemberProfile = (
   if (profilePhone == null || profilePhone === '') {
     return false;
   }
-  const accountPhone =
-    account.phone_number?.trim() ?? account.username?.trim() ?? '';
-  return phonesMatch(profilePhone, accountPhone);
+  return profilePhoneMatchesWhatsappAccount(profilePhone, account);
 };
 
 const linkedinAccountIdentityMatchesWorkspaceMemberProfileWithStatusCheck = (
@@ -260,13 +298,22 @@ export const hasMatchingConnectedWhatsappAccount = (
   accounts: UnipileWhatsappAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,
 ): boolean => {
+  return findMatchingConnectedWhatsappAccount(accounts, profile) != null;
+};
+
+// First connected Unipile WhatsApp row that matches the profile (stored id or phone).
+// Without a profile phone, any connected account counts (no identity restriction).
+export const findMatchingConnectedWhatsappAccount = (
+  accounts: UnipileWhatsappAccount[],
+  profile: WorkspaceMemberProfileUnipileFields | null,
+): UnipileWhatsappAccount | undefined => {
   if (!shouldRestrictWhatsappByProfile(profile)) {
-    return accounts.some((acc) => isUnipileConnectedStatus(acc.status));
+    return accounts.find((acc) => isUnipileConnectedStatus(acc.status));
   }
   if (profile == null) {
-    return false;
+    return undefined;
   }
-  return accounts.some((acc) =>
+  return accounts.find((acc) =>
     whatsappAccountMatchesWorkspaceMemberProfile(profile, acc),
   );
 };
@@ -352,9 +399,7 @@ export const whatsappAccountIdentityMatchesWorkspaceMemberProfile = (
   if (profilePhone == null || profilePhone === '') {
     return false;
   }
-  const accountPhone =
-    account.phone_number?.trim() ?? account.username?.trim() ?? '';
-  return phonesMatch(profilePhone, accountPhone);
+  return profilePhoneMatchesWhatsappAccount(profilePhone, account);
 };
 
 /**
@@ -378,7 +423,7 @@ export const findLinkedinUnipileAccountSameIdentityForProfile = (
 
 /**
  * First WhatsApp row matching the member's phone / stored account id.
- */ 
+ */
 export const findWhatsappUnipileAccountSameIdentityForProfile = (
   accounts: UnipileWhatsappAccount[],
   profile: WorkspaceMemberProfileUnipileFields | null,

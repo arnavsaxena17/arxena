@@ -25,8 +25,8 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
 };
 
 export const MESSAGING_CHANNEL_OPTIONS = [
-  'baileys',
-  'whatsapp-unipile',
-  'linkedin',
-  'linkedin-sock',
+  'BAILEYS',
+  'WHATSAPP_UNIPILE',
+  'LINKEDIN',
+  'LINKEDIN_SOCK',
 ];

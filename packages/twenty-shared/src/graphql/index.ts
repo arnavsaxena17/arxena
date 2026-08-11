@@ -59,6 +59,12 @@ export {
   createViewFieldMutation,
   createOneAssistantThread,
   updateOneAssistantThread,
+  graphqlMutationToDeleteManyPrompts,
+  graphqlMutationToDeleteManyAttachments,
+  graphqlMutationToDeleteManyCandidateFields,
+  graphqlMutationToDeleteManyVideoInterviewTemplates,
+  graphqlMutationToDeleteManyAssistantThreads,
+  graphqlMutationToDeleteOneProject,
 } from './mutations';
 export { queries, mutations } from './queries-mutations-collector';
 export {

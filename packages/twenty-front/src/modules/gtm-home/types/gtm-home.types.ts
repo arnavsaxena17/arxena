@@ -14,7 +14,7 @@ export type GtmOutreachStage =
   | 'negotiating'
   | 'meeting_booked';
 
-export type GtmMainTab = 'companies' | 'people' | 'workflow';
+export type GtmMainTab = 'setup' | 'companies' | 'people' | 'workflow';
 
 export type GtmOutreachSendMode = 'AUTO' | 'APPROVAL';
 
@@ -36,6 +36,22 @@ export type GtmIcpSet = {
   painSignals: string[];
   stdFunctions?: string[];
   stdGrades?: string[];
+};
+
+export type GtmWorkspaceProfileRecord = {
+  id: string;
+  name?: string | null;
+  companyName?: string | null;
+  companyDomain?: string | null;
+  industry?: string | null;
+  summary?: string | null;
+  employeeRange?: string | null;
+  hq?: string | null;
+  icpSegment?: string | null;
+  icpSpec?: string | null;
+  icpBlurb?: string | null;
+  companySearchBlurb?: string | null;
+  peopleSearchBlurb?: string | null;
 };
 
 export type GtmCompanyRow = {
@@ -87,6 +103,13 @@ export type GtmProjectSettings = {
   whatsappConnected: boolean;
   icpSegment: string | null;
   icpSpec: string | null;
+  icpBlurb: string | null;
+  companySearchBlurb: string | null;
+  peopleSearchBlurb: string | null;
+  isIcpRunOverride: boolean;
+  isIcpBlurbRunOverride: boolean;
+  isCompanySearchBlurbRunOverride: boolean;
+  isPeopleSearchBlurbRunOverride: boolean;
 };
 
 export type GtmCommandContext = {
@@ -156,7 +179,7 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
     `We're ${company.name} (${company.domain})`,
     company.industry ? `in ${company.industry}` : null,
     company.employeeRange ? `${company.employeeRange} people` : null,
-    company.hq ? `HQ ${company.hq}` : null,
+    company.hq ? `HQ ${company.hq} ` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -191,11 +214,123 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
     : [];
 
   return [
-    `Hey — help me set up ICP and outreach preferences for ${projectLabel} on GTM Command.`,
+    `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
-      (company.summary ? `. ${company.summary}` : '.') +
-      (input.projectId ? ` Project id: ${input.projectId}.` : ''),
-    'Walk me through who we should sell to, buyer personas, send mode (approval vs auto), and caps — ask questions as we go, then save what we agree on to this GTM Project.',
+      '. Walk me through who we should sell to, buyer personas, send mode (approval vs auto), and caps — ask questions as we go.',
+    'When we agree, save the default ICP (icpSpec + icpBlurb) + company/people search blurbs on the workspace GTM Workspace Profile (not only this Project). Only write Project.icpSpec if I ask for a run-specific override.',
     ...draftLines,
   ].join('\n');
+};
+
+export type GtmFindCompaniesSendPromptInput = {
+  projectId: string | null;
+  companySearchBlurb: string | null;
+  icpBlurb: string | null;
+  icpSpecSummary: string | null;
+};
+
+export const buildGtmFindCompaniesSendPrompt = (
+  input: GtmFindCompaniesSendPromptInput,
+): string => {
+  return [
+    `Find target companies for this GTM run (projectId=${input.projectId ?? 'none'}).`,
+    input.companySearchBlurb ??
+      'Use the effective ICP for this workspace / run to find high-fit accounts.',
+    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
+    input.icpSpecSummary
+      ? `Effective ICP JSON: ${input.icpSpecSummary}`
+      : null,
+    'load_skills(["search-companies"]), search, then upsert_gtm_target_companies({ projectId, mode: "merge", companies }) before ending.',
+    'Do not create CRM Company records for the Companies tab.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+};
+
+export type GtmFindPeopleSendPromptInput = {
+  projectId: string | null;
+  peopleSearchBlurb: string | null;
+  icpBlurb: string | null;
+  icpSpecSummary: string | null;
+};
+
+export const buildGtmFindPeopleSendPrompt = (
+  input: GtmFindPeopleSendPromptInput,
+): string => {
+  return [
+    `Find target people for this GTM run (projectId=${input.projectId ?? 'none'}) at the companies already on the Companies tab.`,
+    input.peopleSearchBlurb ??
+      'Use the effective ICP buyer titles / functions for this workspace / run.',
+    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
+    input.icpSpecSummary
+      ? `Effective ICP JSON: ${input.icpSpecSummary}`
+      : null,
+    'load_skills(["search-people","linkedin-search"]) as needed, search, then upsert_gtm_target_people({ projectId, mode: "merge", people }) before ending.',
+    'Do not create CRM Candidates until I confirm Add to CRM / Enroll.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+};
+
+export type GtmRegenerateIcpSendPromptInput = {
+  workspaceCompany: GtmWorkspaceCompany;
+  currentIcpSpec: string | null;
+  currentIcpBlurb: string | null;
+};
+
+export const buildGtmRegenerateIcpSendPrompt = (
+  input: GtmRegenerateIcpSendPromptInput,
+): string => {
+  const company = input.workspaceCompany;
+
+  return [
+    `Regenerate only the workspace default ICP for ${company.name}${
+      company.domain ? ` (${company.domain})` : ''
+    }.`,
+    company.industry ? `Industry: ${company.industry}.` : null,
+    company.summary ? `Company summary: ${company.summary}` : null,
+    input.currentIcpSpec
+      ? `Current ICP JSON (replace with an improved draft): ${input.currentIcpSpec}`
+      : 'No ICP JSON yet — draft one from the seller company.',
+    input.currentIcpBlurb
+      ? `Current icpBlurb (replace with an improved NL definition): ${input.currentIcpBlurb}`
+      : 'No icpBlurb yet — write a 2–4 sentence NL definition of who we sell to.',
+    'load_skills(["gtm-icp-onboarding"]), then save icpSpec + icpBlurb + icpSegment on gtmWorkspaceProfile (workspace default).',
+    'Do NOT change companySearchBlurb or peopleSearchBlurb — those have their own Regenerate actions.',
+    'Do not write Project.icpSpec unless I ask for a run-specific override.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+};
+
+export type GtmRegenerateSearchBlurbSendPromptInput = {
+  kind: 'company' | 'people';
+  workspaceCompany: GtmWorkspaceCompany;
+  icpBlurb: string | null;
+  icpSpecSummary: string | null;
+  currentBlurb: string | null;
+};
+
+export const buildGtmRegenerateSearchBlurbSendPrompt = (
+  input: GtmRegenerateSearchBlurbSendPromptInput,
+): string => {
+  const fieldName =
+    input.kind === 'company' ? 'companySearchBlurb' : 'peopleSearchBlurb';
+  const label =
+    input.kind === 'company' ? 'company search blurb' : 'people search blurb';
+
+  return [
+    `Regenerate only the ${label} on gtmWorkspaceProfile for ${input.workspaceCompany.name}.`,
+    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
+    input.icpSpecSummary
+      ? `Effective ICP JSON: ${input.icpSpecSummary}`
+      : 'Use the workspace ICP if present; if missing, draft a minimal ICP + icpBlurb first.',
+    input.currentBlurb ? `Current ${fieldName}: ${input.currentBlurb}` : null,
+    `Write an improved short NL brief to ${fieldName} on gtmWorkspaceProfile. Do not change icpSpec / icpBlurb unless they are empty.`,
+    input.kind === 'company'
+      ? 'The blurb should be ready to SEND for Find companies (industries, size, geos, ~15–25 accounts).'
+      : 'The blurb should be ready to SEND for Find people (buyer titles / functions at companies already on this run).',
+  ]
+    .filter(Boolean)
+    .join('\n');
 };

@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
+import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
@@ -16,6 +17,7 @@ import { GtmMainTabs } from '@/gtm-home/components/GtmMainTabs';
 import { GtmNeedsConnectionBanner } from '@/gtm-home/components/GtmNeedsConnectionBanner';
 import { GtmPeoplePanel } from '@/gtm-home/components/GtmPeoplePanel';
 import { GtmRunProgressHeader } from '@/gtm-home/components/GtmRunProgressHeader';
+import { GtmSetupPanel } from '@/gtm-home/components/GtmSetupPanel';
 import { GtmWorkflowPanel } from '@/gtm-home/components/GtmWorkflowPanel';
 import { GtmWorkflowToolbar } from '@/gtm-home/components/GtmWorkflowToolbar';
 import { useGtmLiveWorkingSet } from '@/gtm-home/hooks/useGtmLiveWorkingSet';
@@ -28,10 +30,17 @@ import {
   gtmCommandContextState,
 } from '@/gtm-home/states/gtmCommandContextState';
 import {
-  buildGtmIcpOnboardingKickoffPrompt,
-  type GtmIcpSet,
+  buildGtmFindCompaniesSendPrompt,
+  buildGtmFindPeopleSendPrompt,
+  buildGtmRegenerateIcpSendPrompt,
+  buildGtmRegenerateSearchBlurbSendPrompt,
 } from '@/gtm-home/types/gtm-home.types';
+import { parseGtmIcpSpec } from '@/gtm-home/utils/gtm-effective-icp.util';
+import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
+import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
+import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -77,10 +86,13 @@ const StyledEmpty = styled.div`
   line-height: 1.5;
 `;
 
+type GtmSetupPersistTarget = 'workspaceProfile' | 'project';
+
 export const GtmHomePage = () => {
   const {
     loading,
     workspaceCompany,
+    workspaceProfile,
     companies,
     people,
     projectSettings,
@@ -88,7 +100,7 @@ export const GtmHomePage = () => {
     activeProjectId,
     setActiveProjectId,
     createGtmProject,
-    parsedIcp,
+    isIcpRunOverride,
     linkedinConnected,
     gmailConnected,
     whatsappConnected,
@@ -101,12 +113,21 @@ export const GtmHomePage = () => {
     peopleTableInstanceId,
   } = useGtmLiveWorkingSet();
   const isWorkflowTab = activeTab === 'workflow';
+  const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
+  const { openAskAiPage } = useOpenAskAiPageInSidePanel();
+  const { updateOneRecord } = useUpdateOneRecord();
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const setCommandContext = useSetAtomState(gtmCommandContextState);
   const commandContext = useAtomStateValue(gtmCommandContextState);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+  const [isSavingIcp, setIsSavingIcp] = useState(false);
+  const [isSavingCompanySearchBlurb, setIsSavingCompanySearchBlurb] =
+    useState(false);
+  const [isSavingPeopleSearchBlurb, setIsSavingPeopleSearchBlurb] =
+    useState(false);
   const [workflowMode, setWorkflowMode] =
     useState<GtmWorkflowEmbedMode>('definition');
   const {
@@ -166,37 +187,10 @@ export const GtmHomePage = () => {
     }
   }, [hasWorkflow, hasWorkflowRun, workflowMode]);
 
+  // Show Ask AI on GTM Command entry (URL / reload), not only nav click
   useEffect(() => {
-    if (!activeProjectId) {
-      return;
-    }
-
-    const proposedIcp: GtmIcpSet | null = parsedIcp
-      ? {
-          name: parsedIcp.name ?? projectSettings.icpSegment ?? 'ICP',
-          industries: parsedIcp.industries ?? [],
-          employeeRange: parsedIcp.employeeRange ?? '',
-          geos: parsedIcp.geos ?? [],
-          buyerTitles: parsedIcp.buyerTitles ?? [],
-          painSignals: parsedIcp.painSignals ?? [],
-          stdFunctions: parsedIcp.stdFunctions ?? [],
-          stdGrades: parsedIcp.stdGrades ?? [],
-        }
-      : null;
-
-    // Prefill only — user hits Enter to send the ICP onboarding kickoff.
-    openAskAiPageWithPreprompt({
-      mode: 'PREFILL',
-      text: buildGtmIcpOnboardingKickoffPrompt({
-        workspaceCompany,
-        projectId: projectSettings.projectId,
-        projectName: projectSettings.projectName,
-        proposedIcp,
-      }),
-    });
-    // Re-kick when switching projects so Ask AI is run-aware.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProjectId]);
+    openAskAiPage({ resetNavigationStack: true });
+  }, [openAskAiPage]);
 
   useEffect(() => {
     const selectedPerson = people.find(
@@ -230,6 +224,63 @@ export const GtmHomePage = () => {
     whatsappConnected,
   ]);
 
+  const resolvePersistTarget = (
+    isRunOverride: boolean,
+  ): GtmSetupPersistTarget | null => {
+    if (isRunOverride && isDefined(activeProjectId)) {
+      return 'project';
+    }
+
+    if (isDefined(workspaceProfile?.id)) {
+      return 'workspaceProfile';
+    }
+
+    if (isDefined(activeProjectId)) {
+      return 'project';
+    }
+
+    return null;
+  };
+
+  const persistSetupField = async ({
+    isRunOverride,
+    updateOneRecordInput,
+    successMessage,
+  }: {
+    isRunOverride: boolean;
+    updateOneRecordInput: Record<string, string>;
+    successMessage: string;
+  }) => {
+    const persistTarget = resolvePersistTarget(isRunOverride);
+
+    if (
+      persistTarget === 'workspaceProfile' &&
+      isDefined(workspaceProfile?.id)
+    ) {
+      await updateOneRecord({
+        objectNameSingular: 'gtmWorkspaceProfile',
+        idToUpdate: workspaceProfile.id,
+        updateOneRecordInput,
+      });
+      enqueueSuccessSnackBar({ message: successMessage });
+      return;
+    }
+
+    if (persistTarget === 'project' && isDefined(activeProjectId)) {
+      await updateOneRecord({
+        objectNameSingular: 'project',
+        idToUpdate: activeProjectId,
+        updateOneRecordInput,
+      });
+      enqueueSuccessSnackBar({
+        message: `${successMessage} (this run)`,
+      });
+      return;
+    }
+
+    throw new Error('No workspace profile or GTM run to save to.');
+  };
+
   const handleCreateProject = async () => {
     setIsCreatingProject(true);
 
@@ -238,6 +289,162 @@ export const GtmHomePage = () => {
     } finally {
       setIsCreatingProject(false);
     }
+  };
+
+  const handleRegenerateIcp = () => {
+    openAskAiPageWithPreprompt({
+      mode: 'SEND',
+      text: buildGtmRegenerateIcpSendPrompt({
+        workspaceCompany,
+        currentIcpSpec: projectSettings.icpSpec,
+        currentIcpBlurb: projectSettings.icpBlurb,
+      }),
+    });
+  };
+
+  const handleRegenerateCompanySearchBlurb = () => {
+    openAskAiPageWithPreprompt({
+      mode: 'SEND',
+      text: buildGtmRegenerateSearchBlurbSendPrompt({
+        kind: 'company',
+        workspaceCompany,
+        icpBlurb: projectSettings.icpBlurb,
+        icpSpecSummary: projectSettings.icpSpec,
+        currentBlurb: projectSettings.companySearchBlurb,
+      }),
+    });
+  };
+
+  const handleRegeneratePeopleSearchBlurb = () => {
+    openAskAiPageWithPreprompt({
+      mode: 'SEND',
+      text: buildGtmRegenerateSearchBlurbSendPrompt({
+        kind: 'people',
+        workspaceCompany,
+        icpBlurb: projectSettings.icpBlurb,
+        icpSpecSummary: projectSettings.icpSpec,
+        currentBlurb: projectSettings.peopleSearchBlurb,
+      }),
+    });
+  };
+
+  const handleSaveIcp = async (input: {
+    icpSpec: string;
+    icpBlurb: string;
+  }) => {
+    const trimmedIcpSpec = input.icpSpec.trim();
+    const trimmedIcpBlurb = input.icpBlurb.trim();
+
+    if (!isNonEmptyString(trimmedIcpSpec)) {
+      enqueueErrorSnackBar({ message: 'ICP JSON cannot be empty.' });
+      return;
+    }
+
+    const parsedIcp = parseGtmIcpSpec(trimmedIcpSpec);
+
+    if (parsedIcp === null) {
+      enqueueErrorSnackBar({ message: 'ICP must be valid JSON.' });
+      return;
+    }
+
+    const icpSegment = isNonEmptyString(parsedIcp.name)
+      ? parsedIcp.name
+      : (projectSettings.icpSegment ?? 'ICP');
+
+    setIsSavingIcp(true);
+
+    try {
+      await persistSetupField({
+        isRunOverride:
+          projectSettings.isIcpRunOverride ||
+          projectSettings.isIcpBlurbRunOverride,
+        updateOneRecordInput: {
+          icpSpec: trimmedIcpSpec,
+          icpSegment,
+          icpBlurb: trimmedIcpBlurb,
+        },
+        successMessage: 'ICP saved',
+      });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error ? error.message : 'Failed to save ICP.',
+      });
+    } finally {
+      setIsSavingIcp(false);
+    }
+  };
+
+  const handleSaveCompanySearchBlurb = async (value: string) => {
+    setIsSavingCompanySearchBlurb(true);
+
+    try {
+      await persistSetupField({
+        isRunOverride: projectSettings.isCompanySearchBlurbRunOverride,
+        updateOneRecordInput: {
+          companySearchBlurb: value.trim(),
+        },
+        successMessage: 'Company search blurb saved',
+      });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save company search blurb.',
+      });
+    } finally {
+      setIsSavingCompanySearchBlurb(false);
+    }
+  };
+
+  const handleSavePeopleSearchBlurb = async (value: string) => {
+    setIsSavingPeopleSearchBlurb(true);
+
+    try {
+      await persistSetupField({
+        isRunOverride: projectSettings.isPeopleSearchBlurbRunOverride,
+        updateOneRecordInput: {
+          peopleSearchBlurb: value.trim(),
+        },
+        successMessage: 'People search blurb saved',
+      });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save people search blurb.',
+      });
+    } finally {
+      setIsSavingPeopleSearchBlurb(false);
+    }
+  };
+
+  const handleFindCompanies = () => {
+    openAskAiPageWithPreprompt({
+      mode: 'SEND',
+      text: buildGtmFindCompaniesSendPrompt({
+        projectId: projectSettings.projectId,
+        companySearchBlurb: projectSettings.companySearchBlurb,
+        icpBlurb: projectSettings.icpBlurb,
+        icpSpecSummary: projectSettings.icpSpec,
+      }),
+    });
+    setActiveTab('companies');
+  };
+
+  const handleFindPeople = () => {
+    openAskAiPageWithPreprompt({
+      mode: 'SEND',
+      text: buildGtmFindPeopleSendPrompt({
+        projectId: projectSettings.projectId,
+        peopleSearchBlurb: projectSettings.peopleSearchBlurb,
+        icpBlurb: projectSettings.icpBlurb,
+        icpSpecSummary: projectSettings.icpSpec,
+      }),
+    });
+    setActiveTab('people');
   };
 
   const handleSelectOutreachWorkflow = async (nextWorkflowId: string) => {
@@ -279,6 +486,10 @@ export const GtmHomePage = () => {
           }
         />
       </PageHeader>
+      <InformationBannerChromeExtensionNotInstalled
+        isExtensionInstalled={isExtensionInstalled}
+        isChecking={isExtensionChecking}
+      />
       <PageBody>
         <StyledMain>
           {(!linkedinConnected || !gmailConnected) && (
@@ -315,9 +526,8 @@ export const GtmHomePage = () => {
             </StyledLoading>
           ) : !activeProjectId ? (
             <StyledEmpty>
-              No GTM Project yet. Click <strong>New run</strong> to create one —
-              Companies, People, and Workflows are scoped to that Project id (
-              <code>?projectId=</code>).
+              Preparing a GTM run… If this persists, click{' '}
+              <strong>New run</strong>.
             </StyledEmpty>
           ) : isWorkflowTab ? (
             <StyledWorkflowContent>
@@ -334,6 +544,33 @@ export const GtmHomePage = () => {
             </StyledWorkflowContent>
           ) : (
             <StyledContent>
+              {isSetupTab && (
+                <GtmSetupPanel
+                  workspaceCompany={workspaceCompany}
+                  icpSpec={projectSettings.icpSpec}
+                  icpBlurb={projectSettings.icpBlurb}
+                  companySearchBlurb={projectSettings.companySearchBlurb}
+                  peopleSearchBlurb={projectSettings.peopleSearchBlurb}
+                  isIcpRunOverride={isIcpRunOverride}
+                  hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
+                  hasProject={isDefined(activeProjectId)}
+                  isSavingIcp={isSavingIcp}
+                  isSavingCompanySearchBlurb={isSavingCompanySearchBlurb}
+                  isSavingPeopleSearchBlurb={isSavingPeopleSearchBlurb}
+                  onRegenerateIcp={handleRegenerateIcp}
+                  onRegenerateCompanySearchBlurb={
+                    handleRegenerateCompanySearchBlurb
+                  }
+                  onRegeneratePeopleSearchBlurb={
+                    handleRegeneratePeopleSearchBlurb
+                  }
+                  onSaveIcp={handleSaveIcp}
+                  onSaveCompanySearchBlurb={handleSaveCompanySearchBlurb}
+                  onSavePeopleSearchBlurb={handleSavePeopleSearchBlurb}
+                  onFindCompanies={handleFindCompanies}
+                  onFindPeople={handleFindPeople}
+                />
+              )}
               {activeTab === 'companies' && (
                 <GtmCompaniesPanel
                   companies={companies}

@@ -1,4 +1,5 @@
 import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import { normalizeMessagingChannel } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import {
   extractDisplayPictureUrl,
   resolveAvatarUrlFromDisplayPictureUrl,
@@ -33,7 +34,7 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
 
   // Initialize DataProcessingUtils for enhanced cleaning
   const dataProcessingUtils = new DataProcessingUtils();
-  
+
   // Extract and parse email data using enhanced cleaning
   let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
   if (candidate?.emailAddress) {
@@ -47,15 +48,15 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   } else if (candidate?.emails?.work?.length > 0) {
     emailData = dataProcessingUtils.parseEmails(candidate.emails.work);
   }
-  
+
   // Extract and parse phone data using enhanced cleaning
-  let phoneData: EnhancedPhonesValue = { 
-    primaryPhoneNumber: '', 
-    primaryPhoneCountryCode: '', 
-    primaryPhoneCallingCode: '', 
-    additionalPhones: [] 
+  let phoneData: EnhancedPhonesValue = {
+    primaryPhoneNumber: '',
+    primaryPhoneCountryCode: '',
+    primaryPhoneCallingCode: '',
+    additionalPhones: []
   };
-  
+
   // Try different phone number field formats in order of preference
   if (candidate?.phoneNumbers && candidate.phoneNumbers.length > 0) {
     phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumbers);
@@ -66,7 +67,7 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   } else if (candidate?.phone_number) {
     phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phone_number);
   }
-  
+
   // Extract LinkedIn URL
   let linkedinUrl = '';
   if (candidate?.linkedinUrl) {
@@ -74,11 +75,11 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   } else if (candidate?.profileUrl && candidate.profileUrl.includes('linkedin')) {
     linkedinUrl = candidate.profileUrl;
   }
-  
+
   // Extract job title (current designation) and job name (applied position)
   let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
   let jobName = candidate?.jobName || '';
-  
+
   const personNode: ArxenaPersonNode & {
     emails: EnhancedEmailsValue;
     phones: EnhancedPhonesValue;
@@ -91,7 +92,7 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
       additionalEmails: emailData.additionalEmails
     },
     linkedinLink: linkedinUrl ? { primaryLinkUrl: normalizeLinkedInUrl(linkedinUrl), primaryLinkLabel: normalizeLinkedInUrl(linkedinUrl) } : { primaryLinkUrl: '', primaryLinkLabel: '' },
-    phones: { 
+    phones: {
       primaryPhoneNumber: phoneData.primaryPhoneNumber,
       primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
       primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
@@ -142,10 +143,10 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   const firstName = candidate?.firstName || '';
   const lastName = candidate?.lastName || '';
   const uniqueStringKey = candidate?.uniqueStringKey || '';
-  
+
   // Initialize DataProcessingUtils for enhanced cleaning
   const dataProcessingUtils = new DataProcessingUtils();
-  
+
   // Extract and parse email data using enhanced cleaning
   let emailData: EnhancedEmailsValue = { primaryEmail: '', additionalEmails: [] };
   if (candidate?.emailAddress) {
@@ -157,15 +158,15 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   } else if (candidate?.emails?.work?.length > 0) {
     emailData = dataProcessingUtils.parseEmails(candidate.emails.work);
   }
-  
+
   // Extract and parse phone data using enhanced cleaning
-  let phoneData: EnhancedPhonesValue = { 
-    primaryPhoneNumber: '', 
-    primaryPhoneCountryCode: '', 
-    primaryPhoneCallingCode: '', 
-    additionalPhones: [] 
+  let phoneData: EnhancedPhonesValue = {
+    primaryPhoneNumber: '',
+    primaryPhoneCountryCode: '',
+    primaryPhoneCallingCode: '',
+    additionalPhones: []
   };
-  
+
   // Try different phone number field formats in order of preference
   if (candidate?.phoneNumbers && candidate.phoneNumbers.length > 0) {
     phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumbers);
@@ -174,7 +175,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   } else if (candidate?.phoneNumber) {
     phoneData = dataProcessingUtils.parsePhoneNumbers(candidate.phoneNumber);
   }
-  
+
   const raw = candidate as Record<string, unknown>;
   const displayPictureUrl = extractDisplayPictureUrl(raw);
   const avatarUrl =
@@ -188,7 +189,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   } else if ((candidate as any)?.hiringNaukriUrl) {
     hiringNaukriUrl = (candidate as any).hiringNaukriUrl;
   }
-  
+
   // Extract LinkedIn URL
   let linkedinUrl = '';
   if (candidate?.linkedinUrl) {
@@ -196,11 +197,11 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   } else if (profileUrl && profileUrl.includes('linkedin')) {
     linkedinUrl = profileUrl;
   }
-  
+
   // Extract job title (current designation) and job name (applied position)
   let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
   let jobName = candidate?.jobName || '';
-  let jobCompanyName = candidate?.jobCompanyName || ''; 
+  let jobCompanyName = candidate?.jobCompanyName || '';
 
   const candidateNode: ArxenaCandidateNode & {
     phoneNumber: EnhancedPhonesValue;
@@ -210,13 +211,13 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     projectsId: jobNode?.id,
     engagementStatus: false,
     startChat: false,
-    phoneNumber: { 
+    phoneNumber: {
       primaryPhoneNumber: phoneData.primaryPhoneNumber,
       primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
       primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
       additionalPhones: phoneData.additionalPhones
     },
-    email: { 
+    email: {
       primaryEmail: emailData.primaryEmail,
       additionalEmails: emailData.additionalEmails
     },
@@ -224,28 +225,28 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
     uniqueStringKey: uniqueStringKey,
-    hiringNaukriUrl: { 
-        "primaryLinkLabel": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''), 
+    hiringNaukriUrl: {
+        "primaryLinkLabel": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''),
       "primaryLinkUrl": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : '')
     },
-    resdexNaukriUrl: { 
-      "primaryLinkLabel": profileUrl && profileUrl.includes('resdex') ? profileUrl : '', 
-      "primaryLinkUrl": profileUrl && profileUrl.includes('resdex') ? profileUrl : '' 
+    resdexNaukriUrl: {
+      "primaryLinkLabel": profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
+      "primaryLinkUrl": profileUrl && profileUrl.includes('resdex') ? profileUrl : ''
     },
 
-    displayPicture: { 
-      "primaryLinkLabel": "Display Picture", 
+    displayPicture: {
+      "primaryLinkLabel": "Display Picture",
       "primaryLinkUrl": displayPictureUrl
     },
     avatarUrl,
-    linkedinUrl: { 
-      "primaryLinkLabel": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '', 
+    linkedinUrl: {
+      "primaryLinkLabel": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '',
       "primaryLinkUrl": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : ''
     },
     peopleId: '',
     campaign: candidate?.campaign || '',
     source: dataSource || '',
-    messagingChannel: whatsapp_key,
+    messagingChannel: normalizeMessagingChannel(whatsapp_key) ?? whatsapp_key,
     jobTitle: jobTitle,
     jobCompanyName: jobCompanyName,
   };
@@ -261,15 +262,15 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
   const unmappedKeys = allDataKeys.filter(key => {
   const camelCaseKey = key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
 
-    const isMappedInPerson = personNodeKeys.some(k => 
-      k.toLowerCase() === key.toLowerCase() || 
+    const isMappedInPerson = personNodeKeys.some(k =>
+      k.toLowerCase() === key.toLowerCase() ||
       k.toLowerCase() === camelCaseKey.toLowerCase()
     );
-    const isMappedInCandidate = candidateNodeKeys.some(k => 
-      k.toLowerCase() === key.toLowerCase() || 
+    const isMappedInCandidate = candidateNodeKeys.some(k =>
+      k.toLowerCase() === key.toLowerCase() ||
       k.toLowerCase() === camelCaseKey.toLowerCase()
     );
-    
+
     return !isMappedInPerson && !isMappedInCandidate;
   });
 
@@ -280,7 +281,7 @@ export const generateCompleteMappings = async (rawCandidateData: any, jobNode: a
       value: rawCandidateData[key]
     }
   })
-  
+
   return {
     personNode: personNode,
     candidateNode: candidateNode,

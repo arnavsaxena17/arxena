@@ -16,14 +16,14 @@ const StyledLink = styled(Link)<{ variant: LogoVariant }>`
     `
     height: 40px;
     width: 120px;
-    background-image: url('/images/favicon/icon-512.png');
+    background-image: url('/images/favicon/arxena-A-logo-PQ-HDR-rounded.png');
   `}
   ${({ variant }) =>
     variant === 'compact' &&
     `
     height: 28px;
     width: 28px;
-    background-image: url('/images/favicon/icon-512.png');
+    background-image: url('/images/favicon/arxena-A-logo-PQ-HDR-rounded.png');
   `}
   ${({ variant }) =>
     variant === 'hero' &&
@@ -37,7 +37,7 @@ const StyledLink = styled(Link)<{ variant: LogoVariant }>`
     `
     height: 40px;
     width: 40px;
-    background-image: url('/images/favicon/icon-512.png');
+    background-image: url('/images/favicon/arxena-A-logo-PQ-HDR-rounded.png');
   `}
 `;
 
