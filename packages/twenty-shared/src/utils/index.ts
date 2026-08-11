@@ -57,6 +57,8 @@ export {
   getCountryCodeFromCdnHeaders,
 } from './clientGeo/getCountryCodeFromCdnHeaders';
 export { isPrivateOrLocalClientIp } from './clientGeo/isPrivateOrLocalClientIp';
+export type { IpInfoCompanyResponse } from './clientGeo/lookupCompanyByIp';
+export { lookupCompanyByIp } from './clientGeo/lookupCompanyByIp';
 export { lookupCountryByIp } from './clientGeo/lookupCountryByIp';
 export { resolveClientIpinfoToken } from './clientGeo/resolveClientIpinfoToken';
 export { resolveIpinfoToken } from './clientGeo/resolveIpinfoToken';
