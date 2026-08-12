@@ -526,6 +526,7 @@
           "pages": [
             "developers/extend/api",
             "developers/extend/api/people-api",
+            "developers/extend/org-chart-embed",
             "developers/extend/webhooks",
             "developers/extend/oauth"
           ]

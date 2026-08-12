@@ -104,6 +104,7 @@ export enum SettingsPath {
   WhatsappUnipile = 'whatsapp-unipile',
   FacebookSignUp = 'facebook-signup',
   Baileys = 'baileys',
+  WorkflowApprovals = 'workflow-approvals',
   SearchPlans = 'search-plans',
   DevelopersOrgChartEmbedNew = 'developers/org-chart-embed/new',
   DevelopersOrgChartEmbedDetail = 'developers/org-chart-embed/:embedKeyId',

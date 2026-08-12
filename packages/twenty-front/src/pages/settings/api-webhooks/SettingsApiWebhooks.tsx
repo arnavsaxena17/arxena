@@ -1,6 +1,7 @@
 import { SettingsDiscoveryHeroCard } from '@/settings/components/SettingsDiscoveryHeroCard';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsApiKeysTable } from '@/settings/developers/components/SettingsApiKeysTable';
+import { SettingsOrgChartEmbedTable } from '@/settings/developers/components/SettingsOrgChartEmbedTable';
 import { SettingsWebhooksTable } from '@/settings/developers/components/SettingsWebhooksTable';
 import { PlaygroundSetupForm } from '@/settings/mcp-and-apis/components/PlaygroundSetupForm';
 import { SettingsMcpSetup } from '@/settings/mcp-and-apis/components/SettingsMcpSetup';
@@ -20,6 +21,7 @@ import {
   IconBrandGraphql,
   IconPlus,
   IconPlug,
+  IconSitemap,
   IconSparkle2,
   IconWebhook,
 } from 'twenty-ui/icon';
@@ -77,6 +79,11 @@ export const SettingsApiWebhooks = () => {
       title: t`Webhooks`,
       Icon: IconWebhook,
     },
+    {
+      id: SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.ORG_CHART,
+      title: t`Org chart`,
+      Icon: IconSitemap,
+    },
   ];
 
   const activeTab: TabKey =
@@ -86,6 +93,9 @@ export const SettingsApiWebhooks = () => {
     ) as TabKey) ?? SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.MCP;
 
   const isMcpTab = activeTab === SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.MCP;
+  const showApiHero =
+    activeTab === SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.API ||
+    activeTab === SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.WEBHOOKS;
 
   return (
     <SettingsPageLayout
@@ -105,32 +115,34 @@ export const SettingsApiWebhooks = () => {
       ]}
     >
       <SettingsPageContainer>
-        <Section>
-          <SettingsDiscoveryHeroCard
-            lightSrc={isMcpTab ? McpCoverLight : PlaygroundCoverLight}
-            darkSrc={isMcpTab ? McpCoverDark : PlaygroundCoverDark}
-            instanceIdPrefix={SETTINGS_API_HERO_INSTANCE_ID_PREFIX}
-            tabs={
-              isMcpTab
-                ? []
-                : [
-                    {
-                      id: 'rest',
-                      title: t`REST`,
-                      Icon: IconPlug,
-                      vimeoId: '928786722',
-                    },
-                    {
-                      id: 'graphql',
-                      title: t`GraphQL`,
-                      Icon: IconBrandGraphql,
-                      vimeoId: '928786722',
-                    },
-                  ]
-            }
-            playButtonAriaLabel={t`Watch API demo`}
-          />
-        </Section>
+        {(isMcpTab || showApiHero) && (
+          <Section>
+            <SettingsDiscoveryHeroCard
+              lightSrc={isMcpTab ? McpCoverLight : PlaygroundCoverLight}
+              darkSrc={isMcpTab ? McpCoverDark : PlaygroundCoverDark}
+              instanceIdPrefix={SETTINGS_API_HERO_INSTANCE_ID_PREFIX}
+              tabs={
+                isMcpTab
+                  ? []
+                  : [
+                      {
+                        id: 'rest',
+                        title: t`REST`,
+                        Icon: IconPlug,
+                        vimeoId: '928786722',
+                      },
+                      {
+                        id: 'graphql',
+                        title: t`GraphQL`,
+                        Icon: IconBrandGraphql,
+                        vimeoId: '928786722',
+                      },
+                    ]
+              }
+              playButtonAriaLabel={t`Watch API demo`}
+            />
+          </Section>
+        )}
 
         {activeTab === SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.API && (
           <StyledTabContent>
@@ -185,6 +197,29 @@ export const SettingsApiWebhooks = () => {
                     size="small"
                     variant="secondary"
                     to={getSettingsPath(SettingsPath.NewWebhook)}
+                  />
+                </StyledButtonContainer>
+              </StyledTableContainer>
+            </Section>
+          </StyledTabContent>
+        )}
+
+        {activeTab === SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.ORG_CHART && (
+          <StyledTabContent>
+            <Section>
+              <H2Title
+                title={t`Org chart embed`}
+                description={t`Embed live org charts on your website with a JavaScript snippet.`}
+              />
+              <StyledTableContainer isMobile={isMobile}>
+                <SettingsOrgChartEmbedTable />
+                <StyledButtonContainer>
+                  <Button
+                    Icon={IconPlus}
+                    title={t`Create embed key`}
+                    size="small"
+                    variant="secondary"
+                    to={getSettingsPath(SettingsPath.DevelopersOrgChartEmbedNew)}
                   />
                 </StyledButtonContainer>
               </StyledTableContainer>

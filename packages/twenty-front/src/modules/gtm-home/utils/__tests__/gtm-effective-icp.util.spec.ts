@@ -1,7 +1,9 @@
 import {
+  extractIcpBlurbFromSpec,
   parseGtmIcpSpec,
   resolveEffectiveGtmIcp,
   resolveInheritedTextField,
+  stripBlurbFromIcpSpec,
   toGtmIcpSet,
 } from '@/gtm-home/utils/gtm-effective-icp.util';
 
@@ -108,5 +110,50 @@ describe('gtm-effective-icp.util', () => {
 
     expect(set?.name).toBe('Buyers');
     expect(set?.industries).toEqual(['SaaS']);
+  });
+
+  it('falls back to legacy blurb key inside icpSpec when icpBlurb is empty', () => {
+    const workspaceIcp = JSON.stringify({
+      blurb: 'We sell to mid-market Sales+Talent orgs on disconnected stacks.',
+      name: 'Mid-market Sales+Talent',
+      industries: ['B2B SaaS'],
+    });
+
+    const effective = resolveEffectiveGtmIcp({
+      project: {
+        icpSpec: null,
+        icpSegment: null,
+        icpBlurb: null,
+        companySearchBlurb: null,
+        peopleSearchBlurb: null,
+      },
+      workspaceProfile: {
+        icpSpec: workspaceIcp,
+        icpSegment: 'Mid-market Sales+Talent',
+        icpBlurb: null,
+        companySearchBlurb: null,
+        peopleSearchBlurb: null,
+      },
+    });
+
+    expect(effective.icpBlurb).toBe(
+      'We sell to mid-market Sales+Talent orgs on disconnected stacks.',
+    );
+    expect(effective.icpSpec).not.toContain('"blurb"');
+    expect(parseGtmIcpSpec(effective.icpSpec)?.name).toBe(
+      'Mid-market Sales+Talent',
+    );
+  });
+
+  it('strips and extracts legacy blurb from icpSpec JSON', () => {
+    const withBlurb = JSON.stringify({
+      blurb: 'NL definition',
+      name: 'Buyers',
+    });
+
+    expect(extractIcpBlurbFromSpec(withBlurb)).toBe('NL definition');
+    expect(JSON.parse(stripBlurbFromIcpSpec(withBlurb) ?? '{}')).toEqual({
+      name: 'Buyers',
+    });
   });
 });

@@ -210,7 +210,7 @@ export const GtmSetupPanel = ({
             />
           </StyledActions>
         </StyledTitleRow>
-        <StyledFieldLabel>Blurb</StyledFieldLabel>
+        <StyledFieldLabel>Description</StyledFieldLabel>
         <TextArea
           textAreaId="gtm-setup-icp-blurb"
           minRows={3}
@@ -232,7 +232,7 @@ export const GtmSetupPanel = ({
 
       <StyledSection>
         <StyledTitleRow>
-          <StyledTitle>Company search blurb</StyledTitle>
+          <StyledTitle>Company search</StyledTitle>
           <StyledActions>
             <Button
               title="Regenerate"
@@ -264,7 +264,7 @@ export const GtmSetupPanel = ({
 
       <StyledSection>
         <StyledTitleRow>
-          <StyledTitle>People search blurb</StyledTitle>
+          <StyledTitle>People search</StyledTitle>
           <StyledActions>
             <Button
               title="Regenerate"

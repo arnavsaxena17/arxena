@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
 
+import { WorkflowFormWhatsappDecisionService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-whatsapp-decision.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -11,13 +12,75 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 @Controller('webhook')
 export class WhatsappWebhook {
+  private readonly logger = new Logger(WhatsappWebhook.name);
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly voiceCallService: VoiceCallService,
     private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
+    private readonly workflowFormWhatsappDecisionService: WorkflowFormWhatsappDecisionService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
   ) {}
+
+  // Resume pending FORM steps from Official WhatsApp Flow / quick-reply
+  private async tryHandleWorkflowFormDecision(
+    message: Record<string, unknown> | undefined,
+  ): Promise<boolean> {
+    if (!message || typeof message !== 'object') {
+      return false;
+    }
+
+    const interactive = message.interactive as
+      | {
+          type?: string;
+          button_reply?: { id?: string; payload?: string };
+          nfm_reply?: { response_json?: string; name?: string };
+        }
+      | undefined;
+
+    if (!interactive) {
+      // Template quick-reply may also arrive as type=button
+      if (message.type === 'button') {
+        const button = message.button as { payload?: string } | undefined;
+        const payload = button?.payload;
+
+        if (typeof payload === 'string') {
+          return this.workflowFormWhatsappDecisionService.handleButtonPayload(
+            payload,
+          );
+        }
+      }
+
+      return false;
+    }
+
+    if (
+      interactive.type === 'button_reply' ||
+      interactive.type === 'button'
+    ) {
+      const payload =
+        interactive.button_reply?.id ?? interactive.button_reply?.payload;
+
+      if (typeof payload === 'string') {
+        return this.workflowFormWhatsappDecisionService.handleButtonPayload(
+          payload,
+        );
+      }
+    }
+
+    if (interactive.type === 'nfm_reply') {
+      const responseJson = interactive.nfm_reply?.response_json;
+
+      if (typeof responseJson === 'string') {
+        return this.workflowFormWhatsappDecisionService.handleFlowResponseJson(
+          responseJson,
+        );
+      }
+    }
+
+    return false;
+  }
 
   @Get()
   findAll(@Req() request: any, @Res() response: any) {
@@ -78,8 +141,21 @@ export class WhatsappWebhook {
       console.log('Incoming message could be utility messages:');
     }
 
-    const value = requestBody?.entry?.[0]?.changes?.[0]?.value;
+    const change = requestBody?.entry?.[0]?.changes?.[0];
+    const value = change?.value;
+    const webhookField = change?.field;
     const calls = value?.calls;
+
+    // Flow DRAFT/PUBLISHED status webhooks have field=flows and no messages
+    if (webhookField === 'flows') {
+      this.logger.log(
+        `Ignoring WhatsApp flow status webhook: ${value?.event ?? 'unknown'}`,
+      );
+      response.sendStatus(200);
+
+      return;
+    }
+
     if (Array.isArray(calls) && calls.length > 0) {
       const apiToken =
         (process.env.WHATSAPP_BUSINESS_WEBHOOK_API_TOKEN as string) || null;
@@ -104,15 +180,39 @@ export class WhatsappWebhook {
       }
     }
 
+    const hasMessages =
+      Array.isArray(value?.messages) && value.messages.length > 0;
+    const hasStatuses =
+      Array.isArray(value?.statuses) && value.statuses.length > 0;
+
+    if (!hasMessages && !hasStatuses) {
+      console.log('Response 200 sent to whatsapp webhook for message:');
+      response.sendStatus(200);
+
+      return;
+    }
+
     try {
+      const inboundMessage = value?.messages?.[0];
+
+      const handledAsWorkflowForm =
+        await this.tryHandleWorkflowFormDecision(inboundMessage);
+
+      if (handledAsWorkflowForm) {
+        this.logger.log('Handled inbound WhatsApp as workflow form decision');
+        response.sendStatus(200);
+
+        return;
+      }
+
       await new IncomingWhatsappMessages(
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.messageQueueService,
         this.whatsappMediaStorageService,
-      ).receiveIncomingMessagesFromFacebook(requestBody, requestBody?.entry[0]?.changes[0]?.value?.messages[0]);
+      ).receiveIncomingMessagesFromFacebook(requestBody, inboundMessage);
     } catch (error) {
-      // Handle error
+      this.logger.error('WhatsApp webhook message handling error', error);
     }
     console.log('Response 200 sent to whatsapp webhook for message:');
     response.sendStatus(200);

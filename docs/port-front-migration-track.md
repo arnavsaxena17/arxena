@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Org chart embed settings + Mintlify docs | Ported embed settings UI from `workflows` into MCP & APIs (**Org chart** tab); adapted Recoil→Jotai, Emotion→Linaria, snackbars, `SettingsPageLayout`. Added Mintlify page `/developers/extend/org-chart-embed`. | `SettingsApiWebhooks.tsx`, `SettingsOrgChartEmbed*`, `SettingsDevelopersOrgChartEmbed*`, `SettingsRoutes.tsx`, `twenty-docs/.../org-chart-embed.mdx` |
 | GTM company enrich web_search | Company bootstrap enrichment now runs a native `web_search` model tool (OpenAI/Anthropic/xAI) to fetch website content, then feeds it into the multi-source profile summarizer. | `gtm-web-search-company-enrichment.source.ts`, `gtm-company-enrichment-collector.service.ts`, `gtm-company-profile-summarizer.*`, `gtm-command.module.ts` |
 | GTM Setup scoped regenerate + icpBlurb | ICP / company blurb / people blurb are separate Ask AI SEND turns (ICP no longer refreshes search blurbs). New `icpBlurb` TEXT on `gtmWorkspaceProfile` + Project; Setup shows Blurb + JSON. Skill sync cmd `1785600000017`. Run `workspace:sync-arxena-standard` for the field. | `gtm-icp-onboarding.md`, `gtm-home.types.ts`, `GtmSetupPanel.tsx`, `gtm-workspace-profile-fields.data.ts`, `2-25-workspace-command-1785600000017-*` |
 | GTM outreach prompt + seed field fix | Agent hung editing Stage B because seed SEND steps read Candidate `linkedinLink` (field is `linkedinUrl`). Added clone/edit/enroll guidance to `workflow-building` + GTM browsing/system prompts; sync cmd `1785600000015`. Seed templates now use `linkedinUrl.primaryLinkUrl`. | `workflow-building.md`, `chat-system-prompts.const.ts`, `chat-execution.service.ts`, `setup-gtm-outreach-workflow.ts`, `2-25-workspace-command-1785600000015-*` |
@@ -739,7 +740,7 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/core-modules/client-config/services/client-config.service.ts` | working · intent | Expose `chromeExtensionId` from `CHROME_EXTENSION_ID` |
 | `packages/twenty-server/src/engine/core-modules/client-config/client-config.entity.ts` | working · intent | `chromeExtensionId` field |
 | `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID` (ARXENA group) |
-| `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn routes |
+| `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn routes; Org chart embed new/detail routes |
 | `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Grouped workspace integration keys form (`ApiKeysForm`; provider now in `WorkspaceAppProviders`) |
 | `packages/twenty-front/src/modules/navigation/components/MainNavigationDrawerScrollableItems.tsx` | working · intent | Mount `ProjectsNavigationDrawerItems` + `OrgChartsNavigationDrawerItems` |
 | `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts |

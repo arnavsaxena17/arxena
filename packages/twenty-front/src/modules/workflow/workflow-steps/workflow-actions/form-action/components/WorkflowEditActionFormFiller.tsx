@@ -15,8 +15,34 @@ import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow
 import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
 import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
+import { FieldMetadataType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { useDebouncedCallback } from 'use-debounce';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Button } from 'twenty-ui/input';
+
+const StyledNotifyChips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+`;
+
+const StyledChip = styled.span`
+  background: ${themeCssVariables.background.transparent.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+`;
+
+const StyledApproveRow = styled.div`
+  display: flex;
+  gap: ${themeCssVariables.spacing[2]};
+  margin-bottom: ${themeCssVariables.spacing[3]};
+`;
+
 
 export type WorkflowEditActionFormFillerProps = {
   action: WorkflowFormAction;
@@ -99,10 +125,70 @@ export const WorkflowEditActionFormFiller = ({
     };
   }, [saveAction]);
 
+  const notifyOnPending = (
+    action.settings as {
+      notifyOnPending?: { channels: string[] };
+    }
+  ).notifyOnPending;
+
+  const booleanField = formData.find(
+    (field) => field.type === FieldMetadataType.BOOLEAN,
+  );
+
+  const submitBooleanDecision = async (approved: boolean) => {
+    if (!booleanField || actionOptions.readonly) {
+      return;
+    }
+
+    const response = formData.reduce(
+      (accumulator, field) => {
+        accumulator[field.name] =
+          field.id === booleanField.id ? approved : field.value;
+
+        return accumulator;
+      },
+      {} as Record<string, unknown>,
+    );
+
+    await submitFormStep({
+      stepId: action.id,
+      workflowRunId,
+      response,
+    });
+
+    goBackFromSidePanel();
+  };
+
   return (
     <>
       <WorkflowRunSSESubscribeEffect workflowRunId={workflowRunId} />
       <WorkflowStepBody>
+        {notifyOnPending?.channels?.length ? (
+          <StyledNotifyChips>
+            {notifyOnPending.channels.map((channel) => (
+              <StyledChip key={channel}>
+                {t`Notified via`} {channel.replaceAll('_', ' ')}
+              </StyledChip>
+            ))}
+          </StyledNotifyChips>
+        ) : null}
+        {!actionOptions.readonly && booleanField ? (
+          <StyledApproveRow>
+            <Button
+              title={t`Approve`}
+              onClick={() => {
+                void submitBooleanDecision(true);
+              }}
+            />
+            <Button
+              title={t`Reject`}
+              variant="secondary"
+              onClick={() => {
+                void submitBooleanDecision(false);
+              }}
+            />
+          </StyledApproveRow>
+        ) : null}
         {formData.map((field) => {
           if (field.type === 'RECORD') {
             const objectNameSingular = field.settings?.objectName;

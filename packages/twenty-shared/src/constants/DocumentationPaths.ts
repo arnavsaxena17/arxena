@@ -11,11 +11,34 @@
  */
 
 export const DOCUMENTATION_PATHS = {
+  API_REFERENCE_AUTHENTICATION: '/api-reference/authentication',
+  API_REFERENCE_CREDITS_GET_WORKSPACE_CREDITS:
+    '/api-reference/credits/get-workspace-credits',
+  API_REFERENCE_DATA_SOURCES_LIST_PEOPLE_DATA_SOURCE_CATEGORIES:
+    '/api-reference/data-sources/list-people-data-source-categories',
+  API_REFERENCE_INTRODUCTION: '/api-reference/introduction',
+  API_REFERENCE_PEOPLE_RESOLVE_JOB_TITLE_AND_SEARCH_PEOPLE:
+    '/api-reference/people/resolve-job-title-and-search-people',
+  API_REFERENCE_PEOPLE_SEARCH_PEOPLE: '/api-reference/people/search-people',
+  API_REFERENCE_TAXONOMY_BUILD_BOOLEAN_STRINGS_FROM_TAXONOMY:
+    '/api-reference/taxonomy/build-boolean-strings-from-taxonomy',
+  API_REFERENCE_TAXONOMY_EXPAND_AND_NORMALIZE_A_JOB_TITLE:
+    '/api-reference/taxonomy/expand-and-normalize-a-job-title',
+  API_REFERENCE_TAXONOMY_LIST_STD_FUNCTION_ROOTS:
+    '/api-reference/taxonomy/list-std-function-roots',
+  API_REFERENCE_TAXONOMY_LIST_STD_FUNCTIONS:
+    '/api-reference/taxonomy/list-std-functions',
+  API_REFERENCE_TAXONOMY_LIST_STD_GRADES:
+    '/api-reference/taxonomy/list-std-grades',
+  CHANGELOG_JULY_2026: '/changelog/july-2026',
+  COOKBOOKS_EXPAND_TITLES_THEN_SEARCH: '/cookbooks/expand-titles-then-search',
+  COOKBOOKS_SEARCH_PEOPLE_BY_TAXONOMY: '/cookbooks/search-people-by-taxonomy',
   DEVELOPERS_CONTRIBUTE_CAPABILITIES_LOCAL_SETUP:
     '/developers/contribute/capabilities/local-setup',
   DEVELOPERS_CONTRIBUTE_COMMANDS: '/developers/contribute/commands',
   DEVELOPERS_CONTRIBUTE_STYLE_GUIDE: '/developers/contribute/style-guide',
   DEVELOPERS_EXTEND_API: '/developers/extend/api',
+  DEVELOPERS_EXTEND_API_PEOPLE_API: '/developers/extend/api/people-api',
   DEVELOPERS_EXTEND_APPS_CONFIG_APPLICATION:
     '/developers/extend/apps/config/application',
   DEVELOPERS_EXTEND_APPS_CONFIG_INSTALL_HOOKS:
@@ -93,6 +116,7 @@ export const DOCUMENTATION_PATHS = {
   DEVELOPERS_EXTEND_APPS_TUTORIALS_DOCUMENT_GENERATOR_PUBLISHING:
     '/developers/extend/apps/tutorials/document-generator/publishing',
   DEVELOPERS_EXTEND_OAUTH: '/developers/extend/oauth',
+  DEVELOPERS_EXTEND_ORG_CHART_EMBED: '/developers/extend/org-chart-embed',
   DEVELOPERS_EXTEND_WEBHOOKS: '/developers/extend/webhooks',
   DEVELOPERS_INTRODUCTION: '/developers/introduction',
   DEVELOPERS_SELF_HOST_CAPABILITIES_DOCKER_COMPOSE:

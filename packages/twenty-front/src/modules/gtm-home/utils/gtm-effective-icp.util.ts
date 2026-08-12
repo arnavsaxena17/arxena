@@ -3,6 +3,8 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { type GtmIcpSet } from '@/gtm-home/types/gtm-home.types';
 
 export type GtmIcpSpecParsed = {
+  // Legacy embed when icpBlurb column was missing; prefer dedicated field
+  blurb?: string;
   name?: string;
   industries?: string[];
   employeeRange?: string;
@@ -32,6 +34,41 @@ export const parseGtmIcpSpec = (
     return JSON.parse(icpSpec) as GtmIcpSpecParsed;
   } catch {
     return null;
+  }
+};
+
+export const extractIcpBlurbFromSpec = (
+  icpSpec: string | null | undefined,
+): string | null => {
+  const parsedIcp = parseGtmIcpSpec(icpSpec);
+
+  if (!isNonEmptyString(parsedIcp?.blurb)) {
+    return null;
+  }
+
+  return parsedIcp.blurb;
+};
+
+// Structured filters only — NL definition belongs in icpBlurb
+export const stripBlurbFromIcpSpec = (
+  icpSpec: string | null | undefined,
+): string | null => {
+  if (!isNonEmptyString(icpSpec)) {
+    return null;
+  }
+
+  try {
+    const parsedIcp = JSON.parse(icpSpec) as Record<string, unknown>;
+
+    if (!('blurb' in parsedIcp)) {
+      return icpSpec;
+    }
+
+    const { blurb: _blurb, ...structuredIcp } = parsedIcp;
+
+    return JSON.stringify(structuredIcp);
+  } catch {
+    return icpSpec;
   }
 };
 
@@ -89,11 +126,16 @@ export const resolveEffectiveGtmIcp = ({
     workspaceProfile?.peopleSearchBlurb,
   );
 
+  const parsedIcp = parseGtmIcpSpec(icpSpecResolution.value);
+  const embeddedIcpBlurb = extractIcpBlurbFromSpec(icpSpecResolution.value);
+  const normalizedIcpSpec = stripBlurbFromIcpSpec(icpSpecResolution.value);
+
   return {
-    icpSpec: icpSpecResolution.value,
+    icpSpec: normalizedIcpSpec,
     icpSegment: icpSegmentResolution.value,
-    parsedIcp: parseGtmIcpSpec(icpSpecResolution.value),
-    icpBlurb: icpBlurbResolution.value,
+    parsedIcp: parseGtmIcpSpec(normalizedIcpSpec) ?? parsedIcp,
+    // Prefer dedicated column; fall back to legacy blurb key inside icpSpec JSON
+    icpBlurb: icpBlurbResolution.value ?? embeddedIcpBlurb,
     companySearchBlurb: companySearchBlurbResolution.value,
     peopleSearchBlurb: peopleSearchBlurbResolution.value,
     isIcpRunOverride: icpSpecResolution.isRunOverride,

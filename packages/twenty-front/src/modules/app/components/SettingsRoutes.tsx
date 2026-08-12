@@ -156,6 +156,22 @@ const SettingsDevelopersApiKeysNew = lazy(() =>
   ),
 );
 
+const SettingsDevelopersOrgChartEmbedNew = lazy(() =>
+  import(
+    '~/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedNew'
+  ).then((module) => ({
+    default: module.SettingsDevelopersOrgChartEmbedNew,
+  })),
+);
+
+const SettingsDevelopersOrgChartEmbedDetail = lazy(() =>
+  import(
+    '~/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedDetail'
+  ).then((module) => ({
+    default: module.SettingsDevelopersOrgChartEmbedDetail,
+  })),
+);
+
 const SettingsLogicFunctionDetail = lazy(() =>
   import('~/pages/settings/logic-functions/SettingsLogicFunctionDetail').then(
     (module) => ({
@@ -440,6 +456,14 @@ const SettingsAccountsWhatsappUnipile = lazy(() =>
       default: module.SettingsAccountsWhatsappUnipile,
     }),
   ),
+);
+
+const SettingsWorkflowApprovals = lazy(() =>
+  import(
+    '@/settings/workflow-approvals/components/SettingsWorkflowApprovals'
+  ).then((module) => ({
+    default: module.SettingsWorkflowApprovals,
+  })),
 );
 
 const SettingsAccountsFacebookSignUp = lazy(() =>
@@ -736,6 +760,10 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
           element={<SettingsAccountsWhatsappUnipile />}
         />
         <Route
+          path={SettingsPath.WorkflowApprovals}
+          element={<SettingsWorkflowApprovals />}
+        />
+        <Route
           path={SettingsPath.FacebookSignUp}
           element={<SettingsAccountsFacebookSignUp />}
         />
@@ -1013,6 +1041,14 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
         <Route
           path={SettingsPath.WebhookDetail}
           element={<SettingsDevelopersWebhookDetail />}
+        />
+        <Route
+          path={SettingsPath.DevelopersOrgChartEmbedNew}
+          element={<SettingsDevelopersOrgChartEmbedNew />}
+        />
+        <Route
+          path={SettingsPath.DevelopersOrgChartEmbedDetail}
+          element={<SettingsDevelopersOrgChartEmbedDetail />}
         />
       </Route>
 

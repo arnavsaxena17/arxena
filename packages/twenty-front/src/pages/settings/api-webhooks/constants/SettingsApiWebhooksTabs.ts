@@ -4,5 +4,6 @@ export const SETTINGS_API_WEBHOOKS_TABS = {
     API: 'api',
     MCP: 'mcp',
     WEBHOOKS: 'webhooks',
+    ORG_CHART: 'org-chart',
   },
 } as const;

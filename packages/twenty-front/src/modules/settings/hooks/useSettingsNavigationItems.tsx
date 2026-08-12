@@ -135,6 +135,13 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               indentationLevel: 2,
             },
             {
+              label: t`Workflow Approvals`,
+              path: SettingsPath.WorkflowApprovals,
+              Icon: IconBrandWhatsapp,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
               label: t`LinkedIn Business`,
               path: SettingsPath.LinkedinSignUp,
               Icon: IconBrandLinkedin,

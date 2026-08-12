@@ -13,6 +13,7 @@ import {
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
 import { WorkflowEditActionFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFieldSettings';
+import { WorkflowFormNotifyOnPendingSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormNotifyOnPendingSettings';
 import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormActionField';
 import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
 import { styled } from '@linaria/react';
@@ -430,6 +431,19 @@ export const WorkflowEditActionFormBuilder = ({
               </FormFieldInputRowContainer>
             </FormFieldInputContainer>
           </StyledAddFieldButtonContainer>
+        )}
+        {!actionOptions.readonly && (
+          <WorkflowFormNotifyOnPendingSettings
+            action={action}
+            readonly={false}
+            onActionUpdate={actionOptions.onActionUpdate}
+          />
+        )}
+        {actionOptions.readonly === true && (
+          <WorkflowFormNotifyOnPendingSettings
+            action={action}
+            readonly={true}
+          />
         )}
       </WorkflowStepBody>
       {!actionOptions.readonly && <WorkflowStepFooter stepId={action.id} />}

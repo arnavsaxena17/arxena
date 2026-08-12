@@ -35,7 +35,10 @@ import {
   buildGtmRegenerateIcpSendPrompt,
   buildGtmRegenerateSearchBlurbSendPrompt,
 } from '@/gtm-home/types/gtm-home.types';
-import { parseGtmIcpSpec } from '@/gtm-home/utils/gtm-effective-icp.util';
+import {
+  parseGtmIcpSpec,
+  stripBlurbFromIcpSpec,
+} from '@/gtm-home/utils/gtm-effective-icp.util';
 import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
@@ -334,13 +337,15 @@ export const GtmHomePage = () => {
   }) => {
     const trimmedIcpSpec = input.icpSpec.trim();
     const trimmedIcpBlurb = input.icpBlurb.trim();
+    const normalizedIcpSpec =
+      stripBlurbFromIcpSpec(trimmedIcpSpec) ?? trimmedIcpSpec;
 
-    if (!isNonEmptyString(trimmedIcpSpec)) {
+    if (!isNonEmptyString(normalizedIcpSpec)) {
       enqueueErrorSnackBar({ message: 'ICP JSON cannot be empty.' });
       return;
     }
 
-    const parsedIcp = parseGtmIcpSpec(trimmedIcpSpec);
+    const parsedIcp = parseGtmIcpSpec(normalizedIcpSpec);
 
     if (parsedIcp === null) {
       enqueueErrorSnackBar({ message: 'ICP must be valid JSON.' });
@@ -359,7 +364,7 @@ export const GtmHomePage = () => {
           projectSettings.isIcpRunOverride ||
           projectSettings.isIcpBlurbRunOverride,
         updateOneRecordInput: {
-          icpSpec: trimmedIcpSpec,
+          icpSpec: normalizedIcpSpec,
           icpSegment,
           icpBlurb: trimmedIcpBlurb,
         },

@@ -13,6 +13,21 @@ export type FormFieldMetadata = {
   settings?: Record<string, any>;
 };
 
+export type WorkflowFormNotifyOnPending = {
+  channels: string[];
+  // WhatsApp {{1}} — backdrop / purpose (supports workflow variables)
+  contextTemplate: string;
+  // WhatsApp {{2}} — extra details / variables (optional; else field labels)
+  detailsTemplate?: string;
+  whatsappOfficialRegistryName?: string;
+  recipients?: {
+    WHATSAPP_OFFICIAL?: string;
+    WHATSAPP_UNIPILE?: string;
+    unipileAccountId?: string;
+  };
+};
+
 export type WorkflowFormActionSettings = BaseWorkflowActionSettings & {
   input: FormFieldMetadata[];
+  notifyOnPending?: WorkflowFormNotifyOnPending;
 };

@@ -30,6 +30,8 @@ import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/contr
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { VoiceCallController } from 'src/engine/core-modules/arx-chat/controllers/voice-call.controller';
 import { WhatsappUnipileController } from 'src/engine/core-modules/arx-chat/controllers/whatsapp-unipile.controller';
+import { WorkflowApprovalController } from 'src/engine/core-modules/arx-chat/controllers/workflow-approval.controller';
+import { WorkflowFormWhatsappController } from 'src/engine/core-modules/arx-chat/controllers/workflow-form-whatsapp.controller';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { ExtSockWhatsappController } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.controller';
 import { WhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp.job';
@@ -40,6 +42,7 @@ import { UnipileAccountPoolService } from 'src/engine/core-modules/arx-chat/serv
 import { UnipileWebhookProcessor } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.processor.job';
 import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services/unipile-webhook.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
+import { WorkflowApprovalModule } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-approval.module';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
@@ -153,6 +156,7 @@ const conditionalImports = isWorker
     JwtModule,
     UnipilePoolModule,
     GtmCommandModule,
+    WorkflowApprovalModule,
     forwardRef(() => OrgChartModule),
     TypeORMModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
@@ -178,6 +182,8 @@ const conditionalImports = isWorker
     CandidateEngagementController,
     UnipileWebhookController,
     OrgChartOutreachController,
+    WorkflowFormWhatsappController,
+    WorkflowApprovalController,
   ],
   providers: [
     CalendarEmailService,
