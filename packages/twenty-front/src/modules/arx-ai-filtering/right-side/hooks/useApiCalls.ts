@@ -1,12 +1,12 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { buildSelectedMetadataFieldsForPersist } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { TableState, tableStateAtom } from '@/candidate-table/states/states';
+import { type TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
 import { useState } from 'react';
-import { OtherFieldKey, TokenAnalysis } from '../types';
+import { type OtherFieldKey, type TokenAnalysis } from '../types';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 

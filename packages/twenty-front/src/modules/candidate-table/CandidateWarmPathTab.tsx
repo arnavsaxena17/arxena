@@ -15,76 +15,76 @@ const StyledTabRoot = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
-  padding: ${themeCssVariables.spacing[2]};
-  overflow-y: auto;
   height: 100%;
+  overflow-y: auto;
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSummaryCard = styled.div`
+  background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  background: ${themeCssVariables.background.secondary};
-  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSummaryTitle = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledSummaryMeta = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.4;
 `;
 
 const StyledHonesty = styled.p`
-  margin: 0;
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  margin: 0;
 `;
 
 const StyledSectionTitle = styled.h3`
-  margin: ${themeCssVariables.spacing[1]} 0 0;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.04em;
+  margin: ${themeCssVariables.spacing[1]} 0 0;
   text-transform: uppercase;
-  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledPathCard = styled.div`
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  background: ${themeCssVariables.background.primary};
-  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledPathSummary = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledStepper = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: ${themeCssVariables.spacing[0.5]};
   font-size: ${themeCssVariables.font.size.xs};
-  color: ${themeCssVariables.font.color.secondary};
+  gap: ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledStep = styled.span`
-  display: inline-flex;
   align-items: center;
+  display: inline-flex;
   gap: ${themeCssVariables.spacing[0.5]};
 `;
 
@@ -107,33 +107,33 @@ const StyledChipRow = styled.div`
 `;
 
 const StyledChip = styled.div`
+  background: ${themeCssVariables.background.tertiary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.pill};
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]}`};
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.secondary};
-  background: ${themeCssVariables.background.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]}`};
 `;
 
 const StyledEmpty = styled.div`
-  padding: ${themeCssVariables.spacing[3]};
-  text-align: center;
   color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[3]};
+  text-align: center;
 `;
 
 const StyledError = styled.div`
-  padding: ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.md};
   background: ${themeCssVariables.background.danger};
+  border-radius: ${themeCssVariables.border.radius.md};
   color: ${themeCssVariables.font.color.danger};
   font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledActions = styled.div`
   display: flex;
-  gap: ${themeCssVariables.spacing[1]};
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 type CandidateWarmPathTabProps = {

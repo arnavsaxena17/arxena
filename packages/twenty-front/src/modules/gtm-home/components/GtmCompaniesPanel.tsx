@@ -19,19 +19,19 @@ const StyledPanel = styled.div`
 const StyledEmpty = styled.div`
   color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.sm};
-  padding: ${themeCssVariables.spacing[4]};
   line-height: 1.5;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledActions = styled.div`
   display: flex;
-  gap: ${themeCssVariables.spacing[2]};
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHint = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 type GtmCompaniesPanelProps = {

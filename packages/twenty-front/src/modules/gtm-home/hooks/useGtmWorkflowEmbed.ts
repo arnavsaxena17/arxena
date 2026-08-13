@@ -47,8 +47,8 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const workflowIdFromQuery = searchParams.get('workflowId');
   const workflowRunIdFromQuery = searchParams.get('workflowRunId');
-  const commandContext = useAtomStateValue(gtmCommandContextState);
-  const setCommandContext = useSetAtomState(gtmCommandContextState);
+  const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
+  const setGtmCommandContext = useSetAtomState(gtmCommandContextState);
   const { updateOneRecord } = useUpdateOneRecord();
   const { createOneRecord: createWorkflow } = useCreateOneRecord({
     objectNameSingular: CoreObjectNameSingular.Workflow,
@@ -187,7 +187,7 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
 
   const bindOutreachWorkflowToProject = useCallback(
     async (workflowId: string) => {
-      setCommandContext((previous) => ({
+      setGtmCommandContext((previous) => ({
         ...previous,
         outreachWorkflowId: workflowId,
       }));
@@ -208,7 +208,7 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
         },
       });
     },
-    [projectId, projects, setCommandContext, updateOneRecord],
+    [projectId, projects, setGtmCommandContext, updateOneRecord],
   );
 
   const selectOutreachWorkflow = useCallback(

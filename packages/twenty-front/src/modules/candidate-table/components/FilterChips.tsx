@@ -4,34 +4,34 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { memo, useCallback } from 'react';
 
 const StyledFilterChipsContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1]};
-  align-items: center;
   margin-bottom: ${themeCssVariables.spacing[2]};
   padding: ${themeCssVariables.spacing[1]} 0;
 `;
 
 const StyledFilterChip = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   background-color: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
   max-width: 320px;
   min-width: 0;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  transition: all 0.2s ease-in-out;
 
   span {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    min-width: 0;
   }
 
   &:hover {
@@ -41,35 +41,35 @@ const StyledFilterChip = styled.div`
 `;
 
 const StyledClearButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 0;
-  color: ${themeCssVariables.font.color.tertiary};
   border-radius: 50%;
-  width: 16px;
+  color: ${themeCssVariables.font.color.tertiary};
+  cursor: pointer;
+  display: flex;
   height: 16px;
+  justify-content: center;
+  padding: 0;
+  width: 16px;
   
   &:hover {
-    color: ${themeCssVariables.font.color.secondary};
     background-color: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 `;
 
 const StyledClearAllButton = styled.button`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   background-color: ${themeCssVariables.color.red};
-  color: ${themeCssVariables.font.color.inverted};
   border: none;
   border-radius: ${themeCssVariables.border.radius.sm};
-  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.inverted};
   cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   transition: all 0.2s ease-in-out;
 
   &:hover {

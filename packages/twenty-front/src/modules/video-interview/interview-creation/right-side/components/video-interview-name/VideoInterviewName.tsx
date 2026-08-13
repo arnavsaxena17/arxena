@@ -16,28 +16,28 @@ const StyledInput = styled.input`
   align-items: flex-start;
   &::placeholder {
     color: ${themeCssVariables.font.color.tertiary};
+    font-family: ${themeCssVariables.font.family};
     font-size: ${themeCssVariables.font.size.lg};
     font-weight: ${themeCssVariables.font.weight.medium};
-    font-family: ${themeCssVariables.font.family};
   }
   &:focus {
     outline: none;
   }
+  border: none;
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-grow: 1;
-  border: none;
-  height: auto;
-  color: ${themeCssVariables.font.color.secondary};
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
+  height: auto;
 `;
 
 const StyledButtonsContainer = styled.div`
   display: flex;
   flex-direction: row;
-  width: min-content;
   gap: 8px;
+  width: min-content;
 `;
 
 export const VideoInterviewName = ({

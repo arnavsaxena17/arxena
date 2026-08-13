@@ -2,27 +2,27 @@ import { styled } from '@linaria/react';
 import React, { useEffect, useRef } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { LinkedInSearchCategory, LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
+import { type LinkedInSearchCategory, type LinkedInSearchType } from '../../candidate-search/types/candidate-search.types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
-import { FormComponentProps } from '../types/FormComponentProps';
+import { type FormComponentProps } from '../types/FormComponentProps';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { ArxJDUploadStep } from './ArxJDUploadStep';
 // import { ChatFlowSection } from './ChatFlowSection';
-import { AssistantThread } from '@/assistant/types/assistant.types';
+import { type AssistantThread } from '@/assistant/types/assistant.types';
 import { ChatQuestionsSection } from './ChatQuestionsSection';
-import { ProjectDetailsForm, RecruiterDetails } from './ProjectDetailsForm';
+import { ProjectDetailsForm, type RecruiterDetails } from './ProjectDetailsForm';
 import { MeetingSchedulingSection } from './MeetingSchedulingSection';
 import { VideoQuestionsSection } from './VideoQuestionsSection';
 
 const StyledStepContent = styled.div`
   display: flex;
-  flex-direction: column;
   flex: 1;
-  width: 100%;
-  overflow-y: auto;
+  flex-direction: column;
   max-height: 100%;
+  overflow-y: auto;
+  width: 100%;
 `;
 
 const StyledContentWrapper = styled.div`

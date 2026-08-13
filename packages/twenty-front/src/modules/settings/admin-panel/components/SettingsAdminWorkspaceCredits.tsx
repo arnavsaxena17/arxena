@@ -93,8 +93,8 @@ const StyledAmountInputWrap = styled.div`
 
 const StyledSelect = styled.select`
   background: ${themeCssVariables.background.primary};
-  border-radius: ${themeCssVariables.border.radius.sm};
   border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   flex-shrink: 0;
   font-size: ${themeCssVariables.font.size.sm};
@@ -113,8 +113,8 @@ const StyledShortWorkspaceId = styled.span`
 `;
 
 const StyledCreatedAt = styled.span`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   white-space: nowrap;
 `;
 
@@ -126,8 +126,8 @@ const StyledMobileCardList = styled.div`
 `;
 
 const StyledMobileCard = styled.div`
-  border-radius: ${themeCssVariables.border.radius.md};
   border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};

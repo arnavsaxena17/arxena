@@ -31,19 +31,19 @@ export const ArxJDUploadModal = ({
   const [isArxUploadJDModalOpen, setIsArxUploadJDModalOpen] = useAtomState(
     isArxUploadJDModalOpenState,
   );
-  const [modalMode, setModalMode] = useAtomState(arxUploadJDModalModeState);
+  const [arxUploadJDModalMode, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
   const setParsedJDInternalState = useSetParsedJDInternalState();
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const currentProjectId = useAtomStateValue(projectIdAtom);
   const [tokenPair] = useAtomState(tokenPairState);
   const { findManyAttachments } = useFindManyAttachments();
-  const isEditMode = modalMode === 'edit';
+  const isEditMode = arxUploadJDModalMode === 'edit';
   const projectIdToFetch =
     objectNameSingular === 'project' ? objectRecordId : currentProjectId;
 
   // Debug logging
-  console.log('ArxJDUploadModal - modalMode:', modalMode, 'isEditMode:', isEditMode, 'projectIdToFetch:', projectIdToFetch);
+  console.log('ArxJDUploadModal - arxUploadJDModalMode:', arxUploadJDModalMode, 'isEditMode:', isEditMode, 'projectIdToFetch:', projectIdToFetch);
 
   const {
     parsedJD,
@@ -58,7 +58,7 @@ export const ArxJDUploadModal = ({
     updateRecruiterDetails,
     updateAssistantThreadRecord,
     apiKeys,
-  } = useArxJDUpload(objectNameSingular, modalMode);
+  } = useArxJDUpload(objectNameSingular, arxUploadJDModalMode);
 
   const { reset: resetFormStepper } = useArxJDFormStepper(0);
   const { parseJobDescriptionFromFile } = useProjectDescriptionParser();
@@ -297,7 +297,7 @@ export const ArxJDUploadModal = ({
   const closeModal = () => {
     console.log('closeModal');
     setIsArxUploadJDModalOpen(false);
-    setModalMode('create'); // Reset to default mode
+    setArxUploadJDModalMode('create'); // Reset to default mode
     setParsedJDInternalState(null);
     setParsedJD(null);
     resetUploadState();

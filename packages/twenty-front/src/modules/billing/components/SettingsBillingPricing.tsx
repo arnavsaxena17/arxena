@@ -25,13 +25,13 @@ import {
   PRICING_TALENT_MAP_UNIT,
   PRICING_TALENT_MAPS_UNIT,
   PRICING_VOLUME_LABEL,
-  PricingPlanId,
-  PricingSegmentTone,
+  type PricingPlanId,
+  type PricingSegmentTone,
   REVEAL_CREDIT_COST_EMAIL,
   REVEAL_CREDIT_COST_PHONE,
-  CreditPack as SharedCreditPack,
+  type CreditPack as SharedCreditPack,
   SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
-  SupportedPricingCurrency,
+  type SupportedPricingCurrency,
 } from 'twenty-shared';
 
 type CreditPack = {

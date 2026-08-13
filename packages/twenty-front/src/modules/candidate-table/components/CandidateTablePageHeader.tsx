@@ -1,12 +1,12 @@
 import { IconDownload } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
-import { IconComponent } from 'twenty-ui/icon';
+import { type IconComponent } from 'twenty-ui/icon';
 import { IconAlertCircle, IconHierarchy2 } from 'twenty-ui/icon';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useLingui } from '@lingui/react/macro';
 import { IconArrowMerge } from 'twenty-ui/icon';
-import { ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
@@ -18,16 +18,16 @@ import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResour
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 
 const StyledCompanySearchWrapper = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin-inline: auto;
-  width: min(420px, 100%);
   flex: 0 1 420px;
-  min-width: 350px;
+  left: 0;
+  margin-inline: auto;
   max-width: 420px;
-  z-index: 1;
+  min-width: 350px;
   pointer-events: none;
+  position: absolute;
+  right: 0;
+  width: min(420px, 100%);
+  z-index: 1;
 
   & > * {
     pointer-events: auto;
@@ -46,8 +46,8 @@ const StyledCompanySearchWrapper = styled.div`
 `;
 
 const StyledOrgChartSearchRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
 `;
 
@@ -61,31 +61,31 @@ const StyledPageHeaderShell = styled.div`
 
 export const StyledPageHeader = styled(PageHeader)`
   flex-shrink: 0;
-  padding: 12px 24px;
   overflow: visible;
+  padding: 12px 24px;
   position: relative;
 
   /* Single horizontal row: title (left) | search (center) | buttons (right) */
   & > div {
+    align-items: center;
     display: flex;
     flex-wrap: nowrap;
-    align-items: center;
     position: relative;
   }
   & > div > div:first-of-type {
-    width: auto;
     flex: 0 1 auto;
     min-width: 0;
+    width: auto;
   }
   & > div > div:last-of-type {
-    flex: 1 1 auto;
-    min-width: 0;
+    align-items: center;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: center;
-    justify-content: flex-end;
     gap: ${themeCssVariables.spacing[2]};
+    justify-content: flex-end;
+    min-width: 0;
     position: relative;
   }
 
@@ -95,17 +95,17 @@ export const StyledPageHeader = styled(PageHeader)`
 `;
 
 const StyledCreditsAlert = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background-color: ${themeCssVariables.color.red};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.inverted};
+  cursor: pointer;
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
   margin-left: ${themeCssVariables.spacing[2]};
-  cursor: pointer;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   transition: all 0.2s ease-in-out;
 
   &:hover {
@@ -113,9 +113,9 @@ const StyledCreditsAlert = styled.div`
   }
 
   svg {
-    width: 16px;
-    height: 16px;
     color: ${themeCssVariables.font.color.inverted};
+    height: 16px;
+    width: 16px;
   }
 `;
 
@@ -198,7 +198,7 @@ export const CandidateTablePageHeader = ({
 }: CandidateTablePageHeaderProps) => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const { t } = useLingui();
-  const orgChartLinkedinSource = useAtomStateValue(
+  const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
 

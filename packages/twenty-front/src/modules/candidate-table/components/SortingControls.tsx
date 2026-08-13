@@ -1,27 +1,27 @@
-import { SortConfig } from '@/candidate-table/states/states';
+import { type SortConfig } from '@/candidate-table/states/states';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IconArrowDown, IconArrowUp, IconPlus, IconX } from 'twenty-ui/icon';
-import Handsontable from 'handsontable';
+import type Handsontable from 'handsontable';
 import { useState } from 'react';
 
 const StyledSortingContainer = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[1]};
-  background-color: ${themeCssVariables.background.secondary};
   padding: ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
 `;
 
 const StyledSortingHeader = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-weight: ${themeCssVariables.font.weight.medium};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  justify-content: space-between;
 `;
 
 const StyledSortingList = styled.div`
@@ -31,44 +31,44 @@ const StyledSortingList = styled.div`
 `;
 
 const StyledSortingItem = styled.div`
-  display: flex;
   align-items: center;
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.xs};
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
   padding: ${themeCssVariables.spacing[1]};
-  background-color: ${themeCssVariables.background.primary};
-  border-radius: ${themeCssVariables.border.radius.xs};
-  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledColumnSelect = styled.select`
-  flex: 1;
-  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: ${themeCssVariables.background.primary};
   color: ${themeCssVariables.font.color.primary};
+  flex: 1;
   font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledOrderSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: ${themeCssVariables.background.primary};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSortButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: ${themeCssVariables.spacing[1]};
+  background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: ${themeCssVariables.background.primary};
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[1]};
   transition: all 0.2s ease;
 
   &:hover {
@@ -86,15 +86,15 @@ const StyledSortButton = styled.button`
 `;
 
 const StyledRemoveButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: ${themeCssVariables.spacing[1]};
+  background-color: transparent;
   border: none;
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: transparent;
   color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[1]};
   transition: all 0.2s ease;
 
   &:hover {
@@ -104,44 +104,44 @@ const StyledRemoveButton = styled.button`
 `;
 
 const StyledAddButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: transparent;
   border: 1px dashed ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: transparent;
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  transition: all 0.2s ease;
 
   &:hover {
+    background-color: ${themeCssVariables.background.tertiary};
     border-color: ${themeCssVariables.color.blue};
     color: ${themeCssVariables.color.blue};
-    background-color: ${themeCssVariables.background.tertiary};
   }
 `;
 
 const StyledClearAllButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.xs};
-  background-color: ${themeCssVariables.background.primary};
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: ${themeCssVariables.background.secondary};
-    color: ${themeCssVariables.color.red};
     border-color: ${themeCssVariables.color.red};
+    color: ${themeCssVariables.color.red};
   }
 `;
 

@@ -7,22 +7,22 @@ import { useGtmCommandDashboardPath } from '@/gtm-home/hooks/useGtmCommandDashbo
 import { type GtmProjectOption } from '@/gtm-home/types/gtm-home.types';
 
 const StyledActions = styled.div`
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
-  flex-wrap: wrap;
   align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSelect = styled.select`
   appearance: none;
-  min-width: 180px;
-  max-width: 280px;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
+  max-width: 280px;
+  min-width: 180px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 type GtmRunProgressHeaderProps = {

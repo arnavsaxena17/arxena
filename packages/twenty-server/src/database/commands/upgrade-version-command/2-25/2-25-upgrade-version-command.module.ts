@@ -12,10 +12,14 @@ import { SyncGtmPeopleSkillContentCommand } from 'src/database/commands/upgrade-
 import { SyncGtmOutreachWorkflowSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000015-sync-gtm-outreach-workflow-skill-content.command';
 import { SyncGtmWorkspaceProfileSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000016-sync-gtm-workspace-profile-skill-content.command';
 import { SyncGtmIcpScopedRegenerateSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000017-sync-gtm-icp-scoped-regenerate-skill-content.command';
+import { RenameGtmWorkspaceProfileToWorkspaceProfileCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000018-rename-gtm-workspace-profile-to-workspace-profile.command';
+import { SyncWebsiteTrackerStandardObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000021-sync-website-tracker-standard-objects.command';
+import { SyncWorkflowBuildingFormHitlSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000022-sync-workflow-building-form-hitl-skill-content.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
+import { ArxenaStandardMetadataModule } from 'src/engine/workspace-manager/arxena-standard-metadata/arxena-standard-metadata.module';
 import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration.module';
 import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/workspace-migration-runner.module';
 
@@ -28,6 +32,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     WorkspaceCacheModule,
     WorkspaceMigrationModule,
     WorkspaceMigrationRunnerModule,
+    ArxenaStandardMetadataModule,
   ],
   providers: [
     BackfillMessageListMembersJunctionTargetCommand,
@@ -40,6 +45,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncGtmOutreachWorkflowSkillContentCommand,
     SyncGtmWorkspaceProfileSkillContentCommand,
     SyncGtmIcpScopedRegenerateSkillContentCommand,
+    RenameGtmWorkspaceProfileToWorkspaceProfileCommand,
+    SyncWebsiteTrackerStandardObjectsCommand,
+    SyncWorkflowBuildingFormHitlSkillContentCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

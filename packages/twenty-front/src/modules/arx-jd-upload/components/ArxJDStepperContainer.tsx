@@ -3,16 +3,16 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Loader } from 'twenty-ui';
 
-import { AssistantThread } from '@/assistant/types/assistant.types';
+import { type AssistantThread } from '@/assistant/types/assistant.types';
 import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
 import { useArxJDFormStepper } from '../hooks/useArxJDFormStepper';
-import { FormComponentProps } from '../types/FormComponentProps';
+import { type FormComponentProps } from '../types/FormComponentProps';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
 import { ArxJDFormStepper } from './ArxJDFormStepper';
 import { ArxJDModalLayout } from './ArxJDModalLayout';
 import { ArxJDStepBar } from './ArxJDStepBar';
 import { ArxJDStepNavigation } from './ArxJDStepNavigation';
-import { RecruiterDetails } from './ProjectDetailsForm';
+import { type RecruiterDetails } from './ProjectDetailsForm';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -33,8 +33,8 @@ const StyledHeader = styled.div`
 
 const StyledContent = styled.div`
   display: flex;
-  flex-direction: column;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   width: 100%;

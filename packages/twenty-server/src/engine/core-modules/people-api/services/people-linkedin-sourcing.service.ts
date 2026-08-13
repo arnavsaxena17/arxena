@@ -1,6 +1,13 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
+import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
+import {
+  extractLinkedinCompanyIdFromUnipileProfile,
+  UnipileCompanyService,
+} from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
+import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
+import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import {
   OrgChartSuperImposeService,
   type SuperImposeFetchContext,
@@ -9,7 +16,13 @@ import type { SuperImposeInputs } from 'src/engine/core-modules/org-chart/types/
 import { normalizeLinkedinCompanyUrl } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import { extractKeywordsClauseFromGeneratedSearchParameters } from 'src/engine/core-modules/org-chart/utils/super-impose-keyword-merge.util';
 
-export type PeopleLinkedInCandidateSource = 'harvest' | 'unipile';
+import { resolveSalesNavFilters } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+import {
+  PeopleSalesNavAccountResolver,
+  type PeopleSalesNavAccountSource,
+} from './people-sales-nav-account.resolver';
+
+export type PeopleLinkedInCandidateSource = PeopleSalesNavAccountSource;
 
 export type PeopleLinkedInSourcingInput = {
   apiToken: string;
@@ -21,6 +34,8 @@ export type PeopleLinkedInSourcingInput = {
   stdGrade?: string;
   country?: string;
   candidateSource?: PeopleLinkedInCandidateSource;
+  accountId?: string;
+  linkedInAccountId?: string;
   limit?: number;
   linkedinSearchKeywords?: string;
 };
@@ -28,6 +43,10 @@ export type PeopleLinkedInSourcingInput = {
 export type PeopleLinkedInSourcingResult = {
   candidateSource: PeopleLinkedInCandidateSource;
   keywords: string | null;
+  appliedFilters: {
+    functionIds: string[];
+    seniorities: LinkedInSeniorityType[];
+  };
   company: {
     name: string | null;
     slug: string | null;
@@ -43,17 +62,19 @@ export class PeopleLinkedInSourcingService {
   constructor(
     private readonly orgChartSuperImposeService: OrgChartSuperImposeService,
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
+    private readonly peopleSalesNavAccountResolver: PeopleSalesNavAccountResolver,
+    private readonly linkedInSearchService: LinkedInSearchService,
+    private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
+    private readonly unipileCompanyService: UnipileCompanyService,
   ) {}
 
   isUnipileConfigured(): boolean {
-    return (
-      !!process.env.UNIPILE_API_URL?.trim() &&
-      !!process.env.UNIPILE_ACCESS_TOKEN?.trim()
-    );
+    return this.peopleSalesNavAccountResolver.isUnipileConfigured();
   }
 
-  async search(input: PeopleLinkedInSourcingInput): Promise<PeopleLinkedInSourcingResult> {
-    const candidateSource = input.candidateSource ?? 'unipile';
+  async search(
+    input: PeopleLinkedInSourcingInput,
+  ): Promise<PeopleLinkedInSourcingResult> {
     const companyName = input.companyName?.trim() || '';
     const website = input.website?.trim();
     const companyId = input.companyId?.trim();
@@ -64,6 +85,18 @@ export class PeopleLinkedInSourcingService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const account = await this.peopleSalesNavAccountResolver.resolve({
+      candidateSource: input.candidateSource,
+      accountId: input.accountId,
+      linkedInAccountId: input.linkedInAccountId,
+    });
+
+    const salesNavFilters = resolveSalesNavFilters({
+      functionRoot: input.stdFunctionRoot,
+      stdFunction: input.stdFunction,
+      stdGrade: input.stdGrade,
+    });
 
     const inputs = this.buildSuperImposeInputs({
       website,
@@ -76,7 +109,7 @@ export class PeopleLinkedInSourcingService {
       primaryCompanyId: companyId,
       primaryCompanyName: companyName || undefined,
       primaryLinkedinCompanyUrl: companyId
-        ? normalizeLinkedinCompanyUrl(companyId) ?? undefined
+        ? (normalizeLinkedinCompanyUrl(companyId) ?? undefined)
         : undefined,
       apiToken: input.apiToken,
     });
@@ -103,41 +136,190 @@ export class PeopleLinkedInSourcingService {
       linkedinSearchKeywords: input.linkedinSearchKeywords,
     });
 
-    const context: SuperImposeFetchContext = {
-      apiToken: input.apiToken,
-      primaryCompanyName,
-      companyId: primaryCompany?.slug ?? companyId,
-      country: input.country,
-      functionRoot: keywordPlan.functionRoot,
-      leadershipOnly: keywordPlan.leadershipOnly,
-      linkedinSearchKeywords: keywordPlan.linkedinSearchKeywords,
-      candidateSource,
-      searchType: 'sales_navigator',
-      maxProfiles: input.limit ?? 20,
-    };
+    const functionRoot =
+      keywordPlan.functionRoot ||
+      input.stdFunctionRoot?.trim() ||
+      input.stdFunction?.trim();
 
-    const plan =
-      await this.orgChartSuperImposeService.buildQueryPlanFromContext(
-        context,
-        resolved.resolvedCompanies,
-        resolved.salesNavigatorSearchUrls,
+    // Harvest + keyword Unipile path via super-impose (Sales Nav)
+    if (account.candidateSource === 'harvest') {
+      const context: SuperImposeFetchContext = {
+        apiToken: input.apiToken,
+        primaryCompanyName,
+        companyId: primaryCompany?.slug ?? companyId,
+        country: input.country,
+        functionRoot,
+        leadershipOnly: keywordPlan.leadershipOnly,
+        linkedinSearchKeywords: keywordPlan.linkedinSearchKeywords,
+        candidateSource: 'harvest',
+        searchType: 'sales_navigator',
+        maxProfiles: input.limit ?? 20,
+        salesNavFunctionIds: salesNavFilters.functionIds,
+        salesNavSeniorities: salesNavFilters.seniorities,
+      };
+
+      const plan =
+        await this.orgChartSuperImposeService.buildQueryPlanFromContext(
+          context,
+          resolved.resolvedCompanies,
+          resolved.salesNavigatorSearchUrls,
+        );
+
+      // Prefer mapped functionIds on harvest batches when present
+      if (salesNavFilters.functionIds.length > 0) {
+        const functionIdsJoined = salesNavFilters.functionIds.join(',');
+        for (const batch of plan.harvestBatches) {
+          if (!batch.salesNavUrl) {
+            batch.functionIds = functionIdsJoined;
+          }
+        }
+      }
+
+      const items =
+        await this.orgChartSuperImposeService.fetchCandidatesForPlan(
+          plan,
+          context,
+        );
+
+      return {
+        candidateSource: 'harvest',
+        keywords:
+          plan.mergedSearchClause ??
+          keywordPlan.linkedinSearchKeywords ??
+          null,
+        appliedFilters: salesNavFilters,
+        company: {
+          name: primaryCompanyName,
+          slug: primaryCompany?.slug ?? null,
+          linkedinUrl: primaryCompany?.linkedinUrl ?? null,
+        },
+        items: items.map((item) =>
+          this.normalizePersonItem(item, 'harvest'),
+        ),
+      };
+    }
+
+    // Unipile / pool: facet-mapped Sales Nav people search
+    const accountId = account.linkedinUnipileAccountId;
+    if (!accountId) {
+      throw new HttpException(
+        'Resolved Unipile Sales Navigator account id is missing',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
 
-    const items = await this.orgChartSuperImposeService.fetchCandidatesForPlan(
-      plan,
-      context,
-    );
+    const items = await this.searchUnipileSalesNavWithFacets({
+      apiToken: input.apiToken,
+      accountId,
+      primaryCompanyName,
+      primaryCompanyLinkedinUrl: primaryCompany?.linkedinUrl,
+      country: input.country,
+      keywords: keywordPlan.linkedinSearchKeywords,
+      functionIds: salesNavFilters.functionIds,
+      seniorities: salesNavFilters.seniorities,
+      limit: input.limit ?? 20,
+    });
 
     return {
-      candidateSource,
-      keywords: plan.mergedSearchClause ?? keywordPlan.linkedinSearchKeywords ?? null,
+      candidateSource: account.candidateSource,
+      keywords: keywordPlan.linkedinSearchKeywords ?? null,
+      appliedFilters: salesNavFilters,
       company: {
         name: primaryCompanyName,
         slug: primaryCompany?.slug ?? null,
         linkedinUrl: primaryCompany?.linkedinUrl ?? null,
       },
-      items: items.map((item) => this.normalizePersonItem(item, candidateSource)),
+      items: items.map((item) =>
+        this.normalizePersonItem(item, account.candidateSource),
+      ),
     };
+  }
+
+  private async searchUnipileSalesNavWithFacets(input: {
+    apiToken: string;
+    accountId: string;
+    primaryCompanyName: string;
+    primaryCompanyLinkedinUrl?: string;
+    country?: string;
+    keywords?: string;
+    functionIds: string[];
+    seniorities: LinkedInSeniorityType[];
+    limit: number;
+  }): Promise<Array<Record<string, unknown>>> {
+    return this.linkedinUnipileSessionService.withLinkedinSession(
+      input.apiToken,
+      input.accountId,
+      async (session) => {
+        let companyParameterId: string | undefined;
+
+        if (input.primaryCompanyLinkedinUrl?.trim()) {
+          const slug =
+            this.unipileCompanyService.extractPublicIdentifier(
+              input.primaryCompanyLinkedinUrl,
+            ) ?? undefined;
+          if (slug) {
+            try {
+              const profile =
+                await this.unipileCompanyService.getCompanyProfile(
+                  slug,
+                  session.accountId,
+                );
+              companyParameterId =
+                extractLinkedinCompanyIdFromUnipileProfile(profile) ??
+                undefined;
+            } catch (error) {
+              this.logger.warn(
+                `People API Unipile company profile lookup failed: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              );
+            }
+          }
+        }
+
+        const keywordParts: string[] = [];
+        if (input.keywords?.trim()) {
+          keywordParts.push(input.keywords.trim());
+        }
+        if (!companyParameterId && input.primaryCompanyName.trim()) {
+          keywordParts.push(`"${input.primaryCompanyName.trim()}"`);
+        }
+        if (
+          input.country?.trim() &&
+          input.country.trim().toLowerCase() !== 'global'
+        ) {
+          keywordParts.push(input.country.trim());
+        }
+
+        const request = {
+          ...(keywordParts.length > 0
+            ? { keywords: keywordParts.join(' AND ') }
+            : {}),
+          ...(companyParameterId
+            ? { company: { include: [companyParameterId] } }
+            : {}),
+          ...(input.functionIds.length > 0
+            ? { function: { include: input.functionIds } }
+            : {}),
+          ...(input.seniorities.length > 0
+            ? { seniority: { include: input.seniorities } }
+            : {}),
+        };
+
+        this.logger.log(
+          `People API Sales Nav search account=${session.accountId} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')}`,
+        );
+
+        const response =
+          await this.linkedInSearchService.searchPeopleSalesNavigator(
+            request,
+            session.accountId,
+            { limit: input.limit },
+          );
+
+        return (response.items ?? []) as Array<Record<string, unknown>>;
+      },
+    );
   }
 
   private buildSuperImposeInputs(args: {
@@ -180,7 +362,8 @@ export class PeopleLinkedInSourcingService {
       : [];
 
     let functionRoot: string | undefined;
-    let linkedinSearchKeywords = args.linkedinSearchKeywords?.trim() || undefined;
+    let linkedinSearchKeywords =
+      args.linkedinSearchKeywords?.trim() || undefined;
     let leadershipOnly = false;
 
     if (stdFunctionRoot) {

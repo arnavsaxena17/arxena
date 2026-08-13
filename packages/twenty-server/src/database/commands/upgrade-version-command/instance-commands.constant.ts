@@ -136,6 +136,7 @@ import { EnsureRazorpayBaseProductMetadataFastInstanceCommand } from './2-25/2-2
 import { AddWorkspaceCreditFulfillmentModeFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000009-add-workspace-credit-fulfillment-mode';
 import { AddWorkspaceApiCreditsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000010-add-workspace-api-credits';
 import { CreateUnipileAccountsTableFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000011-create-unipile-accounts-table';
+import { AddWebsiteTrackingColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000020-add-website-tracking-columns';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -274,4 +275,5 @@ export const INSTANCE_COMMANDS = [
   AddWorkspaceCreditFulfillmentModeFastInstanceCommand,
   AddWorkspaceApiCreditsFastInstanceCommand,
   CreateUnipileAccountsTableFastInstanceCommand,
+  AddWebsiteTrackingColumnsFastInstanceCommand,
 ];

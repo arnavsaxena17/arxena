@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 

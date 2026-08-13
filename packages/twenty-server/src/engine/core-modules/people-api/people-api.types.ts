@@ -24,6 +24,12 @@ export type PeopleSearchQueryMeta = {
   stdFunction?: string;
   stdFunctionRoot?: string;
   stdGrade?: string;
+  appliedFilters?: {
+    functionIds?: string[];
+    seniorities?: string[];
+    person_department_or_subdepartments?: string[];
+    person_seniorities?: string[];
+  };
 };
 
 export type PeopleSearchResolvedCandidate = PeopleSearchResultItem & {
@@ -60,13 +66,14 @@ export type PeopleSearchByTitleResponse = PeopleSearchResponse & {
 
 export type PeopleSearchByTaxonomyResponse = {
   status: 'ok';
-  dataSource: 'harvest' | 'unipile';
+  dataSource: 'harvest' | 'unipile' | 'pool';
   query: {
     keywords: string | null;
     company: PeopleSearchLinkedInCompany;
     stdFunction?: string;
     stdFunctionRoot?: string;
     stdGrade?: string;
+    appliedFilters?: PeopleSearchQueryMeta['appliedFilters'];
   };
   total: number;
   totalBeforeFilter: number;

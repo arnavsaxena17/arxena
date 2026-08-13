@@ -79,7 +79,7 @@ const AppErrorBoundaryWithLocationReset = ({
   children,
   FallbackComponent,
   resetOnLocationChange = true,
-}: AppErrorBoundaryProps) => {
+}: AppErrorBoundaryWithLocationResetProps) => {
   const location = useLocation();
 
   return (

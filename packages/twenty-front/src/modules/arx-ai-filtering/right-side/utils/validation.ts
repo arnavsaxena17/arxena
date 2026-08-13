@@ -1,4 +1,4 @@
-import { EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 
 export const validateFieldName = (
   name: string, 

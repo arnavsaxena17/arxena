@@ -11,8 +11,8 @@ const Card = styled.div`
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.light};
-  max-width: 600px;
   margin: 2rem auto;
+  max-width: 600px;
   padding: 1.5rem;
 `;
 
@@ -29,8 +29,8 @@ const CardTitle = styled.h2`
 
 const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
   border-radius: 4px;
-  padding: 1rem;
   margin-bottom: 1.5rem;
+  padding: 1rem;
 
   ${props => {
     switch (props.variant) {
@@ -57,52 +57,52 @@ const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
 `;
 
 const AlertDescription = styled.p`
-  margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
+  margin: 0;
 `;
 
 const QrCodeContainer = styled.div`
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem;
   background: ${themeCssVariables.background.tertiary};
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin: 1.5rem 0;
+  padding: 2rem;
 `;
 
 const QrCodeWrapper = styled.div`
   background: white;
-  padding: 1rem;
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.light};
+  padding: 1rem;
 `;
 
 const Instructions = styled.div`
-  text-align: center;
   color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.875rem;
   line-height: 1.6;
+  text-align: center;
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  background-color: ${({ variant }) =>
+    variant === 'primary' ? '#25d366' : themeCssVariables.background.tertiary};
+  border: ${({ variant }) =>
+    variant === 'primary'
+      ? 'none'
+      : `1px solid ${themeCssVariables.border.color.medium}`};
   border-radius: 4px;
+  color: ${({ variant }) =>
+    variant === 'primary' ? 'white' : themeCssVariables.font.color.primary};
   cursor: pointer;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
   padding: 0.75rem 1rem;
   transition: all 0.2s ease;
-  background-color: ${({ variant }) =>
-    variant === 'primary' ? '#25d366' : themeCssVariables.background.tertiary};
-  color: ${({ variant }) =>
-    variant === 'primary' ? 'white' : themeCssVariables.font.color.primary};
-  border: ${({ variant }) =>
-    variant === 'primary'
-      ? 'none'
-      : `1px solid ${themeCssVariables.border.color.medium}`};
 
   &:hover {
     background-color: ${({ variant }) =>
@@ -117,20 +117,20 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 
   &:focus {
-    outline: none;
     box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.4);
+    outline: none;
   }
 `;
 
 const LoadingSpinner = styled.div`
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
+  animation: spin 1s linear infinite;
   border: 2px solid #e5e7eb;
   border-radius: 50%;
   border-top-color: #25d366;
-  animation: spin 1s linear infinite;
+  display: inline-block;
+  height: 1rem;
   margin-right: 0.5rem;
+  width: 1rem;
 
   @keyframes spin {
     to {
@@ -149,13 +149,13 @@ const isConnectionFailedErrorMessage = (message: string | null): boolean => {
 };
 
 const StatusIndicator = styled.div<{ status: 'connecting' | 'connected' | 'error' }>`
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
   border-radius: 4px;
+  display: flex;
   font-size: 0.875rem;
   font-weight: 500;
+  gap: 0.5rem;
+  padding: 0.75rem;
 
   ${props => {
     switch (props.status) {

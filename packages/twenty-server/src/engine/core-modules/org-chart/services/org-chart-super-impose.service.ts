@@ -58,6 +58,10 @@ export type SuperImposeFetchContext = {
   linkedinLocationName?: string;
   linkedinCompanyParameterId?: string;
   maxProfiles?: number;
+  /** Optional Sales Nav function facet IDs (People API taxonomy map). */
+  salesNavFunctionIds?: string[];
+  /** Optional Sales Nav seniority enums (People API taxonomy map). */
+  salesNavSeniorities?: string[];
   onProgress?: (message: string) => void | Promise<void>;
 };
 

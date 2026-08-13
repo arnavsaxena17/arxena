@@ -6,10 +6,10 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import {
-  ProjectForParsedJDMerge,
+  type ProjectForParsedJDMerge,
   mergeParsedJDFromSources,
 } from '../utils/mergeParsedJDFromSources';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 import {
   arxUploadJDModalModeState,
   isArxUploadJDModalOpenState,
@@ -20,10 +20,10 @@ export const useParsedJDState = (): [
   ParsedJD | null,
   (value: ParsedJD | null | ((prev: ParsedJD | null) => ParsedJD | null)) => void,
 ] => {
-  const userData = useAtomStateValue(parsedJDInternalState);
-  const setUserData = useSetAtomState(parsedJDInternalState);
-  const modalMode = useAtomStateValue(arxUploadJDModalModeState);
-  const isModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
+  const parsedJDInternal = useAtomStateValue(parsedJDInternalState);
+  const setParsedJDInternal = useSetAtomState(parsedJDInternalState);
+  const arxUploadJDModalMode = useAtomStateValue(arxUploadJDModalModeState);
+  const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState) as ProjectForParsedJDMerge[];
 
@@ -32,11 +32,17 @@ export const useParsedJDState = (): [
       mergeParsedJDFromSources({
         projectId,
         projects,
-        userData,
-        modalMode,
-        isModalOpen,
+        userData: parsedJDInternal,
+        modalMode: arxUploadJDModalMode,
+        isModalOpen: isArxUploadJDModalOpen,
       }),
-    [projectId, projects, userData, modalMode, isModalOpen],
+    [
+      projectId,
+      projects,
+      parsedJDInternal,
+      arxUploadJDModalMode,
+      isArxUploadJDModalOpen,
+    ],
   );
 
   const setParsedJD = (
@@ -46,15 +52,15 @@ export const useParsedJDState = (): [
       const currentMerged = mergeParsedJDFromSources({
         projectId,
         projects,
-        userData,
-        modalMode,
-        isModalOpen,
+        userData: parsedJDInternal,
+        modalMode: arxUploadJDModalMode,
+        isModalOpen: isArxUploadJDModalOpen,
       });
-      setUserData(value(currentMerged));
+      setParsedJDInternal(value(currentMerged));
       return;
     }
 
-    setUserData(value);
+    setParsedJDInternal(value);
   };
 
   return [parsedJD, setParsedJD];

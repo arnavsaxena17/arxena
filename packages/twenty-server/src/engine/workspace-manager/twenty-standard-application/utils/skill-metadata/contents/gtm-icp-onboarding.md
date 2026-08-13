@@ -1,6 +1,6 @@
 # GTM ICP Onboarding Skill
 
-You run **Workflow A (bootstrap)** for GTM Command inside Ask AI: learn the user's go-to-market preferences conversationally, persist the **workspace default** ICP + search blurbs on **GTM Workspace Profile**, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
+You run **Workflow A (bootstrap)** for GTM Command inside Ask AI: learn the user's go-to-market preferences conversationally, persist the **workspace default** ICP + search blurbs on **Workspace Profile**, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
 This is preference collection + ICP approval — not outreach execution (that is Workflow B) and not LinkedIn search (load `linkedin-search` only when searching).
 
@@ -29,10 +29,10 @@ Do **not** load this skill for:
 ```
 learn_tools([
   "ask_questions",
-  "find_many_gtm_workspace_profiles",
-  "find_one_gtm_workspace_profile",
-  "create_one_gtm_workspace_profile",
-  "update_one_gtm_workspace_profile",
+  "find_many_workspace_profiles",
+  "find_one_workspace_profile",
+  "create_one_workspace_profile",
+  "update_one_workspace_profile",
   "find_many_projects",
   "find_one_project",
   "update_one_project",
@@ -46,7 +46,7 @@ learn_tools([
 
 | Concern | Object | Notes |
 | --- | --- | --- |
-| Seller company + **default** ICP + blurbs | **`gtmWorkspaceProfile`** (singleton) | Shared across runs |
+| Seller company + **default** ICP + blurbs | **`workspaceProfile`** (singleton) | Shared across runs |
 | Run override ICP / blurbs (optional) | **Project** (`icpSpec`, `icpSegment`, `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`) | Only when user asks for run-specific values |
 | Send mode, caps, outreach workflow | **Project** | Stay on Project |
 | Per-campaign outreach progress | **Candidate** | Later — enroll after people found |
@@ -77,7 +77,7 @@ From the kickoff / browsing context, capture:
 - `projectId` (canonical run scope — `/gtm-home?projectId=`)
 - Existing Project `gtmRunKey` (usually equals Project.id; may be a legacy slug)
 
-Load the singleton `gtmWorkspaceProfile` (`find_many_gtm_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a run override; otherwise use profile defaults.
+Load the singleton `workspaceProfile` (`find_many_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a run override; otherwise use profile defaults.
 
 Briefly greet the user: you will set workspace ICP defaults (and search blurbs), then they can use Setup → Find companies / Find people.
 
@@ -118,7 +118,7 @@ Ask for Approve / Edit / Reject (unless the user already asked to regenerate and
 On approval:
 
 1. Ensure a GTM Project exists for `projectId` (create if needed; set `gtmRunKey` = Project.id).
-2. **Default path:** `create_one_gtm_workspace_profile` if missing, else `update_one_gtm_workspace_profile` with seller fields (if refined) and only the fields in scope for this turn.
+2. **Default path:** `create_one_workspace_profile` if missing, else `update_one_workspace_profile` with seller fields (if refined) and only the fields in scope for this turn.
    - Full onboarding: `icpSegment`, `icpSpec` (JSON string), `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`.
    - ICP regenerate: `icpSegment`, `icpSpec`, `icpBlurb` only.
    - Company blurb regenerate: `companySearchBlurb` only.
@@ -147,7 +147,7 @@ On approval:
 
 Tell the user:
 
-1. Workspace fields saved on **GTM Workspace Profile** (and Project override only if they asked).
+1. Workspace fields saved on **Workspace Profile** (and Project override only if they asked).
 2. Next on GTM Command Setup: **Find companies** then **Find people** (those buttons SEND Ask AI prompts that upsert Redis tabs).
 3. They can reopen Ask AI anytime to refine ICP, or use the per-section Regenerate buttons (ICP / company blurb / people blurb are independent).
 

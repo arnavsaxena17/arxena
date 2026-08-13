@@ -9,16 +9,16 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export const useProjectRefetch = () => {
   const [projectsRefetchTrigger, setProjectsRefetchTrigger] = useAtomState(projectsRefetchTriggerState);
-  const [, setJobs] = useAtomState(projectsState);
+  const [, setProjects] = useAtomState(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
   
   // Use refs to store latest values to avoid dependency issues
   const tokenPairRef = useRef(tokenPair);
-  const setJobsRef = useRef(setJobs);
+  const setProjectsRef = useRef(setProjects);
   
   // Update refs when values change
   tokenPairRef.current = tokenPair;
-  setJobsRef.current = setJobs;
+  setProjectsRef.current = setProjects;
   
   // Debounce timer ref and refetching flag
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -63,7 +63,7 @@ export const useProjectRefetch = () => {
               return new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime();
             });
           
-          setJobsRef.current(activeJobs);
+          setProjectsRef.current(activeJobs);
           console.log('Projects refetched successfully:', activeJobs);
         }
       } catch (error) {

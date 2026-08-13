@@ -4,10 +4,9 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 import {
-  ApiKey,
+  type ApiKey,
   apiKeysErrorState,
   apiKeysLoadingState,
   apiKeysState,
@@ -19,10 +18,9 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 export const useApiKeysState = () => {
   const [tokenPair] = useAtomState(tokenPairState);
   const [apiKeys, setApiKeys] = useAtomState(apiKeysState);
-  const [originalKeys, setOriginalKeys] = useAtomState(originalApiKeysState);
-  const isLoading = useAtomStateValue(apiKeysLoadingState);
-  const error = useAtomStateValue(apiKeysErrorState);
-  const setError = useSetAtomState(apiKeysErrorState);
+  const [originalApiKeys, setOriginalApiKeys] = useAtomState(originalApiKeysState);
+  const apiKeysLoading = useAtomStateValue(apiKeysLoadingState);
+  const apiKeysError = useAtomStateValue(apiKeysErrorState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
 
   const updateApiKeys = useCallback(
@@ -45,7 +43,7 @@ export const useApiKeysState = () => {
         }
 
         setApiKeys(newKeys);
-        setOriginalKeys(newKeys);
+        setOriginalApiKeys(newKeys);
         enqueueSuccessSnackBar({
           message: 'API keys updated successfully',
         });
@@ -62,7 +60,7 @@ export const useApiKeysState = () => {
     [
       tokenPair?.accessOrWorkspaceAgnosticToken?.token,
       setApiKeys,
-      setOriginalKeys,
+      setOriginalApiKeys,
       enqueueSuccessSnackBar,
       enqueueErrorSnackBar,
     ],
@@ -77,15 +75,15 @@ export const useApiKeysState = () => {
   );
 
   const resetKeys = useCallback(() => {
-    setApiKeys(originalKeys);
-  }, [originalKeys, setApiKeys]);
+    setApiKeys(originalApiKeys);
+  }, [originalApiKeys, setApiKeys]);
 
   return {
     keys: apiKeys,
     setKeys: setApiKeys,
-    originalKeys,
-    isLoading,
-    error,
+    originalKeys: originalApiKeys,
+    isLoading: apiKeysLoading,
+    error: apiKeysError,
     updateApiKeys,
     updateSpecificApiKey,
     resetKeys,

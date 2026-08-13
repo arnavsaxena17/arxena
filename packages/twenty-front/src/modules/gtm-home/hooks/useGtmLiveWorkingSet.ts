@@ -20,7 +20,7 @@ import {
     type GtmProjectOption,
     type GtmProjectSettings,
     type GtmWorkspaceCompany,
-    type GtmWorkspaceProfileRecord,
+    type WorkspaceProfileRecord,
 } from '@/gtm-home/types/gtm-home.types';
 import { resolveEffectiveGtmIcp } from '@/gtm-home/utils/gtm-effective-icp.util';
 import {
@@ -225,8 +225,8 @@ export const useGtmLiveWorkingSet = () => {
     });
 
   const { records: workspaceProfiles, loading: workspaceProfilesLoading } =
-    useFindManyRecords<GtmWorkspaceProfileRecord>({
-      objectNameSingular: 'gtmWorkspaceProfile',
+    useFindManyRecords<WorkspaceProfileRecord>({
+      objectNameSingular: 'workspaceProfile',
       orderBy: [{ createdAt: 'AscNullsLast' }],
       limit: 1,
       recordGqlFields: {

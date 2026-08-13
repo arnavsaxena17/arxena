@@ -188,18 +188,36 @@ export const buildPeopleApiOpenApiDocument = (
             type: 'string',
             description:
               'Sample job title to classify into std_function and std_grade before searching.',
-            example: 'Head of Engineering',
+            example: 'CEO',
           },
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
             default: 'index',
-            example: 'index',
+            example: 'pool',
+            description:
+              'People source. Use pool / unipile / harvest for Sales Navigator facet search; apollo for Apollo department filters; index for ES.',
+          },
+          candidateSource: {
+            type: 'string',
+            enum: ['harvest', 'unipile', 'pool'],
+            description:
+              'Sales Navigator account source when using LinkedIn. Required as harvest, pool, or unipile+accountId.',
+            example: 'pool',
+          },
+          accountId: {
+            type: 'string',
+            description:
+              'Explicit Unipile LinkedIn account id when candidateSource/dataSource is unipile.',
+          },
+          linkedInAccountId: {
+            type: 'string',
+            description: 'Alias for accountId.',
           },
           companyId: { type: 'string' },
-          companyName: { type: 'string', example: 'Stripe' },
-          website: { type: 'string' },
-          country: { type: 'string', example: 'United States' },
+          companyName: { type: 'string', example: 'StayVista' },
+          website: { type: 'string', example: 'stayvista.com' },
+          country: { type: 'string', example: 'India' },
           limit: {
             type: 'integer',
             minimum: 1,
@@ -210,9 +228,10 @@ export const buildPeopleApiOpenApiDocument = (
           offset: { type: 'integer', minimum: 0, default: 0, example: 0 },
         },
         example: {
-          jobTitle: 'Head of Engineering',
-          companyName: 'Stripe',
-          dataSource: 'index',
+          jobTitle: 'CEO',
+          website: 'stayvista.com',
+          dataSource: 'pool',
+          candidateSource: 'pool',
           limit: 10,
         },
       },
@@ -431,9 +450,19 @@ export const buildPeopleApiOpenApiDocument = (
           },
           candidateSource: {
             type: 'string',
-            enum: ['harvest', 'unipile'],
-            default: 'unipile',
-            example: 'unipile',
+            enum: ['harvest', 'unipile', 'pool'],
+            description:
+              'Sales Navigator account source. Use pool for shared Unipile Sales Nav pool; unipile requires accountId; harvest uses Harvest SN lead-search.',
+            example: 'pool',
+          },
+          accountId: {
+            type: 'string',
+            description:
+              'Required when candidateSource is unipile — Unipile LinkedIn account id.',
+          },
+          linkedInAccountId: {
+            type: 'string',
+            description: 'Alias for accountId.',
           },
           country: { type: 'string', example: 'United States' },
           limit: {
@@ -445,10 +474,10 @@ export const buildPeopleApiOpenApiDocument = (
           },
         },
         example: {
-          website: 'stripe.com',
-          stdFunctionRoot: 'engineering',
+          website: 'stayvista.com',
+          stdFunctionRoot: 'corporate',
           stdGrade: 'leadership',
-          candidateSource: 'unipile',
+          candidateSource: 'pool',
           limit: 20,
         },
       },
@@ -456,7 +485,10 @@ export const buildPeopleApiOpenApiDocument = (
         type: 'object',
         properties: {
           status: { type: 'string', enum: ['ok'] },
-          dataSource: { type: 'string', enum: ['harvest', 'unipile'] },
+          dataSource: {
+            type: 'string',
+            enum: ['harvest', 'unipile', 'pool'],
+          },
           query: {
             type: 'object',
             properties: {
@@ -472,6 +504,27 @@ export const buildPeopleApiOpenApiDocument = (
               stdFunction: { type: 'string' },
               stdFunctionRoot: { type: 'string' },
               stdGrade: { type: 'string' },
+              appliedFilters: {
+                type: 'object',
+                properties: {
+                  functionIds: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  seniorities: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  person_department_or_subdepartments: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  person_seniorities: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                },
+              },
             },
           },
           total: { type: 'integer' },
@@ -1004,11 +1057,22 @@ export const buildPeopleApiOpenApiDocument = (
               schema: { $ref: '#/components/schemas/TitleFromJobSearchRequest' },
               examples: {
                 byTitle: {
-                  summary: 'Search from a job title',
+                  summary: 'Search from a job title (index)',
                   value: {
                     jobTitle: 'Head of Engineering',
                     companyName: 'Stripe',
                     dataSource: 'index',
+                    limit: 10,
+                  },
+                },
+                byTitleSalesNavPool: {
+                  summary:
+                    'CEO via Sales Navigator Unipile pool (taxonomy → SN facets)',
+                  value: {
+                    jobTitle: 'CEO',
+                    website: 'stayvista.com',
+                    dataSource: 'pool',
+                    candidateSource: 'pool',
                     limit: 10,
                   },
                 },
@@ -1056,8 +1120,18 @@ export const buildPeopleApiOpenApiDocument = (
                     website: 'stripe.com',
                     stdFunctionRoot: 'engineering',
                     stdGrade: 'leadership',
-                    candidateSource: 'unipile',
+                    candidateSource: 'pool',
                     limit: 20,
+                  },
+                },
+                byRootSalesNavPool: {
+                  summary: 'Leadership at StayVista via Sales Nav pool',
+                  value: {
+                    website: 'stayvista.com',
+                    stdFunctionRoot: 'corporate',
+                    stdGrade: 'leadership',
+                    candidateSource: 'pool',
+                    limit: 10,
                   },
                 },
               },

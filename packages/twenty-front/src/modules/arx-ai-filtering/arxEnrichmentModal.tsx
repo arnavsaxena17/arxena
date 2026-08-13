@@ -18,54 +18,54 @@ import { useAiFilteringProgress } from '../websocket-context/useAiFilteringProgr
 const ARX_ENRICHMENT_MODAL_FOCUS_ID = 'arx-enrichment-modal';
 
 const StyledModalContainer = styled.div`
+  align-items: center;
   background-color: solid;
-  top: 10vh;
-  left: 10vw;
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
   height: 80vh;
+  justify-content: center;
+  left: 10vw;
+  pointer-events: none;
+  position: fixed;
+  top: 10vh;
   width: 80vw;
   z-index: 500;
-  pointer-events: none;
 `;
 
 const StyledMinimizedModalContainer = styled.div`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
+  align-items: center;
   background: ${themeCssVariables.background.tertiary};
   border-top: 1px solid ${themeCssVariables.border.color.light};
+  bottom: 0;
   box-shadow: ${themeCssVariables.boxShadow.strong};
-  z-index: 500;
   display: flex;
-  align-items: center;
+  height: 60px;
+  left: 0;
   padding: 0 20px;
+  position: fixed;
+  right: 0;
   transition: transform 0.3s ease;
+  z-index: 500;
 `;
 
 const StyledModalBackdrop = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 499;
+  bottom: 0;
+  left: 0;
   pointer-events: all;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 499;
 `;
 
 const StyledAdjuster = styled.div`
-  display: flex;
-  width: 100%;
-  height: 100%;
-  padding: 0 120px;
-  justify-content: center;
   align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  padding: 0 120px;
+  width: 100%;
 `;
 
 export type Enrichment = {
@@ -85,27 +85,28 @@ export type Enrichment = {
 
 const StyledModal = styled.div`
   background-color: ${themeCssVariables.background.tertiary};
-  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
+  box-sizing: border-box;
   display: flex;
+  flex-basis: 900px;
   flex-direction: row;
   height: 100%;
-  flex-basis: 900px;
-  z-index: 501;
-  overflow: hidden;
   max-height: 680px;
-  box-sizing: border-box;
-  position: relative;
+  overflow: hidden;
   pointer-events: auto;
-  user-select: none;
+  position: relative;
+  scrollbar-color: ${themeCssVariables.background.quaternary}
+    ${themeCssVariables.background.tertiary};
+  scrollbar-width: thin;
 
   & * {
     pointer-events: auto;
   }
 
   ::-webkit-scrollbar {
-    width: 8px;
     height: 8px;
+    width: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -122,9 +123,8 @@ const StyledModal = styled.div`
     }
   }
 
-  scrollbar-width: thin;
-  scrollbar-color: ${themeCssVariables.background.quaternary}
-    ${themeCssVariables.background.tertiary};
+  user-select: none;
+  z-index: 501;
 `;
 
 export const ArxEnrichmentModal = ({
@@ -139,7 +139,7 @@ export const ArxEnrichmentModal = ({
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(
     isArxEnrichModalOpenState,
   );
-  const [isMinimized, setIsMinimized] = useAtomState(
+  const [isArxEnrichModalMinimized, setIsArxEnrichModalMinimized] = useAtomState(
     isArxEnrichModalMinimizedState,
   );
   const [currentProjectId] = useAtomState(currentProjectIdState);
@@ -155,7 +155,7 @@ export const ArxEnrichmentModal = ({
 
   const closeModal = () => {
     setIsArxEnrichModalOpen(false);
-    setIsMinimized(false);
+    setIsArxEnrichModalMinimized(false);
     removeFocusItemFromFocusStackById({
       focusId: ARX_ENRICHMENT_MODAL_FOCUS_ID,
     });

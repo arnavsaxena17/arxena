@@ -3,7 +3,7 @@ import { naukriQueueStatusState } from '@/candidate-table/states/naukriQueueStat
 import {
   getNaukriQueueStatusFromPage,
   isTerminalNaukriQueueState,
-  NaukriQueueSnapshot,
+  type NaukriQueueSnapshot,
   stopNaukriQueueFromPage,
   subscribeToNaukriQueueUpdates,
 } from '@/chrome-extension/utils/naukriQueueExtensionBridge';
@@ -59,8 +59,8 @@ export const useNaukriQueueStatus = () => {
     SnackBarComponentInstanceContext,
   );
   const store = useStore();
-  const [queueStatus, setQueueStatus] = useAtomState(naukriQueueStatusState);
-  const refreshDataFunction = useAtomStateValue(dataTableRefreshFunctionState);
+  const [naukriQueueStatus, setNaukriQueueStatus] = useAtomState(naukriQueueStatusState);
+  const dataTableRefreshFunction = useAtomStateValue(dataTableRefreshFunctionState);
 
   const activeSnackBarShownRef = useRef(false);
   const lastTerminalQueueIdRef = useRef<string | null>(null);
@@ -106,7 +106,7 @@ export const useNaukriQueueStatus = () => {
       stopNaukriQueueFromPage(queueId)
         .then((snapshot) => {
           if (snapshot) {
-            setQueueStatus(snapshot);
+            setNaukriQueueStatus(snapshot);
           }
         })
         .catch((error) => {
@@ -119,16 +119,16 @@ export const useNaukriQueueStatus = () => {
           });
         });
     },
-    [enqueueErrorSnackBar, setQueueStatus],
+    [enqueueErrorSnackBar, setNaukriQueueStatus],
   );
 
   useEffect(() => {
     const unsubscribe = subscribeToNaukriQueueUpdates((snapshot) => {
-      setQueueStatus(snapshot);
+      setNaukriQueueStatus(snapshot);
     });
 
     return unsubscribe;
-  }, [setQueueStatus]);
+  }, [setNaukriQueueStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,7 +136,7 @@ export const useNaukriQueueStatus = () => {
     getNaukriQueueStatusFromPage()
       .then((snapshot) => {
         if (!cancelled && snapshot) {
-          setQueueStatus(snapshot);
+          setNaukriQueueStatus(snapshot);
         }
       })
       .catch(() => {
@@ -146,7 +146,7 @@ export const useNaukriQueueStatus = () => {
     return () => {
       cancelled = true;
     };
-  }, [setQueueStatus]);
+  }, [setNaukriQueueStatus]);
 
   useEffect(() => {
     if (!queueStatus) {

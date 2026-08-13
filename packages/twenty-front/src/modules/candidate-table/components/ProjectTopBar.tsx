@@ -449,7 +449,7 @@ export const ProjectTopBar = memo(
       location.pathname.includes('/project/') ||
       location.pathname.includes('/projects/');
 
-    const [searchQuery, setSearchQuery] = useAtomState(chatSearchQueryState);
+    const [chatSearchQuery, setChatSearchQuery] = useAtomState(chatSearchQueryState);
     const searchResults = useAtomStateValue(searchResultsState);
     const searchMetadata = useAtomStateValue(searchMetadataState);
     const tableState = useAtomStateValue(tableStateAtom);
@@ -462,10 +462,10 @@ export const ProjectTopBar = memo(
     const handleSearchChange = useCallback(
       (event: ChangeEvent<HTMLInputElement>) => {
         const query = event.target.value;
-        setSearchQuery(query);
+        setChatSearchQuery(query);
         onSearch?.(query);
       },
-      [onSearch, setSearchQuery],
+      [onSearch, setChatSearchQuery],
     );
 
     const handleLoadMore = useCallback(

@@ -30,10 +30,10 @@ const StyledTitle = styled.div`
 `;
 
 const StyledRow = styled.div`
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
   align-items: flex-end;
+  display: flex;
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledField = styled.div`
@@ -43,27 +43,27 @@ const StyledField = styled.div`
 `;
 
 const StyledFieldLabel = styled.div`
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   line-height: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledExpiryControls = styled.div`
-  display: flex;
-  gap: ${themeCssVariables.spacing[1]};
   align-items: stretch;
+  display: flex;
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSelect = styled.select`
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   height: ${themeCssVariables.spacing[5]};
   min-width: 160px;
   padding: 0 ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  background: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledGenerateButton = styled(Button)`
@@ -71,9 +71,9 @@ const StyledGenerateButton = styled(Button)`
 `;
 
 const StyledLinkRow = styled.div`
+  align-items: center;
   display: flex;
   gap: ${themeCssVariables.spacing[2]};
-  align-items: center;
 `;
 
 const StyledLinkInput = styled(TextInput)`

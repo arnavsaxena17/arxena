@@ -3,7 +3,7 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useCountries } from '@/ui/input/components/internal/hooks/useCountries';
-import { Country } from '@/ui/input/components/internal/types/Country';
+import { type Country } from '@/ui/input/components/internal/types/Country';
 import { EthnicityCountryPickerDropdownButton } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-country-selection/EthnicityCountryPickerDropdownButton';
 import { EthnicityLanguageSelect } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-language-selection/EthnicityLanguageSelect';
 import { EthnicityModelSelect } from '@/video-interview/interview-creation/right-side/components/introduction/ai-model-selection/ethnicity-selection/ethnicity-model-selection/EthnicityModelSelect';

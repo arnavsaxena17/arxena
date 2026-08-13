@@ -1,7 +1,7 @@
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 import {
-  LinkedInSearchCategory,
-  LinkedInSearchType,
+  type LinkedInSearchCategory,
+  type LinkedInSearchType,
 } from '../types/candidate-search.types';
 
 export type SearchConfig = {

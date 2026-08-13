@@ -31,6 +31,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] GTM Stage B default workflow (`GTM Outreach — Per Candidate`) auto-create + Project bind on Workflow tab / New GTM run
 - [x] GTM Stage B workflow picker (ACTIVE-only list → rebind `outreachWorkflowId` + Ask AI context)
 - [x] GTM Command chrome collapse (PageHeader run controls + tabs trailing workflow modes)
+- [x] Rename `gtmWorkspaceProfile` → `workspaceProfile` (Arxena standard object + workspace cmd `1785600000018`)
 - [x] GTM Workflow tab canvas centers on open (container-bounds viewport; no side-panel double-subtract)
 - [x] GTM ephemeral companies (Redis `/gtm-command/cache/companies` per projectId; CRM Company on enroll only)
 - [x] Ask AI → GTM Companies tab: `upsert_gtm_target_companies` action tool + `/gtm-home` browsing context + skill/system-prompt routing + skill content sync cmd `1785600000013`
@@ -170,6 +171,7 @@ Caveats before first prod run: branch must exist on `origin`; AMI / SG / subnet 
 - `npx nx build twenty-orgchart` — pass
 - `npx nest build` (twenty-server / SWC) — pass (7630 files)
 - `npx nx build twenty-front` — not green yet; ported modules still need API adaptation against current Twenty front (Recoil/Jotai, UI, imports). Nest/core wiring is in place for Phase-1 routes.
+- Recoil→Jotai **setter call-site** sweep (Aug 2026): fixed declared-vs-called mismatches (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, HotTable `setMain*`→`setContextStore*`, etc.) across candidate-table / arx-ai-filtering / arx-jd-upload / gtm-home / orgchart / unipile — see `docs/port-front-migration-track.md` §0 / §2.1.
 
 Next follow-ups: fix front compile errors module-by-module, nav drawer items, Unipile providers (migrate remaining `process.env.UNIPILE_*` call sites to EnvironmentService / TwentyConfigService), and yarn install for mcp/embed package deps.
 

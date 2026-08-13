@@ -3,8 +3,8 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import React, { useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { WebSocketContext, WebSocketContextValue } from './WebSocketContext';
+import { io, type Socket } from 'socket.io-client';
+import { WebSocketContext, type WebSocketContextValue } from './WebSocketContext';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 

@@ -346,10 +346,32 @@ const allObjects: ArxenaObjectDefinition[] = [
       description:
         'Workspace-level seller company profile, default ICP, and GTM search blurbs shared across runs',
       icon: 'IconTargetArrow',
-      labelPlural: 'GTM Workspace Profiles',
-      labelSingular: 'GTM Workspace Profile',
-      nameSingular: 'gtmWorkspaceProfile',
-      namePlural: 'gtmWorkspaceProfiles',
+      labelPlural: 'Workspace Profiles',
+      labelSingular: 'Workspace Profile',
+      nameSingular: 'workspaceProfile',
+      namePlural: 'workspaceProfiles',
+    },
+  },
+  {
+    object: {
+      description:
+        'Registered website domain for visitor tracking (script allowlist)',
+      icon: 'IconWorldWww',
+      labelPlural: 'Website Domains',
+      labelSingular: 'Website Domain',
+      nameSingular: 'websiteDomain',
+      namePlural: 'websiteDomains',
+    },
+  },
+  {
+    object: {
+      description:
+        'Company-level website visitor session identified via IP resolution',
+      icon: 'IconEye',
+      labelPlural: 'Website Visitors',
+      labelSingular: 'Website Visitor',
+      nameSingular: 'websiteVisitor',
+      namePlural: 'websiteVisitors',
     },
   },
 ];

@@ -21,8 +21,8 @@ const StyledStatsContainer = styled.div`
 
 const StyledStatsRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${themeCssVariables.spacing[3]};
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   margin-bottom: ${themeCssVariables.spacing[3]};
 
   @media (max-width: 768px) {
@@ -33,12 +33,12 @@ const StyledStatsRow = styled.div`
 
 const StyledStatItem = styled.div`
   background-color: ${themeCssVariables.background.secondary};
-  padding: ${themeCssVariables.spacing[3]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
   border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  cursor: pointer;
+  padding: ${themeCssVariables.spacing[3]};
+  text-align: center;
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -46,11 +46,11 @@ const StyledStatItem = styled.div`
   }
 
   strong {
-    display: block;
-    margin-bottom: ${themeCssVariables.spacing[1]};
     color: ${themeCssVariables.font.color.primary};
+    display: block;
     font-size: ${themeCssVariables.font.size.sm};
     font-weight: ${themeCssVariables.font.weight.semiBold};
+    margin-bottom: ${themeCssVariables.spacing[1]};
   }
 
   .count {
@@ -61,16 +61,16 @@ const StyledStatItem = styled.div`
 `;
 
 const StyledHeaderContainer = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   width: 100%;
 `;
 
 const StyledTitle = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledTabContent = styled.div`
@@ -89,37 +89,37 @@ const StyledEnrichmentStatsContainer = styled.div`
 
 const StyledEnrichmentSection = styled.div`
   background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
   padding: ${themeCssVariables.spacing[3]};
-  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledEnrichmentTitle = styled.h3`
-  margin: 0 0 ${themeCssVariables.spacing[3]} 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[3]} 0;
 `;
 
 const StyledEnrichmentFieldStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: ${themeCssVariables.spacing[3]};
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 `;
 
 const StyledEnrichmentFieldItem = styled.div`
   background-color: ${themeCssVariables.background.primary};
-  padding: ${themeCssVariables.spacing[3]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  padding: ${themeCssVariables.spacing[3]};
   transition: all 0.2s ease;
 
   strong {
-    display: block;
-    margin-bottom: ${themeCssVariables.spacing[2]};
     color: ${themeCssVariables.font.color.primary};
+    display: block;
     font-size: ${themeCssVariables.font.size.sm};
     font-weight: ${themeCssVariables.font.weight.semiBold};
+    margin-bottom: ${themeCssVariables.spacing[2]};
   }
 
   .field-value {
@@ -129,32 +129,32 @@ const StyledEnrichmentFieldItem = styled.div`
 `;
 
 const StyledValueRow = styled.div`
+  align-items: center;
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.xs};
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: ${themeCssVariables.spacing[1]};
   padding: ${themeCssVariables.spacing[2]};
-  background-color: ${themeCssVariables.background.secondary};
-  border-radius: ${themeCssVariables.border.radius.xs};
-  border: 1px solid ${themeCssVariables.border.color.light};
   
   .value-text {
+    color: ${themeCssVariables.font.color.primary};
     flex: 1;
+    font-size: ${themeCssVariables.font.size.sm};
     margin-right: ${themeCssVariables.spacing[2]};
     word-break: break-word;
-    font-size: ${themeCssVariables.font.size.sm};
-    color: ${themeCssVariables.font.color.primary};
   }
   
   .value-count {
-    font-weight: ${themeCssVariables.font.weight.semiBold};
-    color: ${themeCssVariables.color.blue};
     background-color: ${themeCssVariables.background.primary};
-    padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
     border-radius: ${themeCssVariables.border.radius.xs};
-    min-width: 32px;
-    text-align: center;
+    color: ${themeCssVariables.color.blue};
     font-size: ${themeCssVariables.font.size.sm};
+    font-weight: ${themeCssVariables.font.weight.semiBold};
+    min-width: 32px;
+    padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
+    text-align: center;
   }
 `;
 
@@ -217,8 +217,8 @@ const candidateStatuses: CandidateStatus[] = [
 ];
 
 export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: ProjectStatisticsModalProps) => {
-  const setSelectedStatus = useSetAtomState(selectedConversationStatusState);
-  const customEnrichments = useAtomStateValue(enrichmentsState);
+  const setSelectedConversationStatus = useSetAtomState(selectedConversationStatusState);
+  const enrichments = useAtomStateValue(enrichmentsState);
   const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
   const [activeTabId, setActiveTabId] = useAtomComponentState(
     activeTabIdComponentState,
@@ -293,7 +293,7 @@ export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: Proje
   if (!isOpen) return null;
 
   const handleStatusClick = (status: string | null) => {
-    setSelectedStatus(status);
+    setSelectedConversationStatus(status);
     onClose();
   };
 

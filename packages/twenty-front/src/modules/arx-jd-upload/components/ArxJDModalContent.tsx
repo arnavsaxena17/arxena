@@ -1,8 +1,8 @@
 import { CircularProgressBar } from 'twenty-ui';
 
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepperContainer, type ArxJDStepperContainerProps } from './ArxJDStepperContainer';
-import { RecruiterDetails } from './ProjectDetailsForm';
+import { type RecruiterDetails } from './ProjectDetailsForm';
 import { UploadForm } from './UploadForm';
 
 type GetRootProps = NonNullable<ArxJDStepperContainerProps['getRootProps']>;

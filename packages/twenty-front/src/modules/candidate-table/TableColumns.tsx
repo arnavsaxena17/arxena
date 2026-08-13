@@ -1,4 +1,4 @@
-import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import {
     CANDIDATE_CONVERSATION_STATUS_LABELS,
     MESSAGING_CHANNEL_OPTIONS,

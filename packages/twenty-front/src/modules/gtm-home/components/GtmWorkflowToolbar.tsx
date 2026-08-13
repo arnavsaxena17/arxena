@@ -8,21 +8,21 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { type GtmWorkflowEmbedMode } from '@/gtm-home/hooks/useGtmWorkflowEmbed';
 
 const StyledModeToggle = styled.div`
+  align-items: center;
   display: flex;
   gap: ${themeCssVariables.spacing[1]};
-  align-items: center;
 `;
 
 const StyledSelect = styled.select`
   appearance: none;
-  min-width: 160px;
-  max-width: 240px;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
+  max-width: 240px;
+  min-width: 160px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 type GtmWorkflowToolbarProps = {

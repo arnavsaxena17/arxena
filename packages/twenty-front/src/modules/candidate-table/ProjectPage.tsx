@@ -69,14 +69,14 @@ const StyledPageContainer = styled(PageContainer)`
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: 100%;
   overflow: hidden;
+  width: 100%;
 `;
 
 const StyledPageBody = styled(PageBody)`
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
   /* Above page header (20), below right drawer (30) */
@@ -104,16 +104,16 @@ const DataTable = lazy(() =>
 
 export const ProjectPage: React.FC = () => {
   debugLog(`ProjectPage rendering`);
-  const [projectId, setProjectId] = useAtomState(projectIdAtom);
+  const [projectId, setProjectIdAtom] = useAtomState(projectIdAtom);
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
-  const [jobs, setJobs] = useAtomState(projectsState);
+  const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const filteredCount = useAtomStateValue(filteredCandidatesCountState);
-  const selectedStatus = useAtomStateValue(selectedConversationStatusState);
+  const filteredCandidatesCount = useAtomStateValue(filteredCandidatesCountState);
+  const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
   const tableState = useAtomStateValue(tableStateAtom);
-  const setTableState = useSetAtomState(tableStateAtom);
+  const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
-  const searchQuery = useAtomStateValue(chatSearchQueryState);
+  const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
   const [searchResults, setSearchResults] = useAtomState(searchResultsState);
   const searchMetadata = useAtomStateValue(searchMetadataState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
@@ -188,8 +188,8 @@ export const ProjectPage: React.FC = () => {
 
   // Find the current job based on projectId
   const currentJob = useMemo(() => {
-    return jobs.find((job) => job.id === projectId);
-  }, [jobs, projectId]);
+    return projects.find((job) => job.id === projectId);
+  }, [projects, projectId]);
 
   // Load current job into projectsState if it's not already there
   useEffect(() => {
@@ -209,7 +209,7 @@ export const ProjectPage: React.FC = () => {
             (response?.data?.project || response?.data?.job)
           ) {
             const jobData = response.data.project ?? response.data.job;
-            setJobs(prevJobs => {
+            setProjects(prevJobs => {
               // Check if job already exists to avoid duplicates
               const existingJob = prevJobs.find(job => job.id === projectId);
               if (existingJob) {
@@ -220,12 +220,12 @@ export const ProjectPage: React.FC = () => {
             debugLog('Loaded current job into projectsState:', jobData);
           } else {
             console.warn('Project not found via get-project-by-id, falling back to refetchJobs');
-            // Fallback to refetching all jobs if specific job not found
+            // Fallback to refetching all projects if specific job not found
             await refetchJobsRef.current();
           }
         } catch (error) {
           console.error('Error loading specific job, falling back to refetchJobs:', error);
-          // Fallback to refetching all jobs if specific job loading fails
+          // Fallback to refetching all projects if specific job loading fails
           try {
             await refetchJobsRef.current();
           } catch (refetchError) {
@@ -236,7 +236,7 @@ export const ProjectPage: React.FC = () => {
     };
 
     loadCurrentJob();
-  }, [projectId, currentJob, setJobs, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+  }, [projectId, currentJob, setProjects, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -442,7 +442,7 @@ export const ProjectPage: React.FC = () => {
 
       // Clear selection for discarded candidates
       let nextSelectedIds: string[] = [];
-      setTableState(prev => {
+      setTableStateAtom(prev => {
         nextSelectedIds = prev.selectedRowIds.filter(id => !selectedIds.includes(id));
         return {
           ...prev,
@@ -453,7 +453,7 @@ export const ProjectPage: React.FC = () => {
 
       enqueueSuccessSnackBar({ message: `Discarded ${selectedCandidates.length} selected candidates` });
     }
-  }, [searchResults, searchMetadata, tableState.selectedRowIds, projectId, tokenPair, setSearchResults, setTableState, setSelectedCandidateId, enqueueSuccessSnackBar]);
+  }, [searchResults, searchMetadata, tableState.selectedRowIds, projectId, tokenPair, setSearchResults, setTableStateAtom, setSelectedCandidateId, enqueueSuccessSnackBar]);
 
   const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {
@@ -522,7 +522,7 @@ export const ProjectPage: React.FC = () => {
         // Use requestAnimationFrame to ensure state reset completes before setting new projectId
         // This prevents DataTable from loading persisted results while old search results are still in state
         requestAnimationFrame(() => {
-          setProjectId(extractedProjectId);
+          setProjectIdAtom(extractedProjectId);
 
           // Refresh data after a small delay to ensure all state updates have propagated
           setTimeout(() => {
@@ -534,7 +534,7 @@ export const ProjectPage: React.FC = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, projectId]); // Removed resetJobStates and setProjectId from dependencies as they're stable
+  }, [location.pathname, projectId]); // Removed resetJobStates and setProjectIdAtom from dependencies as they're stable
 
   // Initialize enrichments when component mounts - only run once
   useEffect(() => {

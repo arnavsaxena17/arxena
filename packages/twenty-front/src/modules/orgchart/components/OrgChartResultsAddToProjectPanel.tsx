@@ -11,7 +11,7 @@ import { Button } from 'twenty-ui';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
-import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
+import { projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -41,29 +41,29 @@ const StyledSection = styled.div`
 `;
 
 const StyledSectionLabel = styled.label`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
-  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledInput = styled.input`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledRadioGroup = styled.div`
@@ -73,22 +73,22 @@ const StyledRadioGroup = styled.div`
 `;
 
 const StyledRadioLabel = styled.label`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1.5]};
-  cursor: pointer;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledFooter = styled.div`
+  border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1.5]};
   justify-content: flex-end;
   margin-top: ${themeCssVariables.spacing[1]};
   padding-top: ${themeCssVariables.spacing[2]};
-  border-top: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledSelectAllRow = styled.div`
@@ -125,7 +125,6 @@ export const OrgChartResultsAddToProjectPanel = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const currentProjectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const {

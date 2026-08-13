@@ -12,21 +12,21 @@ const StyledLabel = styled.label`
 `;
 
 const StyledCaption = styled.span`
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  font-size: ${themeCssVariables.font.size.sm};
-  color: ${themeCssVariables.font.color.primary};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 export const OrgChartQueryGeneratorControl = () => {
-  const [value, setValue] = useAtomState(orgChartQueryGeneratorPreferenceState);
+  const [orgChartQueryGeneratorPreference, setOrgChartQueryGeneratorPreference] = useAtomState(orgChartQueryGeneratorPreferenceState);
 
   return (
     <StyledLabel>
@@ -34,9 +34,11 @@ export const OrgChartQueryGeneratorControl = () => {
         <Trans>LinkedIn query generator</Trans>
       </StyledCaption>
       <StyledSelect
-        value={value}
+        value={orgChartQueryGeneratorPreference}
         onChange={(e) =>
-          setValue(e.target.value as typeof value)
+          setOrgChartQueryGeneratorPreference(
+            e.target.value as typeof orgChartQueryGeneratorPreference,
+          )
         }
         aria-label="LinkedIn query generator"
       >

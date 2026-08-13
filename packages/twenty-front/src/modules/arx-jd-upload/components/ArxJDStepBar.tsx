@@ -3,16 +3,16 @@ import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 import { motion } from 'framer-motion';
 
 import { ArxJDFormStepType } from '../states/arxJDFormStepperState';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 const StyledContainer = styled.div`
+  align-items: center;
   display: flex;
   flex: 1;
-  justify-content: space-between;
   height: 40px;
-  align-items: center;
-  min-height: 40px;
+  justify-content: space-between;
   margin: 0;
+  min-height: 40px;
 `;
 
 const StyledStepContainer = styled.div<{ isLast: boolean }>`
@@ -66,13 +66,13 @@ const StyledStepLabel = styled.span<{ isActive: boolean; isNextStep: boolean }>`
 `;
 
 const StyledStepLine = styled(motion.div)`
+  align-self: center;
+  flex-shrink: 1;
   height: 2px;
   margin-left: ${themeCssVariables.spacing[2]};
   margin-right: ${themeCssVariables.spacing[2]};
   overflow: hidden;
   width: 100%;
-  align-self: center;
-  flex-shrink: 1;
 `;
 
 const StyledCheckmark = styled.span`

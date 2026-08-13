@@ -490,6 +490,14 @@ const SettingsAccountsLinkedinSignUp = lazy(() =>
   ),
 );
 
+const SettingsAccountsWebsite = lazy(() =>
+  import(
+    '@/settings/accounts/components/SettingsAccountsWebsite'
+  ).then((module) => ({
+    default: module.SettingsAccountsWebsite,
+  })),
+);
+
 const SettingsBilling = lazy(() =>
   import('~/pages/settings/billing/SettingsBilling').then((module) => ({
     default: module.SettingsBilling,
@@ -774,6 +782,10 @@ export const SettingsRoutes = ({ isAdminPageEnabled }: SettingsRoutesProps) => (
         <Route
           path={SettingsPath.LinkedinSignUp}
           element={<SettingsAccountsLinkedinSignUp />}
+        />
+        <Route
+          path={SettingsPath.AccountsWebsite}
+          element={<SettingsAccountsWebsite />}
         />
         <Route
           path={SettingsPath.NewAccount}

@@ -107,7 +107,8 @@
               "pdl",
               "contactout",
               "harvest",
-              "unipile"
+              "unipile",
+              "pool"
             ],
             "default": "index",
             "description": "Data source category alias. Use `index` for std_function and std_grade filters.",
@@ -198,7 +199,8 @@
               "pdl",
               "contactout",
               "harvest",
-              "unipile"
+              "unipile",
+              "pool"
             ]
           },
           "total": {
@@ -235,7 +237,7 @@
           "jobTitle": {
             "type": "string",
             "description": "Sample job title to classify into std_function and std_grade before searching.",
-            "example": "Head of Engineering"
+            "example": "CEO"
           },
           "dataSource": {
             "type": "string",
@@ -245,24 +247,45 @@
               "pdl",
               "contactout",
               "harvest",
-              "unipile"
+              "unipile",
+              "pool"
             ],
             "default": "index",
-            "example": "index"
+            "example": "pool",
+            "description": "People source. Use pool / unipile / harvest for Sales Navigator facet search; apollo for Apollo department filters; index for ES."
+          },
+          "candidateSource": {
+            "type": "string",
+            "enum": [
+              "harvest",
+              "unipile",
+              "pool"
+            ],
+            "description": "Sales Navigator account source when using LinkedIn. Required as harvest, pool, or unipile+accountId.",
+            "example": "pool"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Explicit Unipile LinkedIn account id when candidateSource/dataSource is unipile."
+          },
+          "linkedInAccountId": {
+            "type": "string",
+            "description": "Alias for accountId."
           },
           "companyId": {
             "type": "string"
           },
           "companyName": {
             "type": "string",
-            "example": "Stripe"
+            "example": "StayVista"
           },
           "website": {
-            "type": "string"
+            "type": "string",
+            "example": "stayvista.com"
           },
           "country": {
             "type": "string",
-            "example": "United States"
+            "example": "India"
           },
           "limit": {
             "type": "integer",
@@ -279,9 +302,10 @@
           }
         },
         "example": {
-          "jobTitle": "Head of Engineering",
-          "companyName": "Stripe",
-          "dataSource": "index",
+          "jobTitle": "CEO",
+          "website": "stayvista.com",
+          "dataSource": "pool",
+          "candidateSource": "pool",
           "limit": 10
         }
       },
@@ -374,7 +398,8 @@
                     "pdl",
                     "contactout",
                     "harvest",
-                    "unipile"
+                    "unipile",
+                    "pool"
                   ]
                 },
                 "label": {
@@ -622,10 +647,19 @@
             "type": "string",
             "enum": [
               "harvest",
-              "unipile"
+              "unipile",
+              "pool"
             ],
-            "default": "unipile",
-            "example": "unipile"
+            "description": "Sales Navigator account source. Use pool for shared Unipile Sales Nav pool; unipile requires accountId; harvest uses Harvest SN lead-search.",
+            "example": "pool"
+          },
+          "accountId": {
+            "type": "string",
+            "description": "Required when candidateSource is unipile — Unipile LinkedIn account id."
+          },
+          "linkedInAccountId": {
+            "type": "string",
+            "description": "Alias for accountId."
           },
           "country": {
             "type": "string",
@@ -640,10 +674,10 @@
           }
         },
         "example": {
-          "website": "stripe.com",
-          "stdFunctionRoot": "engineering",
+          "website": "stayvista.com",
+          "stdFunctionRoot": "corporate",
           "stdGrade": "leadership",
-          "candidateSource": "unipile",
+          "candidateSource": "pool",
           "limit": 20
         }
       },
@@ -660,7 +694,8 @@
             "type": "string",
             "enum": [
               "harvest",
-              "unipile"
+              "unipile",
+              "pool"
             ]
           },
           "query": {
@@ -703,6 +738,35 @@
               },
               "stdGrade": {
                 "type": "string"
+              },
+              "appliedFilters": {
+                "type": "object",
+                "properties": {
+                  "functionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "seniorities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "person_department_or_subdepartments": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "person_seniorities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           },
@@ -1391,11 +1455,21 @@
               },
               "examples": {
                 "byTitle": {
-                  "summary": "Search from a job title",
+                  "summary": "Search from a job title (index)",
                   "value": {
                     "jobTitle": "Head of Engineering",
                     "companyName": "Stripe",
                     "dataSource": "index",
+                    "limit": 10
+                  }
+                },
+                "byTitleSalesNavPool": {
+                  "summary": "CEO via Sales Navigator Unipile pool (taxonomy → SN facets)",
+                  "value": {
+                    "jobTitle": "CEO",
+                    "website": "stayvista.com",
+                    "dataSource": "pool",
+                    "candidateSource": "pool",
                     "limit": 10
                   }
                 }
@@ -1454,8 +1528,18 @@
                     "website": "stripe.com",
                     "stdFunctionRoot": "engineering",
                     "stdGrade": "leadership",
-                    "candidateSource": "unipile",
+                    "candidateSource": "pool",
                     "limit": 20
+                  }
+                },
+                "byRootSalesNavPool": {
+                  "summary": "Leadership at StayVista via Sales Nav pool",
+                  "value": {
+                    "website": "stayvista.com",
+                    "stdFunctionRoot": "corporate",
+                    "stdGrade": "leadership",
+                    "candidateSource": "pool",
+                    "limit": 10
                   }
                 }
               }

@@ -87,15 +87,15 @@ type ModalSectionProps = {
   className?: string;
 };
 
-const ModalHeader = ({ children, className }: ModalSectionProps) => (
+const ModalHeader = ({ children, className }: ModalHeaderProps) => (
   <StyledHeader className={className}>{children}</StyledHeader>
 );
 
-const ModalContent = ({ children, className }: ModalSectionProps) => (
+const ModalContent = ({ children, className }: ModalContentProps) => (
   <StyledContent className={className}>{children}</StyledContent>
 );
 
-const ModalFooter = ({ children, className }: ModalSectionProps) => (
+const ModalFooter = ({ children, className }: ModalFooterProps) => (
   <StyledFooter className={className}>{children}</StyledFooter>
 );
 
@@ -118,7 +118,7 @@ const ModalRoot = ({
   onEnter,
   isClosable = false,
   onClose,
-}: ModalProps) => {
+}: ModalRootProps) => {
   const isMobile = useIsMobile();
   const modalRef = useRef<HTMLDivElement>(null);
 

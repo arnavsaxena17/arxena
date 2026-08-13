@@ -22,27 +22,27 @@ export const useProjectStatusToggle = ({
   projectId, 
   currentJobActive 
 }: UseJobStatusToggleProps): UseJobStatusToggleReturn => {
-  const [jobs, setJobs] = useAtomState(projectsState);
+  const [projects, setProjects] = useAtomState(projectsState);
   const apolloCoreClient = useApolloCoreClient();
   const [updateProject, { loading: isUpdating }] = useMutation(
     gql(UpdateOneProject),
     { client: apolloCoreClient },
   );
 
-  // Find current job from jobs array
-  const currentJob = jobs.find(job => job.id === projectId);
+  // Find current job from projects array
+  const currentJob = projects.find(job => job.id === projectId);
   const isJobActive = currentJob?.isActive ?? currentJobActive ?? true;
 
   const toggleJobStatus = useCallback(() => {
     if (!currentJob) return;
     
     const newStatus = !currentJob.isActive;
-    const updatedJobs = jobs.map(job => 
+    const updatedJobs = projects.map(job => 
       job.id === projectId ? { ...job, isActive: newStatus } : job
     );
     
     // Update local state immediately for better UX
-    setJobs(updatedJobs);
+    setProjects(updatedJobs);
     
     // Update on server
     updateProject({
@@ -55,10 +55,10 @@ export const useProjectStatusToggle = ({
       onError: (error) => {
         console.error('Failed to update job status:', error);
         // Revert local state on error
-        setJobs(jobs);
+        setProjects(projects);
       }
     });
-  }, [currentJob, jobs, projectId, setJobs, updateProject]);
+  }, [currentJob, projects, projectId, setProjects, updateProject]);
 
   return {
     isJobActive,

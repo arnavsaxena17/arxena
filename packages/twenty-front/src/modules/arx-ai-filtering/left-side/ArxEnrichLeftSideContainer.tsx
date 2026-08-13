@@ -13,30 +13,30 @@ const StyledContainer = styled.div`
   color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-direction: column;
+  flex-shrink: 1;
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   gap: 32px;
-  padding: 44px 32px 44px 32px;
-  width: calc(100% * (1 / 6));
   max-width: 300px;
   min-width: 224px;
-  flex-shrink: 1;
-  position: relative;
+  padding: 44px 32px 44px 32px;
   pointer-events: auto;
+  position: relative;
+  width: calc(100% * (1 / 6));
 `;
 
 const ScrollableContent = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 32px;
-  flex: 1;
-  overflow-y: auto;
   min-height: 0;
+  overflow-y: auto;
 
   ::-webkit-scrollbar {
-    width: 8px;
     height: 8px;
+    width: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -53,25 +53,25 @@ const ScrollableContent = styled.div`
     }
   }
 
-  scrollbar-width: thin;
   scrollbar-color: ${themeCssVariables.background.quaternary}
     ${themeCssVariables.background.tertiary};
+  scrollbar-width: thin;
 `;
 
 const StyledModalNavElementContainer = styled.nav`
   display: flex;
-  gap: 4px;
-  padding: 6px 0 6px 0;
   flex-direction: column;
+  gap: 4px;
   overflow: visible;
+  padding: 6px 0 6px 0;
 `;
 
 const StyledIntroductionNavElement = styled.div`
+  border-radius: 4px;
+  color: ${themeCssVariables.grayScale.gray5};
+  cursor: pointer;
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.md};
-  font-weight: ${themeCssVariables.font.weight.medium};
-  padding: 6px;
-  transition: background-color 0.2s ease;
 
   &:hover {
     background-color: ${themeCssVariables.background.transparent.light};
@@ -79,20 +79,20 @@ const StyledIntroductionNavElement = styled.div`
   &.active {
     background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${themeCssVariables.grayScale.gray5};
-  border-radius: 4px;
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: 6px;
+  transition: background-color 0.2s ease;
   width: 200px;
-  cursor: pointer;
 `;
 
 const StyledButton = styled.div`
+  background-color: none;
   border: none;
-  font-family: inherit;
   color: ${themeCssVariables.font.color.light};
+  cursor: pointer;
+  font-family: inherit;
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.regular};
-  cursor: pointer;
-  background-color: none;
   margin-top: 16px;
 `;
 
@@ -100,20 +100,20 @@ const StyledQuestionsContainer = styled.ol`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0;
-  margin: 0px;
   list-style-type: none;
+  margin: 0px;
+  padding: 0;
   scroll-behavior: smooth;
 `;
 
 const StyledListItem = styled.li`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   &::marker {
+    color: ${themeCssVariables.font.color.light};
     display: none;
     font-family: inherit;
-    color: ${themeCssVariables.font.color.light};
     font-size: ${themeCssVariables.font.size.md};
     font-weight: ${themeCssVariables.font.weight.regular};
   }

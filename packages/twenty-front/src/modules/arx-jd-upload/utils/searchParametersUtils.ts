@@ -1,4 +1,4 @@
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 /**
  * Consolidates search parameters into a single group per ParsedJD with one assistantThreadId

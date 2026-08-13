@@ -1,9 +1,9 @@
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import Dropzone, {
-  DropzoneRootProps,
-  DropzoneState,
-  FileRejection,
+  type DropzoneRootProps,
+  type DropzoneState,
+  type FileRejection,
   useDropzone,
 } from 'react-dropzone';
 

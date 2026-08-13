@@ -40,38 +40,38 @@ const TabContainer = styled.div`
 `;
 
 const TabContent = styled.div`
-  flex: 1;
-  height: calc(100% - 120px); /* Adjusted to make room for message input */
-  overflow-y: auto;
   display: flex;
+  flex: 1; /* Adjusted to make room for message input */
   flex-direction: column;
+  height: calc(100% - 120px);
+  overflow-y: auto;
 `;
 
 // Module scope: defining styled() inside render remounts AttachmentPanel children
 // every drawer re-render and leaves the PDF viewer blank.
 const StyledInlineAttachmentContainer = styled.div<{ isOpen: boolean }>`
+  background-color: ${themeCssVariables.background.secondary};
+  height: 100%;
+  overflow-y: auto;
   position: relative;
   width: 100%;
-  height: 100%;
-  background-color: ${themeCssVariables.background.secondary};
-  overflow-y: auto;
 `;
 
 const ChatView = styled.div`
+  display: flex;
   flex: 1;
+  flex-direction: column-reverse;
+  height: 100%; /* Add extra padding at bottom to prevent overlap with input */
   overflow-y: auto;
   padding: 20px;
-  padding-bottom: 40px; /* Add extra padding at bottom to prevent overlap with input */
-  display: flex;
-  flex-direction: column-reverse;
-  height: 100%;
+  padding-bottom: 40px;
 `;
 
 const DateSeparator = styled.div`
-  text-align: center;
-  margin: 16px 0;
   color: ${props => themeCssVariables.font.color.secondary};
   font-size: ${props => themeCssVariables.font.size.sm};
+  margin: 16px 0;
+  text-align: center;
 `;
 
 const MessageContainer = styled.div`
@@ -80,10 +80,6 @@ const MessageContainer = styled.div`
 `;
 
 const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
-  max-width: 70%;
-  margin: ${props => props.isSent ? '8px 8px 8px auto' : '8px'};
-  padding: 12px 16px;
-  border-radius: 16px;
   background-color: ${props => {
     if (props.deliveryFailed && props.isSent) {
       return '#1e40af';
@@ -92,44 +88,44 @@ const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
       ? themeCssVariables.color.blue
       : themeCssVariables.background.tertiary;
   }};
+  border: ${props =>
+    props.deliveryFailed ? `2px solid ${themeCssVariables.color.red}` : 'none'};
+  border-bottom-left-radius: ${props => (props.isSent ? '16px' : '4px')};
+  border-bottom-right-radius: ${props => (props.isSent ? '4px' : '16px')};
+  border-radius: 16px;
+  box-sizing: border-box;
   color: ${props =>
     props.isSent ? 'white' : themeCssVariables.font.color.primary};
   font-size: 14px;
   line-height: 1.5;
+  margin: ${props => props.isSent ? '8px 8px 8px auto' : '8px'};
+  max-width: 70%;
+  padding: 12px 16px;
+  position: relative;
+
   white-space: pre-wrap;
   word-break: break-word;
-  position: relative;
-  border: ${props =>
-    props.deliveryFailed ? `2px solid ${themeCssVariables.color.red}` : 'none'};
-  box-sizing: border-box;
-
-  border-bottom-right-radius: ${props => (props.isSent ? '4px' : '16px')};
-  border-bottom-left-radius: ${props => (props.isSent ? '16px' : '4px')};
 `;
 
 const MessageStatus = styled.div<{ isSent: boolean }>`
-  font-size: 11px;
+  align-items: center;
   color: ${props => themeCssVariables.font.color.light};
+  display: flex;
+  font-size: 11px;
+  gap: 4px;
+  justify-content: ${props => props.isSent ? 'flex-end' : 'flex-start'};
   margin-top: 4px;
   text-align: ${props => props.isSent ? 'right' : 'left'};
-  display: flex;
-  align-items: center;
-  justify-content: ${props => props.isSent ? 'flex-end' : 'flex-start'};
-  gap: 4px;
 `;
 
 const StatusIcon = styled.span<{ status: string }>`
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
   align-items: center;
+  display: inline-flex;
+  height: 16px;
   justify-content: center;
+  width: 16px;
 
   &::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
     background-color: ${props => {
       switch (props.status) {
         case 'sent':
@@ -144,12 +140,16 @@ const StatusIcon = styled.span<{ status: string }>`
           return '#9CA3AF';
       }
     }};
+    border-radius: 50%;
+    content: '';
+    height: 8px;
+    width: 8px;
   }
 `;
 
 const MessageTime = styled.div<{ isSent: boolean }>`
-  font-size: 11px;
   color: ${props => themeCssVariables.font.color.light};
+  font-size: 11px;
   margin-top: 4px;
   text-align: ${props => props.isSent ? 'right' : 'left'};
 `;
@@ -160,61 +160,61 @@ const MessageGroup = styled.div`
 
 const DateLabel = styled.span`
   background-color: ${props => themeCssVariables.background.primary};
-  padding: 0 12px;
   color: ${props => themeCssVariables.font.color.light};
   font-size: 12px;
+  padding: 0 12px;
   position: relative;
   z-index: 1;
 `;
 
 // Message input styles
 const MessageInputContainer = styled.div`
-  border-top: 1px solid ${props => themeCssVariables.border.color.light};
-  padding: ${props => themeCssVariables.spacing[2]};
   background-color: ${props => themeCssVariables.background.primary};
-  position: sticky;
+  border-top: 1px solid ${props => themeCssVariables.border.color.light};
   bottom: 0;
   box-sizing: border-box;
+  padding: ${props => themeCssVariables.spacing[2]};
+  position: sticky;
   width: 100%;
   z-index: 1;
 `;
 
 const MessageInputTabContainer = styled.div`
-  display: flex;
   border-bottom: 1px solid ${props => themeCssVariables.border.color.light};
+  box-sizing: border-box;
+  display: flex;
   margin-bottom: ${props => themeCssVariables.spacing[2]};
   width: 100%;
-  box-sizing: border-box;
 `;
 
 const MessageInputTab = styled.div<{ isActive: boolean }>`
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
-  cursor: pointer;
-  color: ${props => props.isActive ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
-  font-weight: ${props => props.isActive ? 'bold' : 'normal'};
   border-bottom: 2px solid ${props => props.isActive ? themeCssVariables.font.color.primary : 'transparent'};
+  color: ${props => props.isActive ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
+  cursor: pointer;
+  font-weight: ${props => props.isActive ? 'bold' : 'normal'};
+  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
 `;
 
 const InputWrapper = styled.div`
-  display: flex;
   align-items: center;
-  width: 100%;
   box-sizing: border-box;
+  display: flex;
   gap: ${props => themeCssVariables.spacing[2]};
+  width: 100%;
 `;
 
 const StyledChatInput = styled.input`
-  flex: 1;
-  padding: ${props => themeCssVariables.spacing[2]};
-  border-radius: ${props => themeCssVariables.border.radius.md};
-  border: 1px solid ${props => themeCssVariables.border.color.medium};
-  font-size: ${props => themeCssVariables.font.size.md};
-  outline: none;
-  box-sizing: border-box;
-  min-width: 0; /* Prevents input from overflowing */
   background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
+  border: 1px solid ${props => themeCssVariables.border.color.medium};
+  border-radius: ${props => themeCssVariables.border.radius.md};
+  box-sizing: border-box;
   color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
   cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
+  flex: 1;
+  font-size: ${props => themeCssVariables.font.size.md}; /* Prevents input from overflowing */
+  min-width: 0;
+  outline: none;
+  padding: ${props => themeCssVariables.spacing[2]};
 
   &:focus:not(:disabled) {
     border-color: ${props => themeCssVariables.font.color.primary};
@@ -222,16 +222,16 @@ const StyledChatInput = styled.input`
 `;
 
 const StyledButton = styled.button`
-  padding: ${props => themeCssVariables.spacing[2]} ${props => themeCssVariables.spacing[3]};
   background-color: ${props => props.disabled ? themeCssVariables.color.gray : themeCssVariables.color.blue8};
-  color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : 'white'};
   border: none;
   border-radius: ${props => themeCssVariables.border.radius.md};
-  font-weight: 500;
+  color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : 'white'};
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  white-space: nowrap;
+  font-weight: 500;
   opacity: ${props => props.disabled ? 0.6 : 1};
+  padding: ${props => themeCssVariables.spacing[2]} ${props => themeCssVariables.spacing[3]};
   transition: all 0.2s ease;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
     background-color: ${props => themeCssVariables.color.gray};
@@ -240,24 +240,24 @@ const StyledButton = styled.button`
 `;
 
 const TemplateContainer = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: ${props => themeCssVariables.spacing[2]};
   width: 100%;
-  box-sizing: border-box;
 `;
 
 const TemplateSelect = styled.select`
-  width: 100%;
-  padding: ${props => themeCssVariables.spacing[2]};
-  border-radius: ${props => themeCssVariables.border.radius.md};
-  border: 1px solid ${props => themeCssVariables.border.color.medium};
-  font-size: ${props => themeCssVariables.font.size.md};
-  outline: none;
-  box-sizing: border-box;
   background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
+  border: 1px solid ${props => themeCssVariables.border.color.medium};
+  border-radius: ${props => themeCssVariables.border.radius.md};
+  box-sizing: border-box;
   color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  font-size: ${props => themeCssVariables.font.size.md};
+  outline: none;
+  padding: ${props => themeCssVariables.spacing[2]};
+  width: 100%;
 
   &:focus:not(:disabled) {
     border-color: ${props => themeCssVariables.font.color.primary};
@@ -265,51 +265,51 @@ const TemplateSelect = styled.select`
 `;
 
 const TemplatePreview = styled.div`
-  width: 100%;
-  padding: ${props => themeCssVariables.spacing[2]};
+  background-color: ${props => themeCssVariables.background.secondary};
   border: 1px solid ${props => themeCssVariables.border.color.light};
   border-radius: ${props => themeCssVariables.border.radius.md};
-  background-color: ${props => themeCssVariables.background.secondary};
-  min-height: 80px;
-  font-size: ${props => themeCssVariables.font.size.sm};
-  color: ${props => themeCssVariables.font.color.secondary};
   box-sizing: border-box;
+  color: ${props => themeCssVariables.font.color.secondary};
+  font-size: ${props => themeCssVariables.font.size.sm};
+  min-height: 80px;
+  padding: ${props => themeCssVariables.spacing[2]};
+  width: 100%;
 `;
 
 const ChatStatusBar = styled.div`
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
-  margin-bottom: ${props => themeCssVariables.spacing[1]};
-  font-size: ${props => themeCssVariables.font.size.sm};
-  color: ${props => themeCssVariables.font.color.secondary};
   background-color: ${props => themeCssVariables.background.secondary};
-  border-radius: ${props => themeCssVariables.border.radius.sm};
   border-left: 3px solid ${props => themeCssVariables.color.blue8};
+  border-radius: ${props => themeCssVariables.border.radius.sm};
+  color: ${props => themeCssVariables.font.color.secondary};
+  font-size: ${props => themeCssVariables.font.size.sm};
+  margin-bottom: ${props => themeCssVariables.spacing[1]};
+  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
 `;
 
 const DoNotRespondBanner = styled.div`
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
-  margin-bottom: ${props => themeCssVariables.spacing[1]};
-  font-size: ${props => themeCssVariables.font.size.sm};
-  color: ${props => themeCssVariables.font.color.primary};
-  background-color: ${props => themeCssVariables.background.tertiary};
-  border-radius: ${props => themeCssVariables.border.radius.sm};
-  border-left: 3px solid ${props => themeCssVariables.color.orange};
-  display: flex;
   align-items: center;
+  background-color: ${props => themeCssVariables.background.tertiary};
+  border-left: 3px solid ${props => themeCssVariables.color.orange};
+  border-radius: ${props => themeCssVariables.border.radius.sm};
+  color: ${props => themeCssVariables.font.color.primary};
+  display: flex;
+  font-size: ${props => themeCssVariables.font.size.sm};
   gap: ${props => themeCssVariables.spacing[1]};
+  margin-bottom: ${props => themeCssVariables.spacing[1]};
+  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
 `;
 
 const DoNotRespondBubble = styled.div`
-  max-width: 70%;
-  margin: 8px 8px 8px auto;
-  padding: 10px 14px;
-  border-radius: 16px;
-  border-bottom-right-radius: 4px;
-  font-size: 13px;
-  color: ${props => themeCssVariables.font.color.tertiary};
   background-color: ${props => themeCssVariables.background.tertiary};
   border: 1px dashed ${props => themeCssVariables.border.color.medium};
+  border-bottom-right-radius: 4px;
+  border-radius: 16px;
+  color: ${props => themeCssVariables.font.color.tertiary};
+  font-size: 13px;
   font-style: italic;
+  margin: 8px 8px 8px auto;
+  max-width: 70%;
+  padding: 10px 14px;
 `;
 
 function isDoNotRespondMessage(content: string | undefined): boolean {
@@ -383,7 +383,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
 
   // Memoize candidateId to prevent unnecessary re-renders
-  const candidateId = useAtomStateValue(selectedCandidateIdState);
+  const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
 
 
 

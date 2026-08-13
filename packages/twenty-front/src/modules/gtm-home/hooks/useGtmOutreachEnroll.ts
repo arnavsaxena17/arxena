@@ -23,7 +23,7 @@ type GtmProjectRecord = ObjectRecord & {
 
 export const useGtmOutreachEnroll = () => {
   const { enqueueErrorSnackBar, enqueueSuccessSnackBar } = useSnackBar();
-  const commandContext = useAtomStateValue(gtmCommandContextState);
+  const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
   const { updateOneRecord } = useUpdateOneRecord();
   const { createOneRecord: createCandidate } = useCreateOneRecord({
     objectNameSingular: 'candidate',

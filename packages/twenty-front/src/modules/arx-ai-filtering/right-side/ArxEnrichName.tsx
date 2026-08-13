@@ -12,59 +12,59 @@ const StyledArxEnrichNameContainer = styled.div<{
   hasPrompt: boolean;
   isMinimized?: boolean;
 }>`
+  align-items: ${({ isMinimized }) => (isMinimized ? 'center' : 'flex-start')};
   display: flex;
+  gap: ${({ isMinimized }) => (isMinimized ? '12px' : '8px')};
   justify-content: ${({ hasPrompt, isMinimized }) => {
     if (isMinimized) return 'space-between';
     return 'flex-end';
   }};
   width: 100%;
-  align-items: ${({ isMinimized }) => (isMinimized ? 'center' : 'flex-start')};
-  gap: ${({ isMinimized }) => (isMinimized ? '12px' : '8px')};
 `;
 
 const StyledButtonsContainer = styled.div<{ isMinimized?: boolean }>`
   display: flex;
   flex-direction: row;
-  width: min-content;
   gap: ${({ isMinimized }) => (isMinimized ? '4px' : '8px')};
+  width: min-content;
 `;
 
 const StyledInput = styled.input<{ isMinimized?: boolean }>`
   align-items: flex-start;
   &::placeholder {
     color: ${themeCssVariables.font.color.tertiary};
+    font-family: ${themeCssVariables.font.family};
     font-size: ${({ isMinimized }) =>
       isMinimized
         ? themeCssVariables.font.size.sm
         : themeCssVariables.font.size.lg};
     font-weight: ${themeCssVariables.font.weight.medium};
-    font-family: ${themeCssVariables.font.family};
   }
   &:focus {
     outline: none;
   }
+  border: none;
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-grow: ${({ isMinimized }) => (isMinimized ? '0' : '0')};
-  border: none;
-  height: auto;
-  color: ${themeCssVariables.font.color.secondary};
   font-family: ${themeCssVariables.font.family};
   font-size: ${({ isMinimized }) =>
     isMinimized
       ? themeCssVariables.font.size.sm
       : themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
+  height: auto;
   max-width: ${({ isMinimized }) => (isMinimized ? '200px' : '300px')};
   min-width: ${({ isMinimized }) => (isMinimized ? 'auto' : '200px')};
 `;
 
 const StyledValidationMessage = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.color.red};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin-top: 4px;
+  position: absolute;
+  right: 0;
+  top: 100%;
   white-space: nowrap;
 `;
 

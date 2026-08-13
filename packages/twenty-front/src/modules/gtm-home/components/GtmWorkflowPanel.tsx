@@ -16,13 +16,13 @@ const StyledPanel = styled.div`
 `;
 
 const StyledCanvas = styled.div`
-  flex: 1;
-  min-height: 420px;
-  height: 100%;
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
+  flex: 1;
+  height: 100%;
+  min-height: 420px;
   overflow: hidden;
-  background: ${themeCssVariables.background.primary};
 
   > * {
     height: 100%;
@@ -30,10 +30,10 @@ const StyledCanvas = styled.div`
 `;
 
 const StyledEmpty = styled.div`
-  padding: ${themeCssVariables.spacing[6]};
   color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
+  padding: ${themeCssVariables.spacing[6]};
 `;
 
 type GtmWorkflowPanelProps = {

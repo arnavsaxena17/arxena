@@ -10,40 +10,40 @@ import { isVideoInterviewModalOpenState } from '@/video-interview/interview-crea
 import { questionsArrState } from '@/video-interview/interview-creation/states/questionsArrState';
 import { questionToDisplayState } from '@/video-interview/interview-creation/states/questionToDisplay';
 const StyledModalContainer = styled.div`
+  align-items: center;
   background-color: transparent;
-  top: 0px;
-  left: 0px;
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
   height: 100vh;
+  justify-content: center;
+  left: 0px;
+  position: fixed;
+  top: 0px;
   width: 100vw;
   z-index: 1000;
 `;
 
 const StyledAdjuster = styled.div`
-  display: flex;
-  width: 100%;
-  height: 100%;
-  padding: 0 120px;
-  justify-content: center;
   align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  padding: 0 120px;
+  width: 100%;
 `;
 
 const StyledModal = styled.div`
   background-color: ${themeCssVariables.background.tertiary};
-  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
   border-radius: 16px;
+  box-shadow: ${themeCssVariables.boxShadow.superHeavy};
+  box-sizing: border-box;
   display: flex;
+  flex-basis: 900px;
   flex-direction: row;
   height: 100%;
-  flex-basis: 900px;
-  z-index: 1001;
-  overflow: hidden;
   max-height: 680px;
-  box-sizing: border-box;
+  overflow: hidden;
+  z-index: 1001;
 `;
 
 export const InterviewCreationModal = ({

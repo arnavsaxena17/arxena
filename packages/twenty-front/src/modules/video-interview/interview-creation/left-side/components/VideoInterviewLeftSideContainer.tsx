@@ -7,15 +7,15 @@ const StyledContainer = styled.div`
   color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-direction: column;
+  flex-shrink: 1;
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   gap: 32px;
-  padding: 44px 32px 44px 32px;
-  width: calc(100% * (1 / 3));
   max-width: 300px;
   min-width: 224px;
-  flex-shrink: 1;
+  padding: 44px 32px 44px 32px;
+  width: calc(100% * (1 / 3));
 `;
 
 export const VideoInterviewLeftSideContainer = () => {

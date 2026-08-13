@@ -1,11 +1,11 @@
 import { Button, MenuItem } from 'twenty-ui';
 import { IconChevronDown } from 'twenty-ui/icon';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
     OrgChartDiagram,
-    OrgChartDiagramHandle,
-    OrgChartDiagramProps,
+    type OrgChartDiagramHandle,
+    type OrgChartDiagramProps,
     OrgChartSearchControls,
 } from 'twenty-orgchart';
 import type { OrgChartNodeData } from 'twenty-shared/utils';
@@ -14,7 +14,7 @@ import { OrgChartAddToProjectModal } from '../components/OrgChartAddToProjectMod
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
     OrgChartHeader,
-    OrgChartHeaderProps,
+    type OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';

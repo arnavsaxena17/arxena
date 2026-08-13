@@ -51,15 +51,27 @@ const isStandardObjectName = (
 ): nameSingular is keyof typeof STANDARD_OBJECTS =>
   nameSingular in STANDARD_OBJECTS;
 
+// Renames that must keep the pre-rename deterministic UID so sync updates
+// existing workspace objects/tables in place instead of creating duplicates.
+const ARXENA_OBJECT_UNIVERSAL_IDENTIFIER_LEGACY_NAME_SINGULAR: Record<
+  string,
+  string
+> = {
+  workspaceProfile: 'gtmWorkspaceProfile',
+};
+
 const resolveObjectUniversalIdentifier = (nameSingular: string): string => {
   if (isStandardObjectName(nameSingular)) {
     return STANDARD_OBJECTS[nameSingular].universalIdentifier;
   }
 
+  const legacyNameSingular =
+    ARXENA_OBJECT_UNIVERSAL_IDENTIFIER_LEGACY_NAME_SINGULAR[nameSingular];
+
   return getObjectUniversalIdentifier({
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
-    nameSingular,
+    nameSingular: legacyNameSingular ?? nameSingular,
   });
 };
 
@@ -392,7 +404,10 @@ export const buildArxenaStandardManifest = (
   isOrgChartEnabled?: boolean,
 ): Manifest => {
   const objectDefinitions = getObjectCreationArr(isOrgChartEnabled);
-  const fieldsData = getFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
+  const fieldsData = getFieldsData(
+    EMPTY_OBJECTS_NAME_ID_MAP,
+    isOrgChartEnabled,
+  );
   const relationsData = getRelationsData(
     EMPTY_OBJECTS_NAME_ID_MAP,
     isOrgChartEnabled,
@@ -520,8 +535,7 @@ export const buildArxenaStandardManifest = (
       arxenaObjectNames.has(fromObjectName) ||
       isStandardObjectName(fromObjectName);
     const isToKnown =
-      arxenaObjectNames.has(toObjectName) ||
-      isStandardObjectName(toObjectName);
+      arxenaObjectNames.has(toObjectName) || isStandardObjectName(toObjectName);
 
     if (!isFromKnown || !isToKnown) {
       continue;

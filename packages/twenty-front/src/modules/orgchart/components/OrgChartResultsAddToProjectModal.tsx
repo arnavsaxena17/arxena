@@ -19,9 +19,9 @@ const StyledOrgChartAddResultsModal = styled(Modal)`
 `;
 
 const StyledHeaderContainer = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   width: 100%;
 `;
 

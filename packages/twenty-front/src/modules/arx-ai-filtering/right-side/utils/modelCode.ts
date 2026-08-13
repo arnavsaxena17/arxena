@@ -1,4 +1,4 @@
-import { EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 
 export const generateModelCode = (modelName: string, fields: EnrichmentField[]): string => {
   let code = `from pydantic import BaseModel, Field\n\n`;

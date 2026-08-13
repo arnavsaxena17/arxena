@@ -32,7 +32,7 @@ import {
 } from 'twenty-shared/utils';
 
 import { v4 } from 'uuid';
-import { FormComponentProps } from '../types/FormComponentProps';
+import { type FormComponentProps } from '../types/FormComponentProps';
 import {
   StyledFieldGroup,
   StyledFullWidthField,
@@ -44,65 +44,65 @@ import {
 } from './ArxJDUploadModal.styled';
 
 const StyledLabelContainer = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledIconContainer = styled.div`
-  position: relative;
-  display: inline-flex;
   align-items: center;
   cursor: help;
+  display: inline-flex;
   margin-top: -2px;
+  position: relative;
 
   &:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: -10px;
-    left: 24px;
-    transform: translateY(-100%);
     background-color: ${themeCssVariables.background.primary};
-    color: ${themeCssVariables.font.color.primary};
-    padding: ${themeCssVariables.spacing[2]};
     border-radius: ${themeCssVariables.border.radius.sm};
     box-shadow: ${themeCssVariables.boxShadow.light};
-    width: max-content;
-    max-width: 250px;
-    z-index: 1000;
+    color: ${themeCssVariables.font.color.primary};
+    content: attr(data-tooltip);
     font-size: ${themeCssVariables.font.size.sm};
+    left: 24px;
+    max-width: 250px;
+    padding: ${themeCssVariables.spacing[2]};
+    position: absolute;
+    top: -10px;
+    transform: translateY(-100%);
+    width: max-content;
+    z-index: 1000;
   }
 `;
 
 const StyledPhoneInput = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
   width: 100%;
 `;
 
 const StyledPhoneInputContainer = styled.div`
-  display: flex;
   align-items: center;
-  width: 100%;
+  display: flex;
   position: relative;
+  width: 100%;
 
   .PhoneInput {
-    display: flex;
     align-items: center;
-    width: 100%;
+    display: flex;
     gap: ${themeCssVariables.spacing[1]};
+    width: 100%;
   }
 
   .PhoneInputInput {
-    flex: 1;
-    width: 100%;
     background-color: ${themeCssVariables.background.primary};
     border: 1px solid ${themeCssVariables.border.color.medium};
     border-radius: ${themeCssVariables.border.radius.sm};
-    padding: ${themeCssVariables.spacing[2]};
-    font-size: ${themeCssVariables.font.size.md};
     color: ${themeCssVariables.font.color.primary};
+    flex: 1;
+    font-size: ${themeCssVariables.font.size.md};
+    padding: ${themeCssVariables.spacing[2]};
+    width: 100%;
 
     &:hover {
       border-color: ${themeCssVariables.border.color.strong};
@@ -119,14 +119,14 @@ const StyledPhoneNumberInput = styled(ReactPhoneNumberInput)`
   width: 100%;
 
   .PhoneInputCountry {
-    position: relative;
     align-items: center;
-    display: flex;
     background-color: ${themeCssVariables.background.primary};
     border: 1px solid ${themeCssVariables.border.color.medium};
     border-radius: ${themeCssVariables.border.radius.sm};
-    padding: ${themeCssVariables.spacing[1]};
+    display: flex;
     margin-right: ${themeCssVariables.spacing[1]};
+    padding: ${themeCssVariables.spacing[1]};
+    position: relative;
 
     &:hover {
       border-color: ${themeCssVariables.border.color.strong};

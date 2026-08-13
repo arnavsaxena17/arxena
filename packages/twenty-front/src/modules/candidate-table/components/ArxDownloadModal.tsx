@@ -3,7 +3,7 @@ import {
   getOSName,
   getRecommendedFormat,
   getSystemInfo,
-  SystemInfo,
+  type SystemInfo,
   triggerArxenaAppDownload,
 } from '@/candidate-table/utils/arxena-app-download';
 import { Modal } from 'twenty-ui/surfaces';
@@ -13,26 +13,26 @@ import { useEffect, useState } from 'react';
 import { Button } from 'twenty-ui/input';
 
 const StyledModalContent = styled.div`
-  padding: ${themeCssVariables.spacing[4]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[4]};
-  min-width: 220px;
   max-width: 500px;
+  min-width: 220px;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledTitle = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledDescription = styled.p`
-  margin: 0;
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.md};
   line-height: 1.5;
-  color: ${themeCssVariables.font.color.secondary};
+  margin: 0;
 `;
 
 const StyledFullWidthButton = styled(Button)`

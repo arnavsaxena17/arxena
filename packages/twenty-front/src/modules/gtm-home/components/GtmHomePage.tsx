@@ -51,42 +51,42 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
 const StyledMain = styled.div`
+  background: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: ${themeCssVariables.background.primary};
 `;
 
 const StyledContent = styled.div`
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[4]};
   min-height: 0;
   overflow: auto;
   padding: ${themeCssVariables.spacing[4]};
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledWorkflowContent = styled.div`
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
   padding: ${themeCssVariables.spacing[4]};
-  display: flex;
-  flex-direction: column;
 `;
 
 const StyledLoading = styled.div`
-  padding: ${themeCssVariables.spacing[6]};
   color: ${themeCssVariables.font.color.secondary};
+  padding: ${themeCssVariables.spacing[6]};
 `;
 
 const StyledEmpty = styled.div`
-  padding: ${themeCssVariables.spacing[6]};
   color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
+  padding: ${themeCssVariables.spacing[6]};
 `;
 
 type GtmSetupPersistTarget = 'workspaceProfile' | 'project';
@@ -121,8 +121,8 @@ export const GtmHomePage = () => {
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
   const { updateOneRecord } = useUpdateOneRecord();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
-  const setCommandContext = useSetAtomState(gtmCommandContextState);
-  const commandContext = useAtomStateValue(gtmCommandContextState);
+  const setGtmCommandContext = useSetAtomState(gtmCommandContextState);
+  const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
@@ -200,7 +200,7 @@ export const GtmHomePage = () => {
       (person) => person.id === selectedPersonId,
     );
 
-    setCommandContext({
+    setGtmCommandContext({
       projectId: projectSettings.projectId,
       projectName: projectSettings.projectName,
       gtmRunKey: projectSettings.gtmRunKey,
@@ -223,7 +223,7 @@ export const GtmHomePage = () => {
     projectSettings,
     selectedCompanyId,
     selectedPersonId,
-    setCommandContext,
+    setGtmCommandContext,
     whatsappConnected,
   ]);
 
@@ -261,7 +261,7 @@ export const GtmHomePage = () => {
       isDefined(workspaceProfile?.id)
     ) {
       await updateOneRecord({
-        objectNameSingular: 'gtmWorkspaceProfile',
+        objectNameSingular: 'workspaceProfile',
         idToUpdate: workspaceProfile.id,
         updateOneRecordInput,
       });

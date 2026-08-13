@@ -171,20 +171,20 @@ export const ValidationStep = ({
     enableUploadProgressSseWhileOpen,
   } = useSpreadsheetImportInternal();
 
-  const projectIdFromAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
 
   const currentProject = projects.find(
-    (project) => project.id === projectIdFromAtom,
+    (project) => project.id === projectId,
   );
 
   const processInitialData = useCallback(
     (rows: ImportedStructuredRow[]) => {
       if (
         !isDefined(currentProject) ||
-        !projectIdFromAtom ||
-        projectIdFromAtom === 'project-id'
+        !projectId ||
+        projectId === 'project-id'
       ) {
         return rows;
       }
@@ -195,7 +195,7 @@ export const ValidationStep = ({
         projectName: currentProject.name,
       });
     },
-    [currentProject, projectIdFromAtom],
+    [currentProject, projectId],
   );
 
   const [data, setData] = useState<
@@ -316,8 +316,8 @@ export const ValidationStep = ({
 
     if (
       isDefined(currentProject) &&
-      projectIdFromAtom &&
-      projectIdFromAtom !== 'project-id'
+      projectId &&
+      projectId !== 'project-id'
     ) {
       project = {
         id: currentProject.id,

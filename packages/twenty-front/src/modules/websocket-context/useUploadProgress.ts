@@ -22,7 +22,7 @@ export const useUploadProgress = () => {
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const tokenPair = useAtomStateValue(tokenPairState);
-  const uploadProgressSessionCount = useAtomStateValue(
+  const uploadProgressSseSessionCount = useAtomStateValue(
     uploadProgressSseSessionCountState,
   );
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);

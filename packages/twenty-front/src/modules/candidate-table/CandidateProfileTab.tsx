@@ -9,10 +9,10 @@ type CandidateProfileTabProps = {
 };
 
 const StyledContainer = styled.div`
-  padding: ${themeCssVariables.spacing[3]};
+  background-color: ${themeCssVariables.background.primary};
   height: 100%;
   overflow-y: auto;
-  background-color: ${themeCssVariables.background.primary};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledSection = styled.div`
@@ -20,59 +20,59 @@ const StyledSection = styled.div`
 `;
 
 const StyledSectionTitle = styled.h3`
-  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
+  border-bottom: 2px solid ${themeCssVariables.border.color.light};
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
-  border-bottom: 2px solid ${themeCssVariables.border.color.light};
+  margin: 0 0 ${themeCssVariables.spacing[2]} 0;
   padding-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledField = styled.div`
-  display: flex;
   align-items: center;
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
   margin-bottom: ${themeCssVariables.spacing[2]};
   padding: ${themeCssVariables.spacing[2]};
-  background-color: ${themeCssVariables.background.secondary};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledFieldLabel = styled.span`
-  font-weight: ${themeCssVariables.font.weight.medium};
   color: ${themeCssVariables.font.color.secondary};
-  min-width: 120px;
   font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  min-width: 120px;
 `;
 
 const StyledFieldValue = styled.span`
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
   flex: 1;
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledIconWrapper = styled.div`
-  display: flex;
   align-items: center;
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   width: 20px;
 `;
 
 const StyledExperienceItem = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  border-left: 4px solid ${themeCssVariables.color.blue8};
+  border-radius: ${themeCssVariables.border.radius.md};
   margin-bottom: ${themeCssVariables.spacing[3]};
   padding: ${themeCssVariables.spacing[2]};
-  background-color: ${themeCssVariables.background.secondary};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border-left: 4px solid ${themeCssVariables.color.blue8};
 `;
 
 const StyledEducationItem = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  border-left: 4px solid ${themeCssVariables.color.green8};
+  border-radius: ${themeCssVariables.border.radius.md};
   margin-bottom: ${themeCssVariables.spacing[3]};
   padding: ${themeCssVariables.spacing[2]};
-  background-color: ${themeCssVariables.background.secondary};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border-left: 4px solid ${themeCssVariables.color.green8};
 `;
 
 const StyledSkillsContainer = styled.div`
@@ -84,19 +84,19 @@ const StyledSkillsContainer = styled.div`
 
 const StyledSkillTag = styled.span`
   background-color: ${themeCssVariables.color.blue2};
-  color: ${themeCssVariables.color.blue8};
-  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
   border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.color.blue8};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.medium};
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledLoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
   align-items: center;
-  height: 200px;
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  height: 200px;
+  justify-content: center;
 `;
 
 export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfileTabProps) => {

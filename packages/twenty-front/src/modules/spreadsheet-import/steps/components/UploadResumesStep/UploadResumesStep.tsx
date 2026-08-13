@@ -115,10 +115,10 @@ export const UploadResumesStep = ({
     new Set(files.map((_, index) => index)),
   );
 
-  const projectIdFromAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const currentProject = projects.find(
-    (project) => project.id === projectIdFromAtom,
+    (project) => project.id === projectId,
   );
   const tokenPair = useAtomStateValue(tokenPairState);
 
@@ -169,9 +169,9 @@ export const UploadResumesStep = ({
         formData.append('resume', file);
       });
 
-      const projectId = projectIdFromAtom || 'temp-project-id';
+      const resolvedProjectId = projectId || 'temp-project-id';
       const jobName = currentProject?.name || 'Resume Upload';
-      formData.append('projectId', projectId);
+      formData.append('projectId', resolvedProjectId);
       formData.append('jobName', jobName);
 
       const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/resume-upload`, {
@@ -202,7 +202,7 @@ export const UploadResumesStep = ({
     selectedFiles,
     files,
     onError,
-    projectIdFromAtom,
+    projectId,
     currentProject,
     tokenPair,
     enqueueSuccessSnackBar,

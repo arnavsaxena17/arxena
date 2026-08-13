@@ -32,7 +32,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'workflow-building',
     label: 'Workflow Building',
     description:
-      'Creating and managing automation workflows with triggers and steps',
+      'Creating and managing automation workflows with triggers, steps, and FORM human-in-the-loop approval via WhatsApp Official',
     icon: 'IconSettingsAutomation',
   }),
   'data-manipulation': createStandardSkillBuilder({

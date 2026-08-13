@@ -11,15 +11,15 @@ import { H2Title } from 'twenty-ui';
 
 const StyledSelectContainer = styled.div`
   display: flex;
-  width: 200px;
-  height: min-content;
   flex-direction: column;
+  height: min-content;
+  width: 200px;
 `;
 
 const StyledContainer = styled.div`
   display: flex;
-  height: min-content;
   flex-direction: column;
+  height: min-content;
 `;
 
 const StyledDependentContainer = styled.div`

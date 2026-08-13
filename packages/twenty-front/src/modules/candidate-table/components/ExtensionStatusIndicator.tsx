@@ -6,22 +6,22 @@ import React from 'react';
 import { useChromeExtensionDetection } from '../hooks/useChromeExtensionDetection';
 
 const StyledStatusIndicator = styled.div<{ isInstalled: boolean; isChecking: boolean }>`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background-color: ${({ isInstalled, isChecking }) =>
     isChecking ? themeCssVariables.color.blue : isInstalled ? themeCssVariables.color.green : themeCssVariables.color.gray};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.inverted};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   transition: all 0.2s ease-in-out;
 
   svg {
-    width: 16px;
-    height: 16px;
     color: ${themeCssVariables.font.color.inverted};
+    height: 16px;
+    width: 16px;
   }
 `;
 

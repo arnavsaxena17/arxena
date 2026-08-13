@@ -6,7 +6,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
-import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
+import { projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -22,49 +22,49 @@ import type { ContextResultItem } from '../types';
 import { uploadOrgChartCandidatesToJob } from '../utils/orgChartUtils';
 
 const StyledBackdrop = styled.div`
-  position: absolute;
-  inset: 0;
+  align-items: center;
   background: rgba(15, 23, 42, 0.35);
   display: flex;
-  align-items: center;
+  inset: 0;
   justify-content: center;
+  position: absolute;
   z-index: 40;
 `;
 
 const StyledModal = styled.div`
-  width: 560px;
-  max-width: 100%;
-  max-height: 80vh;
   background: ${themeCssVariables.background.primary};
   border-radius: ${themeCssVariables.border.radius.xl};
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
   display: flex;
   flex-direction: column;
+  max-height: 80vh;
+  max-width: 100%;
   overflow: hidden;
+  width: 560px;
 `;
 
 const StyledHeader = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  align-items: center;
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledBody = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
-  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
+  overflow: auto;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledSection = styled.div`
@@ -74,19 +74,19 @@ const StyledSection = styled.div`
 `;
 
 const StyledSectionLabel = styled.label`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
-  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCandidateList = styled.div`
@@ -98,65 +98,65 @@ const StyledCandidateList = styled.div`
 `;
 
 const StyledCandidateRow = styled.label`
-  display: flex;
   align-items: center;
+  color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
   gap: ${themeCssVariables.spacing[1.5]};
   padding: ${themeCssVariables.spacing[1]} 0;
-  cursor: pointer;
-  font-size: ${themeCssVariables.font.size.sm};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledAvatarWrapper = styled.div<{ $size: number }>`
-  width: ${({ $size }) => $size}px;
+  border-radius: 50%;
+  flex-shrink: 0;
   height: ${({ $size }) => $size}px;
   min-width: ${({ $size }) => $size}px;
-  border-radius: 50%;
   overflow: hidden;
-  flex-shrink: 0;
+  width: ${({ $size }) => $size}px;
 `;
 
 const StyledAvatarImage = styled.img`
-  width: 100%;
   height: 100%;
   object-fit: cover;
+  width: 100%;
 `;
 
 const StyledFooter = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
-  justify-content: flex-end;
   gap: ${themeCssVariables.spacing[1.5]};
+  justify-content: flex-end;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledPrimaryButton = styled.button`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: none;
   background: ${themeCssVariables.color.blue};
+  border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.inverted};
-  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:hover:enabled {
     background: ${themeCssVariables.color.blue8};
   }
 
   &:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 
 const StyledSecondaryButton = styled.button`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: transparent;
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:hover {
     background: ${themeCssVariables.background.transparent.light};
@@ -164,13 +164,13 @@ const StyledSecondaryButton = styled.button`
 `;
 
 const StyledCloseButton = styled.button`
-  padding: ${themeCssVariables.spacing[0.5]};
-  border: none;
   background: none;
+  border: none;
   color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   font-size: ${themeCssVariables.font.size.lg};
   line-height: 1;
+  padding: ${themeCssVariables.spacing[0.5]};
 
   &:hover {
     color: ${themeCssVariables.font.color.primary};
@@ -257,7 +257,6 @@ export const OrgChartAddToProjectModal = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const currentProjectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =

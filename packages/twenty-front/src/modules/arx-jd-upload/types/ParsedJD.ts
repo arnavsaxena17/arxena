@@ -5,13 +5,13 @@ export type AiFilterConfig = {
 };
 
   import {
-    ClassicCompaniesSearchParameters,
-    ClassicJobsSearchParameters,
-    ClassicPeopleSearchParameters,
-    RecruiterPeopleSearchParameters,
-    SalesNavigatorCompaniesSearchParameters,
-    SalesNavigatorPeopleSearchParameters,
-    SearchParametersResponse,
+    type ClassicCompaniesSearchParameters,
+    type ClassicJobsSearchParameters,
+    type ClassicPeopleSearchParameters,
+    type RecruiterPeopleSearchParameters,
+    type SalesNavigatorCompaniesSearchParameters,
+    type SalesNavigatorPeopleSearchParameters,
+    type SearchParametersResponse,
 } from '@/candidate-search/types/candidate-search.types';
 
 export type ParsedJD = {

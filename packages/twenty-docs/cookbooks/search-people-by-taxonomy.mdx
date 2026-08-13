@@ -1,16 +1,23 @@
 ---
 title: Search people by taxonomy
-description: Search LinkedIn or the index with std_function / std_function_root and optional std_grade.
+description: Search LinkedIn Sales Nav, Apollo, or the index with std_function / std_function_root and optional std_grade.
 ---
 
 Prefer [natural-language search-by-title](/cookbooks/nl-to-people-at-company) for products and agents. Use explicit taxonomy when you already hold codes from the [nested taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree).
 
-## LinkedIn (company + taxonomy)
+## Sales Navigator (company + taxonomy)
 
-Requires **exactly one** of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade`. Default source is Unipile. Same search engine as `POST /people-api/people/search` with `dataSource: "unipile"` / `"harvest"` — this route only adds the taxonomy input rules and LinkedIn-oriented response shape.
+Requires **exactly one** of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade`.
 
-1. Load nested selects from `GET /people-api/taxonomy/tree` (public)
-2. `POST /people-api/people/search-by-taxonomy` with company scope + taxonomy
+LinkedIn path is **always Sales Navigator**. Pick an account source:
+
+| `candidateSource` | Notes |
+| --- | --- |
+| `pool` | Shared Unipile Sales Navigator pool (no `accountId`) |
+| `harvest` | Harvest SN lead-search (`functionIds` from the same map) |
+| `unipile` | Requires `accountId` / `linkedInAccountId` |
+
+Pipeline: map std → Sales Nav function IDs + seniorities → search → batch reclassify titles → filter to requested taxonomy.
 
 ```bash
 curl -X POST \
@@ -18,15 +25,33 @@ curl -X POST \
   -H 'Content-Type: application/json' \
   https://app.arxena.com/people-api/people/search-by-taxonomy \
   -d '{
-    "website": "stripe.com",
-    "stdFunctionRoot": "engineering",
+    "website": "stayvista.com",
+    "stdFunctionRoot": "corporate",
     "stdGrade": "leadership",
-    "candidateSource": "unipile",
-    "limit": 20
+    "candidateSource": "pool",
+    "limit": 10
   }'
 ```
 
-Results are batch-reclassified and filtered to the requested function/root (and grade when provided).
+`query.appliedFilters` echoes the mapped Sales Nav facets used for the search.
+
+## Apollo
+
+```bash
+curl -X POST \
+  -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  -H 'Content-Type: application/json' \
+  https://app.arxena.com/people-api/people/search \
+  -d '{
+    "dataSource": "apollo",
+    "website": "stayvista.com",
+    "stdFunctionRoot": "corporate",
+    "stdGrade": "leadership",
+    "limit": 10
+  }'
+```
+
+Maps to Apollo `person_department_or_subdepartments` / `person_seniorities`, then post-filters.
 
 ## Index path
 

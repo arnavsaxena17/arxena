@@ -58,8 +58,8 @@ const StyledPageContainer = styled(PageContainer)`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100%;
   overflow: hidden;
+  width: 100%;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -70,8 +70,8 @@ const StyledPageContainer = styled(PageContainer)`
 
 const StyledPageBody = styled(PageBody)`
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   overflow: hidden;
   position: relative;
   /* Above page header (20), below right drawer (30) */
@@ -98,8 +98,8 @@ const StyledTabListContainer = styled.div``;
 
 const StyledProjectCardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: ${themeCssVariables.spacing[4]};
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   padding: ${themeCssVariables.spacing[4]};
 
   @media (max-width: 768px) {
@@ -123,33 +123,33 @@ const StyledContentContainer = styled.div`
 `;
 
 const StyledSectionHeader = styled.div`
-  display: flex;
   align-items: center;
+  border-bottom: 2px solid ${themeCssVariables.border.color.light};
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
   margin-bottom: ${themeCssVariables.spacing[3]};
   padding-bottom: ${themeCssVariables.spacing[2]};
-  border-bottom: 2px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledSectionTitle = styled.h2`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.xl};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const StyledSectionCount = styled.span`
   background-color: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.secondary};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSectionDivider = styled.div`
-  height: 1px;
   background-color: ${themeCssVariables.border.color.light};
+  height: 1px;
   margin: ${themeCssVariables.spacing[2]} 0;
 `;
 
@@ -207,7 +207,7 @@ export const Projects = () => {
   updatedMetadataStructureLoaded = !!jobMetadataItem;
 
   // Jobs populated by useProjectRefetch via REST API
-  const jobsFromState = useAtomStateValue(projectsState);
+  const projects = useAtomStateValue(projectsState);
 
   useEffect(() => {
     Mixpanel.track('job_list_view');

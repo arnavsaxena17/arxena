@@ -9,6 +9,7 @@ export const StyledBackdrop = styled.div`
   background-color: ${themeCssVariables.color.gray8}80;
   display: flex;
   height: 100vh;
+  isolation: isolate;
   justify-content: center;
   left: 0;
   padding: ${themeCssVariables.spacing[6]};
@@ -17,7 +18,6 @@ export const StyledBackdrop = styled.div`
   top: 0;
   width: 100vw;
   z-index: 2000;
-  isolation: isolate;
 `;
 
 export const StyledModalContainer = styled.div`
@@ -40,6 +40,9 @@ export const StyledAdjuster = styled.div`
 `;
 
 export const StyledModal = styled.div`
+  -moz-user-select: text;
+  -ms-user-select: text;
+  -webkit-user-select: text;
   background-color: ${themeCssVariables.background.tertiary};
   border-radius: 16px;
   box-shadow: ${themeCssVariables.boxShadow.superHeavy};
@@ -51,16 +54,14 @@ export const StyledModal = styled.div`
   overflow: hidden;
   pointer-events: auto;
   position: relative;
+  scrollbar-color: ${themeCssVariables.background.quaternary}
+    ${themeCssVariables.background.tertiary};
+  scrollbar-width: thin;
   user-select: text;
-  -webkit-user-select: text;
-  -moz-user-select: text;
-  -ms-user-select: text;
-  width: 100%;
-  z-index: 2002;
 
   ::-webkit-scrollbar {
-    width: 8px;
     height: 8px;
+    width: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -77,15 +78,14 @@ export const StyledModal = styled.div`
     }
   }
 
-  scrollbar-width: thin;
-  scrollbar-color: ${themeCssVariables.background.quaternary}
-    ${themeCssVariables.background.tertiary};
+  width: 100%;
+  z-index: 2002;
 `;
 
 export const StyledScrollableContent = styled.div`
   display: flex;
-  flex-direction: column;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   width: 100%;
@@ -191,8 +191,8 @@ export const StyledLabel = styled.label`
 
 export const StyledFormGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: ${themeCssVariables.spacing[6]};
+  grid-template-columns: 1fr 1fr;
   margin-bottom: ${themeCssVariables.spacing[4]};
 `;
 
@@ -218,10 +218,10 @@ export const StyledSectionContent = styled.div`
 `;
 
 export const StyledSectionDivider = styled.div`
-  width: 100%;
-  height: 1px;
   background-color: ${themeCssVariables.border.color.light};
+  height: 1px;
   margin: ${themeCssVariables.spacing[4]} 0;
+  width: 100%;
 `;
 
 export const StyledSection = styled.div`

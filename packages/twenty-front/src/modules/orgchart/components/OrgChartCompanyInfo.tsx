@@ -25,16 +25,16 @@ const StyledCompanyInfo = styled.div`
 
 // Div (not button): header embeds nested links/buttons for LinkedIn, info, share
 const StyledCompanyInfoClickable = styled.div`
+  background: transparent;
+  border: none;
+  border-radius: ${themeCssVariables.border.radius.md};
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
   min-width: 0;
-  text-align: left;
-  border: none;
-  background: transparent;
-  cursor: pointer;
   padding: 0;
-  border-radius: ${themeCssVariables.border.radius.md};
+  text-align: left;
   transition: background 0.15s ease;
 
   &:hover {
@@ -43,81 +43,81 @@ const StyledCompanyInfoClickable = styled.div`
 `;
 
 const StyledCompanyTitleRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1.5]};
   min-width: 0;
 `;
 
 const StyledCompanyLogo = styled.img`
-  width: 32px;
-  height: 32px;
-  border-radius: ${themeCssVariables.border.radius.md};
-  object-fit: contain;
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
   flex-shrink: 0;
+  height: 32px;
+  object-fit: contain;
+  width: 32px;
 `;
 
 const StyledCompanyLogoPlaceholder = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: ${themeCssVariables.border.radius.md};
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  flex-shrink: 0;
   font-size: 14px;
   font-weight: 600;
-  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
 `;
 
 const StyledCompanyTitle = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  margin: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const StyledTagline = styled.p`
-  margin: 0;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin: 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
 `;
 
 const StyledCompanyMetaRow = styled.div`
-  min-width: 0;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  min-width: 0;
 `;
 
 const StyledCompanyMetaLine = styled.span`
   display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
 `;
 
 const StyledLinkIcon = styled.a`
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  color: ${themeCssVariables.font.color.primary};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 999px;
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
   text-decoration: none;
+  width: 24px;
 
   &:hover {
     background: ${themeCssVariables.background.transparent.light};
@@ -125,17 +125,17 @@ const StyledLinkIcon = styled.a`
 `;
 
 const StyledInfoButton = styled.button`
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  color: ${themeCssVariables.font.color.primary};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 999px;
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
   padding: 0;
+  width: 24px;
 
   &:hover {
     background: ${themeCssVariables.background.transparent.light};
@@ -143,15 +143,15 @@ const StyledInfoButton = styled.button`
 `;
 
 const StyledLinkedinLink = styled.a`
-  display: inline-flex;
   align-items: center;
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 999px;
+  color: ${themeCssVariables.font.color.primary};
+  display: inline-flex;
+  font-size: ${themeCssVariables.font.size.xs};
   gap: ${themeCssVariables.spacing[0.5]};
   padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
-  border-radius: 999px;
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  background: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.xs};
   text-decoration: none;
 
   &:hover {
@@ -160,16 +160,16 @@ const StyledLinkedinLink = styled.a`
 `;
 
 const StyledLinkedinLogo = styled.img`
-  width: 16px;
-  height: 16px;
   display: block;
+  height: 16px;
+  width: 16px;
 `;
 
 const StyledLinkedinText = styled.span`
   max-width: 160px;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export type OrgChartCompanyInfoProps = {

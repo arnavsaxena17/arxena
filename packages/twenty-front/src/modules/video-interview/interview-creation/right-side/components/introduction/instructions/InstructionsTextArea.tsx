@@ -33,12 +33,12 @@ const StyledInputArea = styled.input`
 `;
 
 const StyledContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: row;
-  gap: 8px;
   flex-grow: 1;
+  gap: 8px;
   justify-content: center;
-  align-items: center;
 `;
 
 const StyledTrashIconContainer = styled.div`

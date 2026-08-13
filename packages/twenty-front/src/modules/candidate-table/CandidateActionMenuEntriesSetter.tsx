@@ -1,1 +1,1 @@
-export const CandidateActionMenuEntriesSetter = () => null;
+export const CandidateActionMenuEntriesSetterEffect = () => null;

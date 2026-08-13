@@ -8,9 +8,9 @@ import { type SelectOption } from 'twenty-ui/input';
 
 const StyledContainer = styled.div`
   display: flex;
-  width: 200px;
-  height: min-content;
   flex-direction: column;
+  height: min-content;
+  width: 200px;
 `;
 
 const StyledHiddenInput = styled.input`

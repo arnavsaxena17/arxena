@@ -113,16 +113,16 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   const workspaceMemberProfileUnipileFields = useAtomStateValue(
     workspaceMemberProfileUnipileFieldsState,
   );
-  const setLinkedinAccountsState = useSetAtomState(
+  const setLinkedinUnipileAccounts = useSetAtomState(
     linkedinUnipileAccountsState,
   );
-  const setWhatsappAccountsState = useSetAtomState(
+  const setWhatsappUnipileAccounts = useSetAtomState(
     whatsappUnipileAccountsState,
   );
   const setOrgChartLinkedInSearchType = useSetAtomState(
     orgChartLinkedInSearchTypeState,
   );
-  const setOwnerProfileCache = useSetAtomState(
+  const setLinkedinUnipileOwnerProfileCache = useSetAtomState(
     linkedinUnipileOwnerProfileCacheState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
@@ -169,8 +169,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
         pendingForceRefreshRef.current = false;
         isRefreshingRef.current = false;
         refreshInFlightRef.current = null;
-        setLinkedinAccountsState([]);
-        setWhatsappAccountsState([]);
+        setLinkedinUnipileAccounts([]);
+        setWhatsappUnipileAccounts([]);
         setServerMemberLinkedinConnected(false);
         setServerMemberWhatsappConnected(false);
         setMemberConnectionStatus(null);
@@ -267,7 +267,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
               fetchedAt: refreshedAt,
             },
             setOrgChartLinkedInSearchType,
-            setOwnerProfileCache,
+            setLinkedinUnipileOwnerProfileCache,
           });
         }
 
@@ -306,10 +306,10 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
           !areConnectionStatusesEqual(previousMemberStatus, memberStatus);
 
         if (linkedinAccountsChanged) {
-          setLinkedinAccountsState(nextLinkedinAccounts);
+          setLinkedinUnipileAccounts(nextLinkedinAccounts);
         }
         if (whatsappAccountsChanged) {
-          setWhatsappAccountsState(nextWhatsappAccounts);
+          setWhatsappUnipileAccounts(nextWhatsappAccounts);
         }
         if (
           linkedinResult.status === 'fulfilled' ||
@@ -352,10 +352,10 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [
       accessToken,
-      setLinkedinAccountsState,
+      setLinkedinUnipileAccounts,
       setOrgChartLinkedInSearchType,
-      setOwnerProfileCache,
-      setWhatsappAccountsState,
+      setLinkedinUnipileOwnerProfileCache,
+      setWhatsappUnipileAccounts,
     ],
   );
 
@@ -366,8 +366,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!accessToken?.trim()) {
       bootstrappedTokenRef.current = null;
       bootstrapPromises.delete(accessToken ?? '');
-      setLinkedinAccountsState([]);
-      setWhatsappAccountsState([]);
+      setLinkedinUnipileAccounts([]);
+      setWhatsappUnipileAccounts([]);
       setServerMemberLinkedinConnected(false);
       setServerMemberWhatsappConnected(false);
       setMemberConnectionStatus(null);
@@ -402,7 +402,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     void existingBootstrap;
-  }, [accessToken, setLinkedinAccountsState, setWhatsappAccountsState]);
+  }, [accessToken, setLinkedinUnipileAccounts, setWhatsappUnipileAccounts]);
 
   useEffect(() => {
     linkedinAccountsRef.current = linkedinUnipileAccounts;

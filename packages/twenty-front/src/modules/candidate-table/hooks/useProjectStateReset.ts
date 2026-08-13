@@ -17,12 +17,12 @@ import {
  * This ensures the PageHeader and other components show clean state immediately
  */
 export const useProjectStateReset = () => {
-  const setTableState = useSetAtomState(tableStateAtom);
-  const setFilteredCount = useSetAtomState(filteredCandidatesCountState);
-  const setSelectedStatus = useSetAtomState(selectedConversationStatusState);
-  const setSearchQuery = useSetAtomState(chatSearchQueryState);
+  const setTableStateAtom = useSetAtomState(tableStateAtom);
+  const setFilteredCandidatesCount = useSetAtomState(filteredCandidatesCountState);
+  const setSelectedConversationStatus = useSetAtomState(selectedConversationStatusState);
+  const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const setArxUploadJDModalMode = useSetAtomState(arxUploadJDModalModeState);
-  const setParsedJDInternalState = useSetAtomState(parsedJDInternalState);
+  const setParsedJDInternal = useSetAtomState(parsedJDInternalState);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
   const setSearchResults = useSetAtomState(searchResultsState);
@@ -42,7 +42,7 @@ export const useProjectStateReset = () => {
     console.log('=== resetJobStates: Cleared searchResults and searchMetadata ===');
 
     // Reset table state immediately to prevent stale PageHeader data
-    setTableState(prev => ({
+    setTableStateAtom(prev => ({
       ...prev,
       selectedRowIds: [],
       rawData: [],
@@ -56,18 +56,18 @@ export const useProjectStateReset = () => {
     setUnreadMessagesCounts({});
 
     // Reset filter and search states
-    setFilteredCount(0);
-    setSelectedStatus(null);
-    setSearchQuery('');
+    setFilteredCandidatesCount(0);
+    setSelectedConversationStatus(null);
+    setChatSearchQuery('');
 
     // Reset modal mode to create (default)
     setArxUploadJDModalMode('create');
 
     // Reset parsedJD internal state to allow fresh derivation from job data
-    setParsedJDInternalState(null);
+    setParsedJDInternal(null);
 
     console.log('=== resetJobStates: All states cleared ===');
-  }, [setTableState, setFilteredCount, setSelectedStatus, setSearchQuery, setArxUploadJDModalMode, setParsedJDInternalState, setSelectedCandidateId, setUnreadMessagesCounts, setSearchResults, setSearchMetadata]);
+  }, [setTableStateAtom, setFilteredCandidatesCount, setSelectedConversationStatus, setChatSearchQuery, setArxUploadJDModalMode, setParsedJDInternal, setSelectedCandidateId, setUnreadMessagesCounts, setSearchResults, setSearchMetadata]);
 
   return { resetJobStates };
 };

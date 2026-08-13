@@ -6,7 +6,7 @@ import {
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DEFAULT_ENRICHMENT, DEFAULT_FIELD } from '../constants';
-import { NewField } from '../types';
+import { type NewField } from '../types';
 
 export const useEnrichmentState = (index: number) => {
   const [enrichments, setEnrichments] = useAtomState(enrichmentsState);

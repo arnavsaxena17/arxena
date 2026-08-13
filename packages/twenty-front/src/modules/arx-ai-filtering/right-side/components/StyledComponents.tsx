@@ -21,26 +21,26 @@ const sharedInputStyles = `
 `;
 
 export const Container = styled.div`
-  padding: 1.5rem;
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  align-items: flex-start;
-  width: 100%;
   max-width: 100%;
+  padding: 1.5rem;
+  width: 100%;
 `;
 
 export const StyledInput = styled.input`
   ${sharedInputStyles}
-  width: 400px;
   align-self: flex-start;
+  width: 400px;
 `;
 
 export const StyledTextArea = styled.textarea`
   ${sharedInputStyles}
+  align-self: flex-start;
   resize: vertical;
   width: 400px;
-  align-self: flex-start;
 `;
 
 export const StyledSelect = styled.select`
@@ -49,11 +49,11 @@ export const StyledSelect = styled.select`
 `;
 
 export const FieldsList = styled.div`
-  width: 400px;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  align-self: flex-start;
+  width: 400px;
 `;
 
 export const FieldContainer = styled.div`
@@ -69,20 +69,20 @@ export const EnumValuesInput = styled.div`
 `;
 
 export const EnumValueRow = styled.div`
+  align-items: center;
   display: flex;
   gap: 0.5rem;
-  align-items: center;
 `;
 
 export const FieldCard = styled.div`
-  display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
-  font-family: inherit;
   border-radius: 0.5rem;
+  display: flex;
+  font-family: inherit;
+  gap: 1rem;
+  padding: 1rem;
   transition: all 0.2s;
 
   &:hover {
@@ -95,14 +95,14 @@ export const FieldContent = styled.div`
 `;
 
 export const FieldHeader = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 0.5rem;
 `;
 
 export const FieldName = styled.span`
-  font-weight: 500;
   color: ${themeCssVariables.font.color.primary};
+  font-weight: 500;
 `;
 
 export const FieldType = styled.span`
@@ -122,13 +122,13 @@ export const FieldDescription = styled.p`
 `;
 
 export const AddFieldForm = styled.div`
-  padding: 1rem;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1rem;
 
   form {
     margin: 0;
@@ -136,36 +136,36 @@ export const AddFieldForm = styled.div`
 `;
 
 export const CheckboxContainer = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 0.5rem;
 `;
 
 export const CodeBlock = styled.div`
-  background: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.primary};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  padding: 1rem;
-  border-radius: 0.5rem;
-  width: 400px;
-  margin-top: 1.5rem;
   align-self: flex-start;
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 0.5rem;
+  color: ${themeCssVariables.font.color.primary};
+  margin-top: 1.5rem;
+  padding: 1rem;
+  width: 400px;
 
   pre {
-    white-space: pre-wrap;
     overflow-x: auto;
+    white-space: pre-wrap;
   }
 `;
 
 export const ErrorAlert = styled.div`
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
   background: ${themeCssVariables.tag.background.red};
   border: 1px solid ${themeCssVariables.border.color.danger};
   border-radius: 0.5rem;
   color: ${themeCssVariables.tag.text.red};
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
 `;
 
 export const ButtonGroup = styled.div`
@@ -174,93 +174,93 @@ export const ButtonGroup = styled.div`
 `;
 
 export const SelectedFieldsContainer = styled.div`
-  margin-top: 1rem;
+  align-self: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  width: 400px;
+  margin-top: 1rem;
   max-width: 400px;
-  align-self: flex-start;
+  min-height: 2.5rem;
   overflow-x: auto;
   overflow-y: hidden;
-  min-height: 2.5rem;
+  width: 400px;
 `;
 
 export const SelectedFieldTag = styled.div`
-  background: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.primary};
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+  background: ${themeCssVariables.background.tertiary};
+  border-radius: 0.25rem;
+  color: ${themeCssVariables.font.color.primary};
+  display: flex;
   flex-shrink: 0;
-  white-space: nowrap;
+  font-size: 0.875rem;
+  gap: 0.5rem;
   min-width: fit-content;
+  padding: 0.5rem;
+  white-space: nowrap;
 `;
 
 export const MultiSelect = styled.select`
   ${sharedInputStyles}
-  width: 400px;
-  height: auto;
   font-family: inherit;
+  height: auto;
   min-height: 80px;
   multiple: true;
+  width: 400px;
 `;
 
 export const SelectLabel = styled.label`
+  align-self: flex-start;
+  color: ${themeCssVariables.font.color.primary};
+  display: block;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  align-self: flex-start;
-  display: block;
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 export const ModelCodeDisplay = styled.div<{ show: boolean }>`
-  margin-top: 1.5rem;
   align-self: flex-start;
+  margin-top: 1.5rem;
   opacity: ${(props) => (props.show ? 1 : 0)};
   transition: opacity 0.3s ease-in-out;
 `;
 
 export const LoadingIndicator = styled.div`
-  display: flex;
   align-items: center;
+  color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  font-size: 0.875rem;
   justify-content: center;
   padding: 1rem;
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: 0.875rem;
 `;
 
 export const FieldsLoadingContainer = styled.div`
-  width: 400px;
-  min-height: 80px;
+  align-items: center;
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   display: flex;
-  align-items: center;
   justify-content: center;
+  min-height: 80px;
+  width: 400px;
 `;
 
 export const CheckboxFieldsContainer = styled.div`
-  width: 400px;
+  align-self: flex-start;
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 0.5rem;
   max-height: 200px;
   overflow-y: auto;
   padding: 0.5rem;
-  align-self: flex-start;
+  width: 400px;
 `;
 
 export const CheckboxField = styled.div`
-  display: flex;
   align-items: center;
-  padding: 0.5rem;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  transition: background-color 0.2s;
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -278,15 +278,15 @@ export const CheckboxField = styled.div`
 `;
 
 export const ProcessButton = styled.button`
-  margin-top: 1rem;
   align-self: flex-start;
+  margin-top: 1rem;
 `;
 
 export const TokenUsageContainer = styled.div`
-  margin-top: ${themeCssVariables.spacing['4']};
   background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
+  margin-top: ${themeCssVariables.spacing['4']};
   padding: ${themeCssVariables.spacing['4']};
 `;
 
@@ -306,12 +306,12 @@ export const TokenUsageTitle = styled.h3`
 `;
 
 export const TokenUsageRow = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: ${themeCssVariables.spacing['1']} 0;
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing['1']} 0;
 `;
 
 export const TokenUsageLabel = styled.span`
@@ -324,11 +324,11 @@ export const TokenUsageValue = styled.span`
 `;
 
 export const LoadingContainer = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing['2']};
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing['2']};
   margin-top: ${themeCssVariables.spacing['3']};
 `;
 

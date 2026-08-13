@@ -1,4 +1,4 @@
-import { DropzoneRootProps, FileRejection } from 'react-dropzone';
+import { type DropzoneRootProps, type FileRejection } from 'react-dropzone';
 
 export type DropzoneRenderProps = {
   getRootProps: <T extends HTMLElement = HTMLElement>(

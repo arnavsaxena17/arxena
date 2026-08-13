@@ -70,24 +70,24 @@ const StyledOutreachModalFooter = styled(Modal.Footer)`
 `;
 
 const StyledCandidateHeaderCard = styled.div`
+  background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  background: ${themeCssVariables.background.secondary};
-  padding: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing['0.5']};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCandidateHeaderTitle = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCandidateHeaderSubline = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledTaskBlock = styled.div`
@@ -97,49 +97,49 @@ const StyledTaskBlock = styled.div`
 `;
 
 const StyledTaskHeading = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: ${themeCssVariables.font.color.tertiary};
 `;
 
 const StyledSectionLabel = styled.label`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
-  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledTextarea = styled.textarea`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
+  font-family: inherit;
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 120px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   resize: vertical;
-  font-family: inherit;
 `;
 
 const StyledInput = styled.input`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 export type OrgChartOutreachModalProps = {
@@ -166,7 +166,7 @@ export const OrgChartOutreachModal = ({
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const currentProjectId = useAtomStateValue(projectIdAtom);
-  const setProjectId = useSetAtomState(projectIdAtom);
+  const setProjectIdAtom = useSetAtomState(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const {
@@ -257,10 +257,10 @@ export const OrgChartOutreachModal = ({
     (projectId: string) => {
       setSelectedProjectId(projectId);
       if (projectId.trim()) {
-        setProjectId(projectId);
+        setProjectIdAtom(projectId);
       }
     },
-    [setProjectId],
+    [setProjectIdAtom],
   );
 
   const handleSubmit = useCallback(async () => {

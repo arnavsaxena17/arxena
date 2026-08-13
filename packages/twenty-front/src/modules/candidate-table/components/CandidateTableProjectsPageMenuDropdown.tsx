@@ -88,13 +88,13 @@ const StyledOrgChartSourceLabel = styled.span`
 `;
 
 const StyledOrgChartExtensionRow = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: 0 ${themeCssVariables.spacing[1]};
+  display: flex;
   font-size: ${themeCssVariables.font.size.xs};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: space-between;
   line-height: 1.3;
+  padding: 0 ${themeCssVariables.spacing[1]};
 `;
 
 const StyledOrgChartExtensionLabel = styled.span`
@@ -105,8 +105,6 @@ const StyledOrgChartExtensionLabel = styled.span`
 const StyledOrgChartExtensionStatus = styled.span<{
   status: 'checking' | 'installed' | 'not_installed';
 }>`
-  flex-shrink: 0;
-  font-weight: ${themeCssVariables.font.weight.medium};
   color: ${({ status }) => {
     if (status === 'installed') {
       return themeCssVariables.color.green;
@@ -116,51 +114,53 @@ const StyledOrgChartExtensionStatus = styled.span<{
     }
     return themeCssVariables.font.color.secondary;
   }};
+  flex-shrink: 0;
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledSegmentedTrack = styled.div`
-  display: flex;
-  border-radius: ${themeCssVariables.border.radius.sm};
   background: ${themeCssVariables.background.tertiary};
-  padding: ${themeCssVariables.spacing[0.5]};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  display: flex;
   gap: ${themeCssVariables.spacing[0.5]};
+  padding: ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledSegmentedOption = styled.button<{
   isActive: boolean;
   $layout?: 'column' | 'row';
 }>`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: ${({ $layout }) => $layout ?? 'column'};
   align-items: center;
-  justify-content: center;
-  gap: ${themeCssVariables.spacing[0.5]};
-  border: none;
-  border-radius: ${themeCssVariables.border.radius.sm};
-  cursor: pointer;
-  min-height: ${({ $layout }) => ($layout === 'row' ? '32px' : '40px')};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[0.5]};
-  font-size: ${themeCssVariables.font.size.xs};
-  font-weight: ${themeCssVariables.font.weight.medium};
-  font-family: inherit;
-  line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
   background: ${({ isActive }) =>
     isActive ? themeCssVariables.background.primary : 'transparent'};
+  border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
+  box-shadow: ${({ isActive }) =>
+    isActive ? themeCssVariables.boxShadow.light : 'none'};
   color: ${({ isActive }) =>
     isActive
       ? themeCssVariables.font.color.primary
       : themeCssVariables.font.color.secondary};
-  box-shadow: ${({ isActive }) =>
-    isActive ? themeCssVariables.boxShadow.light : 'none'};
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  flex-direction: ${({ $layout }) => $layout ?? 'column'};
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  gap: ${themeCssVariables.spacing[0.5]};
+  justify-content: center;
+  line-height: 1.2;
+  min-height: ${({ $layout }) => ($layout === 'row' ? '32px' : '40px')};
+  min-width: 0;
+  overflow: hidden;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[0.5]};
+  text-overflow: ellipsis;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  white-space: nowrap;
 
   &:hover {
     background: ${({ isActive }) =>

@@ -2,7 +2,7 @@ import '@/candidate-table/initHandsontable';
 
 import { HotTable } from '@handsontable/react-wrapper';
 import { styled } from '@linaria/react';
-import Handsontable from 'handsontable';
+import type Handsontable from 'handsontable';
 import { type CSSProperties, useMemo } from 'react';
 import {
   themeCssVariables,
@@ -10,12 +10,12 @@ import {
 } from 'twenty-ui/theme-constants';
 
 const StyledTableWrapper = styled.div`
-  width: 100%;
-  margin-top: ${themeCssVariables.spacing[2]};
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
+  margin-top: ${themeCssVariables.spacing[2]};
   overflow: hidden;
-  background: ${themeCssVariables.background.primary};
+  width: 100%;
 
   .handsontable {
     font-size: ${themeCssVariables.font.size.sm};

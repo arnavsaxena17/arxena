@@ -74,25 +74,25 @@ const CHAT_LABELS: Record<string, string> = {
 
 // Styled components
 const StyledContainer = styled.div`
+  background-color: ${themeCssVariables.background.primary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-direction: column;
   padding: ${themeCssVariables.spacing[2]};
-  border-bottom: 1px solid ${themeCssVariables.border.color.light};
-  background-color: ${themeCssVariables.background.primary};
 `;
 
 const StyledTopRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   justify-content: space-between;
   margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledName = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledInfoRow = styled.div`
@@ -103,14 +103,14 @@ const StyledInfoRow = styled.div`
 `;
 
 const StyledInfoItem = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  font-size: ${themeCssVariables.font.size.sm};
-  color: ${themeCssVariables.font.color.secondary};
   border-radius: ${themeCssVariables.border.radius.sm};
-  padding: ${themeCssVariables.spacing[1]};
+  color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]};
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -118,24 +118,24 @@ const StyledInfoItem = styled.div`
 `;
 
 const StyledActionsRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledActionButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: ${themeCssVariables.spacing[1]};
   background-color: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: center;
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
+  transition: all 0.2s ease;
   white-space: nowrap;
 
   &:hover {
@@ -144,31 +144,31 @@ const StyledActionButton = styled.button`
 `;
 
 const StyledDropdownContainer = styled.div`
-  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 120px;
+  position: relative;
 `;
 
 const StyledSelect = styled.select`
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
   background-color: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
-  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.border.color.strong};
+    outline: none;
   }
 `;
 
 const StyledIconWrapper = styled.div`
+  align-items: center;
   cursor: pointer;
   display: flex;
-  align-items: center;
 
   &:hover {
     opacity: 0.8;
@@ -177,8 +177,8 @@ const StyledIconWrapper = styled.div`
 
 const StyledLinkIcon = styled(IconExternalLink)`
   color: ${themeCssVariables.font.color.secondary};
-  width: 16px;
   height: 16px;
+  width: 16px;
   &:hover {
     color: ${themeCssVariables.font.color.primary};
   }
@@ -210,12 +210,12 @@ const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: Candidate
 };
 
 export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateData }: CandidateInfoHeaderProps) => {
-  const candidateId = useAtomStateValue(selectedCandidateIdState);
+  const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
   const [tokenPair] = useAtomState(tokenPairState);
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
   const tableState = useAtomStateValue(tableStateAtom);
-  const projectId = useAtomStateValue(currentProjectIdState);
+  const currentProjectId = useAtomStateValue(currentProjectIdState);
   const navigate = useNavigate();
 
   const [selectedInterimChat, setSelectedInterimChat] = useState('');

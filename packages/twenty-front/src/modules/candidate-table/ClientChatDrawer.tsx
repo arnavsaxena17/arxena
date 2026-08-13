@@ -11,12 +11,12 @@ type ClientMessage = {
 };
 
 const StyledContainer = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
   height: 100%;
   padding: ${themeCssVariables.spacing[3]};
-  box-sizing: border-box;
-  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHeader = styled.div`
@@ -26,27 +26,27 @@ const StyledHeader = styled.div`
 `;
 
 const StyledTitle = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.medium};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledSubtitle = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledTranscript = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1.5]};
   min-height: 0;
   overflow-y: auto;
   padding: ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  background-color: ${themeCssVariables.background.secondary};
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledMessageRow = styled.div<{ from: ClientMessage['from'] }>`
@@ -58,27 +58,19 @@ const StyledMessageBubble = styled.div<{
   from: ClientMessage['from'];
   role: ClientMessage['role'];
 }>`
-  max-width: 80%;
-  padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.lg};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-word;
   background-color: ${({ from }) =>
     from === 'recruiter'
       ? themeCssVariables.color.blue8
       : themeCssVariables.background.primary};
-  color: ${({ from }) =>
-    from === 'recruiter' ? 'white' : themeCssVariables.font.color.primary};
-  border-bottom-right-radius: ${({ from }) =>
-    from === 'recruiter'
-      ? themeCssVariables.border.radius.sm
-      : themeCssVariables.border.radius.lg};
   border-bottom-left-radius: ${({ from }) =>
     from === 'recruiter'
       ? themeCssVariables.border.radius.lg
       : themeCssVariables.border.radius.sm};
+  border-bottom-right-radius: ${({ from }) =>
+    from === 'recruiter'
+      ? themeCssVariables.border.radius.sm
+      : themeCssVariables.border.radius.lg};
+  border-radius: ${themeCssVariables.border.radius.lg};
   box-shadow: ${({ role }) => {
     if (role === 'fee') {
       return `0 0 0 1px ${themeCssVariables.color.orange}`;
@@ -88,25 +80,33 @@ const StyledMessageBubble = styled.div<{
     }
     return 'none';
   }};
+  color: ${({ from }) =>
+    from === 'recruiter' ? 'white' : themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.5;
+  max-width: 80%;
+  padding: ${themeCssVariables.spacing[1.5]} ${themeCssVariables.spacing[2]};
+  white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const StyledTimestamp = styled.div`
-  margin-top: ${themeCssVariables.spacing[0.5]};
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  margin-top: ${themeCssVariables.spacing[0.5]};
   text-align: right;
 `;
 
 const StyledHint = styled.div`
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 const StyledFooter = styled.div`
   border-top: 1px solid ${themeCssVariables.border.color.light};
-  padding-top: ${themeCssVariables.spacing[1.5]};
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding-top: ${themeCssVariables.spacing[1.5]};
 `;
 
 const MOCK_CLIENT_MESSAGES: ClientMessage[] = [

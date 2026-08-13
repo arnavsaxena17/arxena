@@ -142,6 +142,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     ImageProxyService,
     HarvestLinkedinService,
     OrgChartSuperImposeService,
+    UnipileCompanyService,
   ],
 })
 export class OrgChartModule {}

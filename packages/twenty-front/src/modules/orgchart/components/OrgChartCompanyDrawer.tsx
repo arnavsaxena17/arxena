@@ -19,11 +19,11 @@ import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledDrawerBackdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.25);
-  z-index: ${RootStackingContextZIndices.RootModalBackDrop};
   animation: fadeIn 0.2s ease-out;
+  background: rgba(15, 23, 42, 0.25);
+  inset: 0;
+  position: fixed;
+  z-index: ${RootStackingContextZIndices.RootModalBackDrop};
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -31,17 +31,17 @@ const StyledDrawerBackdrop = styled.div`
 `;
 
 const StyledDrawer = styled.div`
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(420px, 100vw);
+  animation: slideIn 0.25s ease-out;
   background: ${themeCssVariables.background.primary};
+  bottom: 0;
   box-shadow: -4px 0 24px rgba(15, 23, 42, 0.15);
-  z-index: ${RootStackingContextZIndices.RootModal};
   display: flex;
   flex-direction: column;
-  animation: slideIn 0.25s ease-out;
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: min(420px, 100vw);
+  z-index: ${RootStackingContextZIndices.RootModal};
   @keyframes slideIn {
     from { transform: translateX(100%); }
     to { transform: translateX(0); }
@@ -49,76 +49,76 @@ const StyledDrawer = styled.div`
 `;
 
 const StyledDrawerHeader = styled.div`
-  display: flex;
   align-items: center;
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
-  border-bottom: 1px solid ${themeCssVariables.border.color.light};
-  flex-shrink: 0;
 `;
 
 const StyledDrawerTitle = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledDrawerBody = styled.div`
-  flex: 1;
-  overflow: auto;
-  padding: ${themeCssVariables.spacing[3]};
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[3]};
+  overflow: auto;
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledCompanyHeader = styled.div`
-  display: flex;
   align-items: flex-start;
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCompanyLogo = styled.img`
-  width: 64px;
-  height: 64px;
-  border-radius: ${themeCssVariables.border.radius.md};
-  object-fit: contain;
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
   flex-shrink: 0;
+  height: 64px;
+  object-fit: contain;
+  width: 64px;
 `;
 
 const StyledCompanyLogoPlaceholder = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: ${themeCssVariables.border.radius.md};
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  flex-shrink: 0;
   font-size: 24px;
   font-weight: 600;
-  flex-shrink: 0;
+  height: 64px;
+  justify-content: center;
+  width: 64px;
 `;
 
 const StyledCompanyTitleBlock = styled.div`
-  min-width: 0;
   flex: 1;
+  min-width: 0;
 `;
 
 const StyledCompanyName = styled.h3`
-  margin: 0 0 ${themeCssVariables.spacing[0.5]};
+  color: ${themeCssVariables.font.color.primary};
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0 0 ${themeCssVariables.spacing[0.5]};
 `;
 
 const StyledTagline = styled.p`
-  margin: 0;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.4;
+  margin: 0;
 `;
 
 const StyledSection = styled.section`
@@ -128,17 +128,17 @@ const StyledSection = styled.section`
 `;
 
 const StyledSectionTitle = styled.h4`
-  margin: 0;
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.tertiary};
-  text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin: 0;
+  text-transform: uppercase;
 `;
 
 const StyledSectionContent = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
 `;
 
@@ -150,15 +150,15 @@ const StyledLinkRow = styled.div`
 
 const StyledMetaGrid = styled.div`
   display: grid;
-  gap: ${themeCssVariables.spacing[2]};
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledMetaRow = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: baseline;
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
 `;
 
 const StyledMetaLabel = styled.span`
@@ -179,8 +179,8 @@ const StyledActionsRow = styled.div`
 
 const StyledTabsRow = styled.div`
   display: flex;
-  gap: ${themeCssVariables.spacing[1]};
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledTimelineTabList = styled(TabList)`
@@ -198,13 +198,13 @@ const StyledProfilesList = styled.div`
 `;
 
 const StyledProfileRow = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledProfileMain = styled.div`
@@ -216,10 +216,10 @@ const StyledProfileTitle = styled.div`
 `;
 
 const StyledProfileRight = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
+  display: flex;
   flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledProfileFunction = styled.div`
@@ -227,20 +227,20 @@ const StyledProfileFunction = styled.div`
 `;
 
 const StyledFunctionGroup = styled.details`
+  background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
-  background: ${themeCssVariables.background.secondary};
 `;
 
 const StyledFunctionSummary = styled.summary`
-  cursor: pointer;
-  list-style: none;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
-  display: flex;
-  justify-content: space-between;
   align-items: center;
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
   font-weight: 500;
+  justify-content: space-between;
+  list-style: none;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
   &::-webkit-details-marker {
     display: none;
   }
@@ -262,13 +262,13 @@ const StyledNewsList = styled.div`
 `;
 
 const StyledNewsCard = styled.div`
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
   padding: ${themeCssVariables.spacing[1.5]};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  background: ${themeCssVariables.background.secondary};
 `;
 
 const StyledNewsSummary = styled.div`
@@ -277,11 +277,11 @@ const StyledNewsSummary = styled.div`
 `;
 
 const StyledNewsMeta = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
   flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[1]};
   font-size: ${themeCssVariables.font.size.xs};
-  color: ${themeCssVariables.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledNewsLink = styled.a`
@@ -295,26 +295,26 @@ const StyledNewsLink = styled.a`
 `;
 
 const StyledNewsNotes = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.4;
 `;
 
 const StyledTechCategory = styled.details`
+  background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.sm};
-  background: ${themeCssVariables.background.secondary};
   padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
 `;
 
 const StyledTechCategorySummary = styled.summary`
+  align-items: center;
+  color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[1]};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: space-between;
   list-style: none;
 
   &::-webkit-details-marker {
@@ -330,11 +330,11 @@ const StyledTechList = styled.div`
 `;
 
 const StyledTechRow = styled.div`
+  border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding-top: ${themeCssVariables.spacing[1]};
-  border-top: 1px solid ${themeCssVariables.border.color.light};
 `;
 
 const StyledTechName = styled.div`
@@ -343,21 +343,21 @@ const StyledTechName = styled.div`
 `;
 
 const StyledTechMeta = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
   flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[1]};
   font-size: ${themeCssVariables.font.size.xs};
-  color: ${themeCssVariables.font.color.tertiary};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledTechBadge = styled.span`
-  display: inline-flex;
   align-items: center;
-  padding: 0 ${themeCssVariables.spacing[1]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.secondary};
+  display: inline-flex;
   font-size: ${themeCssVariables.font.size.xs};
+  padding: 0 ${themeCssVariables.spacing[1]};
 `;
 
 const StyledCacheSection = styled(StyledSection)`

@@ -2,20 +2,20 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const TableContainer = styled.div`
+  -webkit-overflow-scrolling: touch;
   display: flex;
-  flex-direction: column;
-  width: 100%;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   overflow: auto;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  -webkit-overflow-scrolling: touch;
   position: relative;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
   z-index: 10;
   .handsontable {
-    overflow: visible;
     height: 100%;
+    overflow: visible;
   }
   .handsontable .ht_clone_top {
     z-index: 160;
@@ -30,46 +30,46 @@ export const TableContainer = styled.div`
 `;
 
 export const PanelContainer = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  top: 80px;
-  right: ${props => (props.isOpen ? '0' : '-40%')};
-  width: 40%;
   background-color: ${themeCssVariables.background.secondary};
   box-shadow: ${themeCssVariables.boxShadow.strong};
-  transition: right 0.3s ease-in-out;
-  overflow-y: auto;
-  z-index: 1000;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  position: fixed;
+  right: ${props => (props.isOpen ? '0' : '-40%')};
+  top: 80px;
+  transition: right 0.3s ease-in-out;
+  width: 40%;
+  z-index: 1000;
 `;
 export const CandidateNavigation = styled.div`
-  position: fixed;
-  top: 50%;
-  right: 41%;
-  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: fixed;
+  right: 41%;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1001;
 `;
 
 export const NavIconButton = styled.button`
-  display: flex;
   align-items: center;
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 50%;
+  box-shadow: ${themeCssVariables.boxShadow.light};
+  color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
   justify-content: center;
   padding: 0.75rem;
-  border-radius: 50%;
-  background-color: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.primary};
-  box-shadow: ${themeCssVariables.boxShadow.light};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  cursor: pointer;
   transition: all 0.2s;
 
   &:hover:not(:disabled) {
     background-color: ${themeCssVariables.background.tertiary};
-    transform: scale(1.05);
     box-shadow: ${themeCssVariables.boxShadow.strong};
+    transform: scale(1.05);
   }
 
   &:disabled {

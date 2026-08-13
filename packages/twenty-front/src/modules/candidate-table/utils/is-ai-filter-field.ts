@@ -1,4 +1,4 @@
-import { Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 
 export const isAiFilterField = (
   fieldName: string,

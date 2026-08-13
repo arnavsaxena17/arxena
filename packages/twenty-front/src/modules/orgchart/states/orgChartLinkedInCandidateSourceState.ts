@@ -1,6 +1,6 @@
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
+import { type ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
 
 /** Backend `candidateSource` (m7kq slug) plus LinkedIn via Unipile, Apify, or x-ray. */
 export type OrgChartLinkedinCandidateSource =

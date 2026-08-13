@@ -7,7 +7,7 @@ import {
   revokeOrgChartEmbed,
   updateOrgChartEmbed,
 } from '@/settings/developers/services/org-chart-embed-api.service';
-import { OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
+import { type OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';

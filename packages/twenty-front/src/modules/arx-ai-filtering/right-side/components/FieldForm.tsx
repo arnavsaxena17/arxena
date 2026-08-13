@@ -3,7 +3,7 @@ import { Button } from 'twenty-ui/input';
 import React from 'react';
 
 import { FIELD_TYPES } from '../constants';
-import { NewField } from '../types';
+import { type NewField } from '../types';
 import {
     AddFieldForm,
     ButtonGroup,

@@ -4,14 +4,14 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { v4 as uid } from 'uuid';
 
 import { InstructionsTextArea } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/InstructionsTextArea';
-import { Instruction } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/types/instruction';
+import { type Instruction } from '@/video-interview/interview-creation/right-side/components/introduction/instructions/types/instruction';
 import { H2Title } from 'twenty-ui';
 
 const StyledContainer = styled.div`
+  color: ${themeCssVariables.font.color.light};
   display: flex;
   flex-direction: column;
   font-family: inherit;
-  color: ${themeCssVariables.font.color.light};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.regular};
   height: min-content;
@@ -22,27 +22,27 @@ const StyledInstructionsContainer = styled.ol`
   flex-direction: column;
   flex-grow: 1;
   gap: 8px;
-  padding: 0 0 0 16px;
   margin: 0px;
+  padding: 0 0 0 16px;
 `;
 
 const StyledListItem = styled.li`
   &::marker {
-    font-family: inherit;
     color: ${themeCssVariables.font.color.light};
+    font-family: inherit;
     font-size: ${themeCssVariables.font.size.md};
     font-weight: ${themeCssVariables.font.weight.regular};
   }
 `;
 
 const StyledButton = styled.div`
+  background-color: none;
   border: none;
-  font-family: inherit;
   color: ${themeCssVariables.font.color.light};
+  cursor: pointer;
+  font-family: inherit;
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.regular};
-  cursor: pointer;
-  background-color: none;
   margin-top: 16px;
 `;
 

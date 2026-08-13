@@ -12,8 +12,8 @@ const Card = styled.div`
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.light};
-  max-width: 600px;
   margin: 2rem auto;
+  max-width: 600px;
   padding: 1.5rem;
 `;
 
@@ -30,8 +30,8 @@ const CardTitle = styled.h2`
 
 const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
   border-radius: 4px;
-  padding: 1rem;
   margin-bottom: 1.5rem;
+  padding: 1rem;
 
   ${props => {
     switch (props.variant) {
@@ -58,9 +58,9 @@ const Alert = styled.div<{ variant?: 'info' | 'error' | 'success' }>`
 `;
 
 const AlertDescription = styled.p`
-  margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
+  margin: 0;
 `;
 
 const Form = styled.form`
@@ -76,51 +76,44 @@ const FormGroup = styled.div`
 `;
 
 const Label = styled.label`
+  color: ${themeCssVariables.font.color.primary};
   font-size: 0.875rem;
   font-weight: 500;
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const Input = styled.input`
-  padding: 0.75rem;
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  font-size: 0.875rem;
-  background: ${themeCssVariables.background.primary};
   color: ${themeCssVariables.font.color.primary};
+  font-size: 0.875rem;
+  padding: 0.75rem;
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.color.blue};
     box-shadow: 0 0 0 2px ${themeCssVariables.background.transparent.blue};
+    outline: none;
   }
 `;
 
 const Textarea = styled.textarea`
-  padding: 0.75rem;
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
+  color: ${themeCssVariables.font.color.primary};
   font-size: 0.875rem;
   min-height: 100px;
+  padding: 0.75rem;
   resize: vertical;
-  background: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.primary};
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.color.blue};
     box-shadow: 0 0 0 2px ${themeCssVariables.background.transparent.blue};
+    outline: none;
   }
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.75rem 1rem;
-  transition: all 0.2s ease;
   background-color: ${({ variant }) => {
     if (variant === 'primary') {
       return '#0077b5';
@@ -130,14 +123,21 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
     }
     return themeCssVariables.background.tertiary;
   }};
-  color: ${({ variant }) =>
-    variant === 'primary' || variant === 'danger'
-      ? 'white'
-      : themeCssVariables.font.color.primary};
   border: ${({ variant }) =>
     variant === 'primary' || variant === 'danger'
       ? 'none'
       : `1px solid ${themeCssVariables.border.color.medium}`};
+  border-radius: 4px;
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger'
+      ? 'white'
+      : themeCssVariables.font.color.primary};
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: ${({ variant }) => {
@@ -157,8 +157,8 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
   }
 
   &:focus {
-    outline: none;
     box-shadow: 0 0 0 2px rgba(5, 119, 181, 0.4);
+    outline: none;
   }
 `;
 
@@ -169,14 +169,14 @@ const ButtonGroup = styled.div`
 `;
 
 const LoadingSpinner = styled.div`
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
+  animation: spin 1s linear infinite;
   border: 2px solid #e5e7eb;
   border-radius: 50%;
   border-top-color: #0077b5;
-  animation: spin 1s linear infinite;
+  display: inline-block;
+  height: 1rem;
   margin-right: 0.5rem;
+  width: 1rem;
 
   @keyframes spin {
     to {
@@ -186,20 +186,20 @@ const LoadingSpinner = styled.div`
 `;
 
 const TabContainer = styled.div`
-  display: flex;
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
   margin-bottom: 1.5rem;
 `;
 
 const Tab = styled.button<{ active: boolean }>`
   background: none;
   border: none;
-  padding: 0.75rem 1rem;
+  border-bottom: 2px solid ${props => props.active ? '#0077b5' : 'transparent'};
+  color: ${props => props.active ? '#0077b5' : '#6b7280'};
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  color: ${props => props.active ? '#0077b5' : '#6b7280'};
-  border-bottom: 2px solid ${props => props.active ? '#0077b5' : 'transparent'};
+  padding: 0.75rem 1rem;
 
   &:hover {
     color: #0077b5;

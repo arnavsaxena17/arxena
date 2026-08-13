@@ -1,4 +1,4 @@
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 export type ProjectForParsedJDMerge = {
   id: string;

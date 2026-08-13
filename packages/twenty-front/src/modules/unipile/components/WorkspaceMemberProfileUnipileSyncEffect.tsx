@@ -20,7 +20,7 @@ export const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
 export const WorkspaceMemberProfileUnipileSyncEffect = () => {
   const apolloCoreClient = useApolloCoreClient();
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const setProfileFields = useSetAtomState(
+  const setWorkspaceMemberProfileUnipileFields = useSetAtomState(
     workspaceMemberProfileUnipileFieldsState,
   );
   const setOrgChartLinkedinCandidateSource = useSetAtomState(
@@ -63,17 +63,17 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
 
   useEffect(() => {
     if (!workspaceMemberId) {
-      setProfileFields(null);
+      setWorkspaceMemberProfileUnipileFields(null);
     }
-  }, [workspaceMemberId, setProfileFields]);
+  }, [workspaceMemberId, setWorkspaceMemberProfileUnipileFields]);
 
   useEffect(() => {
     const node = data?.workspaceMemberProfiles?.edges?.[0]?.node;
     if (!node) {
-      setProfileFields(null);
+      setWorkspaceMemberProfileUnipileFields(null);
       return;
     }
-    setProfileFields({
+    setWorkspaceMemberProfileUnipileFields({
       phoneNumber: node.phoneNumber ?? null,
       linkedinUrl: node.linkedinUrl ?? null,
       whatsappUnipileAccountId: node.whatsappUnipileAccountId ?? null,
@@ -84,7 +84,11 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
     // if (linkedinUnipileId !== '') {
     //   setOrgChartLinkedinCandidateSource('unipile');
     // }
-  }, [data, setOrgChartLinkedinCandidateSource, setProfileFields]);
+  }, [
+    data,
+    setOrgChartLinkedinCandidateSource,
+    setWorkspaceMemberProfileUnipileFields,
+  ]);
 
   return null;
 };

@@ -3,21 +3,21 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledControlsOverlay = styled.div`
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
   align-items: center;
-  justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
   border-radius: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
+  bottom: 20px;
   color: white;
-  z-index: 10;
-  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
   font-size: 14px;
+  justify-content: center;
+  left: 50%;
+  padding: 10px 20px;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 10;
   
   @media (max-width: 768px) {
     width: 80%;
@@ -31,16 +31,16 @@ interface StyledRecordButtonProps {
 }
 
 const StyledRecordButton = styled.button<StyledRecordButtonProps>`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  align-items: center;
   background-color: ${props => (props.isRecording ? '#ff4136' : '#4285f4')};
   border: none;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  height: 40px;
   justify-content: center;
   margin-right: 10px;
+  width: 40px;
 
   @media (max-width: 768px) {
     margin-right: 0;
@@ -58,9 +58,9 @@ export const RecordIcon = () => <StyledIcon style={{ borderRadius: '50%' }} />;
 
 export const StopIcon = () => <StyledIcon style={{ width: '14px', height: '14px' }} />;
 export const StyledIcon = styled.div`
-  width: 20px;
-  height: 20px;
   background-color: white;
+  height: 20px;
+  width: 20px;
 `;
 interface ControlsOverlayProps {
   isRecording: boolean;

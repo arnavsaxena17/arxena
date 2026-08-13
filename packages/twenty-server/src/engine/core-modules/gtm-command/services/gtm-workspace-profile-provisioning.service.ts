@@ -482,12 +482,12 @@ export class GtmWorkspaceProfileProvisioningService {
     try {
       return await this.globalWorkspaceOrmManager.getRepository<GtmWorkspaceProfileRecord>(
         workspaceId,
-        'gtmWorkspaceProfile',
+        'workspaceProfile',
         { shouldBypassPermissionChecks: true },
       );
     } catch (error) {
       this.logger.warn(
-        `gtmWorkspaceProfile unavailable for workspace ${workspaceId}: ${
+        `workspaceProfile unavailable for workspace ${workspaceId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

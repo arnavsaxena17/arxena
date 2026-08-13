@@ -13,6 +13,9 @@ import { PdlPersonOrgMovementService } from 'src/engine/core-modules/org-chart/s
 import { PeopleEsService } from 'src/engine/core-modules/org-chart/services/people-es.service';
 
 import {
+  resolveApolloFilters,
+} from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+import {
   PEOPLE_DATA_SOURCE_CATEGORIES,
   type PeopleDataSourceAlias,
 } from './constants/people-data-source-aliases';
@@ -68,6 +71,7 @@ export class PeopleApiService {
       contactout: this.contactOutPeopleSearchService.isConfigured(),
       harvest: this.harvestLinkedinService.isConfigured(),
       unipile: this.peopleLinkedInSourcingService.isUnipileConfigured(),
+      pool: this.peopleLinkedInSourcingService.isUnipileConfigured(),
     };
 
     return {
@@ -207,6 +211,9 @@ export class PeopleApiService {
     const searchResult = await this.searchPeople(
       {
         dataSource: body.dataSource,
+        candidateSource: body.candidateSource,
+        accountId: body.accountId,
+        linkedInAccountId: body.linkedInAccountId,
         companyId: body.companyId,
         companyName: body.companyName,
         website: body.website,
@@ -263,7 +270,11 @@ export class PeopleApiService {
       );
     }
 
-    if (dataSource === 'harvest' || dataSource === 'unipile') {
+    if (
+      dataSource === 'harvest' ||
+      dataSource === 'unipile' ||
+      dataSource === 'pool'
+    ) {
       return this.searchPeopleFromLinkedIn(body, dataSource, apiToken);
     }
 
@@ -290,10 +301,21 @@ export class PeopleApiService {
       companyName: body.companyName,
     });
 
-    const dataSource = body.candidateSource ?? 'unipile';
+    const dataSource =
+      body.candidateSource ??
+      (body as { dataSource?: PeopleDataSourceAlias }).dataSource ??
+      'unipile';
     const searchResult = await this.searchPeople(
       {
-        dataSource,
+        dataSource:
+          dataSource === 'harvest' ||
+          dataSource === 'unipile' ||
+          dataSource === 'pool'
+            ? dataSource
+            : 'unipile',
+        candidateSource: body.candidateSource,
+        accountId: body.accountId,
+        linkedInAccountId: body.linkedInAccountId,
         website: body.website,
         companyId: body.companyId,
         companyName: body.companyName,
@@ -306,7 +328,11 @@ export class PeopleApiService {
       apiToken,
     );
 
-    if (searchResult.dataSource !== 'harvest' && searchResult.dataSource !== 'unipile') {
+    if (
+      searchResult.dataSource !== 'harvest' &&
+      searchResult.dataSource !== 'unipile' &&
+      searchResult.dataSource !== 'pool'
+    ) {
       throw new HttpException(
         `Unexpected data source "${searchResult.dataSource}" for taxonomy search`,
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -326,6 +352,9 @@ export class PeopleApiService {
         ...(stdFunction ? { stdFunction } : {}),
         ...(stdFunctionRoot ? { stdFunctionRoot } : {}),
         ...(stdGrade ? { stdGrade } : {}),
+        ...(searchResult.query?.appliedFilters
+          ? { appliedFilters: searchResult.query.appliedFilters }
+          : {}),
       },
       total: searchResult.total,
       totalBeforeFilter:
@@ -407,15 +436,39 @@ export class PeopleApiService {
       );
     }
 
-    const titleParts = [body.stdFunction, body.stdGrade, body.jobTitle]
+    const stdFunction = body.stdFunction?.trim() || undefined;
+    const stdFunctionRoot = body.stdFunctionRoot?.trim() || undefined;
+    const stdGrade = body.stdGrade?.trim() || undefined;
+
+    const apolloFilters = resolveApolloFilters({
+      functionRoot: stdFunctionRoot,
+      stdFunction,
+      stdGrade,
+    });
+
+    const titleParts = [stdFunction, stdGrade, body.jobTitle]
       .map((value) => value?.trim())
       .filter((value): value is string => !!value);
 
     const raw = await this.apolloIoRestService.peopleSearch({
       q_keywords: body.query,
-      person_titles: titleParts.length > 0 ? titleParts : undefined,
-      person_locations: body.country?.trim() ? [body.country.trim()] : undefined,
+      person_titles:
+        apolloFilters.person_department_or_subdepartments.length === 0 &&
+        titleParts.length > 0
+          ? titleParts
+          : undefined,
+      person_locations: body.country?.trim()
+        ? [body.country.trim()]
+        : undefined,
       q_organization_domains_list: domain ? [domain] : undefined,
+      person_seniorities:
+        apolloFilters.person_seniorities.length > 0
+          ? apolloFilters.person_seniorities
+          : undefined,
+      person_department_or_subdepartments:
+        apolloFilters.person_department_or_subdepartments.length > 0
+          ? apolloFilters.person_department_or_subdepartments
+          : undefined,
       per_page: body.limit ?? 20,
       page:
         body.offset && body.limit
@@ -427,35 +480,55 @@ export class PeopleApiService {
       ? ((raw as { people: Record<string, unknown>[] }).people ?? [])
       : [];
 
+    const queryMeta = {
+      keywords: body.query?.trim() || null,
+      company: {
+        name: companyName || null,
+        slug: null,
+        linkedinUrl: null,
+      },
+      ...(stdFunction ? { stdFunction } : {}),
+      ...(stdFunctionRoot ? { stdFunctionRoot } : {}),
+      ...(stdGrade ? { stdGrade } : {}),
+      appliedFilters: {
+        person_department_or_subdepartments:
+          apolloFilters.person_department_or_subdepartments,
+        person_seniorities: apolloFilters.person_seniorities,
+      },
+    };
+
+    if (stdFunction || stdFunctionRoot) {
+      const filtered = await this.filterCandidatesByTaxonomy(people, {
+        stdFunction,
+        stdFunctionRoot,
+        stdGrade,
+      });
+
+      return {
+        status: 'ok',
+        dataSource,
+        total: filtered.length,
+        totalBeforeFilter: people.length,
+        query: queryMeta,
+        items: filtered,
+      };
+    }
+
     return {
       status: 'ok',
       dataSource,
       total: people.length,
+      totalBeforeFilter: people.length,
+      query: queryMeta,
       items: people,
     };
   }
 
   private async searchPeopleFromLinkedIn(
     body: PeopleSearchDto,
-    dataSource: 'harvest' | 'unipile',
+    dataSource: 'harvest' | 'unipile' | 'pool',
     apiToken?: string,
   ): Promise<PeopleSearchResponse> {
-    if (dataSource === 'harvest' && !this.harvestLinkedinService.isConfigured()) {
-      throw new HttpException(
-        'Harvest data source is not configured',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-    if (
-      dataSource === 'unipile' &&
-      !this.peopleLinkedInSourcingService.isUnipileConfigured()
-    ) {
-      throw new HttpException(
-        'Unipile data source is not configured',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-
     if (!apiToken?.trim()) {
       throw new HttpException(
         'Authorization token is required for LinkedIn people search',
@@ -503,7 +576,9 @@ export class PeopleApiService {
       stdFunctionRoot,
       stdGrade,
       country: body.country,
-      candidateSource: dataSource,
+      candidateSource: body.candidateSource ?? dataSource,
+      accountId: body.accountId,
+      linkedInAccountId: body.linkedInAccountId,
       limit: body.limit ?? 20,
       linkedinSearchKeywords:
         body.jobTitle?.trim() || body.query?.trim() || undefined,
@@ -515,7 +590,10 @@ export class PeopleApiService {
       ...(stdFunction ? { stdFunction } : {}),
       ...(stdFunctionRoot ? { stdFunctionRoot } : {}),
       ...(stdGrade ? { stdGrade } : {}),
+      appliedFilters: sourcingResult.appliedFilters,
     };
+
+    const responseDataSource = sourcingResult.candidateSource;
 
     if (stdFunction || stdFunctionRoot) {
       const filtered = await this.filterCandidatesByTaxonomy(
@@ -529,7 +607,7 @@ export class PeopleApiService {
 
       return {
         status: 'ok',
-        dataSource,
+        dataSource: responseDataSource,
         total: filtered.length,
         totalBeforeFilter: sourcingResult.items.length,
         query: queryMeta,
@@ -539,7 +617,7 @@ export class PeopleApiService {
 
     return {
       status: 'ok',
-      dataSource,
+      dataSource: responseDataSource,
       total: sourcingResult.items.length,
       totalBeforeFilter: sourcingResult.items.length,
       query: queryMeta,

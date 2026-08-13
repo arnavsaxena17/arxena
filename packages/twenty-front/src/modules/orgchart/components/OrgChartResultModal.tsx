@@ -21,7 +21,7 @@ import { getProxiedImageUrl, isValidLinkedInProfileUrl, toTitleCase } from 'twen
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 import { orgChartContactsByKeyState } from '../states/orgChartContactsByKeyState';
 
-import { ContextResultItem } from '../types';
+import { type ContextResultItem } from '../types';
 import {
   contextResultItemToDrawerCandidate,
   extractCompanyDomainFromWebsite,
@@ -51,9 +51,9 @@ const StyledOrgChartResultModal = styled(Modal)`
 `;
 
 const StyledHeaderContainer = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   width: 100%;
 `;
 
@@ -282,25 +282,25 @@ const StyledContactButton = styled.button`
 `;
 
 const StyledLoadingMessage = styled.div`
-  display: flex;
   align-items: flex-start;
-  justify-content: center;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[1]};
-  min-height: 120px;
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  flex-direction: column;
   font-size: ${themeCssVariables.font.size.md};
+  gap: ${themeCssVariables.spacing[1]};
+  justify-content: center;
+  min-height: 120px;
 `;
 
 const StyledLoadingRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledStopRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   margin-top: ${themeCssVariables.spacing[2]};
 `;
 

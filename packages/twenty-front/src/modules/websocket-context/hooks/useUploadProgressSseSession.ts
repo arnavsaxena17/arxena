@@ -6,19 +6,19 @@ import { uploadProgressSseSessionCountState } from '../states/uploadProgressSseS
 export const UPLOAD_PROGRESS_SSE_TAIL_MS = 8000;
 
 export const useUploadProgressSseSession = () => {
-  const setSessionCount = useSetAtomState(uploadProgressSseSessionCountState);
+  const setUploadProgressSseSessionCount = useSetAtomState(uploadProgressSseSessionCountState);
 
   const beginUploadProgressSseSession = useCallback(() => {
-    setSessionCount((c) => c + 1);
-  }, [setSessionCount]);
+    setUploadProgressSseSessionCount((c) => c + 1);
+  }, [setUploadProgressSseSessionCount]);
 
   const endUploadProgressSseSessionAfterDelay = useCallback(
     (delayMs: number = UPLOAD_PROGRESS_SSE_TAIL_MS) => {
       setTimeout(() => {
-        setSessionCount((c) => Math.max(0, c - 1));
+        setUploadProgressSseSessionCount((c) => Math.max(0, c - 1));
       }, delayMs);
     },
-    [setSessionCount],
+    [setUploadProgressSseSessionCount],
   );
 
   return {

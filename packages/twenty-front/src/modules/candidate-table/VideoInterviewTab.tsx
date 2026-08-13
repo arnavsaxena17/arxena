@@ -6,10 +6,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
   background-color: ${themeCssVariables.background.primary};
-  width: 100%;
   height: 100%;
   overflow-y: auto;
   padding: ${themeCssVariables.spacing[4]};
+  width: 100%;
 `;
 
 const CompanyInfo = styled.div`
@@ -21,51 +21,51 @@ const QuestionContainer = styled.div`
 `;
 
 const QuestionText = styled.h3`
-  margin-bottom: ${themeCssVariables.spacing[3]};
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const VideoContainer = styled.div`
-  width: 100%;
-  max-width: 100%;
-  margin: ${themeCssVariables.spacing[2]} 0;
   border-radius: ${themeCssVariables.border.radius.md};
+  margin: ${themeCssVariables.spacing[2]} 0;
+  max-width: 100%;
   overflow: hidden;
+  width: 100%;
 `;
 
 const TranscriptContainer = styled.div`
   background-color: ${themeCssVariables.background.tertiary};
-  padding: ${themeCssVariables.spacing[3]};
   border-radius: ${themeCssVariables.border.radius.md};
-  margin-top: ${themeCssVariables.spacing[2]};
   margin-bottom: ${themeCssVariables.spacing[4]};
+  margin-top: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const TranscriptHeading = styled.h4`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: 600;
   margin-bottom: ${themeCssVariables.spacing[2]};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const TranscriptText = styled.p`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
-  color: ${themeCssVariables.font.color.secondary};
   white-space: pre-wrap;
 `;
 
 const EmptyState = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.light};
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   height: 100%;
-  color: ${themeCssVariables.font.color.light};
-  text-align: center;
+  justify-content: center;
   padding: ${themeCssVariables.spacing[4]};
+  text-align: center;
 `;
 
 type VideoInterviewTabProps = {

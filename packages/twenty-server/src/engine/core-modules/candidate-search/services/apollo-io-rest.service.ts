@@ -23,6 +23,8 @@ export type ApolloPeopleSearchParams = {
   organization_ids?: string[];
   q_organization_domains_list?: string[];
   person_seniorities?: string[];
+  /** Department / subdepartment slugs (incl. master_* for whole roots). */
+  person_department_or_subdepartments?: string[];
   page?: number;
   per_page?: number;
 };
@@ -424,6 +426,11 @@ export class ApolloIoRestService {
       input.q_organization_domains_list,
     );
     appendApolloParams(params, 'person_seniorities', input.person_seniorities);
+    appendApolloParams(
+      params,
+      'person_department_or_subdepartments',
+      input.person_department_or_subdepartments,
+    );
     const page = input.page ?? 1;
     const perPage = input.per_page ?? 25;
 

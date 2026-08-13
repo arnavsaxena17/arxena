@@ -35,10 +35,10 @@ import {
 } from '~/utils/linkedinUrlUtils';
 
 const StyledOrgChartNavCompanyLogo = styled.img`
-  border-radius: ${themeCssVariables.border.radius.sm};
-  object-fit: contain;
   background: ${themeCssVariables.background.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
   flex-shrink: 0;
+  object-fit: contain;
 `;
 
 const getCompanyLinkedinPrimaryUrl = (record: ObjectRecord): string => {

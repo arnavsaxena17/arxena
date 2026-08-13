@@ -6,35 +6,35 @@ import React from 'react';
 import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks/useQuestionToDisplay';
 
 const StyledQuestionNavElement = styled.div`
+  border-radius: 4px;
+  color: ${themeCssVariables.grayScale.gray5};
+  cursor: pointer;
   display: flex;
   flex-direction: row;
-  max-width: 200px;
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.medium};
-  padding: 6px;
   justify-content: space-between;
-  transition: background-color 0.3s ease;
   &:hover {
     background-color: ${themeCssVariables.background.transparent.light};
   }
   &.active {
     background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${themeCssVariables.grayScale.gray5};
-  border-radius: 4px;
+  max-width: 200px;
+  padding: 6px;
   &:hover #question-delete-icon {
-    opacity: 1;
     cursor: pointer;
+    opacity: 1;
     transition: display 0.2 ease-in-out;
   }
-  cursor: pointer;
+  transition: background-color 0.3s ease;
 `;
 
 const StyledTrashIconContainer = styled.div`
-  display: flex;
   align-items: center;
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
   justify-content: center;
   opacity: 0;

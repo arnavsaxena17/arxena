@@ -38,7 +38,7 @@ export type GtmIcpSet = {
   stdGrades?: string[];
 };
 
-export type GtmWorkspaceProfileRecord = {
+export type WorkspaceProfileRecord = {
   id: string;
   name?: string | null;
   companyName?: string | null;
@@ -217,7 +217,7 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
     `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
       '. Walk me through who we should sell to, buyer personas, send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP (icpSpec + icpBlurb) + company/people search blurbs on the workspace GTM Workspace Profile (not only this Project). Only write Project.icpSpec if I ask for a run-specific override.',
+    'When we agree, save the default ICP (icpSpec + icpBlurb) + company/people search blurbs on workspaceProfile (not only this Project). Only write Project.icpSpec if I ask for a run-specific override.',
     ...draftLines,
   ].join('\n');
 };
@@ -295,7 +295,7 @@ export const buildGtmRegenerateIcpSendPrompt = (
     input.currentIcpBlurb
       ? `Current icpBlurb (replace with an improved NL definition): ${input.currentIcpBlurb}`
       : 'No icpBlurb yet — write a 2–4 sentence NL definition of who we sell to.',
-    'load_skills(["gtm-icp-onboarding"]), then save icpSpec + icpBlurb + icpSegment on gtmWorkspaceProfile (workspace default).',
+    'load_skills(["gtm-icp-onboarding"]), then save icpSpec + icpBlurb + icpSegment on workspaceProfile (workspace default).',
     'Do NOT change companySearchBlurb or peopleSearchBlurb — those have their own Regenerate actions.',
     'Do not write Project.icpSpec unless I ask for a run-specific override.',
   ]
@@ -320,13 +320,13 @@ export const buildGtmRegenerateSearchBlurbSendPrompt = (
     input.kind === 'company' ? 'company search blurb' : 'people search blurb';
 
   return [
-    `Regenerate only the ${label} on gtmWorkspaceProfile for ${input.workspaceCompany.name}.`,
+    `Regenerate only the ${label} on workspaceProfile for ${input.workspaceCompany.name}.`,
     input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use the workspace ICP if present; if missing, draft a minimal ICP + icpBlurb first.',
     input.currentBlurb ? `Current ${fieldName}: ${input.currentBlurb}` : null,
-    `Write an improved short NL brief to ${fieldName} on gtmWorkspaceProfile. Do not change icpSpec / icpBlurb unless they are empty.`,
+    `Write an improved short NL brief to ${fieldName} on workspaceProfile. Do not change icpSpec / icpBlurb unless they are empty.`,
     input.kind === 'company'
       ? 'The blurb should be ready to SEND for Find companies (industries, size, geos, ~15–25 accounts).'
       : 'The blurb should be ready to SEND for Find people (buyer titles / functions at companies already on this run).',

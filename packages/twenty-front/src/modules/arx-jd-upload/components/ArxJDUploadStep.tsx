@@ -4,7 +4,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 import { ArxJDStepHeading } from './ArxJDStepHeading';
 import { UploadForm } from './UploadForm';
 
@@ -29,9 +29,9 @@ const StyledInstructions = styled.div`
 `;
 
 const StyledList = styled.ul`
-  margin-top: ${themeCssVariables.spacing[2]};
-  margin-left: ${themeCssVariables.spacing[4]};
   list-style-type: disc;
+  margin-left: ${themeCssVariables.spacing[4]};
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledListItem = styled.li`
@@ -39,24 +39,24 @@ const StyledListItem = styled.li`
 `;
 
 const StyledExistingFileSection = styled.div`
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
   margin-bottom: ${themeCssVariables.spacing[4]};
   padding: ${themeCssVariables.spacing[3]};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.md};
 `;
 
 const StyledFileInfo = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   justify-content: space-between;
 `;
 
 const StyledFileName = styled.div`
-  font-weight: ${themeCssVariables.font.weight.medium};
   color: ${themeCssVariables.font.color.primary};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledFileActions = styled.div`
@@ -65,8 +65,8 @@ const StyledFileActions = styled.div`
 `;
 
 const StyledNextButton = styled(Button)`
-  margin-top: ${themeCssVariables.spacing[4]};
   align-self: flex-end;
+  margin-top: ${themeCssVariables.spacing[4]};
 `;
 
 type ArxJDUploadStepProps = {

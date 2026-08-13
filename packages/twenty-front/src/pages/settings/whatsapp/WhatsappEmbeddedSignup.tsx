@@ -11,8 +11,8 @@ const Card = styled.div`
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.light};
-  max-width: 400px;
   margin: 2rem auto;
+  max-width: 400px;
   padding: 1.5rem;
 `;
 
@@ -31,15 +31,15 @@ const Alert = styled.div`
   background: ${themeCssVariables.background.tertiary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  padding: 1rem;
   margin-bottom: 1.5rem;
+  padding: 1rem;
 `;
 
 const AlertDescription = styled.p`
   color: ${themeCssVariables.font.color.secondary};
-  margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
+  margin: 0;
 `;
 
 const Button = styled.button`
@@ -52,16 +52,16 @@ const Button = styled.button`
   font-size: 1rem;
   font-weight: 600;
   padding: 0.75rem 1rem;
-  width: 100%;
   transition: background-color 0.2s ease;
+  width: 100%;
 
   &:hover {
     background-color: #166fe5;
   }
 
   &:focus {
-    outline: none;
     box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.4);
+    outline: none;
   }
 
   &:disabled {

@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useState } from 'react';
+import React, { type RefObject, useEffect, useState } from 'react';
 import { StyledLoadingMessage, StyledVideo, StyledVideoPane } from './StyledComponents';
 
 interface VideoPlayerProps {

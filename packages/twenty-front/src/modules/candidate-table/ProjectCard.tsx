@@ -50,51 +50,51 @@ type ProjectCardProps = {
 };
 
 const StyledCard = styled.div`
-  display: flex;
-  flex-direction: column;
+  background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  padding: ${themeCssVariables.spacing[4]};
-  background-color: ${themeCssVariables.background.primary};
-  transition: all 0.2s ease-in-out;
-  height: 150px;
-  position: relative;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 150px;
+  padding: ${themeCssVariables.spacing[4]};
+  position: relative;
+  transition: all 0.2s ease-in-out;
 
   &:hover {
-    box-shadow: ${themeCssVariables.boxShadow.light};
     border-color: ${themeCssVariables.border.color.medium};
+    box-shadow: ${themeCssVariables.boxShadow.light};
   }
 `;
 
 const StyledCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: ${themeCssVariables.spacing[2]};
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
+  margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledMergeCheckbox = styled.div`
-  flex-shrink: 0;
-  display: flex;
   align-items: center;
   cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
 `;
 
 const StyledCardTitle = styled.h3`
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: ${themeCssVariables.font.color.primary};
+  display: -webkit-box;
+  flex: 1;
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.medium};
-  color: ${themeCssVariables.font.color.primary};
   margin: 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   word-break: break-word;
-  flex: 1;
-  min-width: 0;
 `;
 
 const StyledCardContent = styled.div`
@@ -105,42 +105,42 @@ const StyledCardContent = styled.div`
 `;
 
 const StyledInfoItem = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
   min-height: 20px;
 `;
 
 const StyledCardFooter = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledActiveStatus = styled.div<{ isActive: boolean }>`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
   color: ${({ isActive }) =>
     isActive ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledMenuButton = styled.button`
+  align-items: center;
   background: none;
   border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${themeCssVariables.font.color.tertiary};
   height: 24px;
-  width: 24px;
+  justify-content: center;
   padding: 0;
-  border-radius: ${themeCssVariables.border.radius.sm};
+  width: 24px;
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -148,8 +148,8 @@ const StyledMenuButton = styled.button`
 `;
 
 const StyledEditableField = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
   min-height: 20px;
 `;
@@ -158,17 +158,17 @@ const StyledEditableInput = styled.input`
   background: none;
   border: 1px solid transparent;
   border-radius: ${themeCssVariables.border.radius.sm};
-  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.tertiary};
   flex: 1;
-  min-width: 0;
+  font-size: ${themeCssVariables.font.size.sm};
   min-height: 20px;
+  min-width: 0;
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
 
   &:focus {
-    outline: none;
-    border-color: ${themeCssVariables.border.color.medium};
     background-color: ${themeCssVariables.background.secondary};
+    border-color: ${themeCssVariables.border.color.medium};
+    outline: none;
   }
 
   &:hover {
@@ -177,16 +177,16 @@ const StyledEditableInput = styled.input`
 `;
 
 const StyledEditableText = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.sm};
-  cursor: pointer;
-  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   border: 1px solid transparent;
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
   min-height: 20px;
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -195,15 +195,15 @@ const StyledEditableText = styled.div`
 `;
 
 const StyledEditButton = styled.button`
+  align-items: center;
   background: none;
   border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   display: flex;
-  align-items: center;
   justify-content: center;
-  color: ${themeCssVariables.font.color.tertiary};
   padding: ${themeCssVariables.spacing[0.5]};
-  border-radius: ${themeCssVariables.border.radius.sm};
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -216,16 +216,16 @@ const StyledActionButtons = styled.div`
 `;
 
 const StyledOrgChartButton = styled.button`
-  display: inline-flex;
   align-items: center;
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  cursor: pointer;
+  display: inline-flex;
+  font-size: ${themeCssVariables.font.size.xs};
   gap: ${themeCssVariables.spacing[1]};
   padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1.5]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  background: ${themeCssVariables.background.primary};
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.xs};
-  cursor: pointer;
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -266,7 +266,7 @@ export const ProjectCard = ({
   const { openModal } = useModal();
   const deleteProjectModalId = `delete-project-modal-${id}`;
   const deleteProjectWithCandidatesModalId = `delete-project-with-candidates-modal-${id}`;
-  const [jobs, setJobs] = useAtomState(projectsState);
+  const [projects, setProjects] = useAtomState(projectsState);
   const apolloCoreClient = useApolloCoreClient();
   const [updateProject] = useMutation(gql(UpdateOneProject), {
     client: apolloCoreClient,
@@ -331,10 +331,10 @@ export const ProjectCard = ({
 
   const handleSearchNameSave = () => {
     if (searchNameValue !== searchName) {
-      const updatedJobs = jobs.map(job =>
+      const updatedJobs = projects.map(job =>
         job.id === id ? { ...job, searchName: searchNameValue } : job
       );
-      setJobs(updatedJobs);
+      setProjects(updatedJobs);
 
       updateProject({
         variables: {
@@ -345,7 +345,7 @@ export const ProjectCard = ({
         },
         onError: (error) => {
           console.error('Failed to update search name:', error);
-          setJobs(jobs);
+          setProjects(projects);
           setSearchNameValue(searchName || '');
         }
       });

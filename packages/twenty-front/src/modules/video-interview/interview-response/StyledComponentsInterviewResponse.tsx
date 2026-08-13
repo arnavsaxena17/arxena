@@ -2,23 +2,23 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const StyledContainer = styled.div`
+  background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
   max-width: 100%;
-  overflow-x: hidden;
   min-height: 100%;
-  background-color: ${themeCssVariables.background.primary};
+  overflow-x: hidden;
   @media (min-width: 768px) {
     flex-direction: row;
   }
 `;
 export const EndInterviewStyledContainer = styled.div`
+  background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
   max-width: 100%;
-  overflow-x: hidden;
   min-height: 100%;
-  background-color: ${themeCssVariables.background.primary};
+  overflow-x: hidden;
   @media (min-width: 768px) {
     flex-direction: row;
   }
@@ -90,15 +90,15 @@ export const EndInterviewStyledLeftPanel = styled.div`
 `;
 
 export const StyledAnswerTimer = styled.div`
-  position: absolute;
-  top: 10px;
-  right: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 15px;
+  color: white;
   font-size: 14px;
   font-weight: 600;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
   padding: 5px 10px;
-  border-radius: 15px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
   z-index: 20;
 
   @media (max-width: 768px) {
@@ -110,21 +110,21 @@ export const StyledAnswerTimer = styled.div`
 `;
 
 export const StyledControlsOverlay = styled.div`
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
   align-items: center;
-  justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
   border-radius: 20px;
-  padding: 10px 20px;
-  cursor: pointer;
+  bottom: 20px;
   color: white;
-  z-index: 10;
-  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
   font-size: 14px;
+  justify-content: center;
+  left: 50%;
+  padding: 10px 20px;
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  z-index: 10;
 
   @media (max-width: 768px) {
     width: 80%;
@@ -164,18 +164,18 @@ export const ButtonText = styled.span`
 `;
 
 export const ButtonContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 16px;
   margin-top: 24px;
 `;
 
 // Styled components remain the same
 export const StyledVideoPane = styled.div`
-  height: 300px;
   align-self: stretch;
   border-radius: 16px;
+  height: 300px;
   overflow: hidden;
   position: relative;
 `;
@@ -196,15 +196,15 @@ export const StyledVideoControls = styled.div`
 `;
 
 export const StyledVideoButton = styled.button`
+  align-items: center;
   background-color: rgba(255, 255, 255, 0.7);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
   &:hover {
     background-color: rgba(255, 255, 255, 0.9);
   }
@@ -222,17 +222,17 @@ export const StyledLoadingMessage = styled.div`
 `;
 
 export const StyledButton = styled.button`
-  padding: 10px 16px;
   background-color: #4285f4;
-  color: white;
   border: none;
   border-radius: 4px;
+  color: white;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  width: 100%;
   max-width: 250px;
+  padding: 10px 16px;
   transition: background-color 0.3s ease;
+  width: 100%;
 
   &:hover {
     background-color: #3367d6;
@@ -257,9 +257,9 @@ export const AccessMessage = styled.p`
 `;
 
 export const StyledLeftPanelContentBox = styled.div`
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 12px;
   width: 100%;
 
@@ -308,16 +308,16 @@ export const StyledTextArea = styled.textarea`
 `;
 
 export const SubmitButton = styled.button`
+  align-self: flex-start;
   background-color: #4285f4;
-  color: white;
   border: none;
   border-radius: 4px;
-  padding: 12px 24px;
+  color: white;
+  cursor: pointer;
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
+  padding: 12px 24px;
   transition: background-color 0.3s ease;
-  align-self: flex-start;
 
   &:hover {
     background-color: #3367d6;
@@ -332,8 +332,8 @@ export const SubmitButton = styled.button`
 // `;
 
 export const FeedbackPrompt = styled.p`
-  font-size: 16px;
   color: #666;
+  font-size: 16px;
   margin-bottom: 20px;
 `;
 
@@ -353,9 +353,9 @@ export const InstructionSection = styled.div`
 `;
 
 export const InstructionList = styled.ol`
-  padding-left: 20px;
-  margin: 8px 0;
   font-size: 12px;
+  margin: 8px 0;
+  padding-left: 20px;
 
   @media (min-width: 768px) {
     font-size: 14px;
@@ -480,11 +480,11 @@ export const StyledVideoContainer = styled.div`
 `;
 
 export const StyledMessage = styled.div`
-  margin-top: 20px;
-  padding: 10px;
   background-color: #e8f5e9;
   border-radius: 4px;
   font-size: ${themeCssVariables.font.size.md};
+  margin-top: 20px;
+  padding: 10px;
   text-align: center;
 `;
 
@@ -505,19 +505,19 @@ export const StyledError = styled.div`
 `;
 
 export const StyledCountdownOverlay = styled.div`
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  font-size: 72px;
+  height: 120px;
+  justify-content: center;
+  left: 50%;
+  padding: 20px;
   position: absolute;
   top: 50%;
-  left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 72px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 20px;
-  border-radius: 50%;
   width: 120px;
-  height: 120px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 20;
 `;

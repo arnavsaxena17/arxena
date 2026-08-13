@@ -1,6 +1,6 @@
 ---
 title: Natural language to people at a company
-description: Ask for CHRO / HR leadership at Apple — resolve server-side, get people + resolved_as.
+description: Ask for CHRO / HR leadership / CEO at a company — resolve server-side, search Sales Nav or index.
 ---
 
 import { TaxonomyQueryFlow } from '/snippets/taxonomy-query-flow.mdx';
@@ -9,13 +9,13 @@ Utterances like these should Just Work:
 
 - “Get me the HR leadership at Apple”
 - “Give me CHRO-type people at Apple”
-- “Head of HR at Apple”
+- “CEO at StayVista”
 
-You send **role language + company**. Arxena resolves synonyms and seniority **server-side**, then returns people plus a small `resolved` object to sanity-check — without exposing how the match was made.
+You send **role language + company**. Arxena resolves synonyms and seniority **server-side**, maps std function/root/grade to LinkedIn Sales Navigator or Apollo filters when using those sources, then returns people plus a small `resolved` object.
 
 <TaxonomyQueryFlow />
 
-## One call
+## One call (index)
 
 ```bash
 curl -X POST \
@@ -30,23 +30,51 @@ curl -X POST \
   }'
 ```
 
-Same pattern for `"HR leadership"` or `"Head of HR"`.
+## Sales Navigator pipeline (Unipile pool)
+
+Classifies the title → maps to Sales Nav `function` IDs + `seniority` → searches via the **shared Unipile Sales Navigator pool** → post-filters by taxonomy.
+
+Require one of:
+
+| Source | Body fields |
+| --- | --- |
+| Shared Sales Nav pool | `"dataSource": "pool"`, `"candidateSource": "pool"` |
+| Harvest Sales Nav | `"dataSource": "harvest"`, `"candidateSource": "harvest"` |
+| Explicit Unipile account | `"dataSource": "unipile"`, `"candidateSource": "unipile"`, `"accountId": "..."` |
+
+```bash
+curl -X POST \
+  -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  -H 'Content-Type: application/json' \
+  https://app.arxena.com/people-api/people/search-by-title \
+  -d '{
+    "jobTitle": "CEO",
+    "website": "stayvista.com",
+    "dataSource": "pool",
+    "candidateSource": "pool",
+    "limit": 10
+  }'
+```
+
+Response includes:
+
+- **`resolved`** — std function / root / grade from the title
+- **`query.appliedFilters`** — Sales Nav `functionIds` + `seniorities` (or Apollo department/seniority when `dataSource: "apollo"`)
+- **`items`** — people after taxonomy post-filter
+
+## Apollo path
+
+Same endpoint with `"dataSource": "apollo"`. Taxonomy maps to `person_department_or_subdepartments` (including `master_*` roots) and `person_seniorities`.
 
 ## What you see back
 
 - **`resolved`** — what the phrase became (function root × grade + confidence)
 - **`items`** — filtered people at that company
 
-Show those resolution chips in product UI (or let Claude surface them via MCP).
-
 Playground: [Resolve job title and search people](/api-reference/people/resolve-job-title-and-search-people).
-
-## Org chart
-
-In the product org chart, use **Title query** with the same phrase. Same vocabulary, filter/highlight — no second ontology.
 
 ## Related
 
+- [Search people by taxonomy](/cookbooks/search-people-by-taxonomy)
 - [Standardized taxonomy](/concepts/standardized-taxonomy)
-- [MCP: people and org charts](/cookbooks/mcp-people-and-org-charts)
 - [Authentication](/api-reference/authentication)

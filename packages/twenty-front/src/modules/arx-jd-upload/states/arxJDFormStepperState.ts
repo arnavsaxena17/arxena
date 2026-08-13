@@ -1,9 +1,9 @@
 import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 import { createAtomWritableSelector } from '@/ui/utilities/state/jotai/utils/createAtomWritableSelector';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 import {
-  ProjectForParsedJDMerge,
+  type ProjectForParsedJDMerge,
   mergeParsedJDFromSources,
 } from '../utils/mergeParsedJDFromSources';
 import {

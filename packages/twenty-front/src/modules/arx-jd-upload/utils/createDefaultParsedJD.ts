@@ -1,4 +1,4 @@
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 // Default questions for chat and video sections
 const DEFAULT_CHAT_QUESTIONS = [

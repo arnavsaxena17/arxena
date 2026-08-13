@@ -166,18 +166,18 @@ const AttachmentPdfViewer = lazy(() =>
 //   flex-direction: column;
 // `;
 const DocViewer = styled.div`
-  padding: 24px;
   background: ${themeCssVariables.background.primary};
   border-radius: 4px;
+  color: ${themeCssVariables.font.color.primary};
   font-family: 'Calibri', 'Arial', sans-serif;
   line-height: 1.6;
-  color: ${themeCssVariables.font.color.primary};
+  padding: 24px;
 
   h1 {
+    color: ${themeCssVariables.font.color.primary};
     font-size: 24px;
     font-weight: bold;
     margin: 16px 0 8px;
-    color: ${themeCssVariables.font.color.primary};
   }
 
   h2 {
@@ -193,8 +193,8 @@ const DocViewer = styled.div`
   }
 
   p {
-    margin: 8px 0;
     font-size: 14px;
+    margin: 8px 0;
   }
 
   strong {
@@ -227,18 +227,18 @@ const DocViewer = styled.div`
 `;
 
 const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  top: 10;
-  right: ${(props) => (props.isOpen ? '0' : '-40%')};
-  width: 40%;
-  height: 100vh;
   background-color: ${themeCssVariables.background.secondary};
   box-shadow: ${themeCssVariables.boxShadow.strong};
-  transition: right 0.3s ease-in-out;
-  overflow-y: auto;
-  z-index: 1000;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  position: fixed;
+  right: ${(props) => (props.isOpen ? '0' : '-40%')};
+  top: 10;
+  transition: right 0.3s ease-in-out;
+  width: 40%;
+  z-index: 1000;
 `;
 
 // const PanelContainer = styled.div<{ isOpen: boolean }>`
@@ -259,12 +259,12 @@ const DefaultPanelContainer = styled.div<{ isOpen: boolean }>`
 // `;
 
 const Header = styled.div`
-  padding: 12px 16px;
+  align-items: center;
+  background: ${themeCssVariables.background.primary};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  background: ${themeCssVariables.background.primary};
+  padding: 12px 16px;
 `;
 
 const CandidateInfo = styled.div`
@@ -274,35 +274,35 @@ const CandidateInfo = styled.div`
 `;
 
 const CandidateName = styled.h2`
+  color: ${themeCssVariables.font.color.primary};
   font-size: 14px;
   font-weight: 500;
-  color: ${themeCssVariables.font.color.primary};
   margin: 0;
 `;
 
 const FileName = styled.h3`
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: 13px;
   font-weight: 400;
-  color: ${themeCssVariables.font.color.tertiary};
   margin: 0;
 `;
 
 const NavigationContainer = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 4px;
 `;
 
 const NavButton = styled.button`
+  align-items: center;
   background: transparent;
   border: none;
+  border-radius: 4px;
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  padding: 4px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  padding: 4px;
 
   &:hover:not(:disabled) {
     background: ${themeCssVariables.background.tertiary};
@@ -315,26 +315,26 @@ const NavButton = styled.button`
 `;
 
 const AttachmentCounter = styled.span`
-  font-size: 13px;
   color: ${themeCssVariables.font.color.secondary};
+  font-size: 13px;
   margin: 0 8px;
   min-width: 60px;
   text-align: center;
 `;
 
 const DownloadButton = styled.button`
+  align-items: center;
   background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
   color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
+  display: flex;
   font-size: 13px;
+  font-weight: 500;
+  gap: 8px;
   margin-left: 12px;
   padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
 
   &:hover:not(:disabled) {
     background: ${themeCssVariables.background.tertiary};
@@ -348,18 +348,18 @@ const DownloadButton = styled.button`
 
 const ContentContainer = styled.div`
   flex: 1;
+  height: calc(100vh - 60px);
   overflow-y: auto;
   padding: 15px;
-  height: calc(100vh - 60px);
   width: 100%;
 `;
 
 // Add this new styling for when used inside a tab
 const InlineContentContainer = styled.div`
   flex: 1;
+  height: 100%;
   overflow-y: auto;
   padding: 15px;
-  height: 100%;
   width: 100%;
 `;
 
@@ -379,13 +379,13 @@ const PDFContainer = styled.div`
 `;
 
 const CloseButton = styled.button`
-  position: absolute;
-  top: 15px;
-  right: 15px;
   background: none;
   border: none;
-  font-size: 20px;
   cursor: pointer;
+  font-size: 20px;
+  position: absolute;
+  right: 15px;
+  top: 15px;
   z-index: 1001;
 `;
 
@@ -430,36 +430,36 @@ const ContentViewer = styled.pre`
 `;
 
 const UploadContainer = styled.div`
-  margin-top: 20px;
-  text-align: center;
-  padding: 20px;
+  align-items: center;
+  background-color: #f9f9f9;
   border: 1px dashed #ccc;
   border-radius: 8px;
-  background-color: #f9f9f9;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  margin-top: 20px;
+  padding: 20px;
+  text-align: center;
 `;
 
 const UploadMessage = styled.p`
-  margin-bottom: 16px;
   color: ${props => themeCssVariables.font.color.secondary};
+  margin-bottom: 16px;
 `;
 
 const RetryButton = styled.button`
+  align-items: center;
   background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 4px;
   color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
-  font-size: 13px;
-  padding: 8px 16px;
-  margin-top: 16px;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 13px;
   font-weight: 500;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 8px 16px;
 
   &:hover {
     background: ${themeCssVariables.background.tertiary};
@@ -467,9 +467,9 @@ const RetryButton = styled.button`
 `;
 
 const ErrorContainer = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
   padding: 24px;
   text-align: center;

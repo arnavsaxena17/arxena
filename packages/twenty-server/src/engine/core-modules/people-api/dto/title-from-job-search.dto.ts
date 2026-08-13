@@ -9,6 +9,10 @@ import {
 
 import type { PeopleDataSourceAlias } from '../constants/people-data-source-aliases';
 import { PEOPLE_DATA_SOURCE_CATEGORIES } from '../constants/people-data-source-aliases';
+import {
+  PEOPLE_SALES_NAV_CANDIDATE_SOURCES,
+  type PeopleSalesNavCandidateSourceDto,
+} from './people-search.dto';
 
 const DATA_SOURCE_ALIASES = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
@@ -21,6 +25,18 @@ export class TitleFromJobSearchDto {
   @IsOptional()
   @IsIn(DATA_SOURCE_ALIASES)
   dataSource?: PeopleDataSourceAlias;
+
+  @IsOptional()
+  @IsIn(PEOPLE_SALES_NAV_CANDIDATE_SOURCES)
+  candidateSource?: PeopleSalesNavCandidateSourceDto;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsString()
+  linkedInAccountId?: string;
 
   @IsOptional()
   @IsString()

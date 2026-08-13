@@ -3,14 +3,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
-import { RecruiterDetails } from '../components/ProjectDetailsForm';
+import { type RecruiterDetails } from '../components/ProjectDetailsForm';
 import { apiKeysState } from '../states/apiKeysState';
 import {
-  ArxJDFormStepperState,
+  type ArxJDFormStepperState,
   arxJDFormStepperState,
   ArxJDFormStepType,
 } from '../states/arxJDFormStepperState';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 
 const BASE_FORM_STEPS = [
   ArxJDFormStepType.UploadJD,

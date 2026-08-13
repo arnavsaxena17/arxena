@@ -171,6 +171,10 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     search: jest.fn().mockResolvedValue({
       candidateSource: 'unipile',
       keywords: 'engineer OR engineering',
+      appliedFilters: {
+        functionIds: ['8'],
+        seniorities: ['cxo', 'director'],
+      },
       company: {
         name: 'Stripe',
         slug: 'stripe',
@@ -219,6 +223,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
         website: 'stripe.com',
         stdFunctionRoot: 'engineering',
         stdGrade: 'leadership',
+        accountId: 'acct-1',
       },
       'token',
     );
@@ -226,6 +231,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     expect(peopleLinkedInSourcingService.search).toHaveBeenCalledWith(
       expect.objectContaining({
         candidateSource: 'unipile',
+        accountId: 'acct-1',
         stdFunctionRoot: 'engineering',
         stdGrade: 'leadership',
         apiToken: 'token',
@@ -239,6 +245,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     expect(result.totalBeforeFilter).toBe(2);
     expect(result.total).toBe(1);
     expect(result.items[0].resolved.stdFunctionRoot).toBe('engineering');
+    expect(result.query.appliedFilters?.functionIds).toEqual(['8']);
   });
 
   it('throws when taxonomy batch classify is unavailable', async () => {

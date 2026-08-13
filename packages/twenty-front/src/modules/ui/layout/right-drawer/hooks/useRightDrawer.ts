@@ -32,7 +32,7 @@ const mapRightDrawerPageToSidePanelPage = (
 
 export const useRightDrawer = () => {
   const { navigateSidePanelMenu } = useSidePanelMenu();
-  const setTableState = useSetAtomState(tableStateAtom);
+  const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
 
   const openRightDrawer = useCallback(
@@ -43,7 +43,7 @@ export const useRightDrawer = () => {
         setSelectedCandidateId(candidateId);
       }
 
-      setTableState((previousState) => ({
+      setTableStateAtom((previousState) => ({
         ...previousState,
         isRightPanelOpen: true,
         currentRightPanelRowId:
@@ -64,7 +64,7 @@ export const useRightDrawer = () => {
         resetNavigationStack: true,
       });
     },
-    [navigateSidePanelMenu, setSelectedCandidateId, setTableState],
+    [navigateSidePanelMenu, setSelectedCandidateId, setTableStateAtom],
   );
 
   return { openRightDrawer };

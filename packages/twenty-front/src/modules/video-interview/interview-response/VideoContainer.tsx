@@ -35,43 +35,43 @@ const UnmirroredWebcam = styled(Webcam as any)`
 
 
 const LoadingOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
   align-items: center;
-  justify-content: center;
   backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.5);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
   z-index: 1000;
 `;
 
 const LoaderCard = styled.div`
+  align-items: center;
   background-color: ${themeCssVariables.background.secondary};
-  padding: 32px;
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.strong};
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 16px;
+  padding: 32px;
 `;
 
 const SpinnerContainer = styled.div`
-  width: 48px;
   height: 48px;
   position: relative;
+  width: 48px;
 `;
 
 const Spinner = styled.div`
-  width: 100%;
-  height: 100%;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
   animation: spin 1s linear infinite;
+  border: 4px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  height: 100%;
+  width: 100%;
 
   @keyframes spin {
     0% {
@@ -84,34 +84,34 @@ const Spinner = styled.div`
 `;
 
 const LoaderText = styled.p`
+  color: #333;
   font-size: 18px;
   font-weight: 500;
-  color: #333;
 `;
 
 const ErrorOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
   align-items: center;
-  justify-content: center;
   backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.5);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
   z-index: 1000;
 `;
 
 const ErrorMessage = styled.div`
   background-color: ${themeCssVariables.background.secondary};
-  padding: 24px;
   border-radius: 8px;
   box-shadow: ${themeCssVariables.boxShadow.strong};
   color: #dc2626;
   font-size: 16px;
   font-weight: 500;
   max-width: 400px;
+  padding: 24px;
   text-align: center;
 `;
 
@@ -126,23 +126,23 @@ const TimerContainer = styled.div`
 `;
 
 const TimerBox = styled.div`
+  align-items: center;
   background-color: ${themeCssVariables.background.tertiary};
-  padding: 8px 16px;
   border-radius: 8px;
   display: flex;
-  align-items: center;
   gap: 4px;
+  padding: 8px 16px;
 `;
 
 const TimerValue = styled.span`
-  font-weight: 600;
   color: ${props => props.color || themeCssVariables.font.color.primary};
+  font-weight: 600;
 `;
 
 export const StyledIcon = styled.div`
-  width: 20px;
-  height: 20px;
   background-color: ${themeCssVariables.background.primary};
+  height: 20px;
+  width: 20px;
 `;
 
 const formatTime = (seconds: number) => {

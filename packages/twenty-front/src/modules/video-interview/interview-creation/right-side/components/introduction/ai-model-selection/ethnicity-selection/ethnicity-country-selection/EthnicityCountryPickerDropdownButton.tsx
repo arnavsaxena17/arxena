@@ -2,7 +2,7 @@ import { IconChevronDown, IconWorld } from 'twenty-ui/icon';
 import { styled } from '@linaria/react';
 import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
-import { Country } from '@/ui/input/components/internal/types/Country';
+import { type Country } from '@/ui/input/components/internal/types/Country';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
@@ -18,19 +18,19 @@ type StyledDropdownButtonProps = {
 export const StyledDropdownButtonContainer = styled.div<StyledDropdownButtonProps>`
   align-items: center;
   background-color: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border-right: 1px solid ${themeCssVariables.border.color.light};
   color: ${({ color }) => color ?? 'none'};
   cursor: pointer;
   display: flex;
-  width: min-content;
   height: 32px;
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
   padding-left: ${themeCssVariables.spacing[2]};
   padding-right: ${themeCssVariables.spacing[2]};
 
   user-select: none;
 
-  border-right: 1px solid ${themeCssVariables.border.color.light};
+  width: min-content;
 
   &:hover {
     filter: brightness(0.95);

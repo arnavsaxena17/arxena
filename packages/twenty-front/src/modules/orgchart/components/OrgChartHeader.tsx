@@ -1,21 +1,21 @@
-import { ReactNode, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { OrgChartFilters, OrgChartFiltersProps } from 'twenty-orgchart';
+import { OrgChartFilters, type OrgChartFiltersProps } from 'twenty-orgchart';
 
 import {
     OrgChartBusinessDivisionQuery,
-    OrgChartBusinessDivisionQueryProps,
+    type OrgChartBusinessDivisionQueryProps,
 } from './OrgChartBusinessDivisionQuery';
 import { OrgChartCompanyDrawer } from './OrgChartCompanyDrawer';
 import {
     OrgChartCompanyInfo,
-    OrgChartCompanyInfoProps,
+    type OrgChartCompanyInfoProps,
 } from './OrgChartCompanyInfo';
 import {
     OrgChartTitleQueryBar,
-    OrgChartTitleQueryBarProps,
+    type OrgChartTitleQueryBarProps,
 } from './OrgChartTitleQueryBar';
 
 const StyledHeader = styled.div`
@@ -31,23 +31,23 @@ const StyledHeader = styled.div`
 `;
 
 const StyledMonthPickerCenter = styled.div`
-  position: absolute;
-  left: 50%;
-  top: ${themeCssVariables.spacing[2]};
-  transform: translateX(-50%);
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]}
-    ${themeCssVariables.spacing[1.5]};
+  background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  background: ${themeCssVariables.background.primary};
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+  left: 50%;
+  padding: ${themeCssVariables.spacing[1]}
+    ${themeCssVariables.spacing[1.5]};
+  position: absolute;
+  top: ${themeCssVariables.spacing[2]};
+  transform: translateX(-50%);
 `;
 
 const StyledMonthLabel = styled.span`
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   white-space: nowrap;
 `;
 
@@ -62,28 +62,28 @@ const StyledMonthInput = styled.input`
 `;
 
 const StyledOrgChartToolbar = styled.div`
-  margin-left: auto;
-  display: flex;
   align-items: flex-end;
+  background: ${themeCssVariables.background.transparent.light};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[2]};
-  flex-shrink: 0;
+  margin-left: auto;
   padding: ${themeCssVariables.spacing[1.5]}
     ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  background: ${themeCssVariables.background.transparent.light};
 `;
 
 const StyledBackButton = styled.button`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  margin-right: ${themeCssVariables.spacing[2]};
-  cursor: pointer;
   background: transparent;
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  margin-right: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:hover {
     background: ${themeCssVariables.background.transparent.light};

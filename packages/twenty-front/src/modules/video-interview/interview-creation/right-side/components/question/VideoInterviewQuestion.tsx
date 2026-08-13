@@ -8,11 +8,11 @@ import { QuestionTypeSelectionContainer } from '@/video-interview/interview-crea
 import { SELECT_QUESTION_TYPE_DROPDOWN_ID } from '@/video-interview/interview-creation/right-side/components/question/question-type-selection/selectQuestionTypeDropdownId';
 const StyledContainer = styled.div`
   flex-direction: column;
+  flex-grow: 1;
   gap: 44px;
   overflow-y: scroll;
-  scroll-behavior: smooth;
-  flex-grow: 1;
   overflow-y: scroll;
+  scroll-behavior: smooth;
   scroll-behavior: smooth;
 `;
 

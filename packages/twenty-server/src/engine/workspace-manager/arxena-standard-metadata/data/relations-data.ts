@@ -900,6 +900,40 @@ export const getRelationsData = (
     //   },
     // },
     // Assistant Thread Candidate relations (ONE_TO_MANY only; MANY_TO_ONE not used in sync)
+    {
+      fromObjectName: 'company',
+      toObjectName: 'websiteVisitor',
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconEye',
+        fromLabel: 'Website Visitors',
+        fromName: 'websiteVisitors',
+        fromObjectMetadataId: objectsNameIdMap.company,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.websiteVisitor,
+        toDescription: 'Linked CRM company when resolution confidence is high',
+        toIcon: 'IconBuilding',
+        toLabel: 'Company',
+        toName: 'company',
+      },
+    },
+    {
+      fromObjectName: 'websiteDomain',
+      toObjectName: 'websiteVisitor',
+      relationMetadata: {
+        fromDescription: null,
+        fromIcon: 'IconEye',
+        fromLabel: 'Website Visitors',
+        fromName: 'websiteVisitors',
+        fromObjectMetadataId: objectsNameIdMap.websiteDomain,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.websiteVisitor,
+        toDescription: 'Registered domain this visitor hit',
+        toIcon: 'IconWorldWww',
+        toLabel: 'Website Domain',
+        toName: 'websiteDomain',
+      },
+    },
   ];
 
   return allRelations

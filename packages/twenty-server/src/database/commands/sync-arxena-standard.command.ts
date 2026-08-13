@@ -13,7 +13,7 @@ type SyncArxenaStandardCommandOptions = {
 @Command({
   name: 'workspace:sync-arxena-standard',
   description:
-    'Re-sync the Arxena standard application (objects + fields) onto provisioned workspaces. Required for new objects such as gtmWorkspaceProfile and before GTM Command dashboard seeding on existing workspaces.',
+    'Re-sync the Arxena standard application (objects + fields) onto provisioned workspaces. Required for new objects such as workspaceProfile and before GTM Command dashboard seeding on existing workspaces.',
 })
 export class SyncArxenaStandardCommand extends CommandRunner {
   protected logger: CommandLogger;

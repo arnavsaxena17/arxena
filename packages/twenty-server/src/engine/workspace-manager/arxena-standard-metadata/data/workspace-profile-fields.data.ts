@@ -1,142 +1,142 @@
 import { type ArxenaFieldWithObject } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 
-export const getGtmWorkspaceProfileFieldsData = (
+export const getWorkspaceProfileFieldsData = (
   objectsNameIdMap: Record<string, string>,
 ): ArxenaFieldWithObject[] => [
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Seller company name for GTM Command',
       icon: 'IconBuilding',
       label: 'Company Name',
       name: 'companyName',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Seller company domain (usually signup work email domain)',
       icon: 'IconWorld',
       label: 'Company Domain',
       name: 'companyDomain',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Seller company industry',
       icon: 'IconBuildingFactory',
       label: 'Industry',
       name: 'industry',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Short seller company summary / blurb',
       icon: 'IconNotes',
       label: 'Summary',
       name: 'summary',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Seller company employee range',
       icon: 'IconUsers',
       label: 'Employee Range',
       name: 'employeeRange',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Seller company HQ / primary geo',
       icon: 'IconMapPin',
       label: 'HQ',
       name: 'hq',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description:
         'Company details JSON (LinkedIn / Sales Nav profile, companies index wiki hit, Apollo, and bootstrap metadata)',
       icon: 'IconJson',
       label: 'Company Details JSON',
       name: 'enrichmentJson',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'RAW_JSON',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description: 'Default ICP segment label shared across GTM runs',
       icon: 'IconTags',
       label: 'ICP Segment',
       name: 'icpSegment',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description:
         'Default ICP JSON (std_function / std_grade targets) shared across GTM runs',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description:
         'Natural-language definition of the default ICP (who we sell to / why)',
       icon: 'IconNotes',
       label: 'ICP Blurb',
       name: 'icpBlurb',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description:
         'Natural-language brief used to find target companies for this ICP',
       icon: 'IconSearch',
       label: 'Company Search Blurb',
       name: 'companySearchBlurb',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },
   {
-    objectName: 'gtmWorkspaceProfile',
+    objectName: 'workspaceProfile',
     field: {
       description:
         'Natural-language brief used to find buyers/personas at target companies',
       icon: 'IconUserSearch',
       label: 'People Search Blurb',
       name: 'peopleSearchBlurb',
-      objectMetadataId: objectsNameIdMap.gtmWorkspaceProfile,
+      objectMetadataId: objectsNameIdMap.workspaceProfile,
       type: 'TEXT',
     },
   },

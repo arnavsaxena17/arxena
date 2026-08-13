@@ -1,6 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { fetchOrgChartEmbeds } from '@/settings/developers/services/org-chart-embed-api.service';
-import { OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
+import { type OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
 import { Table } from '@/ui/layout/table/components/Table';
 import { TableBody } from '@/ui/layout/table/components/TableBody';
 import { TableCell } from '@/ui/layout/table/components/TableCell';

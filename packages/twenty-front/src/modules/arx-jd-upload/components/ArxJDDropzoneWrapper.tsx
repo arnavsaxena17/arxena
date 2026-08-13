@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import Dropzone, { DropzoneState, useDropzone } from 'react-dropzone';
+import { type ReactNode } from 'react';
+import Dropzone, { type DropzoneState, useDropzone } from 'react-dropzone';
 
 type ArxJDDropzoneWrapperProps = {
   onDrop: (acceptedFiles: File[]) => void;

@@ -4,7 +4,7 @@ import { useQuestionToDisplay } from '@/video-interview/interview-creation/hooks
 import { QuestionNavElement } from '@/video-interview/interview-creation/left-side/components/video-interview-modal-nav-container/question/QuestionNavElement';
 import { VideoInterviewQuestion } from '@/video-interview/interview-creation/right-side/components/question/VideoInterviewQuestion';
 import { questionsArrState } from '@/video-interview/interview-creation/states/questionsArrState';
-import { leftAndRightCombined } from '@/video-interview/interview-creation/types/leftAndRightCombined';
+import { type leftAndRightCombined } from '@/video-interview/interview-creation/types/leftAndRightCombined';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 
 export const useAddRemoveVideoInterviewQuestion = () => {

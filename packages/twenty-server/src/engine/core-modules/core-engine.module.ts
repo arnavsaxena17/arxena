@@ -91,6 +91,7 @@ import { UsageModule } from 'src/engine/core-modules/usage/usage.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
 import { VideoInterviewModule } from 'src/engine/core-modules/video-interview/video-interview.module';
 import { WebsiteLeadsModule } from 'src/engine/core-modules/website-leads/website-leads.module';
+import { WebsiteTrackerModule } from 'src/engine/core-modules/website-tracker/website-tracker.module';
 import { WellKnownModule } from 'src/engine/core-modules/well-known/well-known.module';
 import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkflowApiModule } from 'src/engine/core-modules/workflow/workflow-api.module';
@@ -231,6 +232,7 @@ import { FileModule } from './file/file.module';
     UnipileAttachmentModule,
     OrgChartModule,
     OrgChartEmbedModule,
+    WebsiteTrackerModule,
     WebsiteLeadsModule,
     PrivacyConsentModule,
     LLMChatModelModule.forRoot({

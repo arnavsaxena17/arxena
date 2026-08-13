@@ -6,30 +6,30 @@ import { IconBolt, IconDatabase, IconTrash } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContextHintBar = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   background-color: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
+  display: flex;
+  justify-content: space-between;
   margin-bottom: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledContextInfo = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[2]};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHintSection = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[2]};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHintIcon = styled.div`
@@ -44,15 +44,7 @@ const StyledActionButtons = styled.div`
 const StyledActionButton = styled.button<{
   variant?: 'primary' | 'secondary' | 'danger';
 }>`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  font-size: ${themeCssVariables.font.size.sm};
-  cursor: pointer;
-  transition: all 0.2s ease;
   background-color: ${({ variant }) => {
     if (variant === 'primary') {
       return themeCssVariables.color.blue;
@@ -62,10 +54,7 @@ const StyledActionButton = styled.button<{
     }
     return themeCssVariables.background.primary;
   }};
-  color: ${({ variant }) =>
-    variant === 'primary' || variant === 'danger'
-      ? 'white'
-      : themeCssVariables.font.color.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-color: ${({ variant }) => {
     if (variant === 'primary') {
       return themeCssVariables.color.blue;
@@ -75,6 +64,17 @@ const StyledActionButton = styled.button<{
     }
     return themeCssVariables.border.color.medium;
   }};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${({ variant }) =>
+    variant === 'primary' || variant === 'danger'
+      ? 'white'
+      : themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: ${({ variant }) => {
@@ -111,7 +111,7 @@ export const ContextHintBar = ({
   onDiscard,
   className
 }: ContextHintBarProps) => {
-  const fetchedCount = useAtomStateValue(fetchedCandidatesCountSelector);
+  const fetchedCandidatesCount = useAtomStateValue(fetchedCandidatesCountSelector);
   const parsedJD = useAtomStateValue(parsedJDSelector);
 
   // Determine hint based on current state

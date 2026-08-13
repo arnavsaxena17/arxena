@@ -15,7 +15,7 @@ import {
   hasAiFilterContext,
 } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { TableState, tableStateAtom } from '@/candidate-table/states/states';
+import { type TableState, tableStateAtom } from '@/candidate-table/states/states';
 import { refreshTableDataTriggerState } from '@/candidate-table/states/refreshTableDataTriggerState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -30,48 +30,48 @@ import { ArxEnrichName } from './ArxEnrichName'; // Ensure this import is correc
 import DynamicModelCreator from './DynamicModelCreator';
 
 const StyledFormElement = styled.form<{ isMinimized?: boolean }>`
-  display: flex;
-  gap: ${({ isMinimized }) => isMinimized ? '0px' : '44px'};
-  flex-grow: 1;
-  flex-direction: ${({ isMinimized }) => isMinimized ? 'row' : 'column'};
-  overflow-y: ${({ isMinimized }) => isMinimized ? 'hidden' : 'auto'};
-  scroll-behavior: smooth;
-  position: relative;
-  left: -80px;
   align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-start'};
+  display: flex;
+  flex-direction: ${({ isMinimized }) => isMinimized ? 'row' : 'column'};
+  flex-grow: 1;
+  gap: ${({ isMinimized }) => isMinimized ? '0px' : '44px'};
   justify-content: ${({ isMinimized }) => isMinimized ? 'space-between' : 'flex-start'};
+  left: -80px;
+  overflow-y: ${({ isMinimized }) => isMinimized ? 'hidden' : 'auto'};
+  position: relative;
+  scroll-behavior: smooth;
 `;
 
 const ErrorContainer = styled.div`
   position: sticky;
   top: 0;
-  z-index: 1;
   width: 100%;
+  z-index: 1;
 `;
 
 const StyledAllContainer = styled.div<{ isMinimized?: boolean }>`
+  align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-end'};
   background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
-  left: -200px;
+  flex-shrink: 1;
   gap: ${({ isMinimized }) => isMinimized ? '0px' : '44px'};
+  height: ${({ isMinimized }) => isMinimized ? '60px' : 'auto'};
+  left: -200px;
+  min-width: ${({ isMinimized }) => isMinimized ? 'auto' : '264px'};
   padding: ${({ isMinimized }) => isMinimized ? '0 16px' : '44px 32px 44px 32px'};
   width: ${({ isMinimized }) => isMinimized ? '100%' : 'calc(100% * (6 / 6))'};
-  min-width: ${({ isMinimized }) => isMinimized ? 'auto' : '264px'};
-  flex-shrink: 1;
-  height: ${({ isMinimized }) => isMinimized ? '60px' : 'auto'};
-  align-items: ${({ isMinimized }) => isMinimized ? 'center' : 'flex-end'};
 `;
 
 const StyledQuestionsContainer = styled.ol`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  padding: 0;
   font-family: ${themeCssVariables.font.family};
-  margin: 0px;
   list-style-type: none;
+  margin: 0px;
   overflow-y: scroll;
+  padding: 0;
   scroll-behavior: smooth;
 `;
 
@@ -106,59 +106,59 @@ interface ArxEnrichRightSideContainerProps {
   onRefresh?: () => void;
 }
 const LoadingOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  align-items: center;
   background: rgba(255, 255, 255, 0.7);
+  bottom: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
   z-index: 1000;
 `;
 
 const ProgressContainer = styled.div`
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
   position: sticky;
   top: 0;
   z-index: 10;
-  background: ${themeCssVariables.background.primary};
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  border: 1px solid ${themeCssVariables.border.color.medium};
 `;
 
 const ProgressBar = styled.div<{ progress: number }>`
-  width: 100%;
-  height: 8px;
   background: ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  overflow: hidden;
+  height: 8px;
   margin: 0.5rem 0;
+  overflow: hidden;
+  width: 100%;
 
   &::after {
+    background: ${themeCssVariables.color.blue};
     content: '';
     display: block;
-    width: ${({ progress }) => progress}%;
     height: 100%;
-    background: ${themeCssVariables.color.blue};
     transition: width 0.3s ease;
+    width: ${({ progress }) => progress}%;
   }
 `;
 
 const ProgressText = styled.div`
-  font-size: 0.875rem;
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: 0.875rem;
   margin-bottom: 0.25rem;
 `;
 
 const ProgressDetails = styled.div`
-  font-size: 0.75rem;
+  align-items: center;
   color: ${themeCssVariables.font.color.tertiary};
   display: flex;
+  font-size: 0.75rem;
   justify-content: space-between;
-  align-items: center;
 `;
 
 export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerProps> = ({
@@ -175,9 +175,9 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   reconnect: propReconnect,
   onRefresh
 }) => {
-  const [activeEnrichment, setActiveEnrichment] = useAtomState(activeAiFilterState);
-  const [enrichments, setEnrichments] = useAtomState(aiFiltersState);
-  const [isMinimized, setIsMinimized] = useAtomState(isArxAiFilteringModalMinimizedState);
+  const [activeAiFilter, setActiveAiFilter] = useAtomState(activeAiFilterState);
+  const [aiFilters, setAiFilters] = useAtomState(aiFiltersState);
+  const [isArxAiFilteringModalMinimized, setIsArxAiFilteringModalMinimized] = useAtomState(isArxAiFilteringModalMinimizedState);
   const [tokenPair] = useAtomState(tokenPairState);
   const [error, setError] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
@@ -197,7 +197,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
     enqueueErrorSnackBar,
   } = useSnackBar();
   const setRefreshTableDataTrigger = useSetAtomState(refreshTableDataTriggerState);
-  const projectId = useAtomStateValue(currentProjectIdState);
+  const currentProjectId = useAtomStateValue(currentProjectIdState);
   const tableState = useAtomStateValue<TableState>(tableStateAtom);
   // Use SSE data from props (passed from modal level)
   const enrichmentProgress = propAiFilteringProgress ?? propEnrichmentProgress;
@@ -214,7 +214,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   };
 
   const handleToggleMinimize = () => {
-    setIsMinimized(!isMinimized);
+    setIsArxAiFilteringModalMinimized(!isArxAiFilteringModalMinimized);
   };
 
   // Get selected or all record IDs from table state
@@ -372,8 +372,8 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
 
   return (
 
- <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`} isMinimized={isMinimized}>
-    <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm" isMinimized={isMinimized}>
+ <StyledAllContainer id={`${objectNameSingular}: ${objectRecordId}`} isMinimized={isArxAiFilteringModalMinimized}>
+    <StyledFormElement onSubmit={handleSubmit} id="NewArxEnrichForm" isMinimized={isArxAiFilteringModalMinimized}>
     {isLoading && (
         <LoadingOverlay>
           <IconLoader size={32} className="animate-spin" />
@@ -385,7 +385,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         onSubmit={handleSubmit}
         index={activeEnrichment || 0}
         onError={handleError}
-        isMinimized={isMinimized}
+        isMinimized={isArxAiFilteringModalMinimized}
         onToggleMinimize={handleToggleMinimize}
       />
 
@@ -414,7 +414,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
         </ProgressContainer>
       )}
 
-      {!isMinimized && (
+      {!isArxAiFilteringModalMinimized && (
         <>
 
           {/* SSE Connection Status Debug */}

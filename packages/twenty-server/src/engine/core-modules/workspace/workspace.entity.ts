@@ -434,6 +434,23 @@ export class WorkspaceEntity {
   })
   isOrgChartEnabled: string | null;
 
+  // Public id embedded in the website visitor tracking snippet
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'website_tracking_app_id',
+  })
+  websiteTrackingAppId: string | null;
+
+  @Column({
+    type: 'boolean',
+    nullable: false,
+    default: false,
+    name: 'website_tracking_enabled',
+  })
+  websiteTrackingEnabled: boolean;
+
   @Field(() => [String], { nullable: true })
   @Column({
     type: 'varchar',

@@ -9,51 +9,51 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledChatKitContainer = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: ${({ isOpen }) => (isOpen ? '400px' : '0')};
-  height: ${({ isOpen }) => (isOpen ? '600px' : '0')};
   background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.xl};
+  bottom: 20px;
   box-shadow: ${themeCssVariables.boxShadow.superHeavy};
-  z-index: 1001;
-  transition: all 200ms ease;
-  overflow: hidden;
   display: ${({ isOpen }) => (isOpen ? 'flex' : 'none')};
   flex-direction: column;
+  height: ${({ isOpen }) => (isOpen ? '600px' : '0')};
+  overflow: hidden;
+  position: fixed;
+  right: 20px;
+  transition: all 200ms ease;
+  width: ${({ isOpen }) => (isOpen ? '400px' : '0')};
+  z-index: 1001;
 `;
 
 const StyledChatHeader = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   background-color: ${themeCssVariables.background.secondary};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
-  min-height: 50px;
+  display: flex;
   flex-shrink: 0;
+  justify-content: space-between;
+  min-height: 50px;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledChatTitle = styled.div`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.medium};
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const StyledCloseButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
   background-color: transparent;
+  border: none;
   border-radius: ${themeCssVariables.border.radius.sm};
-  cursor: pointer;
   color: ${themeCssVariables.font.color.secondary};
+  cursor: pointer;
+  display: flex;
+  height: 32px;
+  justify-content: center;
   transition: all 0.2s ease;
+  width: 32px;
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -62,10 +62,10 @@ const StyledCloseButton = styled.button`
 `;
 
 const StyledChatContent = styled.div`
-  flex: 1;
-  overflow: hidden;
   display: flex;
+  flex: 1;
   flex-direction: column;
+  overflow: hidden;
 `;
 
 type ChatKitWidgetProps = {

@@ -6,37 +6,37 @@ import { AnimatedPlaceholder, AnimatedPlaceholderEmptySubTitle, AnimatedPlacehol
 import { OrgChartCompanySearchWrapper } from '@/orgchart/components/OrgChartCompanySearchWrapper';
 
 const StyledEmptyStateOrgChartSearch = styled.div`
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
   max-width: 420px;
+  width: 100%;
 `;
 
 const StyledEmptyStateOrgChartSearchRow = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledEmptyStateOrgChartCreditsBadge = styled.span`
-margin-top:100px;
+color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.medium};
-  color: ${themeCssVariables.font.color.tertiary};
+  margin-top:100px;
   white-space: nowrap;
 `;
 
 const StyledOrgChartEmptyStateWrapper = styled.div`
-  width: 100%;
-  min-height: 100%;
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding-top: ${themeCssVariables.spacing[8]};
   gap: ${themeCssVariables.spacing[6]};
+  justify-content: flex-start;
+  min-height: 100%;
+  padding-top: ${themeCssVariables.spacing[8]};
   text-align: center;
+  width: 100%;
 `;
 
 type OrgChartWorkspaceReadyEmptyStateProps = {

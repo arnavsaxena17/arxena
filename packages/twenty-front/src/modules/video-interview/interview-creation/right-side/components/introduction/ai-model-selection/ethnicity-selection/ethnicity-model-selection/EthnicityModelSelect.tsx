@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { Country } from '@/ui/input/components/internal/types/Country';
+import { type Country } from '@/ui/input/components/internal/types/Country';
 import { Select } from '@/ui/input/components/Select';
 import { type SelectOption } from 'twenty-ui/input';
 

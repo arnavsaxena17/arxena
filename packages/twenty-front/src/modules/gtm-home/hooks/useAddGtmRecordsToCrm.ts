@@ -162,7 +162,7 @@ const normalizeDomain = (domain: string): string =>
 export const useAddGtmRecordsToCrm = () => {
   const [isPersisting, setIsPersisting] = useState(false);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
-  const commandContext = useAtomStateValue(gtmCommandContextState);
+  const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
   const { createOneRecord: createCompany } = useCreateOneRecord({
     objectNameSingular: 'company',
   });

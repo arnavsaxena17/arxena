@@ -1,4 +1,4 @@
-import { BaseSortField, CustomSortState } from '../types/sortTypes';
+import { type BaseSortField, type CustomSortState } from '../types/sortTypes';
 
 // Define the priority order for conversation status
 const CONVERSATION_STATUS_PRIORITY: Record<string, number> = {

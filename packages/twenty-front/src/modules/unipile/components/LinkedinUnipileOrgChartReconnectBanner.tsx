@@ -26,23 +26,23 @@ const StyledLinkedinInlineLink = styled.a`
 `;
 
 const StyledBanner = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[2]};
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   background: ${themeCssVariables.background.secondary};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  flex-wrap: wrap;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledActions = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
+  display: flex;
   flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 export type LinkedinUnipileOrgChartReconnectBannerProps = {
@@ -57,7 +57,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = ({
   isExtensionInstalled,
 }: LinkedinUnipileOrgChartReconnectBannerProps) => {
   const { t } = useLingui();
-  const orgChartLinkedinSource = useAtomStateValue(
+  const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
   const tokenPair = useAtomStateValue(tokenPairState);

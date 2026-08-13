@@ -22,7 +22,7 @@ type DeleteProjectResponse = {
 
 export const useDeleteProject = () => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [jobs, setJobs] = useAtomState(projectsState);
+  const [projects, setProjects] = useAtomState(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar } =
     useSnackBar();
@@ -40,11 +40,11 @@ export const useDeleteProject = () => {
         throw new Error('Not authenticated');
       }
 
-      const previousJobs = jobs;
+      const previousJobs = projects;
       const deleteCandidates = options.deleteCandidates === true;
 
       setIsDeleting(true);
-      setJobs(jobs.filter((job) => job.id !== projectId));
+      setProjects(projects.filter((job) => job.id !== projectId));
 
       try {
         const response = await axios.post<DeleteProjectResponse>(
@@ -64,7 +64,7 @@ export const useDeleteProject = () => {
         const { status, message } = response.data;
 
         if (status === 'Failed') {
-          setJobs(previousJobs);
+          setProjects(previousJobs);
           throw new Error(message ?? 'Failed to delete project');
         }
 
@@ -89,7 +89,7 @@ export const useDeleteProject = () => {
 
         return response.data;
       } catch (error) {
-        setJobs(previousJobs);
+        setProjects(previousJobs);
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to delete project';
         enqueueErrorSnackBar({
@@ -105,8 +105,8 @@ export const useDeleteProject = () => {
       enqueueErrorSnackBar,
       enqueueSuccessSnackBar,
       enqueueWarningSnackBar,
-      jobs,
-      setJobs,
+      projects,
+      setProjects,
       tokenPair?.accessOrWorkspaceAgnosticToken?.token,
     ],
   );

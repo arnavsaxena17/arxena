@@ -29,38 +29,40 @@ export const HotTableContextStoreEffect = ({
   const tableState = useAtomStateValue(tableStateAtom);
   const searchResults = useAtomStateValue(searchResultsState);
 
-  const targetedRecordsRule = useAtomComponentStateValue(
+  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
     tableId,
   );
-  const numberOfSelectedRecords = useAtomComponentStateValue(
+  const contextStoreNumberOfSelectedRecords = useAtomComponentStateValue(
     contextStoreNumberOfSelectedRecordsComponentState,
     tableId,
   );
 
-  const setContextStoreCurrentObjectMetadataItemId =
+  // Project-scoped HotTable instance
+  const setTableContextStoreCurrentObjectMetadataItemId =
     useSetAtomComponentState(
       contextStoreCurrentObjectMetadataItemIdComponentState,
       tableId,
     );
-  const setContextStoreCurrentPageType = useSetAtomComponentState(
+  const setTableContextStoreCurrentPageType = useSetAtomComponentState(
     contextStoreCurrentPageTypeComponentState,
     tableId,
   );
 
-  const setMainTargetedRecordsRule = useSetAtomComponentState(
+  // MAIN instance (side panel / Cmd+K)
+  const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
     contextStoreTargetedRecordsRuleComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainNumberOfSelectedRecords = useSetAtomComponentState(
+  const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
     contextStoreNumberOfSelectedRecordsComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainObjectMetadataItemId = useSetAtomComponentState(
+  const setContextStoreCurrentObjectMetadataItemId = useSetAtomComponentState(
     contextStoreCurrentObjectMetadataItemIdComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainPageType = useSetAtomComponentState(
+  const setContextStoreCurrentPageType = useSetAtomComponentState(
     contextStoreCurrentPageTypeComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
@@ -74,16 +76,18 @@ export const HotTableContextStoreEffect = ({
       return;
     }
 
+    setTableContextStoreCurrentObjectMetadataItemId(
+      candidateObjectMetadataItem.id,
+    );
+    setTableContextStoreCurrentPageType(ContextStorePageType.Index);
     setContextStoreCurrentObjectMetadataItemId(candidateObjectMetadataItem.id);
     setContextStoreCurrentPageType(ContextStorePageType.Index);
-    setMainObjectMetadataItemId(candidateObjectMetadataItem.id);
-    setMainPageType(ContextStorePageType.Index);
 
     return () => {
-      setMainObjectMetadataItemId(undefined);
-      setMainPageType(null);
-      setMainNumberOfSelectedRecords(0);
-      setMainTargetedRecordsRule({
+      setContextStoreCurrentObjectMetadataItemId(undefined);
+      setContextStoreCurrentPageType(null);
+      setContextStoreNumberOfSelectedRecords(0);
+      setContextStoreTargetedRecordsRule({
         mode: 'selection',
         selectedRecordIds: [],
       });
@@ -92,28 +96,28 @@ export const HotTableContextStoreEffect = ({
     candidateObjectMetadataItem,
     setContextStoreCurrentObjectMetadataItemId,
     setContextStoreCurrentPageType,
-    setMainNumberOfSelectedRecords,
-    setMainObjectMetadataItemId,
-    setMainPageType,
-    setMainTargetedRecordsRule,
+    setContextStoreNumberOfSelectedRecords,
+    setContextStoreTargetedRecordsRule,
+    setTableContextStoreCurrentObjectMetadataItemId,
+    setTableContextStoreCurrentPageType,
   ]);
 
   // Keep MAIN in sync so side panel / Cmd+K see HotTable selection live
   useEffect(() => {
-    setMainTargetedRecordsRule(targetedRecordsRule);
-    setMainNumberOfSelectedRecords(numberOfSelectedRecords);
+    setContextStoreTargetedRecordsRule(contextStoreTargetedRecordsRule);
+    setContextStoreNumberOfSelectedRecords(contextStoreNumberOfSelectedRecords);
   }, [
-    numberOfSelectedRecords,
-    setMainNumberOfSelectedRecords,
-    setMainTargetedRecordsRule,
-    targetedRecordsRule,
+    contextStoreNumberOfSelectedRecords,
+    contextStoreTargetedRecordsRule,
+    setContextStoreNumberOfSelectedRecords,
+    setContextStoreTargetedRecordsRule,
   ]);
 
   // Seed record store so noneDefined(selectedRecords, "deletedAt") can pass
   useEffect(() => {
     const selectedRecordIds =
-      targetedRecordsRule.mode === 'selection'
-        ? targetedRecordsRule.selectedRecordIds
+      contextStoreTargetedRecordsRule.mode === 'selection'
+        ? contextStoreTargetedRecordsRule.selectedRecordIds
         : [];
 
     if (selectedRecordIds.length === 0) {
@@ -174,7 +178,7 @@ export const HotTableContextStoreEffect = ({
   }, [
     searchResults,
     tableState.rawData,
-    targetedRecordsRule,
+    contextStoreTargetedRecordsRule,
     upsertRecordsInStore,
   ]);
 

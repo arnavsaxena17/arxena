@@ -26,9 +26,12 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Recoil→Jotai setter call-site renames | Fixed ReferenceErrors where Jotai setters were declared with longer names but call sites/deps still used old Recoil-era names (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, `setMain*`→`setContextStore*`, etc.) | ARX modules under `candidate-table`, `arx-ai-filtering`, `arx-jd-upload`, `gtm-home`, `orgchart`, `unipile`; see §2 |
+| Website visitor tracking | Apollo-like inbound: `websiteTrackingAppId` on `core.workspace`; CRM `websiteDomain` + `websiteVisitor`; ClickHouse `website_pageview`; public collect + Settings → Accounts → Website (snippet, domains, visitors feed); `website-tracker.js` on marketing site | `website-tracker/*`, `SettingsAccountsWebsite.tsx`, `SettingsPath.AccountsWebsite`, `2-25-*-1785600000020/0021-*`, `docs/website-visitor-tracking.md` |
 | Org chart embed settings + Mintlify docs | Ported embed settings UI from `workflows` into MCP & APIs (**Org chart** tab); adapted Recoil→Jotai, Emotion→Linaria, snackbars, `SettingsPageLayout`. Added Mintlify page `/developers/extend/org-chart-embed`. | `SettingsApiWebhooks.tsx`, `SettingsOrgChartEmbed*`, `SettingsDevelopersOrgChartEmbed*`, `SettingsRoutes.tsx`, `twenty-docs/.../org-chart-embed.mdx` |
+| Rename `gtmWorkspaceProfile` → `workspaceProfile` | CRM object renamed (labels + nameSingular/plural). Pinned Arxena object UID to pre-rename hash so sync updates in place + renames workspace table. Workspace cmd `1785600000018` runs Arxena sync + refreshes `gtm-icp-onboarding` tool names. | `objects-data.ts`, `workspace-profile-fields.data.ts`, `build-arxena-standard-manifest.util.ts`, `gtm-home/*`, `gtm-icp-onboarding.md`, `2-25-workspace-command-1785600000018-*` |
 | GTM company enrich web_search | Company bootstrap enrichment now runs a native `web_search` model tool (OpenAI/Anthropic/xAI) to fetch website content, then feeds it into the multi-source profile summarizer. | `gtm-web-search-company-enrichment.source.ts`, `gtm-company-enrichment-collector.service.ts`, `gtm-company-profile-summarizer.*`, `gtm-command.module.ts` |
-| GTM Setup scoped regenerate + icpBlurb | ICP / company blurb / people blurb are separate Ask AI SEND turns (ICP no longer refreshes search blurbs). New `icpBlurb` TEXT on `gtmWorkspaceProfile` + Project; Setup shows Blurb + JSON. Skill sync cmd `1785600000017`. Run `workspace:sync-arxena-standard` for the field. | `gtm-icp-onboarding.md`, `gtm-home.types.ts`, `GtmSetupPanel.tsx`, `gtm-workspace-profile-fields.data.ts`, `2-25-workspace-command-1785600000017-*` |
+| GTM Setup scoped regenerate + icpBlurb | ICP / company blurb / people blurb are separate Ask AI SEND turns (ICP no longer refreshes search blurbs). New `icpBlurb` TEXT on `workspaceProfile` + Project; Setup shows Blurb + JSON. Skill sync cmd `1785600000017`. Run `workspace:sync-arxena-standard` for the field. | `gtm-icp-onboarding.md`, `gtm-home.types.ts`, `GtmSetupPanel.tsx`, `workspace-profile-fields.data.ts`, `2-25-workspace-command-1785600000017-*` |
 | GTM outreach prompt + seed field fix | Agent hung editing Stage B because seed SEND steps read Candidate `linkedinLink` (field is `linkedinUrl`). Added clone/edit/enroll guidance to `workflow-building` + GTM browsing/system prompts; sync cmd `1785600000015`. Seed templates now use `linkedinUrl.primaryLinkUrl`. | `workflow-building.md`, `chat-system-prompts.const.ts`, `chat-execution.service.ts`, `setup-gtm-outreach-workflow.ts`, `2-25-workspace-command-1785600000015-*` |
 | Harden `execute_tool` arg coerce | Zod `expected record, received undefined` when models flatten nested tool fields, alias `parameters`/`args`/`input`, or stringify the whole payload — caused LinkedIn/people parse retry loops. Coerce now lifts flattened fields, aliases, double-strings; defaults missing args to `{}`. Also drop stale `setSelectedSegmentId` after Market map removal. | `coerce-execute-tool-arguments.util.ts`, `useGtmLiveWorkingSet.ts` |
 | GTM Ask AI ephemeral people upsert | New action tool `upsert_gtm_target_people` writes Redis People tab; People UI polls Redis + merges CRM Candidates; prompts/skills forbid `create_candidate` until Add to CRM / Enroll. Skill sync cmd `1785600000014`. | `upsert-gtm-target-people-tool.ts`, `gtm-people-cache.service.ts`, `useGtmLiveWorkingSet.ts`, `search-people.md`, `linkedin-search.md`, `chat-execution.service.ts` |
@@ -198,6 +201,15 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `type SetterOrUpdater` from `recoil` | remove; use setter from `useSetAtomState` / local `Dispatch` |
 | `RecoilRoot` (tests) | `Provider` from `jotai` + `jotaiStore` |
 | `mainContextStoreComponentInstanceId` | `MAIN_CONTEXT_STORE_INSTANCE_ID` |
+| Declared setter `setProjects` / `setTableStateAtom` / `setChatSearchQuery` / … but call sites still use old `setJobs` / `setTableState` / `setSearchQuery` | Rename **call sites + deps** to the declared Jotai setter name (do not invent new state) |
+| HotTable `setMainTargetedRecordsRule` / `setMainPageType` / … | Matching `setContextStore*` setters already declared for `MAIN_CONTEXT_STORE_INSTANCE_ID` |
+
+**Grep for incomplete setter renames:**
+
+```bash
+# Example: declared setProjects but still calling setJobs
+rg -n "setJobs\b|setTableState\b|setSearchQuery\b|setSelectedStatus\b|setFilteredCount\b|setCommandContext\b|setContactsByKey\b|setMain" packages/twenty-front/src/modules --glob '!**/node_modules/**'
+```
 
 ### 2.2 UI packages
 
@@ -716,7 +728,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 | File | Status | Why |
 | --- | --- | --- |
 | `packages/twenty-shared/src/types/AppPath.ts` | committed · intent (+ working) | `Projects` / `Project` / org-chart / assistant paths |
-| `packages/twenty-shared/src/types/SettingsPath.ts` | committed · intent (+ working) | Accounts Unipile / LinkedIn / WhatsApp / Contacts paths |
+| `packages/twenty-shared/src/types/SettingsPath.ts` | committed · intent (+ working) | Accounts Unipile / LinkedIn / WhatsApp / Contacts / Website paths |
 | `packages/twenty-shared/src/types/index.ts` | committed · intent | Re-export ported types |
 | `packages/twenty-shared/src/constants/index.ts` | committed · intent | Re-export Arxena constants |
 | `packages/twenty-shared/src/utils/index.ts` | committed · intent | Re-export orgchart / Unipile / privacy utils |
@@ -740,10 +752,10 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/core-modules/client-config/services/client-config.service.ts` | working · intent | Expose `chromeExtensionId` from `CHROME_EXTENSION_ID` |
 | `packages/twenty-server/src/engine/core-modules/client-config/client-config.entity.ts` | working · intent | `chromeExtensionId` field |
 | `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID` (ARXENA group) |
-| `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn routes; Org chart embed new/detail routes |
+| `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn / Website routes; Org chart embed new/detail routes |
 | `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Grouped workspace integration keys form (`ApiKeysForm`; provider now in `WorkspaceAppProviders`) |
 | `packages/twenty-front/src/modules/navigation/components/MainNavigationDrawerScrollableItems.tsx` | working · intent | Mount `ProjectsNavigationDrawerItems` + `OrgChartsNavigationDrawerItems` |
-| `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts |
+| `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts / Website |
 | `packages/twenty-front/src/modules/settings/admin-panel/constants/SettingsAdminTabs.ts` | working · intent | Admin tabs: credits, org-chart IPs, published charts, LinkedIn cache, WhatsApp monitoring, users |
 | `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminContent.tsx` | working · intent | Host new admin tab panels |
 | `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminGeneral.tsx` | working · intent | Admin general extensions |
@@ -756,7 +768,7 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/core-modules/admin-panel/admin-panel.module.ts` | working · intent | Register Arxena admin resolvers/services |
 | `packages/twenty-server/src/engine/core-modules/admin-panel/admin-panel.resolver.ts` | working · intent | Admin GraphQL + Job→Project arg renames |
 | `packages/twenty-server/src/engine/core-modules/admin-panel/admin-panel-queue.service.ts` | working · intent | Queue admin / project ops |
-| `packages/twenty-server/src/engine/core-modules/core-engine.module.ts` | working · intent | Further module registration beyond committed |
+| `packages/twenty-server/src/engine/core-modules/core-engine.module.ts` | working · intent | Further module registration beyond committed (WebsiteTrackerModule) |
 | `packages/twenty-emails/src/components/Logo.tsx` | working · intent | Arxena logo |
 | `packages/twenty-emails/src/constants/DefaultWorkspaceLogo.ts` | working · intent | Default logo asset |
 | `packages/twenty-front/src/modules/ui/navigation/navigation-drawer/constants/DefaultWorkspaceLogo.ts` | working · intent | Front default logo |

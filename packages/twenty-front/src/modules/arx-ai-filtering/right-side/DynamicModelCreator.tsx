@@ -10,11 +10,11 @@ import { AVAILABLE_MODELS, DEFAULT_FIELD } from './constants';
 import { useApiCalls } from './hooks/useApiCalls';
 import { useDebounce } from './hooks/useDebounce';
 import { useEnrichmentState } from './hooks/useEnrichmentState';
-import { DynamicModelCreatorProps } from './types';
+import { type DynamicModelCreatorProps } from './types';
 import { generateModelCode } from './utils/modelCode';
 import { validateFieldName, validateModelName } from './utils/validation';
 import { normalizeEnrichmentResumeFlag } from '@/arx-ai-filtering/utils/resumeMetadata';
-import { EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 
 // Components
 import { FieldCardComponent } from './components/FieldCard';

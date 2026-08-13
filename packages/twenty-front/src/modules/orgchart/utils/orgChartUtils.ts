@@ -1,6 +1,6 @@
 import { isValidLinkedInProfileUrl, toTitleCase, type OrgChartNodeData } from 'twenty-shared/utils';
 
-import { ContextResultItem } from '../types';
+import { type ContextResultItem } from '../types';
 
 const readOptionalString = (value: unknown): string | undefined => {
   if (typeof value !== 'string') {

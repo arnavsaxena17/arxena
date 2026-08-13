@@ -21,23 +21,23 @@ const StyledContainer = styled.div`
 
 const TranscriptContainer = styled.div`
   background-color: ${themeCssVariables.background.tertiary};
-  padding: 15px;
   border-radius: 4px;
-  margin-top: 10px;
   margin-bottom: 20px;
+  margin-top: 10px;
+  padding: 15px;
 `;
 
 const TranscriptHeading = styled.h4`
+  color: ${themeCssVariables.font.color.primary};
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: ${themeCssVariables.font.color.primary};
 `;
 
 const TranscriptText = styled.p`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: 14px;
   line-height: 1.5;
-  color: ${themeCssVariables.font.color.secondary};
   white-space: pre-wrap;
 `;
 
@@ -56,9 +56,9 @@ const QuestionText = styled.h3`
 
 const VideoContainer = styled.div`
   background-color: black;
-  width: 100%;
-  max-width: 800px;
   margin: 10px 0;
+  max-width: 800px;
+  width: 100%;
 `;
 
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'avi'];

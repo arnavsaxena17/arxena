@@ -2,8 +2,8 @@ import { Button } from 'twenty-ui/input';
 import { IconMinus, IconPlus } from 'twenty-ui/icon';
 import React from 'react';
 
-import { FormComponentProps } from '../types/FormComponentProps';
-import { ParsedJD } from '../types/ParsedJD';
+import { type FormComponentProps } from '../types/FormComponentProps';
+import { type ParsedJD } from '../types/ParsedJD';
 import {
   StyledInput,
   StyledLabel,

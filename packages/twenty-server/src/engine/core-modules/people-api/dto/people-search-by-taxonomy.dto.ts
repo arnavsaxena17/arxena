@@ -1,5 +1,10 @@
 import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
+import {
+  PEOPLE_SALES_NAV_CANDIDATE_SOURCES,
+  type PeopleSalesNavCandidateSourceDto,
+} from './people-search.dto';
+
 export const PEOPLE_TAXONOMY_GRADE_VALUES = [
   'entry',
   'mid',
@@ -8,13 +13,12 @@ export const PEOPLE_TAXONOMY_GRADE_VALUES = [
 
 export type PeopleTaxonomyGrade = (typeof PEOPLE_TAXONOMY_GRADE_VALUES)[number];
 
-export const PEOPLE_LINKEDIN_CANDIDATE_SOURCES = [
-  'harvest',
-  'unipile',
-] as const;
+/** @deprecated Use PEOPLE_SALES_NAV_CANDIDATE_SOURCES */
+export const PEOPLE_LINKEDIN_CANDIDATE_SOURCES =
+  PEOPLE_SALES_NAV_CANDIDATE_SOURCES;
 
 export type PeopleLinkedInCandidateSourceDto =
-  (typeof PEOPLE_LINKEDIN_CANDIDATE_SOURCES)[number];
+  PeopleSalesNavCandidateSourceDto;
 
 export class PeopleSearchByTaxonomyDto {
   @IsOptional()
@@ -42,8 +46,16 @@ export class PeopleSearchByTaxonomyDto {
   stdGrade?: PeopleTaxonomyGrade;
 
   @IsOptional()
-  @IsIn(PEOPLE_LINKEDIN_CANDIDATE_SOURCES)
-  candidateSource?: PeopleLinkedInCandidateSourceDto;
+  @IsIn(PEOPLE_SALES_NAV_CANDIDATE_SOURCES)
+  candidateSource?: PeopleSalesNavCandidateSourceDto;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsString()
+  linkedInAccountId?: string;
 
   @IsOptional()
   @IsString()

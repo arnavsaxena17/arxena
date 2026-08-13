@@ -12,9 +12,9 @@ type SampleOpenAICallProps = {
 };
 
 export const SampleOpenAICallSelectLabel = styled.label`
-  font-weight: 500;
   align-self: flex-start;
   display: block;
+  font-weight: 500;
 `;
 
 export const SampleOpenAICall: React.FC<SampleOpenAICallProps> = ({

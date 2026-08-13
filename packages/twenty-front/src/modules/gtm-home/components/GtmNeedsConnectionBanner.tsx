@@ -6,15 +6,15 @@ import { getSettingsPath } from 'twenty-shared/utils';
 import { useNavigate } from 'react-router-dom';
 
 const StyledBanner = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[3]};
-  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
   background: ${themeCssVariables.background.transparent.orange};
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   color: ${themeCssVariables.font.color.primary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[3]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
 `;
 
 type GtmNeedsConnectionBannerProps = {

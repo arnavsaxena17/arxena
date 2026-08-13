@@ -32,25 +32,25 @@ const StyledPanel = styled.div`
 const StyledEmpty = styled.div`
   color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.sm};
-  padding: ${themeCssVariables.spacing[4]};
   line-height: 1.5;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledActions = styled.div`
   display: flex;
-  gap: ${themeCssVariables.spacing[2]};
   flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledTableWrapper = styled.div`
-  position: relative;
   flex: 1;
   min-height: 420px;
+  position: relative;
 `;
 
 const StyledHint = styled.div`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const mapGtmPersonToDataTableRow = (
@@ -122,7 +122,7 @@ export const GtmPeoplePanel = ({
   tableInstanceId,
 }: GtmPeoplePanelProps) => {
   const setSearchResults = useSetAtomState(searchResultsState);
-  const setTableState = useSetAtomState(tableStateAtom);
+  const setTableStateAtom = useSetAtomState(tableStateAtom);
   const { isPersisting, addPeopleToCrm } = useAddGtmRecordsToCrm();
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useGtmOutreachEnroll();
@@ -157,7 +157,7 @@ export const GtmPeoplePanel = ({
     }
 
     setSearchResults(tableRows as never[]);
-    setTableState((previous) => ({
+    setTableStateAtom((previous) => ({
       ...previous,
       rawData: [],
       selectedRowIds: [],
@@ -166,9 +166,9 @@ export const GtmPeoplePanel = ({
     return () => {
       setSearchResults([]);
     };
-  }, [setSearchResults, setTableState, tableRows]);
+  }, [setSearchResults, setTableStateAtom, tableRows]);
 
-  const selectionRule = useAtomComponentStateValue(
+  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
     tableInstanceId,
   );

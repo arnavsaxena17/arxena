@@ -93,11 +93,11 @@ export const MatchColumnsStep = ({
   );
 
   const { matchColumnsStepHook } = useSpreadsheetImportInternal();
-  const projectIdFromAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const currentProject = useMemo(
-    () => projects.find((project) => project.id === projectIdFromAtom) ?? null,
-    [projects, projectIdFromAtom],
+    () => projects.find((project) => project.id === projectId) ?? null,
+    [projects, projectId],
   );
 
   const { t } = useLingui();
@@ -107,8 +107,8 @@ export const MatchColumnsStep = ({
       if (
         enableUploadProgressSseWhileOpen !== true ||
         !isDefined(currentProject) ||
-        !projectIdFromAtom ||
-        projectIdFromAtom === 'project-id'
+        !projectId ||
+        projectId === 'project-id'
       ) {
         return rows;
       }
@@ -137,7 +137,7 @@ export const MatchColumnsStep = ({
         } as ImportedStructuredRow;
       });
     },
-    [currentProject, enableUploadProgressSseWhileOpen, projectIdFromAtom],
+    [currentProject, enableUploadProgressSseWhileOpen, projectId],
   );
 
   const onIgnore = useCallback(

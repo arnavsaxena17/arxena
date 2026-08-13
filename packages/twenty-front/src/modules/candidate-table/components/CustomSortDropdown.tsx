@@ -5,26 +5,26 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IconChevronDown, IconSortAscending, IconSortDescending } from 'twenty-ui/icon';
 import { useMemo, useState } from 'react';
-import { BaseSortField, CustomSortState, SortField } from '../types/sortTypes';
+import { type BaseSortField, type CustomSortState, type SortField } from '../types/sortTypes';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 const StyledSortContainer = styled.div`
-  position: relative;
   display: inline-block;
+  position: relative;
 `;
 
 const StyledSortButton = styled.button`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   background-color: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
+  display: flex;
   font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   transition: all 0.2s ease;
 
   &:hover {
@@ -33,36 +33,36 @@ const StyledSortButton = styled.button`
   }
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.color.blue};
     box-shadow: 0 0 0 2px ${themeCssVariables.color.blue}20;
+    outline: none;
   }
 `;
 
 const StyledDropdown = styled.div<{ isOpen: boolean }>`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
   box-shadow: ${themeCssVariables.boxShadow.strong};
-  z-index: 1000;
   display: ${({ isOpen }) => (isOpen ? 'block' : 'none')};
+  left: 0;
   min-width: 200px;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 1000;
 `;
 
 const StyledDropdownItem = styled.div<{ isActive?: boolean }>`
-  padding: ${themeCssVariables.spacing[2]};
-  cursor: pointer;
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: ${themeCssVariables.font.size.sm};
   background-color: ${({ isActive }) => 
     isActive ? themeCssVariables.background.tertiary : 'transparent'};
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[2]};
 
   &:hover {
     background-color: ${themeCssVariables.background.tertiary};
@@ -78,8 +78,8 @@ const StyledDropdownItem = styled.div<{ isActive?: boolean }>`
 `;
 
 const StyledSortIcon = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
@@ -94,7 +94,7 @@ const BASE_SORT_FIELDS: Array<{ field: BaseSortField; label: string }> = [
 export const CustomSortDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [sortState, setSortState] = useAtomState(customSortState) as [CustomSortState, (value: CustomSortState) => void];
-  const customEnrichments = useAtomStateValue(enrichmentsState);
+  const enrichments = useAtomStateValue(enrichmentsState);
   const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
   const processedData = useAtomStateValue(processedDataSelector);
 

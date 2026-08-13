@@ -3,8 +3,8 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IconInfoCircle } from 'twenty-ui/icon';
 import React, { useEffect } from 'react';
 import { MenuItemSelect } from 'twenty-ui/navigation';
-import { FormComponentProps } from '../types/FormComponentProps';
-import { ParsedJD } from '../types/ParsedJD';
+import { type FormComponentProps } from '../types/FormComponentProps';
+import { type ParsedJD } from '../types/ParsedJD';
 import {
   StyledSection,
   StyledSectionContent,
@@ -12,33 +12,33 @@ import {
 } from './ArxJDUploadModal.styled';
 
 const StyledHeaderContainer = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledIconContainer = styled.div`
-  position: relative;
-  display: inline-flex;
   align-items: center;
   cursor: help;
+  display: inline-flex;
   margin-top: -10px;
+  position: relative;
 
   &:hover::after {
-    content: 'This information helps the AI agent understand your preferred recruitment process flow and customize interactions accordingly.';
-    position: absolute;
-    top: -10px;
-    left: 24px;
-    transform: translateY(-100%);
     background-color: ${themeCssVariables.background.primary};
-    color: ${themeCssVariables.font.color.primary};
-    padding: ${themeCssVariables.spacing[2]};
     border-radius: ${themeCssVariables.border.radius.sm};
     box-shadow: ${themeCssVariables.boxShadow.light};
-    width: max-content;
-    max-width: 250px;
-    z-index: 1000;
+    color: ${themeCssVariables.font.color.primary};
+    content: 'This information helps the AI agent understand your preferred recruitment process flow and customize interactions accordingly.';
     font-size: ${themeCssVariables.font.size.sm};
+    left: 24px;
+    max-width: 250px;
+    padding: ${themeCssVariables.spacing[2]};
+    position: absolute;
+    top: -10px;
+    transform: translateY(-100%);
+    width: max-content;
+    z-index: 1000;
   }
 `;
 
@@ -46,21 +46,21 @@ const StyledMenuItemContainer = styled.div`
   position: relative;
 
   &:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: 50%;
-    bottom: 100%;
-    transform: translateX(-50%);
     background-color: ${themeCssVariables.background.primary};
-    color: ${themeCssVariables.font.color.primary};
-    padding: ${themeCssVariables.spacing[2]};
     border-radius: ${themeCssVariables.border.radius.sm};
+    bottom: 100%;
     box-shadow: ${themeCssVariables.boxShadow.light};
-    width: max-content;
-    max-width: 300px;
-    z-index: 1000;
-    margin-bottom: ${themeCssVariables.spacing[2]};
+    color: ${themeCssVariables.font.color.primary};
+    content: attr(data-tooltip);
     font-size: ${themeCssVariables.font.size.sm};
+    left: 50%;
+    margin-bottom: ${themeCssVariables.spacing[2]};
+    max-width: 300px;
+    padding: ${themeCssVariables.spacing[2]};
+    position: absolute;
+    transform: translateX(-50%);
+    width: max-content;
+    z-index: 1000;
   }
 `;
 

@@ -1,7 +1,7 @@
 import type { CandidateNode } from 'twenty-shared/arx';
 import { getResolvedOtherFields, otherFieldsToFlatRow } from 'twenty-shared/utils';
 import { isLinkedInUrl, reconstructLinkedInUrlForDisplay } from "../../utils/linkedinUrlUtils";
-import { ProcessedDataItem } from "./TableColumns";
+import { type ProcessedDataItem } from "./TableColumns";
 
 export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateNode[], selectedRowIds: string[] }): ProcessedDataItem[] => {
     if (!rawData || !rawData.length) return [];

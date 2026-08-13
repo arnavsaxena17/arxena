@@ -23,49 +23,49 @@ import { graphqlToAddNewProject } from 'twenty-shared/graphql';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledBackdrop = styled.div`
-  position: fixed;
-  inset: 0;
+  align-items: center;
   background: rgba(15, 23, 42, 0.35);
   display: flex;
-  align-items: center;
+  inset: 0;
   justify-content: center;
+  position: fixed;
   z-index: 100;
 `;
 
 const StyledModal = styled.div`
-  width: 560px;
-  max-width: 100%;
-  max-height: 80vh;
   background: ${themeCssVariables.background.primary};
   border-radius: ${themeCssVariables.border.radius.xl};
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
   display: flex;
   flex-direction: column;
+  max-height: 80vh;
+  max-width: 100%;
   overflow: hidden;
+  width: 560px;
 `;
 
 const StyledHeader = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  align-items: center;
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTitle = styled.h3`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.md};
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledBody = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
-  overflow: auto;
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
+  overflow: auto;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledSection = styled.div`
@@ -75,74 +75,74 @@ const StyledSection = styled.div`
 `;
 
 const StyledSectionLabel = styled.label`
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: 500;
-  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledSelect = styled.select`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledInput = styled.input`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   min-height: 36px;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const StyledSourceJobList = styled.ul`
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-  font-size: ${themeCssVariables.font.size.sm};
-  color: ${themeCssVariables.font.color.secondary};
 `;
 
 const StyledFooter = styled.div`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
   border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
-  justify-content: flex-end;
   gap: ${themeCssVariables.spacing[1.5]};
+  justify-content: flex-end;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
 const StyledPrimaryButton = styled.button`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: none;
   background: ${themeCssVariables.color.blue};
+  border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.inverted};
-  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:hover:enabled {
     background: ${themeCssVariables.color.blue8};
   }
 
   &:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 
 const StyledSecondaryButton = styled.button`
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: transparent;
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
   cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:hover {
     background: ${themeCssVariables.background.transparent.light};
@@ -150,13 +150,13 @@ const StyledSecondaryButton = styled.button`
 `;
 
 const StyledCloseButton = styled.button`
-  padding: ${themeCssVariables.spacing[0.5]};
-  border: none;
   background: none;
+  border: none;
   color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   font-size: ${themeCssVariables.font.size.lg};
   line-height: 1;
+  padding: ${themeCssVariables.spacing[0.5]};
 
   &:hover {
     color: ${themeCssVariables.font.color.primary};

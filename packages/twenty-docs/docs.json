@@ -132,6 +132,7 @@
               {
                 "group": "Recipes",
                 "pages": [
+                  "cookbooks/nl-to-people-at-company",
                   "cookbooks/search-people-by-taxonomy",
                   "cookbooks/expand-titles-then-search"
                 ]

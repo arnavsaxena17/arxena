@@ -17,13 +17,13 @@ const StyledTextArea = styled.textarea`
   font-family: inherit;
   font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.regular};
+  height: min-content;
   line-height: 16px;
   overflow: auto;
   padding: ${themeCssVariables.spacing[2]};
   padding-top: ${themeCssVariables.spacing[3]};
   resize: none;
   width: 100%;
-  height: min-content;
 
   &:focus {
     outline: none;
@@ -31,8 +31,8 @@ const StyledTextArea = styled.textarea`
 
   &::placeholder {
     color: ${themeCssVariables.font.color.light};
-    font-weight: ${themeCssVariables.font.weight.regular};
     font-size: ${themeCssVariables.font.size.md};
+    font-weight: ${themeCssVariables.font.weight.regular};
   }
 
   &:disabled {

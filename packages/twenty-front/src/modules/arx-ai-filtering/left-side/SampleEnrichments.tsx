@@ -28,10 +28,10 @@ const StyledError = styled.div`
 `;
 
 const StyledSampleCard = styled.div`
-  padding: 12px;
-  border-radius: 8px;
   background-color: ${themeCssVariables.background.secondary};
+  border-radius: 8px;
   cursor: pointer;
+  padding: 12px;
   transition: all 0.2s ease;
 
   &:hover {
@@ -40,14 +40,14 @@ const StyledSampleCard = styled.div`
 `;
 
 const StyledSampleTitle = styled.div`
-  font-weight: ${themeCssVariables.font.weight.medium};
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledSampleDescription = styled.div`
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   margin-top: 4px;
 `;
 

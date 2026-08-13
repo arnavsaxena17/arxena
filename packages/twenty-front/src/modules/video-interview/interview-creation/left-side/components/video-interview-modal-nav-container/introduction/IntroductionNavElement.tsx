@@ -4,11 +4,11 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledIntroductionNavElement = styled.div`
+  border-radius: 4px;
+  color: ${themeCssVariables.grayScale.gray5};
+  cursor: pointer;
   font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.md};
-  font-weight: ${themeCssVariables.font.weight.medium};
-  padding: 6px;
-  transition: background-color 0.2s ease;
 
   &:hover {
     background-color: ${themeCssVariables.background.transparent.light};
@@ -16,10 +16,10 @@ const StyledIntroductionNavElement = styled.div`
   &.active {
     background-color: ${themeCssVariables.background.transparent.light};
   }
-  color: ${themeCssVariables.grayScale.gray5};
-  border-radius: 4px;
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: 6px;
+  transition: background-color 0.2s ease;
   width: 200px;
-  cursor: pointer;
 `;
 
 export const IntroductionNavElement = ({ id }: { id: string }) => {

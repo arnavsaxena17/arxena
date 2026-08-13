@@ -28,40 +28,40 @@ const AccountsContainer = styled.div`
 `;
 
 const AccountsTitle = styled.h3`
+  color: ${themeCssVariables.font.color.primary};
   font-size: 1.25rem;
   font-weight: 600;
-  color: ${themeCssVariables.font.color.primary};
   margin: 0 0 1rem 0;
 `;
 
 const AccountCard = styled.div`
+  align-items: center;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
 `;
 
 const AccountInfo = styled.div`
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 0.75rem;
 `;
 
 const Avatar = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0077b5, #00a0dc);
-  display: flex;
   align-items: center;
-  justify-content: center;
+  background: linear-gradient(135deg, #0077b5, #00a0dc);
+  border-radius: 50%;
   color: white;
-  font-weight: 600;
+  display: flex;
   font-size: 1rem;
+  font-weight: 600;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
 `;
 
 const AccountDetails = styled.div`
@@ -70,16 +70,16 @@ const AccountDetails = styled.div`
 `;
 
 const AccountName = styled.span`
-  font-weight: 600;
   color: ${themeCssVariables.font.color.primary};
   font-size: 0.9rem;
+  font-weight: 600;
 `;
 
 const AccountStatus = styled.span<{ status: string }>`
   font-size: 0.75rem;
   font-weight: 500;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 
   ${(props) => {
     switch (props.status) {
@@ -104,14 +104,14 @@ const AccountStatus = styled.span<{ status: string }>`
 `;
 
 const AccountId = styled.span`
-  font-size: 0.75rem;
-  color: ${themeCssVariables.font.color.tertiary};
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   background-color: ${themeCssVariables.background.tertiary};
-  padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  margin-top: 0.25rem;
+  color: ${themeCssVariables.font.color.tertiary};
   display: inline-block;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
 `;
 
 const AccountActions = styled.div`
@@ -122,13 +122,6 @@ const AccountActions = styled.div`
 const ActionButton = styled.button<{
   variant?: 'primary' | 'secondary' | 'danger';
 }>`
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
   background-color: ${({ variant }) => {
     if (variant === 'primary') {
       return '#0077b5';
@@ -138,10 +131,17 @@ const ActionButton = styled.button<{
     }
     return themeCssVariables.background.tertiary;
   }};
+  border: none;
+  border-radius: 4px;
   color: ${({ variant }) =>
     variant === 'primary' || variant === 'danger'
       ? 'white'
       : themeCssVariables.font.color.primary};
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
 
   &:hover {
     background-color: ${({ variant }) => {
@@ -157,32 +157,32 @@ const ActionButton = styled.button<{
 `;
 
 const EmptyState = styled.div`
-  text-align: center;
-  padding: 2rem;
   color: ${themeCssVariables.font.color.tertiary};
   font-size: 0.9rem;
+  padding: 2rem;
+  text-align: center;
 `;
 
 const ErrorContainer = styled.div`
   background: ${themeCssVariables.background.transparent.danger};
   border: 1px solid ${themeCssVariables.border.color.danger};
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
   color: ${themeCssVariables.font.color.danger};
   font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
 `;
 
 const RetryButton = styled.button`
   background-color: #0077b5;
-  color: white;
   border: none;
-  padding: 0.5rem 1rem;
   border-radius: 4px;
+  color: white;
+  cursor: pointer;
   font-size: 0.75rem;
   font-weight: 500;
-  cursor: pointer;
   margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
   transition: background-color 0.2s ease;
 
   &:hover {

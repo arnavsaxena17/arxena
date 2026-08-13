@@ -19,7 +19,7 @@ import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/works
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import {
-    OrgChartDiagramHandle,
+    type OrgChartDiagramHandle,
     normalizeCompanyIdForUrl,
     useCompanyInfoLookup,
     useOrgChartData,
@@ -209,10 +209,10 @@ export const ArxOrgChartContainer = ({
     workspaceMemberProfileUnipileFieldsState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
-  const setSelectedCompanyInfo = useSetAtomState(
+  const setOrgChartSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
-  const setContactsByKey = useSetAtomState(orgChartContactsByKeyState);
+  const setOrgChartContactsByKey = useSetAtomState(orgChartContactsByKeyState);
   const setOrgChartLinkedinCandidateSource = useSetAtomState(
     orgChartLinkedinCandidateSourceState,
   );
@@ -577,7 +577,7 @@ export const ArxOrgChartContainer = ({
 
     resetOrgChartData();
     actions.clearLatestOrgChart();
-    setContactsByKey({});
+    setOrgChartContactsByKey({});
     setSelectedCountry(DEFAULT_ORG_CHART_COUNTRY);
     setSelectedFunctionRoot(DEFAULT_ORG_CHART_FUNCTION_ROOT);
   }, [
@@ -585,7 +585,7 @@ export const ArxOrgChartContainer = ({
     companyId,
     isJobMode,
     resetOrgChartData,
-    setContactsByKey,
+    setOrgChartContactsByKey,
   ]);
 
   useEffect(() => {
@@ -622,8 +622,8 @@ export const ArxOrgChartContainer = ({
       website,
     });
     if (Object.keys(next).length === 0) return;
-    setContactsByKey((prev) => ({ ...prev, ...next }));
-  }, [orgData, effectiveCompanyWebsite, website, setContactsByKey]);
+    setOrgChartContactsByKey((prev) => ({ ...prev, ...next }));
+  }, [orgData, effectiveCompanyWebsite, website, setOrgChartContactsByKey]);
 
   const isBlankTemplate =
     typeof (orgSource as Record<string, unknown> | null)?.is_blank_template ===
@@ -821,7 +821,7 @@ export const ArxOrgChartContainer = ({
     if (!fallbackCompanyInfo && !savedCompanyMetadata.website && !savedCompanyMetadata.companyName) {
       return;
     }
-    setSelectedCompanyInfo({
+    setOrgChartSelectedCompanyInfo({
       companyId: fallbackCompanyInfo?.companyId ?? companyId,
       companyName:
         displayCompanyName ?? fallbackCompanyInfo?.companyName ?? companyId,
@@ -842,7 +842,7 @@ export const ArxOrgChartContainer = ({
     profileCount,
     savedCompanyMetadata.companyName,
     savedCompanyMetadata.website,
-    setSelectedCompanyInfo,
+    setOrgChartSelectedCompanyInfo,
   ]);
 
   useEffect(() => {
@@ -1298,7 +1298,7 @@ export const ArxOrgChartContainer = ({
             },
           },
         );
-        setSelectedCompanyInfo({
+        setOrgChartSelectedCompanyInfo({
           companyId: targetCompany.slug,
           companyName: targetCompany.title,
           linkedinUrl: targetCompany.linkedinCompanyUrl,
@@ -1337,7 +1337,7 @@ export const ArxOrgChartContainer = ({
       effectiveCompanyName,
       navigate,
       selectedFunctionRoot,
-      setSelectedCompanyInfo,
+      setOrgChartSelectedCompanyInfo,
       superImposeCandidateSource,
     ],
   );

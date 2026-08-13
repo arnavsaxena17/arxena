@@ -23,8 +23,8 @@ const StyledHeader = styled.div`
   align-items: center;
   display: flex;
   flex-shrink: 0;
-  justify-content: space-between;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
 `;
 
 const StyledTitle = styled.h2`
@@ -95,12 +95,12 @@ const StyledTransactionMeta = styled.div`
 `;
 
 const StyledTransactionAmount = styled.span<{ type: string }>`
-  flex-shrink: 0;
-  font-weight: ${themeCssVariables.font.weight.medium};
   color: ${({ type }) =>
     type === 'debit'
       ? themeCssVariables.font.color.danger
       : themeCssVariables.tag.text.green};
+  flex-shrink: 0;
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledEmptyState = styled.div`

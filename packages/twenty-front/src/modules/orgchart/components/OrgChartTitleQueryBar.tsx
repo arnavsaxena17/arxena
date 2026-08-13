@@ -3,57 +3,57 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledWrap = styled.div`
-  flex: 1 1 240px;
-  min-width: 0;
-  max-width: 440px;
   display: flex;
+  flex: 1 1 240px;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
+  max-width: 440px;
+  min-width: 0;
 `;
 
 const StyledLabel = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.tertiary};
-  text-transform: uppercase;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 `;
 
 const StyledRow = styled.div`
-  display: flex;
   align-items: flex-end;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
 `;
 
 const StyledInput = styled.input`
-  flex: 1;
-  min-width: 0;
-  height: ${themeCssVariables.spacing[5]};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  border-radius: ${themeCssVariables.border.radius.md};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
+  flex: 1;
   font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.sm};
+  height: ${themeCssVariables.spacing[5]};
+  min-width: 0;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 
   &:focus {
-    outline: none;
     border-color: ${themeCssVariables.color.blue};
+    outline: none;
   }
 `;
 
 const StyledSubmit = styled.button`
-  flex-shrink: 0;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  flex-shrink: 0;
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  cursor: pointer;
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[1.5]};
   white-space: nowrap;
 
   &:hover:enabled {
@@ -61,39 +61,39 @@ const StyledSubmit = styled.button`
   }
 
   &:disabled {
-    opacity: 0.45;
     cursor: default;
+    opacity: 0.45;
   }
 `;
 
 const StyledChips = styled.div`
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: ${themeCssVariables.spacing[0.5]};
   min-height: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledChip = styled.span`
-  display: inline-flex;
   align-items: center;
-  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background: ${themeCssVariables.background.transparent.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.secondary};
+  display: inline-flex;
   font-size: ${themeCssVariables.font.size.xs};
   line-height: 1.2;
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
 `;
 
 const StyledChipDismiss = styled.button`
-  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  border: 1px solid ${themeCssVariables.border.color.medium};
   background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
   font-size: ${themeCssVariables.font.size.xs};
   line-height: 1;
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
 
   &:hover {
     color: ${themeCssVariables.font.color.primary};

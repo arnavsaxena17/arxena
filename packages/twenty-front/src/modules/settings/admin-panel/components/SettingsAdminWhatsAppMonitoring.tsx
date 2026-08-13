@@ -33,8 +33,8 @@ const StyledChannelBlock = styled.div`
 
 const StyledCardsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: ${themeCssVariables.spacing[3]};
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 `;
 
 const StyledSessionCard = styled(Card)`
@@ -42,9 +42,9 @@ const StyledSessionCard = styled(Card)`
 `;
 
 const StyledSessionHeader = styled.div`
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: ${themeCssVariables.spacing[2]};
 `;
 
@@ -61,8 +61,8 @@ const StyledSessionActions = styled.div`
 
 const StyledMetricsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${themeCssVariables.spacing[2]};
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   margin-top: ${themeCssVariables.spacing[2]};
 `;
 
@@ -73,8 +73,8 @@ const StyledMetricItem = styled.div`
 `;
 
 const StyledMetricLabel = styled.span`
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
 `;
 
 const StyledMetricValue = styled.span`
@@ -83,76 +83,76 @@ const StyledMetricValue = styled.span`
 `;
 
 const StyledErrorMessage = styled.div`
-  color: ${themeCssVariables.color.red};
-  padding: ${themeCssVariables.spacing[2]};
   background: ${themeCssVariables.background.transparent.light};
   border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.color.red};
+  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledUnavailableMessage = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
-  padding: ${themeCssVariables.spacing[3]};
   background: ${themeCssVariables.background.transparent.light};
   border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledLoadingSpinner = styled.div`
+  align-items: center;
   display: flex;
   justify-content: center;
-  align-items: center;
   padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledCardHeader = styled.div`
-  padding: ${themeCssVariables.spacing[3]};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledCardTitle = styled.h3`
-  margin: 0;
   font-size: ${themeCssVariables.font.size.lg};
   font-weight: ${themeCssVariables.font.weight.semiBold};
+  margin: 0;
 `;
 
 const StyledProgressBar = styled.div<{ value: number; color: string }>`
-  width: 100%;
-  height: 8px;
   background: ${themeCssVariables.border.color.medium};
   border-radius: 4px;
-  overflow: hidden;
+  height: 8px;
   margin: ${themeCssVariables.spacing[2]} 0;
+  overflow: hidden;
+  width: 100%;
   
   &::after {
-    content: '';
-    display: block;
-    width: ${({ value }) => value}%;
-    height: 100%;
     background: ${({ color }) => 
       color === 'green' ? '#10b981' : 
       color === 'yellow' ? '#f59e0b' : 
       '#ef4444'
     };
+    content: '';
+    display: block;
+    height: 100%;
     transition: width 0.3s ease;
+    width: ${({ value }) => value}%;
   }
 `;
 
 const StyledBadge = styled.span<{ variant?: 'secondary' | 'outline' }>`
-  display: inline-flex;
   align-items: center;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-  font-size: ${themeCssVariables.font.size.xs};
-  font-weight: ${themeCssVariables.font.weight.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
   background: ${({ variant }) => 
     variant === 'outline' ? 'transparent' : themeCssVariables.background.transparent.light
   };
   border: ${({ variant }) => 
     variant === 'outline' ? `1px solid ${themeCssVariables.border.color.medium}` : 'none'
   };
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.tertiary};
+  display: inline-flex;
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
 const WHATSAPP_MODULE_UNAVAILABLE_MESSAGE =

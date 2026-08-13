@@ -9,8 +9,8 @@ import React, { useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-import { FormComponentProps } from '../types/FormComponentProps';
-import { ParsedJD } from '../types/ParsedJD';
+import { type FormComponentProps } from '../types/FormComponentProps';
+import { type ParsedJD } from '../types/ParsedJD';
 import { StyledSection, StyledSectionContent } from './ArxJDUploadModal.styled';
 
 const StyledLabel = styled.div`

@@ -20,9 +20,9 @@ export const ApiKeysProvider = ({
 }) => {
   const [tokenPair] = useAtomState(tokenPairState);
   const setApiKeys = useSetAtomState(apiKeysState);
-  const setOriginalKeys = useSetAtomState(originalApiKeysState);
-  const setLoading = useSetAtomState(apiKeysLoadingState);
-  const setError = useSetAtomState(apiKeysErrorState);
+  const setOriginalApiKeys = useSetAtomState(originalApiKeysState);
+  const setApiKeysLoading = useSetAtomState(apiKeysLoadingState);
+  const setApiKeysError = useSetAtomState(apiKeysErrorState);
   const { enqueueErrorSnackBar } = useSnackBar();
 
   const lastFetchedTokenRef = useRef<string | null>(null);
@@ -33,8 +33,8 @@ export const ApiKeysProvider = ({
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setApiKeysLoading(true);
+      setApiKeysError(null);
 
       const response = await fetch(
         `${REACT_APP_SERVER_BASE_URL}/workspace-modifications/workspace-keys`,
@@ -51,21 +51,21 @@ export const ApiKeysProvider = ({
 
       const data = await response.json();
       setApiKeys(data);
-      setOriginalKeys(data);
+      setOriginalApiKeys(data);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to load API keys';
-      setError(errorMessage);
+      setApiKeysError(errorMessage);
       enqueueErrorSnackBar({ message: errorMessage });
     } finally {
-      setLoading(false);
+      setApiKeysLoading(false);
     }
   }, [
     tokenPair?.accessOrWorkspaceAgnosticToken?.token,
     setApiKeys,
-    setOriginalKeys,
-    setLoading,
-    setError,
+    setOriginalApiKeys,
+    setApiKeysLoading,
+    setApiKeysError,
     enqueueErrorSnackBar,
   ]);
 

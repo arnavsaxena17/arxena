@@ -69,36 +69,36 @@ const HotTableAllActionsButton = ({ tableId }: { tableId: string }) => {
   const { t } = useLingui();
   const { openSidePanelMenu } = useSidePanelMenu();
 
-  const targetedRecordsRule = useAtomComponentStateValue(
+  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
     tableId,
   );
-  const numberOfSelectedRecords = useAtomComponentStateValue(
+  const contextStoreNumberOfSelectedRecords = useAtomComponentStateValue(
     contextStoreNumberOfSelectedRecordsComponentState,
     tableId,
   );
-  const objectMetadataItemId = useAtomComponentStateValue(
+  const contextStoreCurrentObjectMetadataItemId = useAtomComponentStateValue(
     contextStoreCurrentObjectMetadataItemIdComponentState,
     tableId,
   );
-  const pageType = useAtomComponentStateValue(
+  const contextStoreCurrentPageType = useAtomComponentStateValue(
     contextStoreCurrentPageTypeComponentState,
     tableId,
   );
 
-  const setMainTargetedRecordsRule = useSetAtomComponentState(
+  const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
     contextStoreTargetedRecordsRuleComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainNumberOfSelectedRecords = useSetAtomComponentState(
+  const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
     contextStoreNumberOfSelectedRecordsComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainObjectMetadataItemId = useSetAtomComponentState(
+  const setContextStoreCurrentObjectMetadataItemId = useSetAtomComponentState(
     contextStoreCurrentObjectMetadataItemIdComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
-  const setMainPageType = useSetAtomComponentState(
+  const setContextStoreCurrentPageType = useSetAtomComponentState(
     contextStoreCurrentPageTypeComponentState,
     MAIN_CONTEXT_STORE_INSTANCE_ID,
   );
@@ -106,21 +106,25 @@ const HotTableAllActionsButton = ({ tableId }: { tableId: string }) => {
   // Side panel Command Menu reads MAIN; HotTableContextStoreEffect keeps MAIN
   // in sync, but re-apply immediately before open as a safety net
   const handleOpenAllActions = useCallback(() => {
-    setMainTargetedRecordsRule(targetedRecordsRule);
-    setMainNumberOfSelectedRecords(numberOfSelectedRecords);
-    setMainObjectMetadataItemId(objectMetadataItemId);
-    setMainPageType(pageType);
+    setContextStoreTargetedRecordsRule(contextStoreTargetedRecordsRule);
+    setContextStoreNumberOfSelectedRecords(
+      contextStoreNumberOfSelectedRecords,
+    );
+    setContextStoreCurrentObjectMetadataItemId(
+      contextStoreCurrentObjectMetadataItemId,
+    );
+    setContextStoreCurrentPageType(contextStoreCurrentPageType);
     openSidePanelMenu();
   }, [
-    numberOfSelectedRecords,
-    objectMetadataItemId,
+    contextStoreCurrentObjectMetadataItemId,
+    contextStoreCurrentPageType,
+    contextStoreNumberOfSelectedRecords,
+    contextStoreTargetedRecordsRule,
     openSidePanelMenu,
-    pageType,
-    setMainNumberOfSelectedRecords,
-    setMainObjectMetadataItemId,
-    setMainPageType,
-    setMainTargetedRecordsRule,
-    targetedRecordsRule,
+    setContextStoreCurrentObjectMetadataItemId,
+    setContextStoreCurrentPageType,
+    setContextStoreNumberOfSelectedRecords,
+    setContextStoreTargetedRecordsRule,
   ]);
 
   return (

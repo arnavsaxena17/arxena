@@ -1,7 +1,7 @@
 import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 import { styled } from '@linaria/react';
 import React, { useEffect, useRef, useState } from 'react';
-import Webcam from 'react-webcam';
+import type Webcam from 'react-webcam';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { Button, ButtonGroup } from 'twenty-ui/input';
@@ -46,12 +46,12 @@ const PreviewContainer = styled.div`
 `;
 
 const PreviewControls = styled.div`
+  border-top: 1px solid #e5e7eb;
   display: flex;
-  justify-content: center;
   gap: 12px;
+  justify-content: center;
   margin-top: 24px;
   padding: 16px 0;
-  border-top: 1px solid #e5e7eb;
 `;
 
 const PreviewVideo = styled.video`

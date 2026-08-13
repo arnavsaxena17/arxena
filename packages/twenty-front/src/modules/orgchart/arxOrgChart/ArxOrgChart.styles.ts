@@ -3,21 +3,21 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 export const StyledContainer = styled.div`
+  background: ${themeCssVariables.background.primary};
   display: flex;
-  flex-direction: column;
   flex: 1;
+  flex-direction: column;
   height: 100%;
   min-height: 400px;
-  background: ${themeCssVariables.background.primary};
 `;
 
 export const StyledDiagramArea = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  min-height: 300px;
   background: ${themeCssVariables.background.secondary};
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 300px;
+  position: relative;
 `;
 
 export const StyledDiagramBody = styled.div`
@@ -27,18 +27,18 @@ export const StyledDiagramBody = styled.div`
 `;
 
 export const StyledPreviewPersistentBanner = styled.div`
-  flex-shrink: 0;
-  display: flex;
   align-items: center;
-  justify-content: center;
+  background: ${themeCssVariables.background.tertiary};
+  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
+  color: ${themeCssVariables.font.color.primary};
+  display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
+  font-size: ${themeCssVariables.font.size.sm};
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: center;
   padding: ${themeCssVariables.spacing[1.5]}
     ${themeCssVariables.spacing[2]};
-  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
-  background: ${themeCssVariables.background.tertiary};
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
   text-align: center;
 `;
 
@@ -47,22 +47,22 @@ export const StyledPreviewBannerSignupButton = styled(Button)`
 `;
 
 export const StyledSearchOverlay = styled.div`
-  position: absolute;
   bottom: ${themeCssVariables.spacing[2]};
   left: ${themeCssVariables.spacing[2]};
+  position: absolute;
   z-index: 20;
 `;
 
 export const StyledTopRightActionsOverlay = styled.div`
-  position: absolute;
-  top: ${themeCssVariables.spacing[2]};
-  left: ${themeCssVariables.spacing[2]};
-  right: ${themeCssVariables.spacing[2]};
-  z-index: 20;
+  align-items: start;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: start;
+  left: ${themeCssVariables.spacing[2]};
   pointer-events: none;
+  position: absolute;
+  right: ${themeCssVariables.spacing[2]};
+  top: ${themeCssVariables.spacing[2]};
+  z-index: 20;
 `;
 
 export const StyledTopRightActionButton = styled(Button)`
@@ -129,15 +129,15 @@ export const StyledAsOfMonthSliderTimeline = styled.div`
 `;
 
 export const StyledAsOfMonthSlider = styled.input`
-  width: 240px;
   cursor: pointer;
+  width: 240px;
 `;
 
 export const StyledAsOfMonthSliderRangeLabels = styled.div`
-  display: flex;
-  justify-content: space-between;
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.xs};
+  justify-content: space-between;
   padding-left: ${themeCssVariables.spacing[5]};
   padding-right: ${themeCssVariables.spacing[9]};
 `;
@@ -150,10 +150,10 @@ export const StyledAsOfMonthSliderValue = styled.span`
 `;
 
 export const StyledAsOfMonthSliderDot = styled.div`
-  width: ${themeCssVariables.spacing[2]};
-  height: ${themeCssVariables.spacing[2]};
-  border-radius: 50%;
   background: ${themeCssVariables.color.blue};
+  border-radius: 50%;
+  height: ${themeCssVariables.spacing[2]};
+  width: ${themeCssVariables.spacing[2]};
 `;
 
 export const StyledLoadingMessage = styled.div`
@@ -197,19 +197,19 @@ export const StyledProgressCancelRow = styled.div`
 `;
 
 export const StyledLeadershipLoadingOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: ${themeCssVariables.spacing[2]};
   background: ${themeCssVariables.background.secondary};
   color: ${themeCssVariables.font.color.primary};
+  display: flex;
+  flex-direction: column;
   font-size: ${themeCssVariables.font.size.md};
-  text-align: center;
+  gap: ${themeCssVariables.spacing[2]};
+  inset: 0;
+  justify-content: center;
   padding: ${themeCssVariables.spacing[3]};
+  position: absolute;
+  text-align: center;
+  z-index: 30;
 `;
 
 export const StyledLeadershipInfoBanner = styled.div`
@@ -232,10 +232,10 @@ export const StyledLeadershipInfoBanner = styled.div`
 export const StyledLeadershipBannerLink = styled(Button)`
   align-items: baseline;
   display: inline-flex;
-  height: auto;
-  padding: 0;
   gap: 0;
+  height: auto;
   justify-content: flex-start;
+  padding: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
 `;
@@ -290,12 +290,12 @@ export const StyledTemplateBannerButton = styled(Button)`
 `;
 
 export const StyledSpinner = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid ${themeCssVariables.border.color.medium};
-  border-top-color: ${themeCssVariables.color.blue};
   animation: orgchart-spin 0.8s linear infinite;
+  border: 2px solid ${themeCssVariables.border.color.medium};
+  border-radius: 50%;
+  border-top-color: ${themeCssVariables.color.blue};
+  height: 24px;
+  width: 24px;
 
   @keyframes orgchart-spin {
     from {
@@ -308,17 +308,17 @@ export const StyledSpinner = styled.div`
 `;
 
 export const StyledOrgChartConfirmSummary = styled.div`
-  width: 100%;
+  align-self: stretch;
   max-width: 100%;
   text-align: left;
-  align-self: stretch;
+  width: 100%;
 `;
 
 export const StyledOrgChartConfirmIntro = styled.p`
-  margin: 0 0 ${themeCssVariables.spacing[2]};
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
   line-height: 1.5;
-  color: ${themeCssVariables.font.color.secondary};
+  margin: 0 0 ${themeCssVariables.spacing[2]};
 `;
 
 export const StyledOrgChartConfirmRows = styled.dl`
@@ -337,17 +337,17 @@ export const StyledOrgChartConfirmRow = styled.div`
 `;
 
 export const StyledOrgChartConfirmDt = styled.dt`
-  margin: 0;
   color: ${themeCssVariables.font.color.tertiary};
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   font-size: ${themeCssVariables.font.size.xs};
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-transform: uppercase;
 `;
 
 export const StyledOrgChartConfirmDd = styled.dd`
-  margin: 0;
   color: ${themeCssVariables.font.color.primary};
+  margin: 0;
   word-break: break-word;
 `;
 

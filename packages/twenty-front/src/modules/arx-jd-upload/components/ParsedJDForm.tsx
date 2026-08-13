@@ -1,5 +1,5 @@
 import React from 'react';
-import { ParsedJD } from '../types/ParsedJD';
+import { type ParsedJD } from '../types/ParsedJD';
 import {
   StyledFormGrid,
   StyledFullWidthField,

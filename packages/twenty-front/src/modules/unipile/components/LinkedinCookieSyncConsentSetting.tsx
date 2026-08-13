@@ -22,12 +22,12 @@ const StyledRow = styled.div`
 `;
 
 const StyledLabel = styled.label`
-  display: flex;
   align-items: flex-start;
-  gap: ${themeCssVariables.spacing[2]};
-  cursor: pointer;
-  font-size: ${themeCssVariables.font.size.sm};
   color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledHint = styled.p`

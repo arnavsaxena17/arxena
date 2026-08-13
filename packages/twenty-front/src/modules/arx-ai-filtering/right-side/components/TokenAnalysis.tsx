@@ -1,7 +1,7 @@
 import { IconLoader } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
 import React from 'react';
-import { TokenAnalysis as TokenAnalysisType } from '../types';
+import { type TokenAnalysis as TokenAnalysisType } from '../types';
 import {
   LoadingContainer,
   ModelCodeDisplay,

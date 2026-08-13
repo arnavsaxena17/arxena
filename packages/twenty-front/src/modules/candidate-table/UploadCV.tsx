@@ -4,37 +4,37 @@ import { styled } from '@linaria/react';
 import { useRef } from 'react';
 
 const StyledButton = styled.button<{ bgColor: string }>`
-  display: flex;
   align-items: center;
-  justify-content: center;
   background-color: ${(props) => props.bgColor};
-  color: white;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: flex;
+  height: 32px;
+  justify-content: center;
   position: relative;
+  transition: background-color 0.3s ease;
+  width: 32px;
 
   &:hover {
     filter: brightness(90%);
   }
 
   &::after {
+    background-color: #333;
+    border-radius: 4px;
+    color: white;
     content: attr(data-tooltip);
+    font-size: 12px;
+    left: 50%;
+    opacity: 0;
+    padding: 4px 8px;
+    pointer-events: none;
     position: absolute;
     top: 100%;
-    left: 50%;
     transform: translateX(-50%);
-    background-color: #333;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none;
     white-space: nowrap;
   }
   &:hover::after {

@@ -38,6 +38,7 @@ import {
   IconSparkles,
   IconUserCircle,
   IconUsers,
+  IconWorld,
 } from 'twenty-ui/icon';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
 
@@ -145,6 +146,13 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               label: t`LinkedIn Business`,
               path: SettingsPath.LinkedinSignUp,
               Icon: IconBrandLinkedin,
+              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              indentationLevel: 2,
+            },
+            {
+              label: t`Website`,
+              path: SettingsPath.AccountsWebsite,
+              Icon: IconWorld,
               isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
               indentationLevel: 2,
             },

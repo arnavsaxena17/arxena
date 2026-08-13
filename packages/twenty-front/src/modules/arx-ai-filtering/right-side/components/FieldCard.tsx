@@ -1,8 +1,8 @@
-import { EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type EnrichmentField } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { IconEdit, IconX } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
 import React from 'react';
-import { NewField } from '../types';
+import { type NewField } from '../types';
 import { FieldForm } from './FieldForm';
 import {
     FieldCard,

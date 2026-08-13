@@ -1,4 +1,4 @@
-import { OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
+import { type OrgChartEmbed } from '@/settings/developers/types/org-chart-embed/OrgChartEmbed';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const getServerBaseUrl = (): string =>

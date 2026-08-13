@@ -8,21 +8,21 @@ const StyledContainer = styled.div`
 `;
 
 const StyledTitle = styled.h2`
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.xl};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
   margin-bottom: ${themeCssVariables.spacing[0]};
 `;
 
 const StyledDescription = styled.p`
-  font-size: ${themeCssVariables.font.size.md};
   color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.md};
   line-height: 1.5;
 `;
 
 const StyledStepIndicator = styled.span`
-  font-size: ${themeCssVariables.font.size.md};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.regular};
 `;
 

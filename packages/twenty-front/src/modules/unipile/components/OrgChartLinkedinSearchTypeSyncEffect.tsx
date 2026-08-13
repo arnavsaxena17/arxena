@@ -28,11 +28,11 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
     workspaceMemberProfileUnipileFieldsState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
-  const ownerProfileCache = useAtomStateValue(linkedinUnipileOwnerProfileCacheState);
+  const linkedinUnipileOwnerProfileCache = useAtomStateValue(linkedinUnipileOwnerProfileCacheState);
   const setOrgChartLinkedInSearchType = useSetAtomState(
     orgChartLinkedInSearchTypeState,
   );
-  const setOwnerProfileCache = useSetAtomState(
+  const setLinkedinUnipileOwnerProfileCache = useSetAtomState(
     linkedinUnipileOwnerProfileCacheState,
   );
   const inFlightAccountIdRef = useRef<string | null>(null);
@@ -54,20 +54,20 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
     }
 
     const cacheHasInferredType =
-      ownerProfileCache?.accountId === accountId &&
-      Boolean(ownerProfileCache.inferredSearchType);
+      linkedinUnipileOwnerProfileCache?.accountId === accountId &&
+      Boolean(linkedinUnipileOwnerProfileCache.inferredSearchType);
 
-    if (cacheHasInferredType && ownerProfileCache?.inferredSearchType) {
+    if (cacheHasInferredType && linkedinUnipileOwnerProfileCache?.inferredSearchType) {
       applyInferredOrgChartLinkedinSearchType({
         payload: {
           accountId,
-          inferredSearchType: ownerProfileCache.inferredSearchType,
-          salesNavigatorAvailable: ownerProfileCache.salesNavigatorAvailable,
-          recruiterAvailable: ownerProfileCache.recruiterAvailable,
-          fetchedAt: ownerProfileCache.fetchedAt,
+          inferredSearchType: linkedinUnipileOwnerProfileCache.inferredSearchType,
+          salesNavigatorAvailable: linkedinUnipileOwnerProfileCache.salesNavigatorAvailable,
+          recruiterAvailable: linkedinUnipileOwnerProfileCache.recruiterAvailable,
+          fetchedAt: linkedinUnipileOwnerProfileCache.fetchedAt,
         },
         setOrgChartLinkedInSearchType,
-        setOwnerProfileCache,
+        setOwnerProfileCache: setLinkedinUnipileOwnerProfileCache,
       });
       return;
     }
@@ -95,7 +95,7 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
             recruiterAvailable: profile.recruiter != null,
           },
           setOrgChartLinkedInSearchType,
-          setOwnerProfileCache,
+          setOwnerProfileCache: setLinkedinUnipileOwnerProfileCache,
         });
       } catch (error) {
         console.error(
@@ -112,9 +112,9 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
     accessToken,
     linkedinUnipileAccounts,
     orgChartLinkedinCandidateSource,
-    ownerProfileCache,
+    linkedinUnipileOwnerProfileCache,
     setOrgChartLinkedInSearchType,
-    setOwnerProfileCache,
+    setLinkedinUnipileOwnerProfileCache,
     workspaceMemberProfileUnipileFields,
   ]);
 

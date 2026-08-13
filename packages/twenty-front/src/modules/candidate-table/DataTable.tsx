@@ -1,4 +1,4 @@
-import { Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { type Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
 import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
@@ -10,7 +10,7 @@ import '@/candidate-table/initHandsontable';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { candidateStateSelector, columnsSelector, FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
+import { candidateStateSelector, columnsSelector, type FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, type SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
 import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import {
@@ -31,7 +31,8 @@ import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { HotTable } from '@handsontable/react-wrapper';
 import { styled } from '@linaria/react';
 import axios from 'axios';
-import Handsontable, { type CellChange, type ChangeSource } from 'handsontable';
+import type Handsontable from 'handsontable';
+import { type CellChange, type ChangeSource } from 'handsontable';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Loader } from 'twenty-ui/feedback';
 import { IconPlus, IconX } from 'twenty-ui/icon';
@@ -43,22 +44,22 @@ import {
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledTableWrapper = styled.div`
-  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
-  width: 100%;
   height: 100%;
   min-height: 0;
+  position: relative;
+  width: 100%;
 `;
 
 const StyledTableContainer = styled.div`
-  width: 100%;
   flex: 1;
   height: 100%;
   min-height: 0;
   overflow: auto;
   position: relative;
+  width: 100%;
   .handsontable {
     overflow: visible;
   }
@@ -70,14 +71,14 @@ const StyledTableContainer = styled.div`
 
   /* Hide scrollbar only in header's wtHolder */
   .handsontable .ht_clone_top .wtHolder {
-    overflow: hidden !important;
     -ms-overflow-style: none;
+    overflow: hidden !important;
   }
 
   /* Hide scrollbar for the left fixed column */
   .handsontable .ht_clone_left .wtHolder {
-    overflow: hidden !important;
     -ms-overflow-style: none;
+    overflow: hidden !important;
     scrollbar-width: none;
   }
 
@@ -101,65 +102,65 @@ const StyledTableContainer = styled.div`
 `;
 
 const StyledLoadingContainer = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: ${themeCssVariables.spacing[4]};
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
   font-size: ${themeCssVariables.font.size.lg};
+  height: 100%;
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledErrorContainer = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: ${themeCssVariables.spacing[4]};
   color: ${themeCssVariables.color.red};
+  display: flex;
   font-size: ${themeCssVariables.font.size.lg};
+  height: 100%;
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledEmptyContainer = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: ${themeCssVariables.spacing[4]};
-  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.lg};
+  height: 100%;
+  justify-content: center;
+  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledEmptyIcon = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: ${themeCssVariables.spacing[2]};
-  border-radius: 50%;
   background-color: ${themeCssVariables.background.tertiary};
+  border-radius: 50%;
   color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  width: 48px;
 `;
 
 const StyledEmptyIconButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin-bottom: ${themeCssVariables.spacing[2]};
-  border: none;
-  padding: 0;
-  border-radius: 50%;
   background-color: ${themeCssVariables.background.tertiary};
+  border: none;
+  border-radius: 50%;
   color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  margin-bottom: ${themeCssVariables.spacing[2]};
+  padding: 0;
+  width: 48px;
 
   &:hover {
-    color: ${themeCssVariables.font.color.secondary};
     background-color: ${themeCssVariables.background.secondary};
+    color: ${themeCssVariables.font.color.secondary};
   }
 
   &:focus-visible {
@@ -169,50 +170,50 @@ const StyledEmptyIconButton = styled.button`
 `;
 
 const StyledEmptyTitle = styled.div`
-  margin-bottom: ${themeCssVariables.spacing[1]};
   font-weight: ${themeCssVariables.font.weight.medium};
+  margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledEmptyDescription = styled.div`
-  font-size: ${themeCssVariables.font.size.md};
   color: ${themeCssVariables.font.color.tertiary};
-  text-align: center;
+  font-size: ${themeCssVariables.font.size.md};
   max-width: 300px;
+  text-align: center;
 `;
 
 const StyledFilterBadge = styled.div`
-  position: absolute;
-  top: ${themeCssVariables.spacing[2]};
-  left: ${themeCssVariables.spacing[2]};
-  display: flex;
   align-items: center;
   background-color: ${themeCssVariables.background.secondary};
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
   border-radius: ${themeCssVariables.border.radius.sm};
-  z-index: 102;
+  display: flex;
   gap: ${themeCssVariables.spacing[1]};
+  left: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  position: absolute;
+  top: ${themeCssVariables.spacing[2]};
+  z-index: 102;
 `;
 
 const StyledControlsContainer = styled.div`
-  position: absolute;
-  top: ${themeCssVariables.spacing[2]};
-  right: ${themeCssVariables.spacing[2]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
-  z-index: 102;
   max-width: 400px;
+  position: absolute;
+  right: ${themeCssVariables.spacing[2]};
+  top: ${themeCssVariables.spacing[2]};
+  z-index: 102;
 `;
 
 const StyledClearButton = styled.button`
-  display: flex;
   align-items: center;
-  justify-content: center;
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 0;
   color: ${themeCssVariables.font.color.tertiary};
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: 0;
   &:hover {
     color: ${themeCssVariables.font.color.secondary};
   }
@@ -237,18 +238,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const colorScheme = useThemeColorScheme();
     const tableRef = useRef<any>(null);
     const tableState = useAtomStateValue(tableStateAtom);
-    const setTableState = useSetAtomState(tableStateAtom);
-    const setFilteredCount = useSetAtomState(filteredCandidatesCountState);
+    const setTableStateAtom = useSetAtomState(tableStateAtom);
+    const setFilteredCandidatesCount = useSetAtomState(filteredCandidatesCountState);
     const [tokenPair] = useAtomState(tokenPairState);
     const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
     const processedData = useAtomStateValue(processedDataSelector);
     const [searchResults, setSearchResults] = useAtomState(searchResultsState);
     const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
-    const getCandidateState = useAtomStateValue(candidateStateSelector);
-    const customEnrichments = useAtomStateValue(enrichmentsState);
+    const candidateState = useAtomStateValue(candidateStateSelector);
+    const enrichments = useAtomStateValue(enrichmentsState);
     const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
-    const selectedStatus = useAtomStateValue(selectedConversationStatusState);
-    const setSelectedStatus = useSetAtomState(selectedConversationStatusState);
+    const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
+    const setSelectedConversationStatus = useSetAtomState(selectedConversationStatusState);
     const setDataTableRefreshFunction = useSetAtomState(dataTableRefreshFunctionState);
     const setDataTableApplySortsFunction = useSetAtomState(dataTableApplySortsFunctionState);
     const { showNotification } = useNotification();
@@ -341,8 +342,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [customEnrichments, sampleEnrichments]);
 
     const columns = useAtomStateValue(columnsSelector);
-    const searchQuery = useAtomStateValue(chatSearchQueryState);
-    const setSearchQuery = useSetAtomState(chatSearchQueryState);
+    const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
+    const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
     const { openRightDrawer } = useRightDrawer();
     const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
       contextStoreTargetedRecordsRuleComponentState,
@@ -395,7 +396,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const handleSortChange = useCallback((sortConfig: SortConfig[]) => {
       console.log("handleSortChange called with:", sortConfig);
       sortConfigRef.current = sortConfig;
-      setTableState(prev => ({
+      setTableStateAtom(prev => ({
         ...prev,
         sortConfig
       }));
@@ -450,7 +451,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       } else {
         console.log("Hot instance not available or no sort config");
       }
-    }, [setTableState]);
+    }, [setTableStateAtom]);
 
     const handleClearSort = useCallback(() => {
       const hot = tableRef.current?.hotInstance;
@@ -461,11 +462,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         multiColumnSortingPlugin.clearSort();
       }
 
-      setTableState(prev => ({
+      setTableStateAtom(prev => ({
         ...prev,
         sortConfig: []
       }));
-    }, [setTableState]);
+    }, [setTableStateAtom]);
     // const searchPlanFilters = useSearchPlanFilters();
 
     const filteredData = useMemo(() => {
@@ -517,7 +518,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [filteredData, tableState.selectedRowIds]);
 
     // const keyDownHandler = (event: KeyboardEvent) => {
-    //   handleKeyDown(event, tableRef, tableState, setTableState);
+    //   handleKeyDown(event, tableRef, tableState, setTableStateAtom);
     // };
 
     // Create a function to get the latest token
@@ -526,12 +527,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     }, [tokenPair]);
 
     const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, projectId, getLatestToken, setTableState, setSelectedCandidateId, refreshData, tableState.rawData);
+      afterChange( tableRef, changes, source, projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData);
     }
 
     // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
     //   console.log("event in beforeOnCellMouseDownHandler", event);
-    //   beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableState)
+    //   beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableStateAtom)
     // }
 
     const refreshData = useCallback(async (specificIds?: string[]) => {
@@ -558,7 +559,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         });
 
         if (specificIds?.length) {
-          setTableState(prev => {
+          setTableStateAtom(prev => {
             console.log("Partial refresh in refreshData", rawData);
             const updatedRawData = [...prev.rawData];
             for (const newData of rawData) {
@@ -577,7 +578,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           });
           setUnreadMessagesCounts(prev => ({ ...prev, ...unreadMessagesCounts }));
         } else {
-          setTableState(prev => ({
+          setTableStateAtom(prev => ({
             ...prev,
             rawData,
             isLoading: false,
@@ -585,7 +586,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }));
           setUnreadMessagesCounts(unreadMessagesCounts);
           setSelectedCandidateId(null);
-          setFilteredCount(Array.isArray(rawData) ? rawData.length : 0);
+          setFilteredCandidatesCount(Array.isArray(rawData) ? rawData.length : 0);
 
           // Clear context store states when clearing selected rows
           setContextStoreNumberOfSelectedRecords(0);
@@ -647,7 +648,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         setSelectedCandidateId(null);
         throw error;
       }
-    }, [projectId, setTableState, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCount]);
+    }, [projectId, setTableStateAtom, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCandidatesCount]);
 
     const reapplyPersistedFilters = useCallback((force = false) => {
       if (!force && hasRestoredFiltersRef.current) {
@@ -715,7 +716,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       hasRestoredFiltersRef.current = true;
       filterRestoreStartedAtRef.current = null;
       savePersistedTableFilters(projectId, filtersToApply, columns);
-      setTableState((prev) => ({
+      setTableStateAtom((prev) => ({
         ...prev,
         activeFilters: filtersToApply,
       }));
@@ -724,7 +725,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }, 50);
 
       return true;
-    }, [projectId, setTableState]);
+    }, [projectId, setTableStateAtom]);
 
     // Method to remove a specific filter
     const removeFilter = useCallback((columnIndex: number) => {
@@ -756,14 +757,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       filtersPlugin.clearConditions();
       filtersPlugin.filter();
       clearPersistedTableFilters(projectId);
-      setTableState((prev) => ({
+      setTableStateAtom((prev) => ({
         ...prev,
         activeFilters: [],
       }));
-      setSearchQuery('');
+      setChatSearchQuery('');
 
       console.log('All filters cleared');
-    }, [projectId, setSearchQuery, setTableState]);
+    }, [projectId, setChatSearchQuery, setTableStateAtom]);
 
     // Method to clear all sorts
     const clearAllSorts = useCallback(() => {
@@ -779,13 +780,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
       // Clear sort config from state
       sortConfigRef.current = [];
-      setTableState(prev => ({
+      setTableStateAtom(prev => ({
         ...prev,
         sortConfig: []
       }));
 
       console.log('All sorts cleared');
-    }, [setTableState]);
+    }, [setTableStateAtom]);
 
     // Method to clear all filters and sorts
     const clearAllFiltersAndSorts = useCallback(() => {
@@ -798,10 +799,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       clearAllSorts();
 
       // Clear selected conversation status
-      setSelectedStatus(null);
+      setSelectedConversationStatus(null);
 
       console.log('All filters, sorts, and search cleared');
-    }, [clearAllFilters, clearAllSorts, setSelectedStatus]);
+    }, [clearAllFilters, clearAllSorts, setSelectedConversationStatus]);
 
     // Method to apply generated sorts
     const applyGeneratedSorts = useCallback((sorts: any) => {
@@ -1106,7 +1107,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         row,
         row2,
         column2,
-        setTableState,
+        setTableStateAtom,
         setSelectedCandidateId,
         setUnreadMessagesCounts,
         setContextStoreNumberOfSelectedRecords,
@@ -1116,7 +1117,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         tableState.rawData
       );
     }, [
-      setTableState,
+      setTableStateAtom,
       setSelectedCandidateId,
       setUnreadMessagesCounts,
       setContextStoreNumberOfSelectedRecords,
@@ -1142,12 +1143,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       if (!projectId || projectId === 'project-id' || projectId === '__search__') {
         // For virtual job IDs (assistant search), ensure we're not stuck in a
         // loading state left over from a previous real-job DataTable render.
-        setTableState(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
+        setTableStateAtom(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
         return;
       }
 
       try {
-        setTableState(prev => ({ ...prev, isLoading: true }));
+        setTableStateAtom(prev => ({ ...prev, isLoading: true }));
         const requestBody = { projectId };
         console.log("This is the request body in loadData::::", requestBody);
         const response = await axios.post(
@@ -1174,14 +1175,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }
         });
 
-        setTableState(prev => ({
+        setTableStateAtom(prev => ({
           ...prev,
           rawData,
           isLoading: false
         }));
         setUnreadMessagesCounts(unreadMessagesCounts);
         // afterFilter only fires on Handsontable filter changes; sync count on load
-        setFilteredCount(rawData.length);
+        setFilteredCandidatesCount(rawData.length);
 
         // Reapply multi-column sorting after initial data load
         setTimeout(() => {
@@ -1215,7 +1216,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }, 100);
       } catch (error) {
         console.error('Failed to load candidate data:', error);
-        setTableState(prev => ({
+        setTableStateAtom(prev => ({
           ...prev,
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -1223,9 +1224,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }));
         setUnreadMessagesCounts({});
         setSelectedCandidateId(null);
-        setFilteredCount(0);
+        setFilteredCandidatesCount(0);
       }
-    }, [projectId, setTableState, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCount]);
+    }, [projectId, setTableStateAtom, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCandidatesCount]);
 
 
     // Load persisted search results and metadata from backend cache on mount or when projectId changes
@@ -1426,7 +1427,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         return getPermanentId(rowData, tableState.rawData);
       }).filter((id): id is string => Boolean(id));
 
-      setTableState(prev => ({
+      setTableStateAtom(prev => ({
         ...prev,
         selectedRowIds: checked ? visibleIds : []
       }));
@@ -1632,7 +1633,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         {selectedStatus && (
           <StyledFilterBadge>
             <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedStatus]}</span>
-            <StyledClearButton onClick={() => setSelectedStatus(null)}>
+            <StyledClearButton onClick={() => setSelectedConversationStatus(null)}>
               <IconX size={16} />
             </StyledClearButton>
           </StyledFilterBadge>
@@ -1706,7 +1707,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
                 })),
                 operation: condition.operation || 'conjunction'
               }));
-              setTableState(prev => ({
+              setTableStateAtom(prev => ({
                 ...prev,
                 activeFilters
               }));
@@ -1724,11 +1725,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
               // If there are no conditions, show total count
               if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
-                setFilteredCount(hot.countRows());
+                setFilteredCandidatesCount(hot.countRows());
               } else {
                 // Count visible rows
                 const visibleCount = hot.getData().length;
-                setFilteredCount(visibleCount);
+                setFilteredCandidatesCount(visibleCount);
               }
 
               // Reapply multi-column sorting after filter changes (avoid loops)
@@ -1765,13 +1766,13 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               // Handle Ctrl/Cmd + Z for undo
               if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
                 event.preventDefault();
-                performUndo(tableRef, setTableState);
+                performUndo(tableRef, setTableStateAtom);
               }
               // Handle Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
               if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
                   ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
                 event.preventDefault();
-                performRedo(tableRef, setTableState);
+                performRedo(tableRef, setTableStateAtom);
               }
             }}
             afterColumnSort={(currentSortConfig, destinationSortConfigs) => {
@@ -1788,7 +1789,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               const newSortConfig = destinationSortConfigs || [];
               if (!areSortConfigsEqual(newSortConfig as SortConfig[] | null, sortConfigRef.current)) {
                 sortConfigRef.current = newSortConfig;
-                setTableState(prev => ({
+                setTableStateAtom(prev => ({
                   ...prev,
                   sortConfig: newSortConfig
                 }));

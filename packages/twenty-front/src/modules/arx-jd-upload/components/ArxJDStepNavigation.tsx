@@ -4,28 +4,28 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledContainer = styled.div`
-  border-top: 1px solid ${themeCssVariables.border.color.medium};
-  display: flex;
   align-items: center;
+  background-color: ${themeCssVariables.background.tertiary};
+  border-top: 1px solid ${themeCssVariables.border.color.medium};
+  bottom: 0;
+  display: flex;
   margin-top: ${themeCssVariables.spacing[2]};
   padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[4]};
   position: sticky;
-  bottom: 0;
-  background-color: ${themeCssVariables.background.tertiary};
   z-index: 1;
 `;
 
 const StyledButtonContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
   flex: 1;
+  justify-content: flex-end;
 `;
 
 const StyledValidationMessage = styled.div`
   color: ${themeCssVariables.color.red};
+  flex: 1;
   font-size: ${themeCssVariables.font.size.sm};
   margin-right: ${themeCssVariables.spacing[2]};
-  flex: 1;
 `;
 
 const StyledButtonGroup = styled.div`

@@ -13,32 +13,32 @@ const useUploadContext = (): { pendingUploads: PendingUpload[] } => ({
 });
 
 const ProgressContainer = styled.div`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
   background-color: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
+  bottom: 20px;
   box-shadow: ${themeCssVariables.boxShadow.strong};
-  padding: 12px;
-  z-index: 1000;
-  min-width: 250px;
   max-width: 320px;
+  min-width: 250px;
+  padding: 12px;
+  position: fixed;
+  right: 20px;
+  z-index: 1000;
 `;
 
 const ProgressBar = styled.div<{ progress: number }>`
-  height: 8px;
   background-color: #3498db;
-  width: ${(props) => props.progress}%;
   border-radius: 4px;
+  height: 8px;
+  width: ${(props) => props.progress}%;
 `;
 
 const ProgressTrack = styled.div`
-  height: 8px;
   background-color: #e0e0e0;
-  width: 100%;
   border-radius: 4px;
+  height: 8px;
   margin: 8px 0;
+  width: 100%;
 `;
 
 const UploadItem = styled.div`
@@ -47,15 +47,15 @@ const UploadItem = styled.div`
 
 const FileName = styled.div`
   font-size: 14px;
-  white-space: nowrap;
+  margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
+  white-space: nowrap;
 `;
 
 const ProgressText = styled.div`
-  font-size: 12px;
   color: #666;
+  font-size: 12px;
   text-align: right;
 `;
 

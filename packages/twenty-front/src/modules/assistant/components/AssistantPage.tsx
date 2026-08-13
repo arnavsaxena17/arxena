@@ -13,29 +13,29 @@ const StyledPageContainer = styled(PageContainer)`
 
 const StyledPageHeader = styled(PageHeader)`
   padding: ${themeCssVariables.spacing[3]};
-  padding-right: 0;
   padding-left: ${themeCssVariables.spacing[3]};
+  padding-right: 0;
 `;
 
 const StyledPageBody = styled(PageBody)`
-  padding: ${themeCssVariables.spacing[6]};
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[4]};
   max-width: 640px;
+  padding: ${themeCssVariables.spacing[6]};
 `;
 
 const StyledTitle = styled.h2`
-  margin: 0;
+  color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.xl};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  color: ${themeCssVariables.font.color.primary};
+  margin: 0;
 `;
 
 const StyledCopy = styled.p`
-  margin: 0;
   color: ${themeCssVariables.font.color.secondary};
   line-height: 1.5;
+  margin: 0;
 `;
 
 export const AssistantPage = () => {

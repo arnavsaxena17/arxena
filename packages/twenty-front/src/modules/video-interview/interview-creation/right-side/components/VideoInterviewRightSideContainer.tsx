@@ -13,19 +13,19 @@ const StyledAllContainer = styled.div`
   background-color: ${themeCssVariables.background.primary};
   display: flex;
   flex-direction: column;
+  flex-shrink: 1;
   gap: 44px;
+  min-width: 264px;
   padding: 44px 32px 44px 32px;
   width: calc(100% * (2 / 3));
-  min-width: 264px;
-  flex-shrink: 1;
 `;
 
 
 const StyledFormElement = styled.form`
   display: flex;
-  gap: 44px;
-  flex-grow: 1;
   flex-direction: column;
+  flex-grow: 1;
+  gap: 44px;
   overflow-y: scroll;
   scroll-behavior: smooth;
 `;
@@ -34,18 +34,18 @@ const StyledQuestionsContainer = styled.ol`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  padding: 0;
-  margin: 0px;
   list-style-type: none;
+  margin: 0px;
   overflow-y: scroll;
+  padding: 0;
   scroll-behavior: smooth;
 `;
 
 const StyledListItem = styled.li`
   &::marker {
+    color: ${themeCssVariables.font.color.light};
     display: none;
     font-family: inherit;
-    color: ${themeCssVariables.font.color.light};
     font-size: ${themeCssVariables.font.size.md};
     font-weight: ${themeCssVariables.font.weight.regular};
   }

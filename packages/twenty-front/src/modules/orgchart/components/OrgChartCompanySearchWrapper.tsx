@@ -34,7 +34,7 @@ export const OrgChartCompanySearchWrapper = ({
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
   const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
-  const setSelectedCompanyInfo = useSetAtomState(
+  const setOrgChartSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
   const autocompletePath = '/org-chart/companies/autocomplete';
@@ -56,10 +56,10 @@ export const OrgChartCompanySearchWrapper = ({
         website: company.website,
         industry: company.industry,
       });
-      setSelectedCompanyInfo(company);
+      setOrgChartSelectedCompanyInfo(company);
       onCompanySelect(company);
     },
-    [onCompanySelect, setSelectedCompanyInfo],
+    [onCompanySelect, setOrgChartSelectedCompanyInfo],
   );
 
   return (

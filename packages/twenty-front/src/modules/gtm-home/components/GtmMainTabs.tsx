@@ -5,13 +5,13 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { type GtmMainTab } from '@/gtm-home/types/gtm-home.types';
 
 const StyledTabsRow = styled.div`
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: ${themeCssVariables.spacing[2]};
-  padding: 0 ${themeCssVariables.spacing[4]};
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
+  display: flex;
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
   min-height: 40px;
+  padding: 0 ${themeCssVariables.spacing[4]};
 `;
 
 const StyledTabs = styled.div`
@@ -21,10 +21,10 @@ const StyledTabs = styled.div`
 `;
 
 const StyledTrailing = styled.div`
-  display: flex;
   align-items: center;
-  gap: ${themeCssVariables.spacing[2]};
+  display: flex;
   flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[2]};
   margin-left: auto;
 `;
 

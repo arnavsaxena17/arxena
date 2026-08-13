@@ -1,6 +1,6 @@
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 
-import { CustomSortState } from '../types/sortTypes';
+import { type CustomSortState } from '../types/sortTypes';
 
 export const customSortState = createAtomState<CustomSortState>({
   key: 'customSortState',

@@ -24,10 +24,10 @@ const StyledWrap = styled.div<{ isCompact: boolean }>`
 `;
 
 const StyledHint = styled.p`
-  margin: 0;
-  font-size: ${themeCssVariables.font.size.xs};
   color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   line-height: 1.5;
+  margin: 0;
 `;
 
 const StyledButtonRow = styled.div`
@@ -37,19 +37,19 @@ const StyledButtonRow = styled.div`
 `;
 
 const StyledButton = styled.button<{ variant: 'primary' | 'danger' }>`
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  font-size: ${themeCssVariables.font.size.sm};
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
   background-color: ${({ variant }) =>
     variant === 'danger' ? themeCssVariables.color.red : themeCssVariables.color.blue};
+  border: none;
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.inverted};
+  cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: 500;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 
   &:disabled {
-    opacity: 0.5;
     cursor: not-allowed;
+    opacity: 0.5;
   }
 
   &:hover:not(:disabled) {

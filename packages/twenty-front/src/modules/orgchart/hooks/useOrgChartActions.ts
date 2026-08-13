@@ -3,7 +3,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { ORG_CHART_CANDIDATE_SOURCE_M7KQ } from '@/orgchart/constants/orgChartM7kqSource';
-import { OutreachChannelKey } from '@/orgchart/constants/outreachTemplates';
+import { type OutreachChannelKey } from '@/orgchart/constants/outreachTemplates';
 import { useOrgChartsRefetch } from '@/orgchart/hooks/useOrgChartsRefetch';
 import { orgChartContactsByKeyState } from '@/orgchart/states/orgChartContactsByKeyState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
@@ -20,11 +20,11 @@ import { Mixpanel } from '~/mixpanel';
 
 import {
     normalizeCompanyIdForUrl,
-    OrgChartContextAction,
-    OrgChartNodeContextPayload,
+    type OrgChartContextAction,
+    type OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
 import { isValidLinkedInProfileUrl, type NodeState, type OrgChartNodeData, type OrgchartSearchMode as OrgchartSearchModeValue } from 'twenty-shared/utils';
-import { ContextResultItem } from '../types';
+import { type ContextResultItem } from '../types';
 import type {
     SuperImposeTargetCompany,
     SuperImposeTargetLocation,
@@ -450,7 +450,7 @@ export const useOrgChartActions = ({
 }: UseOrgChartActionsParams) => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
-  const setContactsByKey = useSetAtomState(orgChartContactsByKeyState);
+  const setOrgChartContactsByKey = useSetAtomState(orgChartContactsByKeyState);
   const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
@@ -1115,7 +1115,7 @@ export const useOrgChartActions = ({
           return;
         }
         // Persist to session cache (Recoil) for modals/UX
-        setContactsByKey((prev) => {
+        setOrgChartContactsByKey((prev) => {
           const key =
             typeof domain === 'string' && domain.trim().length > 0
               ? `m7kq:${domain.trim().toLowerCase()}:${personId}`
@@ -1243,7 +1243,7 @@ export const useOrgChartActions = ({
       enqueueSnackBar,
       website,
       selectedNodeForDetails,
-      setContactsByKey,
+      setOrgChartContactsByKey,
     ],
   );
 

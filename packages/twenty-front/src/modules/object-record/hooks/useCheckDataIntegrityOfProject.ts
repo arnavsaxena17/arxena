@@ -82,7 +82,7 @@ export const useCheckDataIntegrityOfProject = ({
 }: UseCheckDataIntegrityOfProjectProps = {}) => {
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const apiKeys = useAtomStateValue(apiKeysState);
-  const isApiKeysLoading = useAtomStateValue(apiKeysLoadingState);
+  const apiKeysLoading = useAtomStateValue(apiKeysLoadingState);
   // Workspace project records are on /graphql, not the default /metadata client
   const apolloCoreClient = useApolloCoreClient();
   const [executeProjectQuery] = useLazyQuery(

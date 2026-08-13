@@ -14,10 +14,31 @@ const DATA_SOURCE_ALIASES = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
 );
 
+export const PEOPLE_SALES_NAV_CANDIDATE_SOURCES = [
+  'harvest',
+  'unipile',
+  'pool',
+] as const;
+
+export type PeopleSalesNavCandidateSourceDto =
+  (typeof PEOPLE_SALES_NAV_CANDIDATE_SOURCES)[number];
+
 export class PeopleSearchDto {
   @IsOptional()
   @IsIn(DATA_SOURCE_ALIASES)
   dataSource?: PeopleDataSourceAlias;
+
+  @IsOptional()
+  @IsIn(PEOPLE_SALES_NAV_CANDIDATE_SOURCES)
+  candidateSource?: PeopleSalesNavCandidateSourceDto;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsString()
+  linkedInAccountId?: string;
 
   @IsOptional()
   @IsString()

@@ -4,7 +4,8 @@ export type PeopleDataSourceAlias =
   | 'pdl'
   | 'contactout'
   | 'harvest'
-  | 'unipile';
+  | 'unipile'
+  | 'pool';
 
 export type PeopleDataSourceCategory = {
   alias: PeopleDataSourceAlias;
@@ -27,9 +28,9 @@ export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
     alias: 'apollo',
     label: 'Apollo',
     description:
-      'Directory-style people search. Map std_function to title keywords when possible.',
-    supportsStdFunctionFilter: false,
-    supportsStdGradeFilter: false,
+      'Apollo people search via mapped person_department_or_subdepartments and person_seniorities.',
+    supportsStdFunctionFilter: true,
+    supportsStdGradeFilter: true,
   },
   {
     alias: 'pdl',
@@ -49,7 +50,7 @@ export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
     alias: 'harvest',
     label: 'Harvest',
     description:
-      'LinkedIn lead search via the shared Harvest/super-impose sourcing pipeline.',
+      'LinkedIn Sales Navigator lead search via Harvest (functionIds mapped from std taxonomy).',
     supportsStdFunctionFilter: true,
     supportsStdGradeFilter: true,
   },
@@ -57,7 +58,15 @@ export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
     alias: 'unipile',
     label: 'Unipile',
     description:
-      'LinkedIn people search via Unipile (default LinkedIn People API source).',
+      'LinkedIn Sales Navigator people search via an explicit Unipile account id.',
+    supportsStdFunctionFilter: true,
+    supportsStdGradeFilter: true,
+  },
+  {
+    alias: 'pool',
+    label: 'Sales Nav pool',
+    description:
+      'LinkedIn Sales Navigator people search via the shared Unipile Sales Navigator pool.',
     supportsStdFunctionFilter: true,
     supportsStdGradeFilter: true,
   },
