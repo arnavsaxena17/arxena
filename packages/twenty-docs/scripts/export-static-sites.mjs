@@ -196,6 +196,19 @@ const runMintlifyExport = ({
   }
 };
 
+const regenerateDocsJson = () => {
+  execFileSync(
+    'npx',
+    ['tsx', path.join(docsRoot, 'scripts/generate-docs-json.ts')],
+    {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    },
+  );
+};
+
+regenerateDocsJson();
+
 const originalDocsConfig = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
 const mintlifyBin = resolveMintlifyBin();
 

@@ -209,9 +209,8 @@ if ! build_step TWENTY_MCP_SERVER npx nx run twenty-mcp-server:build; then
 fi
 
 echo "Building twenty-docs package"
-# Skip yarn docs:generate — it rebuilds docs.json from the full Twenty
-# base-structure × all locales (~2300 pages) and OOMs mintlify export.
-# Arxena ships a curated English-only docs.json (API / Cookbooks / Changelog).
+# export:brands regenerates docs.json first (skips .mintignore + missing MDX)
+# so Mintlify never sees User Guide / Developers / deleted cookbook slugs.
 cd ~/twenty/packages/twenty-docs/
 build_step TWENTY_DOCS env NODE_OPTIONS="--max-old-space-size=8192" yarn export:brands
 
