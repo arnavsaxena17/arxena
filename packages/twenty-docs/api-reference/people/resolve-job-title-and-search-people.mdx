@@ -1,7 +1,0 @@
----
-title: 'Resolve job title and search people'
-description: Natural-language role + company → people + resolved fields.
-openapi: 'openapi/people-api.json POST /people-api/people/search-by-title'
----
-
-Primary product path for phrases like “CEO at StayVista”. Resolution is server-side; LinkedIn uses Sales Navigator facets via `pool` / `harvest` / `unipile`+`accountId`. Response includes `resolved` and `query.appliedFilters`. Cookbook: [Natural language to people at a company](/cookbooks/nl-to-people-at-company).

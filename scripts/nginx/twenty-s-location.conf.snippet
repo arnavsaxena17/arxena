@@ -1,0 +1,26 @@
+# App logic-function HTTP routes (`RouteTriggerController` @Controller('s')).
+# Insert this block in the app.arxena.com vhost BEFORE `location /`.
+# `^~ /s/` wins over the SPA fallback and over the API prefix regex.
+#
+# proxy_ignore_client_abort: Call Recorder posts then aborts at 5s on purpose;
+# nginx must not kill the Nest upstream while import-call-recording-artifacts
+# still runs (timeoutSeconds: 250).
+#
+# Deploy: merge into /etc/nginx/sites-enabled/twenty.conf, then
+#   sudo nginx -t && sudo systemctl reload nginx
+
+location ^~ /s/ {
+    access_log /var/log/nginx/api_endpoints_debug.log;
+    error_log /var/log/nginx/api_endpoints_error.log warn;
+    client_max_body_size 10M;
+
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_ignore_client_abort on;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+}

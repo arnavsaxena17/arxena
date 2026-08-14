@@ -1,5 +1,19 @@
 import { FUNCTION_ROOT_VALUES } from 'src/engine/core-modules/candidate-search/schemas/org-chart.schema';
 
+export const PEOPLE_TAXONOMY_GRADE_VALUES = [
+  'entry',
+  'mid',
+  'leadership',
+] as const;
+
+export type PeopleTaxonomyGrade =
+  (typeof PEOPLE_TAXONOMY_GRADE_VALUES)[number];
+
+export const PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES = FUNCTION_ROOT_VALUES;
+
+export type PeopleTaxonomyFunctionRoot =
+  (typeof PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES)[number];
+
 export type TaxonomyConstantItem = {
   id: string;
   label: string;

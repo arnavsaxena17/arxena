@@ -11,7 +11,7 @@ Utterances like these should Just Work:
 - “Give me CHRO-type people at Apple”
 - “CEO at StayVista”
 
-You send **role language + company**. Arxena resolves synonyms and seniority **server-side**, maps std function/root/grade to LinkedIn Sales Navigator or Apollo filters when using those sources, then returns people plus a small `resolved` object.
+You send **one `naturalLanguage` utterance** (role, optionally `at` company). Arxena resolves synonyms and seniority **server-side**, maps std function/root/grade to LinkedIn Sales Navigator or Apollo filters when using those sources, then returns people plus a small `resolved` object. If the utterance has no company and you omit `companyName` / `companyId` / `website`, the API returns **Please provide company name as well**. A company **name** alone is resolved through companies ES → autocomplete → Google SERP domain → LinkedIn company id before search. A **domain** alone uses ES/autocomplete first, then Google `{domain} linkedin company` if that is only a stem guess.
 
 <TaxonomyQueryFlow />
 
@@ -21,10 +21,9 @@ You send **role language + company**. Arxena resolves synonyms and seniority **s
 curl -X POST \
   -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
   -H 'Content-Type: application/json' \
-  https://app.arxena.com/people-api/people/search-by-title \
+  https://app.arxena.com/people-api/people/search \
   -d '{
-    "jobTitle": "CHRO",
-    "companyName": "Apple",
+    "naturalLanguage": "CHRO at Apple",
     "dataSource": "index",
     "limit": 10
   }'
@@ -38,20 +37,18 @@ Require one of:
 
 | Source | Body fields |
 | --- | --- |
-| Shared Sales Nav pool | `"dataSource": "pool"`, `"candidateSource": "pool"` |
-| Harvest Sales Nav | `"dataSource": "harvest"`, `"candidateSource": "harvest"` |
-| Explicit Unipile account | `"dataSource": "unipile"`, `"candidateSource": "unipile"`, `"accountId": "..."` |
+| Shared Sales Nav pool | `"dataSource": "pool"` |
+| Harvest Sales Nav | `"dataSource": "harvest"` |
+| Explicit Unipile account | `"dataSource": "unipile"`, `"accountId": "..."` |
 
 ```bash
 curl -X POST \
   -H 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
   -H 'Content-Type: application/json' \
-  https://app.arxena.com/people-api/people/search-by-title \
+  https://app.arxena.com/people-api/people/search \
   -d '{
-    "jobTitle": "CEO",
-    "website": "stayvista.com",
+    "naturalLanguage": "CEO at StayVista",
     "dataSource": "pool",
-    "candidateSource": "pool",
     "limit": 10
   }'
 ```
@@ -71,7 +68,7 @@ Same endpoint with `"dataSource": "apollo"`. Taxonomy maps to `person_department
 - **`resolved`** — what the phrase became (function root × grade + confidence)
 - **`items`** — filtered people at that company
 
-Playground: [Resolve job title and search people](/api-reference/people/resolve-job-title-and-search-people).
+Playground: [Search people](/api-reference/people/search-people).
 
 ## Related
 

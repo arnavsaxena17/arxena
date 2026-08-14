@@ -53,8 +53,26 @@ describe('postToOwnRoute', () => {
     ).resolves.toBe(false);
   });
 
+  it('posts to the API /s origin when the functions url is empty', async () => {
+    vi.stubEnv('TWENTY_FUNCTIONS_URL', '');
+    vi.stubEnv('TWENTY_API_URL', 'https://app.example.com');
+
+    const result = await postToOwnRoute({
+      path: '/call-recorder/some-route',
+      body: { key: 'value' },
+    });
+
+    expect(result).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [requestUrl] = fetchMock.mock.calls[0];
+    expect(requestUrl).toBe(
+      'https://app.example.com/s/call-recorder/some-route',
+    );
+  });
+
   it('returns false when the route base url cannot be resolved', async () => {
     vi.stubEnv('TWENTY_FUNCTIONS_URL', '');
+    vi.stubEnv('TWENTY_API_URL', '');
 
     await expect(
       postToOwnRoute({ path: '/call-recorder/some-route', body: {} }),

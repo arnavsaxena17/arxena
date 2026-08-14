@@ -183,7 +183,28 @@ export class LinkedInSearchService {
       this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
       this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
       const response = await this.searchWithRetry(url, queryParams, searchRequest);
-      this.logger.log(`LinkedIn search response: ${JSON.stringify(response.items.map(x=> x.id ?? ''), null, 2)}`);
+      this.logger.log(
+        `LinkedIn search response: ${JSON.stringify(
+          response.items.map((item) => {
+            if (item.type !== 'PEOPLE') {
+              return { id: item.id ?? '', type: item.type };
+            }
+
+            const jobTitles = (item.current_positions ?? [])
+              .map((position) => position.role)
+              .filter(Boolean);
+
+            return {
+              id: item.id ?? '',
+              name: item.name,
+              headline: item.headline,
+              jobTitles,
+            };
+          }),
+          null,
+          2,
+        )}`,
+      );
       return response;
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);
@@ -232,7 +253,9 @@ export class LinkedInSearchService {
     }
 
     const data: LinkedInSearchResponse = await response.json();
-    this.logger.log(`LinkedIn search completed successfully. Found ${data.items.length} results.`);
+    this.logger.log(
+      `LinkedIn search completed successfully. Found ${data.items.length} results (paging.total_count=${data.paging?.total_count ?? 'n/a'} page_count=${data.paging?.page_count ?? 'n/a'} cursor=${data.cursor ?? 'none'}).`,
+    );
 
     return data;
   }

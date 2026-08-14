@@ -1,0 +1,1 @@
+export const TWENTY_API_URL_ENV_VAR_NAME = 'TWENTY_API_URL';

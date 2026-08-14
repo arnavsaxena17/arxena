@@ -1,24 +1,22 @@
+import { Transform } from 'class-transformer';
 import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import {
-  PEOPLE_SALES_NAV_CANDIDATE_SOURCES,
-  type PeopleSalesNavCandidateSourceDto,
-} from './people-search.dto';
+  PEOPLE_LINKEDIN_DATA_SOURCES,
+  type PeopleLinkedInDataSource,
+} from '../constants/people-data-source-aliases';
+import {
+  PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES,
+  PEOPLE_TAXONOMY_GRADE_VALUES,
+  type PeopleTaxonomyFunctionRoot,
+  type PeopleTaxonomyGrade,
+} from '../constants/taxonomy-constants';
+import { toOptionalNormalizedTaxonomyLabel } from '../utils/normalize-taxonomy-label.util';
 
-export const PEOPLE_TAXONOMY_GRADE_VALUES = [
-  'entry',
-  'mid',
-  'leadership',
-] as const;
-
-export type PeopleTaxonomyGrade = (typeof PEOPLE_TAXONOMY_GRADE_VALUES)[number];
-
-/** @deprecated Use PEOPLE_SALES_NAV_CANDIDATE_SOURCES */
-export const PEOPLE_LINKEDIN_CANDIDATE_SOURCES =
-  PEOPLE_SALES_NAV_CANDIDATE_SOURCES;
-
-export type PeopleLinkedInCandidateSourceDto =
-  PeopleSalesNavCandidateSourceDto;
+export {
+  PEOPLE_TAXONOMY_GRADE_VALUES,
+  type PeopleTaxonomyGrade,
+} from '../constants/taxonomy-constants';
 
 export class PeopleSearchByTaxonomyDto {
   @IsOptional()
@@ -34,20 +32,23 @@ export class PeopleSearchByTaxonomyDto {
   companyName?: string;
 
   @IsOptional()
+  @Transform(toOptionalNormalizedTaxonomyLabel)
   @IsString()
   stdFunction?: string;
 
   @IsOptional()
-  @IsString()
-  stdFunctionRoot?: string;
+  @Transform(toOptionalNormalizedTaxonomyLabel)
+  @IsIn(PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES)
+  stdFunctionRoot?: PeopleTaxonomyFunctionRoot;
 
   @IsOptional()
+  @Transform(toOptionalNormalizedTaxonomyLabel)
   @IsIn(PEOPLE_TAXONOMY_GRADE_VALUES)
   stdGrade?: PeopleTaxonomyGrade;
 
   @IsOptional()
-  @IsIn(PEOPLE_SALES_NAV_CANDIDATE_SOURCES)
-  candidateSource?: PeopleSalesNavCandidateSourceDto;
+  @IsIn(PEOPLE_LINKEDIN_DATA_SOURCES)
+  dataSource?: PeopleLinkedInDataSource;
 
   @IsOptional()
   @IsString()
@@ -55,7 +56,7 @@ export class PeopleSearchByTaxonomyDto {
 
   @IsOptional()
   @IsString()
-  linkedInAccountId?: string;
+  location?: string;
 
   @IsOptional()
   @IsString()

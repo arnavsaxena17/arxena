@@ -10,6 +10,18 @@ export function buildGoogleLinkedinCompanySearchUrl(input: {
   return `https://www.google.com/search?q=${q}`;
 }
 
+export function buildGoogleLinkedinCompanySearchUrlFromDomain(input: {
+  domain: string;
+  country?: string;
+}): string {
+  const country = input.country?.trim();
+  const query = country
+    ? `${input.domain} ${country} linkedin company`
+    : `${input.domain} linkedin company`;
+
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+}
+
 export type LinkedinCompanyCandidate = {
   companyName: string;
   linkedinCompanyUrl: string;

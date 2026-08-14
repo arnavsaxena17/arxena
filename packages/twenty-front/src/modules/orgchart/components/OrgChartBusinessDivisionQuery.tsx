@@ -4,10 +4,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledWrap = styled.div`
   display: flex;
-  flex: 1 1 220px;
+  flex: 1 1 140px;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
-  max-width: 400px;
+  max-width: 260px;
   min-width: 0;
 `;
 
@@ -17,6 +17,7 @@ const StyledLabel = styled.span`
   font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
 `;
 
 const StyledRow = styled.div`
@@ -124,7 +125,7 @@ export const OrgChartBusinessDivisionQuery = ({
             if (value.trim()) onSubmit();
           }}
         >
-          Create Map 
+          Create Map
         </StyledSubmit>
       </StyledRow>
     </StyledWrap>

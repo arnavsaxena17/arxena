@@ -7,6 +7,15 @@ export type PeopleDataSourceAlias =
   | 'unipile'
   | 'pool';
 
+export const PEOPLE_LINKEDIN_DATA_SOURCES = [
+  'harvest',
+  'unipile',
+  'pool',
+] as const;
+
+export type PeopleLinkedInDataSource =
+  (typeof PEOPLE_LINKEDIN_DATA_SOURCES)[number];
+
 export type PeopleDataSourceCategory = {
   alias: PeopleDataSourceAlias;
   label: string;

@@ -189,14 +189,14 @@ export const useAddGtmRecordsToCrm = () => {
   });
 
   const requireProjectId = (): string | null => {
-    if (!isDefined(commandContext.projectId)) {
+    if (!isDefined(gtmCommandContext.projectId)) {
       enqueueErrorSnackBar({
         message: 'Select or create a GTM Project before writing to CRM',
       });
       return null;
     }
 
-    return commandContext.projectId;
+    return gtmCommandContext.projectId;
   };
 
   const findExistingCompanyId = useCallback(
@@ -410,7 +410,7 @@ export const useAddGtmRecordsToCrm = () => {
       }
     },
     [
-      commandContext.projectId,
+      gtmCommandContext.projectId,
       createCandidate,
       createPerson,
       enqueueErrorSnackBar,

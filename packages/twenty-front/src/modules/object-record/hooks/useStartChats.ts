@@ -49,7 +49,7 @@ export const useStartChats = ({
       setLoading(true);
 
       try {
-        if (isApiKeysLoading) {
+        if (apiKeysLoading) {
           throw new Error(
             'Workspace API keys are still loading. Try starting chats again in a moment.',
           );
@@ -181,7 +181,7 @@ export const useStartChats = ({
       apiKeys?.openaikey,
       checkDataIntegrityOfProject,
       enqueueErrorSnackBar,
-      isApiKeysLoading,
+      apiKeysLoading,
       onError,
       onSuccess,
       tableState.rawData,

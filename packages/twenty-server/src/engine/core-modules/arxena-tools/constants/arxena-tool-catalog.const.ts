@@ -519,14 +519,14 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'prospecting',
     label: 'Search People By Job Title',
     description:
-      'Search People By Job Title (prospecting pack). Use for GTM prospecting workflows.',
+      'Alias of search_people_api (jobTitle maps to naturalLanguage). Use for GTM prospecting workflows.',
   },
   {
     name: 'search_people_api',
     pack: 'prospecting',
     label: 'Search People Api',
     description:
-      'Search People Api (prospecting pack). Use for GTM prospecting workflows.',
+      'Search people with naturalLanguage (e.g. "CEO at StayVista") or explicit std filters. Use for GTM prospecting workflows.',
   },
   {
     name: 'list_people_data_sources',

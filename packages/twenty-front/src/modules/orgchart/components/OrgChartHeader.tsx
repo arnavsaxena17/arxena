@@ -67,12 +67,17 @@ const StyledOrgChartToolbar = styled.div`
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
-  flex-shrink: 0;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
   gap: ${themeCssVariables.spacing[2]};
   margin-left: auto;
+  min-width: 0;
   padding: ${themeCssVariables.spacing[1.5]}
     ${themeCssVariables.spacing[2]};
+
+  @container orgchart-header (max-width: 720px) {
+    flex-wrap: wrap;
+  }
 `;
 
 const StyledBackButton = styled.button`

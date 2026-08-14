@@ -174,20 +174,22 @@ export const GtmPeoplePanel = ({
   );
 
   useEffect(() => {
-    if (selectionRule.mode !== 'selection') {
+    if (contextStoreTargetedRecordsRule.mode !== 'selection') {
       return;
     }
 
-    const selectedIds = selectionRule.selectedRecordIds;
+    const selectedIds = contextStoreTargetedRecordsRule.selectedRecordIds;
 
     if (selectedIds.length > 0) {
       onSelectPersonId(selectedIds[0]);
     }
-  }, [onSelectPersonId, selectionRule]);
+  }, [onSelectPersonId, contextStoreTargetedRecordsRule]);
 
   const selectedPeople = useMemo(() => {
-    if (selectionRule.mode === 'selection') {
-      const selectedIds = new Set(selectionRule.selectedRecordIds);
+    if (contextStoreTargetedRecordsRule.mode === 'selection') {
+      const selectedIds = new Set(
+        contextStoreTargetedRecordsRule.selectedRecordIds,
+      );
 
       if (selectedIds.size > 0) {
         return filteredPeople.filter((person) => selectedIds.has(person.id));
@@ -199,7 +201,7 @@ export const GtmPeoplePanel = ({
     }
 
     return [];
-  }, [filteredPeople, selectedPersonId, selectionRule]);
+  }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
 
   if (filteredPeople.length === 0) {
     return (

@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsNumber,
@@ -9,19 +10,17 @@ import {
 
 import type { PeopleDataSourceAlias } from '../constants/people-data-source-aliases';
 import { PEOPLE_DATA_SOURCE_CATEGORIES } from '../constants/people-data-source-aliases';
+import {
+  PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES,
+  PEOPLE_TAXONOMY_GRADE_VALUES,
+  type PeopleTaxonomyFunctionRoot,
+  type PeopleTaxonomyGrade,
+} from '../constants/taxonomy-constants';
+import { toOptionalNormalizedTaxonomyLabel } from '../utils/normalize-taxonomy-label.util';
 
 const DATA_SOURCE_ALIASES = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
 );
-
-export const PEOPLE_SALES_NAV_CANDIDATE_SOURCES = [
-  'harvest',
-  'unipile',
-  'pool',
-] as const;
-
-export type PeopleSalesNavCandidateSourceDto =
-  (typeof PEOPLE_SALES_NAV_CANDIDATE_SOURCES)[number];
 
 export class PeopleSearchDto {
   @IsOptional()
@@ -29,16 +28,8 @@ export class PeopleSearchDto {
   dataSource?: PeopleDataSourceAlias;
 
   @IsOptional()
-  @IsIn(PEOPLE_SALES_NAV_CANDIDATE_SOURCES)
-  candidateSource?: PeopleSalesNavCandidateSourceDto;
-
-  @IsOptional()
   @IsString()
   accountId?: string;
-
-  @IsOptional()
-  @IsString()
-  linkedInAccountId?: string;
 
   @IsOptional()
   @IsString()
@@ -53,20 +44,31 @@ export class PeopleSearchDto {
   website?: string;
 
   @IsOptional()
+  @Transform(toOptionalNormalizedTaxonomyLabel)
   @IsString()
   stdFunction?: string;
 
   @IsOptional()
-  @IsString()
-  stdFunctionRoot?: string;
+  @Transform(toOptionalNormalizedTaxonomyLabel)
+  @IsIn(PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES)
+  stdFunctionRoot?: PeopleTaxonomyFunctionRoot;
+
+  @IsOptional()
+  @Transform(toOptionalNormalizedTaxonomyLabel)
+  @IsIn(PEOPLE_TAXONOMY_GRADE_VALUES)
+  stdGrade?: PeopleTaxonomyGrade;
 
   @IsOptional()
   @IsString()
-  stdGrade?: string;
+  location?: string;
 
   @IsOptional()
   @IsString()
   country?: string;
+
+  @IsOptional()
+  @IsString()
+  naturalLanguage?: string;
 
   @IsOptional()
   @IsString()

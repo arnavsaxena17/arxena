@@ -17,6 +17,11 @@ import { normalizeLinkedinCompanyUrl } from 'src/engine/core-modules/org-chart/u
 import { extractKeywordsClauseFromGeneratedSearchParameters } from 'src/engine/core-modules/org-chart/utils/super-impose-keyword-merge.util';
 
 import { resolveSalesNavFilters } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+
+import {
+  buildUnipileSalesNavSearchRequest,
+  shouldOmitSalesNavKeywords,
+} from '../utils/build-unipile-sales-nav-search-request.util';
 import {
   PeopleSalesNavAccountResolver,
   type PeopleSalesNavAccountSource,
@@ -33,15 +38,14 @@ export type PeopleLinkedInSourcingInput = {
   stdFunctionRoot?: string;
   stdGrade?: string;
   country?: string;
-  candidateSource?: PeopleLinkedInCandidateSource;
+  dataSource?: PeopleLinkedInCandidateSource;
   accountId?: string;
-  linkedInAccountId?: string;
   limit?: number;
   linkedinSearchKeywords?: string;
 };
 
 export type PeopleLinkedInSourcingResult = {
-  candidateSource: PeopleLinkedInCandidateSource;
+  dataSource: PeopleLinkedInCandidateSource;
   keywords: string | null;
   appliedFilters: {
     functionIds: string[];
@@ -87,9 +91,8 @@ export class PeopleLinkedInSourcingService {
     }
 
     const account = await this.peopleSalesNavAccountResolver.resolve({
-      candidateSource: input.candidateSource,
+      candidateSource: input.dataSource,
       accountId: input.accountId,
-      linkedInAccountId: input.linkedInAccountId,
     });
 
     const salesNavFilters = resolveSalesNavFilters({
@@ -128,12 +131,19 @@ export class PeopleLinkedInSourcingService {
       primaryCompany?.slug ||
       'company';
 
+    const omitGeneratedKeywords =
+      account.candidateSource !== 'harvest' &&
+      shouldOmitSalesNavKeywords(salesNavFilters);
+
     const keywordPlan = await this.buildKeywordPlan({
       stdFunction: input.stdFunction,
       stdFunctionRoot: input.stdFunctionRoot,
       stdGrade: input.stdGrade,
       primaryCompanyName,
-      linkedinSearchKeywords: input.linkedinSearchKeywords,
+      linkedinSearchKeywords: omitGeneratedKeywords
+        ? undefined
+        : input.linkedinSearchKeywords,
+      skipGeneratedKeywords: omitGeneratedKeywords,
     });
 
     const functionRoot =
@@ -182,7 +192,7 @@ export class PeopleLinkedInSourcingService {
         );
 
       return {
-        candidateSource: 'harvest',
+        dataSource: 'harvest',
         keywords:
           plan.mergedSearchClause ??
           keywordPlan.linkedinSearchKeywords ??
@@ -212,7 +222,9 @@ export class PeopleLinkedInSourcingService {
       apiToken: input.apiToken,
       accountId,
       primaryCompanyName,
-      primaryCompanyLinkedinUrl: primaryCompany?.linkedinUrl,
+      companyLinkedinUrls: resolved.resolvedCompanies
+        .map((company) => company.linkedinUrl)
+        .filter((url): url is string => !!url?.trim()),
       country: input.country,
       keywords: keywordPlan.linkedinSearchKeywords,
       functionIds: salesNavFilters.functionIds,
@@ -221,8 +233,10 @@ export class PeopleLinkedInSourcingService {
     });
 
     return {
-      candidateSource: account.candidateSource,
-      keywords: keywordPlan.linkedinSearchKeywords ?? null,
+      dataSource: account.candidateSource,
+      keywords: omitGeneratedKeywords
+        ? null
+        : (keywordPlan.linkedinSearchKeywords ?? null),
       appliedFilters: salesNavFilters,
       company: {
         name: primaryCompanyName,
@@ -239,7 +253,7 @@ export class PeopleLinkedInSourcingService {
     apiToken: string;
     accountId: string;
     primaryCompanyName: string;
-    primaryCompanyLinkedinUrl?: string;
+    companyLinkedinUrls: string[];
     country?: string;
     keywords?: string;
     functionIds: string[];
@@ -250,64 +264,53 @@ export class PeopleLinkedInSourcingService {
       input.apiToken,
       input.accountId,
       async (session) => {
-        let companyParameterId: string | undefined;
+        const companyParameterIds: string[] = [];
+        const seenCompanyParameterIds = new Set<string>();
 
-        if (input.primaryCompanyLinkedinUrl?.trim()) {
+        for (const companyLinkedinUrl of input.companyLinkedinUrls) {
           const slug =
             this.unipileCompanyService.extractPublicIdentifier(
-              input.primaryCompanyLinkedinUrl,
+              companyLinkedinUrl,
             ) ?? undefined;
-          if (slug) {
-            try {
-              const profile =
-                await this.unipileCompanyService.getCompanyProfile(
-                  slug,
-                  session.accountId,
-                );
-              companyParameterId =
-                extractLinkedinCompanyIdFromUnipileProfile(profile) ??
-                undefined;
-            } catch (error) {
-              this.logger.warn(
-                `People API Unipile company profile lookup failed: ${
-                  error instanceof Error ? error.message : String(error)
-                }`,
+          if (!slug) {
+            continue;
+          }
+          try {
+            const profile =
+              await this.unipileCompanyService.getCompanyProfile(
+                slug,
+                session.accountId,
               );
+            const companyParameterId =
+              extractLinkedinCompanyIdFromUnipileProfile(profile) ??
+              undefined;
+            if (
+              companyParameterId &&
+              !seenCompanyParameterIds.has(companyParameterId)
+            ) {
+              seenCompanyParameterIds.add(companyParameterId);
+              companyParameterIds.push(companyParameterId);
             }
+          } catch (error) {
+            this.logger.warn(
+              `People API Unipile company profile lookup failed for ${slug}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
           }
         }
 
-        const keywordParts: string[] = [];
-        if (input.keywords?.trim()) {
-          keywordParts.push(input.keywords.trim());
-        }
-        if (!companyParameterId && input.primaryCompanyName.trim()) {
-          keywordParts.push(`"${input.primaryCompanyName.trim()}"`);
-        }
-        if (
-          input.country?.trim() &&
-          input.country.trim().toLowerCase() !== 'global'
-        ) {
-          keywordParts.push(input.country.trim());
-        }
-
-        const request = {
-          ...(keywordParts.length > 0
-            ? { keywords: keywordParts.join(' AND ') }
-            : {}),
-          ...(companyParameterId
-            ? { company: { include: [companyParameterId] } }
-            : {}),
-          ...(input.functionIds.length > 0
-            ? { function: { include: input.functionIds } }
-            : {}),
-          ...(input.seniorities.length > 0
-            ? { seniority: { include: input.seniorities } }
-            : {}),
-        };
+        const request = buildUnipileSalesNavSearchRequest({
+          keywords: input.keywords,
+          companyParameterIds,
+          primaryCompanyName: input.primaryCompanyName,
+          country: input.country,
+          functionIds: input.functionIds,
+          seniorities: input.seniorities,
+        });
 
         this.logger.log(
-          `People API Sales Nav search account=${session.accountId} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')}`,
+          `People API Sales Nav search account=${session.accountId} companies=${companyParameterIds.join(',')} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')} keywords=${request.keywords ?? 'omitted'}`,
         );
 
         const response =
@@ -349,6 +352,7 @@ export class PeopleLinkedInSourcingService {
     stdGrade?: string;
     primaryCompanyName: string;
     linkedinSearchKeywords?: string;
+    skipGeneratedKeywords?: boolean;
   }): Promise<{
     functionRoot?: string;
     leadershipOnly?: boolean;
@@ -368,6 +372,18 @@ export class PeopleLinkedInSourcingService {
 
     if (stdFunctionRoot) {
       functionRoot = stdFunctionRoot;
+    }
+
+    if (args.skipGeneratedKeywords) {
+      if (stdGrade?.toLowerCase() === 'leadership') {
+        leadershipOnly = true;
+      }
+
+      return {
+        functionRoot,
+        leadershipOnly,
+        linkedinSearchKeywords: undefined,
+      };
     }
 
     if (stdFunction) {

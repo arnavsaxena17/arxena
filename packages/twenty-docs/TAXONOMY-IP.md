@@ -15,10 +15,7 @@ Altitude target: Apollo-style short seniority / department label lists — not G
 
 ## Auth-gated (integrators only; not the hero docs path)
 
-- List/classify with `?title=`
-- Flat function label lists when needed for filters
-- People search / search-by-title / search-by-taxonomy
-- Boolean-string builder (treat as advanced; never paste real production Booleans into conceptual docs)
+- People search (`naturalLanguage`) / search-by-taxonomy
 
 ## Never publish
 
@@ -26,6 +23,6 @@ Altitude target: Apollo-style short seniority / department label lists — not G
 - Vector / coordinate tables or grade-category scoring thresholds
 - Org-chart wiring source / assignment engine detail
 - Complete title→taxonomy maps or correction-flywheel internals
-- MCP tools that force agents to pass `std_grade` / `std_function_root` as the primary interface — prefer `jobTitle` / role query + company
+- MCP tools that force agents to pass `std_grade` / `std_function_root` as the primary interface — prefer `naturalLanguage` (role utterance, optionally `at` company)
 
 Canonical conceptual page: [concepts/standardized-taxonomy.mdx](./concepts/standardized-taxonomy.mdx)

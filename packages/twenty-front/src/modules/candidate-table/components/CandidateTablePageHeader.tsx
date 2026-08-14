@@ -220,7 +220,7 @@ export const CandidateTablePageHeader = ({
   }
 
   const companySearchDisabledByUnipile =
-    orgChartLinkedinSource === 'unipile' && !isLinkedinConnected;
+    orgChartLinkedinCandidateSource === 'unipile' && !isLinkedinConnected;
   const companySearchDisabled = !hasToken;
   const companySearchTitle = companySearchDisabledByUnipile
     ? t`Connect LinkedIn (Unipile) before searching companies for org charts`

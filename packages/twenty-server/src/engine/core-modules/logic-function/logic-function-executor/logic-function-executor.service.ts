@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import {
   DEFAULT_API_KEY_NAME,
   DEFAULT_API_URL_NAME,
@@ -397,10 +398,24 @@ export class LogicFunctionExecutorService {
         workspaceId,
       });
 
-    return this.workspaceDomainsService.buildPublicFunctionBaseUrl({
-      workspace,
-      primaryPublicDomain,
-    });
+    const publicFunctionBaseUrl =
+      this.workspaceDomainsService.buildPublicFunctionBaseUrl({
+        workspace,
+        primaryPublicDomain,
+      });
+
+    if (isNonEmptyString(publicFunctionBaseUrl)) {
+      return publicFunctionBaseUrl;
+    }
+
+    // Self-host without PUBLIC_DOMAIN_URL: app HTTP routes live on SERVER_URL/s.
+    const serverUrl = cleanServerUrl(this.twentyConfigService.get('SERVER_URL'));
+
+    if (!isNonEmptyString(serverUrl)) {
+      return undefined;
+    }
+
+    return `${serverUrl}/s`;
   }
 
   private async buildServerVariableEnvMap(

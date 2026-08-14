@@ -98,7 +98,7 @@ export const LinkedinUnipileOrgChartReconnectBanner = ({
   }, [accessToken, refreshAccounts]);
 
   if (
-    orgChartLinkedinSource !== 'unipile' ||
+    orgChartLinkedinCandidateSource !== 'unipile' ||
     isLinkedinConnected ||
     !accessToken.trim()
   ) {

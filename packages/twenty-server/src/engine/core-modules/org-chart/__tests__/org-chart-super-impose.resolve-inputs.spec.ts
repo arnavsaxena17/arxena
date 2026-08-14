@@ -45,4 +45,37 @@ describe('OrgChartSuperImposeService.resolveInputs', () => {
     expect(result.resolvedCompanies).toHaveLength(1);
     expect(result.resolvedCompanies[0]?.slug).toBe('background-co');
   });
+
+  it('expands StayVista alias group across LinkedIn slugs', async () => {
+    const result = await OrgChartSuperImposeService.prototype.resolveInputs.call(
+      ctx,
+      {
+        inputs: {
+          linkedinCompanyUrls: [
+            'https://www.linkedin.com/company/vista-rooms/',
+          ],
+        },
+      },
+    );
+
+    const slugs = result.resolvedCompanies.map((company) => company.slug);
+    expect(slugs[0]).toBe('vista-rooms');
+    expect(slugs).toEqual(
+      expect.arrayContaining(['vista-rooms', 'stay-vista', 'stayvista']),
+    );
+  });
+
+  it('expands Meta alias group to facebook LinkedIn slug', async () => {
+    const result = await OrgChartSuperImposeService.prototype.resolveInputs.call(
+      ctx,
+      {
+        inputs: {
+          linkedinCompanyUrls: ['https://www.linkedin.com/company/meta/'],
+        },
+      },
+    );
+
+    const slugs = result.resolvedCompanies.map((company) => company.slug);
+    expect(slugs).toEqual(expect.arrayContaining(['meta', 'facebook']));
+  });
 });

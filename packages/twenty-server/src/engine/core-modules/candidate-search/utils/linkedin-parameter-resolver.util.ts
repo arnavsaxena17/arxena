@@ -27,6 +27,11 @@ type ResolvedParameterItem = {
   title: string;
 };
 
+export type ResolvedLinkedinLocation = {
+  id: string;
+  title: string;
+};
+
 type LinkedinParameterMatchItem = {
   id: string;
   title: string;
@@ -649,6 +654,40 @@ export class LinkedinParameterResolver implements OnModuleDestroy {
     }
 
     return result;
+  }
+
+  async resolveLocationName(
+    locationName: string,
+    accountId: string,
+  ): Promise<ResolvedLinkedinLocation | null> {
+    const trimmedLocationName = locationName.trim();
+    const trimmedAccountId = accountId.trim();
+    if (!trimmedLocationName || !trimmedAccountId) {
+      return null;
+    }
+
+    const resolved = (await this.resolveParameterIds(
+      { location: { include: [trimmedLocationName] } },
+      trimmedAccountId,
+      'people-api-location',
+    )) as {
+      location?: { include?: string[] | null };
+      location_display?: Array<{ id: string; title: string }>;
+    };
+
+    const locationId = resolved.location?.include?.[0]?.trim();
+    if (!locationId) {
+      return null;
+    }
+
+    const displayTitle = resolved.location_display?.find(
+      (item) => item.id === locationId,
+    )?.title;
+
+    return {
+      id: locationId,
+      title: displayTitle?.trim() || trimmedLocationName,
+    };
   }
 
   /**

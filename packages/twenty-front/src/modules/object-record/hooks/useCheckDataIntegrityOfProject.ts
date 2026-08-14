@@ -106,7 +106,7 @@ export const useCheckDataIntegrityOfProject = ({
       options?: CheckDataIntegrityOfProjectOptions,
     ): Promise<boolean> => {
       try {
-        if (isApiKeysLoading) {
+        if (apiKeysLoading) {
           enqueueErrorSnackBar({
             message:
               'Workspace API keys are still loading. Try validating again in a moment.',
@@ -338,7 +338,7 @@ export const useCheckDataIntegrityOfProject = ({
       onSuccess,
       onError,
       apiKeys,
-      isApiKeysLoading,
+      apiKeysLoading,
     ],
   );
 

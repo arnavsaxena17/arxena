@@ -137,7 +137,7 @@ const StyledValueRow = styled.div`
   justify-content: space-between;
   margin-bottom: ${themeCssVariables.spacing[1]};
   padding: ${themeCssVariables.spacing[2]};
-  
+
   .value-text {
     color: ${themeCssVariables.font.color.primary};
     flex: 1;
@@ -145,7 +145,7 @@ const StyledValueRow = styled.div`
     margin-right: ${themeCssVariables.spacing[2]};
     word-break: break-word;
   }
-  
+
   .value-count {
     background-color: ${themeCssVariables.background.primary};
     border-radius: ${themeCssVariables.border.radius.xs};
@@ -224,7 +224,7 @@ export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: Proje
     activeTabIdComponentState,
     'job-statistics-modal',
   );
-  
+
   // Reset to first tab when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -234,7 +234,7 @@ export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: Proje
 
   // Merge enrichments and get enrichment field statistics
   const enrichmentStats = useMemo(() => {
-    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+    const allAiFilters = [...enrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
         return [...acc, current];
@@ -288,7 +288,7 @@ export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: Proje
     });
 
     return stats;
-  }, [customEnrichments, sampleEnrichments, processedData]);
+  }, [enrichments, sampleEnrichments, processedData]);
 
   if (!isOpen) return null;
 
@@ -440,4 +440,4 @@ export const ProjectStatisticsModal = ({ isOpen, onClose, processedData }: Proje
       </ModalContent>
     </Modal>
   );
-}; 
+};

@@ -148,20 +148,19 @@ Harvest is taxonomy-backed people search. Use it when no LinkedIn session is ava
 Load the `linkedin-search` skill's Harvest section and use these People API tools:
 
 - `list_people_data_sources` — confirm Harvest is configured before assuming it.
-- `search_people_by_job_title` — preferred for natural-language roles at a company.
-- `search_people_api` — when `stdFunction` / `stdGrade` / `companyName` / `country` filters are known.
+- `search_people_api` — preferred: `naturalLanguage` such as "CEO at StayVista" or "CHRO at Apple" (company may be in the phrase).
+- `search_people_by_job_title` — alias of `search_people_api` (`jobTitle` maps to `naturalLanguage`).
 - Always pass `dataSource: "harvest"`.
 
 ```
-search_people_by_job_title({
-  "jobTitle": "Head of Engineering",
-  "companyName": "Acme",
+search_people_api({
+  "naturalLanguage": "Head of Engineering at Acme",
   "dataSource": "harvest",
   "limit": 20
 })
 ```
 
-Never invent Harvest HTTP paths or `harvest_*` tool names — only these People API tools reach Harvest. Prefer `search_people_by_job_title` for role strings so you don't invent taxonomy codes.
+Never invent Harvest HTTP paths or `harvest_*` tool names — only these People API tools reach Harvest. Prefer `search_people_api` with `naturalLanguage` for role strings so you don't invent taxonomy codes.
 
 ## Source 4 — Exa (`exa_web_search`)
 

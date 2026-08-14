@@ -4,7 +4,7 @@ icon: 'users'
 description: Search people, inspect data source availability, and resolve taxonomy with workspace-scoped API keys.
 ---
 
-The People API gives each workspace a programmatic way to inspect configured people data sources, resolve Arxena taxonomy values, and search people with a workspace-scoped Bearer token.
+The People API gives each workspace a programmatic way to search people with a workspace-scoped Bearer token.
 
 For full endpoint docs and an interactive playground, use the **API Reference**:
 
@@ -34,7 +34,9 @@ The API exposes provider aliases instead of vendor-specific routing logic:
 | `index` | Search Arxena's internal people index with taxonomy filters |
 | `apollo` | Search via Apollo when configured |
 | `contactout` | Search via ContactOut when configured |
-| `harvest` | Search via Harvest when configured |
+| `pool` | LinkedIn Sales Navigator via the shared Unipile pool |
+| `harvest` | LinkedIn Sales Navigator via Harvest |
+| `unipile` | LinkedIn Sales Navigator via an explicit Unipile `accountId` |
 | `pdl` | Reserved alias; not currently exposed by the public search endpoint |
 
 If a provider is not enabled, the API returns `503 Service Unavailable`. If an alias is recognized but not yet supported for that endpoint, it returns `501 Not Implemented`.
@@ -42,7 +44,7 @@ If a provider is not enabled, the API returns `503 Service Unavailable`. If an a
 ## Recipes
 
 - [Search people by taxonomy](/cookbooks/search-people-by-taxonomy)
-- [Expand titles then search](/cookbooks/expand-titles-then-search)
+- [Natural language to people at a company](/cookbooks/nl-to-people-at-company)
 
 ## OpenAPI
 

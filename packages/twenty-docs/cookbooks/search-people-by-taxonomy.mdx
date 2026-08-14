@@ -3,19 +3,19 @@ title: Search people by taxonomy
 description: Search LinkedIn Sales Nav, Apollo, or the index with std_function / std_function_root and optional std_grade.
 ---
 
-Prefer [natural-language search-by-title](/cookbooks/nl-to-people-at-company) for products and agents. Use explicit taxonomy when you already hold codes from the [nested taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree).
+Prefer [natural-language people search](/cookbooks/nl-to-people-at-company) for products and agents. Use explicit taxonomy when you already hold codes from the [nested taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree).
 
 ## Sales Navigator (company + taxonomy)
 
 Requires **exactly one** of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade`.
 
-LinkedIn path is **always Sales Navigator**. Pick an account source:
+LinkedIn path is **always Sales Navigator**. Pick a `dataSource`:
 
-| `candidateSource` | Notes |
+| `dataSource` | Notes |
 | --- | --- |
 | `pool` | Shared Unipile Sales Navigator pool (no `accountId`) |
 | `harvest` | Harvest SN lead-search (`functionIds` from the same map) |
-| `unipile` | Requires `accountId` / `linkedInAccountId` |
+| `unipile` | Requires `accountId` |
 
 Pipeline: map std → Sales Nav function IDs + seniorities → search → batch reclassify titles → filter to requested taxonomy.
 
@@ -28,7 +28,7 @@ curl -X POST \
     "website": "stayvista.com",
     "stdFunctionRoot": "corporate",
     "stdGrade": "leadership",
-    "candidateSource": "pool",
+    "dataSource": "pool",
     "limit": 10
   }'
 ```
@@ -67,7 +67,7 @@ curl -X POST \
   -d '{
     "dataSource": "index",
     "companyName": "Stripe",
-    "stdFunction": "engineering",
+    "stdFunction": "software engineering",
     "stdGrade": "leadership",
     "limit": 20
   }'

@@ -1,7 +1,23 @@
 ---
 title: 'Search people'
-description: Advanced search with std codes when already known.
+description: Natural-language utterances or explicit std codes — one search endpoint.
 openapi: 'openapi/people-api.json POST /people-api/people/search'
 ---
 
-Prefer [search-by-title](/api-reference/people/resolve-job-title-and-search-people) for natural-language roles. Use this when you already have `stdFunction` / `stdGrade`. Public nouns: [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants).
+Primary path: pass `naturalLanguage` for a role utterance (for example “CHRO at Apple in Cupertino”). An LLM extracts role, company, website, and location; title taxonomy then classifies std function / root / grade. Company may be in the phrase or sent as `companyName` / `companyId` / `website`. A bare `companyName` is resolved via companies ES, then autocomplete, then Google SERP to a domain and LinkedIn company id. A bare `website` / domain uses ES/autocomplete, then Google `{domain} linkedin company` when that lookup is weak. If no company is present, the API returns **Please provide company name as well**.
+
+`naturalLanguage` is not `query`. `naturalLanguage` is a role utterance the server parses and classifies. `query` is a raw keyword string passed through to the search backend with no taxonomy resolution.
+
+```bash
+curl --request POST \
+  --url https://app.arxena.com/people-api/people/search \
+  --header 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "naturalLanguage": "",
+    "dataSource": "index",
+    "limit": 10
+  }'
+```
+
+Use explicit `stdFunction` / `stdGrade` only when those codes are already known. `stdFunction` is a child label (e.g. `software engineering`) and must match [taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree). `stdFunctionRoot` is the department family (`engineering`, `human resources`, …). `stdGrade` is `entry` | `mid` | `leadership`. Cookbook: [Natural language to people at a company](/cookbooks/nl-to-people-at-company).

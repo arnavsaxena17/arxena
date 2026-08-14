@@ -1,10 +1,32 @@
 import { OpenAPIV3_1 } from 'openapi-types';
 
+import { FUNCTION_ROOT_VALUES } from '../candidate-search/schemas/org-chart.schema';
 import { PEOPLE_DATA_SOURCE_CATEGORIES } from '../people-api/constants/people-data-source-aliases';
 
 const dataSourceEnum = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
 );
+
+const stdFunctionRootSchema: OpenAPIV3_1.SchemaObject = {
+  type: 'string',
+  enum: [...FUNCTION_ROOT_VALUES],
+  description: 'Standardized function root (department family).',
+  example: 'engineering',
+};
+
+const stdGradeSchema: OpenAPIV3_1.SchemaObject = {
+  type: 'string',
+  enum: ['entry', 'mid', 'leadership'],
+  description: 'Standardized grade.',
+  example: 'leadership',
+};
+
+const stdFunctionSchema: OpenAPIV3_1.SchemaObject = {
+  type: 'string',
+  description:
+    'Standardized function (child label, e.g. software engineering). Must match a label from GET /people-api/taxonomy/tree.',
+  example: 'software engineering',
+};
 
 export const PEOPLE_API_PRODUCTION_SERVER_URL = 'https://app.arxena.com';
 export const PEOPLE_API_LOCAL_SERVER_URL = 'http://localhost:3000';
@@ -100,34 +122,43 @@ export const buildPeopleApiOpenApiDocument = (
       PeopleSearchRequest: {
         type: 'object',
         properties: {
+          naturalLanguage: {
+            type: 'string',
+            description:
+              'Primary path: a role utterance such as "CHRO at Apple in Cupertino". An LLM extracts job title, company, website, and location; title taxonomy then classifies std function / root / grade. Company may be in the phrase or passed as companyName / companyId / website. If no company is present, the API returns "Please provide company name as well". Overrides jobTitle and explicit std filters.',
+            example: '',
+          },
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
             default: 'index',
             description:
-              'Data source category alias. Use `index` for std_function and std_grade filters.',
+              'Which catalog to search. `index` (default) is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId`).',
             example: 'index',
+          },
+          accountId: {
+            type: 'string',
+            description:
+              'Required when dataSource is unipile — Unipile LinkedIn account id.',
           },
           companyId: { type: 'string', example: 'comp_123' },
           companyName: { type: 'string', example: 'Stripe' },
           website: { type: 'string', example: 'stripe.com' },
-          stdFunction: {
-            type: 'string',
-            description: 'Standardized function (e.g. engineering, sales).',
-            example: 'engineering',
-          },
-          stdFunctionRoot: {
-            type: 'string',
-            description: 'Standardized function root (department family).',
-            example: 'engineering',
-          },
-          stdGrade: {
-            type: 'string',
-            description: 'Standardized grade (e.g. leadership, mid, entry).',
-            example: 'leadership',
-          },
+          stdFunction: stdFunctionSchema,
+          stdFunctionRoot: stdFunctionRootSchema,
+          stdGrade: stdGradeSchema,
           country: { type: 'string', example: 'United States' },
-          query: { type: 'string' },
+          location: {
+            type: 'string',
+            description:
+              'Geographic location. Optional when naturalLanguage already includes a place.',
+            example: 'India',
+          },
+          query: {
+            type: 'string',
+            description:
+              'Raw keyword string passed through to the data source (Elasticsearch query, Apollo q_keywords, or LinkedIn keywords). Not classified into std function/grade. Use naturalLanguage for a role utterance.',
+          },
           personName: { type: 'string' },
           jobTitle: { type: 'string', example: 'Head of Engineering' },
           linkedinUrl: { type: 'string' },
@@ -146,13 +177,9 @@ export const buildPeopleApiOpenApiDocument = (
           },
         },
         example: {
+          naturalLanguage: '',
           dataSource: 'index',
-          companyName: 'Stripe',
-          stdFunction: 'engineering',
-          stdGrade: 'leadership',
-          country: 'United States',
-          limit: 20,
-          offset: 0,
+          limit: 10,
         },
       },
       PeopleSearchResponse: {
@@ -164,6 +191,20 @@ export const buildPeopleApiOpenApiDocument = (
           items: {
             type: 'array',
             items: { type: 'object', additionalProperties: true },
+          },
+          resolved: {
+            type: 'object',
+            description:
+              'Present when naturalLanguage was parsed and the title was classified before searching.',
+            properties: {
+              jobTitle: { type: 'string' },
+              normalizedTitle: { type: ['string', 'null'] },
+              stdFunction: { type: ['string', 'null'] },
+              stdFunctionRoot: { type: ['string', 'null'] },
+              stdGrade: { type: ['string', 'null'] },
+              confidence: { type: 'number' },
+              location: { type: ['string', 'null'] },
+            },
           },
         },
         example: {
@@ -196,23 +237,12 @@ export const buildPeopleApiOpenApiDocument = (
             default: 'index',
             example: 'pool',
             description:
-              'People source. Use pool / unipile / harvest for Sales Navigator facet search; apollo for Apollo department filters; index for ES.',
-          },
-          candidateSource: {
-            type: 'string',
-            enum: ['harvest', 'unipile', 'pool'],
-            description:
-              'Sales Navigator account source when using LinkedIn. Required as harvest, pool, or unipile+accountId.',
-            example: 'pool',
+              'People source. Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId.',
           },
           accountId: {
             type: 'string',
             description:
-              'Explicit Unipile LinkedIn account id when candidateSource/dataSource is unipile.',
-          },
-          linkedInAccountId: {
-            type: 'string',
-            description: 'Alias for accountId.',
+              'Required when dataSource is unipile — Unipile LinkedIn account id.',
           },
           companyId: { type: 'string' },
           companyName: { type: 'string', example: 'StayVista' },
@@ -231,7 +261,6 @@ export const buildPeopleApiOpenApiDocument = (
           jobTitle: 'CEO',
           website: 'stayvista.com',
           dataSource: 'pool',
-          candidateSource: 'pool',
           limit: 10,
         },
       },
@@ -430,39 +459,31 @@ export const buildPeopleApiOpenApiDocument = (
           },
           companyName: { type: 'string', example: 'Stripe' },
           stdFunction: {
-            type: 'string',
+            ...stdFunctionSchema,
             description:
-              'Exactly one of stdFunction or stdFunctionRoot is required.',
-            example: 'software engineering',
+              'Exactly one of stdFunction or stdFunctionRoot is required. Must match a label from GET /people-api/taxonomy/tree.',
           },
           stdFunctionRoot: {
-            type: 'string',
+            ...stdFunctionRootSchema,
             description:
               'Exactly one of stdFunction or stdFunctionRoot is required.',
-            example: 'engineering',
           },
           stdGrade: {
-            type: 'string',
-            enum: ['entry', 'mid', 'leadership'],
+            ...stdGradeSchema,
             description:
               'Optional. Only valid together with stdFunction or stdFunctionRoot.',
-            example: 'leadership',
           },
-          candidateSource: {
+          dataSource: {
             type: 'string',
             enum: ['harvest', 'unipile', 'pool'],
             description:
-              'Sales Navigator account source. Use pool for shared Unipile Sales Nav pool; unipile requires accountId; harvest uses Harvest SN lead-search.',
+              'LinkedIn Sales Navigator source. `pool` is the shared Unipile Sales Nav pool; `unipile` requires accountId; `harvest` uses Harvest SN lead-search. Defaults to unipile.',
             example: 'pool',
           },
           accountId: {
             type: 'string',
             description:
-              'Required when candidateSource is unipile — Unipile LinkedIn account id.',
-          },
-          linkedInAccountId: {
-            type: 'string',
-            description: 'Alias for accountId.',
+              'Required when dataSource is unipile — Unipile LinkedIn account id.',
           },
           country: { type: 'string', example: 'United States' },
           limit: {
@@ -477,7 +498,7 @@ export const buildPeopleApiOpenApiDocument = (
           website: 'stayvista.com',
           stdFunctionRoot: 'corporate',
           stdGrade: 'leadership',
-          candidateSource: 'pool',
+          dataSource: 'pool',
           limit: 20,
         },
       },
@@ -889,7 +910,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'List std functions',
         description:
-          'Auth-gated advanced list. Prefer natural-language search-by-title for products and agents. Optional filters classify or narrow labels — not a public ontology dump.',
+          'Auth-gated advanced list. Prefer natural-language people/search for products and agents. Optional filters classify or narrow labels — not a public ontology dump.',
         operationId: 'listFunctions',
         parameters: [
           {
@@ -960,7 +981,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'Build Boolean strings from taxonomy',
         description:
-          'Advanced auth-gated helper for external keyword tools. OpenAPI examples are illustrative placeholders only — not a dump of production Boolean engines. Prefer people search-by-title for recruiting workflows.',
+          'Advanced auth-gated helper for external keyword tools. OpenAPI examples are illustrative placeholders only — not a dump of production Boolean engines. Prefer people/search with naturalLanguage for recruiting workflows.',
         operationId: 'getTaxonomyBooleanStrings',
         parameters: [
           {
@@ -1010,7 +1031,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'Expand and normalize a job title',
         description:
-          'Advanced debug: classify a title into std fields. Prefer POST /people-api/people/search-by-title when you also need people. Boolean fields in the response are illustrative capability — not for reconstructing the keyword engine.',
+          'Advanced debug: classify a title into std fields. Prefer POST /people-api/people/search with naturalLanguage when you also need people. Boolean fields in the response are illustrative capability — not for reconstructing the keyword engine.',
         operationId: 'expandJobTitles',
         parameters: [
           {
@@ -1047,8 +1068,9 @@ export const buildPeopleApiOpenApiDocument = (
       post: {
         tags: ['People'],
         summary: 'Resolve job title and search people',
+        deprecated: true,
         description:
-          'Classifies a sample job title into std_function and std_grade, then searches people using those resolved values. Requires a company scope (companyId, companyName, or website).',
+          'Compatibility alias for POST /people-api/people/search with naturalLanguage set to jobTitle. Prefer the search endpoint for a role utterance.',
         operationId: 'searchPeopleByJobTitle',
         requestBody: {
           required: true,
@@ -1072,7 +1094,6 @@ export const buildPeopleApiOpenApiDocument = (
                     jobTitle: 'CEO',
                     website: 'stayvista.com',
                     dataSource: 'pool',
-                    candidateSource: 'pool',
                     limit: 10,
                   },
                 },
@@ -1104,7 +1125,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['People'],
         summary: 'Search people by taxonomy at a company',
         description:
-          'Requires exactly one of stdFunction or stdFunctionRoot; optional stdGrade. Validated wrapper over people/search LinkedIn sourcing (Unipile default, or Harvest): boolean keywords, search, batch title reclassify, exact taxonomy matches. Company scope: website, companyId, or companyName.',
+          'Requires exactly one of stdFunction or stdFunctionRoot; optional stdGrade. Validated wrapper over people/search LinkedIn sourcing (dataSource pool / harvest / unipile): boolean keywords, search, batch title reclassify, exact taxonomy matches. Company scope: website, companyId, or companyName.',
         operationId: 'searchPeopleByTaxonomy',
         requestBody: {
           required: true,
@@ -1120,7 +1141,7 @@ export const buildPeopleApiOpenApiDocument = (
                     website: 'stripe.com',
                     stdFunctionRoot: 'engineering',
                     stdGrade: 'leadership',
-                    candidateSource: 'pool',
+                    dataSource: 'pool',
                     limit: 20,
                   },
                 },
@@ -1130,7 +1151,7 @@ export const buildPeopleApiOpenApiDocument = (
                     website: 'stayvista.com',
                     stdFunctionRoot: 'corporate',
                     stdGrade: 'leadership',
-                    candidateSource: 'pool',
+                    dataSource: 'pool',
                     limit: 10,
                   },
                 },
@@ -1160,26 +1181,17 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['People'],
         summary: 'Search people',
         description:
-          'Search people by std_function and std_grade using the `index` data source. Other aliases route to their respective providers.',
+          'Primary people search. Pass naturalLanguage for a role utterance (company and location may be in the phrase or as companyName / companyId / website / location). An LLM extracts those fields; title taxonomy classifies std function / root / grade. Without naturalLanguage, search with explicit stdFunction / stdFunctionRoot / stdGrade and other filters.',
         operationId: 'searchPeople',
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: { $ref: '#/components/schemas/PeopleSearchRequest' },
-              examples: {
-                byTaxonomy: {
-                  summary: 'Search by taxonomy filters',
-                  value: {
-                    dataSource: 'index',
-                    companyName: 'Stripe',
-                    stdFunction: 'engineering',
-                    stdGrade: 'leadership',
-                    country: 'United States',
-                    limit: 20,
-                    offset: 0,
-                  },
-                },
+              example: {
+                naturalLanguage: '',
+                dataSource: 'index',
+                limit: 10,
               },
             },
           },

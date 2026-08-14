@@ -29,8 +29,8 @@ Requires a connected LinkedIn Unipile account. Check **Connected Accounts** in t
 
 Use when searching people without a LinkedIn session, or when the user asks for Harvest specifically:
 
-- `search_people_by_job_title` — preferred for natural-language roles
-- `search_people_api` — when `stdFunction` / `stdGrade` (or other filters) are already known
+- `search_people_api` — preferred for natural-language roles (`naturalLanguage`: "CEO at StayVista")
+- `search_people_by_job_title` — alias of `search_people_api`
 - Pass `dataSource: "harvest"`
 - Call `list_people_data_sources` first if unsure whether Harvest is configured
 
@@ -274,8 +274,7 @@ Natural-language role at a company (preferred):
 
 ```json
 {
-  "jobTitle": "Head of Engineering",
-  "companyName": "Acme",
+  "naturalLanguage": "Head of Engineering at Acme",
   "dataSource": "harvest",
   "limit": 20
 }
@@ -294,7 +293,7 @@ Known taxonomy filters:
 }
 ```
 
-Prefer `search_people_by_job_title` for role strings so you do not invent taxonomy codes. Use `search_people_api` only when filters like `stdFunction` / `stdGrade` / `linkedinUrl` are already known.
+Prefer `search_people_api` with `naturalLanguage` for role strings so you do not invent taxonomy codes. Use explicit `stdFunction` / `stdGrade` / `linkedinUrl` only when those filters are already known.
 
 ## Facet match quality
 

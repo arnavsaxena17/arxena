@@ -57,8 +57,24 @@ export class RouteTriggerService {
   }> {
     const host = `${request.protocol}://${request.get('host')}`;
 
-    const { workspace, publicDomain, isIsolatedOrigin } =
+    const resolvedOrigin =
       await this.workspaceDomainsService.resolveWorkspaceAndPublicDomain(host);
+
+    const publicDomain = resolvedOrigin.publicDomain;
+    const isIsolatedOrigin = resolvedOrigin.isIsolatedOrigin;
+    let workspace = resolvedOrigin.workspace;
+
+    // Shared hosts (default subdomain / SERVER_URL) do not map to a workspace.
+    // Authenticated /s calls carry the workspace on the application token.
+    if (
+      !isDefined(workspace) &&
+      isNonEmptyString(request.headers?.authorization)
+    ) {
+      const authContext =
+        await this.accessTokenService.validateTokenByRequest(request);
+
+      workspace = authContext.workspace;
+    }
 
     assertIsDefinedOrThrow(
       workspace,

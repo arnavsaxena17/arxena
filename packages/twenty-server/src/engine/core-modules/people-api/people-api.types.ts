@@ -1,5 +1,7 @@
 import type { PeopleDataSourceAlias } from './constants/people-data-source-aliases';
 import type { TaxonomyConstantItem } from './constants/taxonomy-constants';
+import type { PeopleCompanyScopeResolvedVia } from './services/people-company-scope.resolver';
+import type { PeopleLocationScopeResolvedVia } from './services/people-location-scope.resolver';
 import type { TaxonomyTreeRootNode } from './utils/build-taxonomy-tree.util';
 
 export type TaxonomyItem = {
@@ -16,17 +18,28 @@ export type PeopleSearchLinkedInCompany = {
   name: string | null;
   slug: string | null;
   linkedinUrl: string | null;
+  website?: string | null;
+  resolvedVia?: PeopleCompanyScopeResolvedVia;
+};
+
+export type PeopleSearchLinkedInLocation = {
+  raw: string | null;
+  linkedinId: string | null;
+  title: string | null;
+  resolvedVia?: PeopleLocationScopeResolvedVia;
 };
 
 export type PeopleSearchQueryMeta = {
   keywords?: string | null;
   company?: PeopleSearchLinkedInCompany;
+  location?: PeopleSearchLinkedInLocation;
   stdFunction?: string;
   stdFunctionRoot?: string;
   stdGrade?: string;
   appliedFilters?: {
     functionIds?: string[];
     seniorities?: string[];
+    locationIds?: string[];
     person_department_or_subdepartments?: string[];
     person_seniorities?: string[];
   };
@@ -41,6 +54,16 @@ export type PeopleSearchResolvedCandidate = PeopleSearchResultItem & {
   };
 };
 
+export type ResolvedTitleTaxonomy = {
+  jobTitle: string;
+  normalizedTitle: string | null;
+  stdFunction: string | null;
+  stdFunctionRoot: string | null;
+  stdGrade: string | null;
+  confidence: number;
+  location?: string | null;
+};
+
 export type PeopleSearchResponse = {
   status: 'ok';
   dataSource: PeopleDataSourceAlias;
@@ -49,15 +72,8 @@ export type PeopleSearchResponse = {
   // Present when LinkedIn sourcing ran taxonomy post-filter
   query?: PeopleSearchQueryMeta;
   totalBeforeFilter?: number;
-};
-
-export type ResolvedTitleTaxonomy = {
-  jobTitle: string;
-  normalizedTitle: string | null;
-  stdFunction: string | null;
-  stdFunctionRoot: string | null;
-  stdGrade: string | null;
-  confidence: number;
+  // Present when naturalLanguage (or search-by-title) classified a role
+  resolved?: ResolvedTitleTaxonomy;
 };
 
 export type PeopleSearchByTitleResponse = PeopleSearchResponse & {
@@ -70,6 +86,7 @@ export type PeopleSearchByTaxonomyResponse = {
   query: {
     keywords: string | null;
     company: PeopleSearchLinkedInCompany;
+    location?: PeopleSearchLinkedInLocation;
     stdFunction?: string;
     stdFunctionRoot?: string;
     stdGrade?: string;

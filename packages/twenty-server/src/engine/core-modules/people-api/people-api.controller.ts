@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 
 import { Request, Response } from 'express';
@@ -26,8 +27,12 @@ import { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import { PeopleSearchDto } from './dto/people-search.dto';
 import { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
-import { TitleFromJobSearchDto } from './dto/title-from-job-search.dto';
 import { PeopleApiService } from './people-api.service';
+
+const PEOPLE_API_BODY_VALIDATION_PIPE = new ValidationPipe({
+  transform: true,
+  whitelist: true,
+});
 
 @Controller('people-api')
 export class PeopleApiController {
@@ -175,44 +180,17 @@ export class PeopleApiController {
     }
   }
 
-  @Post('people/search-by-title')
-  @UseGuards(JwtAuthGuard)
-  async searchPeopleByJobTitle(
-    @Req() request: Request,
-    @Body() body: TitleFromJobSearchDto,
-  ) {
-    try {
-      await this.debitApiSearchCreditOrThrow(request, {
-        endpoint: 'people/search-by-title',
-        dataSource: body.dataSource,
-      });
-
-      return await this.peopleApiService.searchPeopleByJobTitle(
-        body,
-        this.getAuthToken(request) ?? undefined,
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      this.logger.error('People API search-by-title failed', error);
-      throw new HttpException(
-        error instanceof Error ? error.message : 'People search by title failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   @Post('people/search-by-taxonomy')
   @UseGuards(JwtAuthGuard)
   async searchPeopleByTaxonomy(
     @Req() request: Request,
-    @Body() body: PeopleSearchByTaxonomyDto,
+    @Body(PEOPLE_API_BODY_VALIDATION_PIPE) body: PeopleSearchByTaxonomyDto,
   ) {
     try {
+      await this.peopleApiService.assertTaxonomyFilters(body);
       await this.debitApiSearchCreditOrThrow(request, {
         endpoint: 'people/search-by-taxonomy',
-        dataSource: body.candidateSource ?? 'unipile',
+        dataSource: body.dataSource ?? 'unipile',
       });
 
       const apiToken = this.getAuthToken(request);
@@ -240,8 +218,12 @@ export class PeopleApiController {
 
   @Post('people/search')
   @UseGuards(JwtAuthGuard)
-  async searchPeople(@Req() request: Request, @Body() body: PeopleSearchDto) {
+  async searchPeople(
+    @Req() request: Request,
+    @Body(PEOPLE_API_BODY_VALIDATION_PIPE) body: PeopleSearchDto,
+  ) {
     try {
+      await this.peopleApiService.assertTaxonomyFilters(body);
       await this.debitApiSearchCreditOrThrow(request, {
         endpoint: 'people/search',
         dataSource: body.dataSource,

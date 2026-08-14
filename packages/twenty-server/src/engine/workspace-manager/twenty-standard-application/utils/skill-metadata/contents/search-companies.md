@@ -129,16 +129,16 @@ Harvest has no standalone company search — you discover companies *through peo
 Load the `linkedin-search` skill's Harvest section and use these People API tools:
 
 - `list_people_data_sources` — confirm Harvest is configured before assuming it.
-- `search_people_by_job_title` — preferred for natural-language roles at a company.
-- `search_people_api` — when `stdFunction` / `stdGrade` / `companyName` filters are known.
+- `search_people_api` — preferred: `naturalLanguage` such as "Head of Engineering at Acme"
+- `search_people_by_job_title` — alias (`jobTitle` maps to `naturalLanguage`)
+- `search_people_api` with `stdFunction` / `stdGrade` — only when those codes are already known
 - Always pass `dataSource: "harvest"`.
 
 Harvest returns people; extract the `companyName` field to build the company list, then resolve each against the CRM. Never invent Harvest HTTP paths or `harvest_*` tool names — only these People API tools reach Harvest.
 
 ```
-search_people_by_job_title({
-  "jobTitle": "Head of Engineering",
-  "companyName": "Acme",
+search_people_api({
+  "naturalLanguage": "Head of Engineering at Acme",
   "dataSource": "harvest",
   "limit": 20
 })

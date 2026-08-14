@@ -4,8 +4,8 @@ description: Company-scoped LinkedIn search with std_function or std_function_ro
 openapi: 'openapi/people-api.json POST /people-api/people/search-by-taxonomy'
 ---
 
-Requires exactly one of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade` (`entry` | `mid` | `leadership`). Default LinkedIn source is `unipile` (`candidateSource: harvest` also supported).
+Requires exactly one of `stdFunction` or `stdFunctionRoot`. Optional `stdGrade` (`entry` | `mid` | `leadership`). LinkedIn path is always Sales Navigator — set `dataSource` to `pool` (shared Unipile SN pool), `harvest`, or `unipile` (+ `accountId`). Default LinkedIn source is `unipile` when omitted.
 
-Thin validated wrapper over the shared `people/search` LinkedIn path (`dataSource: unipile|harvest`): company → boolean keywords → source → batch title reclassify → exact taxonomy matches.
+Thin validated wrapper over the shared `people/search` LinkedIn path (`dataSource: unipile|harvest|pool`): company → map std → Sales Nav facets → search → batch title reclassify → exact taxonomy matches.
 
 Input helpers: [List taxonomy tree](/api-reference/taxonomy/list-taxonomy-tree) for nested function selects; grades from `gradeLevels` on that response.

@@ -8,7 +8,6 @@ export type PeopleSalesNavAccountSource = 'unipile' | 'harvest' | 'pool';
 export type ResolvePeopleSalesNavAccountInput = {
   candidateSource?: PeopleSalesNavAccountSource;
   accountId?: string;
-  linkedInAccountId?: string;
 };
 
 export type ResolvedPeopleSalesNavAccount = {
@@ -36,8 +35,7 @@ export class PeopleSalesNavAccountResolver {
   async resolve(
     input: ResolvePeopleSalesNavAccountInput,
   ): Promise<ResolvedPeopleSalesNavAccount> {
-    const explicitAccountId =
-      input.accountId?.trim() || input.linkedInAccountId?.trim() || undefined;
+    const explicitAccountId = input.accountId?.trim() || undefined;
     const requestedSource = input.candidateSource;
 
     if (requestedSource === 'harvest') {
@@ -85,7 +83,7 @@ export class PeopleSalesNavAccountResolver {
 
       if (!explicitAccountId) {
         throw new HttpException(
-          'accountId (or linkedInAccountId) is required when candidateSource is unipile',
+          'accountId is required when dataSource is unipile',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -97,7 +95,7 @@ export class PeopleSalesNavAccountResolver {
     }
 
     throw new HttpException(
-      'Provide candidateSource as harvest | pool | unipile (with accountId)',
+      'Provide dataSource as harvest | pool | unipile (with accountId)',
       HttpStatus.BAD_REQUEST,
     );
   }

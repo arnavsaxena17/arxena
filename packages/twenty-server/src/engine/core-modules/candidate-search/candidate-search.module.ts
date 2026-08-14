@@ -137,6 +137,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     PythonQueryGenerationService,
     OrgChartIntentService,
     TitleTaxonomyRemoteService,
+    LinkedinParameterResolver,
   ],
 })
 export class CandidateSearchModule {}

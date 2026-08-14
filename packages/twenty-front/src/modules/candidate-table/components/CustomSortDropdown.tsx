@@ -55,7 +55,7 @@ const StyledDropdown = styled.div<{ isOpen: boolean }>`
 
 const StyledDropdownItem = styled.div<{ isActive?: boolean }>`
   align-items: center;
-  background-color: ${({ isActive }) => 
+  background-color: ${({ isActive }) =>
     isActive ? themeCssVariables.background.tertiary : 'transparent'};
   color: ${themeCssVariables.font.color.primary};
   cursor: pointer;
@@ -101,14 +101,14 @@ export const CustomSortDropdown = () => {
   // Create dynamic sort fields including enrichment fields
   const sortFields = useMemo(() => {
     // Merge enrichments (same logic as in other components)
-    const allAiFilters = [...customEnrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
+    const allAiFilters = [...enrichments, ...sampleEnrichments].reduce<any[]>((acc, current) => {
       const exists = acc.find(item => item.modelName === current.modelName);
       if (!exists) {
         return [...acc, current];
       }
       return acc;
     }, []);
-    
+
     // Get all possible field names from processed data
     const availableFieldNames = new Set<string>();
     if (processedData.length > 0) {
@@ -116,25 +116,25 @@ export const CustomSortDropdown = () => {
         Object.keys(candidate).forEach(key => availableFieldNames.add(key));
       });
     }
-    
+
     // Get enrichment fields that actually exist in the candidate data
     const aiFilterFields = allAiFilters.flatMap(aiFilter =>
       aiFilter.fields?.map((field: any) => ({
         field: field.name,
         label: field.name.charAt(0).toUpperCase() + field.name.slice(1)
-      })).filter((fieldObj: any) => 
+      })).filter((fieldObj: any) =>
         availableFieldNames.has(fieldObj.field)
       ) || []
     );
-    
+
     console.log("Available field names in processed data:", Array.from(availableFieldNames));
     console.log("AI filter fields that exist in data:", aiFilterFields);
-    
+
     // Combine base fields and validated AI filter fields
     const combinedFields = [...BASE_SORT_FIELDS, ...aiFilterFields];
     console.log("Sort fields in dropdown:", combinedFields);
     return combinedFields;
-  }, [customEnrichments, sampleEnrichments, processedData]);
+  }, [enrichments, sampleEnrichments, processedData]);
 
   const handleSortSelect = (field: SortField) => {
     // If clicking the same field, toggle direction
@@ -159,14 +159,14 @@ export const CustomSortDropdown = () => {
   };
 
   const getSortIcon = () => {
-    return sortState.direction === 'asc' ? 
-      <IconSortAscending size={16} /> : 
+    return sortState.direction === 'asc' ?
+      <IconSortAscending size={16} /> :
       <IconSortDescending size={16} />;
   };
 
   return (
     <StyledSortContainer>
-      <StyledSortButton 
+      <StyledSortButton
         onClick={() => setIsOpen(!isOpen)}
         title={`Click to change field, click same field to toggle ${sortState.direction === 'asc' ? 'descending' : 'ascending'}`}
       >
@@ -176,22 +176,22 @@ export const CustomSortDropdown = () => {
         </StyledSortIcon>
         <IconChevronDown size={16} />
       </StyledSortButton>
-      
+
       <StyledDropdown isOpen={isOpen}>
         {sortFields.map((fieldOption, index) => (
           <StyledDropdownItem
             key={index}
             isActive={sortState.field === fieldOption.field}
             onClick={() => handleSortSelect(fieldOption.field)}
-            title={sortState.field === fieldOption.field ? 
-              `Currently sorted ${sortState.direction === 'asc' ? 'ascending' : 'descending'}. Click to toggle.` : 
+            title={sortState.field === fieldOption.field ?
+              `Currently sorted ${sortState.direction === 'asc' ? 'ascending' : 'descending'}. Click to toggle.` :
               'Click to sort by this field'
             }
           >
             <span>{fieldOption.label}</span>
             {sortState.field === fieldOption.field && (
-              sortState.direction === 'asc' ? 
-                <IconSortAscending size={16} /> : 
+              sortState.direction === 'asc' ?
+                <IconSortAscending size={16} /> :
                 <IconSortDescending size={16} />
             )}
           </StyledDropdownItem>

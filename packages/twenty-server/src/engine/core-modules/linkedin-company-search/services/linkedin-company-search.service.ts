@@ -4,10 +4,15 @@ import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/servi
 import {
     buildGoogleCompanyWebsiteSearchUrl,
     buildGoogleLinkedinCompanySearchUrl,
+    buildGoogleLinkedinCompanySearchUrlFromDomain,
     extractCompanyWebsiteCandidatesFromSerpOrganic,
     extractLinkedinCompanyCandidatesFromSerpOrganic,
 } from 'src/engine/core-modules/linkedin-company-search/utils/linkedin-company-from-serp.util';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
+import {
+    extractCompanyNameStemFromDomain,
+    normalizeBareCompanyDomain,
+} from 'src/engine/core-modules/org-chart/utils/org-chart-resolve-domain.util';
 
 export type ResolveLinkedinCompanyInput = {
   companyName: string;
@@ -81,6 +86,56 @@ export class SerpCompanySearchService {
     return {
       inputCompanyName: companyName,
       country,
+      searchUrl,
+      companyName: bestMatch.companyName,
+      linkedinCompanyUrl: bestMatch.linkedinCompanyUrl,
+      linkedinCompanySlug: bestMatch.linkedinCompanySlug,
+      confidenceScore: bestMatch.score,
+    };
+  }
+
+  async resolveLinkedinCompanyUrlFromDomain(input: {
+    domain: string;
+    country?: string;
+  }): Promise<ResolveLinkedinCompanyResult> {
+    const domain =
+      normalizeBareCompanyDomain(input.domain) ?? input.domain.trim();
+    if (!domain) {
+      throw new Error('Domain is required');
+    }
+
+    if (!this.brightDataSerpService.isConfigured()) {
+      throw new Error('BRIGHT_DATA_API_KEY is not set');
+    }
+
+    const country = input.country?.trim() || undefined;
+    const scoreTarget =
+      extractCompanyNameStemFromDomain(domain) ?? domain;
+    const searchUrl = buildGoogleLinkedinCompanySearchUrlFromDomain({
+      domain,
+      country,
+    });
+    const serp =
+      await this.brightDataSerpService.requestSerpGoogleJson(searchUrl);
+    const candidates = extractLinkedinCompanyCandidatesFromSerpOrganic({
+      organic: serp.organic,
+      targetCompanyName: scoreTarget,
+    });
+
+    const bestMatch = candidates[0];
+    if (!bestMatch) {
+      throw new Error(
+        `No LinkedIn company URL found in SERP results for domain "${domain}"`,
+      );
+    }
+
+    this.logger.log(
+      `Resolved LinkedIn company for domain "${domain}" to ${bestMatch.linkedinCompanyUrl} score=${bestMatch.score}`,
+    );
+
+    return {
+      inputCompanyName: domain,
+      country: country ?? '',
       searchUrl,
       companyName: bestMatch.companyName,
       linkedinCompanyUrl: bestMatch.linkedinCompanyUrl,

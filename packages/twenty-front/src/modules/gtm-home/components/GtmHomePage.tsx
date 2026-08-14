@@ -457,7 +457,7 @@ export const GtmHomePage = () => {
     openAskAiPageWithPreprompt({
       mode: 'PREFILL',
       text: buildGtmCommandContextPrompt({
-        ...commandContext,
+        ...gtmCommandContext,
         outreachWorkflowId: nextWorkflowId,
       }),
     });

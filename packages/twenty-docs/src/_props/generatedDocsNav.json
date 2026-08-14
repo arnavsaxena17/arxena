@@ -48,13 +48,7 @@
             {
               "group": "People",
               "pages": [
-                "api-reference/data-sources/list-people-data-source-categories",
-                "api-reference/taxonomy/list-std-function-roots",
-                "api-reference/taxonomy/list-std-functions",
-                "api-reference/taxonomy/list-std-grades",
-                "api-reference/taxonomy/build-boolean-strings-from-taxonomy",
-                "api-reference/taxonomy/expand-and-normalize-a-job-title",
-                "api-reference/people/resolve-job-title-and-search-people",
+
                 "api-reference/people/search-people"
               ]
             }

@@ -27,7 +27,84 @@ describe('buildPeopleApiOpenApiDocument', () => {
       ]),
     );
 
+    const searchRequest = doc.components?.schemas?.PeopleSearchRequest as {
+      properties?: {
+        naturalLanguage?: { description?: string; example?: string };
+        query?: { description?: string };
+        dataSource?: unknown;
+        candidateSource?: unknown;
+        accountId?: unknown;
+        linkedInAccountId?: unknown;
+        stdFunctionRoot?: { enum?: string[] };
+        stdGrade?: { enum?: string[] };
+        stdFunction?: { enum?: string[] };
+      };
+    };
+    expect(searchRequest.properties?.accountId).toBeDefined();
+    expect(searchRequest.properties?.linkedInAccountId).toBeUndefined();
+    expect(searchRequest.properties?.stdFunctionRoot?.enum).toEqual(
+      expect.arrayContaining(['engineering', 'human resources', 'corporate']),
+    );
+    expect(searchRequest.properties?.stdGrade?.enum).toEqual([
+      'entry',
+      'mid',
+      'leadership',
+    ]);
+    expect(searchRequest.properties?.stdFunction?.enum).toBeUndefined();
+    expect(searchRequest.properties?.naturalLanguage).toBeDefined();
+    expect(searchRequest.properties?.naturalLanguage?.example).toBe('');
+    expect(searchRequest.properties?.naturalLanguage?.description).toMatch(
+      /LLM extracts/,
+    );
+    expect(searchRequest.properties?.query?.description).toMatch(
+      /Not classified/,
+    );
+    expect(searchRequest.properties?.candidateSource).toBeUndefined();
+    expect(searchRequest.properties?.dataSource).toBeDefined();
+
+    const searchBody = doc.paths?.['/people-api/people/search']?.post
+      ?.requestBody as {
+      content?: {
+        'application/json'?: {
+          example?: {
+            naturalLanguage?: string;
+            companyName?: string;
+            website?: string;
+          };
+          examples?: Record<string, unknown>;
+        };
+      };
+    };
+    const jsonBody = searchBody.content?.['application/json'];
+    expect(jsonBody?.example).toEqual({
+      naturalLanguage: '',
+      dataSource: 'index',
+      limit: 10,
+    });
+    expect(jsonBody?.examples).toBeUndefined();
+
     console.log('[people-api.openapi] paths', paths);
+  });
+
+  it('documents natural-language resolved fields including location', () => {
+    const doc = buildPeopleApiOpenApiDocument('http://localhost:3000');
+    const searchResponse = doc.components?.schemas?.PeopleSearchResponse as {
+      properties?: {
+        resolved?: {
+          properties?: {
+            location?: unknown;
+            stdFunction?: unknown;
+          };
+        };
+      };
+    };
+
+    expect(searchResponse.properties?.resolved?.properties?.location).toEqual({
+      type: ['string', 'null'],
+    });
+    expect(
+      searchResponse.properties?.resolved?.properties?.stdFunction,
+    ).toBeDefined();
   });
 
   it('includes production and local servers by default', () => {

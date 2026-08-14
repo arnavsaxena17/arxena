@@ -545,11 +545,11 @@ export const Projects = () => {
     setIsDownloadModalOpen(true);
   };
 
-  const hasJobs = jobsFromState && jobsFromState.length > 0;
+  const hasJobs = projects && projects.length > 0;
 
   const showSearch = hasJobs && updatedMetadataStructureLoaded && !!jobMetadataItem;
 
-  const sortedJobs = jobsFromState ? [...jobsFromState].sort((a, b) => {
+  const sortedJobs = projects ? [...projects].sort((a, b) => {
     // First sort by active status (active jobs first)
     if (a.isActive !== b.isActive) {
       return a.isActive ? -1 : 1;

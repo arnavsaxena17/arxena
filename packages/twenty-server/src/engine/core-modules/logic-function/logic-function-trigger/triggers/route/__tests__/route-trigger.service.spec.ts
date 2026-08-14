@@ -64,9 +64,10 @@ describe('buildRouteTriggerResponse', () => {
 describe('RouteTriggerService', () => {
   const resolveWorkspaceAndPublicDomain = jest.fn();
   const find = jest.fn();
+  const validateTokenByRequest = jest.fn();
 
   const service = new RouteTriggerService(
-    {} as unknown as AccessTokenService,
+    { validateTokenByRequest } as unknown as AccessTokenService,
     {} as unknown as LogicFunctionTriggerService,
     { resolveWorkspaceAndPublicDomain } as unknown as WorkspaceDomainsService,
     { get: jest.fn() } as unknown as TwentyConfigService,
@@ -77,6 +78,7 @@ describe('RouteTriggerService', () => {
     protocol: 'https',
     get: () => 'acme.twenty.com',
     path: '/s/webhook',
+    headers: {},
   } as unknown as Request;
 
   afterEach(() => {
@@ -119,6 +121,60 @@ describe('RouteTriggerService', () => {
       code: RouteTriggerExceptionCode.TRIGGER_NOT_FOUND,
     });
 
+    expect(find).toHaveBeenCalledWith({
+      where: {
+        workspaceId: 'workspace-id',
+        httpRouteTriggerSettings: expect.anything(),
+      },
+    });
+  });
+
+  it('should reject requests when the host has no workspace and no token', async () => {
+    resolveWorkspaceAndPublicDomain.mockResolvedValue({
+      workspace: undefined,
+      publicDomain: null,
+      isIsolatedOrigin: false,
+    });
+
+    await expect(
+      service.handle({ request, httpMethod: HTTPMethod.GET }),
+    ).rejects.toMatchObject({
+      code: RouteTriggerExceptionCode.WORKSPACE_NOT_FOUND,
+    });
+
+    expect(validateTokenByRequest).not.toHaveBeenCalled();
+    expect(find).not.toHaveBeenCalled();
+  });
+
+  it('should resolve the workspace from the access token when the host has none', async () => {
+    resolveWorkspaceAndPublicDomain.mockResolvedValue({
+      workspace: undefined,
+      publicDomain: null,
+      isIsolatedOrigin: false,
+    });
+    validateTokenByRequest.mockResolvedValue({
+      workspace: {
+        id: 'workspace-id',
+        activationStatus: WorkspaceActivationStatus.ACTIVE,
+      },
+    });
+    find.mockResolvedValue([]);
+
+    const authenticatedRequest = {
+      ...request,
+      headers: { authorization: 'Bearer app-access-token' },
+    } as unknown as Request;
+
+    await expect(
+      service.handle({
+        request: authenticatedRequest,
+        httpMethod: HTTPMethod.GET,
+      }),
+    ).rejects.toMatchObject({
+      code: RouteTriggerExceptionCode.TRIGGER_NOT_FOUND,
+    });
+
+    expect(validateTokenByRequest).toHaveBeenCalledWith(authenticatedRequest);
     expect(find).toHaveBeenCalledWith({
       where: {
         workspaceId: 'workspace-id',

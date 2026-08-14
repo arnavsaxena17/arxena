@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { hasOrgChartLinkedInSubsetScopeFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
-import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
+import {
+  collectOrgChartCompanyIdsForLookup,
+  getLinkedInUnipileSearchPageLimit,
+  resolveOrgChartCompanyAliasGroup,
+} from 'twenty-shared';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
@@ -101,9 +105,38 @@ export class OrgChartSuperImposeService {
       resolvedCompanies.push(company);
     };
 
+    // Expand StayVista/Meta/Tesla/Samsung-style alias groups so people/SN
+    // search covers divergent LinkedIn slugs (e.g. vista-rooms + stay-vista).
+    const addCompanyWithAliasExpansion = (
+      company: SuperImposeResolvedCompany | null,
+    ) => {
+      if (!company) {
+        return;
+      }
+      addCompany(company);
+      if (!resolveOrgChartCompanyAliasGroup(company.slug)) {
+        return;
+      }
+      for (const aliasId of collectOrgChartCompanyIdsForLookup(company.slug)) {
+        if (aliasId === company.slug) {
+          continue;
+        }
+        const aliasUrl =
+          normalizeLinkedinCompanyUrl(aliasId) ??
+          `https://www.linkedin.com/company/${aliasId}/`;
+        addCompany(
+          buildResolvedCompanyFromUrl(
+            aliasUrl,
+            company.resolvedFrom,
+            company.companyName,
+          ),
+        );
+      }
+    };
+
     const targetCompany = args.inputs.targetCompany;
     if (targetCompany?.linkedinCompanyUrl?.trim()) {
-      addCompany(
+      addCompanyWithAliasExpansion(
         buildResolvedCompanyFromUrl(
           targetCompany.linkedinCompanyUrl,
           'primary_chart',
@@ -111,7 +144,7 @@ export class OrgChartSuperImposeService {
         ),
       );
     } else if (args.primaryLinkedinCompanyUrl?.trim()) {
-      addCompany(
+      addCompanyWithAliasExpansion(
         buildResolvedCompanyFromUrl(
           args.primaryLinkedinCompanyUrl,
           'primary_chart',
@@ -121,8 +154,12 @@ export class OrgChartSuperImposeService {
     } else if (args.primaryCompanyId?.trim()) {
       const url = normalizeLinkedinCompanyUrl(args.primaryCompanyId);
       if (url) {
-        addCompany(
-          buildResolvedCompanyFromUrl(url, 'primary_chart', args.primaryCompanyName),
+        addCompanyWithAliasExpansion(
+          buildResolvedCompanyFromUrl(
+            url,
+            'primary_chart',
+            args.primaryCompanyName,
+          ),
         );
       }
     }
@@ -132,7 +169,9 @@ export class OrgChartSuperImposeService {
         errors.push(`Invalid LinkedIn company URL: ${rawUrl}`);
         continue;
       }
-      addCompany(buildResolvedCompanyFromUrl(rawUrl, 'linkedin_url'));
+      addCompanyWithAliasExpansion(
+        buildResolvedCompanyFromUrl(rawUrl, 'linkedin_url'),
+      );
     }
 
     for (const websiteUrl of args.inputs.websiteUrls ?? []) {
@@ -150,7 +189,7 @@ export class OrgChartSuperImposeService {
         const linkedinUrl =
           normalizeLinkedinCompanyUrl(resolved.companyId) ??
           `https://www.linkedin.com/company/${resolved.companyId}/`;
-        addCompany(
+        addCompanyWithAliasExpansion(
           buildResolvedCompanyFromUrl(
             linkedinUrl,
             'website_url',

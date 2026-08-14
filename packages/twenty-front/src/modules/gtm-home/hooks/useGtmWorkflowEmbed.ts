@@ -69,15 +69,15 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
   const { records: projects, loading: projectsLoading } =
     useFindManyRecords<GtmProjectRecord>({
       objectNameSingular: 'project',
-      filter: isDefined(commandContext.projectId)
+      filter: isDefined(gtmCommandContext.projectId)
         ? {
             id: {
-              eq: commandContext.projectId,
+              eq: gtmCommandContext.projectId,
             },
           }
         : undefined,
       limit: 1,
-      skip: !isEnabled || !isDefined(commandContext.projectId),
+      skip: !isEnabled || !isDefined(gtmCommandContext.projectId),
       recordGqlFields: {
         id: true,
         gtmRunKey: true,
@@ -85,9 +85,9 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
       },
     });
 
-  const projectId = commandContext.projectId ?? projects[0]?.id ?? null;
+  const projectId = gtmCommandContext.projectId ?? projects[0]?.id ?? null;
   const projectOutreachWorkflowId =
-    commandContext.outreachWorkflowId ??
+    gtmCommandContext.outreachWorkflowId ??
     projects[0]?.outreachWorkflowId ??
     null;
 

@@ -330,7 +330,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Merge enrichments
     const allAiFilters = useMemo(() => {
-      const merged = [...customEnrichments, ...sampleEnrichments];
+      const merged = [...enrichments, ...sampleEnrichments];
       // Deduplicate by modelName, preferring custom enrichments over samples
       return merged.reduce<Enrichment[]>((acc, current) => {
         const exists = acc.find(item => item.modelName === current.modelName);
@@ -339,7 +339,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         }
         return acc;
       }, []);
-    }, [customEnrichments, sampleEnrichments]);
+    }, [enrichments, sampleEnrichments]);
 
     const columns = useAtomStateValue(columnsSelector);
     const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
@@ -473,15 +473,15 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       let filtered = mergedData;
 
       // Apply status filter if selected
-      if (selectedStatus) {
+      if (selectedConversationStatus) {
         filtered = filtered.filter((candidate: any) =>
-          candidate.candConversationStatus === selectedStatus
+          candidate.candConversationStatus === selectedConversationStatus
         );
       }
 
       // Apply search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+      if (chatSearchQuery) {
+        const query = chatSearchQuery.toLowerCase();
         filtered = filtered.filter((candidate: any) => {
           return Object.values(candidate).some(value => {
             if (typeof value === 'string') {
@@ -499,7 +499,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
       // Note: We don't set filtered count here anymore as it's handled by afterFilter
       return filtered;
-    }, [mergedData, searchQuery, selectedStatus]);
+    }, [mergedData, chatSearchQuery, selectedConversationStatus]);
 
     const mutatableData = useMemo(() => {
       return filteredData.map((candidate: any) => {
@@ -1630,9 +1630,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     return (
       <StyledTableWrapper>
         <NaukriQueueStatusEffect />
-        {selectedStatus && (
+        {selectedConversationStatus && (
           <StyledFilterBadge>
-            <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedStatus]}</span>
+            <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedConversationStatus]}</span>
             <StyledClearButton onClick={() => setSelectedConversationStatus(null)}>
               <IconX size={16} />
             </StyledClearButton>

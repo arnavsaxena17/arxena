@@ -38,11 +38,11 @@ export const useUploadProgress = () => {
     const tokenChanged = lastTokenRef.current !== currentToken;
     const tokenPairChanged = lastTokenPairRef.current !== tokenPair;
     const shouldConnect =
-      uploadProgressSessionCount > 0 && !!tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+      uploadProgressSseSessionCount > 0 && !!tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
     console.log('🔄 useUploadProgress useEffect triggered', {
       hasToken: !!currentToken,
-      uploadProgressSessionCount,
+      uploadProgressSseSessionCount,
       shouldConnect,
       tokenPreview: currentToken?.substring(0, 20) + '...',
       isConnected: eventSourceRef.current?.readyState,
@@ -74,7 +74,7 @@ export const useUploadProgress = () => {
     }
 
     // If token value is the same but object reference changed, don't recreate connection
-    if (eventSourceRef.current && eventSourceRef.current.readyState === EventSource.OPEN && 
+    if (eventSourceRef.current && eventSourceRef.current.readyState === EventSource.OPEN &&
         lastTokenRef.current === currentToken && currentToken) {
       console.log('✅ Token value unchanged, keeping existing connection');
       lastTokenPairRef.current = tokenPair;
@@ -93,13 +93,13 @@ export const useUploadProgress = () => {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     // Reset reconnect attempts when creating a new connection
     reconnectAttemptsRef.current = 0;
     lastReconnectTimeRef.current = 0;
     lastTokenRef.current = currentToken || null;
     lastTokenPairRef.current = tokenPair;
-    
+
     // Note: EventSource doesn't support custom headers, so we pass token as query parameter
     const url = new URL(`${REACT_APP_SERVER_BASE_URL}/upload-progress/stream`);
     url.searchParams.set('token', tokenPair.accessOrWorkspaceAgnosticToken.token);
@@ -125,15 +125,15 @@ export const useUploadProgress = () => {
         if (jsonData.startsWith('data: ')) {
           jsonData = jsonData.substring(6); // Remove "data: " prefix
         }
-        
+
         const data = JSON.parse(jsonData);
-        
+
         // Skip heartbeat messages early to avoid unnecessary processing
         if (data.step === 'heartbeat') {
           // Heartbeats don't require state updates, so we skip them entirely
           return;
         }
-        
+
         // Only log and update state for actual progress updates
         console.log('📨 Received upload progress data:', data);
         setUploadProgress(data);
@@ -152,18 +152,18 @@ export const useUploadProgress = () => {
       console.error('❌ Error target:', error.target);
       setIsConnected(false);
       setError('Connection error');
-      
+
       // Only attempt reconnection if we haven't exceeded max attempts and enough time has passed
       const now = Date.now();
       const timeSinceLastReconnect = now - lastReconnectTimeRef.current;
       const minReconnectInterval = 10000; // Minimum 10 seconds between reconnection attempts
-      
+
       if (reconnectAttemptsRef.current < maxReconnectAttempts && timeSinceLastReconnect > minReconnectInterval) {
         reconnectAttemptsRef.current++;
         lastReconnectTimeRef.current = now;
         const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current - 1); // Exponential backoff
         console.log(`🔄 SSE connection error - attempting auto-reconnect ${reconnectAttemptsRef.current}/${maxReconnectAttempts} in ${delay}ms...`);
-        
+
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log('🔄 Auto-reconnecting SSE...');
           if (eventSourceRef.current) {
@@ -189,32 +189,32 @@ export const useUploadProgress = () => {
       console.log('🧹 Cleaning up SSE connection - useEffect cleanup triggered');
       console.log('🧹 EventSource readyState before close:', eventSource.readyState);
       console.log('🧹 EventSource URL before close:', eventSource.url);
-      
+
       // Clear reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      
+
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
       setIsConnected(false);
     };
-  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token, uploadProgressSessionCount]);
+  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token, uploadProgressSseSessionCount]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       console.log('🧹 useUploadProgress hook unmounting - closing EventSource');
-      
+
       // Clear reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      
+
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;

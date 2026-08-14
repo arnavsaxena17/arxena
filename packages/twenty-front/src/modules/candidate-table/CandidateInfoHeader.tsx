@@ -234,7 +234,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
   // Function to find all table data states and search for our candidate
   const findCandidateInTableData = () => {
     // If we don't have a candidate ID, return null
-    if (!candidateId) {
+    if (!selectedCandidateId) {
       return null;
     }
 
@@ -242,15 +242,15 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
     const allCandidates = [...searchResults, ...processedData];
 
     // First, try exact match by ID
-    let candidateData = allCandidates.find((row) => row.id === candidateId);
+    let candidateData = allCandidates.find((row) => row.id === selectedCandidateId);
 
     // If not found, try to find using getPermanentId logic
     if (!candidateData && tableState.rawData && Array.isArray(tableState.rawData)) {
-      // Try to find a row that matches the candidateId
-      // by checking if any row's permanentId matches our candidateId
+      // Try to find a row that matches the selectedCandidateId
+      // by checking if any row's permanentId matches our selectedCandidateId
       for (const row of allCandidates) {
         const rowPermanentId = getPermanentId(row, tableState.rawData);
-        if (rowPermanentId === candidateId || row.id === candidateId) {
+        if (rowPermanentId === selectedCandidateId || row.id === selectedCandidateId) {
           candidateData = row;
           break;
         }
@@ -259,9 +259,9 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
       // If still not found, try to find in rawData directly
       if (!candidateData) {
         const rawCandidate = tableState.rawData.find((row: any) => {
-          return row.id === candidateId ||
-                 row.tempId === candidateId ||
-                 getPermanentId(row, tableState.rawData) === candidateId;
+          return row.id === selectedCandidateId ||
+                 row.tempId === selectedCandidateId ||
+                 getPermanentId(row, tableState.rawData) === selectedCandidateId;
         });
 
         // If found in rawData, try to find corresponding entry in allCandidates
@@ -269,19 +269,19 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
           const rawCandidateId = getPermanentId(rawCandidate as any, tableState.rawData) || rawCandidate.id;
           candidateData = allCandidates.find((row) => {
             const rowPermanentId = getPermanentId(row, tableState.rawData);
-            return rowPermanentId === rawCandidateId || row.id === rawCandidateId || row.id === candidateId;
+            return rowPermanentId === rawCandidateId || row.id === rawCandidateId || row.id === selectedCandidateId;
           });
         }
       }
     }
 
-    // Last resort: if candidateId is a LinkedIn ID, try to find by matching LinkedIn ID or tempId
-    if (!candidateData && candidateId && !isUUID(candidateId)) {
+    // Last resort: if selectedCandidateId is a LinkedIn ID, try to find by matching LinkedIn ID or tempId
+    if (!candidateData && selectedCandidateId && !isUUID(selectedCandidateId)) {
       candidateData = allCandidates.find((row) => {
-        return row.tempId === candidateId ||
-               row.id === candidateId ||
-               (row.linkedinUrl && typeof row.linkedinUrl === 'string' && row.linkedinUrl.includes(candidateId)) ||
-               (row.linkedinUrl && typeof row.linkedinUrl === 'object' && row.linkedinUrl.primaryLinkUrl && row.linkedinUrl.primaryLinkUrl.includes(candidateId));
+        return row.tempId === selectedCandidateId ||
+               row.id === selectedCandidateId ||
+               (row.linkedinUrl && typeof row.linkedinUrl === 'string' && row.linkedinUrl.includes(selectedCandidateId)) ||
+               (row.linkedinUrl && typeof row.linkedinUrl === 'object' && row.linkedinUrl.primaryLinkUrl && row.linkedinUrl.primaryLinkUrl.includes(selectedCandidateId));
       });
     }
 
@@ -290,7 +290,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
   // Find the candidate data - use prop data if available, otherwise fall back to table data
   const candidateData = propCandidateData || findCandidateInTableData();
-  const activeCandidateId = candidateId || candidateData?.id;
+  const activeCandidateId = selectedCandidateId || candidateData?.id;
 
   if (!candidateData || !activeCandidateId) {
     return (
@@ -342,7 +342,7 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
 
     try {
       if (selectedInterimChat === 'startChat') {
-        await sendStartChatRequest([activeCandidateId], 'candidate', projectId ? [projectId] : undefined);
+        await sendStartChatRequest([activeCandidateId], 'candidate', currentProjectId ? [currentProjectId] : undefined);
       } else {
         await axios.post(
           `${REACT_APP_SERVER_BASE_URL}/arx-chat/start-interim-chat-prompt`,

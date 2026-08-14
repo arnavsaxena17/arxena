@@ -655,8 +655,8 @@ export const ProjectPage: React.FC = () => {
   debugLog("ProjectPage rendering with recordIndexContextValue:", recordIndexContextValue);
   debugLog("Current job found:", currentJob);
   debugLog("Filtered count:", filteredCount);
-  debugLog("Selected status:", selectedStatus);
-  debugLog("Search query:", searchQuery);
+  debugLog("Selected status:", selectedConversationStatus);
+  debugLog("Search query:", chatSearchQuery);
 
   // Memoize processedData to prevent unnecessary recalculations
   const processedData = useAtomStateValue(processedDataSelector);

@@ -8,64 +8,22 @@ import { callRestAPI, callRestAPIGet } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
 
-const hasCompanyScope = (args: Record<string, unknown>): boolean =>
-  ['companyId', 'companyName', 'website'].some((key) => {
-    const value = args[key];
-    return typeof value === 'string' && value.trim().length > 0;
-  });
+const hasNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
 
 export const peopleApiTools: McpTool[] = [
-  {
-    definition: {
-      name: 'search_people_by_job_title',
-      title: 'Search people by job title',
-      description:
-        'PRIMARY people tool: pass a natural-language jobTitle (e.g. "CHRO", "Head of HR", "HR leadership") plus companyName/companyId/website. Taxonomy resolution is server-side; response includes resolved fields for sanity-check. Prefer this over code-based search.',
-      annotations: { readOnlyHint: true },
-      inputSchema: descriptorToInputSchema(
-        SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const jobTitle = args.jobTitle;
-      if (typeof jobTitle !== 'string' || !jobTitle.trim()) {
-        throw new Error('jobTitle is required.');
-      }
-      if (!hasCompanyScope(args)) {
-        throw new Error(
-          'At least one of companyId, companyName, or website is required.',
-        );
-      }
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'people-api',
-        'people/search-by-title',
-        {
-          jobTitle: jobTitle.trim(),
-          dataSource: args.dataSource,
-          companyId: args.companyId,
-          companyName: args.companyName,
-          website: args.website,
-          country: args.country,
-          limit: args.limit,
-          offset: args.offset,
-        },
-      );
-    },
-  },
   {
     definition: {
       name: 'search_people_api',
       title: 'Search people (People API)',
       description:
-        'Advanced: search with explicit stdFunction/stdGrade when already known. Prefer search_people_by_job_title for natural-language role queries so the model does not invent taxonomy codes.',
+        'PRIMARY people tool: pass naturalLanguage (e.g. "CEO at StayVista", "CHRO at Apple"). Taxonomy resolution is server-side. Company may be in the utterance or as companyName/companyId/website. Use explicit stdFunction/stdGrade only when already known.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(SEARCH_PEOPLE_API_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const filterKeys = [
+        'naturalLanguage',
         'query',
         'personName',
         'jobTitle',
@@ -78,14 +36,11 @@ export const peopleApiTools: McpTool[] = [
         'linkedinUrl',
       ];
 
-      const hasFilter = filterKeys.some((key) => {
-        const value = args[key];
-        return typeof value === 'string' && value.trim().length > 0;
-      });
+      const hasFilter = filterKeys.some((key) => hasNonEmptyString(args[key]));
 
       if (!hasFilter) {
         throw new Error(
-          'At least one search filter is required (query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, or linkedinUrl).',
+          'At least one search filter is required (naturalLanguage, query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, or linkedinUrl).',
         );
       }
 
@@ -96,6 +51,8 @@ export const peopleApiTools: McpTool[] = [
         'people/search',
         {
           dataSource: args.dataSource,
+          accountId: args.accountId,
+          naturalLanguage: args.naturalLanguage,
           query: args.query,
           personName: args.personName,
           jobTitle: args.jobTitle,
@@ -114,10 +71,46 @@ export const peopleApiTools: McpTool[] = [
   },
   {
     definition: {
+      name: 'search_people_by_job_title',
+      title: 'Search people by job title',
+      description:
+        'Alias of search_people_api: pass jobTitle (e.g. "CEO at StayVista" or "CHRO") plus optional companyName/companyId/website. Prefer search_people_api with naturalLanguage.',
+      annotations: { readOnlyHint: true },
+      inputSchema: descriptorToInputSchema(
+        SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const jobTitle = args.jobTitle;
+      if (typeof jobTitle !== 'string' || !jobTitle.trim()) {
+        throw new Error('jobTitle is required.');
+      }
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'people-api',
+        'people/search',
+        {
+          naturalLanguage: jobTitle.trim(),
+          dataSource: args.dataSource,
+          accountId: args.accountId,
+          companyId: args.companyId,
+          companyName: args.companyName,
+          website: args.website,
+          country: args.country,
+          limit: args.limit,
+          offset: args.offset,
+        },
+      );
+    },
+  },
+  {
+    definition: {
       name: 'list_people_data_sources',
       title: 'List people data sources',
       description:
-        'List configured people data source aliases (index, apollo, pdl, contactout, harvest) and whether each supports std_function/std_grade filters.',
+        'List configured people data source aliases (index, apollo, pdl, contactout, harvest, pool, unipile) and whether each supports std_function/std_grade filters.',
       annotations: { readOnlyHint: true },
       inputSchema: { type: 'object', properties: {} },
     },
@@ -134,7 +127,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_taxonomy_constants',
       title: 'List taxonomy constants',
       description:
-        'Public flat vocabulary nouns (grade levels, grade categories, function roots). Use to understand what the system knows — not to invent filters. Prefer search_people_by_job_title for queries.',
+        'Public flat vocabulary nouns (grade levels, grade categories, function roots). Use to understand what the system knows — not to invent filters. Prefer search_people_api with naturalLanguage for queries.',
       annotations: { readOnlyHint: true },
       inputSchema: { type: 'object', properties: {} },
     },
@@ -151,7 +144,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_taxonomy_function_roots',
       title: 'List std function roots',
       description:
-        'Advanced auth-gated list/classify. Prefer list_taxonomy_constants for nouns and search_people_by_job_title for queries.',
+        'Advanced auth-gated list/classify. Prefer list_taxonomy_constants for nouns and search_people_api with naturalLanguage for queries.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(LIST_TAXONOMY_INPUT_DESCRIPTOR),
     },
@@ -171,7 +164,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_taxonomy_functions',
       title: 'List std functions',
       description:
-        'Advanced auth-gated function labels. Prefer search_people_by_job_title so agents do not chain raw taxonomy codes.',
+        'Advanced auth-gated function labels. Prefer search_people_api with naturalLanguage so agents do not chain raw taxonomy codes.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema([
         ...LIST_TAXONOMY_INPUT_DESCRIPTOR,

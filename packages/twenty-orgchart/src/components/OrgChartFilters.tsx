@@ -51,16 +51,23 @@ const StyledFiltersContainer = styled.div<{ $omitMarginLeft?: boolean }>`
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: ${themeCssVariables.spacing['2']};
   max-width: 100%;
+
+  @container orgchart-header (max-width: 720px) {
+    flex-wrap: wrap;
+    width: 100%;
+  }
 `;
 
 const StyledDesktopFilters = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: ${themeCssVariables.spacing['2']};
 
   @container orgchart-header (max-width: 720px) {
@@ -244,6 +251,7 @@ const StyledSheetOptionMeta = styled.span`
 const StyledFilterGroup = styled.div`
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: ${themeCssVariables.spacing['0.5']};
   min-width: 0;
 `;
@@ -254,9 +262,11 @@ const StyledFilterLabel = styled.span`
   color: ${themeCssVariables.font.color.tertiary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 `;
 
 const StyledSelect = styled.select`
+  field-sizing: content;
   min-width: 120px;
   padding: ${themeCssVariables.spacing['1']} ${themeCssVariables.spacing['2']};
   border-radius: ${themeCssVariables.border.radius.md};
@@ -265,6 +275,7 @@ const StyledSelect = styled.select`
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
   font-family: ${themeCssVariables.font.family};
+  white-space: nowrap;
 
   &:focus {
     outline: none;

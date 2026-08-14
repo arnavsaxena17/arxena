@@ -382,7 +382,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const searchResults = useAtomStateValue(searchResultsState);
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
 
-  // Memoize candidateId to prevent unnecessary re-renders
+  // Memoize selectedCandidateId to prevent unnecessary re-renders
   const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
 
 
@@ -488,17 +488,17 @@ export const CandidateChatDrawer = React.memo(() => {
   }, [templatePreviews]);
 
   const fetchMessages = React.useCallback(async () => {
-    if (!candidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
-      console.log('Missing candidateId or token, skipping fetch');
+    if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
+      console.log('Missing selectedCandidateId or token, skipping fetch');
       setIsLoading(false);
       return;
     }
 
     // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
-    const rowData = { id: candidateId };
+    const rowData = { id: selectedCandidateId };
     const permanentId = getPermanentId(rowData, tableState.rawData || []);
     if (!permanentId || !isUUID(permanentId)) {
-      console.log(`Skipping fetch messages for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      console.log(`Skipping fetch messages for candidate ${selectedCandidateId} - no valid UUID found (permanentId: ${permanentId})`);
       setIsLoading(false);
       return;
     }
@@ -536,7 +536,7 @@ export const CandidateChatDrawer = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token, tableState.rawData]);
+  }, [selectedCandidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token, tableState.rawData]);
 
   // Debounced version of fetchMessages to prevent excessive API calls
   const debouncedFetchMessages = useCallback(() => {
@@ -549,22 +549,22 @@ export const CandidateChatDrawer = React.memo(() => {
   }, [fetchMessages]);
 
   const fetchCandidateData = React.useCallback(async () => {
-    if (!candidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
+    if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return;
     }
 
     // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
-    const rowData = { id: candidateId };
+    const rowData = { id: selectedCandidateId };
     const permanentId = getPermanentId(rowData, tableState.rawData || []);
     if (!permanentId || !isUUID(permanentId)) {
-      console.log(`Skipping fetch candidate data from backend for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+      console.log(`Skipping fetch candidate data from backend for candidate ${selectedCandidateId} - no valid UUID found (permanentId: ${permanentId})`);
 
       // Try to find candidate in searchResults first (where LinkedIn candidates are), then processedData
       const allCandidates = [...searchResults, ...processedData];
       const candidateFromTable = allCandidates.find((row) => {
-        return row.id === candidateId ||
-               row.tempId === candidateId ||
-               getPermanentId(row, tableState.rawData || []) === candidateId;
+        return row.id === selectedCandidateId ||
+               row.tempId === selectedCandidateId ||
+               getPermanentId(row, tableState.rawData || []) === selectedCandidateId;
       });
 
       if (candidateFromTable) {
@@ -633,11 +633,11 @@ export const CandidateChatDrawer = React.memo(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [candidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token, tableState.rawData, processedData, searchResults, setCandidateData, setCandidateName, setPhoneNumber]);
+  }, [selectedCandidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token, tableState.rawData, processedData, searchResults, setCandidateData, setCandidateName, setPhoneNumber]);
 
-  // Start polling when component mounts and candidateId is available
+  // Start polling when component mounts and selectedCandidateId is available
   useEffect(() => {
-    if (!candidateId) return;
+    if (!selectedCandidateId) return;
 
     // Initial fetch
     fetchMessages();
@@ -649,7 +649,7 @@ export const CandidateChatDrawer = React.memo(() => {
       fetchCandidateData();
     }, 30000); // Poll every 30 seconds instead of 10
 
-    // Cleanup interval on unmount or when candidateId changes
+    // Cleanup interval on unmount or when selectedCandidateId changes
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -661,7 +661,7 @@ export const CandidateChatDrawer = React.memo(() => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candidateId]); // Only depend on candidateId - callbacks are stable via useCallback
+  }, [selectedCandidateId]); // Only depend on selectedCandidateId - callbacks are stable via useCallback
 
   // Set default active tab
   useEffect(() => {
@@ -680,17 +680,17 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Add effect to mark messages as read when drawer opens
   useEffect(() => {
-    if (candidateId && tokenPair?.accessOrWorkspaceAgnosticToken?.token && messageHistory.length > 0) {
+    if (selectedCandidateId && tokenPair?.accessOrWorkspaceAgnosticToken?.token && messageHistory.length > 0) {
       // Get permanent ID (UUID) - ensure we only use UUIDs, not LinkedIn IDs or tempIds
-      const rowData = { id: candidateId };
+      const rowData = { id: selectedCandidateId };
       const permanentId = getPermanentId(rowData, tableState.rawData || []);
       if (!permanentId || !isUUID(permanentId)) {
-        console.log(`Skipping mark as read for candidate ${candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+        console.log(`Skipping mark as read for candidate ${selectedCandidateId} - no valid UUID found (permanentId: ${permanentId})`);
         return;
       }
 
-      // Only mark as read once per candidate - reset when candidateId changes
-      if (hasMarkedAsReadRef.current === candidateId) {
+      // Only mark as read once per candidate - reset when selectedCandidateId changes
+      if (hasMarkedAsReadRef.current === selectedCandidateId) {
         return;
       }
 
@@ -716,19 +716,19 @@ export const CandidateChatDrawer = React.memo(() => {
           );
 
           // Immediately update unread messages count in state to 0 for this candidate
-          // Update for both permanentId (UUID) and candidateId (in case it's different, e.g., LinkedIn ID)
+          // Update for both permanentId (UUID) and selectedCandidateId (in case it's different, e.g., LinkedIn ID)
           setUnreadMessagesCounts(prev => {
             const updated = { ...prev };
             updated[permanentId] = 0;
-            // Also update candidateId if it's different from permanentId (for search result candidates)
-            if (candidateId !== permanentId) {
-              updated[candidateId] = 0;
+            // Also update selectedCandidateId if it's different from permanentId (for search result candidates)
+            if (selectedCandidateId !== permanentId) {
+              updated[selectedCandidateId] = 0;
             }
             return updated;
           });
 
           // Mark that we've processed this candidate
-          hasMarkedAsReadRef.current = candidateId;
+          hasMarkedAsReadRef.current = selectedCandidateId;
         }).catch(error => {
           console.error('Error updating message status:', error);
         });
@@ -737,20 +737,20 @@ export const CandidateChatDrawer = React.memo(() => {
         setUnreadMessagesCounts(prev => {
           const updated = { ...prev };
           updated[permanentId] = 0;
-          if (candidateId !== permanentId) {
-            updated[candidateId] = 0;
+          if (selectedCandidateId !== permanentId) {
+            updated[selectedCandidateId] = 0;
           }
           return updated;
         });
-        hasMarkedAsReadRef.current = candidateId;
+        hasMarkedAsReadRef.current = selectedCandidateId;
       }
     }
 
-    // Reset the ref when candidateId changes
-    if (hasMarkedAsReadRef.current !== candidateId) {
+    // Reset the ref when selectedCandidateId changes
+    if (hasMarkedAsReadRef.current !== selectedCandidateId) {
       hasMarkedAsReadRef.current = null;
     }
-  }, [candidateId, tokenPair, messageHistory, tableState.rawData, setUnreadMessagesCounts]);
+  }, [selectedCandidateId, tokenPair, messageHistory, tableState.rawData, setUnreadMessagesCounts]);
 
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {
@@ -787,7 +787,7 @@ export const CandidateChatDrawer = React.memo(() => {
       const newMessage: MessageNode = {
         recruiterId: '',
         message: messageText,
-        candidateId: candidateId || '',
+        candidateId: selectedCandidateId || '',
         projectsId: '',
         position: messageHistory.length + 1,
         messageType: 'direct',
@@ -853,7 +853,7 @@ export const CandidateChatDrawer = React.memo(() => {
       const newMessage: MessageNode = {
         recruiterId: '',
         message: `Template: ${templateName}\n${getTemplatePreview(templateName)}`,
-        candidateId: candidateId || '',
+        candidateId: selectedCandidateId || '',
         projectsId: '',
         position: messageHistory.length + 1,
         messageType: 'template',
@@ -916,11 +916,11 @@ export const CandidateChatDrawer = React.memo(() => {
         </ChatStatusBar>
       )}
       {isLoading ? (
-        <div>Loading chat history... for {candidateId}</div>
+        <div>Loading chat history... for {selectedCandidateId}</div>
       ) : error ? (
         <div>{error}</div>
       ) : messageHistory.length === 0 ? (
-        <div id = "candidate-chat-no-messages" data-candidate-id={candidateId} data-person-id={personId}>No chat messages found for {candidateName}</div>
+        <div id = "candidate-chat-no-messages" data-candidate-id={selectedCandidateId} data-person-id={personId}>No chat messages found for {candidateName}</div>
       ) : (
         <MessageContainer>
           {Object.entries(groupMessagesByDate(messageHistory)).map(([date, messages]) => (
@@ -976,7 +976,7 @@ export const CandidateChatDrawer = React.memo(() => {
       <AttachmentPanel
         isOpen={true}
         onClose={() => setActiveTabId('chat')}
-        candidateId={candidateId || ''}
+        candidateId={selectedCandidateId || ''}
         candidateName={candidateName}
         PanelContainer={StyledInlineAttachmentContainer}
       />
@@ -1077,7 +1077,7 @@ export const CandidateChatDrawer = React.memo(() => {
         />
       </TabContainer>
       <TabContent>
-        {!candidateId ? (
+        {!selectedCandidateId ? (
           <div style={{padding: '20px'}}>No candidate selected</div>
         ) : isLoading ? (
           <div style={{padding: '20px'}}>Loading chat...</div>
@@ -1093,7 +1093,7 @@ export const CandidateChatDrawer = React.memo(() => {
           </>
         )}
       </TabContent>
-      {candidateId && activeTabId === 'chat' && renderMessageInput()}
+      {selectedCandidateId && activeTabId === 'chat' && renderMessageInput()}
     </StyledContainer>
   );
 });

@@ -30,7 +30,7 @@ export const useGtmOutreachEnroll = () => {
   });
   const { ensureCrmCompany } = useAddGtmRecordsToCrm();
 
-  const projectId = commandContext.projectId;
+  const projectId = gtmCommandContext.projectId;
 
   const { records: projects } = useFindManyRecords<GtmProjectRecord>({
     objectNameSingular: 'project',

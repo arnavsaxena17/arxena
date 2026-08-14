@@ -18,8 +18,10 @@ const LINKEDIN_ICON_URL = '/img/linkedin.svg';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
+  max-width: 22rem;
   min-width: 0;
 `;
 
@@ -30,8 +32,10 @@ const StyledCompanyInfoClickable = styled.div`
   border-radius: ${themeCssVariables.border.radius.md};
   cursor: pointer;
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[0.5]};
+  max-width: 22rem;
   min-width: 0;
   padding: 0;
   text-align: left;

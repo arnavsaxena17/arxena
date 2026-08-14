@@ -339,7 +339,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
       const response = await axios.post(REACT_APP_SERVER_BASE_URL+'/candidate-sourcing/process-ai-filters', {
         aiFilters: aiFiltersForRequest,
         objectNameSingular,
-        projectId,
+        projectId: currentProjectId,
         objectRecordId,
         selectedRecordIds
       }, {

@@ -116,25 +116,25 @@ export const ContextHintBar = ({
 
   // Determine hint based on current state
   const getHint = () => {
-    if (fetchedCount > 0) {
+    if (fetchedCandidatesCount > 0) {
       return "Enrich data before saving for better filtering";
     }
     return "Search for candidates to get started";
   };
 
   const getHintIcon = () => {
-    if (fetchedCount > 0) {
+    if (fetchedCandidatesCount > 0) {
       return <IconBolt size={16} />;
     }
     return <IconDatabase size={16} />;
   };
 
-  const showActions = fetchedCount > 0;
+  const showActions = fetchedCandidatesCount > 0;
 
   return (
     <StyledContextHintBar className={className}>
       <StyledContextInfo>
-        <span>🔍 {fetchedCount} candidates fetched</span>
+        <span>🔍 {fetchedCandidatesCount} candidates fetched</span>
         {parsedJD && (
           <span>• {parsedJD.name}</span>
         )}
