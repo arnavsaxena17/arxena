@@ -113,7 +113,7 @@ Wave 3: `assistant`, `arx-ai-filtering`
 
 Wave 4: `unipile`, chrome-extension* (AuthBridge + Sidecar + `CHROME_EXTENSION_ID` client-config wired), linkedin-unipile, whatsapp-unipile
 
-Settings Accounts (messaging connections): WhatsApp Unipile, WhatsApp Business / Facebook Official, LinkedIn Business, Google Contacts — nav + routes + pages on `port/arxena-modules`. Baileys nav item hidden (page/route retained). Google OAuth scopes aligned with workflows (`contacts`, `drive`, `gmail.modify`).
+Settings Accounts (messaging connections): WhatsApp Unipile, WhatsApp Business / Facebook Official, LinkedIn Business, Google Contacts — nav + routes + pages on `port/arxena-modules`. Baileys nav item hidden (page/route retained). Google OAuth scopes aligned with workflows (`contacts`, `drive`, `gmail.modify`). Settings → Accounts → Website (`SettingsAccountsWebsite`) uses `@/ui/input/components/TextInput`, not `twenty-ui/input` (`TextInput` is not a twenty-ui export).
 
 Settings Profile: restored workflows account IDs card (member/user/workspace id, schema, names) on `SettingsProfile` using `SettingsTableCard`.
 

@@ -21,6 +21,13 @@ CHATWOOT_BUILDER_VOLUME_SIZE="${CHATWOOT_BUILDER_VOLUME_SIZE:-80}"
 CHATWOOT_BUILDER_INSTANCE_TYPE="${CHATWOOT_BUILDER_INSTANCE_TYPE:-t4g.xlarge}"
 CHATWOOT_DEPLOY_AFTER_BUILD="${CHATWOOT_DEPLOY_AFTER_BUILD:-1}"
 
+# Latest builder transcript only (overwritten each run; older logs are discarded).
+BUILD_LOG_DIR="${BUILD_LOG_DIR:-$HOME/logs}"
+BUILD_LOG_LATEST="${BUILD_LOG_DIR}/build_chatwoot.latest.log"
+REMOTE_BUILD_LOG_PATH="/home/ubuntu/remote-build.log"
+REMOTE_BUILD_LOG_SAVED=0
+BUILD_LOG_SSH_FALLBACK=""
+
 AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_CLI_PROFILE_ARGS=()
 if [ -n "${AWS_PROFILE:-}" ]; then
@@ -36,13 +43,69 @@ EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
 TEMP_INSTANCE_ID=""
 STAGING_ROOT=""
 BUILD_STATUS_LOCAL_FILE=""
+TEMP_DNS=""
+CLEANUP_DONE=0
 
 shell_quote() {
   printf "%q" "$1"
 }
 
+fetch_remote_build_log() {
+  local allow_ssh_fallback="${1:-0}"
+
+  if [ "${REMOTE_BUILD_LOG_SAVED:-0}" = "1" ]; then
+    return 0
+  fi
+  if [ -z "${TEMP_DNS:-}" ] || [ -z "${SSH_KEY_PATH:-}" ]; then
+    return 0
+  fi
+
+  mkdir -p "$BUILD_LOG_DIR"
+  ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+    "ubuntu@$TEMP_DNS" 'sync' >/dev/null 2>&1 || true
+
+  local tmp_log
+  tmp_log="$(mktemp "$BUILD_LOG_DIR/build_chatwoot.latest.log.XXXXXX")" || return 0
+  local attempt
+  for attempt in 1 2 3; do
+    if scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+      "ubuntu@$TEMP_DNS:$REMOTE_BUILD_LOG_PATH" "$tmp_log" 2>/dev/null; then
+      mv -f "$tmp_log" "$BUILD_LOG_LATEST" || {
+        rm -f "$tmp_log"
+        return 0
+      }
+      echo "$BUILD_LOG_LATEST" > "$BUILD_LOG_DIR/latest_build_chatwoot.logpath"
+      echo "Saved remote Chatwoot build log to $BUILD_LOG_LATEST"
+      REMOTE_BUILD_LOG_SAVED=1
+      rm -f "${BUILD_LOG_SSH_FALLBACK:-}"
+      return 0
+    fi
+    sleep 2
+  done
+  rm -f "$tmp_log"
+
+  if [ "$allow_ssh_fallback" = "1" ] && [ -f "${BUILD_LOG_SSH_FALLBACK:-}" ]; then
+    cp -f "$BUILD_LOG_SSH_FALLBACK" "$BUILD_LOG_LATEST"
+    echo "$BUILD_LOG_LATEST" > "$BUILD_LOG_DIR/latest_build_chatwoot.logpath"
+    echo "Remote Chatwoot build log missing; saved SSH transcript to $BUILD_LOG_LATEST"
+    REMOTE_BUILD_LOG_SAVED=1
+    rm -f "$BUILD_LOG_SSH_FALLBACK"
+    return 0
+  fi
+
+  echo "WARNING: Could not copy remote Chatwoot build log from $TEMP_DNS:$REMOTE_BUILD_LOG_PATH"
+  return 0
+}
+
 cleanup() {
   local exit_code=$?
+  if [ "${CLEANUP_DONE:-0}" = "1" ]; then
+    exit "$exit_code"
+  fi
+  CLEANUP_DONE=1
+
+  fetch_remote_build_log 1
+  rm -f "${BUILD_LOG_SSH_FALLBACK:-}"
 
   if [ -n "$STAGING_ROOT" ] && [ -d "$STAGING_ROOT" ]; then
     rm -rf "$STAGING_ROOT"
@@ -136,19 +199,23 @@ done
 BUILD_STATUS_LOCAL_FILE="$(mktemp /tmp/chatwoot-build-status.XXXXXX)"
 STAGING_ROOT="$(mktemp -d /tmp/chatwoot-build-stage.XXXXXX)"
 REMOTE_BUILD_EXIT_CODE=0
+mkdir -p "$BUILD_LOG_DIR"
+BUILD_LOG_SSH_FALLBACK="$(mktemp "$BUILD_LOG_DIR/build_chatwoot.ssh.XXXXXX")"
 
 set +e
 REMOTE_BRANCH="$(shell_quote "$CHATWOOT_BUILD_BRANCH")"
 REMOTE_REPO_URL="$(shell_quote "$CHATWOOT_REPO_URL")"
 REMOTE_IMAGE_NAME="$(shell_quote "$CHATWOOT_IMAGE_NAME")"
 ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "ubuntu@$TEMP_DNS" \
-  "chmod +x script_to_build_chatwoot_in_new_instance.sh && CHATWOOT_BUILD_BRANCH=$REMOTE_BRANCH CHATWOOT_REPO_URL=$REMOTE_REPO_URL CHATWOOT_IMAGE_NAME=$REMOTE_IMAGE_NAME ./script_to_build_chatwoot_in_new_instance.sh"
-REMOTE_BUILD_EXIT_CODE=$?
+  "chmod +x script_to_build_chatwoot_in_new_instance.sh && CHATWOOT_BUILD_BRANCH=$REMOTE_BRANCH CHATWOOT_REPO_URL=$REMOTE_REPO_URL CHATWOOT_IMAGE_NAME=$REMOTE_IMAGE_NAME ./script_to_build_chatwoot_in_new_instance.sh" \
+  2>&1 | tee "$BUILD_LOG_SSH_FALLBACK"
+REMOTE_BUILD_EXIT_CODE=${PIPESTATUS[0]}
 set -e
 
 scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no \
   "ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env" \
   "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
+fetch_remote_build_log 0
 
 get_build_status() {
   if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ]; then
@@ -166,6 +233,9 @@ if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ] || [ "$CHATWOOT_BUILD_STATUS" != "success
   echo "Chatwoot image build failed or status is unknown. Keeping existing production image."
   echo "Remote build exit code: $REMOTE_BUILD_EXIT_CODE"
   echo "Build status: $CHATWOOT_BUILD_STATUS"
+  if [ -f "$BUILD_LOG_LATEST" ]; then
+    echo "Latest remote Chatwoot build log: $BUILD_LOG_LATEST"
+  fi
   exit 1
 fi
 
@@ -218,4 +288,7 @@ docker builder prune -af || true
 docker image prune -f || true
 
 echo "Chatwoot image build and deployment complete."
+if [ -f "$BUILD_LOG_LATEST" ]; then
+  echo "Latest remote Chatwoot build log: $BUILD_LOG_LATEST"
+fi
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"

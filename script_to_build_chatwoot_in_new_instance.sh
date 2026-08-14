@@ -2,6 +2,16 @@
 
 set -euo pipefail
 
+# Keep a full builder transcript so the orchestrator can scp it before
+# this temporary instance is terminated.
+REMOTE_BUILD_LOG="${HOME}/remote-build.log"
+if [ "${_REMOTE_BUILD_LOGGING:-0}" != "1" ]; then
+  export _REMOTE_BUILD_LOGGING=1
+  rm -f "$REMOTE_BUILD_LOG"
+  exec "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+fi
+trap 'sync >/dev/null 2>&1 || true; sleep 1' EXIT
+
 [ -f "$HOME/build.config" ] && source "$HOME/build.config"
 
 CHATWOOT_BUILD_BRANCH="${CHATWOOT_BUILD_BRANCH:-arxena/onboarding-workspace}"

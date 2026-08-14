@@ -12,6 +12,18 @@ for config in "$SCRIPT_DIR/build.config" "$HOME/twenty/build.config" "/home/ubun
 done
 BUILD_BRANCH="${BUILD_BRANCH:-port/arxena-modules}"
 
+# Latest builder transcript only (overwritten each run; older logs are discarded).
+BUILD_LOG_DIR="${BUILD_LOG_DIR:-$HOME/logs}"
+BUILD_LOG_LATEST="${BUILD_LOG_DIR}/build_app.latest.log"
+REMOTE_BUILD_LOG_PATH="/home/ubuntu/remote-build.log"
+TEMP_INSTANCE_ID=""
+TEMP_DNS=""
+REMOTE_BUILD_LOG_SAVED=0
+BUILD_LOG_SSH_FALLBACK=""
+STAGING_ROOT=""
+BUILD_STATUS_LOCAL_FILE=""
+CLEANUP_DONE=0
+
 # arxmukti / Graviton defaults (override via env for break-glass)
 AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_CLI_PROFILE_ARGS=()
@@ -54,19 +66,73 @@ if [ "${SKIP_REPO_SYNC:-0}" != "1" ] && [ -d "$REPO_DIR/.git" ]; then
   exec env SKIP_REPO_SYNC=1 "$REPO_DIR/build_app_in_new_instance.sh" "$@"
 fi
 
+fetch_remote_build_log() {
+  local allow_ssh_fallback="${1:-0}"
+
+  if [ "${REMOTE_BUILD_LOG_SAVED:-0}" = "1" ]; then
+    return 0
+  fi
+  if [ -z "${TEMP_DNS:-}" ] || [ -z "${SSH_KEY_PATH:-}" ]; then
+    return 0
+  fi
+
+  mkdir -p "$BUILD_LOG_DIR"
+  ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+    "ubuntu@$TEMP_DNS" 'sync' >/dev/null 2>&1 || true
+
+  local tmp_log
+  tmp_log="$(mktemp "$BUILD_LOG_DIR/build_app.latest.log.XXXXXX")" || return 0
+  local attempt
+  for attempt in 1 2 3; do
+    if scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+      "ubuntu@$TEMP_DNS:$REMOTE_BUILD_LOG_PATH" "$tmp_log" 2>/dev/null; then
+      mv -f "$tmp_log" "$BUILD_LOG_LATEST" || {
+        rm -f "$tmp_log"
+        return 0
+      }
+      echo "$BUILD_LOG_LATEST" > "$BUILD_LOG_DIR/latest_build_app.logpath"
+      echo "Saved remote build log to $BUILD_LOG_LATEST"
+      REMOTE_BUILD_LOG_SAVED=1
+      rm -f "${BUILD_LOG_SSH_FALLBACK:-}"
+      return 0
+    fi
+    sleep 2
+  done
+  rm -f "$tmp_log"
+
+  if [ "$allow_ssh_fallback" = "1" ] && [ -f "${BUILD_LOG_SSH_FALLBACK:-}" ]; then
+    cp -f "$BUILD_LOG_SSH_FALLBACK" "$BUILD_LOG_LATEST"
+    echo "$BUILD_LOG_LATEST" > "$BUILD_LOG_DIR/latest_build_app.logpath"
+    echo "Remote build log missing; saved SSH transcript to $BUILD_LOG_LATEST"
+    REMOTE_BUILD_LOG_SAVED=1
+    rm -f "$BUILD_LOG_SSH_FALLBACK"
+    return 0
+  fi
+
+  echo "WARNING: Could not copy remote build log from $TEMP_DNS:$REMOTE_BUILD_LOG_PATH"
+  return 0
+}
+
 # Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {
-    if [ -n "$STAGING_ROOT" ] && [ -d "$STAGING_ROOT" ]; then
+    local exit_code=$?
+    if [ "${CLEANUP_DONE:-0}" = "1" ]; then
+      exit "$exit_code"
+    fi
+    CLEANUP_DONE=1
+    fetch_remote_build_log 1
+    rm -f "${BUILD_LOG_SSH_FALLBACK:-}"
+    if [ -n "${STAGING_ROOT:-}" ] && [ -d "$STAGING_ROOT" ]; then
         rm -rf "$STAGING_ROOT"
     fi
-    if [ -n "$BUILD_STATUS_LOCAL_FILE" ] && [ -f "$BUILD_STATUS_LOCAL_FILE" ]; then
+    if [ -n "${BUILD_STATUS_LOCAL_FILE:-}" ] && [ -f "$BUILD_STATUS_LOCAL_FILE" ]; then
         rm -f "$BUILD_STATUS_LOCAL_FILE"
     fi
     if [ -n "$TEMP_INSTANCE_ID" ]; then
         echo "Cleaning up and terminating instance..."
         aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
     fi
-    exit
+    exit "$exit_code"
 }
 
 # Set up trap to call cleanup function on script exit
@@ -130,13 +196,16 @@ echo "Maybe finished copying pem files"
 BUILD_STATUS_LOCAL_FILE="$(mktemp /tmp/twenty-build-status.XXXXXX)"
 STAGING_ROOT="$(mktemp -d /tmp/twenty-build-stage.XXXXXX)"
 REMOTE_BUILD_EXIT_CODE=0
+mkdir -p "$BUILD_LOG_DIR"
+BUILD_LOG_SSH_FALLBACK="$(mktemp "$BUILD_LOG_DIR/build_app.ssh.XXXXXX")"
 
 set +e
-ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh"
-REMOTE_BUILD_EXIT_CODE=$?
+ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh" 2>&1 | tee "$BUILD_LOG_SSH_FALLBACK"
+REMOTE_BUILD_EXIT_CODE=${PIPESTATUS[0]}
 set -e
 
 scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
+fetch_remote_build_log 0
 
 get_build_status() {
   local build_name="$1"
@@ -482,6 +551,10 @@ done
 
 if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ]; then
   echo "Remote build script exited with code $REMOTE_BUILD_EXIT_CODE."
+fi
+
+if [ -f "$BUILD_LOG_LATEST" ]; then
+  echo "Latest remote build log: $BUILD_LOG_LATEST"
 fi
 
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"

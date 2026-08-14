@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| `TextInput` is not a `twenty-ui/input` export | Vite/rolldown `MISSING_EXPORT` on `SettingsAccountsWebsite`. Import `TextInput` from `@/ui/input/components/TextInput`; keep `Button` on `twenty-ui/input`. Sibling grep: only this file. | `SettingsAccountsWebsite.tsx`, §2.2 |
 | Recoil→Jotai setter call-site renames | Fixed ReferenceErrors where Jotai setters were declared with longer names but call sites/deps still used old Recoil-era names (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, `setMain*`→`setContextStore*`, etc.) | ARX modules under `candidate-table`, `arx-ai-filtering`, `arx-jd-upload`, `gtm-home`, `orgchart`, `unipile`; see §2 |
 | Website visitor tracking | Apollo-like inbound: `websiteTrackingAppId` on `core.workspace`; CRM `websiteDomain` + `websiteVisitor`; ClickHouse `website_pageview`; public collect + Settings → Accounts → Website (snippet, domains, visitors feed); `website-tracker.js` on marketing site | `website-tracker/*`, `SettingsAccountsWebsite.tsx`, `SettingsPath.AccountsWebsite`, `2-25-*-1785600000020/0021-*`, `docs/website-visitor-tracking.md` |
 | Org chart embed settings + Mintlify docs | Ported embed settings UI from `workflows` into MCP & APIs (**Org chart** tab); adapted Recoil→Jotai, Emotion→Linaria, snackbars, `SettingsPageLayout`. Added Mintlify page `/developers/extend/org-chart-embed`. | `SettingsApiWebhooks.tsx`, `SettingsOrgChartEmbed*`, `SettingsDevelopersOrgChartEmbed*`, `SettingsRoutes.tsx`, `twenty-docs/.../org-chart-embed.mdx` |
@@ -217,6 +218,7 @@ rg -n "setJobs\b|setTableState\b|setSearchQuery\b|setSelectedStatus\b|setFiltere
 | --- | --- |
 | `twenty-ui/icons` | `twenty-ui/icon` |
 | `Button`, `Checkbox`, `Toggle`, `IconButton`, `Radio`, `ButtonGroup` from `twenty-ui` | `twenty-ui/input` |
+| `TextInput` from `twenty-ui` / `twenty-ui/input` | `@/ui/input/components/TextInput` (settings forms: `SettingsTextInput`). `twenty-ui/input` has `SearchInput` / `Button` / etc., not `TextInput`. |
 | `MenuItem*` from `twenty-ui` | `twenty-ui/navigation` |
 | `H2Title`, typography from `twenty-ui` | `twenty-ui/typography` |
 | `Card`, `CardContent`, `Section`, `Modal` from `twenty-ui` / old layout paths | `twenty-ui/surfaces` (and layout as needed) |

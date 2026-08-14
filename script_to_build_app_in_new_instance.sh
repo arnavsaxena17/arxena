@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Keep a full builder transcript so the orchestrator can scp it before
+# this temporary instance is terminated.
+REMOTE_BUILD_LOG="${HOME}/remote-build.log"
+if [ "${_REMOTE_BUILD_LOGGING:-0}" != "1" ]; then
+  export _REMOTE_BUILD_LOGGING=1
+  rm -f "$REMOTE_BUILD_LOG"
+  exec "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+fi
+trap 'sync >/dev/null 2>&1 || true; sleep 1' EXIT
+
 # Branch: from BUILD_BRANCH env (passed by build_app_in_new_instance.sh) or build.config or default
 [ -f ~/build.config ] && source ~/build.config
 BUILD_BRANCH="${BUILD_BRANCH:-port/arxena-modules}"

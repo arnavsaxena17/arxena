@@ -65,8 +65,9 @@
           "key": "cookbooksOverview",
           "label": "Recipes",
           "pages": [
+            "cookbooks/nl-to-people-at-company",
             "cookbooks/search-people-by-taxonomy",
-            "cookbooks/expand-titles-then-search"
+            "cookbooks/mcp-people-and-org-charts"
           ]
         }
       ]

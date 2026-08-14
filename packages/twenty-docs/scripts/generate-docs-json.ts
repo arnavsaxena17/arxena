@@ -63,16 +63,49 @@ type GeneratedGroup = {
 const OPENAPI_ENDPOINT_PAGE_PATTERN =
   /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+\//i;
 
-const baseStructurePath = path.resolve(
-  __dirname,
-  '../navigation/base-structure.json',
+const docsRoot = path.resolve(__dirname, '..');
+const baseStructurePath = path.join(
+  docsRoot,
+  'navigation/base-structure.json',
 );
-const docsPath = path.resolve(__dirname, '../docs.json');
-const generatedDocsNavPath = path.resolve(
-  __dirname,
-  '../src/_props/generatedDocsNav.json',
+const docsPath = path.join(docsRoot, 'docs.json');
+const generatedDocsNavPath = path.join(
+  docsRoot,
+  'src/_props/generatedDocsNav.json',
 );
-const localesRoot = path.resolve(__dirname, '../l');
+const localesRoot = path.join(docsRoot, 'l');
+const mintignorePath = path.join(docsRoot, '.mintignore');
+
+const mintignorePatterns = fs.existsSync(mintignorePath)
+  ? fs
+      .readFileSync(mintignorePath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#'))
+  : [];
+
+const globSegmentToRegExp = (pattern: string): string =>
+  pattern
+    .split('*')
+    .map((part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&'))
+    .join('[^/]*');
+
+const isMintignored = (relativePath: string): boolean => {
+  const normalized = relativePath.replace(/\\/g, '/').replace(/^\.\//, '');
+
+  return mintignorePatterns.some((rawPattern) => {
+    const anchoredToRoot = rawPattern.startsWith('/');
+    const directoryOnly = rawPattern.endsWith('/');
+    const patternBody = rawPattern
+      .slice(anchoredToRoot ? 1 : 0)
+      .replace(/\/$/, '');
+    const bodyRegExp = globSegmentToRegExp(patternBody);
+    const prefix = anchoredToRoot ? '^' : '(?:^|/)';
+    const suffix = directoryOnly ? '(?:/|$)' : '$';
+
+    return new RegExp(`${prefix}${bodyRegExp}${suffix}`).test(normalized);
+  });
+};
 
 const baseStructure: BaseStructure = JSON.parse(
   fs.readFileSync(baseStructurePath, 'utf8'),
@@ -138,9 +171,10 @@ const buildLanguageEntry = (language: string): GeneratedLanguage => {
 
 // Mintlify requires each page path to appear in only one language's navigation.
 // Duplicating a path across languages breaks the language switcher (it can no
-// longer resolve the equivalent page and falls back to the first page). So a
-// page is only included in a non-default language when its translation exists,
-// and empty groups/tabs are dropped entirely.
+// longer resolve the equivalent page and falls back to the first page). Skip
+// missing MDX files and `.mintignore` paths (Arxena ships English-only docs
+// and hides upstream user-guide / developers / twenty-ui). Empty groups/tabs
+// are dropped entirely.
 const buildGroup = (
   group: BaseGroup,
   translations: TranslationMaps,
@@ -174,13 +208,20 @@ const formatPageSlug = (slug: string, language: string): string | null => {
     return language === DEFAULT_LANGUAGE ? slug : null;
   }
 
-  if (language === DEFAULT_LANGUAGE) {
-    return slug;
+  const relativeMdxPath =
+    language === DEFAULT_LANGUAGE
+      ? `${slug}.mdx`
+      : `l/${language}/${slug}.mdx`;
+
+  if (!fs.existsSync(path.join(docsRoot, relativeMdxPath))) {
+    return null;
   }
 
-  const localizedPagePath = path.join(localesRoot, language, `${slug}.mdx`);
+  if (isMintignored(relativeMdxPath) || isMintignored(slug)) {
+    return null;
+  }
 
-  return fs.existsSync(localizedPagePath) ? `l/${language}/${slug}` : null;
+  return language === DEFAULT_LANGUAGE ? slug : `l/${language}/${slug}`;
 };
 
 const hasLocaleContent = (language: string): boolean => {
@@ -188,12 +229,17 @@ const hasLocaleContent = (language: string): boolean => {
     return true;
   }
 
+  if (isMintignored(`l/${language}/`) || isMintignored('l/')) {
+    return false;
+  }
+
   const localeDir = path.join(localesRoot, language);
   return fs.existsSync(localeDir);
 };
 
-const languages =
-  SUPPORTED_LANGUAGES.filter(hasLocaleContent).map(buildLanguageEntry);
+const languages = SUPPORTED_LANGUAGES.filter(hasLocaleContent)
+  .map(buildLanguageEntry)
+  .filter((languageEntry) => languageEntry.tabs.length > 0);
 
 if (!docsConfig.navigation) {
   docsConfig.navigation = {};

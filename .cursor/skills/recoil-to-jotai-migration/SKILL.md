@@ -170,7 +170,8 @@ Seed state with `jotaiStore.set(state.atom, value)` before render.
 | Broken | Correct |
 | --- | --- |
 | `twenty-ui/icons` | `twenty-ui/icon` |
-| `Button`, inputs from `twenty-ui` | `twenty-ui/input` |
+| `Button`, `Checkbox`, `Toggle`, `IconButton` from `twenty-ui` | `twenty-ui/input` |
+| `TextInput` from `twenty-ui` / `twenty-ui/input` | `@/ui/input/components/TextInput` (settings: `SettingsTextInput`) |
 | `MenuItem*` from `twenty-ui` | `twenty-ui/navigation` |
 | `Modal` from `@/ui/layout/modal/components/Modal` | `Modal` / `ModalContent` from `twenty-ui/surfaces` |
 | `createState` from `twenty-ui` | `createAtomState` (see §1) |
