@@ -47,6 +47,13 @@ IP→company resolution reuses `IpCompanyResolutionService` (geo module).
 | `POST` | `/website-tracker/domains/:id/test-connection` | JWT |
 | `GET` | `/website-tracker/visitors` | JWT |
 
+Nest serves these on `:3000`. Production nginx must proxy `/website-tracker/`
+before the SPA `location /` (same pattern as `/s/` and `/website/`). Snippet:
+[`scripts/nginx/twenty-website-tracker-location.conf.snippet`](../scripts/nginx/twenty-website-tracker-location.conf.snippet).
+
+`location ^~ /website/` does **not** cover `/website-tracker`. Without the
+dedicated block, GET returns `index.html` and POST/OPTIONS return nginx **405**.
+
 ## Upgrade
 
 1. Fast instance cmd `1785600000020` — workspace columns

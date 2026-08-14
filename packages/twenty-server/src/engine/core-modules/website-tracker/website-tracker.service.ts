@@ -161,6 +161,8 @@ export class WebsiteTrackerService {
           );
         }
 
+        // Direct ORM insert skips GraphQL actor side-effects; set required
+        // createdBy/updatedBy so NOT NULL composite columns are populated.
         const systemActor = buildCreatedByFromSystem();
         const insertResult = await repository.insert({
           name: domain,
@@ -168,6 +170,7 @@ export class WebsiteTrackerService {
           status: 'PENDING',
           trackingLevel: 'COMPANY',
           createdBy: systemActor,
+          updatedBy: systemActor,
         });
 
         const createdId = insertResult.identifiers[0]?.id as string | undefined;
@@ -537,6 +540,7 @@ export class WebsiteTrackerService {
             firstSeenAt: nowIso,
             lastSeenAt: nowIso,
             createdBy: systemActor,
+            updatedBy: systemActor,
           });
         },
         buildSystemAuthContext(input.workspaceId),
