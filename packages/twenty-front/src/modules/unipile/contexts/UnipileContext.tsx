@@ -267,7 +267,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
               fetchedAt: refreshedAt,
             },
             setOrgChartLinkedInSearchType,
-            setLinkedinUnipileOwnerProfileCache,
+            setOwnerProfileCache: setLinkedinUnipileOwnerProfileCache,
           });
         }
 

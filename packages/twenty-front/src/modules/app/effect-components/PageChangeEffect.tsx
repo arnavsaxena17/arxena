@@ -332,6 +332,22 @@ export const PageChangeEffect = () => {
         });
         break;
       }
+      case isMatchingLocation(location, AppPath.ExtensionInstallOnboarding): {
+        resetFocusStackToFocusItem({
+          focusStackItem: {
+            focusId: PageFocusId.ExtensionInstallOnboarding,
+            componentInstance: {
+              componentType: FocusComponentType.PAGE,
+              componentInstanceId: PageFocusId.ExtensionInstallOnboarding,
+            },
+            globalHotkeysConfig: {
+              enableGlobalHotkeysWithModifiers: false,
+              enableGlobalHotkeysConflictingWithKeyboard: false,
+            },
+          },
+        });
+        break;
+      }
       case isMatchingLocation(location, AppPath.InviteTeam): {
         resetFocusStackToFocusItem({
           focusStackItem: {

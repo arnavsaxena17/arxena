@@ -137,6 +137,13 @@ export const usePageChangeEffectNavigateLocation = () => {
   }
 
   if (
+    onboardingStatus === OnboardingStatus.EXTENSION_INSTALL &&
+    !isMatchingLocation(location, AppPath.ExtensionInstallOnboarding)
+  ) {
+    return AppPath.ExtensionInstallOnboarding;
+  }
+
+  if (
     onboardingStatus === OnboardingStatus.PROFILE_CREATION &&
     !isMatchingLocation(location, AppPath.CreateProfile)
   ) {

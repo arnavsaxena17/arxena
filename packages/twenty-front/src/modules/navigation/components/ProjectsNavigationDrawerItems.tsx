@@ -6,6 +6,7 @@ import { getAppPath } from 'twenty-shared/utils';
 import { IconBriefcase, IconPlus, IconUsers } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import {
@@ -47,6 +48,8 @@ export const ProjectsNavigationDrawerItems = () => {
   const { t } = useLingui();
   const { openAddJobModal } = useOpenAddProjectModal();
 
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const { objectMetadataItems } = useObjectMetadataItems();
   const projectMetadataItem = useMemo(
     () =>
@@ -56,18 +59,18 @@ export const ProjectsNavigationDrawerItems = () => {
     [objectMetadataItems],
   );
 
-  // Fetch projects only when metadata is loaded (avoids findMany during onboarding)
+  // Fetch projects only when metadata and a workspace JWT are loaded
   useEffect(() => {
-    if (projectMetadataItem) {
+    if (projectMetadataItem && accessToken) {
       refetchJobsRef.current();
     }
-  }, [projectMetadataItem?.id]);
+  }, [projectMetadataItem?.id, accessToken]);
 
   useEffect(() => {
-    if (projectMetadataItem && projectsRefetchTrigger > 0) {
+    if (projectMetadataItem && accessToken && projectsRefetchTrigger > 0) {
       refetchJobsRef.current();
     }
-  }, [projectMetadataItem?.id, projectsRefetchTrigger]);
+  }, [projectMetadataItem?.id, accessToken, projectsRefetchTrigger]);
 
   useEffect(() => {
     if (projects.length > 0) {

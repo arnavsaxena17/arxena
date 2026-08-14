@@ -4,6 +4,7 @@ export const ONBOARDING_PATHS = [
   AppPath.WorkspaceActivation,
   AppPath.CreateProfile,
   AppPath.SyncEmails,
+  AppPath.ExtensionInstallOnboarding,
   AppPath.InstallApps,
   AppPath.InviteTeam,
   AppPath.PlanRequired,

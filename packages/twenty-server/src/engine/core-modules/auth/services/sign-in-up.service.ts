@@ -396,6 +396,15 @@ export class SignInUpService {
       queryRunner,
     );
 
+    await this.onboardingService.setOnboardingExtensionInstallPending(
+      {
+        userId: user.id,
+        workspaceId: workspace.id,
+        value: true,
+      },
+      queryRunner,
+    );
+
     if (shouldShowInstallAppsStep) {
       await this.onboardingService.setOnboardingInstallAppsPending(
         {

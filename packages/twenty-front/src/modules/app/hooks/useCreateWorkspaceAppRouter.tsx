@@ -111,6 +111,12 @@ const SyncEmails = lazyWithPreload(() =>
   })),
 );
 
+const ExtensionInstallOnboarding = lazyWithPreload(() =>
+  import('~/pages/onboarding/ExtensionInstallOnboarding').then((module) => ({
+    default: module.ExtensionInstallOnboarding,
+  })),
+);
+
 const InstallApps = lazyWithPreload(() =>
   import('~/pages/onboarding/InstallApps').then((module) => ({
     default: module.InstallApps,
@@ -163,6 +169,7 @@ const preloadOnboardingPages = () => {
   void WorkspaceActivation.preload();
   void CreateProfile.preload();
   void SyncEmails.preload();
+  void ExtensionInstallOnboarding.preload();
   void InstallApps.preload();
   void InviteTeam.preload();
   void ChooseYourPlan.preload();
@@ -409,6 +416,14 @@ const createWorkspaceAppRouter = (
               element={
                 <LazyRoute fallback={<OnboardingStepPageLoader />}>
                   <SyncEmails />
+                </LazyRoute>
+              }
+            />
+            <Route
+              path={AppPath.ExtensionInstallOnboarding}
+              element={
+                <LazyRoute fallback={<OnboardingStepPageLoader />}>
+                  <ExtensionInstallOnboarding />
                 </LazyRoute>
               }
             />

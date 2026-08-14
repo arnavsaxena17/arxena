@@ -70,6 +70,7 @@ const createSignInUpServiceForTests = () => {
     setOnboardingConnectAccountPending: jest.fn(),
     setOnboardingCreateProfilePending: jest.fn(),
     setOnboardingInstallAppsPending: jest.fn(),
+    setOnboardingExtensionInstallPending: jest.fn(),
     setOnboardingInviteTeamPending: jest.fn(),
     createOnboardingStatusForWorkspaceMember: jest.fn(),
   };
@@ -357,6 +358,9 @@ describe('SignInUpService onboarding steps', () => {
     expect(
       mockOnboardingService.setOnboardingConnectAccountPending,
     ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
+    expect(
+      mockOnboardingService.setOnboardingExtensionInstallPending,
+    ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
   });
 
   it('flags the install-apps step for a user creating a new workspace', async () => {
@@ -384,6 +388,12 @@ describe('SignInUpService onboarding steps', () => {
 
     expect(
       mockOnboardingService.setOnboardingInstallAppsPending,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ value: true }),
+      expect.anything(),
+    );
+    expect(
+      mockOnboardingService.setOnboardingExtensionInstallPending,
     ).toHaveBeenCalledWith(
       expect.objectContaining({ value: true }),
       expect.anything(),

@@ -11,15 +11,15 @@ export const useProjectRefetch = () => {
   const [projectsRefetchTrigger, setProjectsRefetchTrigger] = useAtomState(projectsRefetchTriggerState);
   const [, setProjects] = useAtomState(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
-  
+
   // Use refs to store latest values to avoid dependency issues
   const tokenPairRef = useRef(tokenPair);
   const setProjectsRef = useRef(setProjects);
-  
+
   // Update refs when values change
   tokenPairRef.current = tokenPair;
   setProjectsRef.current = setProjects;
-  
+
   // Debounce timer ref and refetching flag
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isRefetchingRef = useRef(false);
@@ -31,25 +31,34 @@ export const useProjectRefetch = () => {
       pendingRefetchRef.current = true;
       return;
     }
-    
+
     // Clear any pending debounce timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
-    
+
     // Debounce: if called multiple times quickly, only execute after a delay
     debounceTimerRef.current = setTimeout(async () => {
       isRefetchingRef.current = true;
       pendingRefetchRef.current = false;
-      
+
+      const accessToken =
+        tokenPairRef.current?.accessOrWorkspaceAgnosticToken?.token;
+
+      if (!accessToken) {
+        isRefetchingRef.current = false;
+        debounceTimerRef.current = null;
+        return;
+      }
+
       try {
         const response = await axios.post(
           `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-all-projects`,
           {},
-          { headers: { Authorization: `Bearer ${tokenPairRef.current?.accessOrWorkspaceAgnosticToken?.token}` } }
+          { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-        
+
         if (response?.data?.projects) {
           // Filter and sort jobs
           const activeJobs = response?.data?.projects
@@ -62,7 +71,7 @@ export const useProjectRefetch = () => {
               // Then sort by creation date descending
               return new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime();
             });
-          
+
           setProjectsRef.current(activeJobs);
           console.log('Projects refetched successfully:', activeJobs);
         }
@@ -71,7 +80,7 @@ export const useProjectRefetch = () => {
       } finally {
         isRefetchingRef.current = false;
         debounceTimerRef.current = null;
-        
+
         // If there was a pending refetch request, execute it now
         if (pendingRefetchRef.current) {
           pendingRefetchRef.current = false;

@@ -26,6 +26,9 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Nav GraphQL 400s + projects 403 | `dashboards`/`orgCharts` FindMany hit core `/graphql` (HTTP 400 Unknown type FilterInput) when DirectExecution classified them as core because the resolver-name cache omitted them. Classify `*FilterInput`/`*OrderByInput` ops as workspace; rebuild name map from flat objects on miss. Skip dashboard/orgChart nav queries until fields load; skip `get-all-projects` without a JWT (JwtAuthGuard → 403). | `classify-top-level-fields.util.ts`, `direct-execution.service.ts`, `useGtmCommandDashboardPath.ts`, `GtmHomeNavigationDrawerItem.tsx`, `OrgChartsNavigationDrawerItems.tsx`, `useProjectRefetch.ts`, `ProjectsNavigationDrawerItems.tsx` |
+| Unipile `setOwnerProfileCache` is not a function | Prod `r is not a function` in `applyInferredOrgChartLinkedinSearchType` after tab-visible Unipile refresh. `UnipileContext` passed shorthand `setLinkedinUnipileOwnerProfileCache` instead of `setOwnerProfileCache`. Helper still ran the search-type setter, then crashed on cache. | `UnipileContext.tsx`, `applyInferredOrgChartLinkedinSearchType.ts`, §2.1 |
+| Chrome extension onboarding step | Server-owned `EXTENSION_INSTALL` after workspace activation (creators + invitees). Front `/create/extension-install` waits for PING/PONG + `CONTENT_SCRIPT_READY`, Skip allowed, JWT via existing AuthBridge. Store CRX injects content script on install instead of reloading Arxena tabs. | `onboarding.service.ts`, `ExtensionInstallOnboarding.tsx`, `arx-crx` `backgroundPostInstall.ts` / `arxAuthBridge.ts`, §6 / §9 |
 | `TextInput` is not a `twenty-ui/input` export | Vite/rolldown `MISSING_EXPORT` on `SettingsAccountsWebsite`. Import `TextInput` from `@/ui/input/components/TextInput`; keep `Button` on `twenty-ui/input`. Sibling grep: only this file. | `SettingsAccountsWebsite.tsx`, §2.2 |
 | Recoil→Jotai setter call-site renames | Fixed ReferenceErrors where Jotai setters were declared with longer names but call sites/deps still used old Recoil-era names (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, `setMain*`→`setContextStore*`, etc.) | ARX modules under `candidate-table`, `arx-ai-filtering`, `arx-jd-upload`, `gtm-home`, `orgchart`, `unipile`; see §2 |
 | Website visitor tracking | Apollo-like inbound: `websiteTrackingAppId` on `core.workspace`; CRM `websiteDomain` + `websiteVisitor`; ClickHouse `website_pageview`; public collect + Settings → Accounts → Website (snippet, domains, visitors feed); `website-tracker.js` on marketing site | `website-tracker/*`, `SettingsAccountsWebsite.tsx`, `SettingsPath.AccountsWebsite`, `2-25-*-1785600000020/0021-*`, `docs/website-visitor-tracking.md` |
@@ -153,6 +156,8 @@ Network tab shows `POST …/metadata` with errors like:
 - `Unknown type "XFilterInput"`
 - `Cannot query field "projects" / "workspaceMemberProfiles" on type "Query"`
 
+The **same GraphQL messages on `POST …/graphql`** (HTTP 400) mean DirectExecution did not intercept: the core schema has no record types. Typical cause: resolver-name cache missing the object (`dashboards`, `orgCharts`), so `classifyTopLevelFields` treated the query as core. Record FindMany ops declare `*FilterInput` / `*OrderByInput` and must stay on the workspace path.
+
 ### Correct patterns
 
 ```ts
@@ -203,6 +208,7 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `RecoilRoot` (tests) | `Provider` from `jotai` + `jotaiStore` |
 | `mainContextStoreComponentInstanceId` | `MAIN_CONTEXT_STORE_INSTANCE_ID` |
 | Declared setter `setProjects` / `setTableStateAtom` / `setChatSearchQuery` / … but call sites still use old `setJobs` / `setTableState` / `setSearchQuery` | Rename **call sites + deps** to the declared Jotai setter name (do not invent new state) |
+| Helper expects `setOwnerProfileCache` but call site shorthand is `setLinkedinUnipileOwnerProfileCache` | Pass the **option key the helper typed**, not the local variable name (`setOwnerProfileCache: setLinkedinUnipileOwnerProfileCache`). Vite prod builds do not typecheck, so this ships as `r is not a function`. |
 | HotTable `setMainTargetedRecordsRule` / `setMainPageType` / … | Matching `setContextStore*` setters already declared for `MAIN_CONTEXT_STORE_INSTANCE_ID` |
 
 **Grep for incomplete setter renames:**
@@ -210,6 +216,9 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 ```bash
 # Example: declared setProjects but still calling setJobs
 rg -n "setJobs\b|setTableState\b|setSearchQuery\b|setSelectedStatus\b|setFilteredCount\b|setCommandContext\b|setContactsByKey\b|setMain" packages/twenty-front/src/modules --glob '!**/node_modules/**'
+
+# Helper option-key vs local setter shorthand (Unipile owner-profile cache)
+rg -n "applyInferredOrgChartLinkedinSearchType\(" -A 20 packages/twenty-front/src/modules/unipile --glob '!**/__tests__/**'
 ```
 
 ### 2.2 UI packages
@@ -608,7 +617,7 @@ Tracked from current tree greps — fix then tick §7.
 | CV drawer `InvalidPDFException` | **done** — pass `ArrayBuffer` to react-pdf (no `blob:` revoke race); `%PDF-` / ZIP magic checks; normalize localhost file hosts (§0) |
 | Website testimonial JPGs 404 | **partial** — broken paths cleared (ui-avatars). Drop real photos into `public/img/testimonials/` and restore `photo` in `homepage-content.ts` when assets are recovered |
 | Chrome extension AuthBridge / Sidecar unwired | **done** — AuthBridge + Sidecar mounted; `CHROME_EXTENSION_ID` in client-config |
-| ExtensionInstall onboarding path | **deferred** — workflows `ExtensionInstallOnboarding` + `AppPath.ExtensionInstallOnboarding` + `OnboardingStatus.EXTENSION_INSTALL`; current onboarding enum has no `EXTENSION_INSTALL` |
+| ExtensionInstall onboarding path | **done** — `OnboardingStatus.EXTENSION_INSTALL` + `AppPath.ExtensionInstallOnboarding` (`/create/extension-install`); skippable; CRX injects without reload |
 | Hardcoded OAuth `clientId=chrome` + `….chromiumapp.org` | **deferred** — workflows used env `CHROME_EXTENSION_ID` in `auth.service`; HEAD uses `ApplicationRegistration` redirect URIs (register chrome app there) |
 | `InformationBannerLinkedinUnipileAutoConnect` | **deferred** — workflows-only banner; Unipile recovery still via org-chart banner / consent setting |
 | Job-boards → Naukri queue action | **deferred** — `useUpdateSnapshotProfilesFromJobBoards*` not ported; `naukriQueueExtensionBridge` itself is present |
@@ -729,7 +738,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-shared/src/types/AppPath.ts` | committed · intent (+ working) | `Projects` / `Project` / org-chart / assistant paths |
+| `packages/twenty-shared/src/types/AppPath.ts` | committed · intent (+ working) | `Projects` / `Project` / org-chart / assistant paths; `ExtensionInstallOnboarding` |
 | `packages/twenty-shared/src/types/SettingsPath.ts` | committed · intent (+ working) | Accounts Unipile / LinkedIn / WhatsApp / Contacts / Website paths |
 | `packages/twenty-shared/src/types/index.ts` | committed · intent | Re-export ported types |
 | `packages/twenty-shared/src/constants/index.ts` | committed · intent | Re-export Arxena constants |
@@ -739,7 +748,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-front/src/modules/app/hooks/useCreateWorkspaceAppRouter.tsx` | committed · intent (+ working) | Lazy routes for Projects / ProjectPage / org-chart via `OrgChartRoute` / ARX pages |
+| `packages/twenty-front/src/modules/app/hooks/useCreateWorkspaceAppRouter.tsx` | working · intent | Lazy routes for Projects / ProjectPage / org-chart via `OrgChartRoute` / ARX pages; `ExtensionInstallOnboarding` |
 
 ### 9.2 Working-tree intentional wiring (upstream files, still uncommitted)
 
@@ -747,6 +756,13 @@ Edit these carefully on rebase — product integration points.
 
 | File | Status | Why |
 | --- | --- | --- |
+| `packages/twenty-server/src/engine/core-modules/onboarding/enums/onboarding-status.enum.ts` | working · intent | `EXTENSION_INSTALL` status |
+| `packages/twenty-server/src/engine/core-modules/onboarding/onboarding.service.ts` | working · intent | `ONBOARDING_EXTENSION_INSTALL_PENDING` before sync-email |
+| `packages/twenty-server/src/engine/core-modules/onboarding/onboarding.resolver.ts` | working · intent | `completeChromeExtensionOnboardingStep` |
+| `packages/twenty-server/src/engine/core-modules/auth/services/sign-in-up.service.ts` | working · intent | Set extension-install pending for creators + invitees |
+| `packages/twenty-front/src/hooks/usePageChangeEffectNavigateLocation.ts` | working · intent | Redirect `EXTENSION_INSTALL` → `/create/extension-install` |
+| `packages/twenty-front/src/modules/onboarding/hooks/useSetNextOnboardingStatus.ts` | working · intent | Activation → extension install → sync email |
+| `packages/twenty-front/src/modules/app/effect-components/PageChangeEffect.tsx` | working · intent | Focus stack for extension-install onboarding |
 | `packages/twenty-front/src/modules/app/components/WorkspaceAppProviders.tsx` | working · intent | `UnipileProvider`, `BaileysProvider`, `WebSocketProvider`, `NotificationProvider`, profile sync effect, `ChromeExtensionAuthBridgeEffect`, `ApiKeysProvider` (workspace keys for start-chat / JD / settings) |
 | `packages/twenty-front/src/modules/app/components/RootAppProviders.tsx` | working · intent | `ChromeExtensionAuthBridgeEffect` for root/auth shell |
 | `packages/twenty-front/src/modules/app/components/SharedAppProviders.tsx` | working · intent | Chrome extension sidecar effect + provider |

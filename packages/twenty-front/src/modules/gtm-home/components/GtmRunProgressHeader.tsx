@@ -3,7 +3,11 @@ import { Button } from 'twenty-ui/input';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { useGtmCommandDashboardPath } from '@/gtm-home/hooks/useGtmCommandDashboardPath';
+import {
+  getGtmCommandDashboardFallbackPath,
+  useCanQueryDashboardRecords,
+  useGtmCommandDashboardPath,
+} from '@/gtm-home/hooks/useGtmCommandDashboardPath';
 import { type GtmProjectOption } from '@/gtm-home/types/gtm-home.types';
 
 const StyledActions = styled.div`
@@ -34,15 +38,44 @@ type GtmRunProgressHeaderProps = {
 };
 
 // Compact run switcher for the page header — identity lives in the select, not a second title.
-export const GtmRunProgressHeader = ({
+export const GtmRunProgressHeader = (props: GtmRunProgressHeaderProps) => {
+  const canQueryDashboard = useCanQueryDashboardRecords();
+
+  if (!canQueryDashboard) {
+    return (
+      <GtmRunProgressHeaderView
+        {...props}
+        dashboardPath={getGtmCommandDashboardFallbackPath()}
+      />
+    );
+  }
+
+  return <GtmRunProgressHeaderWithDashboardQuery {...props} />;
+};
+
+const GtmRunProgressHeaderWithDashboardQuery = (
+  props: GtmRunProgressHeaderProps,
+) => {
+  const { dashboardPath } = useGtmCommandDashboardPath();
+
+  return (
+    <GtmRunProgressHeaderView {...props} dashboardPath={dashboardPath} />
+  );
+};
+
+type GtmRunProgressHeaderViewProps = GtmRunProgressHeaderProps & {
+  dashboardPath: string;
+};
+
+const GtmRunProgressHeaderView = ({
   projectId,
   projectOptions,
   onSelectProjectId,
   onCreateProject,
   isCreatingProject = false,
-}: GtmRunProgressHeaderProps) => {
+  dashboardPath,
+}: GtmRunProgressHeaderViewProps) => {
   const navigate = useNavigate();
-  const { dashboardPath } = useGtmCommandDashboardPath();
 
   return (
     <StyledActions>

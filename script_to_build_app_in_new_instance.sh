@@ -2,13 +2,23 @@
 
 # Keep a full builder transcript so the orchestrator can scp it before
 # this temporary instance is terminated.
+# Do not exec into the tee pipe: Nx daemon inherits that pipe and SSH never
+# returns, so the orchestrator never deploys or terminates the builder.
 REMOTE_BUILD_LOG="${HOME}/remote-build.log"
 if [ "${_REMOTE_BUILD_LOGGING:-0}" != "1" ]; then
   export _REMOTE_BUILD_LOGGING=1
   rm -f "$REMOTE_BUILD_LOG"
-  exec "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+  set +e
+  "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+  status=$?
+  if [ -x "$HOME/twenty/node_modules/.bin/nx" ]; then
+    (cd "$HOME/twenty" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true
+  fi
+  pkill -f "tee ${REMOTE_BUILD_LOG}" >/dev/null 2>&1 || true
+  exit "$status"
 fi
-trap 'sync >/dev/null 2>&1 || true; sleep 1' EXIT
+export NX_DAEMON=false
+trap 'if [ -x "$HOME/twenty/node_modules/.bin/nx" ]; then (cd "$HOME/twenty" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true; fi; sync >/dev/null 2>&1 || true' EXIT
 
 # Branch: from BUILD_BRANCH env (passed by build_app_in_new_instance.sh) or build.config or default
 [ -f ~/build.config ] && source ~/build.config

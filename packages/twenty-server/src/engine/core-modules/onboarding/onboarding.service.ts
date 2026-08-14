@@ -27,6 +27,7 @@ export enum OnboardingStepKeys {
   ONBOARDING_INVITE_TEAM_PENDING = 'ONBOARDING_INVITE_TEAM_PENDING',
   ONBOARDING_CREATE_PROFILE_PENDING = 'ONBOARDING_CREATE_PROFILE_PENDING',
   ONBOARDING_INSTALL_APPS_PENDING = 'ONBOARDING_INSTALL_APPS_PENDING',
+  ONBOARDING_EXTENSION_INSTALL_PENDING = 'ONBOARDING_EXTENSION_INSTALL_PENDING',
 }
 
 export type OnboardingKeyValueTypeMap = {
@@ -34,6 +35,7 @@ export type OnboardingKeyValueTypeMap = {
   [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
   [OnboardingStepKeys.ONBOARDING_INSTALL_APPS_PENDING]: boolean;
+  [OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING]: boolean;
 };
 
 @Injectable()
@@ -102,6 +104,14 @@ export class OnboardingService {
 
     const isInviteTeamPending =
       userVars.get(OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING) === true;
+
+    const isExtensionInstallPending =
+      userVars.get(OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING) ===
+      true;
+
+    if (isExtensionInstallPending) {
+      return OnboardingStatus.EXTENSION_INSTALL;
+    }
 
     if (isConnectAccountPending) {
       return OnboardingStatus.SYNC_EMAIL;
@@ -250,6 +260,42 @@ export class OnboardingService {
         error,
       );
     }
+  }
+
+  async setOnboardingExtensionInstallPending(
+    {
+      userId,
+      workspaceId,
+      value,
+    }: {
+      userId: string;
+      workspaceId: string;
+      value: boolean;
+    },
+    queryRunner?: QueryRunner,
+  ) {
+    if (!value) {
+      await this.userVarsService.delete(
+        {
+          userId,
+          workspaceId,
+          key: OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING,
+        },
+        queryRunner,
+      );
+
+      return;
+    }
+
+    await this.userVarsService.set(
+      {
+        userId,
+        workspaceId,
+        key: OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING,
+        value: true,
+      },
+      queryRunner,
+    );
   }
 
   async setOnboardingInstallAppsPending(

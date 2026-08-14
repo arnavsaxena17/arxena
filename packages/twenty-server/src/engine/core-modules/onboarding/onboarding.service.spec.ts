@@ -260,6 +260,43 @@ describe('OnboardingService', () => {
     });
   });
 
+  describe('setOnboardingExtensionInstallPending', () => {
+    it('should set the pending flag when value is true', async () => {
+      await service.setOnboardingExtensionInstallPending({
+        userId,
+        workspaceId,
+        value: true,
+      });
+
+      expect(userVarsService.set).toHaveBeenCalledWith(
+        {
+          userId,
+          workspaceId,
+          key: OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING,
+          value: true,
+        },
+        undefined,
+      );
+    });
+
+    it('should delete the pending flag when value is false', async () => {
+      await service.setOnboardingExtensionInstallPending({
+        userId,
+        workspaceId,
+        value: false,
+      });
+
+      expect(userVarsService.delete).toHaveBeenCalledWith(
+        {
+          userId,
+          workspaceId,
+          key: OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING,
+        },
+        undefined,
+      );
+    });
+  });
+
   describe('creditInstallAppsReward', () => {
     it('should credit the reward per installed app', async () => {
       jest.spyOn(twentyConfigService, 'get').mockReturnValue(1_000_000);

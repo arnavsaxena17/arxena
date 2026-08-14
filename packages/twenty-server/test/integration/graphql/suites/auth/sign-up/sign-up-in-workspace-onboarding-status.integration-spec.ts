@@ -21,7 +21,7 @@ describe('Onboarding status when signing up in an existing workspace (integratio
     }
   });
 
-  it('should start with the connect-account step for a new user joining through an invite', async () => {
+  it('should start with the chrome extension step for a new user joining through an invite', async () => {
     createdUserAccessToken = await signUpInWorkspaceAndGetAccessToken(
       `invited-onboarding-status-${randomUUID()}@example.com`,
     );
@@ -33,6 +33,8 @@ describe('Onboarding status when signing up in an existing workspace (integratio
       expectToFail: false,
     });
 
-    expect(currentUser.onboardingStatus).toBe(OnboardingStatus.SYNC_EMAIL);
+    expect(currentUser.onboardingStatus).toBe(
+      OnboardingStatus.EXTENSION_INSTALL,
+    );
   });
 });

@@ -6,6 +6,7 @@ import { findManyApplications } from 'test/integration/graphql/utils/find-many-a
 import { getAuthTokensFromLoginToken } from 'test/integration/graphql/utils/get-auth-tokens-from-login-token.util';
 import { getCurrentUser } from 'test/integration/graphql/utils/get-current-user.util';
 import { getOnboardingStatus } from 'test/integration/graphql/utils/get-onboarding-status.util';
+import { completeChromeExtensionOnboardingStep } from 'test/integration/graphql/utils/complete-chrome-extension-onboarding-step.util';
 import { signUpInNewWorkspace } from 'test/integration/graphql/utils/sign-up-in-new-workspace.util';
 import { skipSyncEmailOnboardingStep } from 'test/integration/graphql/utils/skip-sync-email-onboarding-step.util';
 import { signUp } from 'test/integration/graphql/utils/sign-up.util';
@@ -90,6 +91,22 @@ describe('Successful user and workspace creation', () => {
     });
 
     expect(currentUserAfterActivation.onboardingStatus).toBe(
+      OnboardingStatus.EXTENSION_INSTALL,
+    );
+
+    await completeChromeExtensionOnboardingStep({
+      accessToken: newWorkspaceAccessToken,
+      expectToFail: false,
+    });
+
+    const {
+      data: { currentUser: currentUserAfterExtensionInstall },
+    } = await getOnboardingStatus({
+      accessToken: newWorkspaceAccessToken,
+      expectToFail: false,
+    });
+
+    expect(currentUserAfterExtensionInstall.onboardingStatus).toBe(
       OnboardingStatus.SYNC_EMAIL,
     );
 

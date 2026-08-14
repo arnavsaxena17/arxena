@@ -3,17 +3,46 @@ import { AppPath } from 'twenty-shared/types';
 import { getAppPath } from 'twenty-shared/utils';
 import { IconLayoutDashboard, IconTargetArrow } from 'twenty-ui/icon';
 
-import { useGtmCommandDashboardPath } from '@/gtm-home/hooks/useGtmCommandDashboardPath';
+import {
+  getGtmCommandDashboardFallbackPath,
+  useCanQueryDashboardRecords,
+  useGtmCommandDashboardPath,
+} from '@/gtm-home/hooks/useGtmCommandDashboardPath';
 import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
 import { NavigationDrawerSectionTitle } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSectionTitle';
 
 export const GtmHomeNavigationDrawerItem = () => {
+  const canQueryDashboard = useCanQueryDashboardRecords();
+
+  if (!canQueryDashboard) {
+    return (
+      <GtmHomeNavigationDrawerItemView
+        dashboardPath={getGtmCommandDashboardFallbackPath()}
+      />
+    );
+  }
+
+  return <GtmHomeNavigationDrawerItemWithDashboardQuery />;
+};
+
+const GtmHomeNavigationDrawerItemWithDashboardQuery = () => {
+  const { dashboardPath } = useGtmCommandDashboardPath();
+
+  return <GtmHomeNavigationDrawerItemView dashboardPath={dashboardPath} />;
+};
+
+type GtmHomeNavigationDrawerItemViewProps = {
+  dashboardPath: string;
+};
+
+const GtmHomeNavigationDrawerItemView = ({
+  dashboardPath,
+}: GtmHomeNavigationDrawerItemViewProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
-  const { dashboardPath } = useGtmCommandDashboardPath();
 
   // AppPath.GtmHome is relative (`gtm-home`); prefix `/` so Link is absolute.
   const shellPath = `/${getAppPath(AppPath.GtmHome)}`;

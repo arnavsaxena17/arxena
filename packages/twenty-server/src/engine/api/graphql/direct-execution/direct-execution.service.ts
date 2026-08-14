@@ -35,7 +35,10 @@ import { assertRestoreManyArgs } from 'src/engine/api/graphql/direct-execution/u
 import { assertRestoreOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-restore-one-args.util';
 import { assertUpdateManyArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-many-args.util';
 import { assertUpdateOneArgs } from 'src/engine/api/graphql/direct-execution/utils/assert-update-one-args.util';
-import { type ResolverNameMapEntry } from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
+import {
+  type ResolverNameMapEntry,
+  buildResolverNameMap,
+} from 'src/engine/api/graphql/direct-execution/utils/build-resolver-name-map.util';
 import { buildWorkspaceSchemaBuilderContext } from 'src/engine/api/graphql/direct-execution/utils/build-workspace-schema-builder-context.util';
 import { extractArgumentsFromAst } from 'src/engine/api/graphql/direct-execution/utils/extract-arguments-from-ast.util';
 import { graphQLBuildFragmentMap } from 'src/engine/api/graphql/direct-execution/utils/graphql-build-fragment-map.util';
@@ -221,10 +224,22 @@ export class DirectExecutionService {
 
       await Promise.all(
         topLevelFields.map(async (field) => {
-          const entry = graphQLResolverNameMap[field.name.value];
+          let entry = graphQLResolverNameMap[field.name.value];
           const responseKey = field.alias?.value ?? field.name.value;
 
           try {
+            if (!isDefined(entry)) {
+              entry = buildResolverNameMap(flatObjectMetadataMaps)[
+                field.name.value
+              ];
+            }
+
+            if (!isDefined(entry)) {
+              throw new UserInputError(
+                `Cannot query field "${field.name.value}" on type "Query".`,
+              );
+            }
+
             const args = extractArgumentsFromAst(field.arguments, variables);
 
             const graphqlPartialResolveInfo = graphQLBuildPartialResolveInfo(

@@ -102,6 +102,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 
 Wave 2: `orgchart`, `candidate-table`, `candidate-search`, `arx-jd-upload`
 - Org chart app route: `OrgChartRoute` restores workflows `:companyKey` + location-state wiring (was bare `<ArxOrgChart />`)
+- Nav `dashboards`/`orgCharts` FindMany 400 + `get-all-projects` 403: DirectExecution now treats `*FilterInput` record queries as workspace (stale resolver-name cache no longer falls through to core schema); GTM/org-chart nav wait for object fields; project list waits for JWT
 - Project DataTable blank: restored `flex:1`/`min-height:0` on upstream `PageBody`/`PagePanel` (Handsontable height chain) — see migration track §0/§9.2
 - Candidate name click: `SidePanelPages.CandidateChat` mounts `CandidateChatDrawer` (stubbed `useRightDrawer` previously set `isRightPanelOpen` with no UI)
 - Record selection actions: workflows `action-menu` configs/hooks → `EngineComponentKey` + `ARXENA_STANDARD_COMMAND_MENU_ITEMS` + `command-menu-item/engine-command/record/arx/*`; HotTable bottom bar + All Actions → side panel (migration track §2.11). Needs workspace metadata sync for new CMIs.
@@ -119,7 +120,9 @@ Settings Profile: restored workflows account IDs card (member/user/workspace id,
 
 Settings General: restored workflows workspace integration keys form (`ApiKeysForm`) grouped by AI / Messaging / LinkedIn / Twilio / Workspace & extension; wired via `ApiKeysProvider` + `POST /workspace-modifications/workspace-keys`.
 
-Deferred chrome-extension UX (not protocol): `ExtensionInstallOnboarding`, LinkedIn auto-connect information banner, job-boards Naukri action; OAuth chrome client now via ApplicationRegistration not hardcoded `CHROME_EXTENSION_ID` redirect.
+Chrome extension: AuthBridge + Sidecar + `CHROME_EXTENSION_ID` client-config wired. Onboarding step `ExtensionInstallOnboarding` (`EXTENSION_INSTALL` after workspace activation, skippable, JWT via AuthBridge). Store CRX injects content script on install instead of reloading Arxena tabs.
+
+Deferred chrome-extension UX: LinkedIn auto-connect information banner, job-boards Naukri action; OAuth chrome client now via ApplicationRegistration not hardcoded `CHROME_EXTENSION_ID` redirect.
 
 Wave 5: `video-interview`
 
@@ -171,7 +174,7 @@ Caveats before first prod run: branch must exist on `origin`; AMI / SG / subnet 
 - `npx nx build twenty-orgchart` — pass
 - `npx nest build` (twenty-server / SWC) — pass (7630 files)
 - `npx nx build twenty-front` — not green yet; ported modules still need API adaptation against current Twenty front (Recoil/Jotai, UI, imports). Nest/core wiring is in place for Phase-1 routes.
-- Recoil→Jotai **setter call-site** sweep (Aug 2026): fixed declared-vs-called mismatches (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, HotTable `setMain*`→`setContextStore*`, etc.) across candidate-table / arx-ai-filtering / arx-jd-upload / gtm-home / orgchart / unipile — see `docs/port-front-migration-track.md` §0 / §2.1.
+- Recoil→Jotai **setter call-site** sweep (Aug 2026): fixed declared-vs-called mismatches (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, HotTable `setMain*`→`setContextStore*`, etc.) across candidate-table / arx-ai-filtering / arx-jd-upload / gtm-home / orgchart / unipile — see `docs/port-front-migration-track.md` §0 / §2.1. Follow-up: `UnipileContext` passed `setLinkedinUnipileOwnerProfileCache` shorthand into `applyInferredOrgChartLinkedinSearchType` (expects `setOwnerProfileCache`) → prod `r is not a function` on tab-visible refresh.
 
 Next follow-ups: fix front compile errors module-by-module, nav drawer items, Unipile providers (migrate remaining `process.env.UNIPILE_*` call sites to EnvironmentService / TwentyConfigService), and yarn install for mcp/embed package deps.
 

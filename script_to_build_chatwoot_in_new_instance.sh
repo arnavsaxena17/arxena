@@ -4,13 +4,19 @@ set -euo pipefail
 
 # Keep a full builder transcript so the orchestrator can scp it before
 # this temporary instance is terminated.
+# Do not exec into the tee pipe: leftover children inheriting it would hang SSH
+# so the orchestrator never copies artifacts or terminates the builder.
 REMOTE_BUILD_LOG="${HOME}/remote-build.log"
 if [ "${_REMOTE_BUILD_LOGGING:-0}" != "1" ]; then
   export _REMOTE_BUILD_LOGGING=1
   rm -f "$REMOTE_BUILD_LOG"
-  exec "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+  set +e
+  "$0" "$@" > >(tee "$REMOTE_BUILD_LOG") 2>&1
+  status=$?
+  pkill -f "tee ${REMOTE_BUILD_LOG}" >/dev/null 2>&1 || true
+  exit "$status"
 fi
-trap 'sync >/dev/null 2>&1 || true; sleep 1' EXIT
+trap 'sync >/dev/null 2>&1 || true' EXIT
 
 [ -f "$HOME/build.config" ] && source "$HOME/build.config"
 

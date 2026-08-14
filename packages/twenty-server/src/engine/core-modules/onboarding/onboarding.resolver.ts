@@ -43,6 +43,21 @@ export class OnboardingResolver {
 
   @Mutation(() => OnboardingStepSuccessDTO)
   @UseGuards(NoPermissionGuard)
+  async completeChromeExtensionOnboardingStep(
+    @AuthUser() user: AuthContextUser,
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ): Promise<OnboardingStepSuccessDTO> {
+    await this.onboardingService.setOnboardingExtensionInstallPending({
+      userId: user.id,
+      workspaceId: workspace.id,
+      value: false,
+    });
+
+    return { success: true };
+  }
+
+  @Mutation(() => OnboardingStepSuccessDTO)
+  @UseGuards(NoPermissionGuard)
   async skipSyncEmailOnboardingStep(
     @AuthUser() user: AuthContextUser,
     @AuthWorkspace() workspace: WorkspaceEntity,

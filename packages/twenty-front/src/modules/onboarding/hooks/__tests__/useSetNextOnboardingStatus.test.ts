@@ -111,12 +111,23 @@ describe('useSetNextOnboardingStatus', () => {
     resetJotaiStore();
   });
 
-  it('should sync emails right after workspace activation', () => {
+  it('should install the chrome extension right after workspace activation', () => {
     const {
       nextOnboardingStatus,
       isWelcomeAnimationVisible,
       shouldOpenAiChatAfterOnboarding,
     } = renderHooks(OnboardingStatus.WORKSPACE_ACTIVATION);
+    expect(nextOnboardingStatus).toEqual(OnboardingStatus.EXTENSION_INSTALL);
+    expect(isWelcomeAnimationVisible).toBe(false);
+    expect(shouldOpenAiChatAfterOnboarding).toBe(false);
+  });
+
+  it('should sync emails after installing the chrome extension', () => {
+    const {
+      nextOnboardingStatus,
+      isWelcomeAnimationVisible,
+      shouldOpenAiChatAfterOnboarding,
+    } = renderHooks(OnboardingStatus.EXTENSION_INSTALL);
     expect(nextOnboardingStatus).toEqual(OnboardingStatus.SYNC_EMAIL);
     expect(isWelcomeAnimationVisible).toBe(false);
     expect(shouldOpenAiChatAfterOnboarding).toBe(false);

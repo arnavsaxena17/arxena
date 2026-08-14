@@ -96,6 +96,24 @@ describe('classifyTopLevelFields', () => {
     });
   });
 
+  it('should classify FindMany record queries as workspace when resolver names are stale', () => {
+    const query = `
+      query FindManyDashboards($filter: DashboardFilterInput, $orderBy: [DashboardOrderByInput], $lastCursor: String, $limit: Int) {
+        dashboards(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+          edges { node { id } }
+        }
+      }
+    `;
+
+    expect(
+      classifyTopLevelFields(parse(query), undefined, new Set()),
+    ).toEqual({
+      hasIntrospectionFields: false,
+      hasWorkspaceFields: true,
+      hasCoreFields: false,
+    });
+  });
+
   it('should not classify __typename as introspection', () => {
     const query = `
       query {

@@ -37,6 +37,10 @@ const getNextOnboardingStatus = ({
   });
 
   if (currentUser?.onboardingStatus === OnboardingStatus.WORKSPACE_ACTIVATION) {
+    return OnboardingStatus.EXTENSION_INSTALL;
+  }
+
+  if (currentUser?.onboardingStatus === OnboardingStatus.EXTENSION_INSTALL) {
     return OnboardingStatus.SYNC_EMAIL;
   }
 
