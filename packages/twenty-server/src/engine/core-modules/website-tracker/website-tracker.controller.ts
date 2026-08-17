@@ -30,7 +30,6 @@ export class WebsiteTrackerController {
   constructor(
     private readonly websiteTrackerService: WebsiteTrackerService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly orgChartClientIpService: OrgChartClientIpService,
   ) {}
 
   private getAuthToken(req: Request): string | undefined {
@@ -81,7 +80,7 @@ export class WebsiteTrackerController {
     @Headers('x-forwarded-for') xff?: string,
   ) {
     const ip =
-      this.orgChartClientIpService.extractClientIpFromRequest(req) ??
+      OrgChartClientIpService.extractClientIpFromRequest(req) ??
       (xff ? xff.split(',')[0].trim() : null) ??
       (req.ip as string | undefined) ??
       null;

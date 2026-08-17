@@ -15,13 +15,12 @@ import { VisitorCompanyResolutionService } from 'src/engine/core-modules/geo/vis
 export class VisitorCompanyResolutionController {
   constructor(
     private readonly visitorCompanyResolutionService: VisitorCompanyResolutionService,
-    private readonly orgChartClientIpService: OrgChartClientIpService,
   ) {}
 
   @Get()
   async resolve(@Req() req: Request, @Query('path') path?: string, @Query('workspaceId') workspaceId?: string, @Headers('x-forwarded-for') xff?: string) {
     const ip =
-      this.orgChartClientIpService.extractClientIpFromRequest(req) ??
+      OrgChartClientIpService.extractClientIpFromRequest(req) ??
       (xff ? xff.split(',')[0].trim() : null) ??
       (req.ip as string | undefined) ??
       null;
