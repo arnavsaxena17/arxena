@@ -43,6 +43,10 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
     return this.mainClient;
   }
 
+  public getClient(): ClickHouseClient | undefined {
+    return this.mainClient;
+  }
+
   public async connectToClient(
     clientId: string,
     url?: string,
