@@ -50,15 +50,35 @@ const bootstrap = async () => {
   const twentyConfigService = app.get(TwentyConfigService);
   const exceptionHandlerService = app.get(ExceptionHandlerService);
 
+  const captureProcessError = (error: Error) => {
+    try {
+      if (shouldCaptureException(error)) {
+        exceptionHandlerService.captureExceptions([error]);
+      }
+    } catch (reportingError) {
+      logger.error(
+        reportingError instanceof Error
+          ? reportingError.stack ?? reportingError.message
+          : inspect(reportingError),
+        'ExceptionHandler',
+      );
+    }
+  };
+
   process.on('unhandledRejection', (reason) => {
     const error =
       reason instanceof Error
         ? reason
         : new Error(typeof reason === 'string' ? reason : inspect(reason));
 
-    if (shouldCaptureException(error)) {
-      exceptionHandlerService.captureExceptions([error]);
-    }
+    logger.error(error.stack ?? error.message, 'unhandledRejection');
+    captureProcessError(error);
+  });
+
+  process.on('uncaughtException', (error) => {
+    logger.error(error.stack ?? error.message, 'uncaughtException');
+    captureProcessError(error);
+    process.exit(1);
   });
 
   const trustProxyRaw = twentyConfigService.get('TRUST_PROXY');

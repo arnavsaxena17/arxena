@@ -26,6 +26,7 @@ import { GoogleApisServiceAvailabilityService } from 'src/engine/core-modules/au
 import { GoogleAPIsService } from 'src/engine/core-modules/auth/services/google-apis.service';
 import { MicrosoftAPIsService } from 'src/engine/core-modules/auth/services/microsoft-apis.service';
 import { ResetPasswordService } from 'src/engine/core-modules/auth/services/reset-password.service';
+import { RapidEmailVerifierService } from 'src/engine/core-modules/auth/services/rapid-email-verifier.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { UpdateConnectedAccountOnReconnectService } from 'src/engine/core-modules/auth/services/update-connected-account-on-reconnect.service';
 import { SamlAuthStrategy } from 'src/engine/core-modules/auth/strategies/saml.auth.strategy';
@@ -142,6 +143,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
   ],
   providers: [
     SignInUpService,
+    RapidEmailVerifierService,
     AuthService,
     JwtAuthStrategy,
     SamlAuthStrategy,

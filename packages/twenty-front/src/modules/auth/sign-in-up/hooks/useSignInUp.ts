@@ -20,7 +20,11 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { isErrorLike } from '@apollo/client/errors';
 import { useLingui } from '@lingui/react/macro';
 import { AppPath } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import {
+  isAllowedEmailForNewWorkspaceSignup,
+  isDefined,
+  WORK_EMAIL_REQUIRED_MESSAGE,
+} from 'twenty-shared/utils';
 import { buildAppPathWithQueryParams } from '~/utils/buildAppPathWithQueryParams';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
 import { useAuth } from '@/auth/hooks/useAuth';
@@ -53,6 +57,11 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
   const [isInviteMode] = useState(() =>
     isMatchingLocation(location, AppPath.Invite),
   );
+
+  const isJoiningExistingWorkspace =
+    isInviteMode ||
+    isDefined(workspaceInviteHash) ||
+    isDefined(workspacePersonalInviteToken);
 
   const {
     signInWithCredentialsInWorkspace,
@@ -97,6 +106,18 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
         return enqueueErrorSnackBar({ apolloError: error });
       }
 
+      const email = form.getValues('email').toLowerCase().trim();
+
+      if (
+        !data?.checkUserExists.exists &&
+        !isJoiningExistingWorkspace &&
+        !isAllowedEmailForNewWorkspaceSignup(email)
+      ) {
+        return enqueueErrorSnackBar({
+          message: WORK_EMAIL_REQUIRED_MESSAGE,
+        });
+      }
+
       setSignInUpMode(
         data?.checkUserExists.exists
           ? SignInUpMode.SignIn
@@ -116,6 +137,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
     setSignInUpMode,
     setSignInUpStep,
     errorMsgUserAlreadyExist,
+    isJoiningExistingWorkspace,
   ]);
 
   const submitCredentials: SubmitHandler<Form> = useCallback(
@@ -163,11 +185,18 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
           signInUpMode === SignInUpMode.SignUp &&
           (!isOnAWorkspace || !isMultiWorkspaceEnabled)
         ) {
-          return await signUpWithCredentials(
-            data.email.toLowerCase().trim(),
-            data.password,
-            token,
-          );
+          const email = data.email.toLowerCase().trim();
+
+          if (
+            !isJoiningExistingWorkspace &&
+            !isAllowedEmailForNewWorkspaceSignup(email)
+          ) {
+            return enqueueErrorSnackBar({
+              message: WORK_EMAIL_REQUIRED_MESSAGE,
+            });
+          }
+
+          return await signUpWithCredentials(email, data.password, token);
         }
 
         const verifyEmailRedirectPath = buildAppPathWithQueryParams(
@@ -204,6 +233,7 @@ export const useSignInUp = (form: UseFormReturn<Form>) => {
       buildSearchParamsFromUrlSyncedStates,
       isOnAWorkspace,
       isMultiWorkspaceEnabled,
+      isJoiningExistingWorkspace,
       setLastAuthenticatedMethod,
       t,
     ],

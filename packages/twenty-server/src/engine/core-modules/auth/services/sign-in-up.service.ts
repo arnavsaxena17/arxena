@@ -36,6 +36,7 @@ import {
   compareHash,
   hashPassword,
 } from 'src/engine/core-modules/auth/auth.util';
+import { RapidEmailVerifierService } from 'src/engine/core-modules/auth/services/rapid-email-verifier.service';
 import { MAX_WORKSPACES_WITHOUT_ENTERPRISE_KEY } from 'src/engine/core-modules/auth/constants/max-workspaces-without-enterprise-key.constants';
 import { DEFAULT_DPA_REGION } from 'src/engine/core-modules/dpa/config/dpa-region-config.constant';
 import { DpaAgreementEntity } from 'src/engine/core-modules/dpa/entities/dpa-agreement.entity';
@@ -99,6 +100,7 @@ export class SignInUpService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly rapidEmailVerifierService: RapidEmailVerifierService,
   ) {}
 
   async computePartialUserFromUserPayload(
@@ -471,6 +473,22 @@ export class SignInUpService {
     return savedUser;
   }
 
+  private async assertEmailAllowedForNewWorkspaceSignup(
+    email: string,
+  ): Promise<void> {
+    if (!isWorkEmail(email)) {
+      throw new AuthException(
+        'Please sign up with your work email address. Personal, disposable, and free email providers are not supported for new accounts.',
+        AuthExceptionCode.INVALID_INPUT,
+        {
+          userFriendlyMessage: msg`Please use your work email address to create an account. Personal, disposable, and free addresses are not supported.`,
+        },
+      );
+    }
+
+    await this.rapidEmailVerifierService.assertEmailAllowedForSignup(email);
+  }
+
   private async isSignUpEnabled(): Promise<boolean> {
     const workspaceCount = await this.workspaceRepository.count();
 
@@ -573,6 +591,8 @@ export class SignInUpService {
         },
       );
     }
+
+    await this.assertEmailAllowedForNewWorkspaceSignup(email);
 
     await this.assertWorkspaceCreationAllowed(userData);
 
@@ -781,6 +801,7 @@ export class SignInUpService {
     }
 
     await this.assertSignUpEnabled();
+    await this.assertEmailAllowedForNewWorkspaceSignup(newUserParams.email);
 
     const shouldGrantServerAdmin = !(await this.hasServerAdmin());
 

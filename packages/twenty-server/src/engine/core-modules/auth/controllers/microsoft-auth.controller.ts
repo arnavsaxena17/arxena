@@ -9,6 +9,7 @@ import {
 
 import { Response } from 'express';
 
+import { AuthOAuthExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-oauth-exception.filter';
 import { AuthRestApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-rest-api-exception.filter';
 import { MicrosoftOAuthGuard } from 'src/engine/core-modules/auth/guards/microsoft-oauth.guard';
 import { MicrosoftProviderEnabledGuard } from 'src/engine/core-modules/auth/guards/microsoft-provider-enabled.guard';
@@ -42,6 +43,7 @@ export class MicrosoftAuthController {
     PublicEndpointGuard,
     NoPermissionGuard,
   )
+  @UseFilters(AuthOAuthExceptionFilter)
   async microsoftAuthRedirect(
     @Req() req: MicrosoftRequest,
     @Res() res: Response,

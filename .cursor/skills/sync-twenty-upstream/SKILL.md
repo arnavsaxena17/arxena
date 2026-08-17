@@ -1,11 +1,12 @@
 ---
 name: sync-twenty-upstream
 description: >-
-  Sync TwentyHQ upstream into the Arxena fork mirror and merge it into the
-  working port branch, then resolve conflicts. Use when the user asks to sync
-  upstream, update from twentyhq/twenty, refresh upstream/core, merge
-  origin/main into port/arxena-modules, or incorporate Twenty changes into the
-  port branch.
+  Sync TwentyHQ upstream into the Arxena fork (origin/main), refresh
+  upstream/core, merge into port/arxena-modules, resolve conflicts keeping ARX
+  wiring plus Twenty features, and union instance/workspace upgrade commands.
+  Use when the user asks to sync upstream, update from twentyhq/twenty, refresh
+  upstream/core, merge origin/main into the port branch, or handle schema
+  migrations during an upstream pull.
 ---
 
 # Sync Twenty upstream → port branch
@@ -29,10 +30,33 @@ twentyhq/twenty main  ──sync fork──►  origin/main
 
 Do **not** merge `workflows` into `main`/`port` as a history sync. `workflows` is a feature source only.
 
+Do **not** commit ARX features onto `origin/main`. That branch stays a clean Twenty mirror (GitHub “Sync fork”). All ARX work lives on `port/arxena-modules`.
+
+## Cadence (regular execution)
+
+Run this as one **merge cycle**, not a rebase, on a schedule: **weekly**, or **whenever Twenty cuts a minor** (whichever comes first). Smaller gaps → fewer conflicts.
+
+Copy this checklist and track it:
+
+```
+Upstream sync:
+- [ ] 0. Working tree clean on port/arxena-modules (commit or stash ARX work)
+- [ ] 1. Sync GitHub fork → origin/main
+- [ ] 2. Reset upstream/core to origin/main (bookmark only)
+- [ ] 3. Merge origin/main into port/arxena-modules
+- [ ] 4. Resolve conflicts: Twenty code + re-apply ARX (never -X ours / -X theirs on source)
+- [ ] 5. Union upgrade commands (see migrations.md)
+- [ ] 6. yarn install, regenerate generated files, typecheck
+- [ ] 7. Confirm bookmark; update port-front-migration-track §0 / §9
+- [ ] 8. Push / deploy / migrate only if the user asked
+```
+
+Do not start step 1 with a dirty tree. Current uncommitted port work must land first.
+
 ## When to run
 
 - After Sync fork on GitHub (or when fork is behind `twentyhq/twenty`)
-- User says: sync upstream, pull Twenty into port, refresh `upstream/core`
+- User says: sync upstream, pull Twenty into port, refresh `upstream/core`, bring Twenty into `origin/main` then `port/arxena-modules`
 
 ## Preconditions
 
@@ -81,9 +105,11 @@ git merge origin/main
 
 If the user named a different working branch, use that instead of `port/arxena-modules`.
 
-### 4. Resolve conflicts (order matters)
+### 4. Resolve conflicts (keep ARX **and** Twenty)
 
-List conflicts, then split generated vs real source:
+This is **not** `merge -X ours` or `-X theirs` on application source. Those flags drop one side. Default algorithm:
+
+1. List conflicts; split generated vs real source:
 
 ```bash
 git diff --name-only --diff-filter=U
@@ -91,17 +117,23 @@ git diff --name-only --diff-filter=U \
   | rg -v 'locales/|generated/|yarn\.lock|\.po$|\.lock$'
 ```
 
+2. For each **source** file Twenty and ARX both touched: start from **theirs** (new Twenty), then **re-apply ARX wiring** from ours (and from §9). Result must compile and keep ARX behavior.
+3. For ARX-only paths (new modules, orgchart packages, GTM, Unipile, …): keep **ours**.
+4. For Twenty-only new files: take **theirs**.
+5. Use §9 as the checklist of upstream files ARX already patched so none are silently reverted.
+
 | Conflict class | Resolution |
 | --- | --- |
-| Generated GraphQL, locales, `.po`, most lockfiles | Take **upstream** (`-X theirs` / checkout `--theirs`), then regenerate |
-| `package.json` (front/server/root) | Keep **ARX deps** (e.g. handsontable, `@hello-pangea/dnd`, ARX workspace pkgs) + accept new upstream deps/scripts |
-| Upgrade / workspace commands (`upgrade-version-command/`) | Keep **both**: ARX commands + new upstream version modules; register both in constants/modules |
-| §9 upstream core wires (see migration track) | Keep **ARX wiring** re-applied on Twenty’s new code (`AppPath`, providers, Nest `core-engine`, settings nav, routes, billing hooks) |
-| Pure ARX modules under `core-modules/`, `twenty-orgchart*`, etc. | Keep **ours** |
-| Website / companion deleted on port | Prefer upstream restore unless intentional ARX deletion |
+| Generated GraphQL, locales, `.po`, most lockfiles | Take **upstream**, then regenerate (`yarn` / GraphQL generate) |
+| `package.json` (front/server/root) | Keep **ARX deps** (handsontable, `@hello-pangea/dnd`, ARX workspace pkgs) **and** new upstream deps/scripts |
+| Upgrade / workspace commands | **Union both** — see [migrations.md](migrations.md) |
+| §9 upstream core wires | Re-apply ARX on Twenty’s new code (`AppPath`, providers, Nest `core-engine`, settings nav, routes, billing hooks) |
+| Pure ARX modules (`core-modules/*arx*`, `twenty-orgchart*`, gtm, unipile, …) | Keep **ours** |
+| Website / companion deleted on port | Prefer upstream restore unless the deletion was intentional ARX |
 
 §9 checklist: [`docs/port-front-migration-track.md`](../../../docs/port-front-migration-track.md)
 Sibling patterns: [`.cursor/rules/port-workflows-catalog.mdc`](../../rules/port-workflows-catalog.mdc)
+Schema/upgrade details: [migrations.md](migrations.md)
 
 After package.json resolution:
 
@@ -132,9 +164,9 @@ git rev-parse upstream/core origin/main   # must match
 
 - `npx nx build twenty-shared` then typecheck/lint diff for front + server
 - Regenerate GraphQL if schema changed: `npx nx run twenty-front:graphql:generate` (+ metadata config if needed)
-- Note new upgrade commands; plan `database:migrate` / workspace upgrades when deploying
+- Diff `upgrade-version-command/` vs pre-merge `origin/main`; follow [migrations.md](migrations.md). Plan staging `database:migrate` + `upgrade` before production deploy
 - Update migration track §0 work log + refresh §9 if core files shifted
-- Push only when user asks: `git push origin port/arxena-modules` (and `upstream/core` if tracked)
+- Push only when user asks: `git push origin port/arxena-modules` (do not push `origin/main` ARX commits; `upstream/core` only if tracked and user asks)
 
 ## Anti-patterns
 

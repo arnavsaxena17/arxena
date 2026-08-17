@@ -76,6 +76,16 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ADVANCED_SETTINGS,
     description:
+      'Base URL for Rapid Email Verifier (MX, disposable, role, typo, alias checks on signup).',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  @IsUrl({ require_tld: true })
+  RAPID_EMAIL_VERIFIER_BASE_URL = 'https://rapid-email-verifier.fly.dev';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ADVANCED_SETTINGS,
+    description:
       'Prefills tim@apple.dev in the login form, used in local development for quicker sign-in',
     type: ConfigVariableType.BOOLEAN,
   })

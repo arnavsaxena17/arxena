@@ -412,13 +412,16 @@ export class WorkspaceService {
 
       await this.userWorkspaceService.createWorkspaceMember(workspace.id, user);
 
+      // Upgrade cursor must exist before prefill: pre-installed app install
+      // is gated on getWorkspaceCompletedVersion, which returns null when
+      // core.upgradeMigration has no interpretable cursor yet.
+      await this.activateAndInitializeUpgradeState({
+        workspaceId: workspace.id,
+      });
+
       await this.prefillCreatedWorkspaceRecords({
         workspaceId: workspace.id,
         schemaName: getWorkspaceSchemaName(workspace.id),
-      });
-
-      await this.activateAndInitializeUpgradeState({
-        workspaceId: workspace.id,
       });
     } catch (error) {
       await this.workspaceRepository.update(workspace.id, {

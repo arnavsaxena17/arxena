@@ -6,6 +6,8 @@ import {
 
 import { type Response } from 'express';
 
+import { AppPath } from 'twenty-shared/types';
+
 import {
   AuthException,
   AuthExceptionCode,
@@ -29,6 +31,18 @@ export class AuthOAuthExceptionFilter implements ExceptionFilter {
         response
           .status(403)
           .redirect(this.domainServerConfigService.getBaseUrl().toString());
+        break;
+      case AuthExceptionCode.INVALID_INPUT:
+      case AuthExceptionCode.SIGNUP_DISABLED:
+      case AuthExceptionCode.FORBIDDEN_EXCEPTION:
+        response.redirect(
+          this.domainServerConfigService
+            .buildBaseUrl({
+              pathname: AppPath.SignInUp,
+              searchParams: { errorMessage: exception.message },
+            })
+            .toString(),
+        );
         break;
       default:
         return this.httpExceptionHandlerService.handleError(

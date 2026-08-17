@@ -17,6 +17,13 @@ export class ExceptionHandlerService {
     exceptions: ReadonlyArray<any>,
     options?: ExceptionHandlerOptions,
   ): string[] {
-    return this.driver.captureExceptions(exceptions, options);
+    try {
+      return this.driver.captureExceptions(exceptions, options) ?? [];
+    } catch (error) {
+      // oxlint-disable-next-line no-console
+      console.error('Failed to capture exceptions', error);
+
+      return [];
+    }
   }
 }

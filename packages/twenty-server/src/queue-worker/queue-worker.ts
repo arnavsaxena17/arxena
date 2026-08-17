@@ -26,7 +26,11 @@ async function bootstrap() {
     loggerService?.error(err?.message, err?.name);
 
     if (shouldCaptureException(err)) {
-      exceptionHandlerService?.captureExceptions([err]);
+      try {
+        exceptionHandlerService?.captureExceptions([err]);
+      } catch {
+        // Reporting must never mask the original bootstrap failure.
+      }
     }
 
     throw err;

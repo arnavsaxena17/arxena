@@ -133,6 +133,9 @@ const createSignInUpServiceForTests = () => {
         runInTransaction({ queryRunner: queryRunnerMock }),
       ),
     } as any,
+    {
+      assertEmailAllowedForSignup: jest.fn().mockResolvedValue(undefined),
+    } as any,
   );
 
   return {
@@ -363,6 +366,71 @@ describe('SignInUpService onboarding steps', () => {
     ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
   });
 
+  it('rejects new workspace signup from free email providers', async () => {
+    const { service, mockWorkspaceRepository, mockUserRepository } =
+      createSignInUpServiceForTests();
+
+    mockWorkspaceRepository.count.mockResolvedValue(0);
+    mockUserRepository.count.mockResolvedValue(0);
+
+    await expect(
+      service.signUpOnNewWorkspace(
+        {
+          type: 'newUserWithPicture',
+          newUserWithPicture: {
+            email: 'creator@gmail.com',
+            firstName: 'Creator',
+            lastName: 'User',
+          },
+        },
+        { displayName: 'Acme Inc' },
+      ),
+    ).rejects.toMatchObject({
+      code: AuthExceptionCode.INVALID_INPUT,
+    });
+  });
+
+  it('runs Rapid Email Verifier on the Google workspace-less signup path', async () => {
+    const { service } = createSignInUpServiceForTests();
+
+    jest
+      .spyOn((service as any).userService, 'findUserByEmail')
+      .mockResolvedValue(null);
+
+    await service.signUpWithoutWorkspace(mockPartialUserPayload, {
+      provider: AuthProviderEnum.Google,
+    } as any);
+
+    expect(
+      (service as any).rapidEmailVerifierService.assertEmailAllowedForSignup,
+    ).toHaveBeenCalledWith(mockPartialUserPayload.email);
+  });
+
+  it('rejects workspace-less signup from free email providers', async () => {
+    const { service, mockWorkspaceRepository, mockUserRepository } =
+      createSignInUpServiceForTests();
+
+    mockWorkspaceRepository.count.mockResolvedValue(0);
+    mockUserRepository.count.mockResolvedValue(0);
+    jest
+      .spyOn((service as any).userService, 'findUserByEmail')
+      .mockResolvedValue(null);
+
+    await expect(
+      service.signUpWithoutWorkspace(
+        {
+          ...mockPartialUserPayload,
+          email: 'creator@gmail.com',
+        },
+        {
+          provider: AuthProviderEnum.Google,
+        } as any,
+      ),
+    ).rejects.toMatchObject({
+      code: AuthExceptionCode.INVALID_INPUT,
+    });
+  });
+
   it('flags the install-apps step for a user creating a new workspace', async () => {
     const {
       service,
@@ -378,7 +446,7 @@ describe('SignInUpService onboarding steps', () => {
       {
         type: 'newUserWithPicture',
         newUserWithPicture: {
-          email: 'creator@gmail.com',
+          email: 'creator@acme.dev',
           firstName: 'Creator',
           lastName: 'User',
         },
