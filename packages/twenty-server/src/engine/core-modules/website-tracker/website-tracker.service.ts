@@ -622,7 +622,11 @@ export class WebsiteTrackerService {
             source: record.source,
           },
         ],
-        clickhouse_settings: { async_insert: 1, wait_end_of_query: 1 },
+        format: 'JSONEachRow',
+        clickhouse_settings: {
+          async_insert: 1,
+          wait_for_async_insert: 1,
+        },
       });
 
       return true;
