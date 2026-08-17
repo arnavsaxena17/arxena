@@ -108,7 +108,7 @@ export const ProjectPage: React.FC = () => {
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
   const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const filteredCandidatesCount = useAtomStateValue(filteredCandidatesCountState);
+  const filteredCount = useAtomStateValue(filteredCandidatesCountState);
   const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
   const tableState = useAtomStateValue(tableStateAtom);
   const setTableStateAtom = useSetAtomState(tableStateAtom);

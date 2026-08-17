@@ -96,6 +96,24 @@ describe('classifyTopLevelFields', () => {
     });
   });
 
+  it('should classify Search as a core query even with ObjectRecordFilterInput', () => {
+    const query = `
+      query Search($searchInput: String!, $limit: Int!, $after: String, $filter: ObjectRecordFilterInput) {
+        search(searchInput: $searchInput, limit: $limit, after: $after, filter: $filter) {
+          edges { node { recordId } }
+        }
+      }
+    `;
+
+    expect(
+      classifyTopLevelFields(parse(query), 'Search', WORKSPACE_RESOLVERS),
+    ).toEqual({
+      hasIntrospectionFields: false,
+      hasWorkspaceFields: false,
+      hasCoreFields: true,
+    });
+  });
+
   it('should classify FindMany record queries as workspace when resolver names are stale', () => {
     const query = `
       query FindManyDashboards($filter: DashboardFilterInput, $orderBy: [DashboardOrderByInput], $lastCursor: String, $limit: Int) {

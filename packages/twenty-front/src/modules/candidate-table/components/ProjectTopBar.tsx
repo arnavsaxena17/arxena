@@ -546,7 +546,7 @@ export const ProjectTopBar = memo(
                 <StyledSearchInput
                   type="text"
                   placeholder="Search candidates..."
-                  value={searchQuery}
+                  value={chatSearchQuery}
                   onChange={handleSearchChange}
                 />
               </StyledSearchContainer>
