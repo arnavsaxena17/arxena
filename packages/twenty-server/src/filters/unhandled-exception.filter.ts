@@ -5,7 +5,9 @@ import {
   HttpException,
 } from '@nestjs/common';
 
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
+
+import { applyFallbackCorsHeaders } from 'src/engine/utils/cors-options.util';
 
 // In case of exception in middleware run before the CORS middleware (eg: JSON Middleware that checks the request body),
 // the CORS headers are missing in the response.
@@ -16,21 +18,13 @@ export class UnhandledExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     if (!response.header || response.headersSent) {
       return;
     }
 
-    // TODO: Check if needed, remove otherwise.
-    response.header('Access-Control-Allow-Origin', '*');
-    response.header(
-      'Access-Control-Allow-Methods',
-      'GET,HEAD,PUT,PATCH,POST,DELETE',
-    );
-    response.header(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept',
-    );
+    applyFallbackCorsHeaders(response, request.headers?.origin);
 
     const status =
       exception instanceof HttpException ? exception.getStatus() : 500;

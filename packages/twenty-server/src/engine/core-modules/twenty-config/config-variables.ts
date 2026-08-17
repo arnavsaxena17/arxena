@@ -2424,6 +2424,15 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Primary Elasticsearch companies index (free company dataset). Searched before COMPANIES_SCORES_ES_INDEX.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  FREE_COMPANY_DATASET_ES_INDEX = 'free_company_dataset';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
     isSensitive: true,
     description: 'Apify API token',
     type: ConfigVariableType.STRING,

@@ -109,7 +109,7 @@ describe('GtmCompanyProfileSummarizerService', () => {
       }),
     );
     expect(generateObjectMock.mock.calls[0][0].prompt).toContain(
-      '## Companies ES index (wiki)',
+      '## Companies ES index (free_company_dataset)',
     );
     expect(generateObjectMock.mock.calls[0][0].prompt).toContain(
       '## Web search / website content',

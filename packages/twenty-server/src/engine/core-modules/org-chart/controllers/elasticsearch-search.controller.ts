@@ -40,6 +40,7 @@ export class ElasticsearchSearchController {
         companies: {
           enabled: this.companiesEsService.isEnabled(),
           searchIndex: this.companiesEsService.getIndexName(),
+          fallbackIndex: this.companiesEsService.getFallbackIndexName(),
           legacyIndex: this.companiesEsService.getLegacyIndexName(),
         },
         orgCharts: {

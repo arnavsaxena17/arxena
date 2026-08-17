@@ -38,6 +38,7 @@ import {
   type PeopleCompanyScope,
 } from './services/people-company-scope.resolver';
 import { PeopleLinkedInSourcingService } from './services/people-linkedin-sourcing.service';
+import { PeopleSearchDataSourceResolver } from './services/people-search-data-source.resolver';
 import {
   PeopleLocationScopeResolver,
   type PeopleLocationScope,
@@ -75,17 +76,21 @@ export class PeopleApiService {
     private readonly peopleCompanyScopeResolver: PeopleCompanyScopeResolver,
     private readonly peopleLocationScopeResolver: PeopleLocationScopeResolver,
     private readonly peopleNaturalLanguageParserService: PeopleNaturalLanguageParserService,
+    private readonly peopleSearchDataSourceResolver: PeopleSearchDataSourceResolver,
   ) {}
 
   getDataSourcesStatus(): DataSourcesStatusResponse {
+    const unipileConfigured =
+      this.peopleLinkedInSourcingService.isUnipileConfigured();
     const configuredByAlias: Record<PeopleDataSourceAlias, boolean> = {
+      none: unipileConfigured,
       index: this.peopleEsService.isEnabled(),
       apollo: this.apolloIoRestService.isConfigured(),
       pdl: this.pdlPersonOrgMovementService.isConfigured(),
       contactout: this.contactOutPeopleSearchService.isConfigured(),
       harvest: this.harvestLinkedinService.isConfigured(),
-      unipile: this.peopleLinkedInSourcingService.isUnipileConfigured(),
-      pool: this.peopleLinkedInSourcingService.isUnipileConfigured(),
+      unipile: unipileConfigured,
+      pool: unipileConfigured,
     };
 
     return {
@@ -279,31 +284,41 @@ export class PeopleApiService {
     body: PeopleSearchDto,
     apiToken?: string,
   ): Promise<PeopleSearchResponse> {
+    const resolvedSource = await this.peopleSearchDataSourceResolver.resolve({
+      dataSource: body.dataSource,
+      accountId: body.accountId,
+      apiToken,
+    });
+    const sourcedBody: PeopleSearchDto = {
+      ...body,
+      dataSource: resolvedSource.dataSource,
+      accountId: resolvedSource.accountId ?? body.accountId,
+    };
     const companyScope = await this.peopleCompanyScopeResolver.resolve({
-      companyName: body.companyName,
-      companyId: body.companyId,
-      website: body.website,
-      country: body.country,
+      companyName: sourcedBody.companyName,
+      companyId: sourcedBody.companyId,
+      website: sourcedBody.website,
+      country: sourcedBody.country,
       authToken: apiToken,
     });
     const locationScope = await this.peopleLocationScopeResolver.resolve({
-      location: body.location,
-      country: body.country,
-      accountId: body.accountId,
-      dataSource: body.dataSource,
+      location: sourcedBody.location,
+      country: sourcedBody.country,
+      accountId: sourcedBody.accountId,
+      dataSource: sourcedBody.dataSource,
     });
     const scopedBody: PeopleSearchDto = {
-      ...body,
-      companyName: companyScope.companyName ?? body.companyName,
-      companyId: companyScope.companyId ?? body.companyId,
-      website: companyScope.website ?? body.website,
-      location: locationScope.raw ?? body.location,
+      ...sourcedBody,
+      companyName: companyScope.companyName ?? sourcedBody.companyName,
+      companyId: companyScope.companyId ?? sourcedBody.companyId,
+      website: companyScope.website ?? sourcedBody.website,
+      location: locationScope.raw ?? sourcedBody.location,
       country:
         locationScope.linkedinLocationName ??
         locationScope.raw ??
-        body.country,
+        sourcedBody.country,
     };
-    const dataSource = scopedBody.dataSource ?? 'index';
+    const dataSource = scopedBody.dataSource ?? resolvedSource.dataSource;
 
     this.logger.log(
       `People API search dataSource=${dataSource} stdFunction=${scopedBody.stdFunction ?? ''} stdGrade=${scopedBody.stdGrade ?? ''} companyVia=${companyScope.resolvedVia} companyId=${companyScope.companyId ?? ''} website=${companyScope.website ?? ''} locationVia=${locationScope.resolvedVia} location=${locationScope.linkedinLocationName ?? locationScope.raw ?? ''}`,

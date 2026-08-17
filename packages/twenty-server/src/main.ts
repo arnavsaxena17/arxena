@@ -17,6 +17,7 @@ import { LoggerService } from 'src/engine/core-modules/logger/logger.service';
 import { getSessionStorageOptions } from 'src/engine/core-modules/session-storage/session-storage.module-factory';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { configTransformers } from 'src/engine/core-modules/twenty-config/utils/config-transformers.util';
+import { getCorsOptionsForRequest } from 'src/engine/utils/cors-options.util';
 import { shouldCaptureException } from 'src/engine/utils/global-exception-handler.util';
 import { UnhandledExceptionFilter } from 'src/filters/unhandled-exception.filter';
 
@@ -31,9 +32,11 @@ const bootstrap = async () => {
   setPgDateTypeParser();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    // Expose WWW-Authenticate so browser-based MCP clients can read the
-    // resource_metadata pointer on 401. Required by MCP authorization spec.
-    cors: { exposedHeaders: ['WWW-Authenticate'] },
+    // Docs playground (docs.arxena.com / localhost:3003) reflects Origin so
+    // Try it can send Authorization. Other origins keep wildcard CORS.
+    cors: (req, callback) => {
+      callback(null, getCorsOptionsForRequest(req.headers.origin));
+    },
     bufferLogs: process.env.LOGGER_IS_BUFFER_ENABLED === 'true',
     rawBody: true,
     snapshot: process.env.NODE_ENV === NodeEnvironment.DEVELOPMENT,

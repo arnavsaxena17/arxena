@@ -11,6 +11,7 @@ import { ThrottlerModule } from 'src/engine/core-modules/throttler/throttler.mod
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
 import { PeopleApiController } from './people-api.controller';
 import { PeopleApiService } from './people-api.service';
@@ -19,6 +20,7 @@ import { PeopleLinkedInSourcingService } from './services/people-linkedin-sourci
 import { PeopleLocationScopeResolver } from './services/people-location-scope.resolver';
 import { PeopleNaturalLanguageParserService } from './services/people-natural-language-parser.service';
 import { PeopleSalesNavAccountResolver } from './services/people-sales-nav-account.resolver';
+import { PeopleSearchDataSourceResolver } from './services/people-search-data-source.resolver';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { PeopleSalesNavAccountResolver } from './services/people-sales-nav-accou
     WorkspaceCacheStorageModule,
     ThrottlerModule,
     TwentyConfigModule,
+    WorkspaceModificationsModule,
   ],
   controllers: [PeopleApiController],
   providers: [
@@ -41,6 +44,7 @@ import { PeopleSalesNavAccountResolver } from './services/people-sales-nav-accou
     PeopleNaturalLanguageParserService,
     PeopleLinkedInSourcingService,
     PeopleSalesNavAccountResolver,
+    PeopleSearchDataSourceResolver,
     JwtAuthGuard,
   ],
   exports: [PeopleApiService],

@@ -34,7 +34,7 @@ describe('gtm-workspace-profile-draft.util', () => {
     );
   });
 
-  it('prefers LinkedIn company profile over wiki and Apollo', () => {
+  it('prefers companies ES index over LinkedIn and Apollo', () => {
     const draft = buildGtmWorkspaceProfileDraftFromDomain({
       domain: 'acme.io',
       apolloOrganization: {
@@ -57,12 +57,11 @@ describe('gtm-workspace-profile-draft.util', () => {
       },
     });
 
-    expect(draft.companyName).toBe('LinkedIn Name');
-    expect(draft.industry).toBe('Computer Software');
-    expect(draft.employeeRange).toBe('420+');
-    expect(draft.hq).toContain('SF');
+    expect(draft.companyName).toBe('Wiki Name');
+    expect(draft.industry).toBe('Wiki Industry');
+    expect(draft.employeeRange).toBe('51-200');
     expect(draft.summary).toContain('Full LinkedIn company description');
-    expect(draft.enrichmentJson.source).toBe('linkedin_company_profile');
+    expect(draft.enrichmentJson.source).toBe('companies_index_wiki');
   });
 
   it('falls back to domain heuristics without enrichment sources', () => {

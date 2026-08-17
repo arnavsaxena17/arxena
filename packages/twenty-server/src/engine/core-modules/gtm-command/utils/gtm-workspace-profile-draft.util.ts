@@ -128,6 +128,10 @@ const pickIndustry = (input: {
   wikiCompany?: GtmWikiCompanyHit | null;
   apolloOrganization?: Record<string, unknown> | null;
 }): string => {
+  if (isNonEmptyString(input.wikiCompany?.industry)) {
+    return input.wikiCompany.industry.trim();
+  }
+
   const linkedInIndustry = input.linkedInProfile?.industry?.find(
     isNonEmptyString,
   );
@@ -137,10 +141,6 @@ const pickIndustry = (input: {
 
   if (isNonEmptyString(input.linkedInSearchHit?.industry)) {
     return input.linkedInSearchHit.industry.trim();
-  }
-
-  if (isNonEmptyString(input.wikiCompany?.industry)) {
-    return input.wikiCompany.industry.trim();
   }
 
   const apollo = input.apolloOrganization;
@@ -164,16 +164,16 @@ const pickEmployeeRange = (input: {
   wikiCompany?: GtmWikiCompanyHit | null;
   apolloOrganization?: Record<string, unknown> | null;
 }): string => {
+  if (isNonEmptyString(input.wikiCompany?.size)) {
+    return input.wikiCompany.size.trim();
+  }
+
   if (isDefinedNumber(input.linkedInProfile?.employee_count)) {
     return formatEmployeeRange(input.linkedInProfile.employee_count, null);
   }
 
   if (isNonEmptyString(input.linkedInSearchHit?.headcount)) {
     return input.linkedInSearchHit.headcount.trim();
-  }
-
-  if (isNonEmptyString(input.wikiCompany?.size)) {
-    return input.wikiCompany.size.trim();
   }
 
   const apollo = input.apolloOrganization;
@@ -190,6 +190,13 @@ const pickHq = (input: {
   wikiCompany?: GtmWikiCompanyHit | null;
   apolloOrganization?: Record<string, unknown> | null;
 }): string => {
+  const wikiHq = [input.wikiCompany?.locality, input.wikiCompany?.country]
+    .filter(isNonEmptyString)
+    .join(', ');
+  if (isNonEmptyString(wikiHq)) {
+    return wikiHq;
+  }
+
   const linkedInHq = formatHqFromLinkedInLocations(
     input.linkedInProfile?.locations,
   );
@@ -199,13 +206,6 @@ const pickHq = (input: {
 
   if (isNonEmptyString(input.linkedInSearchHit?.location)) {
     return input.linkedInSearchHit.location.trim();
-  }
-
-  const wikiHq = [input.wikiCompany?.locality, input.wikiCompany?.country]
-    .filter(isNonEmptyString)
-    .join(', ');
-  if (isNonEmptyString(wikiHq)) {
-    return wikiHq;
   }
 
   const apollo = input.apolloOrganization;
@@ -226,16 +226,16 @@ const pickCompanyName = (input: {
   wikiCompany?: GtmWikiCompanyHit | null;
   apolloOrganization?: Record<string, unknown> | null;
 }): string => {
+  if (isNonEmptyString(input.wikiCompany?.name)) {
+    return input.wikiCompany.name.trim();
+  }
+
   if (isNonEmptyString(input.linkedInProfile?.name)) {
     return input.linkedInProfile.name.trim();
   }
 
   if (isNonEmptyString(input.linkedInSearchHit?.name)) {
     return input.linkedInSearchHit.name.trim();
-  }
-
-  if (isNonEmptyString(input.wikiCompany?.name)) {
-    return input.wikiCompany.name.trim();
   }
 
   const apolloName =
@@ -300,6 +300,10 @@ const resolveEnrichmentSource = (input: {
     return 'llm_multi_source_summary';
   }
 
+  if (input.wikiCompany) {
+    return 'companies_index_wiki';
+  }
+
   if (input.linkedInProfile) {
     return 'linkedin_company_profile';
   }
@@ -314,10 +318,6 @@ const resolveEnrichmentSource = (input: {
 
   if (input.wikidataCompany) {
     return 'wikidata';
-  }
-
-  if (input.wikiCompany) {
-    return 'companies_index_wiki';
   }
 
   if (input.apolloOrganization) {
@@ -365,8 +365,8 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
   const webSearchCompany = input.webSearchCompany ?? null;
   const llmCompanyProfile = input.llmCompanyProfile ?? null;
 
-  // Prefer LLM multi-source summary when present; else heuristic merge
-  const wikiForHeuristics = wikidataCompany ?? wikiCompany;
+  // Prefer companies ES (free_company_dataset) over Wikidata for heuristic merge
+  const wikiForHeuristics = wikiCompany ?? wikidataCompany;
 
   const companyName = isNonEmptyString(llmCompanyProfile?.companyName)
     ? llmCompanyProfile.companyName.trim()

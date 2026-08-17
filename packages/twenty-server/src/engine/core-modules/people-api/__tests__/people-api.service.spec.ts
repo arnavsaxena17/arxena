@@ -20,6 +20,7 @@ import { PeopleApiService } from '../people-api.service';
 import type { PeopleCompanyScopeResolver } from '../services/people-company-scope.resolver';
 import type { PeopleLinkedInSourcingService } from '../services/people-linkedin-sourcing.service';
 import type { PeopleLocationScopeResolver } from '../services/people-location-scope.resolver';
+import type { PeopleSearchDataSourceResolver } from '../services/people-search-data-source.resolver';
 import {
   PEOPLE_SEARCH_COMPANY_REQUIRED_MESSAGE,
   type PeopleNaturalLanguageParserService,
@@ -52,6 +53,19 @@ const createPassthroughLocationScopeResolver = (): PeopleLocationScopeResolver =
       }),
     ),
   }) as unknown as PeopleLocationScopeResolver;
+
+const createIndexDataSourceResolver = (): PeopleSearchDataSourceResolver =>
+  ({
+    resolve: jest.fn(
+      async (input: { dataSource?: string; accountId?: string }) => ({
+        dataSource:
+          input.dataSource && input.dataSource !== 'none'
+            ? input.dataSource
+            : 'index',
+        accountId: input.accountId,
+      }),
+    ),
+  }) as unknown as PeopleSearchDataSourceResolver;
 
 const createNaturalLanguageParser = (): PeopleNaturalLanguageParserService =>
   ({
@@ -135,6 +149,7 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
   );
 
   beforeEach(() => {
@@ -243,6 +258,7 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
       peopleCompanyScopeResolver,
       createPassthroughLocationScopeResolver(),
       createNaturalLanguageParser(),
+      createIndexDataSourceResolver(),
     );
 
     const result = await scopedService.searchPeople({
@@ -328,6 +344,7 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
   );
 
   beforeEach(() => {
@@ -495,6 +512,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
   );
 
   beforeEach(() => {
@@ -645,6 +663,7 @@ describe('PeopleApiService.searchPeople taxonomy filters', () => {
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
   );
 
   beforeEach(() => {

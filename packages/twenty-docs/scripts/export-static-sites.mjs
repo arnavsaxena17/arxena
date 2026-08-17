@@ -136,9 +136,12 @@ const runMintlifyExport = ({
   docsConfig.navbar.primary ??= {};
   docsConfig.navbar.primary.href = primaryHref;
 
-  // Interactive playground + every codegen language balloons export memory.
+  // Keep Try it interactive on the self-hosted static export. Trim codegen
+  // languages so mintlify export does not OOM (that was why display used to
+  // be forced to "simple", which hid the playground in prod).
   if (docsConfig.api?.playground) {
-    docsConfig.api.playground.display = 'simple';
+    docsConfig.api.playground.display = 'interactive';
+    docsConfig.api.playground.proxy = false;
   }
   if (docsConfig.api?.examples?.languages) {
     docsConfig.api.examples.languages = ['curl', 'javascript', 'python'];

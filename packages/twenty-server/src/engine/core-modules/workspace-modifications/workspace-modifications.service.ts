@@ -207,6 +207,63 @@ export class WorkspaceQueryService {
     }
   }
 
+  async listWorkspaceMemberLinkedinUnipileProfiles(
+    workspaceId: string,
+  ): Promise<
+    Array<{
+      workspaceMemberId: string;
+      linkedinUnipileAccountId: string;
+      linkedinProfile: unknown;
+    }>
+  > {
+    if (!workspaceId) {
+      return [];
+    }
+
+    try {
+      return await this.executeInWorkspaceContext(workspaceId, async () => {
+        const profileRepository = await this.getObjectRepository<{
+          workspaceMemberId: string | null;
+          linkedinUnipileAccountId: string | null;
+          linkedinProfile: unknown;
+        }>(workspaceId, 'workspaceMemberProfile');
+        const profiles = await profileRepository.find({
+          select: {
+            workspaceMemberId: true,
+            linkedinUnipileAccountId: true,
+            linkedinProfile: true,
+          },
+        });
+
+        return profiles.flatMap((profile) => {
+          const workspaceMemberId = profile.workspaceMemberId?.trim();
+          const linkedinUnipileAccountId =
+            profile.linkedinUnipileAccountId?.trim();
+
+          if (!workspaceMemberId || !linkedinUnipileAccountId) {
+            return [];
+          }
+
+          return [
+            {
+              workspaceMemberId,
+              linkedinUnipileAccountId,
+              linkedinProfile: profile.linkedinProfile,
+            },
+          ];
+        });
+      });
+    } catch (error) {
+      console.error(
+        'listWorkspaceMemberLinkedinUnipileProfiles: query failed',
+        workspaceId,
+        error,
+      );
+
+      return [];
+    }
+  }
+
   async getWorkspaceNameFromToken(apiToken: string) {
     if (!apiToken) {
       throw new Error('API token is required');

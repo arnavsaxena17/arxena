@@ -131,10 +131,9 @@ export const buildPeopleApiOpenApiDocument = (
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
-            default: 'index',
             description:
-              'Which catalog to search. `index` (default) is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId`).',
-            example: 'index',
+              'Which catalog to search. Omit or pass `none` to resolve the caller workspace member LinkedIn Unipile account; API keys (no member on the token) use any workspace member profile with a Sales Navigator Unipile seat. `index` is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId` unless resolved from the workspace).',
+            example: 'none',
           },
           accountId: {
             type: 'string',
@@ -234,10 +233,9 @@ export const buildPeopleApiOpenApiDocument = (
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
-            default: 'index',
             example: 'pool',
             description:
-              'People source. Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId.',
+              'People source. Omit or pass `none` to resolve the workspace member Unipile account (API keys use a workspace Sales Navigator seat). Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId unless resolved.',
           },
           accountId: {
             type: 'string',

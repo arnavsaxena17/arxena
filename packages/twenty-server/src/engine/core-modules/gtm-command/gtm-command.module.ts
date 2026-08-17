@@ -51,21 +51,21 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     {
       provide: GTM_COMPANY_ENRICHMENT_SOURCES,
       useFactory: (
+        wikiSource: GtmCompaniesIndexWikiEnrichmentSource,
         linkedInPoolSource: GtmLinkedInPoolCompanyEnrichmentSource,
         wikidataSource: GtmWikidataCompanyEnrichmentSource,
-        wikiSource: GtmCompaniesIndexWikiEnrichmentSource,
         webSearchSource: GtmWebSearchCompanyEnrichmentSource,
       ) => [
-        // Order: LinkedIn → Wikidata → companies ES → website web_search
+        // Order: companies ES (free_company_dataset) → LinkedIn autocomplete → Wikidata → website web_search
+        wikiSource,
         linkedInPoolSource,
         wikidataSource,
-        wikiSource,
         webSearchSource,
       ],
       inject: [
+        GtmCompaniesIndexWikiEnrichmentSource,
         GtmLinkedInPoolCompanyEnrichmentSource,
         GtmWikidataCompanyEnrichmentSource,
-        GtmCompaniesIndexWikiEnrichmentSource,
         GtmWebSearchCompanyEnrichmentSource,
       ],
     },

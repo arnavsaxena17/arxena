@@ -66,6 +66,52 @@ describe('GtmCompanyEnrichmentCollectorService', () => {
     });
   });
 
+  it('passes companies ES hits as hints into LinkedIn autocomplete', async () => {
+    const enrichCalls: Array<{
+      sourceId: string;
+      hints?: { companyName?: string | null; linkedInUrl?: string | null };
+    }> = [];
+
+    const wikiSource: GtmCompanyEnrichmentSource = {
+      sourceId: 'companies_index_wiki',
+      enrich: async () => ({
+        sourceId: 'companies_index_wiki',
+        wikiCompany: {
+          name: 'Arxena, Inc.',
+          website: 'arxena.com',
+          linkedin_url: 'linkedin.com/company/arxena',
+        },
+      }),
+    };
+
+    const linkedInSource: GtmCompanyEnrichmentSource = {
+      sourceId: 'linkedin_unipile_pool',
+      enrich: async (input) => {
+        enrichCalls.push({
+          sourceId: 'linkedin_unipile_pool',
+          hints: input.hints,
+        });
+
+        return {
+          sourceId: 'linkedin_unipile_pool',
+          linkedInAccountId: 'pool-account-1',
+        };
+      },
+    };
+
+    const collector = new GtmCompanyEnrichmentCollectorService([
+      wikiSource,
+      linkedInSource,
+    ]);
+
+    await collector.collect({ domain: 'arxena.com' });
+
+    expect(enrichCalls[0]?.hints).toEqual({
+      companyName: 'Arxena, Inc.',
+      linkedInUrl: 'linkedin.com/company/arxena',
+    });
+  });
+
   it('continues when one source throws', async () => {
     const failingSource: GtmCompanyEnrichmentSource = {
       sourceId: 'apollo',

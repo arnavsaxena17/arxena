@@ -73,7 +73,7 @@ export const esIndexSearchTools: McpTool[] = [
       name: 'search_companies_index',
       title: 'Search companies index',
       description:
-        'Search the Arxena Elasticsearch std_company_data_scores index for companies by name, website, industry, or company id. Returns scored company metadata (corporate_score, count_org, linkedin_url, is_org_chart) from the global companies database (not workspace CRM companies).',
+        'Search Arxena company Elasticsearch indices (free_company_dataset first, then std_company_data_scores) by name, website, industry, or company id. Returns company metadata (website, linkedin_url, industry, size) from the global companies database (not workspace CRM companies).',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(
         SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR,

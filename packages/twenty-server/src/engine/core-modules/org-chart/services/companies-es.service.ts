@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { buildCompanyWebsiteLookupVariants } from 'src/engine/core-modules/org-chart/utils/org-chart-resolve-domain.util';
 
 export type CompanyEsDocument = {
   id?: string;
@@ -12,6 +13,7 @@ export type CompanyEsDocument = {
   location_name?: string;
   country?: string;
   locality?: string;
+  region?: string;
   linkedin_url?: string;
   count_org?: number;
   size?: string;
@@ -36,15 +38,35 @@ export type CompaniesEsSearchResult = {
   index: string;
 };
 
+const COMPANY_SOURCE_FIELDS = [
+  'id',
+  'name',
+  'website',
+  'industry',
+  'country',
+  'locality',
+  'region',
+  'linkedin_url',
+  'count_org',
+  'size',
+  'founded',
+  'corporate_score',
+  'is_org_chart',
+] as const;
+
 @Injectable()
 export class CompaniesEsService {
   private readonly logger = new Logger(CompaniesEsService.name);
   private readonly client: Client | null;
+  private readonly primaryIndex: string;
   private readonly companiesSearchIndex: string;
   private readonly companiesLegacyIndex: string;
 
   constructor(private readonly environmentService: EnvironmentService) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
+    this.primaryIndex = this.environmentService.get(
+      'FREE_COMPANY_DATASET_ES_INDEX',
+    );
     this.companiesSearchIndex = this.environmentService.get(
       'COMPANIES_SCORES_ES_INDEX',
     );
@@ -53,7 +75,7 @@ export class CompaniesEsService {
     if (typeof endpoint === 'string' && endpoint.length > 0) {
       this.client = new Client({ node: endpoint });
       this.logger.log(
-        `Companies Elasticsearch client configured for search index "${this.companiesSearchIndex}" (legacy index "${this.companiesLegacyIndex}")`,
+        `Companies Elasticsearch client configured primary="${this.primaryIndex}" fallback="${this.companiesSearchIndex}" (legacy "${this.companiesLegacyIndex}")`,
       );
     } else {
       this.client = null;
@@ -68,6 +90,10 @@ export class CompaniesEsService {
   }
 
   getIndexName(): string {
+    return this.primaryIndex;
+  }
+
+  getFallbackIndexName(): string {
     return this.companiesSearchIndex;
   }
 
@@ -79,7 +105,33 @@ export class CompaniesEsService {
     options: CompaniesEsSearchOptions,
   ): Promise<CompaniesEsSearchResult> {
     if (!this.client) {
-      return { total: 0, items: [], index: this.companiesSearchIndex };
+      return { total: 0, items: [], index: this.primaryIndex };
+    }
+
+    const primary = await this.searchIndex(this.primaryIndex, options);
+    if (primary.items.length > 0) {
+      return primary;
+    }
+
+    if (this.companiesSearchIndex !== this.primaryIndex) {
+      const fallback = await this.searchIndex(
+        this.companiesSearchIndex,
+        options,
+      );
+      if (fallback.items.length > 0) {
+        return fallback;
+      }
+    }
+
+    return primary;
+  }
+
+  private async searchIndex(
+    index: string,
+    options: CompaniesEsSearchOptions,
+  ): Promise<CompaniesEsSearchResult> {
+    if (!this.client) {
+      return { total: 0, items: [], index };
     }
 
     const {
@@ -102,12 +154,22 @@ export class CompaniesEsService {
 
     const normalizedWebsite = website?.trim();
     if (normalizedWebsite) {
+      const websiteVariants = buildCompanyWebsiteLookupVariants(
+        normalizedWebsite,
+      );
+      const termsValues =
+        websiteVariants.length > 0 ? websiteVariants : [normalizedWebsite];
+
+      shouldClauses.push({ terms: { website: termsValues } });
       shouldClauses.push({ term: { website: normalizedWebsite } });
       shouldClauses.push({ match: { website: normalizedWebsite } });
     }
 
     const normalizedCompanyName = companyName?.trim();
     if (normalizedCompanyName) {
+      shouldClauses.push({
+        term: { 'name.keyword': normalizedCompanyName },
+      });
       shouldClauses.push({
         match: {
           name: {
@@ -163,36 +225,24 @@ export class CompaniesEsService {
         ? { bool: { must: mustClauses } }
         : { match_all: {} };
 
-    const size = typeof limit === 'number' && limit > 0 ? Math.min(limit, 100) : 20;
+    const size =
+      typeof limit === 'number' && limit > 0 ? Math.min(limit, 100) : 20;
     const from = typeof offset === 'number' && offset >= 0 ? offset : 0;
 
     try {
       this.logger.log(
-        `Executing companies ES query index=${this.companiesSearchIndex} size=${size} from=${from}: ${JSON.stringify(
+        `Executing companies ES query index=${index} size=${size} from=${from}: ${JSON.stringify(
           esQuery,
         ).slice(0, 4000)}`,
       );
 
       const response = await this.client.search<CompanyEsDocument>({
-        index: this.companiesSearchIndex,
+        index,
         from,
         size,
         track_total_hits: true,
         query: esQuery,
-        _source: [
-          'id',
-          'name',
-          'website',
-          'industry',
-          'country',
-          'locality',
-          'linkedin_url',
-          'count_org',
-          'size',
-          'founded',
-          'corporate_score',
-          'is_org_chart',
-        ],
+        _source: [...COMPANY_SOURCE_FIELDS],
         sort: [
           { _score: { order: 'desc' } },
           { count_org: { order: 'desc', unmapped_type: 'long' } },
@@ -209,13 +259,16 @@ export class CompaniesEsService {
         .filter((src): src is CompanyEsDocument => !!src);
 
       this.logger.log(
-        `Companies ES query returned ${items.length} items (total=${total})`,
+        `Companies ES query index=${index} returned ${items.length} items (total=${total})`,
       );
 
-      return { total, items, index: this.companiesSearchIndex };
+      return { total, items, index };
     } catch (error) {
-      this.logger.error('Elasticsearch companies search failed', error as Error);
-      return { total: 0, items: [], index: this.companiesSearchIndex };
+      this.logger.error(
+        `Elasticsearch companies search failed index=${index}`,
+        error as Error,
+      );
+      return { total: 0, items: [], index };
     }
   }
 }

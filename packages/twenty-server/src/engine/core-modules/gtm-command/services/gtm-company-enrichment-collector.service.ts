@@ -47,18 +47,18 @@ export class GtmCompanyEnrichmentCollectorService {
       try {
         const hints = {
           companyName:
+            collected.wikiCompany?.name ??
             collected.linkedInCompanyProfile?.name ??
             collected.linkedInSearchHit?.name ??
             collected.wikidataCompany?.name ??
-            collected.wikiCompany?.name ??
             (typeof collected.apolloOrganization?.name === 'string'
               ? collected.apolloOrganization.name
               : null) ??
             input.workspaceDisplayName ??
             null,
           linkedInUrl:
-            collected.linkedInSearchHit?.profile_url ??
             collected.wikiCompany?.linkedin_url ??
+            collected.linkedInSearchHit?.profile_url ??
             collected.wikidataCompany?.linkedin_url ??
             (typeof collected.apolloOrganization?.linkedin_url === 'string'
               ? collected.apolloOrganization.linkedin_url

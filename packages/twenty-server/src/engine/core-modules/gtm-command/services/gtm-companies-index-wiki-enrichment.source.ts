@@ -10,7 +10,7 @@ import type {
 import { pickBestWikiCompanyHit } from 'src/engine/core-modules/gtm-command/utils/gtm-workspace-profile-draft.util';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 
-// Companies ES index ("wiki companies" / search_companies_index)
+// Companies ES index: free_company_dataset first, then std_company_data_scores
 @Injectable()
 export class GtmCompaniesIndexWikiEnrichmentSource
   implements GtmCompanyEnrichmentSource

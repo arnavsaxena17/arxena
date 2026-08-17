@@ -75,22 +75,36 @@ export class GtmLinkedInPoolCompanyEnrichmentSource
       return null;
     }
 
-    const linkedInSearchHit = await this.fetchCompanySearchHit({
-      domain: input.domain,
-      companyNameHint:
-        input.hints?.companyName ?? input.workspaceDisplayName ?? null,
-      wikiLinkedInUrl: input.hints?.linkedInUrl ?? null,
-      accountId,
-    });
+    const wikiLinkedInUrl = input.hints?.linkedInUrl ?? null;
+    const profileFromIndex = isNonEmptyString(wikiLinkedInUrl)
+      ? await this.fetchCompanyProfile(
+          this.extractCompanyIdentifier({
+            linkedInSearchHit: null,
+            wikiLinkedInUrl,
+          }) ?? wikiLinkedInUrl,
+          accountId,
+        )
+      : null;
+
+    const linkedInSearchHit = profileFromIndex
+      ? null
+      : await this.fetchCompanySearchHit({
+          domain: input.domain,
+          companyNameHint:
+            input.hints?.companyName ?? input.workspaceDisplayName ?? null,
+          wikiLinkedInUrl,
+          accountId,
+        });
 
     const profileIdentifier = this.extractCompanyIdentifier({
       linkedInSearchHit,
-      wikiLinkedInUrl: input.hints?.linkedInUrl ?? null,
+      wikiLinkedInUrl,
     });
 
-    let linkedInCompanyProfile: GtmLinkedInCompanyProfile | null = null;
+    let linkedInCompanyProfile: GtmLinkedInCompanyProfile | null =
+      profileFromIndex;
 
-    if (isNonEmptyString(profileIdentifier)) {
+    if (!linkedInCompanyProfile && isNonEmptyString(profileIdentifier)) {
       linkedInCompanyProfile = await this.fetchCompanyProfile(
         profileIdentifier,
         accountId,
@@ -122,12 +136,9 @@ export class GtmLinkedInPoolCompanyEnrichmentSource
       return null;
     }
 
-    const keywords = [
-      input.domain,
-      isNonEmptyString(input.companyNameHint) ? input.companyNameHint : null,
-    ]
-      .filter(isNonEmptyString)
-      .join(' ');
+    const keywords = isNonEmptyString(input.companyNameHint)
+      ? input.companyNameHint
+      : input.domain;
 
     try {
       const salesNavResponse =
