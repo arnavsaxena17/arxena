@@ -45,7 +45,7 @@ describe('PeopleSearchDataSourceResolver', () => {
     );
 
     await expect(
-      resolver.resolve({ dataSource: 'none', apiToken: 'token' }),
+      resolver.resolve({ dataSource: 'auto', apiToken: 'token' }),
     ).resolves.toEqual({
       dataSource: 'unipile',
       accountId: 'unipile-member',

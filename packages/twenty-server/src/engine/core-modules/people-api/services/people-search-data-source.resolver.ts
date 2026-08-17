@@ -22,7 +22,7 @@ export type ResolvedPeopleSearchDataSource = {
 
 const isUnresolvedPeopleDataSource = (
   dataSource?: PeopleDataSourceAlias,
-): boolean => !dataSource || dataSource === 'none';
+): boolean => !dataSource || dataSource === 'auto';
 
 const hasSalesNavigatorSeat = (linkedinProfile: unknown): boolean => {
   const stored = parseWorkspaceMemberLinkedinProfile(linkedinProfile);
@@ -50,7 +50,7 @@ export class PeopleSearchDataSourceResolver {
 
     if (explicitAccountId) {
       this.logger.log(
-        'People API dataSource none/omitted using explicit accountId as unipile',
+        'People API dataSource auto/omitted using explicit accountId as unipile',
       );
 
       return { dataSource: 'unipile', accountId: explicitAccountId };
@@ -64,7 +64,7 @@ export class PeopleSearchDataSourceResolver {
     }
 
     this.logger.log(
-      'People API dataSource none/omitted falling back to index (no LinkedIn Unipile account)',
+      'People API dataSource auto/omitted falling back to index (no LinkedIn Unipile account)',
     );
 
     return { dataSource: 'index' };
@@ -109,7 +109,7 @@ export class PeopleSearchDataSourceResolver {
 
       if (memberAccountId) {
         this.logger.log(
-          `People API dataSource none/omitted using member ${workspaceMemberId} unipile ${memberAccountId}`,
+          `People API dataSource auto/omitted using member ${workspaceMemberId} unipile ${memberAccountId}`,
         );
 
         return { dataSource: 'unipile', accountId: memberAccountId };
@@ -121,7 +121,7 @@ export class PeopleSearchDataSourceResolver {
     );
     if (workspaceAccount) {
       this.logger.log(
-        `People API dataSource none/omitted using workspace Sales Navigator member ${workspaceAccount.workspaceMemberId} unipile ${workspaceAccount.accountId}`,
+        `People API dataSource auto/omitted using workspace Sales Navigator member ${workspaceAccount.workspaceMemberId} unipile ${workspaceAccount.accountId}`,
       );
 
       return {

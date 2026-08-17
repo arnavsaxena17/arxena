@@ -8,7 +8,7 @@ Primary path: pass `naturalLanguage` for a role utterance (for example “CHRO a
 
 `naturalLanguage` is not `query`. `naturalLanguage` is a role utterance the server parses and classifies. `query` is a raw keyword string passed through to the search backend with no taxonomy resolution.
 
-Omit `dataSource` or pass `none` to resolve LinkedIn Unipile automatically: the token’s workspace member profile first, then (for API keys with no member) any workspace member profile whose stored LinkedIn owner profile has a Sales Navigator seat. Pin `index`, `unipile`, `pool`, and other catalogs explicitly when you do not want that auto-resolve.
+Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically: the token’s workspace member profile first, then (for API keys with no member) any workspace member profile whose stored LinkedIn owner profile has a Sales Navigator seat. Pin `index`, `unipile`, `pool`, and other catalogs explicitly when you do not want that auto-resolve.
 
 ```bash
 curl --request POST \
@@ -17,7 +17,7 @@ curl --request POST \
   --header 'Content-Type: application/json' \
   --data '{
     "naturalLanguage": "",
-    "dataSource": "index",
+    "dataSource": "auto",
     "limit": 10
   }'
 ```

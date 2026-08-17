@@ -83,7 +83,7 @@ export class PeopleApiService {
     const unipileConfigured =
       this.peopleLinkedInSourcingService.isUnipileConfigured();
     const configuredByAlias: Record<PeopleDataSourceAlias, boolean> = {
-      none: unipileConfigured,
+      auto: unipileConfigured,
       index: this.peopleEsService.isEnabled(),
       apollo: this.apolloIoRestService.isConfigured(),
       pdl: this.pdlPersonOrgMovementService.isConfigured(),

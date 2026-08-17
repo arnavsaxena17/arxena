@@ -346,7 +346,7 @@ export const SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'companyName', type: 'string', description: 'Company name (e.g. Salesforce). Optional if the company is already in jobTitle.', required: false },
   { key: 'website', type: 'string', description: 'Company website domain (e.g. salesforce.com)', required: false },
   { key: 'country', type: 'string', description: 'Location country filter', required: false },
-  { key: 'dataSource', type: 'string', description: 'Data source alias: omit or none (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)', required: false },
+  { key: 'dataSource', type: 'string', description: 'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)', required: false },
   { key: 'accountId', type: 'string', description: 'Unipile LinkedIn account id. Required when dataSource is unipile.', required: false },
   { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
   { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
@@ -355,7 +355,7 @@ export const SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR: readonly McpInputField
 /** Descriptor for search_people_api tool input. */
 export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'naturalLanguage', type: 'string', description: 'PRIMARY: role utterance such as "CEO at StayVista" or "CHRO at Apple". Taxonomy is resolved server-side. Company may be in the phrase or passed separately.', required: false },
-  { key: 'dataSource', type: 'string', description: 'Data source alias: omit or none (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)', required: false },
+  { key: 'dataSource', type: 'string', description: 'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)', required: false },
   { key: 'accountId', type: 'string', description: 'Unipile LinkedIn account id. Required when dataSource is unipile.', required: false },
   { key: 'query', type: 'string', description: 'Free-text search (not classified; prefer naturalLanguage for roles)', required: false },
   { key: 'personName', type: 'string', description: 'Person name filter', required: false },

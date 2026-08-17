@@ -1,5 +1,5 @@
 export type PeopleDataSourceAlias =
-  | 'none'
+  | 'auto'
   | 'index'
   | 'apollo'
   | 'pdl'
@@ -10,7 +10,7 @@ export type PeopleDataSourceAlias =
 
 export type PeopleResolvedDataSourceAlias = Exclude<
   PeopleDataSourceAlias,
-  'none'
+  'auto'
 >;
 
 export const PEOPLE_LINKEDIN_DATA_SOURCES = [
@@ -32,10 +32,10 @@ export type PeopleDataSourceCategory = {
 
 export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
   {
-    alias: 'none',
-    label: 'None (auto)',
+    alias: 'auto',
+    label: 'Auto',
     description:
-      'Do not pick a catalog. Resolve the caller workspace member LinkedIn Unipile account, or any workspace member with Sales Navigator when the token is an API key.',
+      'Resolve the caller workspace member LinkedIn Unipile account, or any workspace member with Sales Navigator when the token is an API key.',
     supportsStdFunctionFilter: true,
     supportsStdGradeFilter: true,
   },

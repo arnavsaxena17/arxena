@@ -110,7 +110,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'list_people_data_sources',
       title: 'List people data sources',
       description:
-        'List configured people data source aliases (none, index, apollo, pdl, contactout, harvest, pool, unipile) and whether each supports std_function/std_grade filters.',
+        'List configured people data source aliases (auto, index, apollo, pdl, contactout, harvest, pool, unipile) and whether each supports std_function/std_grade filters.',
       annotations: { readOnlyHint: true },
       inputSchema: { type: 'object', properties: {} },
     },

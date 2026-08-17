@@ -7,7 +7,7 @@ describe('people-data-source-aliases', () => {
   it('exposes public aliases without vendor branding in descriptions', () => {
     const aliases = PEOPLE_DATA_SOURCE_CATEGORIES.map((category) => category.alias);
     expect(aliases).toEqual([
-      'none',
+      'auto',
       'index',
       'apollo',
       'pdl',

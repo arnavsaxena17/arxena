@@ -61,6 +61,15 @@ describe('buildPeopleApiOpenApiDocument', () => {
     );
     expect(searchRequest.properties?.candidateSource).toBeUndefined();
     expect(searchRequest.properties?.dataSource).toBeDefined();
+    expect(
+      (searchRequest.properties?.dataSource as { enum?: string[]; default?: string })
+        ?.enum,
+    ).toEqual(
+      expect.arrayContaining(['auto', 'index', 'unipile', 'pool']),
+    );
+    expect(
+      (searchRequest.properties?.dataSource as { default?: string }).default,
+    ).toBe('auto');
 
     const searchBody = doc.paths?.['/people-api/people/search']?.post
       ?.requestBody as {
@@ -78,7 +87,7 @@ describe('buildPeopleApiOpenApiDocument', () => {
     const jsonBody = searchBody.content?.['application/json'];
     expect(jsonBody?.example).toEqual({
       naturalLanguage: '',
-      dataSource: 'index',
+      dataSource: 'auto',
       limit: 10,
     });
     expect(jsonBody?.examples).toBeUndefined();

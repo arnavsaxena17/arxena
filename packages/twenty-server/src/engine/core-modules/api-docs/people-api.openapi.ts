@@ -131,9 +131,10 @@ export const buildPeopleApiOpenApiDocument = (
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
+            default: 'auto',
             description:
-              'Which catalog to search. Omit or pass `none` to resolve the caller workspace member LinkedIn Unipile account; API keys (no member on the token) use any workspace member profile with a Sales Navigator Unipile seat. `index` is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId` unless resolved from the workspace).',
-            example: 'none',
+              'Which catalog to search. Omit or pass `auto` (default) to resolve the caller workspace member LinkedIn Unipile account; API keys (no member on the token) use any workspace member profile with a Sales Navigator Unipile seat. `index` is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId` unless resolved from the workspace).',
+            example: 'auto',
           },
           accountId: {
             type: 'string',
@@ -177,7 +178,7 @@ export const buildPeopleApiOpenApiDocument = (
         },
         example: {
           naturalLanguage: '',
-          dataSource: 'index',
+          dataSource: 'auto',
           limit: 10,
         },
       },
@@ -233,9 +234,10 @@ export const buildPeopleApiOpenApiDocument = (
           dataSource: {
             type: 'string',
             enum: dataSourceEnum,
-            example: 'pool',
+            default: 'auto',
+            example: 'auto',
             description:
-              'People source. Omit or pass `none` to resolve the workspace member Unipile account (API keys use a workspace Sales Navigator seat). Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId unless resolved.',
+              'People source. Omit or pass `auto` (default) to resolve the workspace member Unipile account (API keys use a workspace Sales Navigator seat). Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId unless resolved.',
           },
           accountId: {
             type: 'string',
@@ -1188,7 +1190,7 @@ export const buildPeopleApiOpenApiDocument = (
               schema: { $ref: '#/components/schemas/PeopleSearchRequest' },
               example: {
                 naturalLanguage: '',
-                dataSource: 'index',
+                dataSource: 'auto',
                 limit: 10,
               },
             },

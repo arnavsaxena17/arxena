@@ -107,6 +107,7 @@
           "dataSource": {
             "type": "string",
             "enum": [
+              "auto",
               "index",
               "apollo",
               "pdl",
@@ -115,9 +116,9 @@
               "unipile",
               "pool"
             ],
-            "default": "index",
-            "description": "Which catalog to search. `index` (default) is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId`).",
-            "example": "index"
+            "default": "auto",
+            "description": "Which catalog to search. Omit or pass `auto` (default) to resolve the caller workspace member LinkedIn Unipile account; API keys (no member on the token) use any workspace member profile with a Sales Navigator Unipile seat. `index` is the people index. `apollo` and `contactout` are vendor search. `pool`, `harvest`, and `unipile` are LinkedIn Sales Navigator (`unipile` requires `accountId` unless resolved from the workspace).",
+            "example": "auto"
           },
           "accountId": {
             "type": "string",
@@ -221,7 +222,7 @@
         },
         "example": {
           "naturalLanguage": "",
-          "dataSource": "index",
+          "dataSource": "auto",
           "limit": 10
         }
       },
@@ -237,6 +238,7 @@
           "dataSource": {
             "type": "string",
             "enum": [
+              "auto",
               "index",
               "apollo",
               "pdl",
@@ -327,6 +329,7 @@
           "dataSource": {
             "type": "string",
             "enum": [
+              "auto",
               "index",
               "apollo",
               "pdl",
@@ -335,9 +338,9 @@
               "unipile",
               "pool"
             ],
-            "default": "index",
-            "example": "pool",
-            "description": "People source. Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId."
+            "default": "auto",
+            "example": "auto",
+            "description": "People source. Omit or pass `auto` (default) to resolve the workspace member Unipile account (API keys use a workspace Sales Navigator seat). Use pool / unipile / harvest for Sales Navigator; apollo for Apollo; index for the people index. unipile requires accountId unless resolved."
           },
           "accountId": {
             "type": "string",
@@ -463,6 +466,7 @@
                 "alias": {
                   "type": "string",
                   "enum": [
+                    "auto",
                     "index",
                     "apollo",
                     "pdl",
@@ -1679,7 +1683,7 @@
               },
               "example": {
                 "naturalLanguage": "",
-                "dataSource": "index",
+                "dataSource": "auto",
                 "limit": 10
               }
             }

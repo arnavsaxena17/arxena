@@ -59,7 +59,7 @@ const createIndexDataSourceResolver = (): PeopleSearchDataSourceResolver =>
     resolve: jest.fn(
       async (input: { dataSource?: string; accountId?: string }) => ({
         dataSource:
-          input.dataSource && input.dataSource !== 'none'
+          input.dataSource && input.dataSource !== 'auto'
             ? input.dataSource
             : 'index',
         accountId: input.accountId,
