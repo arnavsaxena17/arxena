@@ -1,13 +1,14 @@
+import { useEffect, useCallback } from 'react';
+
+import { useInitializeQueryParamState } from '@/app/hooks/useInitializeQueryParamState';
+import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
+import { useGetPublicWorkspaceDataByDomain } from '@/domain-manager/hooks/useGetPublicWorkspaceDataByDomain';
+import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
 import { useReadWorkspaceUrlFromCurrentLocation } from '@/domain-manager/hooks/useReadWorkspaceUrlFromCurrentLocation';
 import { useRedirectToWorkspaceDomain } from '@/domain-manager/hooks/useRedirectToWorkspaceDomain';
 import { lastAuthenticatedWorkspaceDomainState } from '@/domain-manager/states/lastAuthenticatedWorkspaceDomainState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useEffect, useCallback } from 'react';
-
-import { useInitializeQueryParamState } from '@/app/hooks/useInitializeQueryParamState';
-import { useGetPublicWorkspaceDataByDomain } from '@/domain-manager/hooks/useGetPublicWorkspaceDataByDomain';
-import { useIsCurrentLocationOnDefaultDomain } from '@/domain-manager/hooks/useIsCurrentLocationOnDefaultDomain';
 import { isDefined } from 'twenty-shared/utils';
 import { type WorkspaceUrls } from '~/generated-metadata/graphql';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
@@ -32,6 +33,7 @@ export const WorkspaceProviderEffect = () => {
   );
 
   const { initializeQueryParamState } = useInitializeQueryParamState();
+  const hasAccessTokenPair = useHasAccessTokenPair();
 
   const isWorkspaceHostnameMatchCurrentLocationHostname = useCallback(
     (workspaceUrls: WorkspaceUrls) => {
@@ -67,6 +69,7 @@ export const WorkspaceProviderEffect = () => {
     if (
       isMultiWorkspaceEnabled &&
       isDefaultDomain &&
+      hasAccessTokenPair &&
       isDefined(lastAuthenticatedWorkspaceDomain) &&
       'workspaceUrl' in lastAuthenticatedWorkspaceDomain &&
       isDefined(lastAuthenticatedWorkspaceDomain?.workspaceUrl)
@@ -81,6 +84,7 @@ export const WorkspaceProviderEffect = () => {
   }, [
     isMultiWorkspaceEnabled,
     isDefaultDomain,
+    hasAccessTokenPair,
     lastAuthenticatedWorkspaceDomain,
     redirectToWorkspaceDomain,
     initializeQueryParamState,

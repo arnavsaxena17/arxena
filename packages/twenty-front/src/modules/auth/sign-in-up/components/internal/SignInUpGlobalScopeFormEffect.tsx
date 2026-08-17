@@ -4,8 +4,15 @@ import {
   SignInUpStep,
   signInUpStepState,
 } from '@/auth/states/signInUpStepState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
+import {
+  SIGNED_OUT_QUERY_PARAM,
+  clearTokenPairIfSignedOut,
+  hasSignedOutMarker,
+} from '@/auth/utils/signedOutSession';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
+import { useStore } from 'jotai';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
@@ -16,6 +23,7 @@ export const SignInUpGlobalScopeFormEffect = () => {
   const { setAuthTokens, navigateAfterMultiWorkspaceSignInUp } = useAuth();
   const { loadCurrentUser } = useLoadCurrentUser();
   const hasAccessTokenPair = useHasAccessTokenPair();
+  const store = useStore();
 
   useEffect(() => {
     const resumeOnCentralDomain = async () => {
@@ -25,6 +33,21 @@ export const SignInUpGlobalScopeFormEffect = () => {
         user.email,
       );
     };
+
+    if (
+      searchParams.get(SIGNED_OUT_QUERY_PARAM) === '1' ||
+      hasSignedOutMarker()
+    ) {
+      clearTokenPairIfSignedOut();
+      store.set(tokenPairState.atom, null);
+
+      if (searchParams.get(SIGNED_OUT_QUERY_PARAM) === '1') {
+        searchParams.delete(SIGNED_OUT_QUERY_PARAM);
+        setSearchParams(searchParams, { replace: true });
+      }
+
+      return;
+    }
 
     const tokenPairFromUrl = searchParams.get('tokenPair');
     if (isDefined(tokenPairFromUrl)) {
@@ -47,6 +70,7 @@ export const SignInUpGlobalScopeFormEffect = () => {
     signInUpStep,
     hasAccessTokenPair,
     navigateAfterMultiWorkspaceSignInUp,
+    store,
   ]);
 
   return <></>;

@@ -2,7 +2,7 @@ import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { CHECKOUT_SESSION } from '@/billing/graphql/checkoutSession';
 import { t } from '@lingui/core/macro';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { isDefined } from 'twenty-shared/utils';
 import {
@@ -39,11 +39,13 @@ export const useHandleCheckoutSession = ({
   plan,
   requirePaymentMethod,
   successUrlPath,
+  showErrorSnackBar = true,
 }: {
   recurringInterval: SubscriptionInterval;
   plan: BillingPlanKey;
   requirePaymentMethod: boolean;
   successUrlPath: string;
+  showErrorSnackBar?: boolean;
 }) => {
   const { redirect } = useRedirect();
 
@@ -53,7 +55,7 @@ export const useHandleCheckoutSession = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCheckoutSession = async () => {
+  const handleCheckoutSession = useCallback(async (): Promise<boolean> => {
     setIsSubmitting(true);
     try {
       const { data } = await checkoutSession({
@@ -88,23 +90,40 @@ export const useHandleCheckoutSession = ({
 
         razorpay.open();
 
-        return;
+        return true;
       }
 
       if (!isDefined(session?.url) || session.url === '') {
+        if (showErrorSnackBar) {
+          enqueueErrorSnackBar({
+            message: t`Checkout session error. Please retry or contact Arxena team`,
+          });
+        }
+        return false;
+      }
+      redirect(session.url);
+
+      return true;
+    } catch {
+      if (showErrorSnackBar) {
         enqueueErrorSnackBar({
           message: t`Checkout session error. Please retry or contact Arxena team`,
         });
-        return;
       }
-      redirect(session.url);
-    } catch {
-      enqueueErrorSnackBar({
-        message: t`Checkout session error. Please retry or contact Arxena team`,
-      });
+
+      return false;
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    checkoutSession,
+    enqueueErrorSnackBar,
+    plan,
+    redirect,
+    recurringInterval,
+    requirePaymentMethod,
+    showErrorSnackBar,
+    successUrlPath,
+  ]);
   return { isSubmitting, handleCheckoutSession };
 };

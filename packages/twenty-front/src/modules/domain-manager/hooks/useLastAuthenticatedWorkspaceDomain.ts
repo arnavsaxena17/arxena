@@ -2,6 +2,10 @@ import { domainConfigurationState } from '@/domain-manager/states/domainConfigur
 import { lastAuthenticatedWorkspaceDomainState } from '@/domain-manager/states/lastAuthenticatedWorkspaceDomainState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { cookieStorage } from '~/utils/cookie-storage';
+
+const LAST_AUTHENTICATED_WORKSPACE_DOMAIN_COOKIE_KEY =
+  'lastAuthenticateWorkspaceDomain';
 
 export const useLastAuthenticatedWorkspaceDomain = () => {
   const domainConfiguration = useAtomStateValue(domainConfigurationState);
@@ -17,6 +21,12 @@ export const useLastAuthenticatedWorkspaceDomain = () => {
         domain: `.${domainConfiguration.frontDomain}`,
       },
     });
+
+    if (!params) {
+      cookieStorage.removeItem(LAST_AUTHENTICATED_WORKSPACE_DOMAIN_COOKIE_KEY, {
+        path: '/',
+      });
+    }
   };
 
   return {

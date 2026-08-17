@@ -1,5 +1,5 @@
 import { styled } from '@linaria/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -58,12 +58,19 @@ export const GtmWorkflowPanel = ({
   runsLoading,
 }: GtmWorkflowPanelProps) => {
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
+  const lastOpenedForActiveRef = useRef(false);
 
   useEffect(() => {
     if (!isActive) {
+      lastOpenedForActiveRef.current = false;
       return;
     }
 
+    if (lastOpenedForActiveRef.current) {
+      return;
+    }
+
+    lastOpenedForActiveRef.current = true;
     // Keep the existing chat thread; do not auto-send a new kickoff.
     openAskAiPage({ resetNavigationStack: true });
   }, [isActive, openAskAiPage]);

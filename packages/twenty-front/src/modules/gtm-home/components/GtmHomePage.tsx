@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -190,8 +190,14 @@ export const GtmHomePage = () => {
     }
   }, [hasWorkflow, hasWorkflowRun, workflowMode]);
 
-  // Show Ask AI on GTM Command entry (URL / reload), not only nav click
+  // Show Ask AI on GTM Command entry (URL / reload), not only nav click.
+  // Guard: opening the panel must not recreate this effect (max update depth).
+  const hasOpenedAskAiOnEntryRef = useRef(false);
   useEffect(() => {
+    if (hasOpenedAskAiOnEntryRef.current) {
+      return;
+    }
+    hasOpenedAskAiOnEntryRef.current = true;
     openAskAiPage({ resetNavigationStack: true });
   }, [openAskAiPage]);
 

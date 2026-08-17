@@ -1,17 +1,17 @@
 import { hasAgentChatBeenOpenedState } from '@/ai/states/hasAgentChatBeenOpenedState';
 import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
 import { isSidePanelOpenedState } from '@/side-panel/states/isSidePanelOpenedState';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { t } from '@lingui/core/macro';
+import { useStore } from 'jotai';
 import { useCallback } from 'react';
 import { SidePanelPages } from 'twenty-shared/types';
 import { IconSparkles } from 'twenty-ui/icon';
 import { v4 } from 'uuid';
 
 export const useOpenAskAiPageInSidePanel = () => {
+  const store = useStore();
   const { navigateSidePanelMenu } = useSidePanelMenu();
-  const isSidePanelOpened = useAtomStateValue(isSidePanelOpenedState);
   const setHasAgentChatBeenOpened = useSetAtomState(
     hasAgentChatBeenOpenedState,
   );
@@ -25,7 +25,7 @@ export const useOpenAskAiPageInSidePanel = () => {
       const shouldReset =
         resetNavigationStack !== undefined
           ? resetNavigationStack
-          : isSidePanelOpened;
+          : store.get(isSidePanelOpenedState.atom);
 
       setHasAgentChatBeenOpened(true);
 
@@ -37,7 +37,7 @@ export const useOpenAskAiPageInSidePanel = () => {
         resetNavigationStack: shouldReset,
       });
     },
-    [navigateSidePanelMenu, isSidePanelOpened, setHasAgentChatBeenOpened],
+    [navigateSidePanelMenu, setHasAgentChatBeenOpened, store],
   );
 
   return {

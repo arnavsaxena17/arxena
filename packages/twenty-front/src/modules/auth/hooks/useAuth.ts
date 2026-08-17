@@ -30,6 +30,11 @@ import { returnToPathState } from '@/auth/states/returnToPathState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { clearSessionLocalStorageKeys } from '@/auth/utils/clearSessionLocalStorageKeys';
 import { broadcastSignOutToOtherTabs } from '@/auth/utils/crossTabSignOut';
+import {
+  SIGNED_OUT_QUERY_PARAM,
+  clearSignedOutAcrossSubdomains,
+  markSignedOutAcrossSubdomains,
+} from '@/auth/utils/signedOutSession';
 import { isValidReturnToPath } from '@/auth/utils/isValidReturnToPath';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -51,8 +56,10 @@ import { isEmailVerificationRequiredState } from '@/client-config/states/isEmail
 import { isMultiWorkspaceEnabledState } from '@/client-config/states/isMultiWorkspaceEnabledState';
 import { useLastAuthenticatedWorkspaceDomain } from '@/domain-manager/hooks/useLastAuthenticatedWorkspaceDomain';
 import { useOrigin } from '@/domain-manager/hooks/useOrigin';
+import { useReadDefaultDomainFromConfiguration } from '@/domain-manager/hooks/useReadDefaultDomainFromConfiguration';
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { useRedirectToWorkspaceDomain } from '@/domain-manager/hooks/useRedirectToWorkspaceDomain';
+import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
 import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
 import { i18n } from '@lingui/core';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -83,6 +90,8 @@ export const useAuth = () => {
   const setSignInUpStep = useSetAtomState(signInUpStepState);
   const { redirect } = useRedirect();
   const { redirectToWorkspaceDomain } = useRedirectToWorkspaceDomain();
+  const { defaultDomain } = useReadDefaultDomainFromConfiguration();
+  const domainConfiguration = useAtomStateValue(domainConfigurationState);
 
   const [getLoginTokenFromCredentials] = useMutation(
     GetLoginTokenFromCredentialsDocument,
@@ -114,22 +123,50 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   const clearSession = useCallback(() => {
+    setIsAppEffectRedirectEnabled(false);
     sessionStorage.clear();
     store.set(tokenPairState.atom, null);
     store.set(currentUserState.atom, null);
     store.set(currentWorkspaceState.atom, null);
     store.set(currentWorkspaceMemberState.atom, null);
     store.set(currentUserWorkspaceState.atom, null);
+    store.set(returnToPathState.atom, '');
     clearSessionLocalStorageKeys();
     setLastAuthenticateWorkspaceDomain(null);
+    markSignedOutAcrossSubdomains(domainConfiguration.frontDomain);
+
+    if (
+      isMultiWorkspaceEnabled &&
+      window.location.hostname !== defaultDomain
+    ) {
+      const url = new URL(window.location.href);
+
+      url.hostname = defaultDomain;
+      url.pathname = AppPath.SignInUp;
+      url.hash = '';
+      url.search = '';
+      url.searchParams.set(SIGNED_OUT_QUERY_PARAM, '1');
+      redirect(url.toString());
+      return;
+    }
+
     window.location.assign(AppPath.SignInUp);
-  }, [store, setLastAuthenticateWorkspaceDomain]);
+  }, [
+    store,
+    setLastAuthenticateWorkspaceDomain,
+    setIsAppEffectRedirectEnabled,
+    domainConfiguration.frontDomain,
+    isMultiWorkspaceEnabled,
+    defaultDomain,
+    redirect,
+  ]);
 
   const handleSetAuthTokens = useCallback(
     (tokens: AuthTokenPair) => {
+      clearSignedOutAcrossSubdomains(domainConfiguration.frontDomain);
       setTokenPair(tokens);
     },
-    [setTokenPair],
+    [setTokenPair, domainConfiguration.frontDomain],
   );
 
   const navigateAfterMultiWorkspaceSignInUp = useCallback(
