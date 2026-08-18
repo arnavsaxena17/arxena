@@ -17,6 +17,8 @@ import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/s
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -41,6 +43,8 @@ export class IncomingWhatsappMessages {
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
+    private readonly gtmInboundReplyWindowService?: GtmInboundReplyWindowService,
+    private readonly gtmCommandMaterializeService?: GtmCommandMaterializeService,
     ) {
   }
 
@@ -1640,7 +1644,41 @@ export class IncomingWhatsappMessages {
       );
 
       console.log("Message was processed successfully and we should queue for engagement");
-      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id) {
+      const isGtmCandidate = this.isGtmOutreachCandidate(
+        candidateProfileDataNodeObj,
+        candidateJob,
+      );
+
+      if (
+        isGtmCandidate &&
+        whatappUpdateMessageObj &&
+        !replyObject.isFromMe &&
+        candidateProfileDataNodeObj?.id
+      ) {
+        try {
+          await this.gtmCommandMaterializeService?.applyCandidateEvent({
+            candidateId: candidateProfileDataNodeObj.id,
+            event: 'inbound_reply',
+            apiToken,
+          });
+          const workspaceId =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+          if (workspaceId) {
+            await this.gtmInboundReplyWindowService?.schedule({
+              workspaceId,
+              candidateId: candidateProfileDataNodeObj.id,
+              delayMinutes:
+                candidateJob?.engagementProcessingDelayMinutes ?? 2,
+              apiToken,
+            });
+          }
+        } catch (error) {
+          console.error('Error scheduling GTM inbound reply window:', error);
+        }
+      }
+
+      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && !isGtmCandidate) {
         try {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           if (workspaceId) {
@@ -1664,5 +1702,31 @@ export class IncomingWhatsappMessages {
       console.error('Error in createAndUpdateIncomingCandidateChatMessage:', error);
       throw error;
     }
+  }
+
+  private isGtmOutreachCandidate(
+    candidate: CandidateNode & {
+      gtmRunKey?: string | null;
+      outreachSequenceStage?: string | null;
+    },
+    project: Project & { gtmRunKey?: string | null },
+  ): boolean {
+    const stage = candidate?.outreachSequenceStage ?? '';
+    const gtmStages = new Set([
+      'QUEUED',
+      'CONNECTION_SENT',
+      'CONNECTION_ACCEPTED',
+      'MESSAGED',
+      'REPLIED',
+      'PROFILE_CHECKED',
+      'COMMENTED',
+      'WARM_PATH',
+    ]);
+
+    return Boolean(
+      candidate?.gtmRunKey ||
+        project?.gtmRunKey ||
+        gtmStages.has(stage),
+    );
   }
 }

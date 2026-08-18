@@ -72,6 +72,7 @@ import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service'
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
 import { OrgChartEmbedModule } from 'src/engine/core-modules/org-chart-embed/org-chart-embed.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
+import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
@@ -222,6 +223,7 @@ import { FileModule } from './file/file.module';
     WikidataModule,
     LinkedInSearchModule,
     PeopleApiModule,
+    GtmCommandModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
     GoogleDriveModule,

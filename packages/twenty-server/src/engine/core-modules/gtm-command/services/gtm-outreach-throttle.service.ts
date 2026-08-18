@@ -4,8 +4,10 @@ import {
   type GtmThrottleChannel,
   type GtmThrottleCounters,
   computeNextSendWindow,
+  computeSeatGapDelayMs,
   incrementThrottleCounter,
   isOverDailyCap,
+  isOverWeeklyConnectCap,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
 
 export type GtmOutreachThrottleCheckInput = {
@@ -26,6 +28,8 @@ export type GtmOutreachThrottleCheckResult = {
     | 'ok'
     | 'needs_connection'
     | 'over_daily_cap'
+    | 'over_weekly_cap'
+    | 'seat_gap'
     | 'outside_send_window'
     | null;
   delayMs: number;
@@ -88,6 +92,40 @@ export class GtmOutreachThrottleService {
       };
     }
 
+    if (input.channel === 'connect') {
+      const weekly = isOverWeeklyConnectCap(input.counters, now);
+
+      if (weekly.over) {
+        const nextWeek = new Date(weekly.weekStartedAt.getTime());
+
+        nextWeek.setUTCDate(nextWeek.getUTCDate() + 7);
+
+        return {
+          allowed: false,
+          reason: 'over_weekly_cap',
+          delayMs: Math.max(0, nextWeek.getTime() - now.getTime()),
+          nextSendAt: nextWeek,
+          counterPatch: {},
+        };
+      }
+    }
+
+    const gapMs = computeSeatGapDelayMs({
+      channel: input.channel,
+      counters: input.counters,
+      now,
+    });
+
+    if (gapMs > 0) {
+      return {
+        allowed: false,
+        reason: 'seat_gap',
+        delayMs: gapMs,
+        nextSendAt: new Date(now.getTime() + gapMs),
+        counterPatch: {},
+      };
+    }
+
     const window = computeNextSendWindow({
       now,
       timezone: input.sendTimezone,
@@ -114,7 +152,7 @@ export class GtmOutreachThrottleService {
       reason: 'ok',
       delayMs: 0,
       nextSendAt: now,
-      counterPatch: incrementThrottleCounter(input.counters, input.channel),
+      counterPatch: incrementThrottleCounter(input.counters, input.channel, now),
     };
   }
 }

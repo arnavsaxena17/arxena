@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -20,6 +21,7 @@ import { GtmRunProgressHeader } from '@/gtm-home/components/GtmRunProgressHeader
 import { GtmSetupPanel } from '@/gtm-home/components/GtmSetupPanel';
 import { GtmWorkflowPanel } from '@/gtm-home/components/GtmWorkflowPanel';
 import { GtmWorkflowToolbar } from '@/gtm-home/components/GtmWorkflowToolbar';
+import { GTM_PROJECT_ID_QUERY_PARAM } from '@/gtm-home/constants/gtm-command.constants';
 import { useGtmLiveWorkingSet } from '@/gtm-home/hooks/useGtmLiveWorkingSet';
 import {
   type GtmWorkflowEmbedMode,
@@ -92,6 +94,13 @@ const StyledEmpty = styled.div`
 type GtmSetupPersistTarget = 'workspaceProfile' | 'project';
 
 export const GtmHomePage = () => {
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get(GTM_PROJECT_ID_QUERY_PARAM) ?? 'resolving';
+
+  return <GtmHomePageContent key={projectId} />;
+};
+
+const GtmHomePageContent = () => {
   const {
     loading,
     workspaceCompany,

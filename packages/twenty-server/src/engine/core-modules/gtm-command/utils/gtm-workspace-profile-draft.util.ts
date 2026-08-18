@@ -1,14 +1,16 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-export type GtmIcpSpecDraft = {
+export type GtmIcpSpec = {
   name: string;
   industries: string[];
   employeeRange: string;
   geos: string[];
   buyerTitles: string[];
   painSignals: string[];
-  stdFunctions: string[];
-  stdGrades: string[];
+  // stdFunctions?: string[];
+  // stdGrades?: string[];
+  // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
+  blurb?: string;
 };
 
 export type GtmSellerCompanyDraft = {
@@ -22,7 +24,7 @@ export type GtmSellerCompanyDraft = {
 
 export type GtmWorkspaceProfileDraft = GtmSellerCompanyDraft & {
   icpSegment: string;
-  icpSpec: GtmIcpSpecDraft;
+  icpSpec: GtmIcpSpec;
   icpBlurb: string;
   companySearchBlurb: string;
   peopleSearchBlurb: string;
@@ -428,7 +430,7 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
     ? [hq.split(',').map((part) => part.trim()).filter(Boolean).at(-1) ?? hq]
     : [];
 
-  const icpSpec: GtmIcpSpecDraft = {
+  const icpSpec: GtmIcpSpec = {
     name: isNonEmptyString(industry)
       ? `${industry} buyers`
       : `Buyers for ${companyName}`,
@@ -441,8 +443,8 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
       'recruiter capacity constraints',
       'inconsistent outreach quality',
     ],
-    stdFunctions: DEFAULT_STD_FUNCTIONS,
-    stdGrades: DEFAULT_STD_GRADES,
+    // stdFunctions: DEFAULT_STD_FUNCTIONS,
+    // stdGrades: DEFAULT_STD_GRADES,
   };
 
   const icpBlurb = [
@@ -470,7 +472,7 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
   const peopleSearchBlurb = [
     `Find buyers at the target companies already on this GTM run.`,
     `Focus on titles: ${icpSpec.buyerTitles.join(', ')}.`,
-    `Functions/grades: ${icpSpec.stdFunctions.join(', ')} / ${icpSpec.stdGrades.join(', ')}.`,
+    // `Functions/grades: ${icpSpec.stdFunctions.join(', ')} / ${icpSpec.stdGrades.join(', ')}.`,
     'Prefer decision-makers with LinkedIn URLs; keep to a few personas per company.',
   ].join(' ');
 

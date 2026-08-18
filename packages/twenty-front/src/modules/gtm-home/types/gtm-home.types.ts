@@ -27,15 +27,18 @@ export type GtmWorkspaceCompany = {
   hq: string;
 };
 
-export type GtmIcpSet = {
+/** Complete structured ICP stored in `icpSpec` JSON (workspaceProfile / Project). */
+export type GtmIcpSpec = {
   name: string;
   industries: string[];
   employeeRange: string;
   geos: string[];
   buyerTitles: string[];
   painSignals: string[];
-  stdFunctions?: string[];
-  stdGrades?: string[];
+  // stdFunctions?: string[];
+  // stdGrades?: string[];
+  // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
+  blurb?: string;
 };
 
 export type WorkspaceProfileRecord = {
@@ -162,7 +165,7 @@ export type GtmIcpOnboardingKickoffInput = {
   workspaceCompany: GtmWorkspaceCompany;
   projectId: string | null;
   projectName: string | null;
-  proposedIcp?: GtmIcpSet | null;
+  proposedIcp?: GtmIcpSpec | null;
 };
 
 export const buildGtmIcpOnboardingKickoffPrompt = (
@@ -204,12 +207,12 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
         proposedIcp.painSignals.length > 0
           ? `- Pain signals: ${proposedIcp.painSignals.join('; ')}`
           : null,
-        (proposedIcp.stdFunctions?.length ?? 0) > 0
-          ? `- Functions: ${(proposedIcp.stdFunctions ?? []).join(', ')}`
-          : null,
-        (proposedIcp.stdGrades?.length ?? 0) > 0
-          ? `- Grades: ${(proposedIcp.stdGrades ?? []).join(', ')}`
-          : null,
+        // (proposedIcp.stdFunctions?.length ?? 0) > 0
+        //   ? `- Functions: ${(proposedIcp.stdFunctions ?? []).join(', ')}`
+        //   : null,
+        // (proposedIcp.stdGrades?.length ?? 0) > 0
+        //   ? `- Grades: ${(proposedIcp.stdGrades ?? []).join(', ')}`
+        //   : null,
       ].filter(Boolean)
     : [];
 

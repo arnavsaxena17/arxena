@@ -675,8 +675,7 @@ export const TableColumns = ({
         data: column,
         title: getColumnTitle(column),
         width: isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH : 150,
-        renderer: column === 'lastMessage' ? dateRenderer :
-                 isStatusField ? statusRenderer :
+        renderer: isStatusField ? statusRenderer :
                  isMessagingChannelField ? messagingChannelRenderer :
                  simpleRenderer,
         type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
@@ -722,7 +721,7 @@ export const TableColumns = ({
     // .sort()
     .forEach(key => {
       const isUrlField = urlFields.includes(key);
-      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt' || key === 'lastMessage';
+      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
       const isMessagingChannelField = key === 'messagingChannel';

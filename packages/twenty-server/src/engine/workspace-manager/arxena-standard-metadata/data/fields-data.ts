@@ -662,6 +662,28 @@ export const getFieldsData = (
       },
     },
     {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'Last LinkedIn connection request sent from this seat',
+        icon: 'IconClock',
+        label: 'Last LinkedIn Connect At',
+        name: 'lastLinkedinConnectAt',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMemberProfile',
+      field: {
+        description: 'Last LinkedIn DM or InMail sent from this seat',
+        icon: 'IconClock',
+        label: 'Last LinkedIn Message At',
+        name: 'lastLinkedinMessageAt',
+        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        type: 'DATE_TIME',
+      },
+    },
+    {
       objectName: 'person',
       field: {
         description: '',

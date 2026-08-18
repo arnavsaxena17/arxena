@@ -1,5 +1,3 @@
-import { isWorkspaceCustomApplication } from '@/applications/utils/isWorkspaceCustomApplication';
-import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { logicFunctionsSelector } from '@/logic-functions/states/logicFunctionsSelector';
 import { ToolMenuItem } from '@/side-panel/pages/workflow/action/components/ToolMenuItem';
 import { WorkflowActionMenuItems } from '@/side-panel/pages/workflow/action/components/WorkflowActionMenuItems';
@@ -28,13 +26,11 @@ export const SidePanelWorkflowSelectAction = ({
   const { t } = useLingui();
 
   const logicFunctions = useAtomStateValue(logicFunctionsSelector);
-  const currentWorkspace = useAtomStateValue(currentWorkspaceState);
 
+  // Include workspace-seeded first-party LFs (e.g. search-people-for-company).
+  // They live on the workspace custom application, so excluding that app hid them.
   const toolFunctions = logicFunctions.filter(
-    (fn) =>
-      isDefined(fn.workflowActionTriggerSettings) &&
-      isDefined(fn.applicationId) &&
-      !isWorkspaceCustomApplication({ id: fn.applicationId }, currentWorkspace),
+    (fn) => isDefined(fn.workflowActionTriggerSettings),
   );
 
   const handleActionClick = (actionType: WorkflowActionType) => {
@@ -85,7 +81,7 @@ export const SidePanelWorkflowSelectAction = ({
       />
 
       <SidePanelWorkflowSelectStepTitle>
-        {t`Human Input`}
+        {t`Human in the Loop`}
       </SidePanelWorkflowSelectStepTitle>
       <WorkflowActionMenuItems
         actions={HUMAN_INPUT_ACTIONS}

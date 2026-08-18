@@ -6,6 +6,7 @@ import {
   SendLinkedinInmailToolInputZodSchema,
   type SendLinkedinInmailToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-inmail-tool-input.type';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,
@@ -29,7 +30,9 @@ export class SendLinkedinInmailTool implements Tool {
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinInmailToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
-    const linkedinProfileId = input.linkedinProfileId?.trim() ?? '';
+    const linkedinProfileId = extractLinkedinProfileId(
+      input.linkedinProfileId,
+    );
     const subject = input.subject ?? '';
     const body = input.body ?? '';
 

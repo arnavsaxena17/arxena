@@ -54,6 +54,16 @@ export const useApolloFactory = (options: Partial<Options> = {}) => {
           RemoteTable: {
             keyFields: ['name'],
           },
+          WorkflowVersion: {
+            fields: {
+              steps: {
+                merge: false,
+              },
+              trigger: {
+                merge: false,
+              },
+            },
+          },
         },
       }),
 

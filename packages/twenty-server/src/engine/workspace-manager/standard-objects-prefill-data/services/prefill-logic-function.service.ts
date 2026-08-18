@@ -45,6 +45,14 @@ export class PrefillLogicFunctionService {
           id: definition.id,
           name: definition.name,
           description: definition.description,
+          workflowActionTriggerSettings:
+            'workflowActionTriggerSettings' in definition
+              ? (
+                  definition as {
+                    workflowActionTriggerSettings?: unknown;
+                  }
+                ).workflowActionTriggerSettings
+              : undefined,
           source: {
             sourceHandlerCode: definition.sourceHandlerCode,
             handlerName: 'main',

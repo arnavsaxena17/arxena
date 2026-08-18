@@ -28,6 +28,7 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { resolveAvatarUrlFromDisplayPictureUrl } from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
 import {
@@ -642,10 +643,88 @@ export class CandidateService {
       this.displayProcessingSummary();
 
       const createdCandidateIds = Array.from(tracking.candidateIdMap.values());
+
+      await this.applyGtmQueuedEnrollment({
+        data,
+        tracking,
+        jobObject,
+        origin,
+        apiToken,
+      });
+
       return { ...results, timestamp, createdCandidateIds };
     } catch (error) {
       console.error('Error in profile processing:', error);
       throw error;
+    }
+  }
+
+  private async applyGtmQueuedEnrollment({
+    data,
+    tracking,
+    jobObject,
+    origin,
+    apiToken,
+  }: {
+    data: UserProfile[];
+    tracking: {
+      candidateIdMap: Map<string, string>;
+    };
+    jobObject: Project & {
+      gtmRunKey?: string | null;
+      icpSpec?: string | null;
+    };
+    origin: string;
+    apiToken: string;
+  }): Promise<void> {
+    const gtmRunKey = jobObject.gtmRunKey || '';
+    const isGtmProject =
+      origin.includes('gtm') ||
+      Boolean(gtmRunKey) ||
+      Boolean(jobObject.icpSpec) ||
+      /gtm/i.test(jobObject.name ?? '');
+
+    if (!isGtmProject) {
+      return;
+    }
+
+    const resolvedRunKey = gtmRunKey || jobObject.id;
+
+    for (const profile of data) {
+      const key = profile.uniqueStringKey;
+      const candidateId = key
+        ? tracking.candidateIdMap.get(key)
+        : undefined;
+
+      if (!candidateId) {
+        continue;
+      }
+
+      const linkedinUrl =
+        profile.linkedinUrl ||
+        (profile as { profileUrl?: string }).profileUrl ||
+        '';
+      const linkedinProfileId = extractLinkedinProfileId(linkedinUrl);
+
+      try {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId,
+            input: {
+              outreachSequenceStage: 'QUEUED',
+              gtmRunKey: resolvedRunKey,
+              ...(linkedinProfileId ? { linkedinProfileId } : {}),
+            },
+          },
+          apiToken,
+        );
+      } catch (error) {
+        console.error(
+          `Failed to mark GTM QUEUED for candidate ${candidateId}:`,
+          error,
+        );
+      }
     }
   }
 

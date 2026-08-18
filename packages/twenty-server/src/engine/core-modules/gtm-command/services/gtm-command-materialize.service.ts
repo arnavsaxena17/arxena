@@ -74,7 +74,7 @@ export class GtmCommandMaterializeService {
         companyId ??
         (await this.fetchCandidateCompanyId(candidateId, apiToken));
 
-      if (resolvedCompanyId) {
+      if (resolvedCompanyId && event !== 'inbound_reply') {
         await this.recomputeCompanyRollup({
           companyId: resolvedCompanyId,
           companyCreatedAt,

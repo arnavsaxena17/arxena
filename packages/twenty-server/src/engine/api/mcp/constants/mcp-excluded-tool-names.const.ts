@@ -5,3 +5,4 @@ export const MCP_EXCLUDED_TOOL_NAMES = new Set([
   'http_request',
   ...OUTPUT_NAVIGATION_TOOL_NAMES,
 ]);
+console.log(`MCP_EXCLUDED_TOOL_NAMES: ${JSON.stringify(Array.from(MCP_EXCLUDED_TOOL_NAMES))}`);

@@ -914,6 +914,7 @@ export class ChatExecutionService {
       `icpSpec: ${browsingContext.icpSpecSummary ?? 'none'}`,
       `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
       'Target companies on the Companies tab are ephemeral (Redis per projectId), not CRM membership.',
+      
       'When the user asks to find/fetch/add/build target companies:',
       '1. load_skills(["search-companies"])',
       '2. Search (Exa via app_exa_web_search / exa_web_search, Apollo, LinkedIn, etc.)',
@@ -921,14 +922,16 @@ export class ChatExecutionService {
       '4. Call upsert_gtm_target_companies({ projectId, mode: "merge", companies: [...] }) before ending the turn',
       'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when enrolling people.',
       'Target people on the People tab are ephemeral (Redis per projectId) until the user selects rows and confirms Add to CRM / Enroll.',
+      
       'When the user asks to find/fetch/search people (MD/CEO, buyers, personas) for this GTM run:',
       '1. load_skills(["search-people","linkedin-search"]) as needed',
       '2. Search (Unipile LinkedIn / Harvest / Apollo / etc.) using companies from this run when relevant',
       '3. learn_tools({toolNames:["upsert_gtm_target_people"]}) then execute_tool with a JSON-object arguments field',
       '4. Call upsert_gtm_target_people({ projectId, mode: "merge", people: [...] }) before ending the turn',
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
+      
       'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this run:',
-      '1. load_skills(["workflow-building"]) — treat that ask as execute authorization for enrollment',
+      '1. load_skills(["gtm-outreach-workflows","workflow-building"]) — treat that ask as execute authorization for enrollment',
       '2. Prefer Project outreachWorkflowId / name "GTM Outreach — Per Candidate"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
       '3. Candidate Links field is linkedinUrl.primaryLinkUrl (Person uses linkedinLink) — fix SEND_* templates if they still say linkedinLink',
       '4. Activate the draft, then create Candidates for ephemeral People with projectsId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',

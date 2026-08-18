@@ -20,7 +20,7 @@ export const workflowDatabaseEventTriggerSchema = baseTriggerSchema
       outputSchema: z
         .looseObject({})
         .describe(
-          'Schema defining the output data structure. For database events, this includes the record that triggered the workflow accessible via {{trigger.object.fieldName}}.',
+          'Schema defining the output data structure. The triggering record is accessible as {{trigger.properties.after.fieldName}} (not {{trigger.fieldName}} or {{trigger.object.fieldName}}).',
         ),
       objectType: z.string().optional(),
       fields: z.array(z.string()).optional().nullable(),
@@ -36,5 +36,5 @@ export const workflowDatabaseEventTriggerSchema = baseTriggerSchema
     }),
   })
   .describe(
-    'Database event trigger that fires when a record is created, updated, deleted, or upserted. The triggered record is accessible in workflow steps via {{trigger.object.fieldName}}.',
+    'Database event trigger that fires when a record is created, updated, deleted, or upserted. The triggered record is accessible in workflow steps via {{trigger.properties.after.fieldName}}.',
   );

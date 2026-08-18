@@ -1,10 +1,16 @@
 import { Module } from '@nestjs/common';
 
+import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
 import { LogicFunctionWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/logic-function.workflow-action';
 
 @Module({
-  imports: [WorkspaceManyOrAllFlatEntityMapsCacheModule],
+  imports: [
+    WorkspaceManyOrAllFlatEntityMapsCacheModule,
+    LogicFunctionExecutorModule,
+    GtmCommandModule,
+  ],
   providers: [LogicFunctionWorkflowAction],
   exports: [LogicFunctionWorkflowAction],
 })

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { StepLogicalOperator, ViewFilterOperand } from 'twenty-shared';
-import { v4 } from 'uuid';
+import { v4, v5 as uuidv5 } from 'uuid';
 
 const SERVER_URL = process.env.SERVER_URL || 'http://127.0.0.1:3000';
 const SERVER_HOST = process.env.SERVER_HOST || 'arxena.localhost';
@@ -15,7 +15,9 @@ const DELAY_SECONDS =
     : 0;
 
 const WORKFLOW_B_NAME = 'GTM Outreach — Per Candidate';
-const WORKFLOW_C_NAME = 'GTM Outreach — Reply to Meeting';
+const WORKFLOW_ACCEPT_NAME = 'GTM Outreach — Connection Accepted';
+const WORKFLOW_C_NAME = 'GTM Outreach — Reply';
+const GTM_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
 
 type GraphQLResponse<T> = {
   data?: T;
@@ -201,11 +203,13 @@ const createWorkflowStep = async ({
   stepType,
   parentStepId,
   parentStepConnectionOptions,
+  defaultSettings,
 }: {
   workflowVersionId: string;
   stepType: string;
   parentStepId: string;
   parentStepConnectionOptions?: { branchId?: string };
+  defaultSettings?: Record<string, unknown>;
 }) => {
   const stepId = v4();
   const data = await graphqlRequest<{
@@ -224,6 +228,7 @@ const createWorkflowStep = async ({
         stepType,
         parentStepId,
         parentStepConnectionOptions,
+        ...(defaultSettings ? { defaultSettings } : {}),
       },
     },
   );
@@ -289,23 +294,40 @@ const errorHandling = {
   continueOnFailure: { value: false },
 };
 
+const formNotifyOnPending = (contextTemplate: string, detailsTemplate: string) => ({
+  channels: ['WHATSAPP_OFFICIAL'],
+  contextTemplate,
+  detailsTemplate,
+  whatsappOfficialRegistryName: 'wf_form_boolean_text',
+});
+
+const queuedFilterSettings = (groupId: string, filterId: string, stage: string) => ({
+  input: {
+    stepFilterGroups: [
+      {
+        id: groupId,
+        logicalOperator: StepLogicalOperator.AND,
+      },
+    ],
+    stepFilters: [
+      {
+        id: filterId,
+        type: 'SELECT',
+        stepOutputKey: '{{trigger.outreachSequenceStage}}',
+        operand: ViewFilterOperand.IS,
+        value: stage,
+        stepFilterGroupId: groupId,
+      },
+    ],
+  },
+  outputSchema: {},
+  errorHandlingOptions: errorHandling,
+});
+
 const deployWorkflowB = async (workflowVersionId: string) => {
-  const firstDegreeGroupId = v4();
-  const firstDegreeFilterId = v4();
-  const firstDegreeBranchId = v4();
-  const secondDegreeBranchId = v4();
+  const queuedGroupId = v4();
+  const queuedFilterId = v4();
 
-  const acceptedGroupId = v4();
-  const acceptedFilterId = v4();
-  const acceptedBranchId = v4();
-  const ignoredBranchId = v4();
-
-  const inMailGroupId = v4();
-  const inMailFilterId = v4();
-  const inMailBranchId = v4();
-  const emailBranchId = v4();
-
-  // Trigger must exist before createWorkflowVersionStep can attach to it
   await updateWorkflowTrigger({
     workflowVersionId,
     name: 'Candidate is Created',
@@ -325,63 +347,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       ...filterQueued,
       name: 'Only QUEUED candidates',
       valid: true,
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: v4(),
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: v4(),
-              type: 'SELECT',
-              stepOutputKey: '{{trigger.outreachSequenceStage}}',
-              operand: ViewFilterOperand.IS,
-              value: 'QUEUED',
-              stepFilterGroupId: firstDegreeGroupId,
-            },
-          ],
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  // Re-create filter with correct group id linkage
-  const queuedGroupId = v4();
-  const queuedFilterId = v4();
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...filterQueued,
-      name: 'Only QUEUED candidates',
-      valid: true,
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: queuedGroupId,
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: queuedFilterId,
-              type: 'SELECT',
-              stepOutputKey: '{{trigger.outreachSequenceStage}}',
-              operand: ViewFilterOperand.IS,
-              value: 'QUEUED',
-              stepFilterGroupId: queuedGroupId,
-            },
-          ],
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
+      settings: queuedFilterSettings(queuedGroupId, queuedFilterId, 'QUEUED'),
     },
   });
 
@@ -418,108 +384,22 @@ const deployWorkflowB = async (workflowVersionId: string) => {
     },
   });
 
-  const degreeIfElse = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'IF_ELSE',
-    parentStepId: findCandidate.id,
-  });
-
-  const updateFirstDegree = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'UPDATE_RECORD',
-    parentStepId: degreeIfElse.id,
-    parentStepConnectionOptions: { branchId: firstDegreeBranchId },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...updateFirstDegree,
-      name: 'Mark 1st-degree pending message',
-      valid: true,
-      settings: {
-        input: {
-          objectName: 'candidate',
-          objectRecordId: `{{${findCandidate.id}.result.first.id}}`,
-          objectRecord: {
-            pendingChannel: 'OTHER',
-            pendingMessageBody:
-              'Draft 1st-degree LinkedIn/email message (approval or auto)',
-            outreachSequenceStage: 'CONNECTION_ACCEPTED',
-          },
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const formApproveFirst = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'FORM',
-    parentStepId: updateFirstDegree.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...formApproveFirst,
-      name: 'Approve 1st-degree send (skip if AUTO)',
-      valid: true,
-      settings: {
-        input: [
-          {
-            id: v4(),
-            name: 'approveSend',
-            label: 'Approve send',
-            type: 'BOOLEAN',
-            value: true,
-          },
-        ],
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const sendLinkedInMessage = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'SEND_LINKEDIN_MESSAGE',
-    parentStepId: formApproveFirst.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...sendLinkedInMessage,
-      name: 'Send LinkedIn message (1st degree)',
-      valid: true,
-      settings: {
-        input: {
-          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
-          message: `{{${findCandidate.id}.result.first.pendingMessageBody}}`,
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
   const sendConnect = await createWorkflowStep({
     workflowVersionId,
     stepType: 'SEND_LINKEDIN_CONNECTION_REQUEST',
-    parentStepId: degreeIfElse.id,
-    parentStepConnectionOptions: { branchId: secondDegreeBranchId },
+    parentStepId: findCandidate.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
       ...sendConnect,
-      name: 'Send LinkedIn connection (2nd+)',
+      name: 'Send LinkedIn connection',
       valid: true,
       settings: {
         input: {
+          workspaceMemberId: '',
+          linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
           linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
           message: 'Happy to connect — would love to share how we help GTM teams.',
         },
@@ -556,37 +436,70 @@ const deployWorkflowB = async (workflowVersionId: string) => {
     },
   });
 
-  const waitAccept = await createWorkflowStep({
+  return {
+    filterQueuedId: filterQueued.id,
+    findCandidateId: findCandidate.id,
+    sendConnectId: sendConnect.id,
+    markConnectionSentId: markConnectionSent.id,
+  };
+};
+
+const deployWorkflowAccept = async (workflowVersionId: string) => {
+  const acceptedGroupId = v4();
+  const acceptedFilterId = v4();
+  const workspaceId = process.env.WORKSPACE_ID;
+  const fetchLogicFunctionId = workspaceId
+    ? uuidv5(
+        `${workspaceId}:fetch-linkedin-profile`,
+        GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+      )
+    : process.env.GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_ID;
+
+  await updateWorkflowTrigger({
     workflowVersionId,
-    stepType: 'DELAY',
-    parentStepId: markConnectionSent.id,
+    name: 'Candidate is Updated',
+    eventName: 'candidate.updated',
+    nextStepIds: [],
+  });
+
+  const filterAccepted = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FILTER',
+    parentStepId: TRIGGER_STEP_ID,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...waitAccept,
-      name: 'Wait for connection accept',
+      ...filterAccepted,
+      name: 'Only ACCEPTED candidates',
       valid: true,
-      settings: {
-        input: delaySettings(),
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
+      settings: queuedFilterSettings(
+        acceptedGroupId,
+        acceptedFilterId,
+        'CONNECTION_ACCEPTED',
+      ),
     },
   });
 
-  const refreshCandidate = await createWorkflowStep({
+  await updateWorkflowTrigger({
+    workflowVersionId,
+    name: 'Candidate is Updated',
+    eventName: 'candidate.updated',
+    nextStepIds: [filterAccepted.id],
+  });
+
+  const findCandidate = await createWorkflowStep({
     workflowVersionId,
     stepType: 'FIND_RECORDS',
-    parentStepId: waitAccept.id,
+    parentStepId: filterAccepted.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...refreshCandidate,
-      name: 'Refresh Candidate connection status',
+      ...findCandidate,
+      name: 'Load Candidate',
       valid: true,
       settings: {
         input: {
@@ -602,58 +515,127 @@ const deployWorkflowB = async (workflowVersionId: string) => {
     },
   });
 
-  const acceptedIfElse = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'IF_ELSE',
-    parentStepId: refreshCandidate.id,
-  });
+  let parentId = findCandidate.id;
 
-  const approveAccepted = await createWorkflowStep({
+  if (fetchLogicFunctionId) {
+    const fetchProfile = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'LOGIC_FUNCTION',
+      parentStepId: parentId,
+      defaultSettings: {
+        input: {
+          logicFunctionId: fetchLogicFunctionId,
+        },
+      },
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...fetchProfile,
+        name: 'Fetch LinkedIn profile',
+        valid: true,
+        settings: {
+          input: {
+            logicFunctionId: fetchLogicFunctionId,
+            logicFunctionInput: {
+              candidateId: `{{${findCandidate.id}.result.first.id}}`,
+              linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
+              linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
+            },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+    parentId = fetchProfile.id;
+  }
+
+  const draftMessage = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'FORM',
-    parentStepId: acceptedIfElse.id,
-    parentStepConnectionOptions: { branchId: acceptedBranchId },
+    stepType: 'AI_AGENT',
+    parentStepId: parentId,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...approveAccepted,
-      name: 'Approve post-accept LI message',
+      ...draftMessage,
+      name: 'Draft first LinkedIn message',
+      valid: true,
+      settings: {
+        input: {
+          agentId: '',
+          prompt: [
+            'Draft a short first LinkedIn message after the connection was accepted.',
+            `Name: {{${findCandidate.id}.result.first.name}}`,
+            `Title: {{${findCandidate.id}.result.first.jobTitle}}`,
+            'Return JSON only: { "message": "<body>" }',
+          ].join('\n'),
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const approveForm = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FORM',
+    parentStepId: draftMessage.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...approveForm,
+      name: 'Approve / edit first message',
       valid: true,
       settings: {
         input: [
           {
             id: v4(),
-            name: 'approveSend',
+            name: 'approve',
             label: 'Approve send',
             type: 'BOOLEAN',
             value: true,
           },
+          {
+            id: v4(),
+            name: 'editedBody',
+            label: 'Edited message',
+            type: 'TEXT',
+            value: `{{${draftMessage.id}.result.message}}`,
+          },
         ],
+        notifyOnPending: formNotifyOnPending(
+          'Review first LinkedIn message',
+          `Draft: {{${draftMessage.id}.result.message}}`,
+        ),
         outputSchema: {},
         errorHandlingOptions: errorHandling,
       },
     },
   });
 
-  const sendAfterAccept = await createWorkflowStep({
+  const sendMessage = await createWorkflowStep({
     workflowVersionId,
     stepType: 'SEND_LINKEDIN_MESSAGE',
-    parentStepId: approveAccepted.id,
+    parentStepId: approveForm.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...sendAfterAccept,
-      name: 'Send LI message after accept',
+      ...sendMessage,
+      name: 'Send LinkedIn message',
       valid: true,
       settings: {
         input: {
-          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
-          message:
-            'Thanks for connecting — quick note on how we help teams map ICP buyers.',
+          workspaceMemberId: '',
+          linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
+          body: `{{${approveForm.id}.editedBody}}`,
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -661,303 +643,20 @@ const deployWorkflowB = async (workflowVersionId: string) => {
     },
   });
 
-  const inMailIfElse = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'IF_ELSE',
-    parentStepId: acceptedIfElse.id,
-    parentStepConnectionOptions: { branchId: ignoredBranchId },
-  });
-
-  const sendInMail = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'SEND_LINKEDIN_INMAIL',
-    parentStepId: inMailIfElse.id,
-    parentStepConnectionOptions: { branchId: inMailBranchId },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...sendInMail,
-      name: 'InMail fallback',
-      valid: true,
-      settings: {
-        input: {
-          linkedinUrl: `{{${refreshCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
-          subject: 'Quick intro',
-          message: 'Sharing a short note on ICP outreach for your team.',
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const markEnriching = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'UPDATE_RECORD',
-    parentStepId: inMailIfElse.id,
-    parentStepConnectionOptions: { branchId: emailBranchId },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...markEnriching,
-      name: 'Mark EMAIL_ENRICHING',
-      valid: true,
-      settings: {
-        input: {
-          objectName: 'candidate',
-          objectRecordId: `{{${refreshCandidate.id}.result.first.id}}`,
-          objectRecord: {
-            outreachSequenceStage: 'EMAIL_ENRICHING',
-            enrichStatus: 'RUNNING',
-          },
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const email1 = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'SEND_EMAIL',
-    parentStepId: markEnriching.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...email1,
-      name: 'Email 1',
-      valid: true,
-      settings: {
-        input: {
-          email: `{{${refreshCandidate.id}.result.first.email.primaryEmail}}`,
-          subject: 'Intro — GTM Command',
-          body: 'Hi — reaching out about mapping ICP buyers for your team.',
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const delayEmail2 = await createWorkflowStep({
+  const waitFollowUp = await createWorkflowStep({
     workflowVersionId,
     stepType: 'DELAY',
-    parentStepId: email1.id,
+    parentStepId: sendMessage.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...delayEmail2,
-      name: 'Wait before email 2',
+      ...waitFollowUp,
+      name: 'Wait 2–5 days before follow-up',
       valid: true,
       settings: {
         input: delaySettings(),
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const email2 = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'SEND_EMAIL',
-    parentStepId: delayEmail2.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...email2,
-      name: 'Email 2',
-      valid: true,
-      settings: {
-        input: {
-          email: `{{${refreshCandidate.id}.result.first.email.primaryEmail}}`,
-          subject: 'Following up',
-          body: 'Circling back in case this was buried.',
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const delayEmail3 = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'DELAY',
-    parentStepId: email2.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...delayEmail3,
-      name: 'Wait before email 3',
-      valid: true,
-      settings: {
-        input: delaySettings(),
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  const email3 = await createWorkflowStep({
-    workflowVersionId,
-    stepType: 'SEND_EMAIL',
-    parentStepId: delayEmail3.id,
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...email3,
-      name: 'Email 3',
-      valid: true,
-      settings: {
-        input: {
-          email: `{{${refreshCandidate.id}.result.first.email.primaryEmail}}`,
-          subject: 'Last note',
-          body: 'Happy to close the loop if timing is off — otherwise glad to share a short demo.',
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...degreeIfElse,
-      name: 'Connection degree == 1?',
-      valid: true,
-      nextStepIds: [],
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: firstDegreeGroupId,
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: firstDegreeFilterId,
-              type: 'NUMBER',
-              stepOutputKey: `{{${findCandidate.id}.result.first.connectionDegree}}`,
-              operand: ViewFilterOperand.IS,
-              value: '1',
-              stepFilterGroupId: firstDegreeGroupId,
-            },
-          ],
-          branches: [
-            {
-              id: firstDegreeBranchId,
-              nextStepIds: [updateFirstDegree.id],
-              filterGroupId: firstDegreeGroupId,
-            },
-            {
-              id: secondDegreeBranchId,
-              nextStepIds: [sendConnect.id],
-            },
-          ],
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...acceptedIfElse,
-      name: 'Connection accepted?',
-      valid: true,
-      nextStepIds: [],
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: acceptedGroupId,
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: acceptedFilterId,
-              type: 'SELECT',
-              stepOutputKey: `{{${refreshCandidate.id}.result.first.connectionStatus}}`,
-              operand: ViewFilterOperand.IS,
-              value: 'ACCEPTED',
-              stepFilterGroupId: acceptedGroupId,
-            },
-          ],
-          branches: [
-            {
-              id: acceptedBranchId,
-              nextStepIds: [approveAccepted.id],
-              filterGroupId: acceptedGroupId,
-            },
-            {
-              id: ignoredBranchId,
-              nextStepIds: [inMailIfElse.id],
-            },
-          ],
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
-    },
-  });
-
-  await updateWorkflowStep({
-    workflowVersionId,
-    step: {
-      ...inMailIfElse,
-      name: 'InMail fallback enabled?',
-      valid: true,
-      nextStepIds: [],
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: inMailGroupId,
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: inMailFilterId,
-              type: 'BOOLEAN',
-              // Project.inMailFallbackEnabled is checked via candidate pending flag in live runs;
-              // seed uses a placeholder path — simulator sets connectionStatus IGNORED + email path.
-              stepOutputKey: `{{${refreshCandidate.id}.result.first.pendingChannel}}`,
-              operand: ViewFilterOperand.IS,
-              value: 'INMAIL',
-              stepFilterGroupId: inMailGroupId,
-            },
-          ],
-          branches: [
-            {
-              id: inMailBranchId,
-              nextStepIds: [sendInMail.id],
-              filterGroupId: inMailGroupId,
-            },
-            {
-              id: emailBranchId,
-              nextStepIds: [markEnriching.id],
-            },
-          ],
-        },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
       },
@@ -965,13 +664,12 @@ const deployWorkflowB = async (workflowVersionId: string) => {
   });
 
   return {
-    filterQueuedId: filterQueued.id,
+    filterAcceptedId: filterAccepted.id,
     findCandidateId: findCandidate.id,
-    degreeIfElseId: degreeIfElse.id,
-    sendConnectId: sendConnect.id,
-    waitAcceptId: waitAccept.id,
-    email1Id: email1.id,
-    email3Id: email3.id,
+    draftMessageId: draftMessage.id,
+    approveFormId: approveForm.id,
+    sendMessageId: sendMessage.id,
+    waitFollowUpId: waitFollowUp.id,
   };
 };
 
@@ -998,28 +696,11 @@ const deployWorkflowC = async (workflowVersionId: string) => {
       ...filterReplied,
       name: 'Only REPLIED candidates',
       valid: true,
-      settings: {
-        input: {
-          stepFilterGroups: [
-            {
-              id: repliedGroupId,
-              logicalOperator: StepLogicalOperator.AND,
-            },
-          ],
-          stepFilters: [
-            {
-              id: repliedFilterId,
-              type: 'SELECT',
-              stepOutputKey: '{{trigger.outreachSequenceStage}}',
-              operand: ViewFilterOperand.IS,
-              value: 'REPLIED',
-              stepFilterGroupId: repliedGroupId,
-            },
-          ],
-        },
-        outputSchema: {},
-        errorHandlingOptions: errorHandling,
-      },
+      settings: queuedFilterSettings(
+        repliedGroupId,
+        repliedFilterId,
+        'REPLIED',
+      ),
     },
   });
 
@@ -1030,26 +711,24 @@ const deployWorkflowC = async (workflowVersionId: string) => {
     nextStepIds: [filterReplied.id],
   });
 
-  const markNegotiating = await createWorkflowStep({
+  const findMessages = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'UPDATE_RECORD',
+    stepType: 'FIND_RECORDS',
     parentStepId: filterReplied.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...markNegotiating,
-      name: 'Mark NEGOTIATING',
+      ...findMessages,
+      name: 'Load inbound WhatsApp / LinkedIn messages',
       valid: true,
       settings: {
         input: {
-          objectName: 'candidate',
-          objectRecordId: '{{trigger.recordId}}',
-          objectRecord: {
-            outreachSequenceStage: 'NEGOTIATING',
-            pendingMessageBody:
-              'Objective: negotiate an online meeting time.',
+          objectName: 'whatsappMessage',
+          limit: 20,
+          filter: {
+            candidateId: { eq: '{{trigger.recordId}}' },
           },
         },
         outputSchema: {},
@@ -1058,22 +737,26 @@ const deployWorkflowC = async (workflowVersionId: string) => {
     },
   });
 
-  const createMeeting = await createWorkflowStep({
+  const draftReply = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'CREATE_CALENDAR_EVENT',
-    parentStepId: markNegotiating.id,
+    stepType: 'AI_AGENT',
+    parentStepId: findMessages.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...createMeeting,
-      name: 'Book meeting',
+      ...draftReply,
+      name: 'Draft reply',
       valid: true,
       settings: {
         input: {
-          title: 'GTM intro meeting',
-          description: 'Booked from GTM outreach reply workflow',
+          agentId: '',
+          prompt: [
+            'Draft a reply using the latest inbound whatsappMessage.message texts.',
+            'Do not book a meeting automatically.',
+            'Return JSON only: { "message": "<body>" }',
+          ].join('\n'),
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -1081,65 +764,62 @@ const deployWorkflowC = async (workflowVersionId: string) => {
     },
   });
 
-  const markBooked = await createWorkflowStep({
+  const approveForm = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'UPDATE_RECORD',
-    parentStepId: createMeeting.id,
+    stepType: 'FORM',
+    parentStepId: draftReply.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...markBooked,
-      name: 'Mark MEETING_BOOKED',
+      ...approveForm,
+      name: 'Approve / edit reply',
       valid: true,
       settings: {
-        input: {
-          objectName: 'candidate',
-          objectRecordId: '{{trigger.recordId}}',
-          objectRecord: {
-            outreachSequenceStage: 'MEETING_BOOKED',
+        input: [
+          {
+            id: v4(),
+            name: 'approve',
+            label: 'Approve send',
+            type: 'BOOLEAN',
+            value: true,
           },
-        },
+          {
+            id: v4(),
+            name: 'editedBody',
+            label: 'Edited message',
+            type: 'TEXT',
+            value: `{{${draftReply.id}.result.message}}`,
+          },
+        ],
+        notifyOnPending: formNotifyOnPending(
+          'Review inbound reply',
+          `Draft: {{${draftReply.id}.result.message}}`,
+        ),
         outputSchema: {},
         errorHandlingOptions: errorHandling,
       },
     },
   });
 
-  const createColdCallTask = await createWorkflowStep({
+  const sendReply = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'CREATE_RECORD',
-    parentStepId: markBooked.id,
+    stepType: 'SEND_LINKEDIN_MESSAGE',
+    parentStepId: approveForm.id,
   });
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...createColdCallTask,
-      name: 'Create cold-call task',
+      ...sendReply,
+      name: 'Send reply',
       valid: true,
       settings: {
         input: {
-          objectName: 'task',
-          objectRecord: {
-            title: 'Cold call — GTM follow-up',
-            bodyV2: {
-              blocknote: JSON.stringify([
-                {
-                  type: 'paragraph',
-                  content: [
-                    {
-                      type: 'text',
-                      text: 'Enrich phone and add to cold call list after meeting booked.',
-                    },
-                  ],
-                },
-              ]),
-              markdown:
-                'Enrich phone and add to cold call list after meeting booked.',
-            },
-          },
+          workspaceMemberId: '',
+          linkedinProfileId: '{{trigger.linkedinProfileId}}',
+          body: `{{${approveForm.id}.editedBody}}`,
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -1149,8 +829,10 @@ const deployWorkflowC = async (workflowVersionId: string) => {
 
   return {
     filterRepliedId: filterReplied.id,
-    createMeetingId: createMeeting.id,
-    createColdCallTaskId: createColdCallTask.id,
+    findMessagesId: findMessages.id,
+    draftReplyId: draftReply.id,
+    approveFormId: approveForm.id,
+    sendReplyId: sendReply.id,
   };
 };
 
@@ -1199,6 +881,9 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         sendWindowStart: '09:00',
         sendWindowEnd: '17:00',
         maxConnectsPerDay: 25,
+        maxConnectsPerWeek: 100,
+        minConnectGapMinutes: 60,
+        minMessageGapMinutes: 15,
         maxCommentsPerDay: 20,
         maxEmailsPerDay: 50,
         icpSpec: JSON.stringify({
@@ -1217,26 +902,37 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
 
 const main = async () => {
   const workflowBId = process.env.GTM_OUTREACH_WORKFLOW_B_ID || v4();
+  const workflowAcceptId =
+    process.env.GTM_OUTREACH_WORKFLOW_ACCEPT_ID || v4();
   const workflowCId = process.env.GTM_OUTREACH_WORKFLOW_C_ID || v4();
 
   const workflowB = await createWorkflow(workflowBId, WORKFLOW_B_NAME);
   const stepIdsB = await deployWorkflowB(workflowB.workflowVersionId);
-
   await activateWorkflowVersion(workflowB.workflowVersionId);
+
+  const workflowAccept = await createWorkflow(
+    workflowAcceptId,
+    WORKFLOW_ACCEPT_NAME,
+  );
+  const stepIdsAccept = await deployWorkflowAccept(
+    workflowAccept.workflowVersionId,
+  );
+  await activateWorkflowVersion(workflowAccept.workflowVersionId);
 
   const workflowC = await createWorkflow(workflowCId, WORKFLOW_C_NAME);
   const stepIdsC = await deployWorkflowC(workflowC.workflowVersionId);
-
   await activateWorkflowVersion(workflowC.workflowVersionId);
 
   const projectId = await bindProjectOutreachWorkflow(workflowB.workflowId);
 
   console.log('GTM outreach workflows setup complete');
   console.log(`Workflow B (per candidate): ${workflowB.workflowId}`);
-  console.log(`Workflow C (reply→meeting): ${workflowC.workflowId}`);
+  console.log(`Workflow accept: ${workflowAccept.workflowId}`);
+  console.log(`Workflow C (reply): ${workflowC.workflowId}`);
   console.log(`Project bind: ${projectId ?? 'skipped'}`);
   console.log('Open /gtm-home?workflowId=' + workflowB.workflowId);
   console.log('Step IDs B:', stepIdsB);
+  console.log('Step IDs accept:', stepIdsAccept);
   console.log('Step IDs C:', stepIdsC);
 };
 
@@ -1245,3 +941,4 @@ main().catch((error: unknown) => {
   console.error('Failed to set up GTM outreach workflows:', message);
   process.exit(1);
 });
+

@@ -399,6 +399,40 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
+      description: 'Unipile LinkedIn provider / public identifier for SEND_*',
+      icon: 'IconId',
+      label: 'LinkedIn Profile Id',
+      name: 'linkedinProfileId',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Which Projective Tech follow-up was last sent (0–5)',
+      icon: 'IconListNumbers',
+      label: 'Follow Up Index',
+      name: 'followUpIndex',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+      defaultValue: 0,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Cached Unipile LinkedIn profile JSON for AI draft',
+      icon: 'IconBrandLinkedin',
+      label: 'LinkedIn Profile Snapshot',
+      name: 'linkedinProfileSnapshot',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
       description: 'LinkedIn connection request status',
       icon: 'IconUserPlus',
       label: 'Connection Status',
@@ -738,6 +772,65 @@ export const getGtmCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.project,
       type: 'NUMBER',
       defaultValue: 50,
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Weekly LinkedIn connection request cap',
+      icon: 'IconUserPlus',
+      label: 'Max Connects Per Week',
+      name: 'maxConnectsPerWeek',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'NUMBER',
+      defaultValue: 100,
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Connects sent this ISO week (throttle counter)',
+      icon: 'IconCounter',
+      label: 'LinkedIn Connects This Week',
+      name: 'linkedinConnectsThisWeek',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'NUMBER',
+      defaultValue: 0,
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'When the weekly LinkedIn connect counter started',
+      icon: 'IconCalendarWeek',
+      label: 'LinkedIn Connects Week Started At',
+      name: 'linkedinConnectsWeekStartedAt',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'DATE_TIME',
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Minimum minutes between LinkedIn connection requests on a seat',
+      icon: 'IconClockHour4',
+      label: 'Min Connect Gap Minutes',
+      name: 'minConnectGapMinutes',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'NUMBER',
+      defaultValue: 60,
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Minimum minutes between LinkedIn DMs / InMails on a seat',
+      icon: 'IconClockHour3',
+      label: 'Min Message Gap Minutes',
+      name: 'minMessageGapMinutes',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'NUMBER',
+      defaultValue: 15,
     },
   },
   {

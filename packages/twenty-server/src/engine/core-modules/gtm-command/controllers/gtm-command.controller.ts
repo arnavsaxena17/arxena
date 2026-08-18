@@ -5,11 +5,15 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Post,
   Put,
   Query,
   Req,
 } from '@nestjs/common';
 
+import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import {
   type GtmEphemeralCompany,
   GtmCompaniesCacheService,
@@ -18,6 +22,7 @@ import {
   type GtmEphemeralPerson,
   GtmPeopleCacheService,
 } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
+import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('gtm-command')
@@ -28,6 +33,10 @@ export class GtmCommandController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly gtmCompaniesCacheService: GtmCompaniesCacheService,
     private readonly gtmPeopleCacheService: GtmPeopleCacheService,
+    private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
+    private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
+    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
   ) {}
 
   @Get('cache/companies')
@@ -270,5 +279,93 @@ export class GtmCommandController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Post('search-people-for-company')
+  async searchPeopleForCompany(
+    @Body()
+    body: { companyId?: string; projectId?: string; limit?: number },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.searchPeopleForCompanyService.execute({
+      workspaceId,
+      input: {
+        companyId: body.companyId ?? '',
+        projectId: body.projectId,
+        limit: body.limit,
+      },
+    });
+  }
+
+  @Post('fetch-linkedin-profile')
+  async fetchLinkedinProfile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinUrl?: string;
+      linkedinProfileId?: string;
+      candidateId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.fetchLinkedinProfileService.execute({
+      workspaceId,
+      input: body,
+    });
+  }
+
+  @Post('inbound-window')
+  async scheduleInboundWindow(
+    @Body()
+    body: { candidateId?: string; delayMinutes?: number },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!body.candidateId) {
+      throw new HttpException(
+        'candidateId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    await this.gtmCommandMaterializeService.applyCandidateEvent({
+      candidateId: body.candidateId,
+      event: 'inbound_reply',
+      apiToken,
+    });
+    await this.gtmInboundReplyWindowService.schedule({
+      workspaceId,
+      candidateId: body.candidateId,
+      delayMinutes: body.delayMinutes,
+      apiToken,
+    });
+
+    return { ok: true, candidateId: body.candidateId };
   }
 }

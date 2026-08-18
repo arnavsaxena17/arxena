@@ -64,7 +64,7 @@ describe('getTriggerDefaultLabel', () => {
       expect(result).toBe(DatabaseTriggerDefaultLabel.RECORD_IS_CREATED);
     });
 
-    it('throws error for unknown database event', () => {
+    it('returns "Invalid database event" for unknown database event', () => {
       const trigger: WorkflowTrigger = {
         type: 'DATABASE_EVENT',
         name: 'Unknown Event',
@@ -74,9 +74,7 @@ describe('getTriggerDefaultLabel', () => {
         },
       };
 
-      expect(() => getTriggerDefaultLabel(trigger)).toThrow(
-        'Unknown trigger event',
-      );
+      expect(getTriggerDefaultLabel(trigger)).toBe('Invalid database event');
     });
   });
 

@@ -5,6 +5,10 @@ import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 import { SendWhatsappMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-whatsapp-message-tool';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import {
   WorkflowStepExecutorException,
@@ -24,11 +28,16 @@ export class SendWhatsappMessageWorkflowAction extends UnipileMessagingWorkflowA
     private readonly sendWhatsappMessageTool: SendWhatsappMessageTool,
     workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
     globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    gtmUnipilePacingService: GtmUnipilePacingService,
+    @InjectMessageQueue(MessageQueue.delayedJobsQueue)
+    delayedQueue: MessageQueueService,
   ) {
     super(
       SendWhatsappMessageWorkflowAction.name,
       workflowRunStepLogService,
       globalWorkspaceOrmManager,
+      gtmUnipilePacingService,
+      delayedQueue,
     );
   }
 

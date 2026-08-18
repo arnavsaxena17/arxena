@@ -98,6 +98,16 @@ const resolveArgumentsObject = (
   return { argumentsObject: {}, unresolved: false };
 };
 
+const sanitizeExecuteToolName = (toolName: string): string => {
+  const leakedMarkupIndex = toolName.search(/<tool_sep|<\/?arg_/i);
+
+  if (leakedMarkupIndex <= 0) {
+    return toolName.trim();
+  }
+
+  return toolName.slice(0, leakedMarkupIndex).trim();
+};
+
 // Models often stringify nested tool args, alias the field, or flatten nested
 // tool fields onto execute_tool. Coerce before Zod validation.
 export const coerceExecuteToolArguments = (value: unknown): unknown => {
@@ -109,7 +119,9 @@ export const coerceExecuteToolArguments = (value: unknown): unknown => {
   }
 
   const toolName =
-    typeof record.toolName === 'string' ? record.toolName : undefined;
+    typeof record.toolName === 'string'
+      ? sanitizeExecuteToolName(record.toolName)
+      : undefined;
   const { argumentsObject, unresolved } = resolveArgumentsObject(record);
 
   if (unresolved) {

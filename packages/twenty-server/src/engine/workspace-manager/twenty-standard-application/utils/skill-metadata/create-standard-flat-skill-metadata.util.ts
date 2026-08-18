@@ -145,6 +145,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Conversational GTM Command bootstrap: collect ICP and outreach preferences in Ask AI, persist on Project, hand off to company/people discovery',
     icon: 'IconTargetArrow',
   }),
+  'gtm-outreach-workflows': createStandardSkillBuilder({
+    skillName: 'gtm-outreach-workflows',
+    name: 'gtm-outreach-workflows',
+    label: 'GTM Outreach Workflows',
+    description:
+      'GTM Command automation graphs: company.created → search-people-for-company, and LinkedIn Stage B/C outreach clone/edit/enroll',
+    icon: 'IconSend',
+  }),
   'search-companies': createStandardSkillBuilder({
     skillName: 'search-companies',
     name: 'search-companies',

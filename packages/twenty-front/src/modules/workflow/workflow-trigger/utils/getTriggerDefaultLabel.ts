@@ -15,7 +15,7 @@ export const getTriggerDefaultLabel = (trigger: WorkflowTrigger): string => {
     )?.defaultLabel;
 
     if (!isDefined(label)) {
-      throw new Error('Unknown trigger event');
+      return 'Invalid database event';
     }
 
     return label;

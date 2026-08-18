@@ -110,4 +110,15 @@ describe('splitWorkflowTriggerEventName', () => {
       event: 'upserted',
     });
   });
+
+  it('should not throw when eventName is missing', () => {
+    expect(splitWorkflowTriggerEventName(undefined)).toEqual({
+      objectType: '',
+      event: '',
+    });
+    expect(splitWorkflowTriggerEventName(null)).toEqual({
+      objectType: '',
+      event: '',
+    });
+  });
 });

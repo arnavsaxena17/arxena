@@ -4,7 +4,7 @@ import {
   resolveEffectiveGtmIcp,
   resolveInheritedTextField,
   stripBlurbFromIcpSpec,
-  toGtmIcpSet,
+  toGtmIcpSpec,
 } from '@/gtm-home/utils/gtm-effective-icp.util';
 
 describe('gtm-effective-icp.util', () => {
@@ -35,8 +35,8 @@ describe('gtm-effective-icp.util', () => {
       geos: ['US'],
       buyerTitles: ['VP People'],
       painSignals: ['capacity'],
-      stdFunctions: ['people'],
-      stdGrades: ['vp'],
+      // stdFunctions: ['people'],
+      // stdGrades: ['vp'],
     });
 
     const effective = resolveEffectiveGtmIcp({
@@ -92,11 +92,11 @@ describe('gtm-effective-icp.util', () => {
     expect(effective.peopleSearchBlurb).toBe('Workspace people');
   });
 
-  it('parses icpSpec and maps to GtmIcpSet', () => {
+  it('parses icpSpec and maps to GtmIcpSpec', () => {
     expect(parseGtmIcpSpec('not-json')).toBeNull();
-    expect(toGtmIcpSet(null, null)).toBeNull();
+    expect(toGtmIcpSpec(null, null)).toBeNull();
 
-    const set = toGtmIcpSet(
+    const set = toGtmIcpSpec(
       {
         name: 'Buyers',
         industries: ['SaaS'],

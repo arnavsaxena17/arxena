@@ -8,12 +8,23 @@ import { createGetLogicFunctionSourceTool } from '../get-logic-function-source.t
 const WORKSPACE_ID = '20202020-aaaa-4d02-bf25-6aeccf7ea419';
 const LOGIC_FUNCTION_ID = '20202020-bbbb-4d02-bf25-6aeccf7ea419';
 
-const buildDeps = (getSourceCode: jest.Mock) =>
+const buildDeps = ({
+  getSourceCode,
+  logicFunctions = {},
+}: {
+  getSourceCode: jest.Mock;
+  logicFunctions?: Record<string, unknown>;
+}) =>
   ({
     logicFunctionFromSourceService: { getSourceCode },
+    flatEntityMapsCacheService: {
+      getOrRecomputeManyOrAllFlatEntityMaps: jest.fn().mockResolvedValue({
+        flatLogicFunctionMaps: { byUniversalIdentifier: logicFunctions },
+      }),
+    },
   }) as unknown as Pick<
     WorkflowToolDependencies,
-    'logicFunctionFromSourceService'
+    'logicFunctionFromSourceService' | 'flatEntityMapsCacheService'
   >;
 
 const buildContext = () =>
@@ -25,7 +36,7 @@ describe('get_logic_function_source tool', () => {
     const getSourceCode = jest.fn().mockResolvedValue(source);
 
     const tool = createGetLogicFunctionSourceTool(
-      buildDeps(getSourceCode),
+      buildDeps({ getSourceCode }),
       buildContext(),
     );
 
@@ -38,8 +49,41 @@ describe('get_logic_function_source tool', () => {
     expect(result).toEqual({
       success: true,
       logicFunctionId: LOGIC_FUNCTION_ID,
+      isNative: false,
       sourceHandlerCode: source,
     });
+  });
+
+  it('does not treat native GTM stubs as editable source', async () => {
+    const source = `export const main = async (params) => {
+  return params ?? {};
+};`;
+    const getSourceCode = jest.fn().mockResolvedValue(source);
+
+    const tool = createGetLogicFunctionSourceTool(
+      buildDeps({
+        getSourceCode,
+        logicFunctions: {
+          native: {
+            id: LOGIC_FUNCTION_ID,
+            name: 'search-people-for-company',
+            workflowActionTriggerSettings: {
+              inputSchema: [{ type: 'object', properties: { companyId: {} } }],
+            },
+          },
+        },
+      }),
+      buildContext(),
+    );
+
+    const result = await tool.execute({ logicFunctionId: LOGIC_FUNCTION_ID });
+
+    expect(result).toMatchObject({
+      success: true,
+      isNative: true,
+      name: 'search-people-for-company',
+    });
+    expect(result.message).toContain('native GTM');
   });
 
   it('returns a failure result when the service throws', async () => {
@@ -48,7 +92,7 @@ describe('get_logic_function_source tool', () => {
       .mockRejectedValue(new Error('Logic function not found'));
 
     const tool = createGetLogicFunctionSourceTool(
-      buildDeps(getSourceCode),
+      buildDeps({ getSourceCode }),
       buildContext(),
     );
 

@@ -6,6 +6,7 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import {
     GTM_OUTREACH_WORKFLOW_B_NAME,
     GTM_PROJECT_ID_QUERY_PARAM,
@@ -183,6 +184,7 @@ export const useGtmLiveWorkingSet = () => {
     objectNameSingular: 'workflow',
   });
   const { updateOneRecord } = useUpdateOneRecord();
+  const { triggerJobsRefetch } = useProjectRefetch();
 
   const { records: defaultOutreachWorkflows } =
     useFindManyRecords<{ id: string; name?: string }>({
@@ -482,9 +484,13 @@ export const useGtmLiveWorkingSet = () => {
       },
     });
 
-    setActiveProjectId(created.id);
+    setActiveTab('setup');
     setEphemeralCompanies([]);
     setEphemeralPeople([]);
+    setSelectedCompanyId(null);
+    setSelectedPersonId(null);
+    triggerJobsRefetch();
+    setActiveProjectId(created.id);
 
     return created.id;
   }, [
@@ -492,6 +498,7 @@ export const useGtmLiveWorkingSet = () => {
     createWorkflow,
     defaultOutreachWorkflows,
     setActiveProjectId,
+    triggerJobsRefetch,
     updateOneRecord,
   ]);
 

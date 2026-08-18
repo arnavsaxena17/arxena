@@ -4,6 +4,7 @@ import { isDefined, resolveInput } from 'twenty-shared/utils';
 
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
 
+import { GtmLogicFunctionNativeExecutor } from 'src/engine/core-modules/gtm-command/services/gtm-logic-function-native.executor';
 import { LogicFunctionExecutorService } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
@@ -22,6 +23,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
   constructor(
     private readonly logicFunctionExecutorService: LogicFunctionExecutorService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
+    private readonly gtmLogicFunctionNativeExecutor: GtmLogicFunctionNativeExecutor,
   ) {}
 
   async execute({
@@ -74,6 +76,16 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
         `Logic function ${logicFunction.name} is not exposed as a workflow action`,
         WorkflowStepExecutorExceptionCode.INVALID_STEP_TYPE,
       );
+    }
+
+    if (this.gtmLogicFunctionNativeExecutor.isNative(logicFunction.name)) {
+      const nativeResult = await this.gtmLogicFunctionNativeExecutor.execute({
+        name: logicFunction.name,
+        workspaceId,
+        payload: workflowActionInput.logicFunctionInput ?? {},
+      });
+
+      return { result: nativeResult };
     }
 
     const result = await this.logicFunctionExecutorService.execute({

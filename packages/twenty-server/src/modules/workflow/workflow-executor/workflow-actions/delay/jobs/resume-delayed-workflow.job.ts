@@ -11,7 +11,6 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
 import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
-import { isWorkflowDelayAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/guards/is-workflow-delay-action.guard';
 import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
 import {
   WorkflowRunException,
@@ -60,16 +59,9 @@ export class ResumeDelayedWorkflowJob {
 
         const stepInfo = workflowRun.state?.stepInfos[stepId];
 
-        if (!step || !isWorkflowDelayAction(step)) {
+        if (!step || stepInfo?.status !== StepStatus.PENDING) {
           throw new WorkflowRunException(
-            'Step not found or is not a delay action',
-            WorkflowRunExceptionCode.INVALID_OPERATION,
-          );
-        }
-
-        if (stepInfo?.status !== StepStatus.PENDING) {
-          throw new WorkflowRunException(
-            'Step is not pending',
+            'Step not found or is not pending',
             WorkflowRunExceptionCode.INVALID_OPERATION,
           );
         }

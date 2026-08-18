@@ -118,4 +118,17 @@ describe('coerceExecuteToolArguments', () => {
 
     expect(coerceExecuteToolArguments(value)).toBe(value);
   });
+
+  it('strips leaked tool-call markup from toolName', () => {
+    expect(
+      coerceExecuteToolArguments({
+        toolName:
+          'code_interpreter<tool_sep:6124c78e>\n<arg_key:6124c78e>arguments',
+        arguments: { code: 'print(1)' },
+      }),
+    ).toEqual({
+      toolName: 'code_interpreter',
+      arguments: { code: 'print(1)' },
+    });
+  });
 });

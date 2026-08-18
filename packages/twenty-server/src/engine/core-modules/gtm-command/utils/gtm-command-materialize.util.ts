@@ -162,6 +162,7 @@ export type GtmCandidateEventKind =
   | 'enrich_failed'
   | 'outbound_message'
   | 'inbound_reply'
+  | 'inbound_reply_flush'
   | 'meeting_booked'
   | 'meeting_held'
   | 'opportunity_created';
@@ -318,6 +319,7 @@ export const funnelStageForEvent = (
   event: GtmCandidateEventKind,
 ): GtmFunnelStage => {
   switch (event) {
+    case 'inbound_reply_flush':
     case 'inbound_reply':
       return 'REPLIED';
     case 'meeting_booked':
@@ -407,6 +409,10 @@ export const buildCandidateEventUpdate = ({
       };
     }
     case 'inbound_reply':
+      return {
+        lastInboundAt: nowIso,
+      };
+    case 'inbound_reply_flush':
       return {
         outreachSequenceStage: 'REPLIED',
         lastInboundAt: nowIso,

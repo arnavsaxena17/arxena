@@ -1,19 +1,6 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-import { type GtmIcpSet } from '@/gtm-home/types/gtm-home.types';
-
-export type GtmIcpSpecParsed = {
-  // Legacy embed when icpBlurb column was missing; prefer dedicated field
-  blurb?: string;
-  name?: string;
-  industries?: string[];
-  employeeRange?: string;
-  geos?: string[];
-  buyerTitles?: string[];
-  painSignals?: string[];
-  stdFunctions?: string[];
-  stdGrades?: string[];
-};
+import { type GtmIcpSpec } from '@/gtm-home/types/gtm-home.types';
 
 export type GtmProfileIcpSource = {
   icpSpec?: string | null;
@@ -25,13 +12,13 @@ export type GtmProfileIcpSource = {
 
 export const parseGtmIcpSpec = (
   icpSpec: string | null | undefined,
-): GtmIcpSpecParsed | null => {
+): GtmIcpSpec | null => {
   if (!isNonEmptyString(icpSpec)) {
     return null;
   }
 
   try {
-    return JSON.parse(icpSpec) as GtmIcpSpecParsed;
+    return JSON.parse(icpSpec) as GtmIcpSpec;
   } catch {
     return null;
   }
@@ -96,7 +83,7 @@ export const resolveEffectiveGtmIcp = ({
 }): {
   icpSpec: string | null;
   icpSegment: string | null;
-  parsedIcp: GtmIcpSpecParsed | null;
+  parsedIcp: GtmIcpSpec | null;
   icpBlurb: string | null;
   companySearchBlurb: string | null;
   peopleSearchBlurb: string | null;
@@ -145,10 +132,10 @@ export const resolveEffectiveGtmIcp = ({
   };
 };
 
-export const toGtmIcpSet = (
-  parsedIcp: GtmIcpSpecParsed | null,
+export const toGtmIcpSpec = (
+  parsedIcp: GtmIcpSpec | null,
   icpSegment: string | null,
-): GtmIcpSet | null => {
+): GtmIcpSpec | null => {
   if (!parsedIcp && !isNonEmptyString(icpSegment)) {
     return null;
   }
@@ -160,7 +147,7 @@ export const toGtmIcpSet = (
     geos: parsedIcp?.geos ?? [],
     buyerTitles: parsedIcp?.buyerTitles ?? [],
     painSignals: parsedIcp?.painSignals ?? [],
-    stdFunctions: parsedIcp?.stdFunctions ?? [],
-    stdGrades: parsedIcp?.stdGrades ?? [],
+    // stdFunctions: parsedIcp?.stdFunctions ?? [],
+    // stdGrades: parsedIcp?.stdGrades ?? [],
   };
 };

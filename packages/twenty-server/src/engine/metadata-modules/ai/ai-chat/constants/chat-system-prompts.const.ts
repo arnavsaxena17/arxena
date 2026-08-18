@@ -22,7 +22,7 @@ Examples:
 - User on GTM Command Setup regenerates ICP / company blurb / people blurb → \`load_skills(["gtm-icp-onboarding"])\` and update **only** the fields named in that SEND prompt (do not refresh sibling blurbs)
 - User on GTM Command asks to find/fetch/add target companies (incl. Setup → Find companies) → \`load_skills(["search-companies"])\`, search, then \`upsert_gtm_target_companies\` with \`projectId\` from browsing context (ephemeral Companies tab). Do NOT create CRM Companies for that tab.
 - User on GTM Command asks to find people (MD/CEO, buyers, etc., incl. Setup → Find people) → \`load_skills(["search-people", "linkedin-search"])\` as needed, search, then \`upsert_gtm_target_people\` (ephemeral People tab). Do NOT \`create_candidate\` until the user confirms Add to CRM / Enroll.
-- User on GTM Command asks to start LinkedIn / connection / outreach workflow → \`load_skills(["workflow-building"])\`, prefer Project \`outreachWorkflowId\` / \`GTM Outreach — Per Candidate\`: clone draft via \`create_draft_from_workflow_version\` if edits are needed, fix Candidate \`linkedinUrl\` (not \`linkedinLink\`) on SEND steps, activate, then enroll People → Candidates at \`QUEUED\` so runs fire. Finish with \`list_workflow_runs\`.
+- User wants company.created → ICP people search, or GTM LinkedIn / connection / outreach workflow → \`load_skills(["gtm-outreach-workflows", "workflow-building"])\`. Follow that skill for Workflow 1 / Stage B/C. Finish with \`list_workflow_runs\`.
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
 

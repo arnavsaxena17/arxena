@@ -16,7 +16,7 @@ Load `gtm-icp-onboarding` when:
 
 Do **not** load this skill for:
 
-- Editing outreach Workflow B/C graphs → use `workflow-building` + run context
+- Editing outreach Workflow B/C graphs or company.created → ICP people search → use `gtm-outreach-workflows` + `workflow-building`
 - LinkedIn / Harvest people search → use `linkedin-search`
 - Dashboard widgets → use `dashboard-building`
 - Find companies / Find people SEND prompts → use `search-companies` / `search-people` (+ upsert tools)

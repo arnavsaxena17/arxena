@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
 import { graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
-import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../../message-queue/message-queue.constants';
 import { MessageQueueService } from '../../message-queue/services/message-queue.service';
@@ -24,6 +23,8 @@ import type {
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
+import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
@@ -39,6 +40,7 @@ export class UnipileWebhookService {
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
+    private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.unipileWebhookQueue)
     private readonly unipileWebhookQueueService?: MessageQueueService,
@@ -613,6 +615,9 @@ export class UnipileWebhookService {
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.messageQueueService,
+        undefined,
+        this.gtmInboundReplyWindowService,
+        this.gtmCommandMaterializeService,
       );
 
       if (account_type === 'WHATSAPP') {
@@ -794,6 +799,9 @@ export class UnipileWebhookService {
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.messageQueueService,
+      undefined,
+      this.gtmInboundReplyWindowService,
+      this.gtmCommandMaterializeService,
     );
 
     return await incomingMessagesService.getApiKeyToUseFromLinkedinMessageReceived(payload);
@@ -809,6 +817,9 @@ export class UnipileWebhookService {
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.messageQueueService,
+      undefined,
+      this.gtmInboundReplyWindowService,
+      this.gtmCommandMaterializeService,
     );
 
     return await incomingMessagesService.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
@@ -1055,6 +1066,9 @@ export class UnipileWebhookService {
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.messageQueueService,
+        undefined,
+        this.gtmInboundReplyWindowService,
+        this.gtmCommandMaterializeService,
       );
       await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(syntheticMessagePayload);
       this.logger.log(`Processed new relation as "Yes, I'm keen" for ${name}`);

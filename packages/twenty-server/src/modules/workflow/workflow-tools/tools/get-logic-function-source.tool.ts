@@ -1,5 +1,10 @@
+import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
+import {
+  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+} from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
@@ -14,21 +19,39 @@ const getLogicFunctionSourceSchema = z.object({
     ),
 });
 
+const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
+  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+]);
+
 export const createGetLogicFunctionSourceTool = (
-  deps: Pick<WorkflowToolDependencies, 'logicFunctionFromSourceService'>,
+  deps: Pick<
+    WorkflowToolDependencies,
+    'logicFunctionFromSourceService' | 'flatEntityMapsCacheService'
+  >,
   context: WorkflowToolContext,
 ) => ({
   name: 'get_logic_function_source' as const,
-  description: `Read the current TypeScript source code of a logic function used in a workflow CODE step.
+  description: `Read TypeScript source of a CODE-step logic function.
 
-Use this to inspect the code that runs when a CODE step executes — for example, before editing an existing function with update_logic_function_source, so the edit is based on the real current source rather than a guess.
-
-To find the logicFunctionId, look at the code step's settings.input.logicFunctionId field.`,
+Do NOT use this for native GTM workflow actions (search-people-for-company, fetch-linkedin-profile) — their source is a stub. Use list_logic_function_tools inputSchema instead.`,
   inputSchema: getLogicFunctionSourceSchema,
   execute: async (parameters: { logicFunctionId: string }) => {
     try {
       const { logicFunctionId } = parameters;
       const { workspaceId } = context;
+
+      const { flatLogicFunctionMaps } =
+        await deps.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
+          {
+            workspaceId,
+            flatMapsKeys: ['flatLogicFunctionMaps'],
+          },
+        );
+
+      const logicFunction = Object.values(
+        flatLogicFunctionMaps.byUniversalIdentifier,
+      ).find((fn) => isDefined(fn) && fn.id === logicFunctionId);
 
       const sourceHandlerCode =
         await deps.logicFunctionFromSourceService.getSourceCode({
@@ -36,9 +59,31 @@ To find the logicFunctionId, look at the code step's settings.input.logicFunctio
           workspaceId,
         });
 
+      const isNative =
+        (isDefined(logicFunction) &&
+          GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(logicFunction.name)) ||
+        sourceHandlerCode.includes('return params ?? {}');
+
+      if (isNative) {
+        return {
+          success: true,
+          logicFunctionId,
+          isNative: true,
+          name: logicFunction?.name,
+          inputSchema:
+            logicFunction?.workflowActionTriggerSettings?.inputSchema ?? null,
+          outputSchema:
+            logicFunction?.workflowActionTriggerSettings?.outputSchema ?? null,
+          sourceHandlerCode,
+          message:
+            'This is a native GTM logic function. The source is a stub. Use inputSchema (companyId / projectId for search-people-for-company). Do not edit the source.',
+        };
+      }
+
       return {
         success: true,
         logicFunctionId,
+        isNative: false,
         sourceHandlerCode,
       };
     } catch (error) {

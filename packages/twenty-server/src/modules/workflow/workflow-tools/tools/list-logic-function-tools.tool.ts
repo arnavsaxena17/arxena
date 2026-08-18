@@ -1,11 +1,23 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
+import {
+  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+} from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
 import { type WorkflowToolContext } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
 
 const listLogicFunctionToolsSchema = z.object({});
+
+const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
+  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+]);
+
+const isNativeLogicFunction = (fn: FlatLogicFunction): boolean =>
+  GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(fn.name);
 
 export const createListLogicFunctionToolsTool = (
   deps: {
@@ -15,7 +27,7 @@ export const createListLogicFunctionToolsTool = (
 ) => ({
   name: 'list_logic_function_tools' as const,
   description:
-    'List all logic functions exposed as workflow actions, which can be added as LOGIC_FUNCTION steps in workflows. Returns their IDs, names, and descriptions.',
+    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, fetch-linkedin-profile) include isNative=true — do not read their source; use inputSchema. search-people-for-company takes companyId (required) and optional projectId/limit; it loads Project icpSpec itself — do not pass icpSpec.',
   inputSchema: listLogicFunctionToolsSchema,
   execute: async () => {
     const { flatLogicFunctionMaps } =
@@ -37,12 +49,21 @@ export const createListLogicFunctionToolsTool = (
 
     return {
       success: true,
-      logicFunctions: workflowActionFunctions.map((fn) => ({
-        id: fn.id,
-        name: fn.name,
-        displayName: fn.workflowActionTriggerSettings?.label ?? fn.name,
-        description: fn.description,
-      })),
+      logicFunctions: workflowActionFunctions.map((fn) => {
+        const isNative = isNativeLogicFunction(fn);
+
+        return {
+          id: fn.id,
+          name: fn.name,
+          displayName: fn.workflowActionTriggerSettings?.label ?? fn.name,
+          description: isNative
+            ? `${fn.description} Native executor (source is a stub). Use inputSchema; do not call get_logic_function_source.`
+            : fn.description,
+          isNative,
+          inputSchema: fn.workflowActionTriggerSettings?.inputSchema ?? null,
+          outputSchema: fn.workflowActionTriggerSettings?.outputSchema ?? null,
+        };
+      }),
     };
   },
 });

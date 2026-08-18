@@ -41,8 +41,8 @@ const MOCKS = {
     geos: ['US', 'UK'],
     buyerTitles: ['Head of Talent', 'VP People'],
     painSignals: ['slow time-to-hire', 'recruiter capacity'],
-    stdFunctions: ['talent acquisition', 'people'],
-    stdGrades: ['director', 'vp'],
+    // stdFunctions: ['talent acquisition', 'people'],
+    // stdGrades: ['director', 'vp'],
   },
   connectionSent: {
     connectionStatus: 'SENT',

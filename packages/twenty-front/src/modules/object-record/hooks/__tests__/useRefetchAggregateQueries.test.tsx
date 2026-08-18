@@ -10,8 +10,10 @@ jest.mock('@/object-metadata/hooks/useApolloCoreClient', () => ({
 
 describe('useRefetchAggregateQueries', () => {
   const mockRefetchQueries = jest.fn();
+  const mockGetObservableQueries = jest.fn();
   const mockApolloClient = {
     refetchQueries: mockRefetchQueries,
+    getObservableQueries: mockGetObservableQueries,
   };
 
   beforeEach(() => {
@@ -26,6 +28,12 @@ describe('useRefetchAggregateQueries', () => {
     const expectedQueryNameGroupBy = getGroupByAggregateQueryName({
       objectMetadataNamePlural,
     });
+    mockGetObservableQueries.mockReturnValue(
+      new Set([
+        { queryName: expectedQueryName },
+        { queryName: expectedQueryNameGroupBy },
+      ]),
+    );
 
     // Act
     const { result } = renderHook(() => useRefetchAggregateQueries());
@@ -43,6 +51,16 @@ describe('useRefetchAggregateQueries', () => {
     const error = new Error('Refetch failed');
     mockRefetchQueries.mockRejectedValue(error);
     const objectMetadataNamePlural = 'opportunities';
+    mockGetObservableQueries.mockReturnValue(
+      new Set([
+        { queryName: getAggregateQueryName(objectMetadataNamePlural) },
+        {
+          queryName: getGroupByAggregateQueryName({
+            objectMetadataNamePlural,
+          }),
+        },
+      ]),
+    );
 
     // Act
     const { result } = renderHook(() => useRefetchAggregateQueries());

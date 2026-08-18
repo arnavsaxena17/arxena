@@ -28,10 +28,31 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         hiringNaukriUrl: candidate?.hiringNaukriUrl?.primaryLinkUrl?.includes('hiring.naukri.com') ? candidate?.hiringNaukriUrl?.primaryLinkUrl : '',
         linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl && isLinkedInUrl(candidate.linkedinUrl.primaryLinkUrl) ? 
           reconstructLinkedInUrlForDisplay(candidate.linkedinUrl.primaryLinkUrl) : '',
-        lastMessage: candidate?.whatsappMessages?.edges?.length > 0 ? 
-          [...(candidate?.whatsappMessages?.edges || [])]
-            .sort((a, b) => new Date(b.node?.createdAt || 0).getTime() - new Date(a.node?.createdAt || 0).getTime())[0]
-            ?.node?.createdAt || '' : '',
+        lastMessage: (() => {
+          const edges = [...(candidate?.whatsappMessages?.edges || [])].sort(
+            (a, b) =>
+              new Date(b.node?.createdAt || 0).getTime() -
+              new Date(a.node?.createdAt || 0).getTime(),
+          );
+          const inbound = edges.find((edge) => {
+            const node = edge?.node as {
+              message?: string;
+              isFromMe?: boolean;
+              messageType?: string;
+            };
+            if (!node?.message) {
+              return false;
+            }
+            if (node.isFromMe === true || node.messageType === 'messageFromSelf') {
+              return false;
+            }
+            return true;
+          });
+          const latest = inbound ?? edges[0];
+          return (
+            (latest?.node as { message?: string } | undefined)?.message || ''
+          );
+        })(),
         hasCv: candidate?.attachments?.edges?.length > 0 || false,
         cvAvailability: candidate?.attachments?.edges?.length > 0 ? 'CV Available' : 'CV Not found',
       };

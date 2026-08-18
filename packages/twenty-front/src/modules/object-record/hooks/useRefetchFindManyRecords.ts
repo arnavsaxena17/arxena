@@ -1,4 +1,5 @@
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
+import { refetchNamedQueriesIfActive } from '@/object-record/utils/refetchNamedQueriesIfActive';
 import { capitalize } from 'twenty-shared/utils';
 
 export const useRefetchFindManyRecords = ({
@@ -13,8 +14,9 @@ export const useRefetchFindManyRecords = ({
       objectMetadataNamePlural,
     )}`;
 
-    await apolloCoreClient.refetchQueries({
-      include: [findManyRecordsQueryName],
+    await refetchNamedQueriesIfActive({
+      apolloClient: apolloCoreClient,
+      queryNames: [findManyRecordsQueryName],
     });
   };
 

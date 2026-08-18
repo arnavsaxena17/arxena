@@ -15,6 +15,8 @@ import { SyncGtmIcpScopedRegenerateSkillContentCommand } from 'src/database/comm
 import { RenameGtmWorkspaceProfileToWorkspaceProfileCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000018-rename-gtm-workspace-profile-to-workspace-profile.command';
 import { SyncWebsiteTrackerStandardObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000021-sync-website-tracker-standard-objects.command';
 import { SyncWorkflowBuildingFormHitlSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000022-sync-workflow-building-form-hitl-skill-content.command';
+import { SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000023-sync-workflow-building-create-complete-schema-skill-content.command';
+import { BackfillGtmOutreachWorkflowsSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000024-backfill-gtm-outreach-workflows-skill.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
@@ -48,6 +50,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     RenameGtmWorkspaceProfileToWorkspaceProfileCommand,
     SyncWebsiteTrackerStandardObjectsCommand,
     SyncWorkflowBuildingFormHitlSkillContentCommand,
+    SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand,
+    BackfillGtmOutreachWorkflowsSkillCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}
