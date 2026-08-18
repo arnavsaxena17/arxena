@@ -37,7 +37,7 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
 @Module({
   imports: [
     ApiKeyModule,
-    AuthModule,
+    forwardRef(() => AuthModule),
     MessageQueueModule,
     MetadataStructureSeedModule,
     TypeORMModule,

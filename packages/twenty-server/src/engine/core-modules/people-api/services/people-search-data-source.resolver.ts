@@ -13,6 +13,7 @@ export type ResolvePeopleSearchDataSourceInput = {
   dataSource?: PeopleDataSourceAlias;
   accountId?: string;
   apiToken?: string;
+  workspaceId?: string;
 };
 
 export type ResolvedPeopleSearchDataSource = {
@@ -58,6 +59,7 @@ export class PeopleSearchDataSourceResolver {
 
     const resolvedFromWorkspace = await this.resolveFromWorkspace(
       input.apiToken,
+      input.workspaceId,
     );
     if (resolvedFromWorkspace) {
       return resolvedFromWorkspace;
@@ -72,38 +74,42 @@ export class PeopleSearchDataSourceResolver {
 
   private async resolveFromWorkspace(
     apiToken?: string,
+    workspaceId?: string,
   ): Promise<ResolvedPeopleSearchDataSource | null> {
-    const token = apiToken?.trim();
-    if (!token) {
-      return null;
+    const providedWorkspaceId = workspaceId?.trim() || undefined;
+    let resolvedWorkspaceId = providedWorkspaceId;
+    let workspaceMemberId: string | null = null;
+
+    // GTM native actions already have workspaceId. Do not validate a minted
+    // system JWT as an API key — JwtAuthStrategy treats missing jti as revoked.
+    if (!providedWorkspaceId) {
+      const token = apiToken?.trim();
+      if (token) {
+        try {
+          resolvedWorkspaceId =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+          workspaceMemberId =
+            await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+              token,
+            );
+        } catch (error) {
+          this.logger.warn(
+            `People API dataSource resolve: workspace id from token failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
     }
 
-    let workspaceId: string | undefined;
-    try {
-      workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(
-        token,
-      );
-    } catch (error) {
-      this.logger.warn(
-        `People API dataSource resolve: workspace id from token failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-
+    if (!resolvedWorkspaceId) {
       return null;
     }
-
-    if (!workspaceId) {
-      return null;
-    }
-
-    const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(token);
 
     if (workspaceMemberId) {
       const memberAccountId =
         await this.workspaceQueryService.getWorkspaceMemberLinkedinUnipileAccountId(
-          workspaceId,
+          resolvedWorkspaceId,
           workspaceMemberId,
         );
 
@@ -116,12 +122,12 @@ export class PeopleSearchDataSourceResolver {
       }
     }
 
-    const workspaceAccount = await this.resolveWorkspaceSalesNavigatorAccount(
-      workspaceId,
+    const workspaceAccount = await this.resolveWorkspaceUnipileAccount(
+      resolvedWorkspaceId,
     );
     if (workspaceAccount) {
       this.logger.log(
-        `People API dataSource auto/omitted using workspace Sales Navigator member ${workspaceAccount.workspaceMemberId} unipile ${workspaceAccount.accountId}`,
+        `People API dataSource auto/omitted using workspace ${workspaceAccount.kind} member ${workspaceAccount.workspaceMemberId} unipile ${workspaceAccount.accountId}`,
       );
 
       return {
@@ -133,9 +139,13 @@ export class PeopleSearchDataSourceResolver {
     return null;
   }
 
-  private async resolveWorkspaceSalesNavigatorAccount(
+  private async resolveWorkspaceUnipileAccount(
     workspaceId: string,
-  ): Promise<{ workspaceMemberId: string; accountId: string } | null> {
+  ): Promise<{
+    workspaceMemberId: string;
+    accountId: string;
+    kind: 'sales_navigator' | 'classic';
+  } | null> {
     const profiles =
       await this.workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles(
         workspaceId,
@@ -149,6 +159,19 @@ export class PeopleSearchDataSourceResolver {
       return {
         workspaceMemberId: withSalesNavigator.workspaceMemberId,
         accountId: withSalesNavigator.linkedinUnipileAccountId,
+        kind: 'sales_navigator',
+      };
+    }
+
+    const withUnipile = profiles.find((profile) =>
+      Boolean(profile.linkedinUnipileAccountId?.trim()),
+    );
+
+    if (withUnipile) {
+      return {
+        workspaceMemberId: withUnipile.workspaceMemberId,
+        accountId: withUnipile.linkedinUnipileAccountId,
+        kind: 'classic',
       };
     }
 

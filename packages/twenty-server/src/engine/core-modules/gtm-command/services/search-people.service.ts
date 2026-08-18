@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { isNonEmptyString } from '@sniptt/guards';
-
-import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
+import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export type SearchPeopleInput = {
   naturalLanguage?: string;
@@ -36,8 +33,7 @@ export class SearchPeopleService {
 
   constructor(
     private readonly peopleApiService: PeopleApiService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly apiKeyService: ApiKeyService,
+    private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
   ) {}
 
   async execute({
@@ -48,16 +44,8 @@ export class SearchPeopleService {
     input: SearchPeopleInput;
   }): Promise<object> {
     try {
-      const apiToken = await this.resolveApiToken(workspaceId);
-      if (!isNonEmptyString(apiToken)) {
-        return {
-          success: false,
-          total: 0,
-          dataSource: input.dataSource ?? 'auto',
-          error: 'Workspace API token is required to search people',
-          people: [],
-        };
-      }
+      const apiToken =
+        await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
 
       const limit = Math.min(Math.max(1, input.limit ?? 10), 25);
       const search = await this.peopleApiService.searchPeople(
@@ -73,7 +61,8 @@ export class SearchPeopleService {
           accountId: input.accountId,
           limit,
         },
-        apiToken,
+        apiToken ?? undefined,
+        { workspaceId },
       );
 
       const people = (search.items ?? []).map((item) => {
@@ -114,21 +103,5 @@ export class SearchPeopleService {
         people: [],
       };
     }
-  }
-
-  private async resolveApiToken(workspaceId: string): Promise<string | null> {
-    const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId);
-    const apiKeyId = apiKeys?.[0]?.id;
-
-    if (!isNonEmptyString(apiKeyId)) {
-      return null;
-    }
-
-    const token = await this.apiKeyService.generateApiKeyToken(
-      workspaceId,
-      apiKeyId,
-    );
-
-    return token?.token ?? null;
   }
 }

@@ -36,6 +36,7 @@ import { BillingService } from 'src/engine/core-modules/billing/services/billing
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LogicFunctionDriverFactory } from 'src/engine/core-modules/logic-function/logic-function-drivers/logic-function-driver.factory';
+import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 import { buildEnvVar } from 'src/engine/core-modules/logic-function/logic-function-executor/utils/build-env-var';
 import { SecretEncryptionService } from 'src/engine/core-modules/secret-encryption/secret-encryption.service';
 import { ThrottlerService } from 'src/engine/core-modules/throttler/throttler.service';
@@ -46,6 +47,7 @@ import { UsageResourceType } from 'src/engine/core-modules/usage/enums/usage-res
 import { UsageUnit } from 'src/engine/core-modules/usage/enums/usage-unit.enum';
 import { type UsageEvent } from 'src/engine/core-modules/usage/types/usage-event.type';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
+import { LogicFunctionExecutionStatus } from 'src/engine/metadata-modules/logic-function/dtos/logic-function-execution-result.dto';
 import { LogicFunctionExecutionMode } from 'src/engine/metadata-modules/logic-function/logic-function.entity';
 import {
   LogicFunctionException,
@@ -100,6 +102,7 @@ export class LogicFunctionExecutorService {
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @InjectRepository(ApplicationRegistrationVariableEntity)
     private readonly applicationRegistrationVariableRepository: Repository<ApplicationRegistrationVariableEntity>,
+    private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
   async execute({
@@ -128,6 +131,24 @@ export class LogicFunctionExecutorService {
     await this.assertApplicationNotStopped(flatApplication);
 
     await this.throttleExecution(workspaceId);
+
+    if (this.nativeLogicFunctionRegistry.find(flatLogicFunction.name)) {
+      const resultLogicFunction = await this.executeNative({
+        name: flatLogicFunction.name,
+        workspaceId,
+        payload,
+        logicFunctionId,
+      });
+
+      await this.handleExecutionResult({
+        result: resultLogicFunction,
+        flatApplication,
+        flatLogicFunction,
+        workspaceId,
+      });
+
+      return resultLogicFunction;
+    }
 
     const envVariables = await this.getExecutionEnvVariables({
       workspaceId,
@@ -185,6 +206,63 @@ export class LogicFunctionExecutorService {
     });
 
     return resultLogicFunction;
+  }
+
+  private async executeNative({
+    name,
+    workspaceId,
+    payload,
+    logicFunctionId,
+  }: {
+    name: string;
+    workspaceId: string;
+    payload: object;
+    logicFunctionId: string;
+  }): Promise<LogicFunctionExecuteResult> {
+    const startedAt = Date.now();
+
+    try {
+      const nativeHandler = this.nativeLogicFunctionRegistry.find(name);
+
+      if (!nativeHandler) {
+        throw new Error(`No native handler registered for ${name}`);
+      }
+
+      const data = await nativeHandler.execute({
+        name,
+        workspaceId,
+        payload,
+      });
+
+      return {
+        data,
+        duration: Date.now() - startedAt,
+        logs: '',
+        status: LogicFunctionExecutionStatus.SUCCESS,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Native GTM logic function execution failed: ` +
+          `functionId=${logicFunctionId}, ` +
+          `name=${name}, ` +
+          `workspaceId=${workspaceId}: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      return {
+        data: null,
+        duration: Date.now() - startedAt,
+        logs: '',
+        status: LogicFunctionExecutionStatus.ERROR,
+        error: {
+          errorType: error instanceof Error ? error.name : 'Error',
+          errorMessage:
+            error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack ?? '' : '',
+        },
+      };
+    }
   }
 
   private async resolveEffectiveExecutionMode({

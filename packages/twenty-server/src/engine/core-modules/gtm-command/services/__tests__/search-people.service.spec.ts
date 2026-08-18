@@ -4,25 +4,27 @@ describe('SearchPeopleService', () => {
   const peopleApiService = {
     searchPeople: jest.fn(),
   };
-  const workspaceQueryService = {
-    getApiKeys: jest.fn(),
-  };
-  const apiKeyService = {
-    generateApiKeyToken: jest.fn(),
+  const gtmWorkspaceAuthTokenService = {
+    resolveApiKeyToken: jest.fn(),
   };
 
   const service = new SearchPeopleService(
     peopleApiService as never,
-    workspaceQueryService as never,
-    apiKeyService as never,
+    gtmWorkspaceAuthTokenService as never,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('returns an error when the workspace has no API token', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([]);
+  it('searches using workspace context when there is no API key', async () => {
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'index',
+      total: 0,
+      items: [],
+    });
 
     await expect(
       service.execute({
@@ -30,15 +32,19 @@ describe('SearchPeopleService', () => {
         input: { naturalLanguage: 'CEO at Acme' },
       }),
     ).resolves.toMatchObject({
-      success: false,
+      success: true,
       people: [],
+      dataSource: 'index',
     });
-    expect(peopleApiService.searchPeople).not.toHaveBeenCalled();
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({ naturalLanguage: 'CEO at Acme' }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
   });
 
   it('maps People API hits', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue('tok');
     peopleApiService.searchPeople.mockResolvedValue({
       status: 'ok',
       dataSource: 'index',

@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import {
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  GTM_NATIVE_LOGIC_FUNCTION_NAMES,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
@@ -12,27 +13,28 @@ import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/serv
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
 import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/services/search-people.service';
-
-const NATIVE_LOGIC_FUNCTION_NAMES = new Set([
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
-  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
-]);
+import { NativeLogicFunctionHandler } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function-handler.interface';
+import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 
 @Injectable()
-export class GtmLogicFunctionNativeExecutor {
+export class GtmLogicFunctionNativeExecutor
+  implements NativeLogicFunctionHandler, OnModuleInit
+{
   constructor(
     private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
     private readonly searchPeopleService: SearchPeopleService,
     private readonly searchCompaniesService: SearchCompaniesService,
     private readonly searchJobsService: SearchJobsService,
+    private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
+  onModuleInit(): void {
+    this.nativeLogicFunctionRegistry.register(this);
+  }
+
   isNative(name: string): boolean {
-    return NATIVE_LOGIC_FUNCTION_NAMES.has(name);
+    return GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(name);
   }
 
   async execute({

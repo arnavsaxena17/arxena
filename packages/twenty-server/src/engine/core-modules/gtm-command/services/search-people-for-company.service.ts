@@ -4,12 +4,11 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
-import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
+import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -105,8 +104,7 @@ export class SearchPeopleForCompanyService {
     private readonly peopleApiService: PeopleApiService,
     private readonly processCandidatesService: ProcessCandidatesService,
     private readonly ensureGtmProjectService: EnsureGtmProjectService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly apiKeyService: ApiKeyService,
+    private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
   ) {}
 
   async execute({
@@ -223,17 +221,8 @@ export class SearchPeopleForCompanyService {
       25,
     );
 
-    const apiToken = await this.resolveApiToken(workspaceId);
-
-    if (!isNonEmptyString(apiToken)) {
-      return {
-        success: false,
-        enrolledCount: 0,
-        people: [],
-        projectId: ensured.projectId,
-        error: 'Workspace API token is required to search people',
-      };
-    }
+    const apiKeyToken =
+      await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
 
     const search = await this.peopleApiService.searchPeople(
       {
@@ -249,7 +238,8 @@ export class SearchPeopleForCompanyService {
         limit,
         dataSource: 'auto',
       },
-      apiToken,
+      apiKeyToken ?? undefined,
+      { workspaceId },
     );
 
     const people = (search.items ?? []).map((item) => {
@@ -277,6 +267,9 @@ export class SearchPeopleForCompanyService {
     );
 
     if (enrollable.length > 0) {
+      const enrollToken =
+        await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
+
       await this.processCandidatesService.queueRawDataForProcessing(
         enrollable.map((person) => ({
           ...person.raw,
@@ -290,7 +283,7 @@ export class SearchPeopleForCompanyService {
         'system',
         new Date().toISOString(),
         'gtm-search-people-for-company',
-        apiToken,
+        enrollToken,
         undefined,
         { queueStartChatAfter: false },
       );
@@ -313,21 +306,5 @@ export class SearchPeopleForCompanyService {
       ),
       projectId: ensured.projectId,
     };
-  }
-
-  private async resolveApiToken(workspaceId: string): Promise<string | null> {
-    const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId);
-    const apiKeyId = apiKeys?.[0]?.id;
-
-    if (!isNonEmptyString(apiKeyId)) {
-      return null;
-    }
-
-    const token = await this.apiKeyService.generateApiKeyToken(
-      workspaceId,
-      apiKeyId,
-    );
-
-    return token?.token ?? null;
   }
 }

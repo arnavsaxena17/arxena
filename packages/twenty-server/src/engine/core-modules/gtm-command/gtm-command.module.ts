@@ -20,6 +20,7 @@ import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
+import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { GtmCompaniesIndexWikiEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-companies-index-wiki-enrichment.source';
 import {
   GTM_COMPANY_ENRICHMENT_SOURCES,
@@ -33,9 +34,11 @@ import { GtmOutreachThrottleService } from 'src/engine/core-modules/gtm-command/
 import { GtmPeopleCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
 import { GtmWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-wikidata-company-enrichment.source';
 import { GtmWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-web-search-company-enrichment.source';
+import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { GtmWorkspaceProfileProvisioningService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-profile-provisioning.service';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
+import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -43,6 +46,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
 @Module({
   imports: [
     GraphQLExecutionModule,
+    LogicFunctionExecutorModule,
     WorkspaceModificationsModule,
     CandidateSearchModule,
     LinkedInSearchModule,
@@ -53,6 +57,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     PeopleApiModule,
     CompanyApiModule,
     JobsApiModule,
+    JwtModule,
     forwardRef(() => CandidateSourcingModule),
   ],
   controllers: [GtmCommandController],
@@ -92,6 +97,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     GtmCompanyProfileSummarizerService,
     GtmWorkspaceProfileProvisioningService,
     GtmWorkspaceProfileBootstrapJob,
+    GtmWorkspaceAuthTokenService,
     EnsureGtmProjectService,
     SearchPeopleForCompanyService,
     SearchPeopleService,

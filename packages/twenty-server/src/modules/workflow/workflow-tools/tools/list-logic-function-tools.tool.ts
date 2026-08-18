@@ -1,26 +1,12 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import {
-  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
-} from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
+import { GTM_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
 import { type WorkflowToolContext } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
 
 const listLogicFunctionToolsSchema = z.object({});
-
-const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
-  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
-]);
 
 const isNativeLogicFunction = (fn: FlatLogicFunction): boolean =>
   GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(fn.name);

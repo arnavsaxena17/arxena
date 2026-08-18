@@ -1,13 +1,7 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import {
-  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
-} from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
+import { GTM_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
@@ -22,14 +16,6 @@ const getLogicFunctionSourceSchema = z.object({
     ),
 });
 
-const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
-  GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
-  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
-]);
-
 export const createGetLogicFunctionSourceTool = (
   deps: Pick<
     WorkflowToolDependencies,
@@ -40,7 +26,7 @@ export const createGetLogicFunctionSourceTool = (
   name: 'get_logic_function_source' as const,
   description: `Read TypeScript source of a CODE-step logic function.
 
-Do NOT use this for native GTM workflow actions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile) — their source is a stub. Use list_logic_function_tools inputSchema instead.`,
+Do NOT use this for native GTM workflow actions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile) — source is a typed contract only. Use list_logic_function_tools inputSchema instead.`,
   inputSchema: getLogicFunctionSourceSchema,
   execute: async (parameters: { logicFunctionId: string }) => {
     try {
@@ -66,9 +52,8 @@ Do NOT use this for native GTM workflow actions (search-people-for-company, sear
         });
 
       const isNative =
-        (isDefined(logicFunction) &&
-          GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(logicFunction.name)) ||
-        sourceHandlerCode.includes('return params ?? {}');
+        isDefined(logicFunction) &&
+        GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(logicFunction.name);
 
       if (isNative) {
         return {
@@ -82,7 +67,7 @@ Do NOT use this for native GTM workflow actions (search-people-for-company, sear
             logicFunction?.workflowActionTriggerSettings?.outputSchema ?? null,
           sourceHandlerCode,
           message:
-            'This is a native GTM logic function. The source is a stub. Use inputSchema (companyId / projectId for search-people-for-company). Do not edit the source.',
+            'This is a native GTM logic function. Source is the input contract only. Use inputSchema; do not edit the source.',
         };
       }
 

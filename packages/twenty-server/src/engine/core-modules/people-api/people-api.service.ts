@@ -185,6 +185,7 @@ export class PeopleApiService {
   async searchPeople(
     body: PeopleSearchDto,
     apiToken?: string,
+    options?: { workspaceId?: string },
   ): Promise<PeopleSearchResponse> {
     await this.assertTaxonomyFilters(body);
 
@@ -194,16 +195,18 @@ export class PeopleApiService {
         body,
         naturalLanguage,
         apiToken,
+        options,
       );
     }
 
-    return this.executePeopleSearch(body, apiToken);
+    return this.executePeopleSearch(body, apiToken, options);
   }
 
   private async searchPeopleFromNaturalLanguage(
     body: PeopleSearchDto,
     naturalLanguage: string,
     apiToken?: string,
+    options?: { workspaceId?: string },
   ): Promise<PeopleSearchResponse> {
     const parsed =
       await this.peopleNaturalLanguageParserService.parse(naturalLanguage);
@@ -266,6 +269,7 @@ export class PeopleApiService {
         offset: body.offset,
       },
       apiToken,
+      options,
     );
 
     return {
@@ -285,11 +289,13 @@ export class PeopleApiService {
   private async executePeopleSearch(
     body: PeopleSearchDto,
     apiToken?: string,
+    options?: { workspaceId?: string },
   ): Promise<PeopleSearchResponse> {
     const resolvedSource = await this.peopleSearchDataSourceResolver.resolve({
       dataSource: body.dataSource,
       accountId: body.accountId,
       apiToken,
+      workspaceId: options?.workspaceId,
     });
     const sourcedBody: PeopleSearchDto = {
       ...body,
@@ -703,7 +709,12 @@ export class PeopleApiService {
     apiToken?: string,
     locationScope?: PeopleLocationScope,
   ): Promise<PeopleSearchResponse> {
-    if (!apiToken?.trim()) {
+    if (
+      !apiToken?.trim() &&
+      dataSource !== 'harvest' &&
+      dataSource !== 'pool' &&
+      !body.accountId?.trim()
+    ) {
       throw new HttpException(
         'Authorization token is required for LinkedIn people search',
         HttpStatus.UNAUTHORIZED,
@@ -744,7 +755,7 @@ export class PeopleApiService {
     const stdGrade = body.stdGrade?.trim() || undefined;
 
     const sourcingResult = await this.peopleLinkedInSourcingService.search({
-      apiToken,
+      apiToken: apiToken ?? '',
       website: body.website,
       companyId: body.companyId,
       companyName: body.companyName,

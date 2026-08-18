@@ -84,7 +84,7 @@ describe('PeopleSearchDataSourceResolver', () => {
     });
   });
 
-  it('falls back to index when no member or Sales Navigator Unipile account exists', async () => {
+  it('uses a classic Unipile account when Sales Navigator is not present', async () => {
     workspaceQueryService.getWorkspaceIdFromToken.mockResolvedValue('ws-1');
     workspaceQueryService.getWorkspaceMemberIdFromToken.mockResolvedValue(null);
     workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles.mockResolvedValue(
@@ -98,7 +98,72 @@ describe('PeopleSearchDataSourceResolver', () => {
     );
 
     await expect(resolver.resolve({ apiToken: 'api-key' })).resolves.toEqual({
+      dataSource: 'unipile',
+      accountId: 'classic-acct',
+    });
+  });
+
+  it('falls back to index when no Unipile account exists', async () => {
+    workspaceQueryService.getWorkspaceIdFromToken.mockResolvedValue('ws-1');
+    workspaceQueryService.getWorkspaceMemberIdFromToken.mockResolvedValue(null);
+    workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles.mockResolvedValue(
+      [],
+    );
+
+    await expect(resolver.resolve({ apiToken: 'api-key' })).resolves.toEqual({
       dataSource: 'index',
     });
+  });
+
+  it('does not validate a token when workspaceId is already provided', async () => {
+    workspaceQueryService.getWorkspaceIdFromToken.mockRejectedValue(
+      new Error('This API Key is revoked'),
+    );
+    workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles.mockResolvedValue(
+      [
+        {
+          workspaceMemberId: 'classic-member',
+          linkedinUnipileAccountId: 'classic-acct',
+          linkedinProfile: { me: { public_identifier: 'classic' } },
+        },
+      ],
+    );
+
+    await expect(
+      resolver.resolve({
+        dataSource: 'auto',
+        workspaceId: 'ws-1',
+        apiToken: 'minted-system-token',
+      }),
+    ).resolves.toEqual({
+      dataSource: 'unipile',
+      accountId: 'classic-acct',
+    });
+    expect(workspaceQueryService.getWorkspaceIdFromToken).not.toHaveBeenCalled();
+  });
+
+  it('uses a workspace Sales Navigator Unipile account from workspaceId without a token', async () => {
+    workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles.mockResolvedValue(
+      [
+        {
+          workspaceMemberId: 'sn-member',
+          linkedinUnipileAccountId: 'sn-acct',
+          linkedinProfile: {
+            me: {
+              public_identifier: 'sn',
+              sales_navigator: { contract_id: '1', owner_seat_id: '2' },
+            },
+          },
+        },
+      ],
+    );
+
+    await expect(
+      resolver.resolve({ dataSource: 'auto', workspaceId: 'ws-1' }),
+    ).resolves.toEqual({
+      dataSource: 'unipile',
+      accountId: 'sn-acct',
+    });
+    expect(workspaceQueryService.getWorkspaceIdFromToken).not.toHaveBeenCalled();
   });
 });

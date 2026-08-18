@@ -2,6 +2,7 @@ import { v5 as uuidv5 } from 'uuid';
 
 import { type WorkflowActionTriggerSettings } from 'twenty-shared/application';
 
+import { getGtmNativeLogicFunctionHandler } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-native-handlers.const';
 import {
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
@@ -19,10 +20,6 @@ import {
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
 const GTM_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
-
-const NATIVE_HANDLER = `export const main = async (params) => {
-  return params ?? {};
-};`;
 
 export type PrefilledGtmLogicFunctionDefinition =
   PrefilledWorkflowCodeStepLogicFunctionDefinition & {
@@ -63,7 +60,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       name: GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       description:
         'Search ICP people for a company via People API and enroll them as Person + Candidate (QUEUED). Pass companyId (required) and optional projectId/limit. Loads Project icpSpec (std function/grade) itself — do not pass icpSpec.',
-      sourceHandlerCode: NATIVE_HANDLER,
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+      ),
       workflowActionTriggerSettings: {
         label: 'Search people for company',
         icon: 'IconUsers',
@@ -112,7 +111,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       name: GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
       description:
         'Fetch a LinkedIn profile via Unipile for AI_AGENT drafting. Pass linkedinUrl or linkedinProfileId plus workspaceMemberId.',
-      sourceHandlerCode: NATIVE_HANDLER,
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+      ),
       workflowActionTriggerSettings: {
         label: 'Fetch LinkedIn profile',
         icon: 'IconBrandLinkedin',
@@ -152,7 +153,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       name: GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       description:
         'Search people via People API (search only, does not enroll). Pass naturalLanguage and optional company/location/dataSource/limit. Default dataSource is auto.',
-      sourceHandlerCode: NATIVE_HANDLER,
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
+      ),
       workflowActionTriggerSettings: {
         label: 'Search people',
         icon: 'IconUsers',
@@ -205,7 +208,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       name: GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
       description:
         'Search companies via Company API. dataSource auto prefers Unipile Sales Navigator, then Recruiter/classic, Harvest, then index.',
-      sourceHandlerCode: NATIVE_HANDLER,
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+      ),
       workflowActionTriggerSettings: {
         label: 'Search companies',
         icon: 'IconBuildingSkyscraper',
@@ -258,7 +263,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       name: GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
       description:
         'Search jobs via Jobs API. dataSource auto uses Unipile Sales Navigator account resolution then Harvest.',
-      sourceHandlerCode: NATIVE_HANDLER,
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
+      ),
       workflowActionTriggerSettings: {
         label: 'Search jobs',
         icon: 'IconBriefcase',

@@ -17,6 +17,7 @@ type SettingsLogicFunctionCodeEditorProps = Omit<EditorProps, 'onChange'> & {
   files: File[];
   onChange: (value: string) => void;
   applicationVariableKeys?: string[];
+  readOnly?: boolean;
 };
 
 export const SettingsLogicFunctionCodeEditor = ({
@@ -26,6 +27,7 @@ export const SettingsLogicFunctionCodeEditor = ({
   height = 450,
   options = undefined,
   applicationVariableKeys,
+  readOnly = false,
 }: SettingsLogicFunctionCodeEditorProps) => {
   const { logicFunctionId = '' } = useParams();
   const { availablePackages } = useGetAvailablePackages({
@@ -113,7 +115,7 @@ export const SettingsLogicFunctionCodeEditor = ({
         language={currentFile.language}
         onMount={handleEditorDidMount}
         onChange={onChange}
-        options={options}
+        options={{ ...options, readOnly }}
         variant="with-header"
       />
     )
