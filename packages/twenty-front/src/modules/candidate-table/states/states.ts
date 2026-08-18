@@ -78,12 +78,17 @@ export interface TableState {
   sortConfig: SortConfig[];
 }
 
+import { type FieldActorValue } from '@/object-record/record-field/ui/types/FieldMetadata';
+
+export type ProjectCreatedBy = Partial<FieldActorValue>;
+
 export type ProjectStateItem = {
   id: string;
   name: string;
   pathPosition?: string;
   isActive: boolean;
   createdAt?: string;
+  createdBy?: ProjectCreatedBy;
   jobLocation?: string;
   searchName?: string;
   assistantThread?: {

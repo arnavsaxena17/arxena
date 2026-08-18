@@ -24,12 +24,14 @@ import type { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import type { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import type { PeopleSearchDto } from './dto/people-search.dto';
 import type { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
+import type { TaxonomyManualBooleanQueriesDto } from './dto/taxonomy-manual-boolean-queries.dto';
 import type {
   DataSourcesStatusResponse,
   ExpandJobTitlesResponse,
   PeopleSearchByTaxonomyResponse,
   PeopleSearchResponse,
   TaxonomyBooleanStringsResponse,
+  TaxonomyManualBooleanQueriesResponse,
   TaxonomyItem,
   TaxonomyTreeResponse,
 } from './people-api.types';
@@ -187,7 +189,7 @@ export class PeopleApiService {
     await this.assertTaxonomyFilters(body);
 
     const naturalLanguage = body.naturalLanguage?.trim();
-    if (naturalLanguage) {
+    if (naturalLanguage && !body.searchUrl?.trim()) {
       return this.searchPeopleFromNaturalLanguage(
         body,
         naturalLanguage,
@@ -319,6 +321,19 @@ export class PeopleApiService {
         sourcedBody.country,
     };
     const dataSource = scopedBody.dataSource ?? resolvedSource.dataSource;
+    const searchUrl = scopedBody.searchUrl?.trim();
+
+    if (
+      searchUrl &&
+      dataSource !== 'harvest' &&
+      dataSource !== 'unipile' &&
+      dataSource !== 'pool'
+    ) {
+      throw new HttpException(
+        'searchUrl requires dataSource harvest, unipile, pool, or auto with a connected LinkedIn Unipile account',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     this.logger.log(
       `People API search dataSource=${dataSource} stdFunction=${scopedBody.stdFunction ?? ''} stdGrade=${scopedBody.stdGrade ?? ''} companyVia=${companyScope.resolvedVia} companyId=${companyScope.companyId ?? ''} website=${companyScope.website ?? ''} locationVia=${locationScope.resolvedVia} location=${locationScope.linkedinLocationName ?? locationScope.raw ?? ''}`,
@@ -695,6 +710,7 @@ export class PeopleApiService {
       );
     }
 
+    const searchUrl = body.searchUrl?.trim();
     const hasTaxonomy =
       !!body.stdFunction?.trim() ||
       !!body.stdFunctionRoot?.trim() ||
@@ -704,14 +720,19 @@ export class PeopleApiService {
       !!body.companyId?.trim() ||
       !!body.companyName?.trim();
 
-    if (!hasCompany) {
+    if (!searchUrl && !hasCompany) {
       throw new HttpException(
         'companyName, companyId, or website is required for LinkedIn search',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    if (!hasTaxonomy && !body.jobTitle?.trim() && !body.query?.trim()) {
+    if (
+      !searchUrl &&
+      !hasTaxonomy &&
+      !body.jobTitle?.trim() &&
+      !body.query?.trim()
+    ) {
       throw new HttpException(
         'At least one of stdFunction, stdFunctionRoot, stdGrade, jobTitle, or query is required for LinkedIn search',
         HttpStatus.BAD_REQUEST,
@@ -739,9 +760,11 @@ export class PeopleApiService {
       limit: body.limit ?? 20,
       linkedinSearchKeywords:
         body.jobTitle?.trim() || body.query?.trim() || undefined,
+      searchUrl,
     });
 
     const queryMeta = {
+      ...(searchUrl ? { searchUrl } : {}),
       keywords: sourcingResult.keywords,
       company: sourcingResult.company,
       ...(stdFunction ? { stdFunction } : {}),
@@ -1031,6 +1054,42 @@ export class PeopleApiService {
       query,
       booleanQuery: result.boolean_query ?? null,
       keywordGroups: result.keyword_groups ?? [],
+    };
+  }
+
+  async getManualBooleanQueries(
+    dto: TaxonomyManualBooleanQueriesDto,
+  ): Promise<TaxonomyManualBooleanQueriesResponse> {
+    const result =
+      await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+        kind: dto.kind?.trim(),
+        label: dto.label?.trim(),
+        stdGrade: dto.stdGrade?.trim(),
+        stdFunction: dto.stdFunction?.trim(),
+        stdFunctionRoot: dto.stdFunctionRoot?.trim(),
+        includeEmpty: dto.includeEmpty,
+      });
+
+    if (!result) {
+      throw new HttpException(
+        'Title taxonomy service is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const items = (result.items ?? []).map((item) => ({
+      kind: item.kind,
+      label: item.label,
+      stdGrade: item.std_grade,
+      booleanQuery: item.boolean_query,
+      keywords: item.keywords ?? '',
+    }));
+
+    return {
+      status: 'ok',
+      found: result.found ?? items.length > 0,
+      count: result.count ?? items.length,
+      items,
     };
   }
 

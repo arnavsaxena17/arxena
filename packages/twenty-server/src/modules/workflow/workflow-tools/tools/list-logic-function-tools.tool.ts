@@ -3,7 +3,10 @@ import { z } from 'zod';
 
 import {
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
@@ -14,6 +17,9 @@ const listLogicFunctionToolsSchema = z.object({});
 const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
 ]);
 
 const isNativeLogicFunction = (fn: FlatLogicFunction): boolean =>
@@ -27,7 +33,7 @@ export const createListLogicFunctionToolsTool = (
 ) => ({
   name: 'list_logic_function_tools' as const,
   description:
-    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, fetch-linkedin-profile) include isNative=true — do not read their source; use inputSchema. search-people-for-company takes companyId (required) and optional projectId/limit; it loads Project icpSpec itself — do not pass icpSpec.',
+    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile) include isNative=true — do not read their source; use inputSchema. search-people-for-company enrolls Person+Candidate; search-people / search-companies / search-jobs return hits only.',
   inputSchema: listLogicFunctionToolsSchema,
   execute: async () => {
     const { flatLogicFunctionMaps } =

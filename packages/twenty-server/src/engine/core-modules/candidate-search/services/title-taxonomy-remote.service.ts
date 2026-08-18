@@ -8,6 +8,21 @@ export type TitleTaxonomyItem = {
   level: string | number | null;
 };
 
+export type TitleTaxonomyManualBooleanQueryItem = {
+  kind: string;
+  label: string;
+  std_grade: string;
+  boolean_query: string;
+  keywords?: string;
+};
+
+export type TitleTaxonomyManualBooleanQueriesResponse = {
+  status?: string;
+  count?: number;
+  found?: boolean;
+  items?: TitleTaxonomyManualBooleanQueryItem[];
+};
+
 export type TitleTaxonomySearchKeywordsResponse = {
   query?: string;
   boolean_query?: string;
@@ -175,6 +190,27 @@ export class TitleTaxonomyRemoteService {
       );
       return null;
     }
+  }
+
+  async getManualBooleanQueries(query?: {
+    kind?: string;
+    label?: string;
+    stdGrade?: string;
+    stdFunction?: string;
+    stdFunctionRoot?: string;
+    includeEmpty?: boolean;
+  }): Promise<TitleTaxonomyManualBooleanQueriesResponse | null> {
+    return this.fetchTitleTaxonomyJson<TitleTaxonomyManualBooleanQueriesResponse>(
+      '/api/title-taxonomy/manual-boolean-queries',
+      {
+        kind: query?.kind,
+        label: query?.label,
+        std_grade: query?.stdGrade,
+        std_function: query?.stdFunction,
+        std_function_root: query?.stdFunctionRoot,
+        include_empty: query?.includeEmpty ? 'true' : undefined,
+      },
+    );
   }
 
   /**

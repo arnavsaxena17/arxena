@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
@@ -8,6 +10,13 @@ import {
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
+import {
+  classifyLinkedInSearchUrl,
+  isHarvestSalesNavigatorPeopleSearchUrl,
+  isPeopleLinkedInSearchUrl,
+} from 'src/engine/core-modules/linkedin-search/utils/classify-linkedin-search-url.util';
+import { HarvestLinkedinTransformerService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin-transformer.service';
+import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
 import {
   OrgChartSuperImposeService,
   type SuperImposeFetchContext,
@@ -42,6 +51,7 @@ export type PeopleLinkedInSourcingInput = {
   accountId?: string;
   limit?: number;
   linkedinSearchKeywords?: string;
+  searchUrl?: string;
 };
 
 export type PeopleLinkedInSourcingResult = {
@@ -70,6 +80,8 @@ export class PeopleLinkedInSourcingService {
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
     private readonly unipileCompanyService: UnipileCompanyService,
+    private readonly harvestLinkedinService: HarvestLinkedinService,
+    private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
   ) {}
 
   isUnipileConfigured(): boolean {
@@ -79,6 +91,11 @@ export class PeopleLinkedInSourcingService {
   async search(
     input: PeopleLinkedInSourcingInput,
   ): Promise<PeopleLinkedInSourcingResult> {
+    const searchUrl = input.searchUrl?.trim();
+    if (searchUrl) {
+      return this.searchFromUrl(input, searchUrl);
+    }
+
     const companyName = input.companyName?.trim() || '';
     const website = input.website?.trim();
     const companyId = input.companyId?.trim();
@@ -243,6 +260,98 @@ export class PeopleLinkedInSourcingService {
         slug: primaryCompany?.slug ?? null,
         linkedinUrl: primaryCompany?.linkedinUrl ?? null,
       },
+      items: items.map((item) =>
+        this.normalizePersonItem(item, account.candidateSource),
+      ),
+    };
+  }
+
+  private async searchFromUrl(
+    input: PeopleLinkedInSourcingInput,
+    searchUrl: string,
+  ): Promise<PeopleLinkedInSourcingResult> {
+    const classified = classifyLinkedInSearchUrl(searchUrl);
+    if (!isPeopleLinkedInSearchUrl(classified) || !classified) {
+      throw new HttpException(
+        'searchUrl must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people, or Recruiter /talent/search)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const account = await this.peopleSalesNavAccountResolver.resolve({
+      candidateSource: input.dataSource,
+      accountId: input.accountId,
+    });
+    const limit = input.limit ?? 20;
+    const emptyCompany = {
+      name: input.companyName?.trim() || null,
+      slug: input.companyId?.trim() || null,
+      linkedinUrl: null,
+    };
+
+    if (account.candidateSource === 'harvest') {
+      if (!isHarvestSalesNavigatorPeopleSearchUrl(classified)) {
+        throw new HttpException(
+          'Harvest only accepts Sales Navigator people search URLs (linkedin.com/sales/search/people). Use dataSource unipile or pool for classic/premium or Recruiter URLs.',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const leads =
+        await this.harvestLinkedinService.fetchAllLeadsFromQueryParams({
+          params: {
+            salesNavUrl: classified.url,
+            sessionId: randomUUID(),
+          },
+          maxProfiles: limit,
+        });
+      const items =
+        this.harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
+          leads,
+          emptyCompany.name ?? '',
+        );
+
+      return {
+        dataSource: 'harvest',
+        keywords: null,
+        appliedFilters: { functionIds: [], seniorities: [] },
+        company: emptyCompany,
+        items: items.map((item) =>
+          this.normalizePersonItem(
+            item as unknown as Record<string, unknown>,
+            'harvest',
+          ),
+        ),
+      };
+    }
+
+    const accountId = account.linkedinUnipileAccountId;
+    if (!accountId) {
+      throw new HttpException(
+        'Resolved Unipile account id is missing',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const items = await this.linkedinUnipileSessionService.withLinkedinSession(
+      input.apiToken,
+      accountId,
+      async (session) => {
+        const response = await this.linkedInSearchService.searchFromUrl(
+          classified.url,
+          session.accountId,
+          { limit },
+        );
+
+        return (response.items ?? []) as Array<Record<string, unknown>>;
+      },
+    );
+
+    return {
+      dataSource: account.candidateSource,
+      keywords: null,
+      appliedFilters: { functionIds: [], seniorities: [] },
+      company: emptyCompany,
       items: items.map((item) =>
         this.normalizePersonItem(item, account.candidateSource),
       ),

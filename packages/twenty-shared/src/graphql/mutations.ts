@@ -443,6 +443,8 @@ export const UpdateOneProject = `mutation UpdateOneProject($idToUpdate: UUID!, $
    __typename
    recruiterId
    id
+   name
+   isActive
    specificCriteria
    createdAt
    arxenaSiteId

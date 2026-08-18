@@ -17,11 +17,16 @@ import { WorkflowEditActionCodeFields } from '@/workflow/workflow-steps/workflow
 import { mergeDefaultFunctionInputAndFunctionInput } from '@/workflow/workflow-steps/workflow-actions/code-action/utils/mergeDefaultFunctionInputAndFunctionInput';
 import { setNestedValue } from '@/workflow/workflow-steps/workflow-actions/code-action/utils/setNestedValue';
 import { WORKFLOW_LOGIC_FUNCTION_ACTION_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/WorkflowLogicFunctionActionTabListComponentId';
+import {
+  getGtmNativeLogicFunctionSampleOutput,
+  isNativeGtmLogicFunction,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isObject } from '@sniptt/guards';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { getOutputSchemaFromValue } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { getFunctionInputFromInputSchema } from 'twenty-shared/workflow';
@@ -120,8 +125,62 @@ export const WorkflowEditActionLogicFunction = ({
     500,
   );
 
+  const defaultSampleOutput = useMemo(() => {
+    const sampleFromSettings = logicFunction?.workflowActionTriggerSettings
+      ?.sampleOutput as Record<string, unknown> | undefined;
+
+    if (isDefined(sampleFromSettings) && Object.keys(sampleFromSettings).length > 0) {
+      return sampleFromSettings;
+    }
+
+    return getGtmNativeLogicFunctionSampleOutput(logicFunction?.name);
+  }, [
+    logicFunction?.name,
+    logicFunction?.workflowActionTriggerSettings?.sampleOutput,
+  ]);
+
+  const hasAppliedDefaultSample = useRef(false);
+
+  useEffect(() => {
+    if (
+      actionOptions.readonly === true ||
+      hasAppliedDefaultSample.current ||
+      !isDefined(defaultSampleOutput)
+    ) {
+      return;
+    }
+
+    if (
+      !shouldDefaultLogicFunctionSampleOutput({
+        logicFunctionName: logicFunction?.name,
+        expectedOutputSchema: action.settings.expectedOutputSchema,
+      })
+    ) {
+      return;
+    }
+
+    hasAppliedDefaultSample.current = true;
+    actionOptions.onActionUpdate({
+      ...action,
+      settings: {
+        ...action.settings,
+        expectedOutputSchema: defaultSampleOutput,
+        outputSchema: getOutputSchemaFromValue(defaultSampleOutput),
+      },
+    });
+  }, [
+    action,
+    actionOptions,
+    defaultSampleOutput,
+    logicFunction?.name,
+  ]);
+
   const updateOutputSchemaFromTestResult = (testResult: object) => {
     if (actionOptions.readonly === true) {
+      return;
+    }
+
+    if (isNativeGtmLogicFunction(logicFunction?.name)) {
       return;
     }
 
@@ -183,6 +242,7 @@ export const WorkflowEditActionLogicFunction = ({
       settings: {
         ...action.settings,
         expectedOutputSchema: parsedValue,
+        outputSchema: getOutputSchemaFromValue(parsedValue),
       },
     });
   };
@@ -278,7 +338,22 @@ export const WorkflowEditActionLogicFunction = ({
               />
             )}
             <WorkflowExpectedOutputBodyInput
-              defaultValue={action.settings.expectedOutputSchema}
+              key={
+                shouldDefaultLogicFunctionSampleOutput({
+                  logicFunctionName: logicFunction?.name,
+                  expectedOutputSchema: action.settings.expectedOutputSchema,
+                })
+                  ? 'default-sample'
+                  : 'saved-sample'
+              }
+              defaultValue={
+                shouldDefaultLogicFunctionSampleOutput({
+                  logicFunctionName: logicFunction?.name,
+                  expectedOutputSchema: action.settings.expectedOutputSchema,
+                })
+                  ? defaultSampleOutput
+                  : action.settings.expectedOutputSchema
+              }
               onChange={handleExpectedOutputBodyChange}
               readonly={actionOptions.readonly}
             />

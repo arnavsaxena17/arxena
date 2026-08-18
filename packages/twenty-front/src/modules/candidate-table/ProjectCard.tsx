@@ -15,19 +15,23 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
+import { AuthContext } from '@/auth/contexts/AuthContext';
+import { RecordLink } from '@/ai/components/RecordLink';
 import { useDeleteProject } from '@/candidate-table/hooks/useDeleteProject';
 import { useProjectStatusToggle } from '@/candidate-table/hooks/useProjectStatusToggle';
-import { projectsState } from '@/candidate-table/states/states';
+import { type ProjectCreatedBy, projectsState } from '@/candidate-table/states/states';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
+import { ActorDisplay } from '@/ui/field/display/components/ActorDisplay';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
@@ -39,6 +43,7 @@ type ProjectCardProps = {
   id: string;
   name: string;
   createdAt: string;
+  createdBy?: ProjectCreatedBy;
   isActive: boolean;
   jobLocation?: string;
   searchName?: string;
@@ -56,7 +61,7 @@ const StyledCard = styled.div`
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  height: 150px;
+  min-height: 150px;
   padding: ${themeCssVariables.spacing[4]};
   position: relative;
   transition: all 0.2s ease-in-out;
@@ -97,11 +102,40 @@ const StyledCardTitle = styled.h3`
   word-break: break-word;
 `;
 
+const StyledTitleEditor = styled.div`
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: ${themeCssVariables.spacing[1]};
+  min-width: 0;
+`;
+
+const StyledTitleInput = styled.input`
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  flex: 1;
+  font-size: ${themeCssVariables.font.size.lg};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  min-width: 0;
+  outline: none;
+  padding: ${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]};
+`;
+
 const StyledCardContent = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
   gap: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledChipsRow = styled.div`
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[1]};
+  min-height: 24px;
 `;
 
 const StyledInfoItem = styled.div`
@@ -233,10 +267,43 @@ const StyledOrgChartButton = styled.button`
   }
 `;
 
+const ProjectCreatedByChip = ({
+  createdBy,
+}: {
+  createdBy?: ProjectCreatedBy;
+}) => {
+  const { currentWorkspaceMembers, currentWorkspaceDeletedMembers } =
+    useContext(AuthContext);
+
+  if (!createdBy) {
+    return null;
+  }
+
+  const relatedWorkspaceMember = [
+    ...(currentWorkspaceDeletedMembers ?? []),
+    ...(currentWorkspaceMembers ?? []),
+  ].find((workspaceMember) => workspaceMember.id === createdBy.workspaceMemberId);
+
+  const displayName = relatedWorkspaceMember
+    ? `${relatedWorkspaceMember.name.firstName} ${relatedWorkspaceMember.name.lastName}`.trim()
+    : createdBy.name;
+
+  return (
+    <ActorDisplay
+      name={displayName || 'System'}
+      source={createdBy.source}
+      workspaceMemberId={createdBy.workspaceMemberId}
+      avatarUrl={relatedWorkspaceMember?.avatarUrl}
+      context={createdBy.context}
+    />
+  );
+};
+
 export const ProjectCard = ({
   id,
   name,
   createdAt,
+  createdBy,
   isActive,
   jobLocation,
   searchName,
@@ -264,6 +331,7 @@ export const ProjectCard = ({
   });
   const { deleteProject, isDeleting } = useDeleteProject();
   const { openModal } = useModal();
+  const { enqueueErrorSnackBar } = useSnackBar();
   const deleteProjectModalId = `delete-project-modal-${id}`;
   const deleteProjectWithCandidatesModalId = `delete-project-with-candidates-modal-${id}`;
   const [projects, setProjects] = useAtomState(projectsState);
@@ -271,6 +339,8 @@ export const ProjectCard = ({
   const [updateProject] = useMutation(gql(UpdateOneProject), {
     client: apolloCoreClient,
   });
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState(name);
   const [isEditingSearchName, setIsEditingSearchName] = useState(false);
   const [searchNameValue, setSearchNameValue] = useState(searchName || '');
 
@@ -285,6 +355,9 @@ export const ProjectCard = ({
   const handleCardClick = (event: React.MouseEvent) => {
     // Don't navigate if clicking on the menu button or dropdown
     if ((event.target as HTMLElement).closest('.menu-container')) {
+      return;
+    }
+    if ((event.target as HTMLElement).closest('.project-card-chips')) {
       return;
     }
     if ((event.target as HTMLElement).closest('.merge-checkbox')) {
@@ -323,6 +396,67 @@ export const ProjectCard = ({
 
   const handleConfirmDeleteProjectWithCandidates = () => {
     void deleteProject(id, { deleteCandidates: true }).catch(() => undefined);
+  };
+
+  const handleStartRename = () => {
+    setNameValue(name);
+    setIsEditingName(true);
+    closeDropdown(dropdownId);
+  };
+
+  const handleNameSave = () => {
+    const trimmedName = nameValue.trim();
+
+    if (!trimmedName) {
+      enqueueErrorSnackBar({
+        message: 'Enter a project name',
+        options: { duration: 3000 },
+      });
+      return;
+    }
+
+    if (trimmedName !== name) {
+      const previousProjects = projects;
+      const updatedJobs = projects.map((job) =>
+        job.id === id ? { ...job, name: trimmedName } : job,
+      );
+      setProjects(updatedJobs);
+      setNameValue(trimmedName);
+
+      updateProject({
+        variables: {
+          idToUpdate: id,
+          input: {
+            name: trimmedName,
+          },
+        },
+        onError: (error) => {
+          console.error('Failed to rename project:', error);
+          setProjects(previousProjects);
+          setNameValue(name);
+          enqueueErrorSnackBar({
+            message: 'Failed to rename project',
+            options: { duration: 4000 },
+          });
+        },
+      });
+    }
+
+    setIsEditingName(false);
+  };
+
+  const handleNameCancel = () => {
+    setNameValue(name);
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleNameSave();
+    } else if (event.key === 'Escape') {
+      handleNameCancel();
+    }
   };
 
   const handleSearchNameEdit = () => {
@@ -385,7 +519,49 @@ export const ProjectCard = ({
             />
           </StyledMergeCheckbox>
         )}
-        <StyledCardTitle>{name}</StyledCardTitle>
+        {isEditingName ? (
+          <StyledTitleEditor
+            className="project-name-editor"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <StyledTitleInput
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              onBlur={handleNameSave}
+              placeholder="Enter project name..."
+              aria-label="Project name"
+              autoFocus
+            />
+            <StyledActionButtons>
+              <StyledEditButton
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleNameSave}
+              >
+                <IconCheck size={14} />
+              </StyledEditButton>
+              <StyledEditButton
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={handleNameCancel}
+              >
+                <IconX size={14} />
+              </StyledEditButton>
+            </StyledActionButtons>
+          </StyledTitleEditor>
+        ) : (
+          <StyledCardTitle
+            className="project-name-editor"
+            title="Click to rename"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStartRename();
+            }}
+          >
+            {name}
+          </StyledCardTitle>
+        )}
         <div className="menu-container" onClick={(e) => e.stopPropagation()}>
           <Dropdown
             dropdownId={dropdownId}
@@ -398,6 +574,11 @@ export const ProjectCard = ({
             dropdownComponents={
               <DropdownContent widthInPixels={280}>
                 <DropdownMenuItemsContainer>
+                  <MenuItem
+                    onClick={handleStartRename}
+                    text="Rename"
+                    LeftIcon={IconPencil}
+                  />
                   <MenuItem
                     accent={isActive ? 'default' : 'danger'}
                     onClick={handleToggleJobStatus}
@@ -424,6 +605,18 @@ export const ProjectCard = ({
       </StyledCardHeader>
 
       <StyledCardContent>
+        <StyledChipsRow
+          className="project-card-chips"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <RecordLink
+            objectNameSingular="project"
+            recordId={id}
+            displayName={name}
+          />
+          <ProjectCreatedByChip createdBy={createdBy} />
+        </StyledChipsRow>
+
         <StyledInfoItem>
           <IconCalendar size={16} />
           Created on {formattedDate}

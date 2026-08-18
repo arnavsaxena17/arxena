@@ -651,6 +651,22 @@ export class LinkedInSearchService {
   }
 
   /**
+   * Unipile Recruiter has no companies category. Run classic/premium company
+   * search on the Recruiter-connected account.
+   */
+  async searchCompaniesRecruiter(
+    request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>,
+    accountId: string,
+    options: { cursor?: string; limit?: number } = {},
+  ): Promise<LinkedInSearchResponse> {
+    this.logger.log(
+      'Recruiter company search falls through to classic/premium company search on the Recruiter Unipile account',
+    );
+
+    return this.searchCompanies(request, accountId, options);
+  }
+
+  /**
    * Search using a LinkedIn URL
    */
   async searchFromUrl(

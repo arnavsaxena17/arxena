@@ -17,11 +17,13 @@ import { SyncWebsiteTrackerStandardObjectsCommand } from 'src/database/commands/
 import { SyncWorkflowBuildingFormHitlSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000022-sync-workflow-building-form-hitl-skill-content.command';
 import { SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000023-sync-workflow-building-create-complete-schema-skill-content.command';
 import { BackfillGtmOutreachWorkflowsSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000024-backfill-gtm-outreach-workflows-skill.command';
+import { EnsureGtmSearchLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000025-ensure-gtm-search-logic-functions.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { ArxenaStandardMetadataModule } from 'src/engine/workspace-manager/arxena-standard-metadata/arxena-standard-metadata.module';
+import { StandardObjectsPrefillModule } from 'src/engine/workspace-manager/standard-objects-prefill-data/standard-objects-prefill.module';
 import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration.module';
 import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/workspace-migration-runner.module';
 
@@ -35,6 +37,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     WorkspaceMigrationModule,
     WorkspaceMigrationRunnerModule,
     ArxenaStandardMetadataModule,
+    StandardObjectsPrefillModule,
   ],
   providers: [
     BackfillMessageListMembersJunctionTargetCommand,
@@ -52,6 +55,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncWorkflowBuildingFormHitlSkillContentCommand,
     SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand,
     BackfillGtmOutreachWorkflowsSkillCommand,
+    EnsureGtmSearchLogicFunctionsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

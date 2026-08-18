@@ -273,6 +273,13 @@ const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFi
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         jobCode
         jobLocation
         assistantThreads {
@@ -347,6 +354,13 @@ const graphqlToFindManyProjectsOrgChart = `query FindManyProjects($filter: Proje
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         jobCode
         jobLocation
         attachments{
@@ -424,6 +438,13 @@ const graphqlToFindManyProjectsWithPromptsFull = `query FindManyProjects($filter
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         prompt{
             edges{
                 node{
@@ -508,6 +529,13 @@ const graphqlToFindManyProjectsWithPromptsOrgChart = `query FindManyProjects($fi
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         name
         jobCode
         jobLocation
@@ -578,6 +606,13 @@ const graphqlToFindManyProjectsWithCandidateValuesFull = `query FindManyProjects
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         prompt{
             edges{
                 node{
@@ -678,6 +713,13 @@ const graphqlToFindManyProjectsWithCandidateValuesOrgChart = `query FindManyProj
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         prompt{
             edges{
                 node{
@@ -789,6 +831,13 @@ const graphqlToFindManyProjectsWithCandidatesFull = `query FindManyProjects($fil
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         prompt{
             edges{
                 node{
@@ -889,6 +938,13 @@ const graphqlToFindManyProjectsWithCandidatesOrgChart = `query FindManyProjects(
         id
         recruiterId
         createdAt
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
         name
         company{
             id

@@ -21,7 +21,9 @@ Do **not** load this skill for generic CRM automations (email on person create, 
 2. `list_logic_function_tools` — use `inputSchema` / `isNative`. There is **no** `upload_profiles` logic function.
 3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
 
-Native GTM functions (`search-people-for-company`, `fetch-linkedin-profile`) have stub source. Do **not** call `get_logic_function_source` for them.
+Native GTM functions (`search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`) have stub source. Do **not** call `get_logic_function_source` for them.
+
+Generic search (hits only, no CRM enroll): `search-people` (People API), `search-companies` (Company API — Unipile Sales Nav auto, Recruiter/classic, Harvest, index), `search-jobs` (Jobs API). Workflow 1 enroll still uses **`search-people-for-company`**.
 
 ## GTM workflows (do not conflate)
 

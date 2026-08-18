@@ -30,6 +30,7 @@ export type PeopleSearchLinkedInLocation = {
 };
 
 export type PeopleSearchQueryMeta = {
+  searchUrl?: string | null;
   keywords?: string | null;
   company?: PeopleSearchLinkedInCompany;
   location?: PeopleSearchLinkedInLocation;
@@ -134,6 +135,21 @@ export type TaxonomyBooleanStringsResponse = {
     terms?: string[];
     clause?: string;
   }>;
+};
+
+export type TaxonomyManualBooleanQueryItem = {
+  kind: string;
+  label: string;
+  stdGrade: string;
+  booleanQuery: string;
+  keywords: string;
+};
+
+export type TaxonomyManualBooleanQueriesResponse = {
+  status: 'ok';
+  found: boolean;
+  count: number;
+  items: TaxonomyManualBooleanQueryItem[];
 };
 
 export type TaxonomyTreeResponse = {

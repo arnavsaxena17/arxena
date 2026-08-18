@@ -14,7 +14,12 @@ import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command
 import { GtmLogicFunctionNativeExecutor } from 'src/engine/core-modules/gtm-command/services/gtm-logic-function-native.executor';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
+import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/services/search-people.service';
+import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/services/search-companies.service';
+import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
+import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
+import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
 import { GtmCompaniesIndexWikiEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-companies-index-wiki-enrichment.source';
 import {
   GTM_COMPANY_ENRICHMENT_SOURCES,
@@ -46,6 +51,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     WikidataModule,
     ApiKeyModule,
     PeopleApiModule,
+    CompanyApiModule,
+    JobsApiModule,
     forwardRef(() => CandidateSourcingModule),
   ],
   controllers: [GtmCommandController],
@@ -87,6 +94,9 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     GtmWorkspaceProfileBootstrapJob,
     EnsureGtmProjectService,
     SearchPeopleForCompanyService,
+    SearchPeopleService,
+    SearchCompaniesService,
+    SearchJobsService,
     FetchLinkedinProfileService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,

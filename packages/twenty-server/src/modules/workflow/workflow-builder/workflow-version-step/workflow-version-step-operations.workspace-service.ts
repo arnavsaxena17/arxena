@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { inputSchemaToOutputSchema } from 'twenty-shared/logic-function';
+import {
+  getOutputSchemaFromValue,
+  inputSchemaToOutputSchema,
+} from 'twenty-shared/logic-function';
 import {
   FieldMetadataType,
   StepLogicalOperator,
@@ -250,20 +253,22 @@ export class WorkflowVersionStepOperationsWorkspaceService {
 
         const declaredOutputSchema =
           flatLogicFunction.workflowActionTriggerSettings?.outputSchema;
+        const sampleOutput =
+          flatLogicFunction.workflowActionTriggerSettings?.sampleOutput;
 
-        const initialOutputSchema: OutputSchema = isDefined(
-          declaredOutputSchema,
-        )
-          ? inputSchemaToOutputSchema(declaredOutputSchema)
-          : {
-              link: {
-                isLeaf: true,
-                icon: 'IconVariable',
-                tab: 'test',
-                label: 'Generate Function Output',
-              },
-              _outputSchemaType: 'LINK',
-            };
+        const initialOutputSchema: OutputSchema = isDefined(sampleOutput)
+          ? getOutputSchemaFromValue(sampleOutput)
+          : isDefined(declaredOutputSchema)
+            ? inputSchemaToOutputSchema(declaredOutputSchema)
+            : {
+                link: {
+                  isLeaf: true,
+                  icon: 'IconVariable',
+                  tab: 'test',
+                  label: 'Generate Function Output',
+                },
+                _outputSchemaType: 'LINK',
+              };
 
         return {
           builtStep: {
@@ -275,7 +280,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
             settings: {
               ...BASE_STEP_DEFINITION,
               outputSchema: initialOutputSchema,
-              expectedOutputSchema: {},
+              expectedOutputSchema: sampleOutput ?? {},
               input: {
                 logicFunctionId,
                 logicFunctionInput: isDefined(

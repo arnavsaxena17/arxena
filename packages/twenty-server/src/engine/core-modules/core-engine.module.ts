@@ -74,6 +74,8 @@ import { OrgChartEmbedModule } from 'src/engine/core-modules/org-chart-embed/org
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
+import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
+import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
@@ -223,6 +225,8 @@ import { FileModule } from './file/file.module';
     WikidataModule,
     LinkedInSearchModule,
     PeopleApiModule,
+    CompanyApiModule,
+    JobsApiModule,
     GtmCommandModule,
     ArxChatAgentModule,
     GoogleCalendarModule,

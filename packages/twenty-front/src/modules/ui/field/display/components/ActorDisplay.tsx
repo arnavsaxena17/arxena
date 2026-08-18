@@ -1,8 +1,9 @@
 import { type FieldActorValue } from '@/object-record/record-field/ui/types/FieldMetadata';
 
 import { t } from '@lingui/core/macro';
-import { ConnectedAccountProvider } from 'twenty-shared/types';
-import { AvatarOrIcon, Chip, ChipVariant } from 'twenty-ui/data-display';
+import { ConnectedAccountProvider, SettingsPath } from 'twenty-shared/types';
+import { getSettingsPath, isDefined } from 'twenty-shared/utils';
+import { AvatarOrIcon, Chip, ChipVariant, LinkChip } from 'twenty-ui/data-display';
 import {
   IconApi,
   IconCalendar,
@@ -22,6 +23,7 @@ import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 
 type ActorDisplayProps = Partial<FieldActorValue> & {
   avatarUrl?: string | null;
+  variant?: ChipVariant;
 };
 
 const PROVIDERS_ICON_MAPPING = {
@@ -82,24 +84,44 @@ export const ActorDisplay = ({
   workspaceMemberId,
   avatarUrl,
   context,
+  variant = ChipVariant.Highlighted,
 }: ActorDisplayProps) => {
   const LeftIcon = getLeftIcon({ source, context });
+  const memberLink = isDefined(workspaceMemberId)
+    ? getSettingsPath(SettingsPath.WorkspaceMemberPage, {
+        workspaceMemberId,
+      })
+    : undefined;
+
+  const leftComponent = (
+    <AvatarOrIcon
+      placeholderColorSeed={workspaceMemberId ?? undefined}
+      avatarType={workspaceMemberId ? 'rounded' : 'squared'}
+      placeholder={name}
+      Icon={LeftIcon}
+      avatarUrl={getAbsoluteImageUrl(avatarUrl ?? undefined)}
+    />
+  );
+
+  if (isDefined(memberLink)) {
+    return (
+      <LinkChip
+        to={memberLink}
+        label={name ?? ''}
+        emptyLabel={t`Untitled`}
+        variant={variant}
+        leftComponent={leftComponent}
+      />
+    );
+  }
 
   return (
     <Chip
       label={name ?? ''}
       clickable={false}
       emptyLabel={t`Untitled`}
-      variant={ChipVariant.Transparent}
-      leftComponent={
-        <AvatarOrIcon
-          placeholderColorSeed={workspaceMemberId ?? undefined}
-          avatarType={workspaceMemberId ? 'rounded' : 'squared'}
-          placeholder={name}
-          Icon={LeftIcon}
-          avatarUrl={getAbsoluteImageUrl(avatarUrl ?? undefined)}
-        />
-      }
+      variant={variant}
+      leftComponent={leftComponent}
     />
   );
 };

@@ -87,6 +87,10 @@ export class PeopleSearchDto {
   linkedinUrl?: string;
 
   @IsOptional()
+  @IsString()
+  searchUrl?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(100)

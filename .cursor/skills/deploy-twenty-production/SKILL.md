@@ -101,7 +101,11 @@ cd /home/ubuntu/twenty
 ./build_app_in_new_instance.sh
 ```
 
-That script syncs the build branch, spins a builder instance, and deploys the built app. Do not substitute `npx nx run twenty-front:build`, orgchart/mcp/shared/docs (Mintlify) builds, or `yarn build` on the live box.
+That script syncs the build branch, spins a builder instance, deploys the built app, then runs production `yarn command:prod upgrade` (cache flush → upgrade all workspaces → cache flush) **before** `pm2 restart`. Do not substitute `npx nx run twenty-front:build`, orgchart/mcp/shared/docs (Mintlify) builds, or `yarn build` on the live box.
+
+Skip the upgrade step only with `SKIP_PROD_UPGRADE=1`. Do not use `npx nx run twenty-server:command` on production for this — Nx can hang after "Command completed!". Use `yarn command:prod …` from `packages/twenty-server`.
+
+The orchestrator kills a remote builder SSH session that is still open ~90s after the log shows `Required build check passed` / `failed`, so a completed build cannot leave the pipeline stuck. CLI commands force-exit after Nest `app.close()` for the same reason.
 
 If the change set mixes server/website **and** any new-instance package, use `build_app_in_new_instance.sh` only.
 

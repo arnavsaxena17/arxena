@@ -240,6 +240,13 @@ export class WorkflowSchemaWorkspaceService {
     expectedOutputSchema: object | undefined;
     workspaceId: string;
   }): Promise<OutputSchema> {
+    const expectedSampleSchema =
+      this.computeOutputSchemaFromExpectedSample(expectedOutputSchema);
+
+    if (Object.keys(expectedSampleSchema).length > 0) {
+      return expectedSampleSchema;
+    }
+
     const declaredOutputSchema =
       await this.getLogicFunctionDeclaredOutputSchema({
         logicFunctionId,
@@ -250,7 +257,7 @@ export class WorkflowSchemaWorkspaceService {
       return declaredOutputSchema;
     }
 
-    return this.computeOutputSchemaFromExpectedSample(expectedOutputSchema);
+    return {};
   }
 
   private async getLogicFunctionDeclaredOutputSchema({

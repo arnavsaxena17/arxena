@@ -20,6 +20,7 @@ describe('buildPeopleApiOpenApiDocument', () => {
         '/people-api/taxonomy/functions',
         '/people-api/taxonomy/grades',
         '/people-api/taxonomy/boolean-strings',
+        '/people-api/taxonomy/manual-boolean-queries',
         '/people-api/titles/expand',
         '/people-api/people/search-by-title',
         '/people-api/people/search-by-taxonomy',
@@ -41,6 +42,10 @@ describe('buildPeopleApiOpenApiDocument', () => {
       };
     };
     expect(searchRequest.properties?.accountId).toBeDefined();
+    expect(
+      (searchRequest.properties as { searchUrl?: unknown } | undefined)
+        ?.searchUrl,
+    ).toBeDefined();
     expect(searchRequest.properties?.linkedInAccountId).toBeUndefined();
     expect(searchRequest.properties?.stdFunctionRoot?.enum).toEqual(
       expect.arrayContaining(['engineering', 'human resources', 'corporate']),

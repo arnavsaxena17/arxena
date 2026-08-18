@@ -27,6 +27,7 @@ import { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import { PeopleSearchDto } from './dto/people-search.dto';
 import { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
+import { TaxonomyManualBooleanQueriesDto } from './dto/taxonomy-manual-boolean-queries.dto';
 import { PeopleApiService } from './people-api.service';
 
 const PEOPLE_API_BODY_VALIDATION_PIPE = new ValidationPipe({
@@ -150,6 +151,50 @@ export class PeopleApiController {
         error instanceof Error
           ? error.message
           : 'Taxonomy boolean-strings failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('taxonomy/manual-boolean-queries')
+  @UseGuards(JwtAuthGuard)
+  async getManualBooleanQueries(
+    @Req() request: Request,
+    @Query('kind') kind?: string,
+    @Query('label') label?: string,
+    @Query('std_function') stdFunction?: string,
+    @Query('std_function_root') stdFunctionRoot?: string,
+    @Query('std_grade') stdGrade?: string,
+    @Query('include_empty') includeEmpty?: string,
+  ) {
+    try {
+      await this.throttleTaxonomyBrowse(request);
+
+      const dto: TaxonomyManualBooleanQueriesDto = {
+        kind,
+        label,
+        stdFunction,
+        stdFunctionRoot,
+        stdGrade,
+        includeEmpty:
+          includeEmpty === 'true' ||
+          includeEmpty === '1' ||
+          includeEmpty === 'yes',
+      };
+
+      return await this.peopleApiService.getManualBooleanQueries(dto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        'People API taxonomy manual-boolean-queries failed',
+        error,
+      );
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Taxonomy manual boolean queries failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

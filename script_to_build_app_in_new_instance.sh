@@ -15,6 +15,9 @@ if [ "${_REMOTE_BUILD_LOGGING:-0}" != "1" ]; then
     (cd "$HOME/twenty" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true
   fi
   pkill -f "tee ${REMOTE_BUILD_LOG}" >/dev/null 2>&1 || true
+  # Process substitution `> >(tee)` can keep this wrapper alive after the
+  # inner script has exited. Drop leftover nx/node children on this builder.
+  pkill -P $$ >/dev/null 2>&1 || true
   exit "$status"
 fi
 export NX_DAEMON=false

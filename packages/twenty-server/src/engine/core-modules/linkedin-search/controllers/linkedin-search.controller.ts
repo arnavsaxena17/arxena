@@ -28,6 +28,12 @@ import {
   LinkedInSearchParametersList,
   LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
+import {
+  classifyLinkedInSearchUrl,
+  isCompanyLinkedInSearchUrl,
+  isPeopleLinkedInSearchUrl,
+  type LinkedInSearchUrlCategory,
+} from '../utils/classify-linkedin-search-url.util';
 
 @Controller('linkedin-search')
 export class LinkedInSearchController {
@@ -132,12 +138,40 @@ export class LinkedInSearchController {
     }
   }
 
+  private extractSearchUrl(body: { url?: string }): string | undefined {
+    return body.url?.trim() || undefined;
+  }
+
+  private assertSearchUrlCategory(
+    url: string,
+    expectedCategory: LinkedInSearchUrlCategory,
+  ): string {
+    const classified = classifyLinkedInSearchUrl(url);
+    const matches =
+      expectedCategory === 'people'
+        ? isPeopleLinkedInSearchUrl(classified)
+        : isCompanyLinkedInSearchUrl(classified);
+
+    if (!classified || !matches) {
+      throw new HttpException(
+        expectedCategory === 'people'
+          ? 'url must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people, or Recruiter /talent/search)'
+          : 'url must be a LinkedIn company search URL (classic /search/results/companies or Sales Navigator /sales/search/company)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return classified.url;
+  }
+
   /**
    * Search for people using LinkedIn Classic API
    */
   @Post('search/people')
   async searchPeople(
-    @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> & {
+      url?: string;
+    },
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -145,6 +179,16 @@ export class LinkedInSearchController {
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const searchUrl = this.extractSearchUrl(request);
+
+      if (searchUrl) {
+        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'people');
+        return await this.linkedInSearchService.searchFromUrl(
+          normalizedUrl,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+      }
 
       this.logger.log(`Searching for people on LinkedIn for account: ${resolvedAccountId}`);
       
@@ -221,7 +265,9 @@ export class LinkedInSearchController {
    */
   @Post('search/companies')
   async searchCompanies(
-    @Body() request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>,
+    @Body() request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> & {
+      url?: string;
+    },
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -229,6 +275,16 @@ export class LinkedInSearchController {
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const searchUrl = this.extractSearchUrl(request);
+
+      if (searchUrl) {
+        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'companies');
+        return await this.linkedInSearchService.searchFromUrl(
+          normalizedUrl,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+      }
 
       this.logger.log(`Searching for companies on LinkedIn for account: ${resolvedAccountId}`);
       
@@ -320,7 +376,9 @@ export class LinkedInSearchController {
    */
   @Post('search/sales-navigator/people')
   async searchPeopleSalesNavigator(
-    @Body() request: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
+    @Body() request: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> & {
+      url?: string;
+    },
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -328,6 +386,16 @@ export class LinkedInSearchController {
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const searchUrl = this.extractSearchUrl(request);
+
+      if (searchUrl) {
+        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'people');
+        return await this.linkedInSearchService.searchFromUrl(
+          normalizedUrl,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+      }
 
       this.logger.log(`Searching for people on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
       
@@ -353,7 +421,9 @@ export class LinkedInSearchController {
    */
   @Post('search/sales-navigator/companies')
   async searchCompaniesSalesNavigator(
-    @Body() request: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>,
+    @Body() request: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'> & {
+      url?: string;
+    },
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -361,6 +431,16 @@ export class LinkedInSearchController {
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const searchUrl = this.extractSearchUrl(request);
+
+      if (searchUrl) {
+        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'companies');
+        return await this.linkedInSearchService.searchFromUrl(
+          normalizedUrl,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+      }
 
       this.logger.log(`Searching for companies on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
       
@@ -386,7 +466,9 @@ export class LinkedInSearchController {
    */
   @Post('search/recruiter/people')
   async searchPeopleRecruiter(
-    @Body() request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
+    @Body() request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> & {
+      url?: string;
+    },
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -394,6 +476,16 @@ export class LinkedInSearchController {
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const searchUrl = this.extractSearchUrl(request);
+
+      if (searchUrl) {
+        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'people');
+        return await this.linkedInSearchService.searchFromUrl(
+          normalizedUrl,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+      }
 
       this.logger.log(`Searching for people on LinkedIn Recruiter for account: ${resolvedAccountId}`);
       

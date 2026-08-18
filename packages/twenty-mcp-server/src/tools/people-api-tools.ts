@@ -17,7 +17,7 @@ export const peopleApiTools: McpTool[] = [
       name: 'search_people_api',
       title: 'Search people (People API)',
       description:
-        'PRIMARY people tool: pass naturalLanguage (e.g. "CEO at StayVista", "CHRO at Apple"). Taxonomy resolution is server-side. Company may be in the utterance or as companyName/companyId/website. Use explicit stdFunction/stdGrade only when already known.',
+        'PRIMARY people tool: pass naturalLanguage (e.g. "CEO at StayVista", "CHRO at Apple"), or searchUrl for a pasted LinkedIn / Sales Nav / Recruiter people search. Taxonomy resolution is server-side for role utterances.',
       annotations: { readOnlyHint: true },
       inputSchema: descriptorToInputSchema(SEARCH_PEOPLE_API_INPUT_DESCRIPTOR),
     },
@@ -34,13 +34,14 @@ export const peopleApiTools: McpTool[] = [
         'stdGrade',
         'country',
         'linkedinUrl',
+        'searchUrl',
       ];
 
       const hasFilter = filterKeys.some((key) => hasNonEmptyString(args[key]));
 
       if (!hasFilter) {
         throw new Error(
-          'At least one search filter is required (naturalLanguage, query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, or linkedinUrl).',
+          'At least one search filter is required (naturalLanguage, query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, linkedinUrl, or searchUrl).',
         );
       }
 
@@ -63,6 +64,7 @@ export const peopleApiTools: McpTool[] = [
           stdGrade: args.stdGrade,
           country: args.country,
           linkedinUrl: args.linkedinUrl,
+          searchUrl: args.searchUrl,
           limit: args.limit,
           offset: args.offset,
         },

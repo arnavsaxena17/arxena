@@ -366,7 +366,8 @@ export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
   { key: 'stdFunction', type: 'string', description: 'Standardized function child label (e.g. software engineering). Must match GET /people-api/taxonomy/tree.', required: false },
   { key: 'stdGrade', type: 'string', description: 'Standardized grade: entry, mid, or leadership', required: false },
   { key: 'country', type: 'string', description: 'Location country filter', required: false },
-  { key: 'linkedinUrl', type: 'string', description: 'LinkedIn profile URL filter', required: false },
+  { key: 'linkedinUrl', type: 'string', description: 'LinkedIn profile URL filter (index). Not a search-results URL.', required: false },
+  { key: 'searchUrl', type: 'string', description: 'Optional LinkedIn people search URL: classic /search/results/people, Sales Nav /sales/search/people (incl. savedSearchId), Recruiter /talent/search. Harvest accepts Sales Nav people URLs only; Unipile/pool accept classic, Sales Nav, and Recruiter.', required: false },
   { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
   { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
 ] as const;
@@ -412,7 +413,8 @@ export const SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
 /** Descriptor for search_linkedin_people tool input. */
 export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator, recruiter', required: true },
-  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters. Classic: flat ID arrays (location/industry). Sales Navigator: include/exclude objects; use role (not job_title) for titles. Recruiter: role/location as object arrays.', required: false },
+  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters. Classic: flat ID arrays (location/industry). Sales Navigator: include/exclude objects; use role (not job_title) for titles. Recruiter: role/location as object arrays. Optional when url is provided.', required: false },
+  { key: 'url', type: 'string', description: 'Optional LinkedIn people search URL (classic /search/results/people, Sales Nav /sales/search/people, Recruiter /talent/search). When set, Unipile runs search-from-URL.', required: false },
   { key: 'query', type: 'string', description: 'Natural language query for full search flow (optional if searchParameters provided)', required: false },
   { key: 'assistantThreadId', type: 'string', description: 'Assistant thread ID for conversation context (required if using query)', required: false },
   { key: 'parsedJD', type: 'object', description: 'Parsed job description (optional, used with query)', required: false },
@@ -436,7 +438,8 @@ export const SEARCH_LINKEDIN_WITH_QUERY_INPUT_DESCRIPTOR: readonly McpInputField
 /** Descriptor for search_linkedin_companies tool input. */
 export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'searchType', type: 'string', description: 'One of: classic, sales_navigator', required: true },
-  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object', required: true },
+  { key: 'searchParameters', type: 'object', description: 'LinkedIn search parameters object. Optional when url is provided.', required: false },
+  { key: 'url', type: 'string', description: 'Optional LinkedIn company search URL (classic /search/results/companies or Sales Navigator /sales/search/company). When set, Unipile runs search-from-URL instead of searchParameters.', required: false },
   { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
   { key: 'cursor', type: 'string', description: 'Pagination cursor for continuing search', required: false },
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },

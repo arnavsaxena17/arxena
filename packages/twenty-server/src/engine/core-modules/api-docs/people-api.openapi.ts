@@ -161,7 +161,18 @@ export const buildPeopleApiOpenApiDocument = (
           },
           personName: { type: 'string' },
           jobTitle: { type: 'string', example: 'Head of Engineering' },
-          linkedinUrl: { type: 'string' },
+          linkedinUrl: {
+            type: 'string',
+            description:
+              'LinkedIn profile URL filter for the people index. Not a search-results URL.',
+          },
+          searchUrl: {
+            type: 'string',
+            description:
+              'Optional LinkedIn people search URL. Classic/premium: /search/results/people. Sales Navigator (including savedSearchId): /sales/search/people. Recruiter: /talent/search. Harvest only accepts Sales Navigator people URLs; Unipile/pool accept classic, Sales Nav, and Recruiter. Company, job title, and taxonomy filters are not required when this is set.',
+            example:
+              'https://www.linkedin.com/sales/search/people?savedSearchId=1936431145',
+          },
           limit: {
             type: 'integer',
             minimum: 1,
@@ -204,6 +215,12 @@ export const buildPeopleApiOpenApiDocument = (
               stdGrade: { type: ['string', 'null'] },
               confidence: { type: 'number' },
               location: { type: ['string', 'null'] },
+            },
+          },
+          query: {
+            type: 'object',
+            properties: {
+              searchUrl: { type: ['string', 'null'] },
             },
           },
         },
@@ -602,6 +619,48 @@ export const buildPeopleApiOpenApiDocument = (
               type: 'function',
               terms: ['EXAMPLE_FUNCTION', 'example role'],
               clause: '("EXAMPLE_FUNCTION" OR "example role")',
+            },
+          ],
+        },
+      },
+      TaxonomyManualBooleanQueriesResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          found: { type: 'boolean' },
+          count: { type: 'number' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                kind: {
+                  type: 'string',
+                  enum: ['std_function', 'std_function_root'],
+                },
+                label: { type: 'string', example: 'sales' },
+                stdGrade: {
+                  type: 'string',
+                  enum: ['entry', 'mid', 'leadership', ''],
+                },
+                booleanQuery: { type: 'string' },
+                keywords: { type: 'string' },
+              },
+              required: ['kind', 'label', 'stdGrade', 'booleanQuery', 'keywords'],
+            },
+          },
+        },
+        example: {
+          status: 'ok',
+          found: true,
+          count: 1,
+          items: [
+            {
+              kind: 'std_function',
+              label: 'sales',
+              stdGrade: 'mid',
+              booleanQuery: '("account executive" OR "sales manager")',
+              keywords: '(sales OR AE)',
             },
           ],
         },
@@ -1026,6 +1085,71 @@ export const buildPeopleApiOpenApiDocument = (
         },
       },
     },
+    '/people-api/taxonomy/manual-boolean-queries': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'Look up curated taxonomy boolean queries',
+        description:
+          'Auth-gated. Returns hand-written LinkedIn strings from std_manual_boolean_queries.csv (std_function / std_function_root × grade). booleanQuery is for the job-title field; keywords is for the keywords field. Empty cells are omitted unless include_empty=true. Does not generate programmatic queries — use taxonomy/boolean-strings for that.',
+        operationId: 'getManualBooleanQueries',
+        parameters: [
+          {
+            name: 'kind',
+            in: 'query',
+            required: false,
+            schema: {
+              type: 'string',
+              enum: ['std_function', 'std_function_root'],
+            },
+          },
+          {
+            name: 'label',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'sales' },
+          },
+          {
+            name: 'std_function',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'sales' },
+          },
+          {
+            name: 'std_function_root',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'sales' },
+          },
+          {
+            name: 'std_grade',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', example: 'mid' },
+          },
+          {
+            name: 'include_empty',
+            in: 'query',
+            required: false,
+            schema: { type: 'boolean' },
+            description: 'Include catalog rows that have no curated query yet',
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Curated boolean queries',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/TaxonomyManualBooleanQueriesResponse',
+                },
+              },
+            },
+          },
+          '401': { description: 'Unauthorized' },
+          '503': { description: 'Title taxonomy service unavailable' },
+        },
+      },
+    },
     '/people-api/titles/expand': {
       get: {
         tags: ['Taxonomy'],
@@ -1181,7 +1305,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['People'],
         summary: 'Search people',
         description:
-          'Primary people search. Pass naturalLanguage for a role utterance (company and location may be in the phrase or as companyName / companyId / website / location). An LLM extracts those fields; title taxonomy classifies std function / root / grade. Without naturalLanguage, search with explicit stdFunction / stdFunctionRoot / stdGrade and other filters.',
+          'Primary people search. Pass naturalLanguage for a role utterance, explicit taxonomy/company filters, or searchUrl for a pasted LinkedIn / Sales Navigator / Recruiter people search URL. searchUrl runs Harvest (Sales Nav only) or Unipile and returns transformed items.',
         operationId: 'searchPeople',
         requestBody: {
           required: true,

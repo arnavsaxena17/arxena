@@ -164,6 +164,7 @@ export const linkedinSearchTools: McpTool[] = [
       const {
         searchType,
         searchParameters,
+        url,
         query,
         assistantThreadId,
         parsedJD,
@@ -173,6 +174,7 @@ export const linkedinSearchTools: McpTool[] = [
       } = args as {
         searchType: string;
         searchParameters?: Record<string, unknown>;
+        url?: string;
         query?: string;
         assistantThreadId?: string;
         parsedJD?: Record<string, unknown>;
@@ -180,6 +182,17 @@ export const linkedinSearchTools: McpTool[] = [
         cursor?: string;
         limit?: number;
       };
+
+      if (url?.trim()) {
+        return callRestAPI(
+          config.baseUrl,
+          config.apiToken,
+          'linkedin-search',
+          'search/url',
+          { url: url.trim() },
+          buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+        );
+      }
 
       // If query provided, use candidate search streaming flow
       if (query && assistantThreadId) {
@@ -254,13 +267,29 @@ export const linkedinSearchTools: McpTool[] = [
       })(),
     },
     handler: async (args, config) => {
-      const { searchType, searchParameters, account_id, cursor, limit } = args as {
+      const { searchType, searchParameters, url, account_id, cursor, limit } = args as {
         searchType: string;
-        searchParameters: Record<string, unknown>;
+        searchParameters?: Record<string, unknown>;
+        url?: string;
         account_id?: string;
         cursor?: string;
         limit?: number;
       };
+
+      if (url?.trim()) {
+        return callRestAPI(
+          config.baseUrl,
+          config.apiToken,
+          'linkedin-search',
+          'search/url',
+          { url: url.trim() },
+          buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+        );
+      }
+
+      if (!searchParameters) {
+        throw new Error('Either url or searchParameters must be provided');
+      }
 
       const endpoint =
         searchType === 'sales_navigator'

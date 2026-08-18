@@ -27,6 +27,36 @@ export class HarvestLinkedinService {
     return typeof apiKey === 'string' && apiKey.length > 0;
   }
 
+  async searchCompanies(input: {
+    search?: string;
+    location?: string;
+    limit?: number;
+  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+    return this.searchPaginatedCollection({
+      path: '/linkedin/company-search',
+      search: input.search,
+      location: input.location,
+      limit: input.limit,
+    });
+  }
+
+  async searchJobs(input: {
+    search?: string;
+    location?: string;
+    company?: string;
+    datePosted?: number;
+    limit?: number;
+  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+    return this.searchPaginatedCollection({
+      path: '/linkedin/job-search',
+      search: input.search,
+      location: input.location,
+      company: input.company,
+      datePosted: input.datePosted,
+      limit: input.limit,
+    });
+  }
+
   async fetchCurrentAndPastEmployees(input: {
     linkedinCompanyUrl: string;
     maxProfiles?: number;
@@ -482,6 +512,78 @@ export class HarvestLinkedinService {
     }
   }
 
+  private async searchPaginatedCollection(input: {
+    path: string;
+    search?: string;
+    location?: string;
+    company?: string;
+    datePosted?: number;
+    limit?: number;
+  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+    const limit = Math.max(1, Math.min(100, input.limit ?? 20));
+    const firstPage = await this.fetchCollectionPage({
+      ...input,
+      page: 1,
+    });
+    const out = [...firstPage.items];
+    const total = firstPage.pagination?.totalElements ?? out.length;
+
+    if (out.length >= limit) {
+      return { total, items: out.slice(0, limit) };
+    }
+
+    const totalPages = firstPage.pagination?.totalPages;
+    const lastPage =
+      typeof totalPages === 'number'
+        ? Math.min(totalPages, 10)
+        : Math.ceil(limit / Math.max(out.length, 1));
+
+    for (let page = 2; page <= lastPage; page += 1) {
+      const pageResult = await this.fetchCollectionPage({
+        ...input,
+        page,
+      });
+      out.push(...pageResult.items);
+      if (out.length >= limit || pageResult.items.length === 0) {
+        break;
+      }
+    }
+
+    return { total, items: out.slice(0, limit) };
+  }
+
+  private async fetchCollectionPage(input: {
+    path: string;
+    search?: string;
+    location?: string;
+    company?: string;
+    datePosted?: number;
+    page: number;
+  }): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('page', String(input.page));
+    if (input.search?.trim()) {
+      searchParams.set('search', input.search.trim());
+    }
+    if (input.location?.trim()) {
+      searchParams.set('location', input.location.trim());
+    }
+    if (input.company?.trim()) {
+      searchParams.set('company', input.company.trim());
+    }
+    if (typeof input.datePosted === 'number' && Number.isFinite(input.datePosted)) {
+      searchParams.set('postedLimit', String(input.datePosted));
+    }
+
+    const url = `${this.getBaseUrl()}${input.path}?${searchParams.toString()}`;
+    const json = await this.getJson(url);
+
+    return {
+      items: this.extractLeadItems(json),
+      pagination: this.extractPagination(json),
+    };
+  }
+
   private extractLeadItems(payload: unknown): HarvestLeadItem[] {
     if (!payload || typeof payload !== 'object') {
       return [];
@@ -498,6 +600,8 @@ export class HarvestLinkedinService {
       objectPayload.results,
       objectPayload.data,
       objectPayload.people,
+      objectPayload.companies,
+      objectPayload.jobs,
     ];
 
     for (const value of candidates) {

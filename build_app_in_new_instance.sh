@@ -31,6 +31,12 @@ if [ -n "${AWS_PROFILE:-}" ]; then
   AWS_CLI_PROFILE_ARGS=(--profile "$AWS_PROFILE")
 fi
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
+SSH_OPTS=(-o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=6)
+# After the remote script logs "Required build check passed/failed", SSH can still
+# hang (Nx daemon / tee process substitution). Kill it so deploy continues.
+REMOTE_BUILD_EXIT_GRACE_SECONDS="${REMOTE_BUILD_EXIT_GRACE_SECONDS:-90}"
+# Workspace upgrade can take a while; still fail-soft like Docker entrypoint.
+COMMAND_PROD_TIMEOUT_SECONDS="${COMMAND_PROD_TIMEOUT_SECONDS:-2700}"
 EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps (nvm; build script installs Node 24.5.0, yarn, nest, docker)
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t4g.xlarge}"
 EC2_KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
@@ -77,14 +83,14 @@ fetch_remote_build_log() {
   fi
 
   mkdir -p "$BUILD_LOG_DIR"
-  ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+  timeout 30 ssh -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" \
     "ubuntu@$TEMP_DNS" 'sync' >/dev/null 2>&1 || true
 
   local tmp_log
   tmp_log="$(mktemp "$BUILD_LOG_DIR/build_app.latest.log.XXXXXX")" || return 0
   local attempt
   for attempt in 1 2 3; do
-    if scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
+    if timeout 30 scp -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" \
       "ubuntu@$TEMP_DNS:$REMOTE_BUILD_LOG_PATH" "$tmp_log" 2>/dev/null; then
       mv -f "$tmp_log" "$BUILD_LOG_LATEST" || {
         rm -f "$tmp_log"
@@ -113,6 +119,70 @@ fetch_remote_build_log() {
   return 0
 }
 
+wait_for_remote_build_ssh() {
+  local ssh_pid="$1"
+  local log_file="$2"
+  local grace_s="${REMOTE_BUILD_EXIT_GRACE_SECONDS:-90}"
+  local seen_complete=0
+  local complete_at=0
+
+  while kill -0 "$ssh_pid" 2>/dev/null; do
+    if [ "$seen_complete" = "0" ] && grep -E -q 'Required build check (passed|failed)' "$log_file" 2>/dev/null; then
+      seen_complete=1
+      complete_at="$(date +%s)"
+      echo "Remote build reported completion; waiting up to ${grace_s}s for SSH to exit..."
+    fi
+    if [ "$seen_complete" = "1" ]; then
+      local now
+      now="$(date +%s)"
+      if [ $((now - complete_at)) -ge "$grace_s" ]; then
+        echo "WARNING: Remote build SSH still running after completion marker. Terminating SSH so deploy can continue."
+        kill -TERM "$ssh_pid" 2>/dev/null || true
+        sleep 10
+        kill -KILL "$ssh_pid" 2>/dev/null || true
+        return 0
+      fi
+    fi
+    sleep 5
+  done
+}
+
+run_prod_server_command() {
+  local label="$1"
+  shift
+
+  echo "Running production command: $label ($*)"
+  cd "$REPO_DIR/packages/twenty-server"
+  # Use yarn command:prod (node dist/command/command), not nx — the Nx daemon
+  # can hold SSH/stdio open after the CLI has finished.
+  if command -v timeout >/dev/null 2>&1; then
+    timeout --kill-after=60s "${COMMAND_PROD_TIMEOUT_SECONDS}" \
+      yarn command:prod "$@"
+  else
+    yarn command:prod "$@"
+  fi
+}
+
+run_production_upgrade() {
+  if [ "${SKIP_PROD_UPGRADE:-0}" = "1" ]; then
+    echo "SKIP_PROD_UPGRADE=1 — skipping yarn command:prod upgrade"
+    return 0
+  fi
+
+  echo "Running production workspace upgrade (cache flush → upgrade → cache flush)"
+  if ! run_prod_server_command cache:flush cache:flush; then
+    echo "WARNING: cache:flush before upgrade failed; continuing"
+  fi
+  if run_prod_server_command upgrade upgrade; then
+    echo "Production upgrade completed."
+  else
+    echo "WARNING: yarn command:prod upgrade exited non-zero. Some workspaces may not be fully migrated. Check logs."
+  fi
+  if ! run_prod_server_command cache:flush cache:flush; then
+    echo "WARNING: cache:flush after upgrade failed; continuing"
+  fi
+}
+
 # Function to cleanup staging artifacts and terminate the temporary build instance
 cleanup() {
     local exit_code=$?
@@ -130,7 +200,8 @@ cleanup() {
     fi
     if [ -n "$TEMP_INSTANCE_ID" ]; then
         echo "Cleaning up and terminating instance..."
-        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+        timeout 60 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID || \
+          aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
     fi
     exit "$exit_code"
 }
@@ -141,6 +212,7 @@ trap cleanup EXIT INT
 
 # Set to exit immediately if a command exits with a non-zero status
 set -e
+export NX_DAEMON=false
 
 start_time=$(date +%s)
 
@@ -200,9 +272,16 @@ mkdir -p "$BUILD_LOG_DIR"
 BUILD_LOG_SSH_FALLBACK="$(mktemp "$BUILD_LOG_DIR/build_app.ssh.XXXXXX")"
 
 set +e
-ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh" 2>&1 | tee "$BUILD_LOG_SSH_FALLBACK"
-REMOTE_BUILD_EXIT_CODE=${PIPESTATUS[0]}
+ssh -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" ubuntu@$TEMP_DNS "BUILD_BRANCH=$BUILD_BRANCH chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH ./script_to_build_app_in_new_instance.sh" > >(tee "$BUILD_LOG_SSH_FALLBACK") 2>&1 &
+REMOTE_BUILD_SSH_PID=$!
+wait_for_remote_build_ssh "$REMOTE_BUILD_SSH_PID" "$BUILD_LOG_SSH_FALLBACK"
+wait "$REMOTE_BUILD_SSH_PID"
+REMOTE_BUILD_EXIT_CODE=$?
 set -e
+if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ] && grep -E -q 'Required build check passed' "$BUILD_LOG_SSH_FALLBACK" 2>/dev/null; then
+  echo "Remote SSH exited $REMOTE_BUILD_EXIT_CODE after a successful build log; continuing deploy."
+  REMOTE_BUILD_EXIT_CODE=0
+fi
 
 scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || true
 fetch_remote_build_log 0
@@ -533,6 +612,8 @@ NGINX_HTTP
     fi
   fi
 
+  run_production_upgrade
+
   echo "Restarting NGINX and PM2"
   # 6. Restart services
   sudo systemctl restart nginx
@@ -555,6 +636,10 @@ fi
 
 if [ -f "$BUILD_LOG_LATEST" ]; then
   echo "Latest remote build log: $BUILD_LOG_LATEST"
+fi
+
+if [ -x "$REPO_DIR/node_modules/.bin/nx" ]; then
+  (cd "$REPO_DIR" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true
 fi
 
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"

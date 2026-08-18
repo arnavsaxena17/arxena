@@ -72,16 +72,33 @@ export class RedisClientService implements OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    const quitWithTimeout = async (client: IORedis) => {
+      await Promise.race([
+        client.quit().catch(() => undefined),
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            client.disconnect();
+            resolve();
+          }, 3_000);
+        }),
+      ]);
+    };
+
     if (isDefined(this.redisQueueClient)) {
-      await this.redisQueueClient.quit();
+      await quitWithTimeout(this.redisQueueClient);
       this.redisQueueClient = null;
     }
     if (isDefined(this.redisClient)) {
-      await this.redisClient.quit();
+      await quitWithTimeout(this.redisClient);
       this.redisClient = null;
     }
     if (isDefined(this.redisPubSubClient)) {
-      await this.redisPubSubClient.close();
+      await Promise.race([
+        this.redisPubSubClient.close().catch(() => undefined),
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, 3_000);
+        }),
+      ]);
       this.redisPubSubClient = null;
     }
   }

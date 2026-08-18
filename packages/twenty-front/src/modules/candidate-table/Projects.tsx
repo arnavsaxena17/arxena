@@ -715,6 +715,7 @@ export const Projects = () => {
                                   id={job.id}
                                   name={job.name}
                                   createdAt={job.createdAt || new Date().toISOString()}
+                                  createdBy={job.createdBy}
                                   isActive={job.isActive}
                                   jobLocation={job.jobLocation}
                                   searchName={job.searchName}
@@ -746,6 +747,7 @@ export const Projects = () => {
                                       id={job.id}
                                       name={job.name}
                                       createdAt={job.createdAt || new Date().toISOString()}
+                                      createdBy={job.createdBy}
                                       isActive={job.isActive}
                                       jobLocation={job.jobLocation}
                                       searchName={job.searchName}

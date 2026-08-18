@@ -141,6 +141,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartEsService,
     ImageProxyService,
     HarvestLinkedinService,
+    HarvestLinkedinTransformerService,
     OrgChartSuperImposeService,
     UnipileCompanyService,
   ],

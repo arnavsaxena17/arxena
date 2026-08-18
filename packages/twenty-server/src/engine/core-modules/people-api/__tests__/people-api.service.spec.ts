@@ -738,3 +738,160 @@ describe('PeopleApiService.searchPeople taxonomy filters', () => {
     );
   });
 });
+
+describe('PeopleApiService.searchPeople searchUrl', () => {
+  const peopleLinkedInSourcingService = {
+    isUnipileConfigured: jest.fn().mockReturnValue(true),
+    search: jest.fn().mockResolvedValue({
+      dataSource: 'unipile',
+      keywords: null,
+      appliedFilters: { functionIds: [], seniorities: [] },
+      company: { name: null, slug: null, linkedinUrl: null },
+      items: [{ name: 'Ada', type: 'PEOPLE' }],
+    }),
+  } as unknown as PeopleLinkedInSourcingService;
+
+  const service = new PeopleApiService(
+    {
+      isEnabled: jest.fn().mockReturnValue(true),
+      searchPeople: jest.fn(),
+    } as unknown as PeopleEsService,
+    {
+      classifyTitle: jest.fn(),
+      classifyTitles: jest.fn(),
+      getFunctionRoots: jest.fn(),
+      getFunctions: jest.fn(),
+    } as unknown as TitleTaxonomyRemoteService,
+    {} as ApolloIoRestService,
+    {} as PdlPersonOrgMovementService,
+    {} as ContactOutPeopleSearchService,
+    { isConfigured: jest.fn().mockReturnValue(true) } as unknown as HarvestLinkedinService,
+    peopleLinkedInSourcingService,
+    createPassthroughCompanyScopeResolver(),
+    createPassthroughLocationScopeResolver(),
+    createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
+  );
+
+  it('runs LinkedIn sourcing from a people search URL without company or title', async () => {
+    const searchUrl =
+      'https://www.linkedin.com/sales/search/people?savedSearchId=1936431145';
+
+    const result = await service.searchPeople(
+      {
+        searchUrl,
+        dataSource: 'unipile',
+        accountId: 'acct-1',
+        limit: 10,
+      },
+      'token',
+    );
+
+    expect(peopleLinkedInSourcingService.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchUrl,
+        dataSource: 'unipile',
+        accountId: 'acct-1',
+        apiToken: 'token',
+        limit: 10,
+      }),
+    );
+    expect(result.total).toBe(1);
+    expect(result.query?.searchUrl).toBe(searchUrl);
+  });
+
+  it('rejects searchUrl when auto falls back to the people index', async () => {
+    await expect(
+      service.searchPeople({
+        searchUrl:
+          'https://www.linkedin.com/search/results/people/?keywords=helo',
+      }),
+    ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+  });
+});
+
+describe('PeopleApiService.getManualBooleanQueries', () => {
+  const titleTaxonomyRemoteService = {
+    getManualBooleanQueries: jest.fn(),
+  } as unknown as TitleTaxonomyRemoteService;
+
+  const service = new PeopleApiService(
+    { isEnabled: jest.fn(), searchPeople: jest.fn() } as unknown as PeopleEsService,
+    titleTaxonomyRemoteService,
+    {} as ApolloIoRestService,
+    {} as PdlPersonOrgMovementService,
+    {} as ContactOutPeopleSearchService,
+    { isConfigured: jest.fn() } as unknown as HarvestLinkedinService,
+    {
+      isUnipileConfigured: jest.fn(),
+      search: jest.fn(),
+    } as unknown as PeopleLinkedInSourcingService,
+    createPassthroughCompanyScopeResolver(),
+    createPassthroughLocationScopeResolver(),
+    createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('maps curated python rows to camelCase items', async () => {
+    (
+      titleTaxonomyRemoteService.getManualBooleanQueries as jest.Mock
+    ).mockResolvedValue({
+      status: 'ok',
+      found: true,
+      count: 1,
+      items: [
+        {
+          kind: 'std_function',
+          label: 'sales',
+          std_grade: 'mid',
+          boolean_query: '("sales manager")',
+          keywords: 'sales',
+        },
+      ],
+    });
+
+    const result = await service.getManualBooleanQueries({
+      stdFunction: 'sales',
+      stdGrade: 'mid',
+    });
+
+    expect(
+      titleTaxonomyRemoteService.getManualBooleanQueries,
+    ).toHaveBeenCalledWith({
+      kind: undefined,
+      label: undefined,
+      stdGrade: 'mid',
+      stdFunction: 'sales',
+      stdFunctionRoot: undefined,
+      includeEmpty: undefined,
+    });
+    expect(result).toEqual({
+      status: 'ok',
+      found: true,
+      count: 1,
+      items: [
+        {
+          kind: 'std_function',
+          label: 'sales',
+          stdGrade: 'mid',
+          booleanQuery: '("sales manager")',
+          keywords: 'sales',
+        },
+      ],
+    });
+  });
+
+  it('throws when the python taxonomy service is down', async () => {
+    (
+      titleTaxonomyRemoteService.getManualBooleanQueries as jest.Mock
+    ).mockResolvedValue(null);
+
+    await expect(
+      service.getManualBooleanQueries({ stdFunction: 'sales' }),
+    ).rejects.toMatchObject({ status: HttpStatus.SERVICE_UNAVAILABLE });
+  });
+});

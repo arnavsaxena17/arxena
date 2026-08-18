@@ -31,6 +31,17 @@ async function bootstrap() {
 
   await CommandFactory.runApplication(app);
 
-  await app.close();
+  const closeTimeoutMs = Number(process.env.COMMAND_CLOSE_TIMEOUT_MS ?? 10_000);
+
+  await Promise.race([
+    app.close().catch(() => undefined),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, closeTimeoutMs);
+    }),
+  ]);
+
+  // Redis quit / open handles can keep Node alive after Nest close (CLI prints
+  // "Command completed!" then hangs). Force-exit so deploy scripts terminate.
+  process.exit(process.exitCode ?? 0);
 }
 void bootstrap();

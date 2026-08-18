@@ -8,6 +8,8 @@ import { type InputSchema } from '@/workflow/types/InputSchema';
 export type WorkflowActionTriggerSettings = {
   inputSchema?: InputSchema;
   outputSchema?: InputSchema;
+  // Example return value used as the workflow step Expected Output Body default.
+  sampleOutput?: Record<string, unknown>;
   icon?: string;
   label?: string;
 };

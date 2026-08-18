@@ -20,7 +20,7 @@ Use when the user wants live LinkedIn results from a connected account:
 
 - Classic, Sales Navigator (`sales_navigator`), or Recruiter (`recruiter`)
 - People, companies, jobs, posts
-- Pasted search URLs
+- Pasted search URLs (`searchUrl` on People API, `url` on Unipile people/company search, or `search_linkedin_from_url`)
 - Facet ID lookup (`search_linkedin_parameters`)
 
 Requires a connected LinkedIn Unipile account. Check **Connected Accounts** in the system prompt for whether this user is connected and which search types (`classic` / `sales_navigator` / `recruiter`) are available before choosing `searchType`. `account_id` is optional on search tools (resolved from auth).
@@ -32,6 +32,7 @@ Use when searching people without a LinkedIn session, or when the user asks for 
 - `search_people_api` — preferred for natural-language roles (`naturalLanguage`: "CEO at StayVista")
 - `search_people_by_job_title` — alias of `search_people_api`
 - Pass `dataSource: "harvest"`
+- Sales Navigator people search URLs via `searchUrl` (`/sales/search/people`, including `savedSearchId`)
 - Call `list_people_data_sources` first if unsure whether Harvest is configured
 
 Never invent Harvest HTTP paths or `harvest_*` tool names. Agents only reach Harvest through these People API tools.
@@ -52,7 +53,7 @@ learn_tools([
 ```
 
 3. Resolve facet IDs with `search_linkedin_parameters` before ID-based filters.
-4. Prefer `search_linkedin_from_url` when the user pastes a LinkedIn / Sales Nav / Recruiter search URL.
+4. Prefer People API `searchUrl` or `search_linkedin_from_url` when the user pastes a LinkedIn / Sales Nav / Recruiter search URL.
 5. Keep `limit` small (5–10) unless the user asks for more.
 6. Paginate with `search_linkedin_continue` using the returned `cursor`.
 
@@ -293,7 +294,17 @@ Known taxonomy filters:
 }
 ```
 
-Prefer `search_people_api` with `naturalLanguage` for role strings so you do not invent taxonomy codes. Use explicit `stdFunction` / `stdGrade` / `linkedinUrl` only when those filters are already known.
+Sales Navigator people search URL:
+
+```json
+{
+  "searchUrl": "https://www.linkedin.com/sales/search/people?savedSearchId=1936431145",
+  "dataSource": "harvest",
+  "limit": 20
+}
+```
+
+Prefer `search_people_api` with `naturalLanguage` for role strings so you do not invent taxonomy codes. Use explicit `stdFunction` / `stdGrade` / `linkedinUrl` only when those filters are already known. Use `searchUrl` when the user pastes a LinkedIn search URL.
 
 ## Facet match quality
 
