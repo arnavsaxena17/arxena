@@ -509,6 +509,7 @@ export class PeopleApiService {
       dataSource: searchResult.dataSource,
       query: {
         keywords: searchResult.query?.keywords ?? null,
+        jobTitle: searchResult.query?.jobTitle ?? null,
         company: searchResult.query?.company ?? {
           name: null,
           slug: null,
@@ -777,6 +778,7 @@ export class PeopleApiService {
     const queryMeta = {
       ...(searchUrl ? { searchUrl } : {}),
       keywords: sourcingResult.keywords,
+      jobTitle: sourcingResult.jobTitle,
       company: sourcingResult.company,
       ...(stdFunction ? { stdFunction } : {}),
       ...(stdFunctionRoot ? { stdFunctionRoot } : {}),

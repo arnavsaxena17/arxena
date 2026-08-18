@@ -32,6 +32,7 @@ export type PeopleSearchLinkedInLocation = {
 export type PeopleSearchQueryMeta = {
   searchUrl?: string | null;
   keywords?: string | null;
+  jobTitle?: string | null;
   company?: PeopleSearchLinkedInCompany;
   location?: PeopleSearchLinkedInLocation;
   stdFunction?: string;
@@ -86,6 +87,7 @@ export type PeopleSearchByTaxonomyResponse = {
   dataSource: 'harvest' | 'unipile' | 'pool';
   query: {
     keywords: string | null;
+    jobTitle?: string | null;
     company: PeopleSearchLinkedInCompany;
     location?: PeopleSearchLinkedInLocation;
     stdFunction?: string;

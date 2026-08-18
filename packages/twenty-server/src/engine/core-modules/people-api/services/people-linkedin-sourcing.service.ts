@@ -8,6 +8,7 @@ import {
   UnipileCompanyService,
 } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
+import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import {
@@ -31,6 +32,8 @@ import {
   buildUnipileSalesNavSearchRequest,
   shouldOmitSalesNavKeywords,
 } from '../utils/build-unipile-sales-nav-search-request.util';
+import { pickManualLinkedInBooleanQuery } from '../utils/pick-manual-linkedin-boolean-query.util';
+import type { ManualLinkedInQuery } from '../utils/pick-manual-linkedin-boolean-query.util';
 import {
   PeopleSalesNavAccountResolver,
   type PeopleSalesNavAccountSource,
@@ -57,6 +60,7 @@ export type PeopleLinkedInSourcingInput = {
 export type PeopleLinkedInSourcingResult = {
   dataSource: PeopleLinkedInCandidateSource;
   keywords: string | null;
+  jobTitle: string | null;
   appliedFilters: {
     functionIds: string[];
     seniorities: LinkedInSeniorityType[];
@@ -82,6 +86,7 @@ export class PeopleLinkedInSourcingService {
     private readonly unipileCompanyService: UnipileCompanyService,
     private readonly harvestLinkedinService: HarvestLinkedinService,
     private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
+    private readonly titleTaxonomyRemoteService: TitleTaxonomyRemoteService,
   ) {}
 
   isUnipileConfigured(): boolean {
@@ -118,6 +123,18 @@ export class PeopleLinkedInSourcingService {
       stdGrade: input.stdGrade,
     });
 
+    const manualLinkedInQuery = await this.resolveManualBooleanQuery({
+      stdFunction: input.stdFunction,
+      stdFunctionRoot: input.stdFunctionRoot,
+      stdGrade: input.stdGrade,
+    });
+    const hasManualLinkedInQuery = !!manualLinkedInQuery;
+
+    const omitGeneratedKeywords =
+      !hasManualLinkedInQuery &&
+      account.candidateSource !== 'harvest' &&
+      shouldOmitSalesNavKeywords(salesNavFilters);
+
     const inputs = this.buildSuperImposeInputs({
       website,
       companyId,
@@ -148,19 +165,22 @@ export class PeopleLinkedInSourcingService {
       primaryCompany?.slug ||
       'company';
 
-    const omitGeneratedKeywords =
-      account.candidateSource !== 'harvest' &&
-      shouldOmitSalesNavKeywords(salesNavFilters);
+    const appliedFilters = hasManualLinkedInQuery
+      ? { functionIds: [], seniorities: [] }
+      : salesNavFilters;
 
     const keywordPlan = await this.buildKeywordPlan({
       stdFunction: input.stdFunction,
       stdFunctionRoot: input.stdFunctionRoot,
       stdGrade: input.stdGrade,
       primaryCompanyName,
-      linkedinSearchKeywords: omitGeneratedKeywords
-        ? undefined
-        : input.linkedinSearchKeywords,
-      skipGeneratedKeywords: omitGeneratedKeywords,
+      linkedinSearchKeywords: hasManualLinkedInQuery
+        ? (manualLinkedInQuery?.keywords ??
+          manualLinkedInQuery?.jobTitle)
+        : omitGeneratedKeywords
+          ? undefined
+          : input.linkedinSearchKeywords,
+      skipGeneratedKeywords: omitGeneratedKeywords || hasManualLinkedInQuery,
     });
 
     const functionRoot =
@@ -177,12 +197,14 @@ export class PeopleLinkedInSourcingService {
         country: input.country,
         functionRoot,
         leadershipOnly: keywordPlan.leadershipOnly,
-        linkedinSearchKeywords: keywordPlan.linkedinSearchKeywords,
+        linkedinSearchKeywords: this.mergeManualQueryForSingleSearchField(
+          manualLinkedInQuery,
+        ) ?? keywordPlan.linkedinSearchKeywords,
         candidateSource: 'harvest',
         searchType: 'sales_navigator',
         maxProfiles: input.limit ?? 20,
-        salesNavFunctionIds: salesNavFilters.functionIds,
-        salesNavSeniorities: salesNavFilters.seniorities,
+        salesNavFunctionIds: appliedFilters.functionIds,
+        salesNavSeniorities: appliedFilters.seniorities,
       };
 
       const plan =
@@ -192,9 +214,8 @@ export class PeopleLinkedInSourcingService {
           resolved.salesNavigatorSearchUrls,
         );
 
-      // Prefer mapped functionIds on harvest batches when present
-      if (salesNavFilters.functionIds.length > 0) {
-        const functionIdsJoined = salesNavFilters.functionIds.join(',');
+      if (appliedFilters.functionIds.length > 0) {
+        const functionIdsJoined = appliedFilters.functionIds.join(',');
         for (const batch of plan.harvestBatches) {
           if (!batch.salesNavUrl) {
             batch.functionIds = functionIdsJoined;
@@ -214,7 +235,8 @@ export class PeopleLinkedInSourcingService {
           plan.mergedSearchClause ??
           keywordPlan.linkedinSearchKeywords ??
           null,
-        appliedFilters: salesNavFilters,
+        jobTitle: manualLinkedInQuery?.jobTitle ?? null,
+        appliedFilters,
         company: {
           name: primaryCompanyName,
           slug: primaryCompany?.slug ?? null,
@@ -243,18 +265,25 @@ export class PeopleLinkedInSourcingService {
         .map((company) => company.linkedinUrl)
         .filter((url): url is string => !!url?.trim()),
       country: input.country,
-      keywords: keywordPlan.linkedinSearchKeywords,
-      functionIds: salesNavFilters.functionIds,
-      seniorities: salesNavFilters.seniorities,
+      keywords: hasManualLinkedInQuery
+        ? manualLinkedInQuery?.keywords
+        : keywordPlan.linkedinSearchKeywords,
+      jobTitle: manualLinkedInQuery?.jobTitle,
+      functionIds: appliedFilters.functionIds,
+      seniorities: appliedFilters.seniorities,
       limit: input.limit ?? 20,
+      includeManualLinkedInQuery: hasManualLinkedInQuery,
     });
 
     return {
       dataSource: account.candidateSource,
       keywords: omitGeneratedKeywords
         ? null
-        : (keywordPlan.linkedinSearchKeywords ?? null),
-      appliedFilters: salesNavFilters,
+        : (manualLinkedInQuery?.keywords ??
+          keywordPlan.linkedinSearchKeywords ??
+          null),
+      jobTitle: manualLinkedInQuery?.jobTitle ?? null,
+      appliedFilters,
       company: {
         name: primaryCompanyName,
         slug: primaryCompany?.slug ?? null,
@@ -314,6 +343,7 @@ export class PeopleLinkedInSourcingService {
       return {
         dataSource: 'harvest',
         keywords: null,
+        jobTitle: null,
         appliedFilters: { functionIds: [], seniorities: [] },
         company: emptyCompany,
         items: items.map((item) =>
@@ -350,6 +380,7 @@ export class PeopleLinkedInSourcingService {
     return {
       dataSource: account.candidateSource,
       keywords: null,
+      jobTitle: null,
       appliedFilters: { functionIds: [], seniorities: [] },
       company: emptyCompany,
       items: items.map((item) =>
@@ -365,9 +396,11 @@ export class PeopleLinkedInSourcingService {
     companyLinkedinUrls: string[];
     country?: string;
     keywords?: string;
+    jobTitle?: string;
     functionIds: string[];
     seniorities: LinkedInSeniorityType[];
     limit: number;
+    includeManualLinkedInQuery?: boolean;
   }): Promise<Array<Record<string, unknown>>> {
     return this.linkedinUnipileSessionService.withLinkedinSession(
       input.apiToken,
@@ -411,15 +444,17 @@ export class PeopleLinkedInSourcingService {
 
         const request = buildUnipileSalesNavSearchRequest({
           keywords: input.keywords,
+          jobTitle: input.jobTitle,
           companyParameterIds,
           primaryCompanyName: input.primaryCompanyName,
           country: input.country,
           functionIds: input.functionIds,
           seniorities: input.seniorities,
+          includeManualLinkedInQuery: input.includeManualLinkedInQuery,
         });
 
         this.logger.log(
-          `People API Sales Nav search account=${session.accountId} companies=${companyParameterIds.join(',')} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')} keywords=${request.keywords ?? 'omitted'}`,
+          `People API Sales Nav search account=${session.accountId} companies=${companyParameterIds.join(',')} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')} keywords=${request.keywords ?? 'omitted'} jobTitle=${request.advanced_keywords?.title ?? 'omitted'}`,
         );
 
         const response =
@@ -432,6 +467,78 @@ export class PeopleLinkedInSourcingService {
         return (response.items ?? []) as Array<Record<string, unknown>>;
       },
     );
+  }
+
+  private async resolveManualBooleanQuery(args: {
+    stdFunction?: string;
+    stdFunctionRoot?: string;
+    stdGrade?: string;
+  }): Promise<ManualLinkedInQuery | undefined> {
+    const stdFunction = args.stdFunction?.trim();
+    const stdFunctionRoot = args.stdFunctionRoot?.trim();
+    const stdGrade = args.stdGrade?.trim();
+
+    if (!stdFunction && !stdFunctionRoot) {
+      return undefined;
+    }
+
+    try {
+      const result =
+        await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+          stdFunction,
+          stdFunctionRoot,
+          stdGrade,
+        });
+      const query = pickManualLinkedInBooleanQuery(
+        (result?.items ?? []).map((item) => ({
+          kind: item.kind,
+          label: item.label,
+          stdGrade: item.std_grade,
+          booleanQuery: item.boolean_query,
+          keywords: item.keywords,
+        })),
+        {
+          stdFunction,
+          stdFunctionRoot,
+          stdGrade,
+        },
+      );
+
+      if (query) {
+        this.logger.log(
+          `People API using manual LinkedIn query stdFunction=${stdFunction ?? ''} stdFunctionRoot=${stdFunctionRoot ?? ''} stdGrade=${stdGrade ?? ''} jobTitle=${query.jobTitle ?? 'omitted'} keywords=${query.keywords ?? 'omitted'}`,
+        );
+      }
+
+      return query;
+    } catch (error) {
+      this.logger.warn(
+        `People API manual boolean query lookup failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return undefined;
+    }
+  }
+
+  private mergeManualQueryForSingleSearchField(
+    query: ManualLinkedInQuery | undefined,
+  ): string | undefined {
+    if (!query) {
+      return undefined;
+    }
+
+    const parts = [query.jobTitle, query.keywords].filter(
+      (value): value is string => !!value?.trim(),
+    );
+    if (parts.length === 0) {
+      return undefined;
+    }
+    if (parts.length === 1) {
+      return parts[0];
+    }
+
+    return parts.map((part) => `(${part})`).join(' AND ');
   }
 
   private buildSuperImposeInputs(args: {

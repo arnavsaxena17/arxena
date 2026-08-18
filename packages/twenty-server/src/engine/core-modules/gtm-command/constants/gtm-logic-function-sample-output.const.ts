@@ -8,15 +8,27 @@ import {
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
-  enrolledCount: 1,
+  total: 1,
+  dataSource: 'unipile',
   projectId: 'project-id',
   error: '',
   people: [
     {
+      name: 'Arapa Hara',
+      firstName: 'Arapa',
+      lastName: 'Hara',
+      title: 'Head of Sales',
+      headline: 'Head of Sales at Acme',
+      company: 'Acme',
+      location: 'San Francisco',
       linkedinUrl: 'https://www.linkedin.com/in/example',
       linkedinProfileId: 'example',
-      name: 'Arapa Hara',
-      title: 'Head of Sales',
+      peopleId: 'ACwAAAExample',
+      profilePictureUrl: '',
+      source: 'linkedin_sales_navigator',
+      stdFunction: 'sales',
+      stdFunctionRoot: 'go-to-market',
+      stdGrade: 'leadership',
     },
   ],
 };

@@ -362,6 +362,7 @@ export interface LinkedInSalesNavigatorPeopleSearchRequest {
   tenure_at_role?: LinkedInTenureRange[];
   seniority?: LinkedInSeniorityFilter;
   past_role?: LinkedInPastRoleFilter;
+  advanced_keywords?: LinkedInAdvancedKeywordsFilter;
   following_your_company?: boolean;
   viewed_your_profile_recently?: boolean;
   network_distance?: (LinkedInNetworkDistanceType | 'GROUP')[];

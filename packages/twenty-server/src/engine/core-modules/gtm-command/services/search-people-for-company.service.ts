@@ -4,10 +4,14 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
-import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import {
+  LinkedInSearchTransformerService,
+  type TransformedCandidateForTable,
+} from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -40,11 +44,27 @@ export type SearchPeopleForCompanyInput = {
   limit?: number;
 };
 
+export type SearchPeopleForCompanyPerson = {
+  name: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+  headline: string;
+  company: string;
+  location: string;
+  linkedinUrl: string;
+  linkedinProfileId: string;
+  peopleId: string | null;
+  profilePictureUrl: string;
+  source: string;
+  stdFunction: string | null;
+  stdFunctionRoot: string | null;
+  stdGrade: string | null;
+};
+
 const parseIcpSpec = (
   raw: string | null | undefined,
 ): {
-  // stdFunctions?: string[];
-  // stdGrades?: string[];
   buyerTitles?: string[];
 } => {
   if (!isNonEmptyString(raw)) {
@@ -53,16 +73,10 @@ const parseIcpSpec = (
 
   try {
     const parsed = JSON.parse(raw) as {
-      // stdFunctions?: string[];
-      // std_function?: string[];
-      // stdGrades?: string[];
-      std_grade?: string[];
       buyerTitles?: string[];
     };
 
     return {
-      // stdFunctions: parsed.stdFunctions ?? parsed.std_function,
-      // stdGrades: parsed.stdGrades ?? parsed.std_grade,
       buyerTitles: parsed.buyerTitles,
     };
   } catch {
@@ -70,30 +84,35 @@ const parseIcpSpec = (
   }
 };
 
-const readLinkedinUrl = (item: Record<string, unknown>): string => {
-  const candidates = [
-    item.linkedinUrl,
-    item.linkedin_url,
-    item.profile_url,
-    item.profileUrl,
-    item.url,
-  ];
+const readTaxonomyResolved = (
+  item: Record<string, unknown> | undefined,
+): Pick<
+  SearchPeopleForCompanyPerson,
+  'stdFunction' | 'stdFunctionRoot' | 'stdGrade'
+> => {
+  const resolved =
+    item && typeof item.resolved === 'object' && item.resolved !== null
+      ? (item.resolved as Record<string, unknown>)
+      : undefined;
 
-  for (const value of candidates) {
-    if (typeof value === 'string' && value.includes('linkedin')) {
-      return value;
-    }
-  }
-
-  const publicId =
-    typeof item.public_identifier === 'string'
-      ? item.public_identifier
-      : typeof item.publicIdentifier === 'string'
-        ? item.publicIdentifier
-        : '';
-
-  return publicId ? `https://www.linkedin.com/in/${publicId}` : '';
+  return {
+    stdFunction:
+      typeof resolved?.stdFunction === 'string' ? resolved.stdFunction : null,
+    stdFunctionRoot:
+      typeof resolved?.stdFunctionRoot === 'string'
+        ? resolved.stdFunctionRoot
+        : null,
+    stdGrade:
+      typeof resolved?.stdGrade === 'string' ? resolved.stdGrade : null,
+  };
 };
+
+const isUnipilePeopleSearchHit = (item: Record<string, unknown>): boolean =>
+  item.type === 'PEOPLE' ||
+  Array.isArray(item.current_positions) ||
+  typeof item.public_identifier === 'string' ||
+  typeof item.profile_url === 'string' ||
+  typeof item.public_profile_url === 'string';
 
 @Injectable()
 export class SearchPeopleForCompanyService {
@@ -102,7 +121,7 @@ export class SearchPeopleForCompanyService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly peopleApiService: PeopleApiService,
-    private readonly processCandidatesService: ProcessCandidatesService,
+    private readonly linkedInSearchTransformer: LinkedInSearchTransformerService,
     private readonly ensureGtmProjectService: EnsureGtmProjectService,
     private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
   ) {}
@@ -115,13 +134,9 @@ export class SearchPeopleForCompanyService {
     input: SearchPeopleForCompanyInput;
   }): Promise<{
     success: boolean;
-    enrolledCount: number;
-    people: Array<{
-      linkedinUrl: string;
-      linkedinProfileId: string;
-      name: string;
-      title: string;
-    }>;
+    total: number;
+    dataSource: string;
+    people: SearchPeopleForCompanyPerson[];
     projectId: string | null;
     error?: string;
   }> {
@@ -130,7 +145,8 @@ export class SearchPeopleForCompanyService {
     if (!isNonEmptyString(companyId)) {
       return {
         success: false,
-        enrolledCount: 0,
+        total: 0,
+        dataSource: '',
         people: [],
         projectId: null,
         error: 'companyId is required',
@@ -146,7 +162,8 @@ export class SearchPeopleForCompanyService {
     if (!isDefined(ensured)) {
       return {
         success: false,
-        enrolledCount: 0,
+        total: 0,
+        dataSource: '',
         people: [],
         projectId: null,
         error: 'Could not ensure a GTM Project',
@@ -197,7 +214,8 @@ export class SearchPeopleForCompanyService {
     if (!isDefined(context.company) || !isDefined(context.project)) {
       return {
         success: false,
-        enrolledCount: 0,
+        total: 0,
+        dataSource: '',
         people: [],
         projectId: ensured.projectId,
         error: 'Company or Project not found',
@@ -229,8 +247,6 @@ export class SearchPeopleForCompanyService {
         companyId,
         companyName: context.company.name ?? undefined,
         website,
-        // stdFunction: icp.stdFunctions?.[0],
-        // stdGrade: icp.stdGrades?.[0],
         jobTitle: buyerTitle,
         naturalLanguage: buyerTitle
           ? `${buyerTitle} at ${context.company.name ?? 'the company'}`
@@ -242,69 +258,77 @@ export class SearchPeopleForCompanyService {
       { workspaceId },
     );
 
-    const people = (search.items ?? []).map((item) => {
-      const linkedinUrl = readLinkedinUrl(item);
-      const name =
-        (typeof item.name === 'string' && item.name) ||
-        [item.first_name, item.last_name].filter(Boolean).join(' ') ||
-        '';
-      const title =
-        (typeof item.title === 'string' && item.title) ||
-        (typeof item.headline === 'string' && item.headline) ||
-        '';
-
-      return {
-        linkedinUrl,
-        linkedinProfileId: extractLinkedinProfileId(linkedinUrl),
-        name,
-        title,
-        raw: item,
-      };
-    });
-
-    const enrollable = people.filter((person) =>
-      isNonEmptyString(person.linkedinUrl),
+    const items = (search.items ?? []) as Array<Record<string, unknown>>;
+    const people = this.toStandardizedPeople(
+      items,
+      search.dataSource,
+      ensured.projectId,
+      context.project.name || 'GTM Outreach',
     );
 
-    if (enrollable.length > 0) {
-      const enrollToken =
-        await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
-
-      await this.processCandidatesService.queueRawDataForProcessing(
-        enrollable.map((person) => ({
-          ...person.raw,
-          linkedinUrl: person.linkedinUrl,
-          name: person.name,
-          title: person.title,
-        })),
-        'linkedin_search',
-        ensured.projectId,
-        context.project.name || 'GTM Outreach',
-        'system',
-        new Date().toISOString(),
-        'gtm-search-people-for-company',
-        enrollToken,
-        undefined,
-        { queueStartChatAfter: false },
-      );
-    }
-
     this.logger.log(
-      `search-people-for-company enrolled ${enrollable.length} profiles for company ${companyId}`,
+      `search-people-for-company returned ${people.length} standardized profiles for company ${companyId} dataSource=${search.dataSource ?? ''}`,
     );
 
     return {
       success: true,
-      enrolledCount: enrollable.length,
-      people: enrollable.map(
-        ({ linkedinUrl, linkedinProfileId, name, title }) => ({
-          linkedinUrl,
-          linkedinProfileId,
-          name,
-          title,
-        }),
-      ),
+      total: people.length,
+      dataSource: search.dataSource ?? '',
+      people,
       projectId: ensured.projectId,
     };
+  }
+
+  private toStandardizedPeople(
+    items: Array<Record<string, unknown>>,
+    dataSource: string | undefined,
+    projectId: string,
+    projectName: string,
+  ): SearchPeopleForCompanyPerson[] {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const shouldTransformUnipileHits =
+      dataSource !== 'harvest' && items.some(isUnipilePeopleSearchHit);
+
+    const transformed: TransformedCandidateForTable[] = shouldTransformUnipileHits
+      ? this.linkedInSearchTransformer.addMetadataToCandidates(
+          this.linkedInSearchTransformer.transformSearchResultsToTableFormat(
+            items as LinkedInSearchResult[],
+            projectId,
+            projectName,
+          ),
+          {
+            searchType: 'sales_navigator',
+            searchCategory: 'people',
+            timestamp: new Date().toISOString(),
+            processingTime: 0,
+          },
+        )
+      : (items as unknown as TransformedCandidateForTable[]);
+
+    return transformed.map((row, index) => {
+      const linkedinUrl =
+        typeof row.linkedinUrl === 'string' ? row.linkedinUrl.trim() : '';
+      const taxonomy = readTaxonomyResolved(items[index]);
+
+      return {
+        name: row.name?.trim() || row.fullName?.trim() || '',
+        firstName: row.firstName?.trim() || '',
+        lastName: row.lastName?.trim() || '',
+        title: row.jobTitle?.trim() || '',
+        headline: row.headline?.trim() || row.linkedinHeadline?.trim() || '',
+        company: row.company?.trim() || row.jobCompanyName?.trim() || '',
+        location: row.location?.trim() || row.locationName?.trim() || '',
+        linkedinUrl,
+        linkedinProfileId: extractLinkedinProfileId(linkedinUrl),
+        peopleId: row.peopleId ?? null,
+        profilePictureUrl:
+          row.profilePictureUrl?.trim() || row.displayPicture?.trim() || '',
+        source: row.source || dataSource || '',
+        ...taxonomy,
+      };
+    });
   }
 }

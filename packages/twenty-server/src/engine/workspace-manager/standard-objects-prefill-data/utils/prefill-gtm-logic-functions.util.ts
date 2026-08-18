@@ -59,7 +59,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleForCompanyId,
       name: GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       description:
-        'Search ICP people for a company via People API and enroll them as Person + Candidate (QUEUED). Pass companyId (required) and optional projectId/limit. Loads Project icpSpec (std function/grade) itself — do not pass icpSpec.',
+        'Search ICP people for a company via People API and return transformer-standardized hits (no CRM enroll). Pass companyId (required) and optional projectId/limit. Loads Project icpSpec itself — do not pass icpSpec.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       ),
@@ -81,7 +81,8 @@ export const getGtmOutreachLogicFunctionDefinitions = (
             type: 'object',
             properties: {
               success: { type: 'boolean', label: 'Success' },
-              enrolledCount: { type: 'number', label: 'Enrolled count' },
+              total: { type: 'number', label: 'Total' },
+              dataSource: { type: 'string', label: 'Data source' },
               projectId: { type: 'string', label: 'Project ID' },
               error: { type: 'string', label: 'Error' },
               people: {
@@ -90,13 +91,30 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                 items: {
                   type: 'object',
                   properties: {
+                    name: { type: 'string', label: 'Name' },
+                    firstName: { type: 'string', label: 'First name' },
+                    lastName: { type: 'string', label: 'Last name' },
+                    title: { type: 'string', label: 'Title' },
+                    headline: { type: 'string', label: 'Headline' },
+                    company: { type: 'string', label: 'Company' },
+                    location: { type: 'string', label: 'Location' },
                     linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
                     linkedinProfileId: {
                       type: 'string',
                       label: 'LinkedIn profile ID',
                     },
-                    name: { type: 'string', label: 'Name' },
-                    title: { type: 'string', label: 'Title' },
+                    peopleId: { type: 'string', label: 'People ID' },
+                    profilePictureUrl: {
+                      type: 'string',
+                      label: 'Profile picture URL',
+                    },
+                    source: { type: 'string', label: 'Source' },
+                    stdFunction: { type: 'string', label: 'Std function' },
+                    stdFunctionRoot: {
+                      type: 'string',
+                      label: 'Std function root',
+                    },
+                    stdGrade: { type: 'string', label: 'Std grade' },
                   },
                 },
               },

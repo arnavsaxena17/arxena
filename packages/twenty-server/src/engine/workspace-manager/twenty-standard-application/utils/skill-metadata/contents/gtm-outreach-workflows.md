@@ -23,13 +23,13 @@ Do **not** load this skill for generic CRM automations (email on person create, 
 
 Native GTM functions (`search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`) have stub source. Do **not** call `get_logic_function_source` for them.
 
-Generic search (hits only, no CRM enroll): `search-people` (People API), `search-companies` (Company API — Unipile Sales Nav auto, Recruiter/classic, Harvest, index), `search-jobs` (Jobs API). Workflow 1 enroll still uses **`search-people-for-company`**.
+Generic search (hits only, no CRM enroll): `search-people-for-company` (ICP people for a company, transformer-standardized), `search-people` (People API), `search-companies` (Company API — Unipile Sales Nav auto, Recruiter/classic, Harvest, index), `search-jobs` (Jobs API). Manual enroll stays HTTP/`upload_profiles`.
 
 ## GTM workflows (do not conflate)
 
 | Workflow | Trigger | Role |
 | --- | --- | --- |
-| **Workflow 1** (company search enroll) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → Person+Candidate at `QUEUED` |
+| **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → standardized people hits (no enroll) |
 | **Workflow U** (manual) | HTTP Ask AI / org-chart `upload_profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
 | **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` using `workspaceMemberId` + `linkedinProfileId`. Do **not** DELAY-poll accept. |
 | **Stage B accept** (`GTM Outreach — Connection Accepted`) | `candidate.updated` `CONNECTION_ACCEPTED` / ACCEPTED | `fetch-linkedin-profile` → AI_AGENT draft → FORM `notifyOnPending` (`wf_form_boolean_text`, WhatsApp to workspace member phone) → SEND `{{form.editedBody}}`. Follow-up DELAY 2–5 days until inbound. |
@@ -85,7 +85,7 @@ When the user wants a LinkedIn connection / outreach workflow and a template alr
 5. **Candidate LinkedIn fields** — `linkedinUrl.primaryLinkUrl` is the profile URL. `linkedinProfileId` is the Unipile/public identifier only (never a URL). Person uses `linkedinLink`. SEND_* should pass `linkedinProfileId`.
 6. **Validate once** — `validate_workflow` at the end (`validate: false` on intermediate step updates).
 7. **Activate** — `activate_workflow_version` on the draft you edited.
-8. **Execute for GTM people** — enroll with `projectsId` = Project id, `outreachSequenceStage` = `QUEUED`, `linkedinUrl.primaryLinkUrl`, and `linkedinProfileId` slug. Manual enroll stays HTTP/`upload_profiles`. Auto enroll is Workflow 1 above. That fires `candidate.created` → Stage B. Then `list_workflow_runs`.
+8. **Execute for GTM people** — enroll with `projectsId` = Project id, `outreachSequenceStage` = `QUEUED`, `linkedinUrl.primaryLinkUrl`, and `linkedinProfileId` slug. Manual enroll stays HTTP/`upload_profiles`. `search-people-for-company` returns hits only. Enroll then fires `candidate.created` → Stage B. Then `list_workflow_runs`.
 9. **Do not** burn the turn on metadata rabbit holes or parse-glitch retries.
 
 ## GTM Command “start LinkedIn connection outreach”
