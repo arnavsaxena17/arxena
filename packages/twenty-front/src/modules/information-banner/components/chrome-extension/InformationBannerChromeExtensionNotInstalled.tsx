@@ -32,7 +32,7 @@ export const InformationBannerChromeExtensionNotInstalled = ({
       componentInstanceId={COMPONENT_INSTANCE_ID}
       color="blue"
       variant="secondary"
-      message={t`Install the Arx Chrome extension to sync LinkedIn and use sourcing tools.`}
+      message={t`Install the Arx Chrome extension to sync LinkedIn.`}
       buttonTitle={t`Install extension`}
       buttonIcon={IconBrowserMaximize}
       buttonOnClick={() => {

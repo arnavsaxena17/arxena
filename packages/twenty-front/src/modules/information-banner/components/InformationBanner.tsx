@@ -3,6 +3,7 @@ import { informationBannerIsOpenComponentState } from '@/information-banner/stat
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
+import { useContext } from 'react';
 import {
   Banner,
   type BannerColor,
@@ -10,24 +11,33 @@ import {
 } from 'twenty-ui/feedback';
 import { type IconComponent, IconX } from 'twenty-ui/icon';
 import { Button, IconButton } from 'twenty-ui/input';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledText = styled.div`
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const StyledInvertedIconButton = styled(IconButton)`
-  color: ${themeCssVariables.font.color.inverted} !important;
+  color: var(--t-font-color-white) !important;
 `;
 
-const StyledContent = styled.div<{ hasCloseButton: boolean }>`
+const StyledContent = styled.div`
   align-items: center;
   display: flex;
   flex: 1;
-  gap: ${themeCssVariables.spacing[3]};
-  justify-content: center;
-  margin-left: ${({ hasCloseButton }) => (hasCloseButton ? '24px' : '0')};
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
+  min-width: 0;
+`;
+
+const StyledActions = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
 `;
 
 export const InformationBanner = ({
@@ -56,7 +66,9 @@ export const InformationBanner = ({
     componentInstanceId,
   );
 
+  const { colorScheme } = useContext(ThemeContext);
   const isPrimary = variant === 'primary';
+  const invertControls = isPrimary || colorScheme === 'dark';
   const buttonAccent = color === 'danger' ? 'danger' : 'blue';
 
   return (
@@ -67,23 +79,25 @@ export const InformationBanner = ({
     >
       {informationBannerIsOpen && (
         <Banner color={color} variant={variant}>
-          <StyledContent hasCloseButton={!!onClose}>
+          <StyledContent>
             <StyledText>{message}</StyledText>
             {buttonTitle && buttonOnClick && (
-              <Button
-                variant="secondary"
-                accent={buttonAccent}
-                title={buttonTitle}
-                Icon={buttonIcon}
-                size="small"
-                inverted={isPrimary}
-                onClick={buttonOnClick}
-                disabled={isButtonDisabled}
-              />
+              <StyledActions>
+                <Button
+                  variant="secondary"
+                  accent={buttonAccent}
+                  title={buttonTitle}
+                  Icon={buttonIcon}
+                  size="small"
+                  inverted={invertControls}
+                  onClick={buttonOnClick}
+                  disabled={isButtonDisabled}
+                />
+              </StyledActions>
             )}
           </StyledContent>
           {onClose &&
-            (isPrimary ? (
+            (invertControls ? (
               <StyledInvertedIconButton
                 Icon={IconX}
                 size="small"

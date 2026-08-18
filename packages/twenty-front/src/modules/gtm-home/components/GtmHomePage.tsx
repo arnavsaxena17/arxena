@@ -510,15 +510,13 @@ const GtmHomePageContent = () => {
         isExtensionInstalled={isExtensionInstalled}
         isChecking={isExtensionChecking}
       />
+      <GtmNeedsConnectionBanner
+        linkedinConnected={linkedinConnected}
+        gmailConnected={gmailConnected}
+        whatsappConnected={whatsappConnected}
+      />
       <PageBody>
         <StyledMain>
-          {(!linkedinConnected || !gmailConnected) && (
-            <GtmNeedsConnectionBanner
-              linkedinConnected={linkedinConnected}
-              gmailConnected={gmailConnected}
-              whatsappConnected={whatsappConnected}
-            />
-          )}
           <GtmMainTabs
             activeTab={activeTab}
             companyCount={companies.length}

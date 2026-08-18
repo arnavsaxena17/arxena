@@ -3,7 +3,8 @@
   display: flex;
   flex: 1;
   gap: 8px;
-  justify-content: center;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .container {
@@ -11,5 +12,5 @@
 }
 
 .invertedIconButton {
-  color: var(--t-font-color-inverted) !important;
+  color: var(--t-font-color-white) !important;
 }

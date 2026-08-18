@@ -3,7 +3,7 @@ import { qrCodeState } from '@/auth/states/qrCode';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useMutation } from '@apollo/client/react';
 import { useLingui } from '@lingui/react/macro';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -19,11 +19,18 @@ export const TwoFactorAuthenticationSetupForSettingsEffect = () => {
   const [initiateOTPProvisioningForAuthenticatedUser] = useMutation(
     InitiateOtpProvisioningForAuthenticatedUserDocument,
   );
+  const hasStartedProvisioning = useRef(false);
 
   useEffect(() => {
-    if (!isDefined(currentUser) || isDefined(qrCode)) {
+    if (
+      !isDefined(currentUser) ||
+      isDefined(qrCode) ||
+      hasStartedProvisioning.current
+    ) {
       return;
     }
+
+    hasStartedProvisioning.current = true;
 
     const handleTwoFactorAuthenticationProvisioningInitiation = async () => {
       try {
@@ -42,6 +49,7 @@ export const TwoFactorAuthenticationSetupForSettingsEffect = () => {
             .initiateOTPProvisioningForAuthenticatedUser.uri,
         );
       } catch {
+        hasStartedProvisioning.current = false;
         enqueueErrorSnackBar({
           message: t`Two factor authentication provisioning failed.`,
           options: {

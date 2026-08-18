@@ -34,6 +34,13 @@ const StyledFooter = styled.div`
 
 const StyledInstallButton = styled.div`
   width: 100%;
+
+  :global(.dark) button {
+    --main-button-bg: var(--t-color-blue);
+    --main-button-border-color: var(--t-color-blue);
+    --main-button-color: var(--t-font-color-white);
+    --main-button-hover-bg: var(--t-color-blue10);
+  }
 `;
 
 const StyledStatus = styled.p`

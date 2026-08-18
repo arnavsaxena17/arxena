@@ -1,6 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
+import { QueryFailedError } from 'typeorm';
 import { TwoFactorAuthenticationStrategy } from 'twenty-shared/types';
+
+import { POSTGRESQL_ERROR_CODES } from 'src/engine/api/graphql/workspace-query-runner/constants/postgres-error-codes.constants';
 
 import {
   AuthException,
@@ -405,6 +408,45 @@ describe('TwoFactorAuthenticationService', () => {
           strategy: TwoFactorAuthenticationStrategy.TOTP,
         }),
       );
+    });
+
+    it('should reuse concurrently inserted pending method on unique violation', async () => {
+      const concurrentMethod = {
+        id: 'existing_method_id',
+        status: 'PENDING',
+        secret: encryptedSecret,
+        createdAt: new Date(),
+      };
+
+      repository.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(concurrentMethod);
+
+      const driverError = Object.assign(new Error('duplicate key'), {
+        code: POSTGRESQL_ERROR_CODES.UNIQUE_VIOLATION,
+      });
+
+      repository.save.mockRejectedValue(
+        new QueryFailedError('INSERT', [], driverError),
+      );
+      secretEncryptionService.encryptVersioned.mockReturnValue(encryptedSecret);
+      secretEncryptionService.decryptVersionedOrThrow.mockReturnValue(
+        rawSecret,
+      );
+
+      const uri = await service.initiateStrategyConfiguration(
+        mockUser.id,
+        mockUser.email,
+        workspace.id,
+        workspace.displayName,
+      );
+
+      expect(uri).toBe(
+        'otpauth://totp/test@example.com?secret=RAW_OTP_SECRET&issuer=Arxena%20-%20Test%20Workspace',
+      );
+      expect(
+        secretEncryptionService.decryptVersionedOrThrow,
+      ).toHaveBeenCalledWith(encryptedSecret, { workspaceId: workspace.id });
     });
   });
 

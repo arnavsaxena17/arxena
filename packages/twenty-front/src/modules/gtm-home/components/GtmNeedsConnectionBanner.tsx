@@ -1,21 +1,10 @@
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { Button } from 'twenty-ui/input';
+import { InformationBanner } from '@/information-banner/components/InformationBanner';
+import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { useLingui } from '@lingui/react/macro';
 import { SettingsPath } from 'twenty-shared/types';
-import { getSettingsPath } from 'twenty-shared/utils';
-import { useNavigate } from 'react-router-dom';
+import { IconMail } from 'twenty-ui/icon';
 
-const StyledBanner = styled.div`
-  align-items: center;
-  background: ${themeCssVariables.background.transparent.orange};
-  border-bottom: 1px solid ${themeCssVariables.border.color.medium};
-  color: ${themeCssVariables.font.color.primary};
-  display: flex;
-  font-size: ${themeCssVariables.font.size.sm};
-  gap: ${themeCssVariables.spacing[3]};
-  justify-content: space-between;
-  padding: ${themeCssVariables.spacing[3]} ${themeCssVariables.spacing[4]};
-`;
+const COMPONENT_INSTANCE_ID = 'information-banner-gtm-needs-connection';
 
 type GtmNeedsConnectionBannerProps = {
   linkedinConnected: boolean;
@@ -23,41 +12,54 @@ type GtmNeedsConnectionBannerProps = {
   whatsappConnected?: boolean;
 };
 
+const formatChannelList = (channels: string[]) => {
+  if (channels.length === 1) {
+    return channels[0];
+  }
+
+  if (channels.length === 2) {
+    return `${channels[0]} and ${channels[1]}`;
+  }
+
+  return `${channels.slice(0, -1).join(', ')}, and ${channels[channels.length - 1]}`;
+};
+
 export const GtmNeedsConnectionBanner = ({
   linkedinConnected,
   gmailConnected,
   whatsappConnected = true,
 }: GtmNeedsConnectionBannerProps) => {
-  const navigate = useNavigate();
+  const { t } = useLingui();
+  const navigateSettings = useNavigateSettings();
   const missing: string[] = [];
 
   if (!linkedinConnected) {
-    missing.push('LinkedIn');
+    missing.push(t`LinkedIn`);
   }
 
   if (!gmailConnected) {
-    missing.push('Gmail');
+    missing.push(t`Gmail`);
   }
 
   if (!whatsappConnected) {
-    missing.push('WhatsApp');
+    missing.push(t`WhatsApp`);
   }
 
   if (missing.length === 0) {
     return null;
   }
 
+  const channels = formatChannelList(missing);
+
   return (
-    <StyledBanner>
-      <span>
-        Connect {missing.join(', ')} before live outreach. Candidates stay at
-        NEEDS_CONNECTION until channels are ready.
-      </span>
-      <Button
-        title="Open accounts"
-        size="small"
-        onClick={() => navigate(getSettingsPath(SettingsPath.Accounts))}
-      />
-    </StyledBanner>
+    <InformationBanner
+      componentInstanceId={COMPONENT_INSTANCE_ID}
+      color="danger"
+      variant="secondary"
+      message={t`Connect ${channels} to start live outreach.`}
+      buttonTitle={t`Open accounts`}
+      buttonIcon={IconMail}
+      buttonOnClick={() => navigateSettings(SettingsPath.Accounts)}
+    />
   );
 };

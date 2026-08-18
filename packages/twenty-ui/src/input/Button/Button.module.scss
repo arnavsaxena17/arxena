@@ -1,8 +1,6 @@
 @use 'sass:map';
 
-// GRAY_SCALE_LIGHT.gray1 from theme/constants/GrayScaleLight.ts — the legacy
-// Linaria styles read it from JS because it is theme-invariant.
-$gray-scale-light-gray1: color(display-p3 1 1 1);
+$font-color-white: var(--t-font-color-white);
 
 // The variant × accent × inverted × disabled × focus matrix below is ported
 // token-for-token from computeButtonDynamicStyles in the deprecated
@@ -125,8 +123,8 @@ $primary-accents: (
     border-focus: var(--t-color-blue),
     focus-needs-enabled: false,
     shadow-focus: var(--t-accent-tertiary),
-    color: $gray-scale-light-gray1,
-    color-disabled: $gray-scale-light-gray1,
+    color: $font-color-white,
+    color-disabled: $font-color-white,
     hover: var(--t-color-blue10),
     active: var(--t-color-blue12),
   ),
@@ -149,7 +147,7 @@ $primary-accents: (
     border-focus: var(--t-color-green9),
     focus-needs-enabled: false,
     shadow-focus: var(--t-color-green3),
-    color: $gray-scale-light-gray1,
+    color: $font-color-white,
     color-disabled: var(--t-color-green9),
     hover: var(--t-color-green10),
     active: var(--t-color-green12),
@@ -318,7 +316,7 @@ $secondary-accents: (
     [data-variant='secondary'],
     [data-variant='tertiary']
   )[data-inverted] {
-  --btn-color: var(--t-font-color-inverted);
+  --btn-color: var(--t-font-color-white);
   --btn-hover-bg: var(--t-background-transparent-light);
   --btn-active-bg: var(--t-background-transparent-medium);
 }
@@ -331,7 +329,7 @@ $secondary-accents: (
     [data-variant='secondary'],
     [data-variant='tertiary']
   )[data-inverted][data-focus] {
-  --btn-border-color: #{$gray-scale-light-gray1};
+  --btn-border-color: #{$font-color-white};
   --btn-box-shadow: 0 0 0 3px var(--t-background-transparent-medium);
 }
 
@@ -343,5 +341,5 @@ $secondary-accents: (
 }
 
 .button[data-variant='secondary'][data-inverted][data-disabled] {
-  --btn-border-color: #{$gray-scale-light-gray1};
+  --btn-border-color: #{$font-color-white};
 }

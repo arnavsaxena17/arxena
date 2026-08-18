@@ -3,7 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { authenticator } from 'otplib';
 import { TwoFactorAuthenticationStrategy } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { QueryFailedError } from 'typeorm';
 
+import { POSTGRESQL_ERROR_CODES } from 'src/engine/api/graphql/workspace-query-runner/constants/postgres-error-codes.constants';
+import { type QueryFailedErrorWithCode } from 'src/engine/api/graphql/workspace-query-runner/utils/workspace-query-runner-graphql-api-exception-handler.util';
 import {
   AuthException,
   AuthExceptionCode,
@@ -96,60 +99,145 @@ export class TwoFactorAuthenticationService {
         workspaceId,
       });
 
-    const existing2FAMethod =
-      await this.twoFactorAuthenticationMethodRepository.findOne(workspaceId, {
-        where: {
-          userWorkspace: { id: userWorkspace.id },
-          strategy: TwoFactorAuthenticationStrategy.TOTP,
-        },
-      });
+    const existing2FAMethod = await this.findTotpMethod({
+      workspaceId,
+      userWorkspaceId: userWorkspace.id,
+    });
 
-    if (existing2FAMethod && existing2FAMethod.status !== 'PENDING') {
+    if (
+      existing2FAMethod &&
+      existing2FAMethod.status !== OTPStatus.PENDING
+    ) {
       throw new TwoFactorAuthenticationException(
         'A two factor authentication method has already been set. Please delete it and try again.',
         TwoFactorAuthenticationExceptionCode.TWO_FACTOR_AUTHENTICATION_METHOD_ALREADY_PROVISIONED,
       );
     }
 
-    if (
-      existing2FAMethod &&
-      existing2FAMethod.status === 'PENDING' &&
-      existing2FAMethod.createdAt &&
-      Date.now() - existing2FAMethod.createdAt.getTime() <
-        PENDING_METHOD_REUSE_WINDOW_MS
-    ) {
-      const existingSecret = await this.decryptStoredSecret({
+    if (this.canReusePendingMethod(existing2FAMethod)) {
+      return this.buildOtpAuthUri({
+        userEmail,
+        workspaceDisplayName,
         storedSecret: existing2FAMethod.secret,
         workspaceId,
       });
-
-      const issuer = `Arxena${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;
-      const reuseUri = authenticator.keyuri(userEmail, issuer, existingSecret);
-
-      return reuseUri;
     }
 
+    const issuer = this.buildIssuer(workspaceDisplayName);
     const { uri, context } = new TotpStrategy(
       TOTP_DEFAULT_CONFIGURATION,
-    ).initiate(
-      userEmail,
-      `Arxena${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,
-    );
+    ).initiate(userEmail, issuer);
 
     const encryptedSecret = this.secretEncryptionService.encryptVersioned(
       context.secret,
       { workspaceId },
     );
 
-    await this.twoFactorAuthenticationMethodRepository.save(workspaceId, {
-      id: existing2FAMethod?.id,
-      userWorkspace: userWorkspace,
-      secret: encryptedSecret,
-      status: context.status,
-      strategy: TwoFactorAuthenticationStrategy.TOTP,
-    });
+    try {
+      await this.twoFactorAuthenticationMethodRepository.save(workspaceId, {
+        id: existing2FAMethod?.id,
+        userWorkspace: userWorkspace,
+        secret: encryptedSecret,
+        status: context.status,
+        strategy: TwoFactorAuthenticationStrategy.TOTP,
+      });
+    } catch (error) {
+      if (!this.isUniqueViolation(error)) {
+        throw error;
+      }
+
+      const concurrentMethod = await this.findTotpMethod({
+        workspaceId,
+        userWorkspaceId: userWorkspace.id,
+      });
+
+      if (!isDefined(concurrentMethod)) {
+        throw error;
+      }
+
+      if (concurrentMethod.status !== OTPStatus.PENDING) {
+        throw new TwoFactorAuthenticationException(
+          'A two factor authentication method has already been set. Please delete it and try again.',
+          TwoFactorAuthenticationExceptionCode.TWO_FACTOR_AUTHENTICATION_METHOD_ALREADY_PROVISIONED,
+        );
+      }
+
+      return this.buildOtpAuthUri({
+        userEmail,
+        workspaceDisplayName,
+        storedSecret: concurrentMethod.secret,
+        workspaceId,
+      });
+    }
 
     return uri;
+  }
+
+  private async findTotpMethod({
+    workspaceId,
+    userWorkspaceId,
+  }: {
+    workspaceId: string;
+    userWorkspaceId: string;
+  }) {
+    return this.twoFactorAuthenticationMethodRepository.findOne(workspaceId, {
+      where: {
+        userWorkspaceId,
+        strategy: TwoFactorAuthenticationStrategy.TOTP,
+      },
+    });
+  }
+
+  private canReusePendingMethod(
+    method: TwoFactorAuthenticationMethodEntity | null,
+  ): method is TwoFactorAuthenticationMethodEntity {
+    return (
+      isDefined(method) &&
+      method.status === OTPStatus.PENDING &&
+      isDefined(method.createdAt) &&
+      Date.now() - method.createdAt.getTime() < PENDING_METHOD_REUSE_WINDOW_MS
+    );
+  }
+
+  private buildIssuer(workspaceDisplayName?: string) {
+    return `Arxena${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;
+  }
+
+  private async buildOtpAuthUri({
+    userEmail,
+    workspaceDisplayName,
+    storedSecret,
+    workspaceId,
+  }: {
+    userEmail: string;
+    workspaceDisplayName?: string;
+    storedSecret: EncryptedString;
+    workspaceId: string;
+  }) {
+    const existingSecret = await this.decryptStoredSecret({
+      storedSecret,
+      workspaceId,
+    });
+
+    return authenticator.keyuri(
+      userEmail,
+      this.buildIssuer(workspaceDisplayName),
+      existingSecret,
+    );
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const queryFailedError = error as QueryFailedErrorWithCode;
+    const driverError = error.driverError as { code?: string } | undefined;
+
+    return (
+      queryFailedError.code === POSTGRESQL_ERROR_CODES.UNIQUE_VIOLATION ||
+      driverError?.code === POSTGRESQL_ERROR_CODES.UNIQUE_VIOLATION
+    );
   }
 
   async validateStrategy(

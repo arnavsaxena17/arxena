@@ -10,6 +10,8 @@ export const FONT_LIGHT = {
     light: GRAY_SCALE_LIGHT.gray8,
     extraLight: GRAY_SCALE_LIGHT.gray7,
     inverted: GRAY_SCALE_LIGHT.gray1,
+    // Theme-invariant white for text on colored surfaces (banners, accent buttons).
+    white: GRAY_SCALE_LIGHT.gray1,
     danger: COLOR_LIGHT.red,
   },
   ...FONT_COMMON,
