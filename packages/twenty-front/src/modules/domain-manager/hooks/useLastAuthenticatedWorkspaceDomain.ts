@@ -25,6 +25,10 @@ export const useLastAuthenticatedWorkspaceDomain = () => {
     if (!params) {
       cookieStorage.removeItem(LAST_AUTHENTICATED_WORKSPACE_DOMAIN_COOKIE_KEY, {
         path: '/',
+        domain: `.${domainConfiguration.frontDomain}`,
+      });
+      cookieStorage.removeItem(LAST_AUTHENTICATED_WORKSPACE_DOMAIN_COOKIE_KEY, {
+        path: '/',
       });
     }
   };

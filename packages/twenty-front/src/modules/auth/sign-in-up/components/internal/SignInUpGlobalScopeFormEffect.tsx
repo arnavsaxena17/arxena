@@ -7,9 +7,11 @@ import {
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import {
   SIGNED_OUT_QUERY_PARAM,
+  clearSignedOutAcrossSubdomains,
   clearTokenPairIfSignedOut,
-  hasSignedOutMarker,
+  shouldDiscardStaleSignedOutSession,
 } from '@/auth/utils/signedOutSession';
+import { domainConfigurationState } from '@/domain-manager/states/domainConfigurationState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
 import { useStore } from 'jotai';
@@ -19,6 +21,7 @@ import { isDefined } from 'twenty-shared/utils';
 
 export const SignInUpGlobalScopeFormEffect = () => {
   const signInUpStep = useAtomStateValue(signInUpStepState);
+  const domainConfiguration = useAtomStateValue(domainConfigurationState);
   const [searchParams, setSearchParams] = useSearchParams();
   const { setAuthTokens, navigateAfterMultiWorkspaceSignInUp } = useAuth();
   const { loadCurrentUser } = useLoadCurrentUser();
@@ -34,10 +37,11 @@ export const SignInUpGlobalScopeFormEffect = () => {
       );
     };
 
-    if (
-      searchParams.get(SIGNED_OUT_QUERY_PARAM) === '1' ||
-      hasSignedOutMarker()
-    ) {
+    const tokenPairFromUrl = searchParams.get('tokenPair');
+    const hasFreshAuthTokens =
+      hasAccessTokenPair || isDefined(tokenPairFromUrl);
+
+    if (shouldDiscardStaleSignedOutSession(hasFreshAuthTokens)) {
       clearTokenPairIfSignedOut();
       store.set(tokenPairState.atom, null);
 
@@ -49,12 +53,22 @@ export const SignInUpGlobalScopeFormEffect = () => {
       return;
     }
 
-    const tokenPairFromUrl = searchParams.get('tokenPair');
+    if (hasFreshAuthTokens) {
+      clearSignedOutAcrossSubdomains(domainConfiguration.frontDomain);
+    }
+
     if (isDefined(tokenPairFromUrl)) {
       setAuthTokens(JSON.parse(tokenPairFromUrl));
       searchParams.delete('tokenPair');
+      searchParams.delete(SIGNED_OUT_QUERY_PARAM);
       setSearchParams(searchParams);
       void resumeOnCentralDomain();
+      return;
+    }
+
+    if (searchParams.get(SIGNED_OUT_QUERY_PARAM) === '1') {
+      searchParams.delete(SIGNED_OUT_QUERY_PARAM);
+      setSearchParams(searchParams, { replace: true });
       return;
     }
 
@@ -71,6 +85,7 @@ export const SignInUpGlobalScopeFormEffect = () => {
     hasAccessTokenPair,
     navigateAfterMultiWorkspaceSignInUp,
     store,
+    domainConfiguration.frontDomain,
   ]);
 
   return <></>;

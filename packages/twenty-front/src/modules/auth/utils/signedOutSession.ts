@@ -14,6 +14,11 @@ const getSignedOutCookieAttributes = (frontDomain?: string) => ({
   ...(frontDomain ? { domain: `.${frontDomain}` } : {}),
 });
 
+const getSignedOutCookieRemovalAttributes = (frontDomain?: string) => ({
+  ...cookiePathAttributes,
+  ...(frontDomain ? { domain: `.${frontDomain}` } : {}),
+});
+
 export const hasSignedOutMarker = (): boolean => {
   if (typeof window === 'undefined') {
     return false;
@@ -33,6 +38,12 @@ export const hasSignedOutMarker = (): boolean => {
     return false;
   }
 };
+
+// Leftover tokens on the default domain should be discarded after logout.
+// A new sign-in (tokens already in memory or arriving in the URL) must not be.
+export const shouldDiscardStaleSignedOutSession = (
+  hasFreshAuthTokens: boolean,
+): boolean => hasSignedOutMarker() && !hasFreshAuthTokens;
 
 export const markSignedOutAcrossSubdomains = (frontDomain?: string) => {
   if (frontDomain) {
@@ -54,13 +65,13 @@ export const clearSignedOutAcrossSubdomains = (frontDomain?: string) => {
   if (frontDomain) {
     cookieStorage.removeItem(
       SIGNED_OUT_COOKIE_KEY,
-      getSignedOutCookieAttributes(frontDomain),
+      getSignedOutCookieRemovalAttributes(frontDomain),
     );
   }
 
   cookieStorage.removeItem(
     SIGNED_OUT_COOKIE_KEY,
-    getSignedOutCookieAttributes(),
+    getSignedOutCookieRemovalAttributes(),
   );
 };
 

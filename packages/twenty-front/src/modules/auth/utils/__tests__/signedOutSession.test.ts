@@ -6,6 +6,7 @@ import {
   clearTokenPairIfSignedOut,
   hasSignedOutMarker,
   markSignedOutAcrossSubdomains,
+  shouldDiscardStaleSignedOutSession,
 } from '@/auth/utils/signedOutSession';
 
 describe('signedOutSession', () => {
@@ -53,5 +54,14 @@ describe('signedOutSession', () => {
 
     expect(cookieStorage.getItem(SIGNED_OUT_COOKIE_KEY)).toBeUndefined();
     expect(hasSignedOutMarker()).toBe(false);
+  });
+
+  it('discards leftover tokens after logout, but not a fresh sign-in', () => {
+    expect(shouldDiscardStaleSignedOutSession(false)).toBe(false);
+
+    markSignedOutAcrossSubdomains();
+
+    expect(shouldDiscardStaleSignedOutSession(false)).toBe(true);
+    expect(shouldDiscardStaleSignedOutSession(true)).toBe(false);
   });
 });
