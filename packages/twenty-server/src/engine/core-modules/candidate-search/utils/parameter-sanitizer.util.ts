@@ -23,6 +23,10 @@ export class ParameterSanitizer {
     const keepValue = (item: unknown): item is string =>
       typeof item === 'string' && item.trim().length > 0;
 
+    if (typeof value === 'string' && value.trim()) {
+      return { include: [value.trim()] };
+    }
+
     if (Array.isArray(value) && value.length > 0) {
       const include = value.filter(keepValue).map((item) => item.trim());
       if (include.length > 0) {
@@ -671,7 +675,12 @@ export class ParameterSanitizer {
     this.assignIncludeExcludeNumericIds(sanitized, 'function', request.function);
 
     // Handle role parameter — numeric JOB_TITLE ids or plain-text boolean
-    const role = this.sanitizeIncludeExcludeRoleValues(request.role);
+    const role = this.sanitizeIncludeExcludeRoleValues(
+      request.role ??
+        (typeof request.advanced_keywords?.title === 'string'
+          ? { include: [request.advanced_keywords.title] }
+          : request.job_title),
+    );
     if (role) {
       sanitized.role = role;
     }

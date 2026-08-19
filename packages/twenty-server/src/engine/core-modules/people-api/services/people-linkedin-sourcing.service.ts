@@ -639,6 +639,34 @@ export class PeopleLinkedInSourcingService {
           }`,
         );
       }
+    } else if (stdFunctionRoot) {
+      try {
+        const generated =
+          await this.pythonQueryGenerationService.generateSearchParameters(
+            {
+              function_root: [
+                { name: stdFunctionRoot, exclude: false },
+              ],
+              ...(stdGrade
+                ? { grades: [{ name: stdGrade, exclude: false }] }
+                : {}),
+              company_names: companyNames,
+            },
+            'sales_navigator',
+            `People API std_function_root search for ${args.primaryCompanyName}`,
+          );
+        linkedinSearchKeywords =
+          extractKeywordsClauseFromGeneratedSearchParameters(generated) ??
+          linkedinSearchKeywords;
+        jobTitle =
+          extractJobTitleClauseFromGeneratedSearchParameters(generated);
+      } catch (error) {
+        this.logger.warn(
+          `People API std_function_root keyword generation failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
     } else if (stdGrade && stdGrade.toLowerCase() !== 'leadership') {
       try {
         const generated =

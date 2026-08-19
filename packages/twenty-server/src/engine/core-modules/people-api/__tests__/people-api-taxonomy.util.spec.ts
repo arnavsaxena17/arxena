@@ -1,4 +1,5 @@
 import { buildTaxonomyTreeFromFlatLists } from '../utils/build-taxonomy-tree.util';
+import { extractCandidateExperience } from '../utils/extract-candidate-experience.util';
 import { extractCandidateJobTitle } from '../utils/extract-candidate-job-title.util';
 import {
   classificationToResolvedFields,
@@ -75,6 +76,31 @@ describe('extractCandidateJobTitle', () => {
         currentPositions: [{ title: 'Account Executive' }],
       }),
     ).toBe('Account Executive');
+  });
+});
+
+describe('extractCandidateExperience', () => {
+  it('reads nested title.name and snake_case dates', () => {
+    expect(
+      extractCandidateExperience({
+        experience: [
+          {
+            title: { name: 'VP Product' },
+            start_date: '2022-01-01',
+            end_date: '2024-06-01',
+            is_current: false,
+          },
+          { title: '  ' },
+        ],
+      }),
+    ).toEqual([
+      {
+        title: 'VP Product',
+        startDate: '2022-01-01',
+        endDate: '2024-06-01',
+        isCurrent: false,
+      },
+    ]);
   });
 });
 

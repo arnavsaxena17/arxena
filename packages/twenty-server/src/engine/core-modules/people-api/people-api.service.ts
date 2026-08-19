@@ -46,6 +46,7 @@ import {
   type PeopleLocationScope,
 } from './services/people-location-scope.resolver';
 import { buildTaxonomyTreeFromFlatLists } from './utils/build-taxonomy-tree.util';
+import { extractCandidateExperience } from './utils/extract-candidate-experience.util';
 import { extractCandidateJobTitle } from './utils/extract-candidate-job-title.util';
 import { extractTaxonomyItemValue } from './utils/extract-taxonomy-item-value.util';
 import {
@@ -933,9 +934,20 @@ export class PeopleApiService {
       }
     >
   > {
-    const titles = items.map((item) => extractCandidateJobTitle(item) ?? '');
-    const classifications =
-      await this.titleTaxonomyRemoteService.classifyTitles(titles);
+    const anyHasExperience = items.some(
+      (item) => extractCandidateExperience(item).length > 0,
+    );
+
+    const classifications = anyHasExperience
+      ? await this.titleTaxonomyRemoteService.classifyProfiles(
+          items.map((item) => ({
+            jobTitle: extractCandidateJobTitle(item) ?? '',
+            experience: extractCandidateExperience(item),
+          })),
+        )
+      : await this.titleTaxonomyRemoteService.classifyTitles(
+          items.map((item) => extractCandidateJobTitle(item) ?? ''),
+        );
 
     if (!classifications) {
       throw new HttpException(

@@ -42,6 +42,30 @@ export type TitleTaxonomyClassifyResponse = {
   function: TitleTaxonomyItem | null;
   grade: TitleTaxonomyItem | null;
   confidence: number;
+  function_matched?: boolean;
+  grade_matched?: boolean;
+  inference?: {
+    used_history?: boolean;
+    titles_considered?: string[];
+    function_source?: string;
+    grade_source?: string;
+    grade_inferred?: boolean;
+  };
+};
+
+export type TitleTaxonomyProfileExperience = {
+  title?: string | { name?: string | null } | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_current?: boolean;
+};
+
+export type TitleTaxonomyClassifyProfileInput = {
+  jobTitle: string;
+  experience?: TitleTaxonomyProfileExperience[];
 };
 
 @Injectable()
@@ -185,6 +209,101 @@ export class TitleTaxonomyRemoteService {
     } catch (error) {
       this.logger.warn(
         `Title taxonomy classify-titles failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  private mapExperienceForPython(experience?: TitleTaxonomyProfileExperience[]) {
+    return (experience ?? []).map((entry) => {
+      const rawTitle = entry.title;
+      const title =
+        typeof rawTitle === 'string'
+          ? rawTitle
+          : rawTitle && typeof rawTitle === 'object'
+            ? rawTitle.name
+            : undefined;
+      return {
+        title,
+        start_date: entry.start_date ?? entry.startDate ?? null,
+        end_date: entry.end_date ?? entry.endDate ?? null,
+        is_current: entry.is_current ?? entry.isCurrent ?? false,
+      };
+    });
+  }
+
+  async classifyProfile(
+    input: TitleTaxonomyClassifyProfileInput,
+  ): Promise<TitleTaxonomyClassifyResponse | null> {
+    const jobTitle = input.jobTitle.trim();
+    if (!jobTitle) {
+      return null;
+    }
+    const url = `${this.getBaseUrl()}/api/title-taxonomy/classify-profile`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          job_title: jobTitle,
+          experience: this.mapExperienceForPython(input.experience),
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `Title taxonomy classify-profile returned ${response.status}: ${text}`,
+        );
+        return null;
+      }
+      return (await response.json()) as TitleTaxonomyClassifyResponse;
+    } catch (error) {
+      this.logger.warn(
+        `Title taxonomy classify-profile failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  async classifyProfiles(
+    profiles: TitleTaxonomyClassifyProfileInput[],
+  ): Promise<TitleTaxonomyClassifyResponse[] | null> {
+    const url = `${this.getBaseUrl()}/api/title-taxonomy/classify-profiles`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profiles: profiles.map((profile) => ({
+            job_title: profile.jobTitle,
+            experience: this.mapExperienceForPython(profile.experience),
+          })),
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `Title taxonomy classify-profiles returned ${response.status}: ${text}`,
+        );
+        return null;
+      }
+      const json = (await response.json()) as {
+        items?: TitleTaxonomyClassifyResponse[];
+      };
+      return Array.isArray(json.items) ? json.items : [];
+    } catch (error) {
+      this.logger.warn(
+        `Title taxonomy classify-profiles failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

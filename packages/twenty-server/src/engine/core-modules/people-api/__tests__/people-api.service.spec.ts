@@ -125,6 +125,7 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
       confidence: 0.75,
     }),
     classifyTitles: jest.fn(),
+    classifyProfiles: jest.fn(),
     getFunctionRoots: jest.fn(),
     getFunctions: jest.fn(),
   } as unknown as TitleTaxonomyRemoteService;
@@ -320,6 +321,7 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
       confidence: 0.9,
     }),
     classifyTitles: jest.fn(),
+    classifyProfiles: jest.fn(),
     getFunctionRoots: jest.fn(),
     getFunctions: jest.fn(),
   } as unknown as TitleTaxonomyRemoteService;
@@ -458,6 +460,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
         confidence: 0.7,
       },
     ]),
+    classifyProfiles: jest.fn(),
     getFunctions: jest.fn().mockResolvedValue([
       {
         id: 'software engineering',
@@ -555,11 +558,78 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
       'VP Engineering',
       'Account Executive',
     ]);
+    expect(titleTaxonomyRemoteService.classifyProfiles).not.toHaveBeenCalled();
     expect(result.dataSource).toBe('unipile');
     expect(result.totalBeforeFilter).toBe(2);
     expect(result.total).toBe(1);
     expect(result.items[0].resolved.stdFunctionRoot).toBe('engineering');
     expect(result.query.appliedFilters?.functionIds).toEqual(['8']);
+  });
+
+  it('uses classifyProfiles when hits include experience history', async () => {
+    (
+      peopleLinkedInSourcingService.search as jest.Mock
+    ).mockResolvedValueOnce({
+      dataSource: 'unipile',
+      keywords: 'engineer OR engineering',
+      appliedFilters: {
+        functionIds: ['8'],
+        seniorities: ['cxo', 'director'],
+      },
+      company: {
+        name: 'Stripe',
+        slug: 'stripe',
+        linkedinUrl: 'https://www.linkedin.com/company/stripe/',
+      },
+      items: [
+        {
+          jobTitle: 'Product Strategy & GTM',
+          name: 'Alex',
+          experience: [
+            { title: { name: 'VP Product' }, endDate: '2024-01-01' },
+          ],
+        },
+      ],
+    });
+    (
+      titleTaxonomyRemoteService.classifyProfiles as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        title: 'Product Strategy & GTM',
+        normalized_title: 'product strategy gtm',
+        function_root: { id: 'product', name: 'product' },
+        function: { id: 'product', name: 'product' },
+        grade: { id: 'leadership', name: 'leadership' },
+        confidence: 0.75,
+      },
+    ]);
+
+    const result = await service.searchPeopleByTaxonomy(
+      {
+        website: 'stripe.com',
+        stdFunctionRoot: 'product',
+        stdGrade: 'leadership',
+        accountId: 'acct-1',
+      },
+      'token',
+    );
+
+    expect(titleTaxonomyRemoteService.classifyTitles).not.toHaveBeenCalled();
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      {
+        jobTitle: 'Product Strategy & GTM',
+        experience: [
+          {
+            title: 'VP Product',
+            startDate: null,
+            endDate: '2024-01-01',
+            isCurrent: false,
+          },
+        ],
+      },
+    ]);
+    expect(result.total).toBe(1);
+    expect(result.items[0].resolved.stdFunctionRoot).toBe('product');
   });
 
   it('throws when taxonomy batch classify is unavailable', async () => {
@@ -621,6 +691,7 @@ describe('PeopleApiService.searchPeople taxonomy filters', () => {
   const titleTaxonomyRemoteService = {
     classifyTitle: jest.fn(),
     classifyTitles: jest.fn(),
+    classifyProfiles: jest.fn(),
     getFunctionRoots: jest.fn(),
     getFunctions: jest.fn().mockResolvedValue([
       {
@@ -759,6 +830,7 @@ describe('PeopleApiService.searchPeople searchUrl', () => {
     {
       classifyTitle: jest.fn(),
       classifyTitles: jest.fn(),
+      classifyProfiles: jest.fn(),
       getFunctionRoots: jest.fn(),
       getFunctions: jest.fn(),
     } as unknown as TitleTaxonomyRemoteService,

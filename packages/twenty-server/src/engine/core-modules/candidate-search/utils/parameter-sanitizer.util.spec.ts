@@ -47,6 +47,25 @@ describe('ParameterSanitizer', () => {
       });
     });
 
+    it('maps generated advanced_keywords.title onto role.include', () => {
+      const result = sanitizer.sanitizeSalesNavigatorPeopleSearchRequest({
+        keywords: 'technology OR software',
+        advanced_keywords: {
+          title:
+            '("CTO" OR "chief technology officer") AND (head OR director)',
+        },
+        company: {
+          include: ['106694021'],
+        },
+      });
+
+      expect(result.role).toEqual({
+        include: [
+          '("CTO" OR "chief technology officer") AND (head OR director)',
+        ],
+      });
+    });
+
     it('preserves plain-text job title booleans on role.include', () => {
       const result = sanitizer.sanitizeSalesNavigatorPeopleSearchRequest({
         keywords: 'technology OR software',
