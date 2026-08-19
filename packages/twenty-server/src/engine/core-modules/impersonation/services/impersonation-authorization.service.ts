@@ -1,12 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { PermissionFlagType } from 'twenty-shared/constants';
-import { isDefined } from 'twenty-shared/utils';
 
 import { userHasAdminPrivileges } from 'src/engine/core-modules/impersonation/utils/user-has-admin-privileges.util';
-import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
-import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { twoFactorAuthenticationMethodsValidator } from 'src/engine/core-modules/two-factor-authentication/two-factor-authentication.validation';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { PermissionsService } from 'src/engine/metadata-modules/permissions/permissions.service';
 
@@ -29,10 +25,7 @@ export type ImpersonationAuthorizationResult =
 
 @Injectable()
 export class ImpersonationAuthorizationService {
-  constructor(
-    private readonly permissionsService: PermissionsService,
-    private readonly twentyConfigService: TwentyConfigService,
-  ) {}
+  constructor(private readonly permissionsService: PermissionsService) {}
 
   getImpersonationLevel(
     impersonatorUserWorkspace: UserWorkspaceEntity,
@@ -54,26 +47,57 @@ export class ImpersonationAuthorizationService {
     );
 
     if (level === 'server') {
-      const hasServerLevelImpersonatePermission =
-        impersonatorUserWorkspace.user.canImpersonate === true &&
-        targetUserWorkspace.workspace.allowImpersonation === true;
+      return this.checkServerLevelAuthorization(
+        impersonatorUserWorkspace,
+        targetUserWorkspace,
+      );
+    }
 
-      if (!hasServerLevelImpersonatePermission) {
-        return { allowed: false, level, reason: 'SERVER_LEVEL_NOT_ALLOWED' };
-      }
+    return this.checkWorkspaceLevelAuthorization(
+      impersonatorUserWorkspace,
+      targetUserWorkspace,
+    );
+  }
 
-      if (this.isTwoFactorRequiredForServerLevelImpersonation()) {
-        const twoFactorDenialReason = this.getServerLevelTwoFactorDenialReason(
-          impersonatorUserWorkspace,
-        );
+  private async checkServerLevelAuthorization(
+    impersonatorUserWorkspace: UserWorkspaceEntity,
+    targetUserWorkspace: UserWorkspaceEntity,
+  ): Promise<ImpersonationAuthorizationResult> {
+    const level = 'server' as const;
 
-        if (isDefined(twoFactorDenialReason)) {
-          return { allowed: false, level, reason: twoFactorDenialReason };
-        }
-      }
+    if (targetUserWorkspace.workspace.allowImpersonation !== true) {
+      return { allowed: false, level, reason: 'SERVER_LEVEL_NOT_ALLOWED' };
+    }
 
+    if (impersonatorUserWorkspace.user.canImpersonate === true) {
+      // 2FA is temporarily not required for server-level impersonation.
       return { allowed: true, level };
     }
+
+    const hasImpersonatePermission =
+      await this.hasImpersonatePermission(impersonatorUserWorkspace);
+
+    if (!hasImpersonatePermission) {
+      return { allowed: false, level, reason: 'SERVER_LEVEL_NOT_ALLOWED' };
+    }
+
+    if (
+      this.isNonAdminImpersonatingAdmin(
+        impersonatorUserWorkspace,
+        targetUserWorkspace,
+      )
+    ) {
+      return { allowed: false, level, reason: 'TARGET_HAS_ADMIN_PRIVILEGES' };
+    }
+
+    return { allowed: true, level };
+  }
+
+  private async checkWorkspaceLevelAuthorization(
+    impersonatorUserWorkspace: UserWorkspaceEntity,
+    targetUserWorkspace: UserWorkspaceEntity,
+  ): Promise<ImpersonationAuthorizationResult> {
+    const level = 'workspace' as const;
 
     const hasWorkspaceLevelImpersonatePermission =
       await this.permissionsService.userHasWorkspaceSettingPermission({
@@ -87,8 +111,10 @@ export class ImpersonationAuthorizationService {
     }
 
     if (
-      userHasAdminPrivileges(targetUserWorkspace.user) &&
-      !userHasAdminPrivileges(impersonatorUserWorkspace.user)
+      this.isNonAdminImpersonatingAdmin(
+        impersonatorUserWorkspace,
+        targetUserWorkspace,
+      )
     ) {
       return { allowed: false, level, reason: 'TARGET_HAS_ADMIN_PRIVILEGES' };
     }
@@ -96,34 +122,23 @@ export class ImpersonationAuthorizationService {
     return { allowed: true, level };
   }
 
-  private isTwoFactorRequiredForServerLevelImpersonation(): boolean {
-    return (
-      this.twentyConfigService.get('NODE_ENV') !== NodeEnvironment.DEVELOPMENT
-    );
+  private hasImpersonatePermission(
+    impersonatorUserWorkspace: UserWorkspaceEntity,
+  ): Promise<boolean> {
+    return this.permissionsService.userHasWorkspaceSettingPermission({
+      userWorkspaceId: impersonatorUserWorkspace.id,
+      setting: PermissionFlagType.IMPERSONATE,
+      workspaceId: impersonatorUserWorkspace.workspace.id,
+    });
   }
 
-  private getServerLevelTwoFactorDenialReason(
+  private isNonAdminImpersonatingAdmin(
     impersonatorUserWorkspace: UserWorkspaceEntity,
-  ): ImpersonationDenialReason | undefined {
-    const twoFactorAuthenticationMethods =
-      impersonatorUserWorkspace.twoFactorAuthenticationMethods;
-
-    if (
-      !twoFactorAuthenticationMethodsValidator.areDefined(
-        twoFactorAuthenticationMethods,
-      )
-    ) {
-      return 'SERVER_LEVEL_2FA_PROVISION_REQUIRED';
-    }
-
-    if (
-      !twoFactorAuthenticationMethodsValidator.areVerified(
-        twoFactorAuthenticationMethods,
-      )
-    ) {
-      return 'SERVER_LEVEL_2FA_VERIFICATION_REQUIRED';
-    }
-
-    return undefined;
+    targetUserWorkspace: UserWorkspaceEntity,
+  ): boolean {
+    return (
+      userHasAdminPrivileges(targetUserWorkspace.user) &&
+      !userHasAdminPrivileges(impersonatorUserWorkspace.user)
+    );
   }
 }
