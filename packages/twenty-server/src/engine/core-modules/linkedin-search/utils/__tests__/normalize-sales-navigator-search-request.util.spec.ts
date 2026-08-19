@@ -22,6 +22,24 @@ describe('normalizeSalesNavigatorPeopleSearchRequest', () => {
     });
   });
 
+  it('moves advanced_keywords.title onto role.include as plain text', () => {
+    expect(
+      normalizeSalesNavigatorPeopleSearchRequest({
+        api: 'sales_navigator',
+        category: 'people',
+        keywords: 'technology OR software',
+        advanced_keywords: {
+          title: '("CTO" OR CIO)',
+        },
+      }),
+    ).toEqual({
+      api: 'sales_navigator',
+      category: 'people',
+      keywords: 'technology OR software',
+      role: { include: ['("CTO" OR CIO)'] },
+    });
+  });
+
   it('leaves already-correct include/exclude objects unchanged', () => {
     const request = {
       api: 'sales_navigator',

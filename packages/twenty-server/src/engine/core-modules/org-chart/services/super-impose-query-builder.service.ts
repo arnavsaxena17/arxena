@@ -17,7 +17,7 @@ import {
 import { resolveSuperImposeCompanySearchNames } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
     andMergeBooleanSearchClauses,
-    extractKeywordsClauseFromGeneratedSearchParameters,
+    extractLinkedInSearchClauseFromGeneratedSearchParameters,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-keyword-merge.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -172,7 +172,7 @@ export class SuperImposeQueryBuilderService {
             `Function root search for ${input.primaryCompanyName}`,
           );
         functionRootClause =
-          extractKeywordsClauseFromGeneratedSearchParameters(generated);
+          extractLinkedInSearchClauseFromGeneratedSearchParameters(generated);
       } catch (error) {
         this.logger.warn(
           `Super impose function-root keyword generation failed: ${
@@ -197,7 +197,7 @@ export class SuperImposeQueryBuilderService {
             `Leadership search for ${input.primaryCompanyName}`,
           );
         leadershipClause =
-          extractKeywordsClauseFromGeneratedSearchParameters(generated);
+          extractLinkedInSearchClauseFromGeneratedSearchParameters(generated);
       } catch (error) {
         this.logger.warn(
           `Super impose leadership keyword generation failed: ${

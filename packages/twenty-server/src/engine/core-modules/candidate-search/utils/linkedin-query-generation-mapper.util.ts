@@ -13,19 +13,6 @@ type PeopleSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 
 type ParamShape = Record<string, unknown>;
 
-function splitToArray(value: string | null | undefined): string[] {
-  if (!value || typeof value !== 'string') {
-    return [];
-  }
-
-  const parts = value
-    .split(/\s+OR\s+|,|\|/i)
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  return [...new Set(parts)];
-}
-
 function normalizeStringArray(values: string[] | null): string[] | undefined {
   if (!values || values.length === 0) {
     return undefined;
@@ -239,13 +226,13 @@ function buildSalesNavigatorStrategies(
 
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
-    const roleInclude = splitToArray(query.job_title);
+    const jobTitle = query.job_title?.trim();
 
     const parameters: SalesNavigatorPeopleSearchStrategyResult['parameters'] = {
       keywords: query.keywords ?? undefined,
       ...(normalizedLocation && { location: { include: normalizedLocation } }),
       ...(normalizedCompany && { company: { include: normalizedCompany } }),
-      ...(roleInclude.length > 0 && { role: { include: roleInclude } }),
+      ...(jobTitle ? { role: { include: [jobTitle] } } : {}),
     };
 
     return {

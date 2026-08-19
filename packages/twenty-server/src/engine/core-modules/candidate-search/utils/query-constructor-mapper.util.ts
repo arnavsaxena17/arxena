@@ -127,14 +127,14 @@ function mapToSalesNavigatorParams(
 ): Omit<SalesNavigatorPeopleSearchStrategyResult['parameters'], never> & Record<string, unknown> {
   const bs = query.linkedin_boolean_search;
   const keywords = (bs.keywords ?? '').trim() || undefined;
-  const roleInclude = splitToArray(bs.job_title ?? '');
+  const jobTitle = (bs.job_title ?? '').trim();
   const locationArr = splitToArray(bs.location ?? '');
   const companyArr = splitToArray(bs.company ?? '');
   return {
     keywords,
     location: locationArr.length > 0 ? { include: locationArr } : undefined,
     company: companyArr.length > 0 ? { include: companyArr } : undefined,
-    ...(roleInclude.length > 0 && { role: { include: roleInclude } }),
+    ...(jobTitle ? { role: { include: [jobTitle] } } : {}),
   };
 }
 

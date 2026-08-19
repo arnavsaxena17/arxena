@@ -15,7 +15,7 @@ export type ManualBooleanQueryCriteria = {
 };
 
 export type ManualLinkedInQuery = {
-  /** CSV `boolean_query` → LinkedIn job-title field. */
+  /** CSV `boolean_query` → Sales Nav `role.include` (current job title). */
   jobTitle?: string;
   /** CSV `keywords` → LinkedIn keywords field. */
   keywords?: string;

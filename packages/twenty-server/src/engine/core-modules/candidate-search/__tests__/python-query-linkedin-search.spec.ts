@@ -99,6 +99,32 @@ describe('PythonQueryGenerationService', () => {
       expect(strategy?.parameters.company).toEqual(['acme']);
     });
 
+    it('should map Python job_title booleans onto Sales Nav role.include', async () => {
+      const mockResponse = {
+        job_title: '"VP Sales" OR "Director Sales"',
+        keywords: 'sales OR revenue',
+        company: ['Acme'],
+      };
+
+      global.fetch = mockFetch(mockResponse) as typeof fetch;
+
+      const result = await service.generateSearchParameters(
+        {
+          functions: [{ name: 'sales' }],
+          grades: [{ name: 'leadership' }],
+          company_names: ['Acme'],
+        },
+        'sales_navigator',
+        'Find sales leadership at Acme',
+      );
+
+      const strategy = result.salesNavigatorPeopleSearchStrategies?.[0];
+      expect(strategy?.parameters.role).toEqual({
+        include: ['"VP Sales" OR "Director Sales"'],
+      });
+      expect(strategy?.parameters.keywords).toBe('sales OR revenue');
+    });
+
     it('should produce valid params for LinkedIn search (mocked flow)', async () => {
       const mockResponse = {
         job_title: '"HR" OR "Human Resources" OR "People"',

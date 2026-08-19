@@ -44,24 +44,59 @@ export const wrapJobTitleAsOrClause = (jobTitle: string | null | undefined): str
   return terms.join(' OR ');
 };
 
+const readTrimmedString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
 export const extractKeywordsClauseFromGeneratedSearchParameters = (
   generated: GeneratedSearchParameters,
 ): string | undefined => {
   const classicKeywords =
-    generated.classicPeopleSearch?.keywords?.trim() || undefined;
+    generated.classicPeopleSearch?.keywords?.trim() ||
+    generated.classicPeopleSearchStrategies?.[0]?.parameters?.keywords?.trim() ||
+    undefined;
   const strategyKeywords =
     generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters?.keywords;
-  const salesNavKeywords =
-    typeof strategyKeywords === 'string' ? strategyKeywords.trim() : undefined;
+
+  return (
+    classicKeywords ||
+    (typeof strategyKeywords === 'string'
+      ? strategyKeywords.trim() || undefined
+      : undefined)
+  );
+};
+
+export const extractJobTitleClauseFromGeneratedSearchParameters = (
+  generated: GeneratedSearchParameters,
+): string | undefined => {
+  const salesNavTitle =
+    generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters?.role
+      ?.include?.[0];
+  const classicTitle =
+    generated.classicPeopleSearchStrategies?.[0]?.parameters?.advanced_keywords
+      ?.title;
+  const recruiterTitle =
+    generated.recruiterPeopleSearchStrategies?.[0]?.parameters?.role?.[0]
+      ?.keywords;
   const classicPeopleSearch = generated.classicPeopleSearch as
     | { job_title?: string }
     | undefined;
-  const jobTitleClause = wrapJobTitleAsOrClause(
-    classicPeopleSearch?.job_title ??
-      generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters?.role
-        ?.include?.[0] ??
-      null,
-  );
 
-  return classicKeywords || salesNavKeywords || jobTitleClause;
+  return (
+    readTrimmedString(salesNavTitle) ||
+    readTrimmedString(classicTitle) ||
+    readTrimmedString(recruiterTitle) ||
+    wrapJobTitleAsOrClause(classicPeopleSearch?.job_title)
+  );
 };
+
+export const extractLinkedInSearchClauseFromGeneratedSearchParameters = (
+  generated: GeneratedSearchParameters,
+): string | undefined =>
+  extractKeywordsClauseFromGeneratedSearchParameters(generated) ||
+  extractJobTitleClauseFromGeneratedSearchParameters(generated);

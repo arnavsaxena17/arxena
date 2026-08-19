@@ -1,9 +1,9 @@
-import type { LinkedInAdvancedKeywordsFilter } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
+import type { LinkedInRoleFilter } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-request.type';
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 
 export type UnipileSalesNavSearchRequest = {
   keywords?: string;
-  advanced_keywords?: LinkedInAdvancedKeywordsFilter;
+  role?: LinkedInRoleFilter;
   company?: { include: string[] };
   function?: { include: string[] };
   seniority?: { include: LinkedInSeniorityType[] };
@@ -25,8 +25,11 @@ export const buildUnipileSalesNavSearchRequest = (input: {
   seniorities: LinkedInSeniorityType[];
   includeManualLinkedInQuery?: boolean;
 }): UnipileSalesNavSearchRequest => {
+  const jobTitle = input.jobTitle?.trim();
+  const hasBooleanTitleOrManualQuery =
+    !!jobTitle || !!input.includeManualLinkedInQuery;
   const omitGeneratedText =
-    !input.includeManualLinkedInQuery &&
+    !hasBooleanTitleOrManualQuery &&
     shouldOmitSalesNavKeywords({
       functionIds: input.functionIds,
       seniorities: input.seniorities,
@@ -53,10 +56,9 @@ export const buildUnipileSalesNavSearchRequest = (input: {
     keywordParts.push(input.country.trim());
   }
 
-  const jobTitle = input.jobTitle?.trim();
   const omitFunctionAndSeniorityFacets =
-    !!input.includeManualLinkedInQuery &&
-    (!!jobTitle || keywordParts.length > 0);
+    !!jobTitle ||
+    (!!input.includeManualLinkedInQuery && keywordParts.length > 0);
 
   return {
     ...(keywordParts.length > 0
@@ -64,8 +66,8 @@ export const buildUnipileSalesNavSearchRequest = (input: {
       : {}),
     ...(jobTitle
       ? {
-          advanced_keywords: {
-            title: jobTitle,
+          role: {
+            include: [jobTitle],
           },
         }
       : {}),

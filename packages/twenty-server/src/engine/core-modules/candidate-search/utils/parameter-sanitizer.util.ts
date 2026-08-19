@@ -14,6 +14,52 @@ export class ParameterSanitizer {
   private readonly logger = new Logger(ParameterSanitizer.name);
 
   /**
+   * Sales Nav CURRENT JOB TITLE (`role`) accepts numeric JOB_TITLE ids or
+   * a plain-text boolean query. Do not strip non-numeric values.
+   */
+  private sanitizeIncludeExcludeRoleValues(
+    value: unknown,
+  ): IncludeExcludeStringIds | undefined {
+    const keepValue = (item: unknown): item is string =>
+      typeof item === 'string' && item.trim().length > 0;
+
+    if (Array.isArray(value) && value.length > 0) {
+      const include = value.filter(keepValue).map((item) => item.trim());
+      if (include.length > 0) {
+        return { include };
+      }
+      return undefined;
+    }
+
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    const param = value as { include?: unknown; exclude?: unknown };
+    const result: IncludeExcludeStringIds = {};
+
+    if (Array.isArray(param.include) && param.include.length > 0) {
+      const include = param.include.filter(keepValue).map((item) => item.trim());
+      if (include.length > 0) {
+        result.include = include;
+      }
+    }
+
+    if (Array.isArray(param.exclude) && param.exclude.length > 0) {
+      const exclude = param.exclude.filter(keepValue).map((item) => item.trim());
+      if (exclude.length > 0) {
+        result.exclude = exclude;
+      }
+    }
+
+    if (result.include || result.exclude) {
+      return result;
+    }
+
+    return undefined;
+  }
+
+  /**
    * Normalize Sales Navigator / Recruiter include/exclude filters.
    * Accepts either a flat numeric-id array or an existing { include, exclude } object.
    */
@@ -624,8 +670,11 @@ export class ParameterSanitizer {
     // Handle function parameter - flat array or include/exclude structure
     this.assignIncludeExcludeNumericIds(sanitized, 'function', request.function);
 
-    // Handle role parameter - flat array or include/exclude structure
-    this.assignIncludeExcludeNumericIds(sanitized, 'role', request.role);
+    // Handle role parameter — numeric JOB_TITLE ids or plain-text boolean
+    const role = this.sanitizeIncludeExcludeRoleValues(request.role);
+    if (role) {
+      sanitized.role = role;
+    }
 
     // Handle past_role parameter - flat array or include/exclude structure
     this.assignIncludeExcludeNumericIds(sanitized, 'past_role', request.past_role);

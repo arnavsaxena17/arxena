@@ -1090,7 +1090,7 @@ export const buildPeopleApiOpenApiDocument = (
         tags: ['Taxonomy'],
         summary: 'Look up curated taxonomy boolean queries',
         description:
-          'Auth-gated. Returns hand-written LinkedIn strings from std_manual_boolean_queries.csv (std_function / std_function_root × grade). booleanQuery is for the job-title field; keywords is for the keywords field. Empty cells are omitted unless include_empty=true. Does not generate programmatic queries — use taxonomy/boolean-strings for that.',
+          'Auth-gated. Returns hand-written LinkedIn strings from std_manual_boolean_queries.csv (std_function / std_function_root × grade). booleanQuery is for Sales Nav role.include (current job title); keywords is for the keywords field. Empty cells are omitted unless include_empty=true. Does not generate programmatic queries — use taxonomy/boolean-strings for that.',
         operationId: 'getManualBooleanQueries',
         parameters: [
           {

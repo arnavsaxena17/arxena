@@ -42,12 +42,34 @@ describe('buildUnipileSalesNavSearchRequest', () => {
     });
 
     expect(request.keywords).toBe('technology OR software');
-    expect(request.advanced_keywords).toEqual({
-      title: '("CTO" OR "chief technology officer")',
+    expect(request.role).toEqual({
+      include: ['("CTO" OR "chief technology officer")'],
     });
+    expect(request.role?.exclude).toBeUndefined();
     expect(request.function).toBeUndefined();
     expect(request.seniority).toBeUndefined();
     expect(request.company).toEqual({ include: ['10155014'] });
+  });
+
+  it('should send generated job-title booleans on role.include', () => {
+    const request = buildUnipileSalesNavSearchRequest({
+      keywords: 'technology OR software',
+      jobTitle:
+        '("CTO" OR "chief technology officer") AND (head OR director)',
+      companyParameterIds: ['10155014'],
+      primaryCompanyName: 'vista rooms',
+      functionIds: ['13'],
+      seniorities: ['cxo'],
+    });
+
+    expect(request.keywords).toBe('technology OR software');
+    expect(request.role).toEqual({
+      include: [
+        '("CTO" OR "chief technology officer") AND (head OR director)',
+      ],
+    });
+    expect(request.function).toBeUndefined();
+    expect(request.seniority).toBeUndefined();
   });
 
   it('should omit function and seniority when only manual keywords are present', () => {

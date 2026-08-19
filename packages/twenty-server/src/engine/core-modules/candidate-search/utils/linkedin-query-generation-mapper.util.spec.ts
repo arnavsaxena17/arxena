@@ -50,6 +50,38 @@ describe('mapLinkedinSearchQueriesToGeneratedParameters', () => {
       'hubspot',
       'salesforce',
     ]);
+    expect(strategy.parameters.role).toEqual({
+      include: ['Account Executive'],
+    });
+  });
+
+  it('should keep generated job-title booleans intact on role.include', () => {
+    const result = mapLinkedinSearchQueriesToGeneratedParameters(
+      {
+        search_query_set: [
+          {
+            keywords: 'technology OR software',
+            job_title:
+              '("CTO" OR "chief technology officer") AND (head OR director)',
+            company: ['Acme'],
+            location: null,
+            years_of_experience: null,
+          },
+        ],
+      },
+      'sales_navigator',
+    );
+
+    expect(
+      result.salesNavigatorPeopleSearchStrategies?.[0]?.parameters.role,
+    ).toEqual({
+      include: [
+        '("CTO" OR "chief technology officer") AND (head OR director)',
+      ],
+    });
+    expect(
+      result.salesNavigatorPeopleSearchStrategies?.[0]?.parameters.keywords,
+    ).toBe('technology OR software');
   });
 
   it('should map to recruiter strategies with structured location and company filters', () => {

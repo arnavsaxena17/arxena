@@ -24,6 +24,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string');
 
+const readTrimmedString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
 const toIncludeExcludeFilter = (
   value: unknown,
 ): IncludeExcludeFilter | undefined => {
@@ -59,6 +68,30 @@ export const normalizeSalesNavigatorPeopleSearchRequest = (
     normalized.role = normalized.job_title;
   }
   delete normalized.job_title;
+
+  const advancedKeywords = isRecord(normalized.advanced_keywords)
+    ? normalized.advanced_keywords
+    : undefined;
+  const advancedTitle = readTrimmedString(advancedKeywords?.title);
+  if (advancedTitle && normalized.role === undefined) {
+    normalized.role = { include: [advancedTitle] };
+  }
+  if (advancedKeywords && advancedTitle) {
+    const restAdvancedKeywords = { ...advancedKeywords };
+    delete restAdvancedKeywords.title;
+    const hasRemainingAdvancedKeywords = Object.values(
+      restAdvancedKeywords,
+    ).some((value) => value !== undefined && value !== '');
+    if (hasRemainingAdvancedKeywords) {
+      normalized.advanced_keywords = restAdvancedKeywords;
+    } else {
+      delete normalized.advanced_keywords;
+    }
+  }
+
+  if (typeof normalized.role === 'string' && normalized.role.trim()) {
+    normalized.role = { include: [normalized.role.trim()] };
+  }
 
   for (const fieldName of SALES_NAVIGATOR_INCLUDE_EXCLUDE_FIELDS) {
     if (normalized[fieldName] === undefined) {
