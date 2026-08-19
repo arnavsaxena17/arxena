@@ -47,6 +47,7 @@ const StyledSecondaryLogoContainer = styled.div`
 
 const StyledPrimaryLogo = styled.div`
   background-size: cover;
+  border-radius: ${themeCssVariables.border.radius.md};
   height: 100%;
   width: 100%;
 `;
@@ -59,7 +60,7 @@ export const Logo = ({
   to = AppPath.SignInUp,
 }: LogoProps) => {
   const { redirectToDefaultDomain } = useRedirectToDefaultDomain();
-  const defaultPrimaryLogoUrl = `${window.location.origin}/images/favicon/arxena-A-logo-PQ-HDR.jpg`;
+  const defaultPrimaryLogoUrl = `${window.location.origin}/images/favicon/arxena-A-logo-PQ-HDR-rounded.png`;
 
   const primaryLogoUrl = getImageAbsoluteURI({
     imageUrl: primaryLogo ?? defaultPrimaryLogoUrl,

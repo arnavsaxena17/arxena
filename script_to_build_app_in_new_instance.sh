@@ -30,6 +30,10 @@ trap 'if [ -x "'"$WORKSPACE"'/node_modules/.bin/nx" ]; then (cd "'"$WORKSPACE"'"
 BUILD_BRANCH="${BUILD_BRANCH:-port/arxena-modules}"
 SELECTED_BUILDS="${SELECTED_BUILDS:-ALL}"
 LAST_DEPLOY_SHA="${LAST_DEPLOY_SHA:-}"
+LOCKFILE_CHANGED="${LOCKFILE_CHANGED:-1}"
+LINGUI_SERVER="${LINGUI_SERVER:-1}"
+LINGUI_FRONT="${LINGUI_FRONT:-1}"
+LINGUI_EMAILS="${LINGUI_EMAILS:-1}"
 GIT_REPO_URL="${GIT_REPO_URL:-https://github.com/arnavsaxena17/twenty.git}"
 YARN_CACHE_FOLDER="${YARN_CACHE_FOLDER:-$(dirname "$WORKSPACE")/yarn-cache}"
 export YARN_CACHE_FOLDER
@@ -125,19 +129,23 @@ else
   echo "apt build packages already present (AMI); skipping apt install"
 fi
 
-echo "Node version: $(node -v 2>/dev/null || echo missing)"
-echo "npm version: $(npm -v 2>/dev/null || echo missing)"
-echo "Nest CLI version: $(nest --version 2>/dev/null || echo missing)"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
 # shellcheck disable=SC1090
 source ~/.nvm/nvm.sh
 NODE_VERSION="${NODE_VERSION:-24.5.0}"
+if nvm use "$NODE_VERSION" >/dev/null 2>&1; then
+  echo "Using nvm Node $NODE_VERSION (already installed)"
+else
+  echo "Installing Node $NODE_VERSION via nvm"
+  nvm install "$NODE_VERSION"
+  nvm use "$NODE_VERSION"
+fi
 CURRENT_NODE="$(node -v 2>/dev/null | sed 's/^v//')"
 if [ "$CURRENT_NODE" != "$NODE_VERSION" ]; then
-  echo "Installing Node $NODE_VERSION (found ${CURRENT_NODE:-none})"
+  echo "Installing Node $NODE_VERSION (found ${CURRENT_NODE:-none} after nvm use)"
   nvm install "$NODE_VERSION"
+  nvm use "$NODE_VERSION"
 fi
-nvm use "$NODE_VERSION"
 
 echo "Node version: $(node -v)"
 echo "npm version: $(npm -v)"
@@ -184,13 +192,18 @@ HEAD_SHA="$(git rev-parse HEAD)"
 echo "BUILD_HEAD_SHA=$HEAD_SHA" >> "$BUILD_STATUS_FILE"
 
 YARN_START="$(date +%s)"
-if ! yarn; then
-  echo "yarn install failed (check Node version / peer constraints)" >&2
-  log_remote_elapsed "yarn install failed" "$YARN_START"
-  log_remote_elapsed "Remote build finished (total)"
-  exit 1
+if [ "$LOCKFILE_CHANGED" != "1" ] && [ -d "$WORKSPACE/node_modules" ]; then
+  echo "[timing] yarn install skipped (lockfile unchanged)"
+  log_remote_elapsed "yarn install skipped (lockfile unchanged)" "$YARN_START"
+else
+  if ! yarn; then
+    echo "yarn install failed (check Node version / peer constraints)" >&2
+    log_remote_elapsed "yarn install failed" "$YARN_START"
+    log_remote_elapsed "Remote build finished (total)"
+    exit 1
+  fi
+  log_remote_elapsed "yarn install" "$YARN_START"
 fi
-log_remote_elapsed "yarn install" "$YARN_START"
 
 ensure_swc_native_binding() {
   local swc_check_cmd="require('@swc/core'); require('@swc/cli'); require('@swc/cli/lib/swc/dir')"
@@ -265,11 +278,22 @@ else
   skip_step TWENTY_UI
 fi
 
+maybe_lingui() {
+  local flag="$1"
+  local extract_dir="$2"
+  local generated_dir="$3"
+  mkdir -p "$generated_dir"
+  if [ "$flag" != "1" ] && [ -n "$(ls -A "$generated_dir" 2>/dev/null)" ]; then
+    echo "[timing] lingui extract skipped in $extract_dir (i18n inputs unchanged)"
+    (cd "$extract_dir" && npx lingui compile --verbose) || true
+    return 0
+  fi
+  (cd "$extract_dir" && npx lingui extract --clean --verbose && npx lingui compile --verbose)
+}
+
 if should_build TWENTY_SERVER; then
-  cd "$WORKSPACE/packages/twenty-server"
-  mkdir -p src/engine/core-modules/i18n/locales/generated
-  npx lingui extract --clean --verbose
-  npx lingui compile --verbose
+  maybe_lingui "$LINGUI_SERVER" "$WORKSPACE/packages/twenty-server" \
+    "$WORKSPACE/packages/twenty-server/src/engine/core-modules/i18n/locales/generated"
   cd "$WORKSPACE"
   if ! build_step TWENTY_SERVER npx nx build twenty-server; then
     cd "$WORKSPACE/packages/twenty-server"
@@ -292,10 +316,8 @@ if should_build TWENTY_FRONT || should_build TWENTY_FRONT_COMPONENT_RENDERER; th
 fi
 
 if should_build TWENTY_FRONT; then
-  cd "$WORKSPACE/packages/twenty-front"
-  mkdir -p src/locales/generated
-  npx lingui extract --clean --verbose
-  npx lingui compile --verbose
+  maybe_lingui "$LINGUI_FRONT" "$WORKSPACE/packages/twenty-front" \
+    "$WORKSPACE/packages/twenty-front/src/locales/generated"
   cd "$WORKSPACE"
   if build_step TWENTY_FRONT env VITE_BUILD_SOURCEMAP=false NODE_OPTIONS="--max-old-space-size=8192" yarn workspace twenty-front build; then
     FRONT_IMG_DEST="$WORKSPACE/packages/twenty-front/build/img"
@@ -334,9 +356,9 @@ else
 fi
 
 if should_build TWENTY_EMAILS; then
+  maybe_lingui "$LINGUI_EMAILS" "$WORKSPACE/packages/twenty-emails" \
+    "$WORKSPACE/packages/twenty-emails/src/locales/generated"
   cd "$WORKSPACE/packages/twenty-emails"
-  mkdir -p src/locales/generated
-  npx lingui extract --clean --verbose
   if build_step TWENTY_EMAILS yarn build; then
     record_status TWENTY_EMAILS success "$WORKSPACE/packages/twenty-emails/dist"
   fi

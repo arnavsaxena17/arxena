@@ -74,6 +74,9 @@ EC2_SECURITY_GROUP_ID="${EC2_SECURITY_GROUP_ID:-sg-0da9fdd5e7f6c4f1e}"
 EC2_SUBNET_ID="${EC2_SUBNET_ID:-subnet-026eb73699b4efba7}"
 EC2_VOLUME_SIZE="${EC2_VOLUME_SIZE:-40}"
 SKIP_EBS="${SKIP_EBS:-0}"
+SKIP_WARM_BUILDER="${SKIP_WARM_BUILDER:-0}"
+WARM_BUILDER_TAG_NAME="${WARM_BUILDER_TAG_NAME:-arxena-warm-builder}"
+WARM_BUILDER_USED=0
 BUILDER_VOLUME_TAG_NAME="${BUILDER_VOLUME_TAG_NAME:-arxena-builder-workspace}"
 BUILDER_DATA_VOLUME_SIZE="${BUILDER_DATA_VOLUME_SIZE:-100}"
 BUILDER_NX_CACHE_S3="${BUILDER_NX_CACHE_S3:-s3://arxmukti-builder-nx-cache/linux-arm64}"
@@ -81,6 +84,9 @@ BUILD_META_FILE="${BUILD_META_FILE:-$REPO_DIR/build-meta.json}"
 REMOTE_WORKSPACE="/home/ubuntu/twenty"
 PROD_YARN_DONE=0
 LOCKFILE_CHANGED=0
+LINGUI_SERVER=1
+LINGUI_FRONT=1
+LINGUI_EMAILS=1
 DEPLOYMENTS_APPLIED=0
 NGINX_RELOADED=0
 
@@ -265,11 +271,22 @@ cleanup() {
     if [ -n "${BUILD_STATUS_LOCAL_FILE:-}" ] && [ -f "$BUILD_STATUS_LOCAL_FILE" ]; then
         rm -f "$BUILD_STATUS_LOCAL_FILE"
     fi
-    detach_builder_volume
     if [ -n "$TEMP_INSTANCE_ID" ]; then
-        echo "Cleaning up and terminating instance..."
-        timeout 60 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID || \
-          aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+      aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 delete-tags --resources "$TEMP_INSTANCE_ID" \
+        --tags Key=BuildLock >/dev/null 2>&1 || true
+    fi
+    if [ "$SKIP_WARM_BUILDER" != "1" ] && [ "${WARM_BUILDER_USED:-0}" = "1" ] && [ -n "$TEMP_INSTANCE_ID" ]; then
+        echo "Stopping warm builder $TEMP_INSTANCE_ID (data volume stays attached)..."
+        timeout 60 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 stop-instances --instance-ids "$TEMP_INSTANCE_ID" || \
+          aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 stop-instances --instance-ids "$TEMP_INSTANCE_ID"
+        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-stopped --instance-ids "$TEMP_INSTANCE_ID" || true
+    else
+        detach_builder_volume
+        if [ -n "$TEMP_INSTANCE_ID" ]; then
+            echo "Cleaning up and terminating instance..."
+            timeout 60 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID || \
+              aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+        fi
     fi
     if [ "${BUILD_TIMING_LOGGED:-0}" != "1" ]; then
       log_timing "Build process finished (total, including cleanup)"
@@ -402,26 +419,49 @@ map_nx_project() {
   esac
 }
 
+compute_lingui_flags() {
+  LINGUI_SERVER=1
+  LINGUI_FRONT=1
+  LINGUI_EMAILS=1
+  if [ -z "${LAST_DEPLOY_SHA:-}" ]; then
+    echo "Lingui extract: all packages (no last deploy SHA)"
+    return 0
+  fi
+  local files
+  files="$(git -C "$REPO_DIR" diff --name-only "$LAST_DEPLOY_SHA" HEAD || true)"
+  LINGUI_SERVER=0
+  LINGUI_FRONT=0
+  LINGUI_EMAILS=0
+  if echo "$files" | grep -Eq '^packages/twenty-server/(src/|locales/)|packages/twenty-server/.*/locales/|packages/twenty-server/.*\.(po|pot)$'; then
+    LINGUI_SERVER=1
+  fi
+  if echo "$files" | grep -Eq '^packages/twenty-front/(src/|locales/)|packages/twenty-front/.*/locales/|packages/twenty-front/.*\.(po|pot)$'; then
+    LINGUI_FRONT=1
+  fi
+  if echo "$files" | grep -Eq '^packages/twenty-emails/(src/|locales/)|packages/twenty-emails/.*/locales/|packages/twenty-emails/.*\.(po|pot)$'; then
+    LINGUI_EMAILS=1
+  fi
+  echo "Lingui extract flags: server=$LINGUI_SERVER front=$LINGUI_FRONT emails=$LINGUI_EMAILS"
+}
+
 compute_selected_builds() {
   SELECTED_BUILDS=""
+  LAST_DEPLOY_SHA="$(read_meta_value commit 2>/dev/null || true)"
   if ! command -v python3 >/dev/null 2>&1; then
     SELECTED_BUILDS="ALL"
-    LOCKFILE_CHANGED=1
     echo "python3 not found — building all packages"
     return 0
   fi
   if [ "${FORCE_FULL_BUILD:-0}" = "1" ]; then
     SELECTED_BUILDS="ALL"
-    LOCKFILE_CHANGED=1
     echo "FORCE_FULL_BUILD=1 — building all packages"
     return 0
   fi
 
   local base_sha
-  base_sha="$(read_meta_value commit)"
+  base_sha="$LAST_DEPLOY_SHA"
   if [ -z "$base_sha" ]; then
     SELECTED_BUILDS="ALL"
-    LOCKFILE_CHANGED=1
     echo "No build-meta.json commit — building all packages"
     return 0
   fi
@@ -431,7 +471,7 @@ compute_selected_builds() {
   fi
   if ! git -C "$REPO_DIR" cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
     SELECTED_BUILDS="ALL"
-    LOCKFILE_CHANGED=1
+    LAST_DEPLOY_SHA=""
     echo "Last deploy SHA $base_sha not in git — building all packages"
     return 0
   fi
@@ -606,22 +646,31 @@ attach_builder_volume() {
       "$helper"
   )"
   echo "Data volume: $BUILDER_VOLUME_ID"
-  local state
+  local state attached_to
   state="$(
     aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-volumes \
       --volume-ids "$BUILDER_VOLUME_ID" \
       --query 'Volumes[0].State' --output text
   )"
-  if [ "$state" = "in-use" ]; then
-    echo "Volume in-use; attempting force detach from a previous builder..."
-    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 detach-volume --volume-id "$BUILDER_VOLUME_ID" --force >/dev/null || true
-    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait volume-available --volume-ids "$BUILDER_VOLUME_ID"
+  attached_to="$(
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-volumes \
+      --volume-ids "$BUILDER_VOLUME_ID" \
+      --query 'Volumes[0].Attachments[0].InstanceId' --output text
+  )"
+  if [ "$state" = "in-use" ] && [ "$attached_to" = "$TEMP_INSTANCE_ID" ]; then
+    echo "Data volume already attached to $TEMP_INSTANCE_ID"
+  else
+    if [ "$state" = "in-use" ]; then
+      echo "Volume in-use on ${attached_to}; attempting force detach from a previous builder..."
+      aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 detach-volume --volume-id "$BUILDER_VOLUME_ID" --force >/dev/null || true
+      aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait volume-available --volume-ids "$BUILDER_VOLUME_ID"
+    fi
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 attach-volume \
+      --volume-id "$BUILDER_VOLUME_ID" \
+      --instance-id "$TEMP_INSTANCE_ID" \
+      --device /dev/sdf >/dev/null
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait volume-in-use --volume-ids "$BUILDER_VOLUME_ID"
   fi
-  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 attach-volume \
-    --volume-id "$BUILDER_VOLUME_ID" \
-    --instance-id "$TEMP_INSTANCE_ID" \
-    --device /dev/sdf >/dev/null
-  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait volume-in-use --volume-ids "$BUILDER_VOLUME_ID"
   aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 create-tags --resources "$BUILDER_VOLUME_ID" \
     --tags "Key=AttachedTo,Value=$TEMP_INSTANCE_ID" >/dev/null || true
   sleep 3
@@ -632,6 +681,183 @@ attach_builder_volume() {
     REMOTE_WORKSPACE="/home/ubuntu/twenty"
   fi
   echo "Remote workspace: $REMOTE_WORKSPACE"
+}
+
+tag_warm_builder() {
+  local id="$1"
+  [ -z "$id" ] && return 0
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 create-tags --resources "$id" \
+    --tags "Key=Name,Value=$WARM_BUILDER_TAG_NAME" "Key=Purpose,Value=twenty-build" >/dev/null || true
+}
+
+set_builder_lock() {
+  [ -z "$TEMP_INSTANCE_ID" ] && return 0
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 create-tags --resources "$TEMP_INSTANCE_ID" \
+    --tags "Key=BuildLock,Value=${HOSTNAME:-prod}-$$" >/dev/null || true
+}
+
+refresh_builder_host() {
+  TEMP_PRIVATE_IP=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$TEMP_INSTANCE_ID" --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
+  TEMP_PUBLIC_DNS=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$TEMP_INSTANCE_ID" --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
+  IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
+  if [ -n "$IMDS_TOKEN" ] && curl -s --connect-timeout 1 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id >/dev/null 2>&1; then
+    TEMP_HOST="$TEMP_PRIVATE_IP"
+  elif [ "${EC2_BUILDER_USE_PRIVATE_IP:-0}" = "1" ]; then
+    TEMP_HOST="$TEMP_PRIVATE_IP"
+  else
+    TEMP_HOST="$TEMP_PUBLIC_DNS"
+  fi
+  TEMP_DNS="$TEMP_HOST"
+  echo "Builder host: $TEMP_DNS (private=$TEMP_PRIVATE_IP public=$TEMP_PUBLIC_DNS)"
+}
+
+wait_builder_ssh() {
+  local i
+  for i in $(seq 1 60); do
+    if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$TEMP_DNS" 'echo ok' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 5
+  done
+  echo "WARNING: SSH to ubuntu@$TEMP_DNS did not succeed within 5 minutes"
+}
+
+launch_fresh_builder() {
+  local tag_spec=()
+  if [ "$SKIP_WARM_BUILDER" != "1" ]; then
+    tag_spec=(--tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${WARM_BUILDER_TAG_NAME}},{Key=Purpose,Value=twenty-build}]")
+  fi
+  TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances \
+    --image-id "$EC2_IMAGE_ID" --instance-type "$EC2_INSTANCE_TYPE" --key-name "$EC2_KEY_NAME" \
+    --security-group-ids "$EC2_SECURITY_GROUP_ID" --subnet-id "$EC2_SUBNET_ID" \
+    --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$EC2_VOLUME_SIZE,\"VolumeType\":\"gp3\"}}]" \
+    "${tag_spec[@]}" \
+    --query 'Instances[0].InstanceId' --output text)
+  echo "$TEMP_INSTANCE_ID"
+  echo "EC2 instance is starting, please wait....."
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$TEMP_INSTANCE_ID"
+  log_timing "EC2 instance launch and status-ok" "$INSTANCE_START"
+  if [ "$SKIP_WARM_BUILDER" != "1" ]; then
+    tag_warm_builder "$TEMP_INSTANCE_ID"
+    WARM_BUILDER_USED=1
+  fi
+}
+
+start_existing_builder() {
+  local id="$1"
+  echo "Starting warm builder $id..."
+  if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 start-instances --instance-ids "$id" >/dev/null; then
+    echo "start-instances failed for $id; launching a replacement and terminating the broken instance"
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids "$id" >/dev/null || true
+    launch_fresh_builder
+    return 0
+  fi
+  TEMP_INSTANCE_ID="$id"
+  if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$id"; then
+    echo "Warm builder $id did not reach status-ok; launching a replacement"
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids "$id" >/dev/null || true
+    launch_fresh_builder
+    return 0
+  fi
+  log_timing "Warm builder start" "$INSTANCE_START"
+  tag_warm_builder "$id"
+  WARM_BUILDER_USED=1
+}
+
+acquire_builder_instance() {
+  INSTANCE_START="$(date +%s)"
+  if [ "$SKIP_WARM_BUILDER" = "1" ]; then
+    WARM_BUILDER_USED=0
+    launch_fresh_builder
+    refresh_builder_host
+    wait_builder_ssh
+    return 0
+  fi
+
+  local id state lock pick_stopped="" pick_running="" pick_stopping=""
+  while IFS=$'\t' read -r id state lock; do
+    [ -z "$id" ] && continue
+    case "$state" in
+      stopped)
+        pick_stopped="$id"
+        ;;
+      stopping)
+        pick_stopping="$id"
+        ;;
+      running|pending)
+        if [ -z "$lock" ] || [ "$lock" = "None" ] || [ "$lock" = "none" ]; then
+          pick_running="$id"
+        else
+          echo "Warm builder $id is running with BuildLock=$lock"
+          if [ -z "$pick_running" ]; then
+            pick_running="BUSY:$id"
+          fi
+        fi
+        ;;
+    esac
+  done < <(
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances \
+      --filters "Name=tag:Name,Values=$WARM_BUILDER_TAG_NAME" \
+        "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+      --query 'Reservations[].Instances[].[InstanceId,State.Name,Tags[?Key==`BuildLock`].Value|[0]]' \
+      --output text 2>/dev/null || true
+  )
+
+  if [ -n "$pick_running" ] && [[ "$pick_running" != BUSY:* ]]; then
+    TEMP_INSTANCE_ID="$pick_running"
+    WARM_BUILDER_USED=1
+    echo "Reusing already-running warm builder $TEMP_INSTANCE_ID"
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$TEMP_INSTANCE_ID" || true
+    log_timing "Warm builder reuse (already running)" "$INSTANCE_START"
+    tag_warm_builder "$TEMP_INSTANCE_ID"
+  elif [ -n "$pick_stopped" ]; then
+    start_existing_builder "$pick_stopped"
+  elif [ -n "$pick_stopping" ]; then
+    echo "Waiting for warm builder $pick_stopping to finish stopping..."
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-stopped --instance-ids "$pick_stopping" || true
+    start_existing_builder "$pick_stopping"
+  elif [ -n "$pick_running" ]; then
+    local busy_id="${pick_running#BUSY:}"
+    echo "Waiting up to 20 minutes for BuildLock to clear on $busy_id..."
+    local waited=0
+    lock="busy"
+    while [ "$waited" -lt 40 ]; do
+      lock="$(
+        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$busy_id" \
+          --query 'Reservations[0].Instances[0].Tags[?Key==`BuildLock`].Value|[0]' --output text 2>/dev/null || echo None
+      )"
+      state="$(
+        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$busy_id" \
+          --query 'Reservations[0].Instances[0].State.Name' --output text 2>/dev/null || echo none
+      )"
+      if [ "$state" = "stopped" ]; then
+        start_existing_builder "$busy_id"
+        lock=""
+        break
+      fi
+      if [ -z "$lock" ] || [ "$lock" = "None" ] || [ "$lock" = "none" ]; then
+        TEMP_INSTANCE_ID="$busy_id"
+        WARM_BUILDER_USED=1
+        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$TEMP_INSTANCE_ID" || true
+        log_timing "Warm builder reuse (lock cleared)" "$INSTANCE_START"
+        break
+      fi
+      sleep 30
+      waited=$((waited + 1))
+    done
+    if [ -z "$TEMP_INSTANCE_ID" ]; then
+      echo "ERROR: Warm builder $busy_id is still locked after 20 minutes. Set SKIP_WARM_BUILDER=1 to launch a throwaway instance."
+      exit 1
+    fi
+  else
+    echo "No warm builder tagged $WARM_BUILDER_TAG_NAME; launching a new one"
+    launch_fresh_builder
+  fi
+
+  tag_warm_builder "$TEMP_INSTANCE_ID"
+  set_builder_lock
+  refresh_builder_host
+  wait_builder_ssh
 }
 
 get_build_status() {
@@ -718,7 +944,9 @@ ensure_prod_yarn() {
   if [ "$PROD_YARN_DONE" = "1" ]; then
     return 0
   fi
-  if [ "$LOCKFILE_CHANGED" != "1" ] && [ "$SELECTED_BUILDS" != "ALL" ]; then
+  if [ "$LOCKFILE_CHANGED" != "1" ]; then
+    echo "[timing] production yarn skipped (lockfile unchanged)"
+    PROD_YARN_DONE=1
     return 0
   fi
   if [ -n "${TEMP_DNS:-}" ]; then
@@ -888,27 +1116,38 @@ maybe_stream_component() {
   case "$build_name" in
     TWENTY_SERVER)
       local locale_dest="$REPO_DIR/packages/twenty-server/src/engine/core-modules/i18n/locales/generated"
-      ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-server/src/engine/core-modules/i18n/locales/generated' ]" && \
-        stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-server/src/engine/core-modules/i18n/locales/generated" \
-          "$STAGING_ROOT/TWENTY_SERVER_LOCALES" && \
-        activate_staged_dir "$STAGING_ROOT/TWENTY_SERVER_LOCALES" "$locale_dest" || true
-      ensure_prod_yarn
-      cd "$REPO_DIR/packages/twenty-server"
-      npx lingui compile --verbose || npx nx run twenty-server:lingui:compile || true
+      if [ "$LINGUI_SERVER" = "1" ]; then
+        ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-server/src/engine/core-modules/i18n/locales/generated' ]" && \
+          stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-server/src/engine/core-modules/i18n/locales/generated" \
+            "$STAGING_ROOT/TWENTY_SERVER_LOCALES" && \
+          activate_staged_dir "$STAGING_ROOT/TWENTY_SERVER_LOCALES" "$locale_dest" || true
+        ensure_prod_yarn
+        cd "$REPO_DIR/packages/twenty-server"
+        npx lingui compile --verbose || npx nx run twenty-server:lingui:compile || true
+      else
+        echo "[timing] production lingui compile skipped for twenty-server (i18n inputs unchanged)"
+        ensure_prod_yarn
+      fi
       run_production_upgrade
       cd "$REPO_DIR"
       pm2 restart twenty-server twenty-worker || pm2 restart twenty-server || true
       ;;
     TWENTY_FRONT)
       local front_locales="$REPO_DIR/packages/twenty-front/src/locales/generated"
-      ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-front/src/locales/generated' ]" && \
-        stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-front/src/locales/generated" \
-          "$STAGING_ROOT/TWENTY_FRONT_LOCALES" && \
-        activate_staged_dir "$STAGING_ROOT/TWENTY_FRONT_LOCALES" "$front_locales" || true
-      ensure_front_orgchart_img_assets || true
-      ensure_prod_yarn
-      cd "$REPO_DIR/packages/twenty-front"
-      npx lingui compile --verbose || npx nx run twenty-front:lingui:compile || true
+      if [ "$LINGUI_FRONT" = "1" ]; then
+        ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-front/src/locales/generated' ]" && \
+          stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-front/src/locales/generated" \
+            "$STAGING_ROOT/TWENTY_FRONT_LOCALES" && \
+          activate_staged_dir "$STAGING_ROOT/TWENTY_FRONT_LOCALES" "$front_locales" || true
+        ensure_front_orgchart_img_assets || true
+        ensure_prod_yarn
+        cd "$REPO_DIR/packages/twenty-front"
+        npx lingui compile --verbose || npx nx run twenty-front:lingui:compile || true
+      else
+        echo "[timing] production lingui compile skipped for twenty-front (i18n inputs unchanged)"
+        ensure_front_orgchart_img_assets || true
+        ensure_prod_yarn
+      fi
       reload_nginx_once
       ;;
     TWENTY_WEBSITE)
@@ -930,15 +1169,19 @@ maybe_stream_component() {
       pm2 startOrRestart ecosystem.config.js --only arxena-mcp-http || pm2 restart arxena-mcp-http || true
       ;;
     TWENTY_EMAILS)
-      ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-emails/src/locales/generated' ]" && \
-        stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-emails/src/locales/generated" \
-          "$STAGING_ROOT/TWENTY_EMAILS_LOCALES" && \
-        mkdir -p "$REPO_DIR/packages/twenty-emails/src/locales/generated" && \
-        activate_staged_dir "$STAGING_ROOT/TWENTY_EMAILS_LOCALES" \
-          "$REPO_DIR/packages/twenty-emails/src/locales/generated" || true
-      cd "$REPO_DIR/packages/twenty-emails"
-      mkdir -p src/locales/generated
-      npx lingui compile --verbose || npx nx run twenty-emails:lingui:compile || true
+      if [ "$LINGUI_EMAILS" = "1" ]; then
+        ssh_builder "[ -d '${REMOTE_WORKSPACE}/packages/twenty-emails/src/locales/generated' ]" && \
+          stage_remote_dir "${REMOTE_WORKSPACE}/packages/twenty-emails/src/locales/generated" \
+            "$STAGING_ROOT/TWENTY_EMAILS_LOCALES" && \
+          mkdir -p "$REPO_DIR/packages/twenty-emails/src/locales/generated" && \
+          activate_staged_dir "$STAGING_ROOT/TWENTY_EMAILS_LOCALES" \
+            "$REPO_DIR/packages/twenty-emails/src/locales/generated" || true
+        cd "$REPO_DIR/packages/twenty-emails"
+        mkdir -p src/locales/generated
+        npx lingui compile --verbose || npx nx run twenty-emails:lingui:compile || true
+      else
+        echo "[timing] production lingui compile skipped for twenty-emails (i18n inputs unchanged)"
+      fi
       ;;
     TWENTY_DOCS)
       local docs_root="$REPO_DIR/packages/twenty-docs/.deploy"
@@ -1039,6 +1282,8 @@ poll_remote_build_and_stream() {
 
 LAST_DEPLOY_SHA=""
 compute_selected_builds
+compute_lingui_flags
+echo "LOCKFILE_CHANGED=$LOCKFILE_CHANGED SELECTED_BUILDS=${SELECTED_BUILDS:-empty}"
 
 for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_ORGCHART TWENTY_UI TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS TWENTY_EMAILS; do
   set_deploy_status "$_name" kept-existing-files
@@ -1060,8 +1305,6 @@ if [ -z "${SELECTED_BUILDS:-}" ]; then
   exit 0
 fi
 
-INSTANCE_START="$(date +%s)"
-
 echo "Using AWS profile $AWS_PROFILE (EC2 SSH key remains $EC2_KEY_NAME)"
 if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" sts get-caller-identity >/dev/null 2>&1; then
   echo "ERROR: AWS CLI profile '$AWS_PROFILE' is missing or has no credentials."
@@ -1072,30 +1315,7 @@ if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" sts get-caller-identity >/dev/null 2>&1; t
 fi
 ensure_s3_bucket || true
 
-TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances --image-id "$EC2_IMAGE_ID" --instance-type "$EC2_INSTANCE_TYPE" --key-name "$EC2_KEY_NAME" --security-group-ids "$EC2_SECURITY_GROUP_ID" --subnet-id "$EC2_SUBNET_ID" --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$EC2_VOLUME_SIZE,\"VolumeType\":\"gp3\"}}]" --query 'Instances[0].InstanceId' --output text)
-echo $TEMP_INSTANCE_ID
-echo "EC2 instance is starting, please wait....."
-aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
-log_timing "EC2 instance launch and status-ok" "$INSTANCE_START"
-
-TEMP_PRIVATE_IP=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
-TEMP_PUBLIC_DNS=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
-IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
-if [ -n "$IMDS_TOKEN" ] && curl -s --connect-timeout 1 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/instance-id >/dev/null 2>&1; then
-  TEMP_HOST="$TEMP_PRIVATE_IP"
-elif [ "${EC2_BUILDER_USE_PRIVATE_IP:-0}" = "1" ]; then
-  TEMP_HOST="$TEMP_PRIVATE_IP"
-else
-  TEMP_HOST="$TEMP_PUBLIC_DNS"
-fi
-TEMP_DNS="$TEMP_HOST"
-echo "Builder host: $TEMP_DNS (private=$TEMP_PRIVATE_IP public=$TEMP_PUBLIC_DNS)"
-for _ in $(seq 1 60); do
-  if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$TEMP_DNS" 'echo ok' >/dev/null 2>&1; then
-    break
-  fi
-  sleep 5
-done
+acquire_builder_instance
 
 VOLUME_START="$(date +%s)"
 attach_builder_volume
@@ -1127,9 +1347,10 @@ if [ "$REMOTE_WORKSPACE" = "/home/ubuntu/twenty" ]; then
   YARN_CACHE_REMOTE="/home/ubuntu/yarn-cache"
 fi
 
+REMOTE_BUILD_ENV="BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' LOCKFILE_CHANGED=$LOCKFILE_CHANGED LINGUI_SERVER=$LINGUI_SERVER LINGUI_FRONT=$LINGUI_FRONT LINGUI_EMAILS=$LINGUI_EMAILS YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE"
 set +e
 ssh -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" ubuntu@$TEMP_DNS \
-  "BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE ./script_to_build_app_in_new_instance.sh" \
+  "$REMOTE_BUILD_ENV chmod +x script_to_build_app_in_new_instance.sh && $REMOTE_BUILD_ENV ./script_to_build_app_in_new_instance.sh" \
   > >(tee "$BUILD_LOG_SSH_FALLBACK") 2>&1 &
 REMOTE_BUILD_SSH_PID=$!
 REMOTE_BUILD_START="$(date +%s)"
@@ -1181,7 +1402,11 @@ if [ -x "$REPO_DIR/node_modules/.bin/nx" ]; then
   (cd "$REPO_DIR" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true
 fi
 
-log_timing "Build process finished (total, before instance terminate)"
+if [ "$SKIP_WARM_BUILDER" != "1" ] && [ "${WARM_BUILDER_USED:-0}" = "1" ]; then
+  log_timing "Build process finished (total, before warm builder stop)"
+else
+  log_timing "Build process finished (total, before instance terminate)"
+fi
 echo "[timing] Timing log: $BUILD_TIMING_LOG"
 BUILD_TIMING_LOGGED=1
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"
