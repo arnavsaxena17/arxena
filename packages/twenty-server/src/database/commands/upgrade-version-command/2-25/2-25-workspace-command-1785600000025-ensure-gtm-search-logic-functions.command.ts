@@ -12,7 +12,7 @@ import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-man
 @Command({
   name: 'upgrade:2-25:ensure-gtm-search-logic-functions',
   description:
-    'Seed missing native GTM logic functions (search-people, search-companies, search-jobs) for existing workspaces',
+    'Seed missing native GTM logic functions (search-people, search-companies, search-jobs, search-posts) for existing workspaces',
 })
 export class EnsureGtmSearchLogicFunctionsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(

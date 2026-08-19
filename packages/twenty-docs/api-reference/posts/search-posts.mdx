@@ -1,0 +1,23 @@
+---
+title: 'Search posts'
+description: Search LinkedIn posts via Unipile and Harvest. Hits are returned in a standard format.
+openapi: 'openapi/posts-api.json POST /posts-api/posts/search'
+---
+
+Pass `keywords`, and optionally `sortBy` (`relevance` | `date`), `datePosted` (`past_day` | `past_week` | `past_month`), and `contentType`. Omit `dataSource` or pass `auto` to resolve a LinkedIn Unipile account automatically (Sales Navigator seat first), then Harvest. Pin `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve.
+
+Each hit is a standard post record: `id`, `socialId`, `shareUrl`, `title`, `text`, `postedAt`, `authorName`, `authorUrl`, `reactionCount`, `commentCount`, `isRepost`.
+
+Nested Unipile filters (`posted_by`, `mentioning`, `author`) remain on the low-level LinkedIn search route.
+
+```bash
+curl --request POST \
+  --url https://app.arxena.com/posts-api/posts/search \
+  --header 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "keywords": "hiring",
+    "dataSource": "auto",
+    "limit": 10
+  }'
+```

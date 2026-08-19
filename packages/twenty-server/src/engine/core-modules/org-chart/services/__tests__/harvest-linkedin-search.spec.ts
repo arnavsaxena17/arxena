@@ -80,4 +80,37 @@ describe('HarvestLinkedinService company/job search', () => {
 
     expect(result.items[0]).toMatchObject({ title: 'Engineer' });
   });
+
+  it('searches posts via Harvest post-search', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        elements: [
+          {
+            id: 'post-1',
+            content: 'Hiring',
+            linkedinUrl: 'https://www.linkedin.com/feed/update/1',
+          },
+        ],
+        pagination: { totalElements: 1, totalPages: 1 },
+      }),
+    } as Response);
+
+    const result = await service.searchPosts({
+      search: 'hiring',
+      postedLimit: '24h',
+      sortBy: 'relevance',
+      limit: 10,
+    });
+
+    expect(result.items[0]).toMatchObject({ content: 'Hiring' });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/linkedin/post-search?'),
+      expect.objectContaining({
+        headers: { 'X-API-Key': 'harvest-key' },
+      }),
+    );
+    expect(fetchMock.mock.calls[0][0]).toContain('postedLimit=24h');
+    expect(fetchMock.mock.calls[0][0]).toContain('sortBy=relevance');
+  });
 });

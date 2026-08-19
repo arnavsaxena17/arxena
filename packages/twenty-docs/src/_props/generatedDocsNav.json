@@ -50,6 +50,24 @@
               "pages": [
                 "api-reference/people/search-people"
               ]
+            },
+            {
+              "group": "Companies",
+              "pages": [
+                "api-reference/companies/search-companies"
+              ]
+            },
+            {
+              "group": "Jobs",
+              "pages": [
+                "api-reference/jobs/search-jobs"
+              ]
+            },
+            {
+              "group": "Posts",
+              "pages": [
+                "api-reference/posts/search-posts"
+              ]
             }
           ]
         },

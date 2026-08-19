@@ -32,7 +32,10 @@
   },
   "api": {
     "openapi": [
-      "openapi/people-api.json"
+      "openapi/people-api.json",
+      "openapi/company-api.json",
+      "openapi/jobs-api.json",
+      "openapi/posts-api.json"
     ],
     "url": "full",
     "playground": {
@@ -118,6 +121,24 @@
                 "group": "People",
                 "pages": [
                   "api-reference/people/search-people"
+                ]
+              },
+              {
+                "group": "Companies",
+                "pages": [
+                  "api-reference/companies/search-companies"
+                ]
+              },
+              {
+                "group": "Jobs",
+                "pages": [
+                  "api-reference/jobs/search-jobs"
+                ]
+              },
+              {
+                "group": "Posts",
+                "pages": [
+                  "api-reference/posts/search-posts"
                 ]
               }
             ]

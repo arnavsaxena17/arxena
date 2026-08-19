@@ -17,20 +17,7 @@ import type {
   CompanySearchResponse,
 } from './company-api.types';
 import { CompanySearchDataSourceResolver } from './services/company-search-data-source.resolver';
-
-const readString = (
-  item: Record<string, unknown>,
-  keys: string[],
-): string => {
-  for (const key of keys) {
-    const value = item[key];
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return '';
-};
+import { CompanySearchHitTransformer } from './services/company-search-hit.transformer';
 
 @Injectable()
 export class CompanyApiService {
@@ -42,6 +29,7 @@ export class CompanyApiService {
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
     private readonly companySearchDataSourceResolver: CompanySearchDataSourceResolver,
+    private readonly companySearchHitTransformer: CompanySearchHitTransformer,
   ) {}
 
   getDataSourcesStatus(): CompanyDataSourcesStatusResponse {
@@ -96,13 +84,9 @@ export class CompanyApiService {
         status: 'ok',
         dataSource: 'index',
         total: result.total,
-        items: result.items.map((item) => ({
-          id: item.id ?? '',
-          name: item.name ?? '',
-          website: item.website ?? '',
-          linkedinUrl: item.linkedin_url ?? '',
-          industry: item.industry ?? '',
-        })),
+        items: result.items.map((item) =>
+          this.companySearchHitTransformer.fromIndexItem(item),
+        ),
       };
     }
 
@@ -124,7 +108,9 @@ export class CompanyApiService {
         status: 'ok',
         dataSource: 'harvest',
         total: result.total,
-        items: result.items.map((item) => this.normalizeHarvestCompany(item)),
+        items: result.items.map((item) =>
+          this.companySearchHitTransformer.fromHarvestItem(item),
+        ),
       };
     }
 
@@ -175,7 +161,9 @@ export class CompanyApiService {
         { limit: input.limit },
       );
 
-      return this.normalizeUnipileCompanies(response.items);
+      return this.companySearchHitTransformer.fromUnipileItems(
+        response.items as Array<{ type?: string } & Record<string, unknown>>,
+      );
     }
 
     if (input.product === 'classic') {
@@ -185,7 +173,9 @@ export class CompanyApiService {
         { limit: input.limit },
       );
 
-      return this.normalizeUnipileCompanies(response.items);
+      return this.companySearchHitTransformer.fromUnipileItems(
+        response.items as Array<{ type?: string } & Record<string, unknown>>,
+      );
     }
 
     try {
@@ -196,7 +186,9 @@ export class CompanyApiService {
           { limit: input.limit },
         );
 
-      return this.normalizeUnipileCompanies(response.items);
+      return this.companySearchHitTransformer.fromUnipileItems(
+        response.items as Array<{ type?: string } & Record<string, unknown>>,
+      );
     } catch (error) {
       this.logger.warn(
         `Sales Nav company search failed, falling back to classic: ${
@@ -210,34 +202,9 @@ export class CompanyApiService {
         { limit: input.limit },
       );
 
-      return this.normalizeUnipileCompanies(response.items);
+      return this.companySearchHitTransformer.fromUnipileItems(
+        response.items as Array<{ type?: string } & Record<string, unknown>>,
+      );
     }
-  }
-
-  private normalizeUnipileCompanies(items: Array<{ type?: string } & Record<string, unknown>>): CompanySearchHit[] {
-    return items
-      .filter((item) => item.type === 'COMPANY')
-      .map((item) => ({
-        id: readString(item, ['id']),
-        name: readString(item, ['name']),
-        website: readString(item, ['website']),
-        linkedinUrl: readString(item, ['profile_url', 'linkedinUrl', 'url']),
-        industry: readString(item, ['industry']),
-      }));
-  }
-
-  private normalizeHarvestCompany(item: Record<string, unknown>): CompanySearchHit {
-    return {
-      id: readString(item, ['id', 'universalName', 'universal_name']),
-      name: readString(item, ['name', 'companyName']),
-      website: readString(item, ['website', 'websiteUrl']),
-      linkedinUrl: readString(item, [
-        'linkedinUrl',
-        'linkedin_url',
-        'url',
-        'profileUrl',
-      ]),
-      industry: readString(item, ['industry']),
-    };
   }
 }

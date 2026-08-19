@@ -6,6 +6,7 @@ import {
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
@@ -38,9 +39,24 @@ export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
 export const GTM_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
   success: true,
   linkedinProfileId: 'example',
+  firstName: 'Arapa',
+  lastName: 'Hara',
   headline: 'Head of Sales',
-  about: '',
-  experience: [],
+  about: 'B2B sales leader at Acme',
+  location: 'San Francisco',
+  linkedinUrl: 'https://www.linkedin.com/in/example',
+  profilePictureUrl: 'https://media.licdn.com/example.jpg',
+  experience: [
+    {
+      company: 'Acme',
+      position: 'Head of Sales',
+      location: 'San Francisco',
+      description: 'Owns enterprise revenue',
+      start: '2022-01',
+      end: '',
+    },
+  ],
+  skills: ['Sales', 'GTM'],
   snapshot: '{}',
   error: '',
 };
@@ -53,9 +69,20 @@ export const GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   people: [
     {
       name: 'Arapa Hara',
+      firstName: 'Arapa',
+      lastName: 'Hara',
       title: 'Head of Sales',
-      linkedinUrl: 'https://www.linkedin.com/in/example',
+      headline: 'Head of Sales at Acme',
       companyName: 'Acme',
+      location: 'San Francisco',
+      linkedinUrl: 'https://www.linkedin.com/in/example',
+      linkedinProfileId: 'example',
+      peopleId: 'ACwAAAExample',
+      profilePictureUrl: '',
+      source: 'index',
+      stdFunction: 'sales',
+      stdFunctionRoot: 'go-to-market',
+      stdGrade: 'leadership',
     },
   ],
 };
@@ -89,6 +116,28 @@ export const GTM_SEARCH_JOBS_SAMPLE_OUTPUT = {
       url: 'https://www.linkedin.com/jobs/view/1',
       companyName: 'Acme',
       postedAt: '2026-08-01',
+    },
+  ],
+};
+
+export const GTM_SEARCH_POSTS_SAMPLE_OUTPUT = {
+  success: true,
+  total: 1,
+  dataSource: 'auto',
+  error: '',
+  posts: [
+    {
+      id: 'post-1',
+      socialId: 'urn:li:activity:1',
+      shareUrl: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+      title: 'Hiring',
+      text: 'We are hiring Account Executives',
+      postedAt: '2026-08-01T12:00:00.000Z',
+      authorName: 'Jane Doe',
+      authorUrl: 'https://www.linkedin.com/in/jane-doe',
+      reactionCount: 12,
+      commentCount: 3,
+      isRepost: false,
     },
   ],
 };
@@ -139,6 +188,7 @@ export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   [GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   [GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: GTM_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   [GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
+  [GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: GTM_SEARCH_POSTS_SAMPLE_OUTPUT,
   [GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:

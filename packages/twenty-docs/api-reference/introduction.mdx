@@ -1,16 +1,22 @@
 ---
 title: API Documentation
-description: Introduction to the Arxena People API — base URLs, authentication, and interactive playground.
+description: Introduction to the Arxena search APIs — People, Companies, Jobs, and Posts.
 ---
 
-Use the Arxena People API for **natural-language people search** at a company, public taxonomy constants, and auth-gated advanced filters — then try real requests from this documentation.
+Use the Arxena search APIs for **people**, **companies**, **jobs**, and **LinkedIn posts** — then try real requests from this documentation.
 
 <CardGroup cols={2}>
-  <Card title="NL → people" icon="wand-magic-sparkles" href="/cookbooks/nl-to-people-at-company">
-    CHRO / HR leadership at a company
+  <Card title="Search people" icon="users" href="/api-reference/people/search-people">
+    Natural-language people search at a company
   </Card>
-  <Card title="Taxonomy constants" icon="list" href="/api-reference/taxonomy/list-taxonomy-constants">
-    Public flat grade and function-root labels
+  <Card title="Search companies" icon="building" href="/api-reference/companies/search-companies">
+    Company search with standard hits
+  </Card>
+  <Card title="Search jobs" icon="briefcase" href="/api-reference/jobs/search-jobs">
+    Job search with standard hits
+  </Card>
+  <Card title="Search posts" icon="newspaper" href="/api-reference/posts/search-posts">
+    LinkedIn post search with standard hits
   </Card>
 </CardGroup>
 
@@ -35,6 +41,9 @@ Use the server dropdown in the interactive playground to switch between producti
 | Surface | In this API Reference | Notes |
 |---------|------------------------|-------|
 | People API | Yes — interactive playground | Fixed REST surface under `/people-api` |
+| Company API | Yes | Fixed REST surface under `/company-api` |
+| Jobs API | Yes | Fixed REST surface under `/jobs-api` |
+| Posts API | Yes | Fixed REST surface under `/posts-api` |
 | Workspace credits | Yes — `GET /people-api/credits` | Org chart, reveal, and API balances |
 | Core / Metadata CRM APIs | No | Schema is workspace-specific; use the in-app explorer under **Settings → APIs & Webhooks** for custom objects |
 

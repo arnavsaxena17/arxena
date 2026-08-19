@@ -57,6 +57,23 @@ export class HarvestLinkedinService {
     });
   }
 
+  async searchPosts(input: {
+    search?: string;
+    postedLimit?: string;
+    sortBy?: string;
+    contentType?: string;
+    limit?: number;
+  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+    return this.searchPaginatedCollection({
+      path: '/linkedin/post-search',
+      search: input.search,
+      postedLimit: input.postedLimit,
+      sortBy: input.sortBy,
+      contentType: input.contentType,
+      limit: input.limit,
+    });
+  }
+
   async fetchCurrentAndPastEmployees(input: {
     linkedinCompanyUrl: string;
     maxProfiles?: number;
@@ -518,6 +535,9 @@ export class HarvestLinkedinService {
     location?: string;
     company?: string;
     datePosted?: number;
+    postedLimit?: string;
+    sortBy?: string;
+    contentType?: string;
     limit?: number;
   }): Promise<{ total: number; items: HarvestLeadItem[] }> {
     const limit = Math.max(1, Math.min(100, input.limit ?? 20));
@@ -558,6 +578,9 @@ export class HarvestLinkedinService {
     location?: string;
     company?: string;
     datePosted?: number;
+    postedLimit?: string;
+    sortBy?: string;
+    contentType?: string;
     page: number;
   }): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
     const searchParams = new URLSearchParams();
@@ -571,8 +594,19 @@ export class HarvestLinkedinService {
     if (input.company?.trim()) {
       searchParams.set('company', input.company.trim());
     }
-    if (typeof input.datePosted === 'number' && Number.isFinite(input.datePosted)) {
+    if (input.postedLimit?.trim()) {
+      searchParams.set('postedLimit', input.postedLimit.trim());
+    } else if (
+      typeof input.datePosted === 'number' &&
+      Number.isFinite(input.datePosted)
+    ) {
       searchParams.set('postedLimit', String(input.datePosted));
+    }
+    if (input.sortBy?.trim()) {
+      searchParams.set('sortBy', input.sortBy.trim());
+    }
+    if (input.contentType?.trim()) {
+      searchParams.set('contentType', input.contentType.trim());
     }
 
     const url = `${this.getBaseUrl()}${input.path}?${searchParams.toString()}`;
@@ -602,6 +636,7 @@ export class HarvestLinkedinService {
       objectPayload.people,
       objectPayload.companies,
       objectPayload.jobs,
+      objectPayload.posts,
     ];
 
     for (const value of candidates) {

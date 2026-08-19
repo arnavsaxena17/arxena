@@ -1,0 +1,36 @@
+---
+title: Posts API
+icon: 'newspaper'
+description: Search LinkedIn posts with workspace-scoped API keys. Hits are returned in a standard format.
+---
+
+The Posts API gives each workspace a programmatic way to search LinkedIn posts with a workspace-scoped Bearer token.
+
+For full endpoint docs and an interactive playground, use the **API Reference**:
+
+<CardGroup cols={2}>
+  <Card title="Search posts" icon="magnifying-glass" href="/api-reference/posts/search-posts">
+    POST /posts-api/posts/search
+  </Card>
+  <Card title="Authentication" icon="lock" href="/api-reference/authentication">
+    Create a workspace API key and authenticate requests
+  </Card>
+</CardGroup>
+
+## Data source aliases
+
+| Alias | Typical use |
+|------|-------------|
+| `auto` | Unipile Sales Navigator, then Recruiter/classic, then Harvest |
+| `harvest` | Harvest LinkedIn post search ([post search](https://docs.harvestapi.io/linkedin-api-reference/post/search)) |
+| `unipile` | LinkedIn classic post search via Unipile |
+| `pool` | Shared Unipile Sales Navigator pool |
+| `recruiter` | Recruiter-connected Unipile account |
+
+If Unipile is not available, `auto` uses Harvest.
+
+## OpenAPI
+
+```bash
+curl https://app.arxena.com/posts-api/openapi.json
+```

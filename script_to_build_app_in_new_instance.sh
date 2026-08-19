@@ -49,6 +49,32 @@ record_status() {
   sync >/dev/null 2>&1 || true
 }
 
+format_duration() {
+  local s="${1:-0}"
+  local h=$((s / 3600))
+  local m=$(((s % 3600) / 60))
+  local sec=$((s % 60))
+  if [ "$h" -gt 0 ]; then
+    printf '%dh %dm %ds (%ss)' "$h" "$m" "$sec" "$s"
+  elif [ "$m" -gt 0 ]; then
+    printf '%dm %ds (%ss)' "$m" "$sec" "$s"
+  else
+    printf '%ds' "$s"
+  fi
+}
+
+REMOTE_BUILD_START="$(date +%s)"
+echo "[timing] Remote build started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
+
+log_remote_elapsed() {
+  local label="$1"
+  local since="${2:-$REMOTE_BUILD_START}"
+  local now elapsed
+  now="$(date +%s)"
+  elapsed=$((now - since))
+  echo "[timing] ${label}: $(format_duration "$elapsed")  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
+}
+
 should_build() {
   local name="$1"
   if [ "$SELECTED_BUILDS" = "ALL" ] || [ -z "$SELECTED_BUILDS" ]; then
@@ -69,16 +95,21 @@ skip_step() {
 build_step() {
   local name="$1"
   shift
+  local step_start
+  step_start="$(date +%s)"
 
   echo "Starting build: $name"
+  echo "[timing] $name started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
   if "$@"; then
     record_status "$name" success
     echo "Build succeeded: $name"
+    log_remote_elapsed "$name succeeded" "$step_start"
     return 0
   else
     local exit_code=$?
     record_status "$name" failed
     echo "Build failed: $name (exit code $exit_code)"
+    log_remote_elapsed "$name failed" "$step_start"
     return "$exit_code"
   fi
 }
@@ -152,10 +183,14 @@ fi
 HEAD_SHA="$(git rev-parse HEAD)"
 echo "BUILD_HEAD_SHA=$HEAD_SHA" >> "$BUILD_STATUS_FILE"
 
+YARN_START="$(date +%s)"
 if ! yarn; then
   echo "yarn install failed (check Node version / peer constraints)" >&2
+  log_remote_elapsed "yarn install failed" "$YARN_START"
+  log_remote_elapsed "Remote build finished (total)"
   exit 1
 fi
+log_remote_elapsed "yarn install" "$YARN_START"
 
 ensure_swc_native_binding() {
   local swc_check_cmd="require('@swc/core'); require('@swc/cli'); require('@swc/cli/lib/swc/dir')"
@@ -369,13 +404,16 @@ done
 
 if [ "$checked_any" = false ]; then
   echo "Required build check passed: no packages selected (nothing changed)."
+  log_remote_elapsed "Remote build finished (total)"
   exit 0
 fi
 
 if [ "$all_required_success" = true ]; then
   echo "Required build check passed: selected packages built successfully."
+  log_remote_elapsed "Remote build finished (total)"
   exit 0
 fi
 
 echo "Required build check failed: one or more selected packages did not build successfully."
+log_remote_elapsed "Remote build finished (total)"
 exit 1

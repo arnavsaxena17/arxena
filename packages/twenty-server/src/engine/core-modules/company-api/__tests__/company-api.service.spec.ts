@@ -21,12 +21,35 @@ describe('CompanyApiService', () => {
     resolve: jest.fn(),
   };
 
+  const companySearchHitTransformer = {
+    fromIndexItem: jest.fn((item) => ({
+      id: item.id ?? '',
+      name: item.name ?? '',
+      website: item.website ?? '',
+      linkedinUrl: item.linkedin_url ?? '',
+      industry: item.industry ?? '',
+    })),
+    fromHarvestItem: jest.fn(),
+    fromUnipileItems: jest.fn((items) =>
+      items
+        .filter((item: { type?: string }) => item.type === 'COMPANY')
+        .map((item: { id?: string; name?: string }) => ({
+          id: item.id ?? '',
+          name: item.name ?? '',
+          website: '',
+          linkedinUrl: '',
+          industry: '',
+        })),
+    ),
+  };
+
   const service = new CompanyApiService(
     companiesEsService as never,
     harvestLinkedinService as never,
     linkedInSearchService as never,
     unipileSearchAccountResolver as never,
     companySearchDataSourceResolver as never,
+    companySearchHitTransformer as never,
   );
 
   beforeEach(() => {

@@ -11,33 +11,10 @@ import {
 import type { JobSearchDto } from './dto/job-search.dto';
 import type {
   JobDataSourcesStatusResponse,
-  JobSearchHit,
   JobSearchResponse,
 } from './jobs-api.types';
 import { JobSearchDataSourceResolver } from './services/job-search-data-source.resolver';
-
-const readString = (item: Record<string, unknown>, keys: string[]): string => {
-  for (const key of keys) {
-    const value = item[key];
-    if (typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return '';
-};
-
-const readCompanyName = (item: Record<string, unknown>): string => {
-  const company = item.company;
-  if (typeof company === 'string') {
-    return company.trim();
-  }
-  if (company && typeof company === 'object') {
-    return readString(company as Record<string, unknown>, ['name', 'title']);
-  }
-
-  return readString(item, ['companyName', 'company_name']);
-};
+import { JobSearchHitTransformer } from './services/job-search-hit.transformer';
 
 @Injectable()
 export class JobApiService {
@@ -46,6 +23,7 @@ export class JobApiService {
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
     private readonly jobSearchDataSourceResolver: JobSearchDataSourceResolver,
+    private readonly jobSearchHitTransformer: JobSearchHitTransformer,
   ) {}
 
   getDataSourcesStatus(): JobDataSourcesStatusResponse {
@@ -102,7 +80,9 @@ export class JobApiService {
         status: 'ok',
         dataSource: 'harvest',
         total: result.total,
-        items: result.items.map((item) => this.normalizeHarvestJob(item)),
+        items: result.items.map((item) =>
+          this.jobSearchHitTransformer.fromHarvestItem(item),
+        ),
       };
     }
 
@@ -126,35 +106,17 @@ export class JobApiService {
 
     const items = response.items
       .filter((item) => item.type === 'JOB')
-      .map((item) => this.normalizeUnipileJob(item as unknown as Record<string, unknown>));
+      .map((item) =>
+        this.jobSearchHitTransformer.fromUnipileItem(
+          item as unknown as Record<string, unknown>,
+        ),
+      );
 
     return {
       status: 'ok',
       dataSource: resolved.dataSource,
       total: items.length,
       items,
-    };
-  }
-
-  private normalizeUnipileJob(item: Record<string, unknown>): JobSearchHit {
-    return {
-      id: readString(item, ['id', 'reference_id']),
-      title: readString(item, ['title']),
-      location: readString(item, ['location']),
-      url: readString(item, ['url']),
-      companyName: readCompanyName(item),
-      postedAt: readString(item, ['posted_at', 'postedAt']),
-    };
-  }
-
-  private normalizeHarvestJob(item: Record<string, unknown>): JobSearchHit {
-    return {
-      id: readString(item, ['id']),
-      title: readString(item, ['title', 'jobTitle']),
-      location: readString(item, ['location']),
-      url: readString(item, ['url', 'linkedinUrl', 'jobUrl']),
-      companyName: readCompanyName(item),
-      postedAt: readString(item, ['postedAt', 'postedDate', 'listedAt']),
     };
   }
 }

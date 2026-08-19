@@ -12,18 +12,27 @@
 
 export const DOCUMENTATION_PATHS = {
   API_REFERENCE_AUTHENTICATION: '/api-reference/authentication',
+  API_REFERENCE_COMPANIES_SEARCH_COMPANIES:
+    '/api-reference/companies/search-companies',
   API_REFERENCE_CREDITS_GET_WORKSPACE_CREDITS:
     '/api-reference/credits/get-workspace-credits',
   API_REFERENCE_INTRODUCTION: '/api-reference/introduction',
+  API_REFERENCE_JOBS_SEARCH_JOBS: '/api-reference/jobs/search-jobs',
   API_REFERENCE_PEOPLE_SEARCH_PEOPLE: '/api-reference/people/search-people',
+  API_REFERENCE_POSTS_SEARCH_POSTS: '/api-reference/posts/search-posts',
   CHANGELOG_JULY_2026: '/changelog/july-2026',
+  COOKBOOKS_MCP_PEOPLE_AND_ORG_CHARTS: '/cookbooks/mcp-people-and-org-charts',
+  COOKBOOKS_NL_TO_PEOPLE_AT_COMPANY: '/cookbooks/nl-to-people-at-company',
   COOKBOOKS_SEARCH_PEOPLE_BY_TAXONOMY: '/cookbooks/search-people-by-taxonomy',
   DEVELOPERS_CONTRIBUTE_CAPABILITIES_LOCAL_SETUP:
     '/developers/contribute/capabilities/local-setup',
   DEVELOPERS_CONTRIBUTE_COMMANDS: '/developers/contribute/commands',
   DEVELOPERS_CONTRIBUTE_STYLE_GUIDE: '/developers/contribute/style-guide',
   DEVELOPERS_EXTEND_API: '/developers/extend/api',
+  DEVELOPERS_EXTEND_API_COMPANY_API: '/developers/extend/api/company-api',
+  DEVELOPERS_EXTEND_API_JOBS_API: '/developers/extend/api/jobs-api',
   DEVELOPERS_EXTEND_API_PEOPLE_API: '/developers/extend/api/people-api',
+  DEVELOPERS_EXTEND_API_POSTS_API: '/developers/extend/api/posts-api',
   DEVELOPERS_EXTEND_APPS_CONFIG_APPLICATION:
     '/developers/extend/apps/config/application',
   DEVELOPERS_EXTEND_APPS_CONFIG_INSTALL_HOOKS:

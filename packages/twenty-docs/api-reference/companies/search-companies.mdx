@@ -1,0 +1,21 @@
+---
+title: 'Search companies'
+description: Search companies across Unipile LinkedIn, Harvest, and the companies index. Hits are returned in a standard format.
+openapi: 'openapi/company-api.json POST /company-api/companies/search'
+---
+
+Pass `companyName`, `keywords`, `query`, `website`, `industry`, or `location`. Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically (Sales Navigator seat first), then Harvest, then the companies index. Pin `index`, `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve.
+
+Each hit is a standard company record: `id`, `name`, `website`, `linkedinUrl`, `industry`.
+
+```bash
+curl --request POST \
+  --url https://app.arxena.com/company-api/companies/search \
+  --header 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "companyName": "Acme",
+    "dataSource": "auto",
+    "limit": 10
+  }'
+```

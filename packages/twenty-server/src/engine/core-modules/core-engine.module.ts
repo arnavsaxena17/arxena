@@ -76,6 +76,7 @@ import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-comman
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
+import { PostsApiModule } from 'src/engine/core-modules/posts-api/posts-api.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
@@ -227,6 +228,7 @@ import { FileModule } from './file/file.module';
     PeopleApiModule,
     CompanyApiModule,
     JobsApiModule,
+    PostsApiModule,
     GtmCommandModule,
     ArxChatAgentModule,
     GoogleCalendarModule,

@@ -1,3 +1,4 @@
+import { CODE_STEP_LOGIC_FUNCTION_NAME } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
@@ -19,7 +20,7 @@ export const createListLogicFunctionToolsTool = (
 ) => ({
   name: 'list_logic_function_tools' as const,
   description:
-    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile, fetch-linkedin-messages, fetch-company-details) include isNative=true — do not read their source; use inputSchema. search-people-for-company, search-people, search-companies, and search-jobs return hits only (no CRM enroll).',
+    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, search-people, search-companies, search-jobs, search-posts, fetch-linkedin-profile, fetch-linkedin-messages, fetch-company-details) include isNative=true — do not read their source; use inputSchema. search-people-for-company, search-people, search-companies, search-jobs, and search-posts return hits only (no CRM enroll).',
   inputSchema: listLogicFunctionToolsSchema,
   execute: async () => {
     const { flatLogicFunctionMaps } =
@@ -36,6 +37,7 @@ export const createListLogicFunctionToolsTool = (
       (fn): fn is FlatLogicFunction =>
         isDefined(fn) &&
         isDefined(fn.workflowActionTriggerSettings) &&
+        fn.name !== CODE_STEP_LOGIC_FUNCTION_NAME &&
         fn.deletedAt === null,
     );
 

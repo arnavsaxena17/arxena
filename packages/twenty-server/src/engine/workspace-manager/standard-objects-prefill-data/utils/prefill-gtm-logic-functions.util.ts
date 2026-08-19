@@ -11,6 +11,7 @@ import {
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -20,6 +21,7 @@ import {
   GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
   GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+  GTM_SEARCH_POSTS_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -49,6 +51,10 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   searchJobsId: uuidv5(
     `${workspaceId}:search-jobs`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  searchPostsId: uuidv5(
+    `${workspaceId}:search-posts`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   fetchLinkedinMessagesId: uuidv5(
@@ -167,9 +173,36 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                 type: 'string',
                 label: 'LinkedIn profile ID',
               },
+              firstName: { type: 'string', label: 'First name' },
+              lastName: { type: 'string', label: 'Last name' },
               headline: { type: 'string', label: 'Headline' },
               about: { type: 'string', label: 'About' },
-              experience: { type: 'array', label: 'Experience' },
+              location: { type: 'string', label: 'Location' },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              profilePictureUrl: {
+                type: 'string',
+                label: 'Profile picture URL',
+              },
+              experience: {
+                type: 'array',
+                label: 'Experience',
+                items: {
+                  type: 'object',
+                  properties: {
+                    company: { type: 'string', label: 'Company' },
+                    position: { type: 'string', label: 'Position' },
+                    location: { type: 'string', label: 'Location' },
+                    description: { type: 'string', label: 'Description' },
+                    start: { type: 'string', label: 'Start' },
+                    end: { type: 'string', label: 'End' },
+                  },
+                },
+              },
+              skills: {
+                type: 'array',
+                label: 'Skills',
+                items: { type: 'string', label: 'Skill' },
+              },
               snapshot: { type: 'string', label: 'Snapshot' },
               error: { type: 'string', label: 'Error' },
             },
@@ -221,9 +254,29 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                   type: 'object',
                   properties: {
                     name: { type: 'string', label: 'Name' },
+                    firstName: { type: 'string', label: 'First name' },
+                    lastName: { type: 'string', label: 'Last name' },
                     title: { type: 'string', label: 'Title' },
-                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    headline: { type: 'string', label: 'Headline' },
                     companyName: { type: 'string', label: 'Company name' },
+                    location: { type: 'string', label: 'Location' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    linkedinProfileId: {
+                      type: 'string',
+                      label: 'LinkedIn profile ID',
+                    },
+                    peopleId: { type: 'string', label: 'People ID' },
+                    profilePictureUrl: {
+                      type: 'string',
+                      label: 'Profile picture URL',
+                    },
+                    source: { type: 'string', label: 'Source' },
+                    stdFunction: { type: 'string', label: 'Std function' },
+                    stdFunctionRoot: {
+                      type: 'string',
+                      label: 'Std function root',
+                    },
+                    stdGrade: { type: 'string', label: 'Std grade' },
                   },
                 },
               },
@@ -340,6 +393,65 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.searchPostsId,
+      name: GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+      description:
+        'Search LinkedIn posts via Posts API. dataSource auto uses Unipile Sales Navigator account resolution then Harvest.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Search posts',
+        icon: 'IconNews',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              keywords: { type: 'string', label: 'Keywords' },
+              sortBy: { type: 'string', label: 'Sort by' },
+              datePosted: { type: 'string', label: 'Date posted' },
+              contentType: { type: 'string', label: 'Content type' },
+              dataSource: { type: 'string', label: 'Data source' },
+              accountId: { type: 'string', label: 'Account ID' },
+              limit: { type: 'number', label: 'Limit' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              total: { type: 'number', label: 'Total' },
+              dataSource: { type: 'string', label: 'Data source' },
+              error: { type: 'string', label: 'Error' },
+              posts: {
+                type: 'array',
+                label: 'Posts',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    socialId: { type: 'string', label: 'Social ID' },
+                    shareUrl: { type: 'string', label: 'Share URL' },
+                    title: { type: 'string', label: 'Title' },
+                    text: { type: 'string', label: 'Text' },
+                    postedAt: { type: 'string', label: 'Posted at' },
+                    authorName: { type: 'string', label: 'Author name' },
+                    authorUrl: { type: 'string', label: 'Author URL' },
+                    reactionCount: { type: 'number', label: 'Reaction count' },
+                    commentCount: { type: 'number', label: 'Comment count' },
+                    isRepost: { type: 'boolean', label: 'Is repost' },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: GTM_SEARCH_POSTS_SAMPLE_OUTPUT,
       },
     },
     {

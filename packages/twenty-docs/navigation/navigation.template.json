@@ -11,6 +11,45 @@
         }
       }
     },
+    "apiReference": {
+      "label": "API Reference",
+      "groups": {
+        "apiReferenceGettingStarted": {
+          "label": "Getting started"
+        },
+        "apiReferenceCredits": {
+          "label": "Credits"
+        },
+        "apiReferencePeople": {
+          "label": "People"
+        },
+        "apiReferenceCompanies": {
+          "label": "Companies"
+        },
+        "apiReferenceJobs": {
+          "label": "Jobs"
+        },
+        "apiReferencePosts": {
+          "label": "Posts"
+        }
+      }
+    },
+    "cookbooks": {
+      "label": "Cookbooks",
+      "groups": {
+        "cookbooksOverview": {
+          "label": "Recipes"
+        }
+      }
+    },
+    "changelog": {
+      "label": "Changelog",
+      "groups": {
+        "changelogReleases": {
+          "label": "Releases"
+        }
+      }
+    },
     "userGuide": {
       "label": "User Guide",
       "groups": {

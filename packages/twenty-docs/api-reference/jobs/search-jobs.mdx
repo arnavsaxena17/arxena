@@ -1,0 +1,21 @@
+---
+title: 'Search jobs'
+description: Search jobs via Unipile LinkedIn and Harvest. Hits are returned in a standard format.
+openapi: 'openapi/jobs-api.json POST /jobs-api/jobs/search'
+---
+
+Pass `keywords`, and optionally `location`, `company`, and `datePosted`. Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically (Sales Navigator seat first), then Harvest. Pin `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve.
+
+Each hit is a standard job record: `id`, `title`, `location`, `url`, `companyName`, `postedAt`.
+
+```bash
+curl --request POST \
+  --url https://app.arxena.com/jobs-api/jobs/search \
+  --header 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "keywords": "account executive",
+    "dataSource": "auto",
+    "limit": 10
+  }'
+```

@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { SEED_WORKFLOW_ACTION_TRIGGER_SETTINGS } from 'twenty-shared/logic-function';
+import {
+  CODE_STEP_LOGIC_FUNCTION_NAME,
+  SEED_WORKFLOW_ACTION_TRIGGER_SETTINGS,
+} from 'twenty-shared/logic-function';
 import { FeatureFlagKey } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -38,7 +41,7 @@ export class CodeStepBuildService {
     return await this.logicFunctionFromSourceService.createOneFromSource({
       input: {
         id: logicFunctionId,
-        name: 'A Code Step',
+        name: CODE_STEP_LOGIC_FUNCTION_NAME,
         description: '',
         workflowActionTriggerSettings: SEED_WORKFLOW_ACTION_TRIGGER_SETTINGS,
       },

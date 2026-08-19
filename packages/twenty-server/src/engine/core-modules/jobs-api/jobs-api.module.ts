@@ -11,6 +11,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
 import { JobsApiController } from './jobs-api.controller';
 import { JobApiService } from './jobs-api.service';
 import { JobSearchDataSourceResolver } from './services/job-search-data-source.resolver';
+import { JobSearchHitTransformer } from './services/job-search-hit.transformer';
 
 @Module({
   imports: [
@@ -22,7 +23,12 @@ import { JobSearchDataSourceResolver } from './services/job-search-data-source.r
     WorkspaceModificationsModule,
   ],
   controllers: [JobsApiController],
-  providers: [JobApiService, JobSearchDataSourceResolver, JwtAuthGuard],
+  providers: [
+    JobApiService,
+    JobSearchDataSourceResolver,
+    JobSearchHitTransformer,
+    JwtAuthGuard,
+  ],
   exports: [JobApiService],
 })
 export class JobsApiModule {}

@@ -19,9 +19,11 @@ import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-comma
 import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/services/search-people.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/services/search-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
+import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
+import { PostsApiModule } from 'src/engine/core-modules/posts-api/posts-api.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { GtmCompaniesIndexWikiEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-companies-index-wiki-enrichment.source';
 import {
@@ -59,6 +61,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     PeopleApiModule,
     CompanyApiModule,
     JobsApiModule,
+    PostsApiModule,
     JwtModule,
     forwardRef(() => CandidateSourcingModule),
   ],
@@ -105,6 +108,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     SearchPeopleService,
     SearchCompaniesService,
     SearchJobsService,
+    SearchPostsService,
     FetchLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import {
@@ -35,6 +36,7 @@ export class GtmCommandController {
     private readonly gtmPeopleCacheService: GtmPeopleCacheService,
     private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly fetchLinkedinMessagesService: FetchLinkedinMessagesService,
     private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
   ) {}
@@ -329,6 +331,39 @@ export class GtmCommandController {
     return this.fetchLinkedinProfileService.execute({
       workspaceId,
       input: body,
+    });
+  }
+
+  @Post('fetch-linkedin-messages')
+  async fetchLinkedinMessages(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinUrl?: string;
+      linkedinProfileId?: string;
+      candidateId?: string;
+      limit?: number;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const workspaceMemberIdFromToken =
+      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+
+    return this.fetchLinkedinMessagesService.execute({
+      workspaceId,
+      input: {
+        ...body,
+        workspaceMemberId:
+          body.workspaceMemberId ?? workspaceMemberIdFromToken ?? undefined,
+      },
     });
   }
 

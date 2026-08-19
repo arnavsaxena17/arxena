@@ -1,0 +1,35 @@
+---
+title: Company API
+icon: 'building'
+description: Search companies with workspace-scoped API keys. Hits are returned in a standard format.
+---
+
+The Company API gives each workspace a programmatic way to search companies with a workspace-scoped Bearer token.
+
+For full endpoint docs and an interactive playground, use the **API Reference**:
+
+<CardGroup cols={2}>
+  <Card title="Search companies" icon="magnifying-glass" href="/api-reference/companies/search-companies">
+    POST /company-api/companies/search
+  </Card>
+  <Card title="Authentication" icon="lock" href="/api-reference/authentication">
+    Create a workspace API key and authenticate requests
+  </Card>
+</CardGroup>
+
+## Data source aliases
+
+| Alias | Typical use |
+|------|-------------|
+| `auto` | Unipile Sales Navigator, then Recruiter/classic, Harvest, then index |
+| `index` | Arxena companies Elasticsearch index |
+| `unipile` | LinkedIn via an explicit Unipile `accountId` |
+| `pool` | Shared Unipile Sales Navigator pool |
+| `recruiter` | Recruiter-connected Unipile account |
+| `harvest` | Harvest LinkedIn company search ([company search](https://docs.harvestapi.io/linkedin-api-reference/company/search)) |
+
+## OpenAPI
+
+```bash
+curl https://app.arxena.com/company-api/openapi.json
+```

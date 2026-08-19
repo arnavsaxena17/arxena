@@ -46,11 +46,24 @@ export class FetchLinkedinProfileService {
   }): Promise<{
     success: boolean;
     linkedinProfileId: string;
+    firstName: string;
+    lastName: string;
     headline: string;
     about: string;
-    experience: unknown;
+    location: string;
+    linkedinUrl: string;
+    profilePictureUrl: string;
+    experience: Array<{
+      company: string;
+      position: string;
+      location: string;
+      description: string;
+      start: string;
+      end: string;
+    }>;
+    skills: string[];
     snapshot: string;
-    error?: string;
+    error: string;
   }> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -115,24 +128,14 @@ export class FetchLinkedinProfileService {
 
     if (!isNonEmptyString(resolved.accountId)) {
       return {
-        success: false,
-        linkedinProfileId: '',
-        headline: '',
-        about: '',
-        experience: [],
-        snapshot: '',
+        ...emptyProfile(resolved.identifier),
         error: 'No LinkedIn Unipile account on workspace member profile',
       };
     }
 
     if (!isNonEmptyString(resolved.identifier)) {
       return {
-        success: false,
-        linkedinProfileId: '',
-        headline: '',
-        about: '',
-        experience: [],
-        snapshot: '',
+        ...emptyProfile(''),
         error: 'linkedinUrl or linkedinProfileId is required',
       };
     }
@@ -145,31 +148,12 @@ export class FetchLinkedinProfileService {
 
     if (!isDefined(profile)) {
       return {
-        success: false,
-        linkedinProfileId: resolved.identifier,
-        headline: '',
-        about: '',
-        experience: [],
-        snapshot: '',
+        ...emptyProfile(resolved.identifier),
         error: 'Unipile returned no profile',
       };
     }
 
-    const headline =
-      typeof profile.headline === 'string' ? profile.headline : '';
-    const about =
-      typeof profile.about === 'string'
-        ? profile.about
-        : typeof profile.summary === 'string'
-          ? profile.summary
-          : '';
-    const experience = profile.work_experience ?? profile.experience ?? [];
-    const snapshot = JSON.stringify(profile);
-    const linkedinProfileId =
-      (typeof profile.public_identifier === 'string' &&
-        profile.public_identifier) ||
-      (typeof profile.provider_id === 'string' && profile.provider_id) ||
-      resolved.identifier;
+    const mapped = mapUnipileProfile(profile, resolved.identifier);
 
     if (isNonEmptyString(input.candidateId)) {
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -182,23 +166,146 @@ export class FetchLinkedinProfileService {
             );
 
           await candidateRepository.update(input.candidateId as string, {
-            linkedinProfileId,
-            linkedinProfileSnapshot: snapshot,
+            linkedinProfileId: mapped.linkedinProfileId,
+            linkedinProfileSnapshot: mapped.snapshot,
           });
         },
         authContext,
       );
     }
 
-    this.logger.log(`Fetched LinkedIn profile ${linkedinProfileId}`);
+    this.logger.log(`Fetched LinkedIn profile ${mapped.linkedinProfileId}`);
 
-    return {
-      success: true,
-      linkedinProfileId,
-      headline,
-      about,
-      experience,
-      snapshot,
-    };
+    return mapped;
   }
 }
+
+const emptyProfile = (linkedinProfileId: string) => ({
+  success: false as const,
+  linkedinProfileId,
+  firstName: '',
+  lastName: '',
+  headline: '',
+  about: '',
+  location: '',
+  linkedinUrl: '',
+  profilePictureUrl: '',
+  experience: [] as Array<{
+    company: string;
+    position: string;
+    location: string;
+    description: string;
+    start: string;
+    end: string;
+  }>,
+  skills: [] as string[],
+  snapshot: '',
+  error: '',
+});
+
+const readProfileString = (
+  profile: Record<string, unknown>,
+  keys: string[],
+): string => {
+  for (const key of keys) {
+    const value = profile[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+};
+
+const mapExperience = (
+  profile: Record<string, unknown>,
+): Array<{
+  company: string;
+  position: string;
+  location: string;
+  description: string;
+  start: string;
+  end: string;
+}> => {
+  const raw = profile.work_experience ?? profile.experience;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .map((item) => {
+      const nestedCompany =
+        item.company && typeof item.company === 'object'
+          ? (item.company as Record<string, unknown>)
+          : undefined;
+
+      return {
+        company:
+          readProfileString(item, ['company', 'companyName', 'company_name']) ||
+          (nestedCompany
+            ? readProfileString(nestedCompany, ['name', 'title'])
+            : ''),
+        position: readProfileString(item, ['position', 'title', 'jobTitle']),
+        location: readProfileString(item, ['location']),
+        description: readProfileString(item, ['description', 'summary']),
+        start: readProfileString(item, ['start', 'startDate', 'start_date']),
+        end: readProfileString(item, ['end', 'endDate', 'end_date']),
+      };
+    });
+};
+
+const mapSkills = (profile: Record<string, unknown>): string[] => {
+  const raw = profile.skills;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item.trim();
+      }
+      if (item && typeof item === 'object' && 'name' in item) {
+        const name = (item as { name?: unknown }).name;
+        return typeof name === 'string' ? name.trim() : '';
+      }
+      return '';
+    })
+    .filter((name) => name.length > 0);
+};
+
+const mapUnipileProfile = (
+  profile: Record<string, unknown>,
+  fallbackIdentifier: string,
+) => {
+  const linkedinProfileId =
+    readProfileString(profile, ['public_identifier', 'provider_id']) ||
+    fallbackIdentifier;
+  const firstName = readProfileString(profile, ['first_name', 'firstName']);
+  const lastName = readProfileString(profile, ['last_name', 'lastName']);
+
+  return {
+    success: true as const,
+    linkedinProfileId,
+    firstName,
+    lastName,
+    headline: readProfileString(profile, ['headline']),
+    about: readProfileString(profile, ['about', 'summary']),
+    location: readProfileString(profile, ['location']),
+    linkedinUrl:
+      readProfileString(profile, ['profile_url', 'linkedinUrl', 'url']) ||
+      (linkedinProfileId
+        ? `https://www.linkedin.com/in/${linkedinProfileId}`
+        : ''),
+    profilePictureUrl: readProfileString(profile, [
+      'profile_picture_url',
+      'profilePictureUrl',
+      'picture_url',
+    ]),
+    experience: mapExperience(profile),
+    skills: mapSkills(profile),
+    snapshot: JSON.stringify(profile),
+    error: '',
+  };
+};

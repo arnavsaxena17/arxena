@@ -1,0 +1,246 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Arxena Jobs API",
+    "description": "Job search via Unipile LinkedIn (Sales Navigator auto account resolution) and Harvest. Hits are returned in a standard format.",
+    "version": "1.0.0",
+    "contact": {
+      "email": "felix@arxena.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.arxena.com",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/jobs-api/jobs/search": {
+      "post": {
+        "operationId": "searchJobs",
+        "summary": "Search jobs",
+        "description": "Search jobs. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job search hits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs-api/data-sources": {
+      "get": {
+        "operationId": "listJobDataSources",
+        "summary": "List job search data sources",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data source catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobDataSourcesStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "JobSearchHit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "postedAt": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "id": "job-1",
+          "title": "Account Executive",
+          "location": "San Francisco",
+          "url": "https://www.linkedin.com/jobs/view/1",
+          "companyName": "Acme",
+          "postedAt": "2026-08-01"
+        }
+      },
+      "JobSearchRequest": {
+        "type": "object",
+        "properties": {
+          "dataSource": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "harvest",
+              "unipile",
+              "pool",
+              "recruiter"
+            ],
+            "example": "auto"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "string",
+            "example": "account executive"
+          },
+          "location": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "datePosted": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          }
+        },
+        "example": {
+          "keywords": "account executive",
+          "dataSource": "auto",
+          "limit": 10
+        }
+      },
+      "JobSearchResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "dataSource": {
+            "type": "string",
+            "enum": [
+              "harvest",
+              "unipile",
+              "pool",
+              "recruiter"
+            ]
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobSearchHit"
+            }
+          }
+        },
+        "example": {
+          "status": "ok",
+          "dataSource": "unipile",
+          "total": 1,
+          "items": [
+            {
+              "id": "job-1",
+              "title": "Account Executive",
+              "location": "San Francisco",
+              "url": "https://www.linkedin.com/jobs/view/1",
+              "companyName": "Acme",
+              "postedAt": "2026-08-01"
+            }
+          ]
+        }
+      },
+      "JobDataSourcesStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "harvest",
+                    "unipile",
+                    "pool",
+                    "recruiter"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "configured": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

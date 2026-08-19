@@ -1,9 +1,9 @@
 ---
 title: Authentication
-description: Authenticate People API requests with a workspace-scoped Bearer token.
+description: Authenticate search API requests with a workspace-scoped Bearer token.
 ---
 
-Most People API requests require a workspace token:
+Most People, Company, Jobs, and Posts API requests require a workspace token:
 
 ```http
 Authorization: Bearer YOUR_API_KEY_TOKEN
@@ -19,7 +19,7 @@ Authorization: Bearer YOUR_API_KEY_TOKEN
 For production use, assign the API key to a role under **Settings → Members → Roles → Assignment** so the key only gets the permissions it needs.
 
 <Warning>
-Keep this token secret. Anyone who has it can call the People API with your workspace permissions.
+Keep this token secret. Anyone who has it can call the People, Company, Jobs, and Posts APIs with your workspace permissions.
 </Warning>
 
 ## Using the playground
@@ -39,10 +39,13 @@ These stay ungated on purpose — short **nouns**, not engines:
 
 ```bash
 curl https://app.arxena.com/people-api/openapi.json
+curl https://app.arxena.com/company-api/openapi.json
+curl https://app.arxena.com/jobs-api/openapi.json
+curl https://app.arxena.com/posts-api/openapi.json
 curl https://app.arxena.com/people-api/taxonomy/constants
 ```
 
-[Taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) are Apollo-style flat label lists (grade levels, grade categories, function roots). People search and other authenticated endpoints require Bearer auth.
+[Taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants) are Apollo-style flat label lists (grade levels, grade categories, function roots). Search endpoints and other authenticated endpoints require Bearer auth.
 
 ## Fair use
 

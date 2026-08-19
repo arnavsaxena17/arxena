@@ -5,59 +5,85 @@ import { COMPANY_DATA_SOURCE_CATEGORIES } from '../company-api/constants/company
 const dataSourceEnum = COMPANY_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
 );
+const resolvedDataSourceEnum = dataSourceEnum.filter(
+  (alias) => alias !== 'auto',
+);
 
 export const COMPANY_API_PRODUCTION_SERVER_URL = 'https://app.arxena.com';
 export const COMPANY_API_LOCAL_SERVER_URL = 'http://localhost:3000';
 
+export type CompanyApiOpenApiServer = {
+  url: string;
+  description: string;
+};
+
+export const COMPANY_API_DOCS_SERVERS: CompanyApiOpenApiServer[] = [
+  {
+    url: COMPANY_API_PRODUCTION_SERVER_URL,
+    description: 'Production',
+  },
+  {
+    url: COMPANY_API_LOCAL_SERVER_URL,
+    description: 'Local development',
+  },
+];
+
+const resolveServers = (
+  servers: string | CompanyApiOpenApiServer[],
+): OpenAPIV3_1.ServerObject[] => {
+  if (typeof servers === 'string') {
+    return [{ url: servers, description: 'Arxena server' }];
+  }
+
+  return servers.map((server) => ({
+    url: server.url,
+    description: server.description,
+  }));
+};
+
+const bearerAuth: OpenAPIV3_1.SecuritySchemeObject = {
+  type: 'http',
+  scheme: 'bearer',
+};
+
 export const buildCompanyApiOpenApiDocument = (
-  serverUrl: string = COMPANY_API_PRODUCTION_SERVER_URL,
+  servers: string | CompanyApiOpenApiServer[] = COMPANY_API_DOCS_SERVERS,
 ): OpenAPIV3_1.Document => ({
   openapi: '3.1.1',
   info: {
     title: 'Arxena Company API',
     description:
-      'Company search across Elasticsearch, Unipile LinkedIn (Sales Navigator auto, classic/premium, Recruiter account), and Harvest.',
+      'Company search across Elasticsearch, Unipile LinkedIn (Sales Navigator auto, classic/premium, Recruiter), and Harvest. Hits are returned in a standard format.',
     version: '1.0.0',
     contact: {
       email: 'felix@arxena.com',
     },
   },
-  servers: [{ url: serverUrl, description: 'Arxena server' }],
+  servers: resolveServers(servers),
   paths: {
     '/company-api/companies/search': {
       post: {
         operationId: 'searchCompanies',
         summary: 'Search companies',
+        description:
+          'Search companies. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest, then the companies index.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
             'application/json': {
-              schema: {
-                type: 'object',
-                properties: {
-                  dataSource: {
-                    type: 'string',
-                    enum: dataSourceEnum,
-                    description:
-                      'auto prefers Unipile Sales Navigator, then Recruiter/classic, Harvest, then index.',
-                  },
-                  accountId: { type: 'string' },
-                  query: { type: 'string' },
-                  keywords: { type: 'string' },
-                  companyName: { type: 'string' },
-                  website: { type: 'string' },
-                  industry: { type: 'string' },
-                  location: { type: 'string' },
-                  limit: { type: 'number', minimum: 1, maximum: 100 },
-                },
-              },
+              schema: { $ref: '#/components/schemas/CompanySearchRequest' },
             },
           },
         },
         responses: {
           '200': {
             description: 'Company search hits',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CompanySearchResponse' },
+              },
+            },
           },
         },
       },
@@ -67,15 +93,110 @@ export const buildCompanyApiOpenApiDocument = (
         operationId: 'listCompanyDataSources',
         summary: 'List company search data sources',
         security: [{ bearerAuth: [] }],
-        responses: { '200': { description: 'Data source catalog' } },
+        responses: {
+          '200': {
+            description: 'Data source catalog',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/CompanyDataSourcesStatusResponse',
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
   components: {
-    securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
+    securitySchemes: { bearerAuth },
+    schemas: {
+      CompanySearchHit: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          website: { type: 'string' },
+          linkedinUrl: { type: 'string' },
+          industry: { type: 'string' },
+        },
+        example: {
+          id: 'acme',
+          name: 'Acme',
+          website: 'acme.com',
+          linkedinUrl: 'https://www.linkedin.com/company/acme',
+          industry: 'Software',
+        },
+      },
+      CompanySearchRequest: {
+        type: 'object',
+        properties: {
+          dataSource: {
+            type: 'string',
+            enum: dataSourceEnum,
+            description:
+              'auto prefers Unipile Sales Navigator, then Recruiter/classic, Harvest, then index.',
+            example: 'auto',
+          },
+          accountId: { type: 'string' },
+          query: { type: 'string' },
+          keywords: { type: 'string' },
+          companyName: { type: 'string', example: 'Acme' },
+          website: { type: 'string' },
+          industry: { type: 'string' },
+          location: { type: 'string' },
+          limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
+        },
+        example: {
+          companyName: 'Acme',
+          dataSource: 'auto',
+          limit: 10,
+        },
+      },
+      CompanySearchResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          dataSource: { type: 'string', enum: resolvedDataSourceEnum },
+          unipileProduct: { type: 'string' },
+          total: { type: 'integer' },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/CompanySearchHit' },
+          },
+        },
+        example: {
+          status: 'ok',
+          dataSource: 'index',
+          total: 1,
+          items: [
+            {
+              id: 'acme',
+              name: 'Acme',
+              website: 'acme.com',
+              linkedinUrl: 'https://www.linkedin.com/company/acme',
+              industry: 'Software',
+            },
+          ],
+        },
+      },
+      CompanyDataSourcesStatusResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          sources: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                alias: { type: 'string', enum: dataSourceEnum },
+                label: { type: 'string' },
+                description: { type: 'string' },
+                configured: { type: 'boolean' },
+              },
+            },
+          },
+        },
       },
     },
   },

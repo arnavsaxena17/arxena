@@ -11,6 +11,7 @@ import { FLOW_ACTIONS } from '@/workflow/workflow-steps/workflow-actions/constan
 import { HUMAN_INPUT_ACTIONS } from '@/workflow/workflow-steps/workflow-actions/constants/HumanInputActions';
 import { RECORD_ACTIONS } from '@/workflow/workflow-steps/workflow-actions/constants/RecordActions';
 import { useLingui } from '@lingui/react/macro';
+import { CODE_STEP_LOGIC_FUNCTION_NAME } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 
 export type WorkflowActionSelection = {
@@ -29,8 +30,11 @@ export const SidePanelWorkflowSelectAction = ({
 
   // Include workspace-seeded first-party LFs (e.g. search-people-for-company).
   // They live on the workspace custom application, so excluding that app hid them.
+  // CODE-step logic functions also have trigger settings but are added via Core.
   const toolFunctions = logicFunctions.filter(
-    (fn) => isDefined(fn.workflowActionTriggerSettings),
+    (fn) =>
+      isDefined(fn.workflowActionTriggerSettings) &&
+      fn.name !== CODE_STEP_LOGIC_FUNCTION_NAME,
   );
 
   const handleActionClick = (actionType: WorkflowActionType) => {

@@ -19,6 +19,27 @@
         "command": "tsx packages/twenty-docs/scripts/export-people-openapi.ts"
       }
     },
+    "export-company-openapi": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/openapi/company-api.json"],
+      "options": {
+        "command": "tsx packages/twenty-docs/scripts/export-company-openapi.ts"
+      }
+    },
+    "export-jobs-openapi": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/openapi/jobs-api.json"],
+      "options": {
+        "command": "tsx packages/twenty-docs/scripts/export-jobs-openapi.ts"
+      }
+    },
+    "export-posts-openapi": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/openapi/posts-api.json"],
+      "options": {
+        "command": "tsx packages/twenty-docs/scripts/export-posts-openapi.ts"
+      }
+    },
     "validate": {
       "executor": "nx:run-commands",
       "options": {

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
 
 export type SearchPeopleInput = {
@@ -25,6 +26,25 @@ const readString = (item: Record<string, unknown>, keys: string[]): string => {
   }
 
   return '';
+};
+
+const readTaxonomy = (
+  item: Record<string, unknown>,
+): {
+  stdFunction: string;
+  stdFunctionRoot: string;
+  stdGrade: string;
+} => {
+  const resolved =
+    item.resolved && typeof item.resolved === 'object'
+      ? (item.resolved as Record<string, unknown>)
+      : item;
+
+  return {
+    stdFunction: readString(resolved, ['stdFunction']),
+    stdFunctionRoot: readString(resolved, ['stdFunctionRoot']),
+    stdGrade: readString(resolved, ['stdGrade']),
+  };
 };
 
 @Injectable()
@@ -66,22 +86,48 @@ export class SearchPeopleService {
       );
 
       const people = (search.items ?? []).map((item) => {
-        const firstName =
-          typeof item.first_name === 'string' ? item.first_name : '';
-        const lastName =
-          typeof item.last_name === 'string' ? item.last_name : '';
+        const firstName = readString(item, ['firstName', 'first_name']);
+        const lastName = readString(item, ['lastName', 'last_name']);
+        const linkedinUrl = readString(item, [
+          'linkedinUrl',
+          'linkedin_url',
+          'profile_url',
+          'profileUrl',
+          'public_profile_url',
+          'url',
+        ]);
+        const taxonomy = readTaxonomy(item);
 
         return {
-          name: readString(item, ['name']) || [firstName, lastName].filter(Boolean).join(' '),
-          title: readString(item, ['title', 'headline']),
-          linkedinUrl: readString(item, [
-            'linkedinUrl',
-            'linkedin_url',
-            'profile_url',
-            'profileUrl',
-            'url',
+          name:
+            readString(item, ['name', 'fullName']) ||
+            [firstName, lastName].filter(Boolean).join(' '),
+          firstName,
+          lastName,
+          title: readString(item, ['title', 'jobTitle', 'headline']),
+          headline: readString(item, ['headline', 'linkedinHeadline', 'title']),
+          companyName: readString(item, [
+            'companyName',
+            'company',
+            'org',
+            'jobCompanyName',
           ]),
-          companyName: readString(item, ['companyName', 'company', 'org']),
+          location: readString(item, ['location', 'locationName']),
+          linkedinUrl,
+          linkedinProfileId:
+            readString(item, [
+              'linkedinProfileId',
+              'public_identifier',
+              'peopleId',
+            ]) || extractLinkedinProfileId(linkedinUrl),
+          peopleId: readString(item, ['peopleId', 'id']),
+          profilePictureUrl: readString(item, [
+            'profilePictureUrl',
+            'displayPicture',
+            'profile_picture_url',
+          ]),
+          source: readString(item, ['source']) || search.dataSource,
+          ...taxonomy,
         };
       });
 

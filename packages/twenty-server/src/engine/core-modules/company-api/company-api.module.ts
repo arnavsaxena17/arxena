@@ -11,6 +11,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
 import { CompanyApiController } from './company-api.controller';
 import { CompanyApiService } from './company-api.service';
 import { CompanySearchDataSourceResolver } from './services/company-search-data-source.resolver';
+import { CompanySearchHitTransformer } from './services/company-search-hit.transformer';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CompanySearchDataSourceResolver } from './services/company-search-data-
   providers: [
     CompanyApiService,
     CompanySearchDataSourceResolver,
+    CompanySearchHitTransformer,
     JwtAuthGuard,
   ],
   exports: [CompanyApiService],

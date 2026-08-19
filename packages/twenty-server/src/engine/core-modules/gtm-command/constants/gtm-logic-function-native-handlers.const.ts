@@ -6,6 +6,7 @@ import {
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -81,6 +82,21 @@ export const main = async (params: {
 };
 `;
 
+const SEARCH_POSTS_HANDLER = `// Native GTM action: SearchPostsService (Posts API).
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  keywords?: string;
+  sortBy?: string;
+  datePosted?: string;
+  contentType?: string;
+  dataSource?: string;
+  accountId?: string;
+  limit?: number;
+}) => {
+  return params;
+};
+`;
+
 const FETCH_LINKEDIN_MESSAGES_HANDLER = `// Native GTM action: FetchLinkedinMessagesService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
@@ -115,6 +131,7 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: SEARCH_PEOPLE_HANDLER,
   [GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
   [GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,
+  [GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: SEARCH_POSTS_HANDLER,
   [GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     FETCH_LINKEDIN_MESSAGES_HANDLER,
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:

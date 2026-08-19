@@ -54,6 +54,27 @@
           "pages": [
             "api-reference/people/search-people"
           ]
+        },
+        {
+          "key": "apiReferenceCompanies",
+          "label": "Companies",
+          "pages": [
+            "api-reference/companies/search-companies"
+          ]
+        },
+        {
+          "key": "apiReferenceJobs",
+          "label": "Jobs",
+          "pages": [
+            "api-reference/jobs/search-jobs"
+          ]
+        },
+        {
+          "key": "apiReferencePosts",
+          "label": "Posts",
+          "pages": [
+            "api-reference/posts/search-posts"
+          ]
         }
       ]
     },
@@ -520,6 +541,9 @@
           "pages": [
             "developers/extend/api",
             "developers/extend/api/people-api",
+            "developers/extend/api/company-api",
+            "developers/extend/api/jobs-api",
+            "developers/extend/api/posts-api",
             "developers/extend/org-chart-embed",
             "developers/extend/webhooks",
             "developers/extend/oauth"

@@ -1,0 +1,34 @@
+---
+title: Jobs API
+icon: 'briefcase'
+description: Search jobs with workspace-scoped API keys. Hits are returned in a standard format.
+---
+
+The Jobs API gives each workspace a programmatic way to search jobs with a workspace-scoped Bearer token.
+
+For full endpoint docs and an interactive playground, use the **API Reference**:
+
+<CardGroup cols={2}>
+  <Card title="Search jobs" icon="magnifying-glass" href="/api-reference/jobs/search-jobs">
+    POST /jobs-api/jobs/search
+  </Card>
+  <Card title="Authentication" icon="lock" href="/api-reference/authentication">
+    Create a workspace API key and authenticate requests
+  </Card>
+</CardGroup>
+
+## Data source aliases
+
+| Alias | Typical use |
+|------|-------------|
+| `auto` | Unipile Sales Navigator, then Recruiter/classic, then Harvest |
+| `unipile` | LinkedIn classic job search via Unipile |
+| `pool` | Shared Unipile Sales Navigator pool |
+| `recruiter` | Recruiter-connected Unipile account |
+| `harvest` | Harvest LinkedIn job search ([job search](https://docs.harvestapi.io/linkedin-api-reference/job/search)) |
+
+## OpenAPI
+
+```bash
+curl https://app.arxena.com/jobs-api/openapi.json
+```

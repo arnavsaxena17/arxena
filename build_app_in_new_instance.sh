@@ -15,7 +15,36 @@ BUILD_BRANCH="${BUILD_BRANCH:-port/arxena-modules}"
 # Latest builder transcript only (overwritten each run; older logs are discarded).
 BUILD_LOG_DIR="${BUILD_LOG_DIR:-$HOME/logs}"
 BUILD_LOG_LATEST="${BUILD_LOG_DIR}/build_app.latest.log"
+BUILD_TIMING_LOG="${BUILD_TIMING_LOG:-$BUILD_LOG_DIR/build_app.timing.log}"
+BUILD_PROCESS_START="${BUILD_PROCESS_START:-$(date +%s)}"
+BUILD_TIMING_LOGGED=0
 REMOTE_BUILD_LOG_PATH="/home/ubuntu/remote-build.log"
+
+format_duration() {
+  local s="${1:-0}"
+  local h=$((s / 3600))
+  local m=$(((s % 3600) / 60))
+  local sec=$((s % 60))
+  if [ "$h" -gt 0 ]; then
+    printf '%dh %dm %ds (%ss)' "$h" "$m" "$sec" "$s"
+  elif [ "$m" -gt 0 ]; then
+    printf '%dm %ds (%ss)' "$m" "$sec" "$s"
+  else
+    printf '%ds' "$s"
+  fi
+}
+
+log_timing() {
+  local label="$1"
+  local since="${2:-$BUILD_PROCESS_START}"
+  local now elapsed line
+  now="$(date +%s)"
+  elapsed=$((now - since))
+  line="[timing] ${label}: $(format_duration "$elapsed")  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
+  echo "$line"
+  mkdir -p "$BUILD_LOG_DIR"
+  echo "$line" >> "$BUILD_TIMING_LOG"
+}
 TEMP_INSTANCE_ID=""
 TEMP_DNS=""
 BUILDER_VOLUME_ID=""
@@ -59,6 +88,10 @@ NGINX_RELOADED=0
 # Must finish (and re-exec) before bash reads further lines: a mid-run git pull that rewrites
 # this file causes "syntax error near unexpected token '('" when the line offsets shift.
 if [ "${SKIP_REPO_SYNC:-0}" != "1" ] && [ -d "$REPO_DIR/.git" ]; then
+  mkdir -p "$BUILD_LOG_DIR"
+  : > "$BUILD_TIMING_LOG"
+  echo "[timing] Build process started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
+  echo "[timing] Build process started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))" >> "$BUILD_TIMING_LOG"
   echo "Syncing repo with build branch ($BUILD_BRANCH)..."
   cd "$REPO_DIR"
   git fetch origin
@@ -75,8 +108,18 @@ if [ "${SKIP_REPO_SYNC:-0}" != "1" ] && [ -d "$REPO_DIR/.git" ]; then
     echo "Ignoring /tmp/build-script-keep (set KEEP_LOCAL_BUILD_SCRIPTS=1 to restore orchestrator overrides)"
   fi
   cd "$SCRIPT_DIR"
+  log_timing "Repo sync"
   echo "Re-executing build script after repo sync..."
-  exec env SKIP_REPO_SYNC=1 "$REPO_DIR/build_app_in_new_instance.sh" "$@"
+  exec env SKIP_REPO_SYNC=1 BUILD_PROCESS_START="$BUILD_PROCESS_START" \
+    BUILD_TIMING_LOG="$BUILD_TIMING_LOG" \
+    "$REPO_DIR/build_app_in_new_instance.sh" "$@"
+fi
+
+mkdir -p "$BUILD_LOG_DIR"
+if [ ! -f "$BUILD_TIMING_LOG" ]; then
+  : > "$BUILD_TIMING_LOG"
+  echo "[timing] Build process started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
+  echo "[timing] Build process started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))" >> "$BUILD_TIMING_LOG"
 fi
 
 ssh_builder() {
@@ -227,6 +270,11 @@ cleanup() {
         echo "Cleaning up and terminating instance..."
         timeout 60 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID || \
           aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 terminate-instances --instance-ids $TEMP_INSTANCE_ID
+    fi
+    if [ "${BUILD_TIMING_LOGGED:-0}" != "1" ]; then
+      log_timing "Build process finished (total, including cleanup)"
+      echo "[timing] Timing log: $BUILD_TIMING_LOG"
+      BUILD_TIMING_LOGGED=1
     fi
     exit "$exit_code"
 }
@@ -1004,12 +1052,15 @@ if [ -z "${SELECTED_BUILDS:-}" ]; then
       write_meta_value "$_name" "$HEAD_SHA"
     done
   fi
+  log_timing "Build process finished (nothing to build)"
+  echo "[timing] Timing log: $BUILD_TIMING_LOG"
+  BUILD_TIMING_LOGGED=1
   TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"
   echo "Operations Complete, Will Power Off"
   exit 0
 fi
 
-start_time=$(date +%s)
+INSTANCE_START="$(date +%s)"
 
 echo "Using AWS profile $AWS_PROFILE (EC2 SSH key remains $EC2_KEY_NAME)"
 if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" sts get-caller-identity >/dev/null 2>&1; then
@@ -1025,9 +1076,7 @@ TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances --image-id
 echo $TEMP_INSTANCE_ID
 echo "EC2 instance is starting, please wait....."
 aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids $TEMP_INSTANCE_ID
-end_time=$(date +%s)
-elapsed_time=$((end_time - start_time))
-echo "Instance creation took $elapsed_time seconds."
+log_timing "EC2 instance launch and status-ok" "$INSTANCE_START"
 
 TEMP_PRIVATE_IP=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)
 TEMP_PUBLIC_DNS=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids $TEMP_INSTANCE_ID --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
@@ -1048,8 +1097,12 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 
+VOLUME_START="$(date +%s)"
 attach_builder_volume
+log_timing "EBS attach and mount" "$VOLUME_START"
+NX_CACHE_START="$(date +%s)"
 pull_nx_cache_from_s3 || true
+log_timing "Nx cache S3 pull" "$NX_CACHE_START"
 
 scp -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$SCRIPT_DIR/script_to_build_app_in_new_instance.sh" ubuntu@$TEMP_DNS:/home/ubuntu/
 for config in "$SCRIPT_DIR/build.config" "$REPO_DIR/build.config" "/home/ubuntu/twenty/build.config"; do
@@ -1079,9 +1132,12 @@ ssh -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" ubuntu@$TEMP_DNS \
   "BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE chmod +x script_to_build_app_in_new_instance.sh && BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE ./script_to_build_app_in_new_instance.sh" \
   > >(tee "$BUILD_LOG_SSH_FALLBACK") 2>&1 &
 REMOTE_BUILD_SSH_PID=$!
+REMOTE_BUILD_START="$(date +%s)"
+echo "[timing] Remote package build started  ($(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z'))"
 poll_remote_build_and_stream "$REMOTE_BUILD_SSH_PID" "$BUILD_LOG_SSH_FALLBACK"
 wait "$REMOTE_BUILD_SSH_PID"
 REMOTE_BUILD_EXIT_CODE=$?
+log_timing "Remote package build + streaming deploy" "$REMOTE_BUILD_START"
 set -e
 if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ] && grep -E -q 'Required build check passed' "$BUILD_LOG_SSH_FALLBACK" 2>/dev/null; then
   echo "Remote SSH exited $REMOTE_BUILD_EXIT_CODE after a successful build log; continuing deploy."
@@ -1125,6 +1181,9 @@ if [ -x "$REPO_DIR/node_modules/.bin/nx" ]; then
   (cd "$REPO_DIR" && ./node_modules/.bin/nx daemon --stop) >/dev/null 2>&1 || true
 fi
 
+log_timing "Build process finished (total, before instance terminate)"
+echo "[timing] Timing log: $BUILD_TIMING_LOG"
+BUILD_TIMING_LOGGED=1
 TZ=Asia/Kolkata date "+%Y-%m-%d %H:%M:%S %Z"
 
 echo "Operations Complete, Will Power Off"

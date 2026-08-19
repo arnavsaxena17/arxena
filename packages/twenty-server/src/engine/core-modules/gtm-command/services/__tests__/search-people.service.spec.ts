@@ -64,7 +64,7 @@ describe('SearchPeopleService', () => {
         workspaceId: 'ws-1',
         input: { naturalLanguage: 'CEO at Acme', limit: 5 },
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       success: true,
       total: 1,
       dataSource: 'index',
@@ -72,8 +72,11 @@ describe('SearchPeopleService', () => {
       people: [
         {
           name: 'Ada',
+          firstName: '',
+          lastName: '',
           title: 'CEO',
           linkedinUrl: 'https://www.linkedin.com/in/ada',
+          linkedinProfileId: 'ada',
           companyName: 'Acme',
         },
       ],
