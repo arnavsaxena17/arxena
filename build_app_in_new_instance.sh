@@ -26,8 +26,8 @@ BUILD_STATUS_LOCAL_FILE=""
 CLEANUP_DONE=0
 NX_CACHE_PUSHED=0
 
-# AWS CLI profile for launch / EBS / S3 (SSH key is still arxmukti-key.pem).
-AWS_PROFILE="${AWS_PROFILE:-arxmukti-key}"
+# AWS CLI profile for launch / EBS / S3. EC2 key pair / PEM is arxmukti-key, not this profile.
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_CLI_PROFILE_ARGS=()
 if [ -n "${AWS_PROFILE:-}" ]; then
   AWS_CLI_PROFILE_ARGS=(--profile "$AWS_PROFILE")
@@ -1003,7 +1003,14 @@ fi
 
 start_time=$(date +%s)
 
-echo "Using AWS profile $AWS_PROFILE"
+echo "Using AWS profile $AWS_PROFILE (EC2 SSH key remains $EC2_KEY_NAME)"
+if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" sts get-caller-identity >/dev/null 2>&1; then
+  echo "ERROR: AWS CLI profile '$AWS_PROFILE' is missing or has no credentials."
+  echo "Configured profiles:"
+  aws configure list-profiles 2>/dev/null || true
+  echo "Override with AWS_PROFILE=<name> if needed. Do not use the SSH key name arxmukti-key as the CLI profile."
+  exit 1
+fi
 ensure_s3_bucket || true
 
 TEMP_INSTANCE_ID=$(aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 run-instances --image-id "$EC2_IMAGE_ID" --instance-type "$EC2_INSTANCE_TYPE" --key-name "$EC2_KEY_NAME" --security-group-ids "$EC2_SECURITY_GROUP_ID" --subnet-id "$EC2_SUBNET_ID" --block-device-mappings "[{\"DeviceName\":\"/dev/sda1\",\"Ebs\":{\"VolumeSize\":$EC2_VOLUME_SIZE,\"VolumeType\":\"gp3\"}}]" --query 'Instances[0].InstanceId' --output text)

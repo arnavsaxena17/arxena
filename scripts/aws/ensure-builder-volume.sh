@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Create (if missing) and print the id of the persistent arm64 builder data volume.
-# Usage: AWS_PROFILE=arxmukti-key ./scripts/aws/ensure-builder-volume.sh
+# Usage: AWS_PROFILE=arxmukti ./scripts/aws/ensure-builder-volume.sh
 set -euo pipefail
 
-AWS_PROFILE="${AWS_PROFILE:-arxmukti-key}"
+AWS_PROFILE="${AWS_PROFILE:-arxmukti}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
 VOLUME_TAG_NAME="${BUILDER_VOLUME_TAG_NAME:-arxena-builder-workspace}"
