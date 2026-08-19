@@ -1,6 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import {
+  GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_NATIVE_LOGIC_FUNCTION_NAMES,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
@@ -8,6 +10,8 @@ import {
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
+import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
+import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/services/search-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
@@ -23,6 +27,8 @@ export class GtmLogicFunctionNativeExecutor
   constructor(
     private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly fetchLinkedinMessagesService: FetchLinkedinMessagesService,
+    private readonly fetchCompanyDetailsService: FetchCompanyDetailsService,
     private readonly searchPeopleService: SearchPeopleService,
     private readonly searchCompaniesService: SearchCompaniesService,
     private readonly searchJobsService: SearchJobsService,
@@ -83,6 +89,32 @@ export class GtmLogicFunctionNativeExecutor
       return this.searchJobsService.execute({
         workspaceId,
         input: payload,
+      });
+    }
+
+    if (name === GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME) {
+      return this.fetchLinkedinMessagesService.execute({
+        workspaceId,
+        input: payload as {
+          workspaceMemberId?: string;
+          linkedinUrl?: string;
+          linkedinProfileId?: string;
+          candidateId?: string;
+          limit?: number;
+        },
+      });
+    }
+
+    if (name === GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME) {
+      return this.fetchCompanyDetailsService.execute({
+        workspaceId,
+        input: payload as {
+          companyName?: string;
+          website?: string;
+          linkedinUrl?: string;
+          workspaceMemberId?: string;
+          accountId?: string;
+        },
       });
     }
 

@@ -1,4 +1,6 @@
 import {
+  GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
@@ -91,6 +93,41 @@ export const GTM_SEARCH_JOBS_SAMPLE_OUTPUT = {
   ],
 };
 
+export const GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = {
+  success: true,
+  chatId: 'chat-1',
+  attendeeId: 'ACoAAExampleProviderId1234567890',
+  total: 1,
+  error: '',
+  messages: [
+    {
+      id: 'msg-1',
+      text: 'Hello',
+      timestamp: '2026-08-01T00:00:00.000Z',
+      senderId: 'ACoAAExampleProviderId1234567890',
+      isSender: false,
+    },
+  ],
+};
+
+export const GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
+  success: true,
+  dataSource: 'unipile',
+  error: '',
+  company: {
+    id: '123',
+    name: 'Acme',
+    website: 'acme.com',
+    linkedinUrl: 'https://www.linkedin.com/company/acme',
+    industry: 'Software',
+    description: 'B2B software',
+    tagline: 'Build faster',
+    employeeCount: 200,
+    followersCount: 1000,
+    publicIdentifier: 'acme',
+  },
+};
+
 export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   string,
   Record<string, unknown>
@@ -102,4 +139,8 @@ export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   [GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   [GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: GTM_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   [GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
+  [GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
+    GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
+  [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
+    GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
 };

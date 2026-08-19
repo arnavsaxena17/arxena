@@ -5,6 +5,10 @@ export const GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME =
 export const GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME = 'search-people';
 export const GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME = 'search-companies';
 export const GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME = 'search-jobs';
+export const GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME =
+  'fetch-linkedin-messages';
+export const GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME =
+  'fetch-company-details';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
@@ -91,12 +95,49 @@ export const GTM_SEARCH_JOBS_SAMPLE_OUTPUT = {
   ],
 };
 
+export const GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = {
+  success: true,
+  chatId: 'chat-1',
+  attendeeId: 'ACoAAExampleProviderId1234567890',
+  total: 1,
+  error: '',
+  messages: [
+    {
+      id: 'msg-1',
+      text: 'Hello',
+      timestamp: '2026-08-01T00:00:00.000Z',
+      senderId: 'ACoAAExampleProviderId1234567890',
+      isSender: false,
+    },
+  ],
+};
+
+export const GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
+  success: true,
+  dataSource: 'unipile',
+  error: '',
+  company: {
+    id: '123',
+    name: 'Acme',
+    website: 'acme.com',
+    linkedinUrl: 'https://www.linkedin.com/company/acme',
+    industry: 'Software',
+    description: 'B2B software',
+    tagline: 'Build faster',
+    employeeCount: 200,
+    followersCount: 1000,
+    publicIdentifier: 'acme',
+  },
+};
+
 export const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
 ]);
 
 const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
@@ -107,6 +148,10 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
   [GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   [GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: GTM_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   [GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
+  [GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
+    GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
+  [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
+    GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
 };
 
 export const isNativeGtmLogicFunction = (name?: string | null): boolean =>

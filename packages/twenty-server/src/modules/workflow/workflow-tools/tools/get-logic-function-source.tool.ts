@@ -26,7 +26,7 @@ export const createGetLogicFunctionSourceTool = (
   name: 'get_logic_function_source' as const,
   description: `Read TypeScript source of a CODE-step logic function.
 
-Do NOT use this for native GTM workflow actions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile) — source is a typed contract only. Use list_logic_function_tools inputSchema instead.`,
+Do NOT use this for native GTM workflow actions (search-people-for-company, search-people, search-companies, search-jobs, fetch-linkedin-profile, fetch-linkedin-messages, fetch-company-details) — source is a typed contract only. Use list_logic_function_tools inputSchema instead.`,
   inputSchema: getLogicFunctionSourceSchema,
   execute: async (parameters: { logicFunctionId: string }) => {
     try {

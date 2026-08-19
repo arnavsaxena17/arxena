@@ -18,6 +18,7 @@ import { SyncWorkflowBuildingFormHitlSkillContentCommand } from 'src/database/co
 import { SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000023-sync-workflow-building-create-complete-schema-skill-content.command';
 import { BackfillGtmOutreachWorkflowsSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000024-backfill-gtm-outreach-workflows-skill.command';
 import { EnsureGtmSearchLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000025-ensure-gtm-search-logic-functions.command';
+import { EnsureGtmFetchLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000026-ensure-gtm-fetch-logic-functions.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
@@ -56,6 +57,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncWorkflowBuildingCreateCompleteSchemaSkillContentCommand,
     BackfillGtmOutreachWorkflowsSkillCommand,
     EnsureGtmSearchLogicFunctionsCommand,
+    EnsureGtmFetchLogicFunctionsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

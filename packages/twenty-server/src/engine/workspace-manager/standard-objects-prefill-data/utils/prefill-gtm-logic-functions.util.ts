@@ -4,6 +4,8 @@ import { type WorkflowActionTriggerSettings } from 'twenty-shared/application';
 
 import { getGtmNativeLogicFunctionHandler } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-native-handlers.const';
 import {
+  GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
@@ -11,6 +13,8 @@ import {
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
+  GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
+  GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   GTM_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
   GTM_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
@@ -45,6 +49,14 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   searchJobsId: uuidv5(
     `${workspaceId}:search-jobs`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchLinkedinMessagesId: uuidv5(
+    `${workspaceId}:fetch-linkedin-messages`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchCompanyDetailsId: uuidv5(
+    `${workspaceId}:fetch-company-details`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -328,6 +340,122 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_SEARCH_JOBS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchLinkedinMessagesId,
+      name: GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch LinkedIn chat messages for a person via Unipile ChatAttendees. Pass linkedinUrl or linkedinProfileId plus optional workspaceMemberId/candidateId/limit.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch LinkedIn messages',
+        icon: 'IconBrandLinkedin',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              linkedinProfileId: {
+                type: 'string',
+                label: 'LinkedIn profile ID',
+              },
+              candidateId: { type: 'string', label: 'Candidate ID' },
+              limit: { type: 'number', label: 'Limit' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              chatId: { type: 'string', label: 'Chat ID' },
+              attendeeId: { type: 'string', label: 'Attendee ID' },
+              total: { type: 'number', label: 'Total' },
+              error: { type: 'string', label: 'Error' },
+              messages: {
+                type: 'array',
+                label: 'Messages',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    text: { type: 'string', label: 'Text' },
+                    timestamp: { type: 'string', label: 'Timestamp' },
+                    senderId: { type: 'string', label: 'Sender ID' },
+                    isSender: { type: 'boolean', label: 'Is sender' },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: GTM_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchCompanyDetailsId,
+      name: GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch a single company by LinkedIn URL, domain, or name. LinkedIn URL uses Unipile company profile; otherwise searches Company API and enriches when possible.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch company details',
+        icon: 'IconBuildingSkyscraper',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              companyName: { type: 'string', label: 'Company name' },
+              website: { type: 'string', label: 'Website / domain' },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              accountId: { type: 'string', label: 'Account ID' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              dataSource: { type: 'string', label: 'Data source' },
+              error: { type: 'string', label: 'Error' },
+              company: {
+                type: 'object',
+                label: 'Company',
+                properties: {
+                  id: { type: 'string', label: 'ID' },
+                  name: { type: 'string', label: 'Name' },
+                  website: { type: 'string', label: 'Website' },
+                  linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                  industry: { type: 'string', label: 'Industry' },
+                  description: { type: 'string', label: 'Description' },
+                  tagline: { type: 'string', label: 'Tagline' },
+                  employeeCount: { type: 'number', label: 'Employee count' },
+                  followersCount: { type: 'number', label: 'Followers count' },
+                  publicIdentifier: {
+                    type: 'string',
+                    label: 'Public identifier',
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
       },
     },
   ];

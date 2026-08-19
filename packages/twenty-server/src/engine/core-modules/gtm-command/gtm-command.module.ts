@@ -10,6 +10,8 @@ import { GtmCommandController } from 'src/engine/core-modules/gtm-command/contro
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { GtmWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job';
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
+import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
+import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { GtmLogicFunctionNativeExecutor } from 'src/engine/core-modules/gtm-command/services/gtm-logic-function-native.executor';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
@@ -104,6 +106,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     SearchCompaniesService,
     SearchJobsService,
     FetchLinkedinProfileService,
+    FetchLinkedinMessagesService,
+    FetchCompanyDetailsService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
     GtmInboundReplyWindowService,
@@ -117,6 +121,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     EnsureGtmProjectService,
     SearchPeopleForCompanyService,
     FetchLinkedinProfileService,
+    FetchLinkedinMessagesService,
+    FetchCompanyDetailsService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
     GtmInboundReplyWindowService,

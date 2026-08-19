@@ -1,4 +1,6 @@
 import {
+  GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
@@ -79,6 +81,32 @@ export const main = async (params: {
 };
 `;
 
+const FETCH_LINKEDIN_MESSAGES_HANDLER = `// Native GTM action: FetchLinkedinMessagesService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  workspaceMemberId?: string;
+  linkedinUrl?: string;
+  linkedinProfileId?: string;
+  candidateId?: string;
+  limit?: number;
+}) => {
+  return params;
+};
+`;
+
+const FETCH_COMPANY_DETAILS_HANDLER = `// Native GTM action: FetchCompanyDetailsService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  companyName?: string;
+  website?: string;
+  linkedinUrl?: string;
+  workspaceMemberId?: string;
+  accountId?: string;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -87,6 +115,10 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: SEARCH_PEOPLE_HANDLER,
   [GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
   [GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,
+  [GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
+    FETCH_LINKEDIN_MESSAGES_HANDLER,
+  [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
+    FETCH_COMPANY_DETAILS_HANDLER,
 };
 
 export const getGtmNativeLogicFunctionHandler = (name: string): string => {
