@@ -139,8 +139,8 @@ push_nx_cache_to_s3() {
     return 0
   fi
   if [ -z "${TEMP_DNS:-}" ]; then
-    return 0
-  fi
+        return 0
+      fi
   local remote_cache="${REMOTE_WORKSPACE}/.nx/cache"
   if ! ssh_builder "test -d '$remote_cache'" 2>/dev/null; then
     return 0
@@ -460,12 +460,20 @@ ensure_s3_bucket() {
   fi
   if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api head-bucket --bucket "$bucket" 2>/dev/null; then
     echo "Creating S3 bucket $bucket in $AWS_REGION..."
+    local create_out
     if [ "$AWS_REGION" = "us-east-1" ]; then
-      aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api create-bucket --bucket "$bucket" || true
+      create_out="$(aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api create-bucket --bucket "$bucket" 2>&1)" || true
     else
-      aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api create-bucket --bucket "$bucket" \
-        --create-bucket-configuration LocationConstraint="$AWS_REGION" || true
+      create_out="$(aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api create-bucket --bucket "$bucket" \
+        --create-bucket-configuration LocationConstraint="$AWS_REGION" 2>&1)" || true
     fi
+    if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" s3api head-bucket --bucket "$bucket" 2>/dev/null; then
+      echo "WARNING: Could not create or access s3://$bucket"
+      echo "$create_out"
+      echo "Nx cache sync will be skipped until the instance role can s3:CreateBucket/s3:PutObject on this bucket."
+      return 0
+    fi
+    echo "Created s3://$bucket"
   fi
   echo "Nx cache URI s3://${bucket}/${prefix}"
 }
@@ -711,24 +719,24 @@ ensure_front_orgchart_img_assets() {
   echo "Copied org-chart icons from $src into $dest"
 }
 
-ensure_docs_nginx_site() {
-  local domain="$1"
-  local export_dir="$2"
-  local snippet_source="$3"
-  local available_path="$4"
-  local enabled_path="$5"
-  local cert_email="${DOCS_CERTBOT_EMAIL:-support@arxena.com}"
+  ensure_docs_nginx_site() {
+    local domain="$1"
+    local export_dir="$2"
+    local snippet_source="$3"
+    local available_path="$4"
+    local enabled_path="$5"
+    local cert_email="${DOCS_CERTBOT_EMAIL:-support@arxena.com}"
 
-  if [ ! -d "$export_dir" ]; then
-    echo "Docs export directory missing for $domain: $export_dir"
-    return 1
-  fi
+    if [ ! -d "$export_dir" ]; then
+      echo "Docs export directory missing for $domain: $export_dir"
+      return 1
+    fi
 
-  sudo mkdir -p /var/www/certbot
+    sudo mkdir -p /var/www/certbot
 
-  if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
-    echo "Staging HTTP-only nginx for $domain certificate..."
-    sudo tee "$available_path" >/dev/null <<NGINX_HTTP
+    if [ ! -f "/etc/letsencrypt/live/${domain}/fullchain.pem" ]; then
+      echo "Staging HTTP-only nginx for $domain certificate..."
+      sudo tee "$available_path" >/dev/null <<NGINX_HTTP
 server {
   listen 80;
   server_name ${domain};
@@ -743,20 +751,20 @@ server {
   }
 }
 NGINX_HTTP
+      sudo ln -sf "$available_path" "$enabled_path"
+      sudo nginx -t
+      sudo systemctl reload nginx
+      sleep 5
+      sudo certbot certonly --webroot -w /var/www/certbot \
+        -d "$domain" \
+        --non-interactive --agree-tos -m "$cert_email"
+    fi
+
+    sudo cp "$snippet_source" "$available_path"
     sudo ln -sf "$available_path" "$enabled_path"
     sudo nginx -t
     sudo systemctl reload nginx
-    sleep 5
-    sudo certbot certonly --webroot -w /var/www/certbot \
-      -d "$domain" \
-      --non-interactive --agree-tos -m "$cert_email"
-  fi
-
-  sudo cp "$snippet_source" "$available_path"
-  sudo ln -sf "$available_path" "$enabled_path"
-  sudo nginx -t
-  sudo systemctl reload nginx
-}
+  }
 
 reload_nginx_once() {
   sudo systemctl reload nginx || sudo systemctl restart nginx
@@ -887,19 +895,19 @@ maybe_stream_component() {
     TWENTY_DOCS)
       local docs_root="$REPO_DIR/packages/twenty-docs/.deploy"
       mkdir -p "$docs_root/arxena"
-      DOCS_IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT \
-        http://169.254.169.254/latest/api/token \
-        -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
-      CURRENT_INSTANCE_ID="$(curl -s --connect-timeout 1 \
-        -H "X-aws-ec2-metadata-token: $DOCS_IMDS_TOKEN" \
-        http://169.254.169.254/latest/meta-data/instance-id || true)"
-      if [ "$CURRENT_INSTANCE_ID" = "i-01fa0853163833136" ]; then
-        ensure_docs_nginx_site \
-          docs.arxena.com \
+  DOCS_IMDS_TOKEN="$(curl -s --connect-timeout 1 -X PUT \
+    http://169.254.169.254/latest/api/token \
+    -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' || true)"
+  CURRENT_INSTANCE_ID="$(curl -s --connect-timeout 1 \
+    -H "X-aws-ec2-metadata-token: $DOCS_IMDS_TOKEN" \
+    http://169.254.169.254/latest/meta-data/instance-id || true)"
+    if [ "$CURRENT_INSTANCE_ID" = "i-01fa0853163833136" ]; then
+      ensure_docs_nginx_site \
+        docs.arxena.com \
           "$docs_root/arxena" \
-          "$REPO_DIR/scripts/nginx/docs-arxena.conf.snippet" \
-          /etc/nginx/sites-available/docs-arxena.conf \
-          /etc/nginx/sites-enabled/docs-arxena.conf
+        "$REPO_DIR/scripts/nginx/docs-arxena.conf.snippet" \
+        /etc/nginx/sites-available/docs-arxena.conf \
+        /etc/nginx/sites-enabled/docs-arxena.conf
       else
         reload_nginx_once
       fi
