@@ -367,6 +367,9 @@ map_path_to_builds() {
     yarn.lock|package.json|.yarnrc.yml|yarn.config.cjs)
       echo ALL
       ;;
+    build_app_in_new_instance.sh|script_to_build_app_in_new_instance.sh|build.config)
+      echo ALL
+      ;;
     packages/twenty-shared/*|packages/twenty-shared)
       expand_dependents TWENTY_SHARED
       ;;
@@ -1324,12 +1327,11 @@ for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_O
 done
 
 if [ -z "${SELECTED_BUILDS:-}" ]; then
-  echo "Nothing to build or deploy. Recording current HEAD in build-meta.json."
+  echo "Nothing to build or deploy (no package paths changed since ${LAST_DEPLOY_SHA:-unknown})."
+  echo "Not stamping package SHAs — live artifacts may still be older than HEAD."
+  echo "Force a rebuild with: FORCE_FULL_BUILD=1 ./build_app_in_new_instance.sh"
   if [ -n "$HEAD_SHA" ]; then
     write_meta_value commit "$HEAD_SHA"
-    for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_ORGCHART TWENTY_UI TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS TWENTY_EMAILS; do
-      write_meta_value "$_name" "$HEAD_SHA"
-    done
   fi
   log_timing "Build process finished (nothing to build)"
   echo "[timing] Timing log: $BUILD_TIMING_LOG"
