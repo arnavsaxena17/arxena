@@ -124,7 +124,7 @@ export class EngagedCandidateQueueService {
       whatsappDeliveryStatus: string;
       chatReply: string;
       phoneNumberFrom: string;
-      whatsappMessageId: string;
+      externalMessageId: string;
       databaseFilePath?: string | null;
       type?: string;
       isFromMe?: boolean;
@@ -150,27 +150,27 @@ export class EngagedCandidateQueueService {
       }
 
       // Step 3: Check for duplicate messages for this specific candidate and job context
-      if (replyObject.whatsappMessageId && replyObject.chatReply) {
+      if (replyObject.externalMessageId && replyObject.chatReply) {
         const duplicateResult =
           await this.workspaceQueryService.executeInWorkspaceContext(
             workspaceId,
             async () => {
-              const whatsappMessageRepository =
+              const chatMessageRepository =
                 await this.workspaceQueryService.getObjectRepository<{
                   id: string;
-                  whatsappMessageId?: string;
+                  externalMessageId?: string;
                   message?: string;
                   phoneFrom?: string;
                   phoneTo?: string;
                   candidateId?: string;
                   projectsId?: string;
-                }>(workspaceId, 'whatsappMessage');
+                }>(workspaceId, 'chatMessage');
 
               // For messages with actual WhatsApp message IDs (not 'NA'), check by message ID
-              if (replyObject.whatsappMessageId !== 'NA') {
-                return whatsappMessageRepository.findOne({
+              if (replyObject.externalMessageId !== 'NA') {
+                return chatMessageRepository.findOne({
                   where: {
-                    whatsappMessageId: replyObject.whatsappMessageId,
+                    externalMessageId: replyObject.externalMessageId,
                     message: replyObject.chatReply,
                   },
                   select: { id: true },
@@ -178,7 +178,7 @@ export class EngagedCandidateQueueService {
               }
 
               // For interim messages (like 'startChat'), check by candidate ID, job ID, and message content
-              return whatsappMessageRepository.findOne({
+              return chatMessageRepository.findOne({
                 where: {
                   message: replyObject.chatReply,
                   phoneFrom: replyObject.phoneNumberFrom,
@@ -194,10 +194,10 @@ export class EngagedCandidateQueueService {
           );
 
         if (duplicateResult) {
-          if (replyObject.whatsappMessageId !== 'NA') {
+          if (replyObject.externalMessageId !== 'NA') {
             console.log(
               'Message already exists in database, skipping creation. Message ID:',
-              replyObject.whatsappMessageId,
+              replyObject.externalMessageId,
             );
           } else {
             console.log(
@@ -208,7 +208,7 @@ export class EngagedCandidateQueueService {
           return null;
         }
 
-        if (replyObject.whatsappMessageId === 'NA') {
+        if (replyObject.externalMessageId === 'NA') {
           console.log(
             `Message '${replyObject.chatReply}' is new for candidate ${candidateProfileDataNodeObj.id} and job ${candidateJob.id}, proceeding with creation`,
           );
@@ -216,7 +216,7 @@ export class EngagedCandidateQueueService {
       }
 
       // Step 4: Prepare message object
-      const messagesList = candidateProfileDataNodeObj?.whatsappMessages?.edges;
+      const messagesList = candidateProfileDataNodeObj?.chatMessages?.edges;
       let mostRecentMessageObj;
 
       if (messagesList) {
@@ -227,7 +227,7 @@ export class EngagedCandidateQueueService {
         );
         mostRecentMessageObj = messagesList[0]?.node.messageObj;
       } else {
-        mostRecentMessageObj = candidateProfileDataNodeObj?.whatsappMessages.edges[0]?.node.messageObj;
+        mostRecentMessageObj = candidateProfileDataNodeObj?.chatMessages.edges[0]?.node.messageObj;
       }
 
       // For startChat messages, create proper chat history with system prompt and user message
@@ -325,7 +325,7 @@ export class EngagedCandidateQueueService {
         messageObj: mostRecentMessageObj,
         lastEngagementChatControl: candidateProfileDataNodeObj?.lastEngagementChatControl,
         whatsappDeliveryStatus: replyObject.whatsappDeliveryStatus,
-        whatsappMessageId: replyObject.whatsappMessageId,
+        externalMessageId: replyObject.externalMessageId,
         type: replyObject.type || 'text',
         databaseFilePath: replyObject?.databaseFilePath || '',
         typeOfMessage:
@@ -379,7 +379,7 @@ export class EngagedCandidateQueueService {
       let isDuplicate = false;
 
       // Self messages (manual or bot webhook echoes) still need content/participant dedupe.
-      // Bot outbound rows often use synthetic whatsappMessageIds, so ID-only dedupe is not enough.
+      // Bot outbound rows often use synthetic externalMessageIds, so ID-only dedupe is not enough.
       if (candidateProfileData.id && candidateJob.id) {
         console.log(`Checking for duplicates for candidate ${candidateProfileData.id} (job ${candidateJob.id})`);
         console.log(`Incoming message: "${whatsappIncomingMessage.messages[0].content}"`);
@@ -390,7 +390,7 @@ export class EngagedCandidateQueueService {
         const existingMessages = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
+        ).fetchAllChatMessages(candidateProfileData.id, apiToken);
 
         console.log(`Found ${existingMessages.length} existing messages for candidate ${candidateProfileData.id}`);
 
@@ -442,7 +442,7 @@ export class EngagedCandidateQueueService {
       const existingMessages = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).fetchAllWhatsappMessages(candidateProfileData.id, apiToken);
+      ).fetchAllChatMessages(candidateProfileData.id, apiToken);
 
       // Check if the exact same message content already exists for this candidate
       const isDuplicate = existingMessages.some(msg => {

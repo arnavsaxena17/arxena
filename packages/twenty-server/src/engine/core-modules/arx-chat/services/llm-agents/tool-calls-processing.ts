@@ -142,7 +142,7 @@ export class ToolCallsProcessing {
       toMessagingChannelTransportKey(candidate?.messagingChannel) ||
       process.env.DEFAULT_WHATSAPP_CLIENT ||
       'baileys',
-    whatsappMessageId: 'updateCandidateStatus',
+    externalMessageId: 'updateCandidateStatus',
   };
 
   const updateCandidateStatusObj = await new UpdateChat(
@@ -233,7 +233,7 @@ export class ToolCallsProcessing {
       messageType: status,
       messageObj: [],
       whatsappDeliveryStatus: 'scheduleCandidateInterview',
-      whatsappMessageId: 'scheduleCandidateInterview',
+      externalMessageId: 'scheduleCandidateInterview',
       typeOfMessage:
         toMessagingChannelTransportKey(candidate?.messagingChannel) ||
         process.env.DEFAULT_WHATSAPP_CLIENT ||

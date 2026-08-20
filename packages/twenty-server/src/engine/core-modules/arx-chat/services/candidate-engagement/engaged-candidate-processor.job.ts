@@ -259,7 +259,7 @@ export class EngagedCandidateProcessor {
         chatReply: chatReply,
         whatsappDeliveryStatus: 'receivedFromCandidate',
         phoneNumberFrom: messageFrom,
-        whatsappMessageId: 'NA',
+        externalMessageId: 'NA',
       };
 
       // Step 4: Use the new queue service to process all engagement operations

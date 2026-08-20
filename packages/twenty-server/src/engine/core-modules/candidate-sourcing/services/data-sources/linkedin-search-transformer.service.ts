@@ -40,17 +40,15 @@ export type TransformedCandidateForTable = Omit<
   lastEngagementChatControl: any;
   
   // Relationship edges
-  whatsappMessages: { edges: any[] };
+  chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
   otherFields?: Record<string, unknown>;
-  candidateReminders: { edges: any[] };
   projects: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
   whatsappProvider: string;
   input: string;
-  clientInterview?: any;
   remarks?: string;
   
   // LinkedIn-specific display fields
@@ -434,17 +432,15 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         lastEngagementChatControl: 'startChat',
         
         // Relationship edges
-        whatsappMessages: { edges: [] },
+        chatMessages: { edges: [] },
         emailMessages: { edges: [] },
         otherFields: {},
-        candidateReminders: { edges: [] },
         attachments: { edges: [] },
         videoInterview: { edges: [] },
         projects: { id: projectId, name: jobName },
         people: { id: peopleId },
         whatsappProvider: 'application03',
         input: '',
-        clientInterview: undefined,
         remarks: '',
         
         // LinkedIn-specific display fields

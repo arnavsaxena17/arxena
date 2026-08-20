@@ -26,6 +26,34 @@ import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-
 import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
+const extractProviderMessageId = (result: unknown): string | undefined => {
+  if (!isDefined(result) || typeof result !== 'object') {
+    return undefined;
+  }
+
+  const record = result as Record<string, unknown>;
+  const nested =
+    record.response && typeof record.response === 'object'
+      ? (record.response as Record<string, unknown>)
+      : undefined;
+  const candidates = [
+    record.id,
+    record.message_id,
+    record.messageId,
+    nested?.id,
+    nested?.message_id,
+    nested?.messageId,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && isNonEmptyString(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+};
+
 type WorkspaceMemberProfileUnipileFields = {
   id: string;
   workspaceMemberId: string;
@@ -140,6 +168,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             candidateId: resolvedInput.candidateId,
             linkedinProfileId: resolvedInput.linkedinProfileId,
             phone: resolvedInput.phone,
+            externalMessageId: extractProviderMessageId(toolOutput.result),
           });
         } catch (error) {
           this.logger.warn(

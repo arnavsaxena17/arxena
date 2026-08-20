@@ -552,7 +552,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         const unreadMessagesCounts: Record<string, number> = {};
         rawData.forEach((candidate: any) => {
           if (!candidate || typeof candidate !== 'object' || !candidate.id) return;
-          const unreadCount = candidate?.whatsappMessages?.edges
+          const unreadCount = candidate?.chatMessages?.edges
             ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
             ?.length || 0;
           unreadMessagesCounts[candidate.id] = unreadCount;
@@ -1166,7 +1166,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         rawData.forEach(candidate => {
           if (!candidate || typeof candidate !== 'object') return;
 
-          const unreadCount = candidate?.whatsappMessages?.edges
+          const unreadCount = candidate?.chatMessages?.edges
             ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
             ?.length || 0;
 
@@ -1481,7 +1481,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       candidateId: string;
       projectId: string;
       messageId: string;
-    }>('whatsapp_message_updated', async (data) => {
+    }>('chat_message_updated', async (data) => {
       // Only refresh if the message is for the current job
       if (data.projectId === projectId) {
         await refreshData();

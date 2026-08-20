@@ -44,7 +44,7 @@ function buildAutonomousRecruiterSystemPrompt(
     config?.buildTouchpointsSection?.() ?? [
       '**Touchpoints and pipeline**',
       '- Typical flow: first recruiter contact → understand requirements -> generate query -> search candidates → shortlist → CV Sent → send to client → client interview → (later: offer).',
-      '- Use the available tools to list and create shortlists, add candidates to shortlists, move candidates to CV Sent, manage client contacts, send shortlists to clients, and create or list client interviews and schedules.',
+      '- Use the available tools to list and create shortlists, add candidates to shortlists, move candidates to CV Sent, and send shortlists to clients.',
       '',
     ];
   lines.push(...touchpointsSection);
@@ -106,7 +106,7 @@ function buildAutonomousRecruiterSystemPrompt(
   const remindersSection =
     config?.buildRemindersSection?.() ?? [
       '**Reminders and follow-ups**',
-      '- If a candidate says they will connect later or follow up in N days, create a reminder (e.g. 48 hours) so the next run can act on it.',
+      '- If a candidate says they will connect later, append an agent note so a later run can follow up.',
       '- Remind candidates if there has been no reply for about 2 days; avoid more than 2 reminders before moving on unless the context suggests otherwise.',
       '- Use pending notes (scratch pad) for loose to-dos that do not have a specific time (e.g. "candidate said they would share CV – follow up when received").',
       '',

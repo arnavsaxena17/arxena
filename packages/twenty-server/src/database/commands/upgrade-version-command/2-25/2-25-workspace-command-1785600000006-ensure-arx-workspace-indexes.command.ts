@@ -37,7 +37,7 @@ export class EnsureArxWorkspaceIndexesCommand extends ProvisionedWorkspaceComman
 
     const schema = getWorkspaceSchemaName(workspaceId);
     const indexQueries = [
-      `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_created_at ON "${schema}"."_whatsappMessage" ("createdAt")`,
+      `CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON "${schema}"."_chatMessage" ("createdAt")`,
       `CREATE INDEX IF NOT EXISTS idx_candidate_deleted_at ON "${schema}"."_candidate" ("deletedAt") WHERE "deletedAt" IS NULL`,
       `CREATE INDEX IF NOT EXISTS idx_projects_active ON "${schema}"."_project" ("isActive") WHERE "isActive" = true`,
     ];

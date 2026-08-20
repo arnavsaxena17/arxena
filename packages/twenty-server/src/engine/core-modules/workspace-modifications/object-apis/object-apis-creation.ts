@@ -403,33 +403,33 @@ export class CreateMetaDataStructure {
       // Define indices with their table and column requirements
       const indexDefinitions = [
         {
-          name: 'idx_whatsapp_message_comprehensive',
-          table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_comprehensive ON "${dataSourceSchema}"."_whatsappMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "projectsId", "position", "phoneTo", "phoneFrom" )`,
+          name: 'idx_chat_message_comprehensive',
+          table: '_chatMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_chat_message_comprehensive ON "${dataSourceSchema}"."_chatMessage" ( "candidateId", "updatedAt" DESC, "createdAt" DESC, "id", "message", "whatsappDeliveryStatus", "name", "recruiterId", "projectsId", "position", "phoneTo", "phoneFrom" )`,
           requiredColumns: ['candidateId', 'updatedAt', 'createdAt', 'id', 'message', 'whatsappDeliveryStatus', 'name', 'recruiterId', 'projectsId', 'position', 'phoneTo', 'phoneFrom']
         },
         {
-          name: 'idx_whatsapp_message_delivery_status',
-          table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_delivery_status ON "${dataSourceSchema}"."_whatsappMessage" ("whatsappDeliveryStatus")`,
+          name: 'idx_chat_message_delivery_status',
+          table: '_chatMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_chat_message_delivery_status ON "${dataSourceSchema}"."_chatMessage" ("whatsappDeliveryStatus")`,
           requiredColumns: ['whatsappDeliveryStatus']
         },
         {
-          name: 'idx_whatsapp_message_recruiter',
-          table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_recruiter ON "${dataSourceSchema}"."_whatsappMessage" ("recruiterId")`,
+          name: 'idx_chat_message_recruiter',
+          table: '_chatMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_chat_message_recruiter ON "${dataSourceSchema}"."_chatMessage" ("recruiterId")`,
           requiredColumns: ['recruiterId']
         },
         {
-          name: 'idx_whatsapp_message_project',
-          table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_project ON "${dataSourceSchema}"."_whatsappMessage" ("projectsId")`,
+          name: 'idx_chat_message_project',
+          table: '_chatMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_chat_message_project ON "${dataSourceSchema}"."_chatMessage" ("projectsId")`,
           requiredColumns: ['projectsId']
         },
         {
-          name: 'idx_whatsapp_message_created_at',
-          table: '_whatsappMessage',
-          query: `CREATE INDEX IF NOT EXISTS idx_whatsapp_message_created_at ON "${dataSourceSchema}"."_whatsappMessage" ("createdAt")`,
+          name: 'idx_chat_message_created_at',
+          table: '_chatMessage',
+          query: `CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON "${dataSourceSchema}"."_chatMessage" ("createdAt")`,
           requiredColumns: ['createdAt']
         },
         {

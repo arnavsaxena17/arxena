@@ -58,7 +58,24 @@ const ARXENA_OBJECT_UNIVERSAL_IDENTIFIER_LEGACY_NAME_SINGULAR: Record<
   string
 > = {
   workspaceProfile: 'gtmWorkspaceProfile',
+  chatMessage: 'whatsappMessage',
 };
+
+// Field names used for UID hashing when the live field name changed.
+const ARXENA_FIELD_UNIVERSAL_IDENTIFIER_LEGACY_NAME: Record<string, string> = {
+  'chatMessage:externalMessageId': 'whatsappMessageId',
+  'candidate:chatMessages': 'whatsappMessages',
+  'person:chatMessages': 'whatsappMessages',
+  'project:chatMessages': 'whatsappMessages',
+  'workspaceMember:chatMessages': 'whatsappMessages',
+};
+
+const resolveFieldNameForUniversalIdentifier = (
+  objectName: string,
+  fieldName: string,
+): string =>
+  ARXENA_FIELD_UNIVERSAL_IDENTIFIER_LEGACY_NAME[`${objectName}:${fieldName}`] ??
+  fieldName;
 
 const resolveObjectUniversalIdentifier = (nameSingular: string): string => {
   if (isStandardObjectName(nameSingular)) {
@@ -125,7 +142,7 @@ const buildScalarFieldManifest = ({
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
     objectUniversalIdentifier,
-    name: field.name,
+    name: resolveFieldNameForUniversalIdentifier(objectName, field.name),
   });
 
   // Always use optionIndex — source data often sets every option to position 0
@@ -199,14 +216,17 @@ const buildRelationFieldManifest = ({
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
     objectUniversalIdentifier,
-    name: fieldName,
+    name: resolveFieldNameForUniversalIdentifier(objectName, fieldName),
   });
   const relationTargetFieldMetadataUniversalIdentifier =
     getFieldUniversalIdentifier({
       applicationUniversalIdentifier:
         ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
       objectUniversalIdentifier: targetObjectUniversalIdentifier,
-      name: targetFieldName,
+      name: resolveFieldNameForUniversalIdentifier(
+        targetObjectName,
+        targetFieldName,
+      ),
     });
 
   return {

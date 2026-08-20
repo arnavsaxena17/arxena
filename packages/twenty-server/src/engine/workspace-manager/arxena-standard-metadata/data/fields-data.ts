@@ -171,121 +171,6 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'recruiterInterview',
-      field: {
-        description: '',
-        label: 'Schedule',
-        name: 'schedule',
-        objectMetadataId: objectsNameIdMap.recruiterInterview,
-        type: 'DATE_TIME',
-      },
-    },
-    {
-      objectName: 'interviewSchedule',
-      field: {
-        description: '',
-        label: 'Slots Available',
-        name: 'slotsAvailable',
-        objectMetadataId: objectsNameIdMap.interviewSchedule,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'clientInterview',
-      field: {
-        description: '',
-        label: 'Interview Time',
-        name: 'interviewTime',
-        objectMetadataId: objectsNameIdMap.clientInterview,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'clientInterview',
-      field: {
-        description: '',
-        label: 'Client Interview Completed',
-        name: 'clientInterviewCompleted',
-        objectMetadataId: objectsNameIdMap.clientInterview,
-        type: 'BOOLEAN',
-        defaultValue: false,
-      },
-    },
-
-    // {
-    //     "field": {
-    //         "description": "",
-    //         "icon": "IconReload",
-    //         "label": "Meeting Duration",
-    //         "name": "durationMeeting",
-    //         "options": [{
-    //                 "color": "green",
-    //                 "label": "30 mins",
-    //                 "position": 0,
-    //                 "value": "mins30"
-    //             },
-    //             {
-    //                 "color": "turquoise",
-    //                 "label": "45 mins",
-    //                 "position": 1,
-    //                 "value": "mins45"
-    //             },
-    //             {
-    //                 "color": "sky",
-    //                 "label": "1 hour",
-    //                 "position": 2,
-    //                 "value": "hour1"
-    //             },
-    //             {
-    //                 "color": "sky",
-    //                 "label": "1.5 hours",
-    //                 "position": 3,
-    //                 "value": "hours15"
-    //             },
-    //             {
-    //                 "color": "sky",
-    //                 "label": "2 hours",
-    //                 "position": 3,
-    //                 "value": "hours2"
-    //             },
-    //         ],
-    //         "objectMetadataId": objectsNameIdMap.interviewSchedule,
-    //         "type": "SELECT"
-    //     }
-
-    // },
-    {
-      objectName: 'interviewSchedule',
-      field: {
-        description: '',
-        icon: 'IconVideoCall',
-        label: 'Meeting Type',
-        name: 'meetingType',
-        options: [
-          {
-            color: 'green',
-            label: 'In Person',
-            position: 0,
-            value: 'IN_PERSON',
-          },
-          {
-            color: 'turquoise',
-            label: 'Online',
-            position: 1,
-            value: 'ONLINE',
-          },
-          {
-            color: 'sky',
-            label: 'Walk In',
-            position: 2,
-            value: 'WALK_IN',
-          },
-        ],
-        objectMetadataId: objectsNameIdMap.interviewSchedule,
-        type: 'SELECT',
-      },
-    },
-    {
       objectName: 'workspaceMemberProfile',
       field: {
         description: '',
@@ -354,82 +239,13 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'textMessage',
-      field: {
-        description: '',
-        icon: 'IconMessage',
-        label: 'Text Message Type',
-        name: 'textMessageType',
-        options: [
-          {
-            color: 'green',
-            label: 'Incoming',
-            position: 0,
-            value: 'INCOMING',
-          },
-          {
-            color: 'turquoise',
-            label: 'Outgoing',
-            position: 1,
-            value: 'OUTGOING',
-          },
-        ],
-        objectMetadataId: objectsNameIdMap.textMessage,
-        type: 'SELECT',
-      },
-    },
-    {
-      objectName: 'recruiterInterview',
-      field: {
-        description: '',
-        icon: 'IconFileText',
-        label: 'Transcription',
-        name: 'transcription',
-        objectMetadataId: objectsNameIdMap.recruiterInterview,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'recruiterInterview',
-      field: {
-        description: '',
-        icon: 'IconChartBar',
-        label: 'Analysis',
-        name: 'analysis',
-        objectMetadataId: objectsNameIdMap.recruiterInterview,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'offer',
-      field: {
-        description: '',
-        icon: 'IconCalendar',
-        label: 'Date of Joining',
-        name: 'dateofJoining',
-        objectMetadataId: objectsNameIdMap.offer,
-        type: 'DATE_TIME',
-      },
-    },
-    {
-      objectName: 'offer',
-      field: {
-        description: '',
-        icon: 'IconNumber',
-        label: 'Number of Days',
-        name: 'numberofDays',
-        objectMetadataId: objectsNameIdMap.offer,
-        type: 'NUMBER',
-      },
-    },
-    {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconPhone',
         label: 'From Phone',
         name: 'phoneFrom',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
@@ -695,35 +511,24 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconPhone',
         label: 'To Phone',
         name: 'phoneTo',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconMessage',
         label: 'Message',
         name: 'message',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'textMessage',
-      field: {
-        description: '',
-        icon: 'IconMessage',
-        label: 'Message',
-        name: 'message',
-        objectMetadataId: objectsNameIdMap.textMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
@@ -761,17 +566,6 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'textMessage',
-      field: {
-        description: '',
-        icon: 'IconPhone',
-        label: 'phoneNumber',
-        name: 'phoneNumber',
-        objectMetadataId: objectsNameIdMap.textMessage,
-        type: 'TEXT',
-      },
-    },
-    {
       objectName: 'phoneCall',
       field: {
         description: '',
@@ -783,101 +577,90 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'textMessage',
-      field: {
-        description: '',
-        icon: 'IconCalendar',
-        label: 'TimeStamp',
-        name: 'timestamp',
-        objectMetadataId: objectsNameIdMap.textMessage,
-        type: 'DATE_TIME',
-      },
-    },
-    {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconJson',
         label: 'messageObj',
         name: 'messageObj',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'RAW_JSON',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconJson',
         label: 'messageObjWithTimeStamp',
         name: 'messageObjWithTimeStamp',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'RAW_JSON',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconBrandWhatsapp',
         label: 'whatsappProvider',
         name: 'whatsappProvider',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconId',
-        label: 'whatsappMessageId',
-        name: 'whatsappMessageId',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        label: 'External Message Id',
+        name: 'externalMessageId',
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconCheck',
         label: 'whatsappDeliveryStatus',
         name: 'whatsappDeliveryStatus',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconMessageCircle',
         label: 'typeOfMessage',
         name: 'typeOfMessage',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: 'lastEngagementChatControl',
         icon: 'IconMessageDots',
         label: 'lastEngagementChatControl',
         name: 'lastEngagementChatControl',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'whatsappMessage',
+      objectName: 'chatMessage',
       field: {
         description: '',
         icon: 'IconAudio',
         label: 'audioFilePath',
         name: 'audioFilePath',
-        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        objectMetadataId: objectsNameIdMap.chatMessage,
         type: 'TEXT',
       },
     },
@@ -1371,37 +1154,6 @@ export const getFieldsData = (
         name: 'descriptionOneliner',
         objectMetadataId: objectsNameIdMap.company,
         type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'candidateReminder',
-      field: {
-        description: '',
-        label: 'remindCandidateAtTimestamp',
-        name: 'remindCandidateAtTimestamp',
-        objectMetadataId: objectsNameIdMap.candidateReminder,
-        type: 'DATE_TIME',
-      },
-    },
-    {
-      objectName: 'candidateReminder',
-      field: {
-        description: '',
-        label: 'remindCandidateDuration',
-        name: 'remindCandidateDuration',
-        objectMetadataId: objectsNameIdMap.candidateReminder,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'candidateReminder',
-      field: {
-        description: '',
-        label: 'isReminderActive',
-        name: 'isReminderActive',
-        objectMetadataId: objectsNameIdMap.candidateReminder,
-        type: 'BOOLEAN',
-        defaultValue: false,
       },
     },
     {

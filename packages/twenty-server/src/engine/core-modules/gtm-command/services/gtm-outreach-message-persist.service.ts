@@ -19,7 +19,7 @@ type ChatTurn = {
   timestamp?: string;
 };
 
-type WhatsappMessageRecord = ObjectLiteral & {
+type ChatMessageRecord = ObjectLiteral & {
   id: string;
   candidateId?: string | null;
   personId?: string | null;
@@ -29,7 +29,7 @@ type WhatsappMessageRecord = ObjectLiteral & {
   messageObjWithTimeStamp?: unknown;
   typeOfMessage?: string | null;
   channel?: string | null;
-  whatsappMessageId?: string | null;
+  externalMessageId?: string | null;
   externalChatId?: string | null;
   phoneFrom?: string | null;
   phoneTo?: string | null;
@@ -270,9 +270,9 @@ export class GtmOutreachMessagePersistService {
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const messageRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WhatsappMessageRecord>(
+          await this.globalWorkspaceOrmManager.getRepository<ChatMessageRecord>(
             workspaceId,
-            'whatsappMessage',
+            'chatMessage',
             { shouldBypassPermissionChecks: true },
           );
         const candidateRepository =
@@ -310,7 +310,7 @@ export class GtmOutreachMessagePersistService {
         };
 
         if (isNonEmptyString(latestExternalMessageId)) {
-          patch.whatsappMessageId = latestExternalMessageId;
+          patch.externalMessageId = latestExternalMessageId;
         }
 
         if (isNonEmptyString(chatId)) {
@@ -353,11 +353,11 @@ export class GtmOutreachMessagePersistService {
 
   private async findChannelRow(
     messageRepository: {
-      find: (options: object) => Promise<WhatsappMessageRecord[]>;
+      find: (options: object) => Promise<ChatMessageRecord[]>;
     },
     candidateId: string,
     channel: GtmOutreachTranscriptChannel,
-  ): Promise<WhatsappMessageRecord | null> {
+  ): Promise<ChatMessageRecord | null> {
     const rows = await messageRepository.find({
       where: { candidateId },
       order: { updatedAt: 'DESC' },

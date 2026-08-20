@@ -207,48 +207,6 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Process Filter Description (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
-    name: 'list_client_contacts',
-    pack: 'accounts',
-    label: 'List Client Contacts',
-    description:
-      'List Client Contacts (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_client_contact',
-    pack: 'accounts',
-    label: 'Create Client Contact',
-    description:
-      'Create Client Contact (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'list_interview_schedules',
-    pack: 'accounts',
-    label: 'List Interview Schedules',
-    description:
-      'List Interview Schedules (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_interview_schedule',
-    pack: 'accounts',
-    label: 'Create Interview Schedule',
-    description:
-      'Create Interview Schedule (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'list_client_interviews',
-    pack: 'accounts',
-    label: 'List Client Interviews',
-    description:
-      'List Client Interviews (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'create_client_interview',
-    pack: 'accounts',
-    label: 'Create Client Interview',
-    description:
-      'Create Client Interview (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
     name: 'send_shortlist_to_client',
     pack: 'outreach',
     label: 'Send Shortlist To Client',

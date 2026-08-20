@@ -612,7 +612,7 @@ export class LinkedinUnipileMessagingService {
         const whatappUpdateMessageObjAfterUpdate = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).updateChatHistoryObjCreateWhatsappMessageObj(
+        ).updateChatHistoryObjCreateChatMessageObj(
           `linkedin_${Date.now()}`,
           candidate,
           mostRecentMessageArr,
@@ -737,7 +737,7 @@ export class LinkedinUnipileMessagingService {
         const whatappUpdateMessageObjAfterUpdate = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).updateChatHistoryObjCreateWhatsappMessageObj(
+        ).updateChatHistoryObjCreateChatMessageObj(
           `linkedin_inmail_${Date.now()}`,
           candidate,
           mostRecentMessageArr,

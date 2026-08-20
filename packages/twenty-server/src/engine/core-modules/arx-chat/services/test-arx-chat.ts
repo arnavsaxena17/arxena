@@ -119,7 +119,7 @@ export class TestArxChat {
       // Step 6: Check messages
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for messages to be processed
 
-      const messagesResponse = await this.arxChatEndpoint.getWhatsappMessagessByCandidateId({
+      const messagesResponse = await this.arxChatEndpoint.getChatMessagesByCandidateId({
         headers: { authorization: `Bearer ${apiToken}` },
         body: { candidateId: candidateToUpdate.id }
       });

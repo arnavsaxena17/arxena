@@ -8,7 +8,7 @@ import {
   getGraphqlToFindManyProjects,
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
-  graphQlToFetchWhatsappMessages,
+  graphQlToFetchChatMessages,
   graphQltoUpdateOneCandidate,
   Project,
   ProjectEdge,
@@ -29,7 +29,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { Injectable, Optional } from '@nestjs/common';
 import axios from 'axios';
-import { sortWhatsAppMessages } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { sortCandidatesByLatestChatMessage } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import {
   MessagingChannel,
@@ -149,7 +149,7 @@ export class CandidateEngagementArx {
   ) {
     const config = chatFlowConfigObj[chatReply].templateConfig;
     const isFirstMessage =
-      candidate?.whatsappMessages
+      candidate?.chatMessages
         ?.edges.length === 0;
     const messageSetup = config.messageSetup(isFirstMessage);
     const chatHistory = sortedMessagesList[0]?.messageObj || [];
@@ -218,7 +218,7 @@ export class CandidateEngagementArx {
       messageType: 'candidateMessage',
       messageObj: chatHistory,
       whatsappDeliveryStatus: 'startChatTriggered',
-      whatsappMessageId: 'NA',
+      externalMessageId: 'NA',
       typeOfMessage:
         toMessagingChannelTransportKey(candidate?.messagingChannel) ||
         process.env.DEFAULT_WHATSAPP_CLIENT ||
@@ -273,7 +273,7 @@ export class CandidateEngagementArx {
     const messagesList: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchAllWhatsappMessages(candidateId, apiToken);
+    ).fetchAllChatMessages(candidateId, apiToken);
     console.log("messagesList::", messagesList)
     const sortedMessagesList: MessageNode[] = messagesList.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -311,7 +311,7 @@ export class CandidateEngagementArx {
       const messagesList: MessageNode[] = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).fetchAllWhatsappMessages(candidateId, apiToken);
+      ).fetchAllChatMessages(candidateId, apiToken);
 
       console.log( 'the number of messages in the message list is::', messagesList.length, );
       const mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
@@ -399,7 +399,7 @@ export class CandidateEngagementArx {
   ) {
     console.log('Fetching recent messages from startTime to endTime');
     const graphqlQueryObj = JSON.stringify({
-      query: graphQlToFetchWhatsappMessages,
+      query: graphQlToFetchChatMessages,
       variables: {
         filter: {
           createdAt: {
@@ -416,7 +416,7 @@ export class CandidateEngagementArx {
     );
     console.log('The value of endTime.toISOString()():', endTime.toISOString());
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, {
+    const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, {
       filter: {
         createdAt: {
           gte: startTime.toISOString(),
@@ -427,15 +427,15 @@ export class CandidateEngagementArx {
 
     // console.log(
     //   'Number of messages in fetchRe centMessages::',
-    //   response?.data?.data?.whatsappMessages?.edges.length,
+    //   response?.data?.data?.chatMessages?.edges.length,
     // );
 
-    const messages = response?.data?.data?.whatsappMessages as {
+    const messages = response?.data?.data?.chatMessages as {
       edges: MessageNode[];
       pageInfo: PageInfo;
     } | undefined;
 
-    // console.log("This is the response from cre atedAt::", response?.data?.data?.whatsappMessages?.edges.map((message) => message.node.createdAt));
+    // console.log("This is the response from cre atedAt::", response?.data?.data?.chatMessages?.edges.map((message) => message.node.createdAt));
     return messages?.edges || [];
   }
 
@@ -675,7 +675,7 @@ export class CandidateEngagementArx {
       chatControl.chatControlType,
     );
 
-    const sortedCandidates: CandidateNode[] = sortWhatsAppMessages(
+    const sortedCandidates: CandidateNode[] = sortCandidatesByLatestChatMessage(
       candidates,
     );
     const config = chatFlowConfigObj[chatControl.chatControlType];

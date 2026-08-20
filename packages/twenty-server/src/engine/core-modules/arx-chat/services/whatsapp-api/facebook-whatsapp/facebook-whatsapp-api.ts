@@ -131,7 +131,7 @@ export class FacebookWhatsappChatApi {
     //   this.staticGraphQLService,
     // ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
     const mostRecentMessageArr: ChatHistoryItem[] =
-      candidate?.whatsappMessages?.edges[0]?.node
+      candidate?.chatMessages?.edges[0]?.node
         ?.messageObj;
 
     mostRecentMessageArr.push({ role: 'user', content: 'Sharing the JD' });
@@ -241,7 +241,7 @@ export class FacebookWhatsappChatApi {
               this.staticGraphQLService,
             ).getPersonDetailsByPhoneNumber(phoneNumberTo, apiToken);
             const mostRecentMessageArr: ChatHistoryItem[] =
-              personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]
+              personObj?.candidates?.edges[0]?.node?.chatMessages?.edges[0]
                 ?.node?.messageObj;
 
             mostRecentMessageArr.push({
@@ -254,7 +254,7 @@ export class FacebookWhatsappChatApi {
               await new FilterCandidates(
                 this.workspaceQueryService,
                 this.staticGraphQLService,
-              ).updateChatHistoryObjCreateWhatsappMessageObj(
+              ).updateChatHistoryObjCreateChatMessageObj(
                 'failed',
                 candidate,
                 mostRecentMessageArr,
@@ -387,7 +387,7 @@ export class FacebookWhatsappChatApi {
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        ).updateChatHistoryObjCreateWhatsappMessageObj(
+        ).updateChatHistoryObjCreateChatMessageObj(
         wamId,
           candidate,
         mostRecentMessageArr,
@@ -696,7 +696,7 @@ export class FacebookWhatsappChatApi {
           await new FilterCandidates(
             this.workspaceQueryService,
             this.staticGraphQLService,
-          ).updateChatHistoryObjCreateWhatsappMessageObj(
+          ).updateChatHistoryObjCreateChatMessageObj(
             response?.data?.messages[0]?.id || response.messages[0].id,
             candidate,
             mostRecentMessageArr,

@@ -868,7 +868,7 @@ const deployWorkflowC = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          objectName: 'whatsappMessage',
+          objectName: 'chatMessage',
           limit: 20,
           filter: {
             candidateId: { eq: '{{trigger.recordId}}' },
@@ -896,7 +896,7 @@ const deployWorkflowC = async (workflowVersionId: string) => {
         input: {
           agentId: '',
           prompt: [
-            'Draft a reply using the latest inbound whatsappMessage.message texts.',
+            'Draft a reply using the latest inbound chatMessage.message texts.',
             'Do not book a meeting automatically.',
             'Return JSON only: { "message": "<body>" }',
           ].join('\n'),

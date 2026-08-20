@@ -33,7 +33,7 @@ Generic search (hits only, no CRM enroll): `search-people-for-company` (ICP peop
 | **Workflow U** (manual) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
 | **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` using `workspaceMemberId` + `linkedinProfileId`. Do **not** DELAY-poll accept. |
 | **Stage B accept** (`GTM Outreach — Connection Accepted`) | `candidate.updated` `CONNECTION_ACCEPTED` / ACCEPTED | `fetch-linkedin-messages` (merge `messageObj`) → `fetch-linkedin-profile` → AI_AGENT draft → FORM `notifyOnPending` (`wf_form_boolean_text`, WhatsApp to workspace member phone) → SEND `{{form.editedBody}}`. Follow-up DELAY until inbound. |
-| **Stage C** (`GTM Outreach — Reply`) | `candidate.updated` `REPLIED` | FIND `whatsappMessages` → AI_AGENT → FORM → send. No instant calendar create. Inbound sets `lastInboundAt` immediately; `REPLIED` only after a silence window. |
+| **Stage C** (`GTM Outreach — Reply`) | `candidate.updated` `REPLIED` | FIND `chatMessages` → AI_AGENT → FORM → send. No instant calendar create. Inbound sets `lastInboundAt` immediately; `REPLIED` only after a silence window. |
 
 ## Workflow 1 — company created → ICP people → enroll
 

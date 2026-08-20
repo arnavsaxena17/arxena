@@ -63,11 +63,11 @@ export class GoogleSheetsService {
     for (const result of results) {
       if (!result?.googleSheetId) continue;
 
-      const formattedChat = await formatChat(result.whatsappMessages);
+      const formattedChat = await formatChat(result.chatMessages);
       const updateData = {
         candidateId: result.candidateId,
         chatMessages: formattedChat,
-        chatCount: result.whatsappMessages.length,
+        chatCount: result.chatMessages.length,
         candConversationStatus: result.candidateStatus,
       };
 

@@ -105,7 +105,7 @@ export class MetaWhatsappController {
         );
       // const whatsappTemplateMessageSent = await new WhatsappTemplateMessages().generateMessage(requestBody.templateName, sendTemplateMessageObj);
       const mostRecentMessageArr: ChatHistoryItem[] =
-        personObj?.candidates?.edges[0]?.node?.whatsappMessages?.edges[0]?.node
+        personObj?.candidates?.edges[0]?.node?.chatMessages?.edges[0]?.node
           ?.messageObj;
 
       console.log('This is the mostRecentMessageArr:', mostRecentMessageArr);
@@ -121,7 +121,7 @@ export class MetaWhatsappController {
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).updateChatHistoryObjCreateWhatsappMessageObj(
+      ).updateChatHistoryObjCreateChatMessageObj(
         'success',
         candidateNode as CandidateNode,
         mostRecentMessageArr,

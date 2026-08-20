@@ -8,13 +8,12 @@ import {
   CandidateNode,
   CandidatesEdge,
   chatMessageType,
-  deleteOneWhatsappMessage,
+  deleteOneChatMessage,
   getResolvedOtherFields,
-  graphqlQueryToCreateOneNewWhatsappMessage,
+  graphqlQueryToCreateOneNewChatMessage,
   graphqlQueryToRemoveMessages,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
-  graphqlToUpdateOneClientInterview,
   Project,
   mergeOtherFields,
   PageInfo,
@@ -110,21 +109,6 @@ export class UpdateChat {
         'updatedCandidateProfileDataNodeObj::',
         updatedCandidateProfileDataNodeObj,
       );
-      const clientInterviewId =
-        updatedCandidateProfileDataNodeObj?.clientInterview?.edges[0]?.node?.id;
-
-      console.log('clientInterviewId::', clientInterviewId);
-      const updateClientInterviewVariables = {
-        idToUpdate: clientInterviewId,
-        input: { clientInterviewCompleted: true },
-      };
-
-
-      await this.staticGraphQLService.executeGraphQL(graphqlToUpdateOneClientInterview, updateClientInterviewVariables, apiToken);
-      console.log(
-        `Successfully closed meeting status for candidate ${candidateId}`,
-      );
-      // Optionally, you could also update the candidate's status or add follow-up tasks here
 
       // Update the candidate's status to "Interview Completed"
       const updateCandidateVariables = {
@@ -155,37 +139,8 @@ export class UpdateChat {
     }
   }
 
-  async checkScheduledClientMeetingsCount(projectId, apiToken: string) {
-    const scheduledClientMeetings = await new FilterCandidates(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-    ).fetchScheduledClientMeetings(projectId, apiToken);
-    const today = new Date();
-    const dayAfterTomorrow = new Date(today);
-
-    dayAfterTomorrow.setDate(today.getDate() + 2);
-    const countScheduledMeetings = scheduledClientMeetings?.edges.filter((meeting) => {
-      const meetingDate = new Date(meeting.node.interviewTime.date);
-
-      return meetingDate.toDateString() === dayAfterTomorrow.toDateString();
-    }).length;
-
-    console.log(
-      `Number of scheduled meetings for the day after tomorrow: ${countScheduledMeetings}`,
-    );
-    // Send candidate details to email
-    const candidateDetails = scheduledClientMeetings?.edges.map((meeting) => ({
-      candidateId: meeting.node?.candidateId,
-      candidateName: meeting.node?.candidateName,
-      interviewTime: meeting.node?.interviewTime,
-    }));
-    const candidateIds = scheduledClientMeetings?.edges.map(
-      (meeting) => meeting.node?.candidateId,
-    ) || [];
-
-    await this.createShortlist(candidateIds, apiToken);
-
-    return scheduledClientMeetings;
+  async checkScheduledClientMeetingsCount(_projectId, _apiToken: string) {
+    return { edges: [] };
   }
 
   async createShortlist(candidateIds: string[], apiToken: string) {
@@ -353,13 +308,13 @@ export class UpdateChat {
 
 
   async resetMessagesFromWhatsapp(candidateId: string, apiToken: string) {
-    const whatsappMessages = await new FilterCandidates(
+    const chatMessages = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchAllWhatsappMessages(candidateId, apiToken);
-    for (const message of whatsappMessages) {
+    ).fetchAllChatMessages(candidateId, apiToken);
+    for (const message of chatMessages) {
       try {
-        const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneWhatsappMessage, { idToDelete: message.id }, apiToken);
+        const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneChatMessage, { idToDelete: message.id }, apiToken);
         // console.log('deleteMessageResponse::', deleteMessageResponse.data);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
@@ -433,7 +388,7 @@ export class UpdateChat {
       chatReply: chatReply,
       whatsappDeliveryStatus: 'receivedFromCandidate',
       phoneNumberFrom: candidate?.phoneNumber?.primaryPhoneNumber || '',
-      whatsappMessageId: 'NA',
+      externalMessageId: 'NA',
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
       this.workspaceQueryService,
@@ -557,7 +512,7 @@ export class UpdateChat {
         const messagesList = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          ).fetchAllWhatsappMessages(candidate.node.id, apiToken);
+          ).fetchAllChatMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
 
         console.log('New chat count::', newCount);
@@ -693,10 +648,10 @@ export class UpdateChat {
         if (projectId == '') {
           console.log('Project ID is not present for the candidate::', candidateId);
         }
-        const whatsappMessages = await new FilterCandidates(
+        const chatMessages = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).fetchAllWhatsappMessages(candidateId, apiToken);
+        ).fetchAllChatMessages(candidateId, apiToken);
         // Get the chat status and formatted chat in parallel
         try {
           const [candidateStatus] = await Promise.all([
@@ -704,7 +659,7 @@ export class UpdateChat {
               this.workspaceQueryService,
               this.staticGraphQLService,
             ).getChatStageFromChatHistory(
-              whatsappMessages,
+              chatMessages,
               candidateId,
               projectId,
               apiToken,
@@ -724,7 +679,7 @@ export class UpdateChat {
             candidateId,
             candidateStatus,
             googleSheetId: candidate?.projects?.googleSheetId,
-            whatsappMessages,
+            chatMessages,
           };
         } catch (error) {
           console.log('Error in processing candidate:', error);
@@ -794,7 +749,7 @@ export class UpdateChat {
   }
 
 
-  async createAndUpdateWhatsappMessage(
+  async createAndUpdateChatMessage(
     candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
     apiToken: string,
@@ -804,7 +759,7 @@ export class UpdateChat {
       'This is the message being updated in the database ',
       whatappUpdateMessageObj?.messages[0]?.content || '',
     );
-    const createNewWhatsappMessageUpdateVariables = {
+    const createNewChatMessageUpdateVariables = {
       input: {
         position: 'first',
         id: whatappUpdateMessageObj?.id || uuidv4(),
@@ -821,7 +776,7 @@ export class UpdateChat {
         lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
         messageObj: whatappUpdateMessageObj?.messageObj,
         whatsappDeliveryStatus: whatappUpdateMessageObj.whatsappDeliveryStatus,
-        whatsappMessageId: whatappUpdateMessageObj?.whatsappMessageId,
+        externalMessageId: whatappUpdateMessageObj?.externalMessageId,
         typeOfMessage: whatappUpdateMessageObj?.typeOfMessage,
         audioFilePath: whatappUpdateMessageObj?.databaseFilePath,
         ...(options?.createdAt ? { createdAt: options.createdAt } : {}),
@@ -832,11 +787,11 @@ export class UpdateChat {
     try {
       console.log(
         'GRAPHQL WITH WHATSAPP MESSAGE:',
-        createNewWhatsappMessageUpdateVariables?.input?.message,
+        createNewChatMessageUpdateVariables?.input?.message,
       );
       const response = (await this.staticGraphQLService.executeGraphQL(
-        graphqlQueryToCreateOneNewWhatsappMessage,
-        createNewWhatsappMessageUpdateVariables,
+        graphqlQueryToCreateOneNewChatMessage,
+        createNewChatMessageUpdateVariables,
         apiToken,
       )) as {
         data?: {
@@ -848,7 +803,7 @@ export class UpdateChat {
       const graphQLErrors = response?.data?.errors;
       if (graphQLErrors && graphQLErrors.length > 0) {
         console.error(
-          'createWhatsappMessage failed:',
+          'createChatMessage failed:',
           graphQLErrors.map((error) => error.message).join('; '),
         );
 
@@ -859,10 +814,10 @@ export class UpdateChat {
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
         console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
-        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'whatsapp_message_updated', {
+        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'chat_message_updated', {
           candidateId: candidate?.id,
           projectId: candidate?.projects?.id,
-          messageId: createNewWhatsappMessageUpdateVariables.input.id,
+          messageId: createNewChatMessageUpdateVariables.input.id,
         });
         console.log('WebSocket event sent to the specific recruiter::', recruiterId);
       } else {
@@ -1009,13 +964,13 @@ export class UpdateChat {
 
     if (candidate?.name === '') return;
     console.log('Candidate information retrieved successfully');
-    const whatsappMessage = await this.createAndUpdateWhatsappMessage(
+    const chatMessage = await this.createAndUpdateChatMessage(
       candidate,
       whatappUpdateMessageObj,
       apiToken,
     );
 
-    if (!whatsappMessage || isAfterMessageSent) {
+    if (!chatMessage || isAfterMessageSent) {
       console.log( 'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true', );
       return;
     }
@@ -1120,11 +1075,11 @@ export class UpdateChat {
       const existingMessages = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).fetchAllWhatsappMessages(candidateId, apiToken);
+      ).fetchAllChatMessages(candidateId, apiToken);
       console.log("existingMessages in syncBaileysMessagesWithDatabase:", existingMessages);
       // Create a set of existing message IDs for quick lookup
       const existingMessageIds = new Set(
-        existingMessages.map(msg => (msg as any).whatsappMessageId).filter(Boolean)
+        existingMessages.map(msg => (msg as any).externalMessageId).filter(Boolean)
       );
 
       console.log(`📊 Found ${existingMessages.length} existing messages in database`);
@@ -1155,7 +1110,7 @@ export class UpdateChat {
           const messageType = this.determineMessageType(baileysMessage);
 
           // Create WhatsApp message object
-          const whatsappMessageObj: whatappUpdateMessageObjType = {
+          const chatMessageObj: whatappUpdateMessageObjType = {
             id: baileysMessage.id,
             phoneNumberFrom: isFromMe
               ? candidate.phoneNumber?.primaryPhoneNumber || ''
@@ -1173,7 +1128,7 @@ export class UpdateChat {
               content: messageContent
             }],
             whatsappDeliveryStatus: 'receivedFromCandidate',
-            whatsappMessageId: baileysMessage.id,
+            externalMessageId: baileysMessage.id,
             typeOfMessage: messageType,
             lastEngagementChatControl: 'startChat',
             candidateProfile: candidate,
@@ -1182,9 +1137,9 @@ export class UpdateChat {
           };
 
           // Save message to database
-          await this.createAndUpdateWhatsappMessage(
+          await this.createAndUpdateChatMessage(
             candidate,
-            whatsappMessageObj,
+            chatMessageObj,
             apiToken
           );
 
@@ -1306,11 +1261,11 @@ export class UpdateChat {
       const existingMessages = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).fetchAllWhatsappMessages(candidateId, apiToken);
+      ).fetchAllChatMessages(candidateId, apiToken);
 
       const existingMessageIds = new Set(
         existingMessages
-          .map((msg) => (msg as { whatsappMessageId?: string }).whatsappMessageId)
+          .map((msg) => (msg as { externalMessageId?: string }).externalMessageId)
           .filter(Boolean),
       );
 
@@ -1386,8 +1341,8 @@ export class UpdateChat {
             continue;
           }
 
-          // Record id must be a UUID; Unipile ids go in whatsappMessageId for dedupe
-          const whatsappMessageObj: whatappUpdateMessageObjType = {
+          // Record id must be a UUID; Unipile ids go in externalMessageId for dedupe
+          const chatMessageObj: whatappUpdateMessageObjType = {
             id: uuidv4(),
             phoneNumberFrom: phoneFrom,
             phoneNumberTo: phoneTo,
@@ -1407,7 +1362,7 @@ export class UpdateChat {
             whatsappDeliveryStatus: isFromConnectedUser
               ? 'delivered'
               : 'receivedFromCandidate',
-            whatsappMessageId: unipileMessageId,
+            externalMessageId: unipileMessageId,
             typeOfMessage: this.determineUnipileMessageType(unipileMessage),
             lastEngagementChatControl: 'startChat',
             candidateProfile: candidate,
@@ -1415,9 +1370,9 @@ export class UpdateChat {
             whatsappMessageType: this.determineUnipileMessageType(unipileMessage),
           };
 
-          const createdMessage = await this.createAndUpdateWhatsappMessage(
+          const createdMessage = await this.createAndUpdateChatMessage(
             candidate,
-            whatsappMessageObj,
+            chatMessageObj,
             apiToken,
             unipileMessage.timestamp
               ? { createdAt: unipileMessage.timestamp }

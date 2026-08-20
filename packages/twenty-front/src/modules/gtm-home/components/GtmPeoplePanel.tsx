@@ -87,7 +87,7 @@ const mapGtmPersonToDataTableRow = (
     engagementStatus: person.stage,
     startChat: false,
     stopChat: false,
-    whatsappMessages: { edges: [] },
+    chatMessages: { edges: [] },
     emailMessages: { edges: [] },
     otherFields: {
       warmPath: person.warmPath,
@@ -95,7 +95,6 @@ const mapGtmPersonToDataTableRow = (
       companyId: person.companyId,
       candidateId: person.candidateId,
     },
-    candidateReminders: { edges: [] },
     uniqueStringKey: person.id,
     peopleId: person.id,
     personId: person.id,

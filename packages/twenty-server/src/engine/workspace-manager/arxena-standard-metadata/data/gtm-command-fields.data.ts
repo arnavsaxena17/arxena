@@ -888,27 +888,27 @@ export const getGtmCommandFieldsData = (
     },
   },
 
-  // Message object (nameSingular stays whatsappMessage)
+  // Message object (chatMessage)
   {
-    objectName: 'whatsappMessage',
+    objectName: 'chatMessage',
     field: {
       description: 'Channel for this transcript row (one row per candidate × channel)',
       icon: 'IconMessage',
       label: 'Channel',
       name: 'channel',
-      objectMetadataId: objectsNameIdMap.whatsappMessage,
+      objectMetadataId: objectsNameIdMap.chatMessage,
       type: 'SELECT',
       options: GTM_MESSAGE_CHANNEL_OPTIONS,
     },
   },
   {
-    objectName: 'whatsappMessage',
+    objectName: 'chatMessage',
     field: {
       description: 'Provider chat id (Unipile chat id, WhatsApp thread, etc.)',
       icon: 'IconHash',
       label: 'External Chat Id',
       name: 'externalChatId',
-      objectMetadataId: objectsNameIdMap.whatsappMessage,
+      objectMetadataId: objectsNameIdMap.chatMessage,
       type: 'TEXT',
     },
   },

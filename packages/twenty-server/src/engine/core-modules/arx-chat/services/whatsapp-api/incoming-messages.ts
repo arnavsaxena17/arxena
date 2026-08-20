@@ -3,10 +3,10 @@ import {
   CandidateNode,
   chatMessageType,
   emptyCandidateProfileObj,
-  graphqlQueryToCreateOneNewWhatsappMessage,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
+  graphqlQueryToCreateOneNewChatMessage,
+  graphqlToFetchChatMessageByExternalMessageId,
+  graphQlToFetchChatMessages,
+  graphqlToUpdateChatMessage,
   Project,
   WhatsAppBusinessAccount
 } from 'twenty-shared';
@@ -129,7 +129,7 @@ export class IncomingWhatsappMessages {
           chatReply: savedMessage,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: requestBody.phoneNumberFrom,
-          whatsappMessageId: requestBody.baileysMessageId,
+          externalMessageId: requestBody.baileysMessageId,
         },
         candidateProfileData,
         candidateJob,
@@ -190,7 +190,7 @@ export class IncomingWhatsappMessages {
           chatReply: chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: requestBody.phoneNumberFrom,
-          whatsappMessageId: requestBody.baileysMessageId,
+          externalMessageId: requestBody.baileysMessageId,
           messageType: 'messageFromSelf',
           isFromMe: true,
         },
@@ -314,7 +314,7 @@ export class IncomingWhatsappMessages {
           chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: linkedinUrlFrom,
-          whatsappMessageId: message_id,
+          externalMessageId: message_id,
           messageType: isFromConnectedUser ? 'messageFromSelf' : 'linkedin',
           isFromMe: isFromConnectedUser,
         },
@@ -472,7 +472,7 @@ export class IncomingWhatsappMessages {
           chatReply,
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: phoneNumberFrom,
-          whatsappMessageId: message_id,
+          externalMessageId: message_id,
           messageType: isFromConnectedUser ? 'messageFromSelf' : 'whatsapp-unipile',
           isFromMe: isFromConnectedUser,
         },
@@ -493,17 +493,17 @@ export class IncomingWhatsappMessages {
     return differenceInSeconds < 300;
   }
 
-  async fetchWhatsappMessageById(messageId: string, apiToken: string) {
+  async fetchChatMessageById(messageId: string, apiToken: string) {
     console.log('This is the message id:', messageId);
     try {
-      const whatsappMessageVariable = {
-        whatsappMessageId: messageId,
+      const chatMessageVariable = {
+        externalMessageId: messageId,
       };
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchChatMessageByExternalMessageId, chatMessageVariable, apiToken);
 
-      console.log('Response from fetchWhatsappMessageById:', response?.data);
+      console.log('Response from fetchChatMessageById:', response?.data);
 
-      return response?.data.data.whatsappMessage?.message || '';
+      return response?.data.data.chatMessage?.message || '';
     } catch (error) {
       console.log('Error fetching whatsapp message by id:', error);
 
@@ -579,15 +579,15 @@ export class IncomingWhatsappMessages {
     const dataSourceSchema =
       this.workspaceQueryService.getDataSourceSchema(workspaceId);
 
-    const whatsappMessageTableExists =
+    const chatMessageTableExists =
       await this.workspaceQueryService.checkIfTableExists(
         dataSourceSchema,
-        '_whatsappMessage',
+        '_chatMessage',
       );
 
-    if (!whatsappMessageTableExists) {
+    if (!chatMessageTableExists) {
       console.log(
-        `Table _whatsappMessage does not exist for schema ${dataSourceSchema}, skipping`,
+        `Table _chatMessage does not exist for schema ${dataSourceSchema}, skipping`,
       );
 
       return null;
@@ -628,8 +628,8 @@ export class IncomingWhatsappMessages {
 
     const safeSenderIdentifier = escapeForLike(incomingSenderIdentifierId);
 
-    const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-      WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${safeSenderIdentifier}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${safeSenderIdentifier}%')
+    const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+      WHERE ("_chatMessage"."phoneFrom" ILIKE '%${safeSenderIdentifier}%' OR "_chatMessage"."phoneTo" ILIKE '%${safeSenderIdentifier}%')
       ORDER BY "updatedAt" DESC
       LIMIT 1`;
 
@@ -784,7 +784,7 @@ export class IncomingWhatsappMessages {
     }
 
     // Extract WhatsApp message ID for duplicate detection
-    const whatsappMessageId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.id;
+    const externalMessageId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.id;
     const messageBody = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.text?.body;
 
     const results =
@@ -856,13 +856,13 @@ export class IncomingWhatsappMessages {
           let recentMessageQuery = '';
 
           if (incomingSenderIdentifierId.includes('linkedin')) {
-            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+             WHERE ("_chatMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_chatMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
              ORDER BY "updatedAt" DESC
              LIMIT 1`;
           } else {
-            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-            WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+            recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+            WHERE ("_chatMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_chatMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
           }
@@ -1020,15 +1020,15 @@ export class IncomingWhatsappMessages {
     const dataSourceSchema =
       this.workspaceQueryService.getDataSourceSchema(workspaceId);
 
-    const whatsappMessageTableExists =
+    const chatMessageTableExists =
       await this.workspaceQueryService.checkIfTableExists(
         dataSourceSchema,
-        '_whatsappMessage',
+        '_chatMessage',
       );
 
-    if (!whatsappMessageTableExists) {
+    if (!chatMessageTableExists) {
       console.log(
-        `Table _whatsappMessage does not exist for schema ${dataSourceSchema}, skipping`,
+        `Table _chatMessage does not exist for schema ${dataSourceSchema}, skipping`,
       );
 
       return null;
@@ -1069,8 +1069,8 @@ export class IncomingWhatsappMessages {
       );
     }
 
-    const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-      WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${phoneNumberForLookup}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${phoneNumberForLookup}%')
+    const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+      WHERE ("_chatMessage"."phoneFrom" ILIKE '%${phoneNumberForLookup}%' OR "_chatMessage"."phoneTo" ILIKE '%${phoneNumberForLookup}%')
       ORDER BY "updatedAt" DESC
       LIMIT 1`;
 
@@ -1231,14 +1231,14 @@ export class IncomingWhatsappMessages {
 
       console.log('This is the message statuse:', messageStatus);
       const variables = {
-        filter: { whatsappMessageId: { ilike: `%${messageId}%` } },
+        filter: { externalMessageId: { ilike: `%${messageId}%` } },
         orderBy: { position: 'AscNullsFirst' },
       };
       const graphqlQueryObj = JSON.stringify({
-        query: graphQlToFetchWhatsappMessages,
+        query: graphQlToFetchChatMessages,
         variables: variables,
       });
-      const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, variables, apiToken);
 
       console.log(
         '-----------------This is the response from the query to find the message by WAMID::-------------------',
@@ -1249,16 +1249,16 @@ export class IncomingWhatsappMessages {
         response?.data?.data,
       );
 
-      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
+      if (response?.data?.data?.chatMessages?.edges.length === 0) {
         console.log('No message found with the given WAMID');
 
         return;
       }
 
       if (
-        response?.data?.data?.whatsappMessages?.edges[0]?.node
+        response?.data?.data?.chatMessages?.edges[0]?.node
           ?.whatsappDeliveryStatus === 'read' ||
-        (response?.data?.data?.whatsappMessages?.edges[0]?.node
+        (response?.data?.data?.chatMessages?.edges[0]?.node
           ?.whatsappDeliveryStatus === 'delivered' &&
           messageStatus !== 'read')
       ) {
@@ -1270,16 +1270,16 @@ export class IncomingWhatsappMessages {
       }
       console.log(
         'Will try and do a delivery status update now:: ',
-        response?.data?.data?.whatsappMessages?.edges[0]?.node?.id,
+        response?.data?.data?.chatMessages?.edges[0]?.node?.id,
         'with delivery satatus::',
         messageStatus,
       );
       const variablesToUpdateDeliveryStatus = {
-        idToUpdate: response?.data?.data?.whatsappMessages?.edges[0]?.node?.id,
+        idToUpdate: response?.data?.data?.chatMessages?.edges[0]?.node?.id,
         input: { whatsappDeliveryStatus: messageStatus },
       };
 
-      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, variablesToUpdateDeliveryStatus, apiToken);
+      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateChatMessage, variablesToUpdateDeliveryStatus, apiToken);
       // console.log("This is the response of the delivery status update::", responseOfDeliveryStatus);
 
       console.log(
@@ -1295,7 +1295,7 @@ export class IncomingWhatsappMessages {
       const userMessageBody =
         requestBody?.entry[0]?.changes[0]?.value?.messages[0];
       let chatReply = '';
-      let whatsappMessageCommentedOn = '';
+      let chatMessageCommentedOn = '';
 
       console.log(`Message: ${userMessageBody?.text?.body},
         To: ${requestBody?.entry[0]?.changes[0]?.value?.metadata?.display_phone_number},
@@ -1313,25 +1313,25 @@ export class IncomingWhatsappMessages {
         }
 
         // Additional duplicate check using WhatsApp message ID
-        const whatsappMessageId = userMessageBody?.id;
+        const externalMessageId = userMessageBody?.id;
         const messageBody = userMessageBody?.text?.body;
 
-        if (whatsappMessageId && messageBody) {
+        if (externalMessageId && messageBody) {
           // Check if this message already exists in the current workspace
           const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-          const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_whatsappMessage"
-            WHERE "whatsappMessageId" = $1 AND "message" = $2 LIMIT 1`;
+          const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_chatMessage"
+            WHERE "externalMessageId" = $1 AND "message" = $2 LIMIT 1`;
 
           try {
             const duplicateResult =
               await this.workspaceQueryService.executeWorkspaceRawQuery(
                 duplicateCheckQuery,
-                [whatsappMessageId, messageBody],
+                [externalMessageId, messageBody],
                 workspaceId,
               );
 
             if (duplicateResult.length > 0) {
-              console.log('Message already exists in current workspace, skipping processing. Message ID:', whatsappMessageId);
+              console.log('Message already exists in current workspace, skipping processing. Message ID:', externalMessageId);
               return;
             }
           } catch (error) {
@@ -1341,13 +1341,13 @@ export class IncomingWhatsappMessages {
         // if (userMessageBody.reaction){
         //   console.log("This is a reaction message", userMessageBody.reaction.emoji)
         //   console.log("its likely an emoji message or emoji reaction to precededing message")
-        //   const whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(userMessageBody?.reaction?.message_id,apiToken);
-        //   console.log("this is the messages commented on ::", whatsappMessageCommentedOn)
+        //   const chatMessageCommentedOn = await this.fetchChatMessageById(userMessageBody?.reaction?.message_id,apiToken);
+        //   console.log("this is the messages commented on ::", chatMessageCommentedOn)
         //   if (!userMessageBody.reaction.emoji){
         //     console.log("This is a reaction message without an emoji")
-        //     chatReply = "Removed emoji " + " from " + "'" + whatsappMessageCommentedOn + "'" || "";
+        //     chatReply = "Removed emoji " + " from " + "'" + chatMessageCommentedOn + "'" || "";
         //   }
-        //   const messageToAppend = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + whatsappMessageCommentedOn + "'" || '';
+        //   const messageToAppend = 'Reacted ' + userMessageBody.reaction.emoji + ' to ' + "'" + chatMessageCommentedOn + "'" || '';
         //   chatReply = messageToAppend || ""
         // }
 
@@ -1371,21 +1371,21 @@ export class IncomingWhatsappMessages {
             console.log(
               'There is not chat body and we have a reaction id, so we will fetch based on the reaction',
             );
-            whatsappMessageCommentedOn = await this.fetchWhatsappMessageById(
+            chatMessageCommentedOn = await this.fetchChatMessageById(
               userMessageBody?.reaction?.message_id,
               apiToken,
             );
             if (
-              typeof whatsappMessageCommentedOn === 'object' &&
-              whatsappMessageCommentedOn !== null &&
-              'error' in whatsappMessageCommentedOn
+              typeof chatMessageCommentedOn === 'object' &&
+              chatMessageCommentedOn !== null &&
+              'error' in chatMessageCommentedOn
             ) {
               console.log('Error in fetching the message commented on');
-              whatsappMessageCommentedOn = 'Message commented on not found';
+              chatMessageCommentedOn = 'Message commented on not found';
             }
             console.log(
               'this is the messages commented on ::',
-              whatsappMessageCommentedOn,
+              chatMessageCommentedOn,
             );
 
             console.log(
@@ -1414,7 +1414,7 @@ export class IncomingWhatsappMessages {
                 'Removed emoji ' +
                   ' from ' +
                   "'" +
-                  whatsappMessageCommentedOn +
+                  chatMessageCommentedOn +
                   "'" || '';
             } else {
               chatReply =
@@ -1422,7 +1422,7 @@ export class IncomingWhatsappMessages {
                   userMessageBody.reaction.emoji +
                   ' to ' +
                   "'" +
-                  whatsappMessageCommentedOn +
+                  chatMessageCommentedOn +
                   "'" || '';
             }
             console.log('This is the chatReply', chatReply);
@@ -1457,7 +1457,7 @@ export class IncomingWhatsappMessages {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
             phoneNumberFrom: userMessageBody.from,
-            whatsappMessageId:
+            externalMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0]?.id,
           };
 
@@ -1468,20 +1468,6 @@ export class IncomingWhatsappMessages {
               candidateJob,
               apiToken,
             );
-
-          if (candidateProfileData?.candidateReminders?.edges.length > 0) {
-            console.log( 'Candidate reminder found, updating the reminder status to false', );
-            const listOfReminders =
-              candidateProfileData?.candidateReminders?.edges;
-            const updateOneReminderVariables = {
-              idToUpdate: listOfReminders[0]?.node?.id,
-              input: { isReminderActive: false },
-            };
-            const graphqlQueryObj = JSON.stringify({
-              query: graphqlQueryToCreateOneNewWhatsappMessage,
-              variables: updateOneReminderVariables,
-            });
-          }
 
           console.log( 'Graphqlreqsponse after message update', responseAfterMessageUpdate, );
         } else if (
@@ -1513,7 +1499,7 @@ export class IncomingWhatsappMessages {
             chatReply: chatReply || 'CV Received',
             whatsappDeliveryStatus: 'receivedFromCandidate',
             phoneNumberFrom: whatsappIncomingMessage.phoneNumberFrom,
-            whatsappMessageId:
+            externalMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
           const candidateProfileData = await new FilterCandidates(
@@ -1587,7 +1573,7 @@ export class IncomingWhatsappMessages {
             phoneNumberFrom: userMessageBody.from,
             type: 'audio',
             databaseFilePath: audioMessageDetails?.databaseFilePath,
-            whatsappMessageId:
+            externalMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
           const candidateJob: Project = candidateProfileData.projects;
@@ -1614,7 +1600,7 @@ export class IncomingWhatsappMessages {
       whatsappDeliveryStatus: string;
       chatReply: string;
       phoneNumberFrom: string;
-      whatsappMessageId: string;
+      externalMessageId: string;
       databaseFilePath?: string | null;
       type?: string;
       isFromMe?: boolean;
@@ -1686,7 +1672,7 @@ export class IncomingWhatsappMessages {
             await this.queueCandidateForEngagement(
               candidateProfileDataNodeObj.id,
               workspaceId,
-              replyObject.whatsappMessageId,
+              replyObject.externalMessageId,
               true,
               candidateJob?.engagementProcessingDelayMinutes,
             );

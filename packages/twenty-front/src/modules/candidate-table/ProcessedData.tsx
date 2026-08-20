@@ -29,7 +29,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         linkedinUrl: candidate?.linkedinUrl?.primaryLinkUrl && isLinkedInUrl(candidate.linkedinUrl.primaryLinkUrl) ? 
           reconstructLinkedInUrlForDisplay(candidate.linkedinUrl.primaryLinkUrl) : '',
         lastMessage: (() => {
-          const edges = [...(candidate?.whatsappMessages?.edges || [])].sort(
+          const edges = [...(candidate?.chatMessages?.edges || [])].sort(
             (a, b) =>
               new Date(b.node?.createdAt || 0).getTime() -
               new Date(a.node?.createdAt || 0).getTime(),

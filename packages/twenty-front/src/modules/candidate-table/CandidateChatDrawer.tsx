@@ -13,7 +13,7 @@ import { styled } from '@linaria/react';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { MessageNode } from 'twenty-shared/arx';
+import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
 import { IconArrowsSplit2, IconFileText, IconMessage, IconUser, IconVideo } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -348,14 +348,6 @@ const groupMessagesByDate = (messages: MessageNode[]) => {
   return groups;
 };
 
-// Add type definitions at the top of the file after imports
-type WhatsAppMessage = {
-  node: {
-    id: string;
-    whatsappDeliveryStatus: string;
-  };
-};
-
 type CandidateData = {
   id: string;
   personId: string;
@@ -369,9 +361,7 @@ type CandidateData = {
   startChatCompleted: boolean;
   engagementStatus: string | true;
   messagingChannel: string;
-  whatsappMessages?: {
-    edges: WhatsAppMessage[];
-  };
+  chatMessages?: ChatMessages;
 };
 
 export const CandidateChatDrawer = React.memo(() => {

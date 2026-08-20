@@ -19,9 +19,9 @@ import {
   CandidateNode,
   chatMessageType,
   emptyCandidateProfileObj,
-  graphqlToFetchWhatsappMessageByWhatsappId,
-  graphQlToFetchWhatsappMessages,
-  graphqlToUpdateWhatsappMessageId,
+  graphqlToFetchChatMessageByExternalMessageId,
+  graphQlToFetchChatMessages,
+  graphqlToUpdateChatMessage,
   WhatsAppBusinessAccount,
 } from 'twenty-shared';
 
@@ -848,7 +848,7 @@ export class BaileysWhatsappService {
 
                   if (msg?.message?.reactionMessage) {
                     isReactionMessage = true;
-                    const whatsappMessageReacted = await this.fetchWhatsappMessageById(
+                    const chatMessageReacted = await this.fetchChatMessageById(
                       msg?.message?.reactionMessage?.key?.id,
                       apiToken
                     );
@@ -859,7 +859,7 @@ export class BaileysWhatsappService {
                           msg?.message?.reactionMessage?.text +
                           ' to ' +
                           "'" +
-                          whatsappMessageReacted?.data?.whatsappMessage?.message +
+                          chatMessageReacted?.data?.chatMessage?.message +
                           "'" || '';
                     } else {
                       textMessageToSend =
@@ -867,7 +867,7 @@ export class BaileysWhatsappService {
                           msg?.message?.reactionMessage?.text +
                           ' to ' +
                           "'" +
-                          whatsappMessageReacted?.data?.whatsappMessage?.message +
+                          chatMessageReacted?.data?.chatMessage?.message +
                           "'" || '';
                     }
                   }
@@ -1054,13 +1054,13 @@ export class BaileysWhatsappService {
         }
         let recentMessageQuery = '';
         if (incomingSenderIdentifierId?.includes('linkedin')) {
-          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-             WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+             WHERE ("_chatMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_chatMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
              ORDER BY "updatedAt" DESC
              LIMIT 1`;
         } else {
-          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_whatsappMessage"
-            WHERE ("_whatsappMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_whatsappMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
+          recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
+            WHERE ("_chatMessage"."phoneFrom" ILIKE '%${incomingSenderIdentifierId}%' OR "_chatMessage"."phoneTo" ILIKE '%${incomingSenderIdentifierId}%')
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
         }
@@ -1146,16 +1146,16 @@ export class BaileysWhatsappService {
     return match?.token ?? null;
   }
 
-  async fetchWhatsappMessageById(messageId: string, apiToken: string) {
+  async fetchChatMessageById(messageId: string, apiToken: string) {
     console.log('This is the message id:', messageId, "for recruiter:", this.recruiterName);
     try {
-      const whatsappMessageVariable = {
-        whatsappMessageId: messageId,
+      const chatMessageVariable = {
+        externalMessageId: messageId,
       };
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchWhatsappMessageByWhatsappId, whatsappMessageVariable, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchChatMessageByExternalMessageId, chatMessageVariable, apiToken);
 
-      console.log('Response from fetchWhatsappMessageById:', response?.data, "for recruiter:", this.recruiterName);
+      console.log('Response from fetchChatMessageById:', response?.data, "for recruiter:", this.recruiterName);
 
       return response?.data
     } catch (error) {
@@ -1165,14 +1165,14 @@ export class BaileysWhatsappService {
   }
 
   async handleDeleteForEveryoneMessage(msg: any, candidateProfile: CandidateNode, apiToken: string) {
-    const whatsappMessageToGetDeleted = await this.fetchWhatsappMessageById(
+    const chatMessageToGetDeleted = await this.fetchChatMessageById(
       msg?.message?.protocolMessage?.key?.id,
       apiToken
     );
 
-    console.log('whatsappMessageToGetDeleted:', whatsappMessageToGetDeleted, "for recruiter:", this.recruiterName);
+    console.log('chatMessageToGetDeleted:', chatMessageToGetDeleted, "for recruiter:", this.recruiterName);
     const messageObj =
-      whatsappMessageToGetDeleted?.data?.whatsappMessage?.messageObj;
+      chatMessageToGetDeleted?.data?.chatMessage?.messageObj;
 
     console.log('messageObj:', messageObj, "for recruiter:", this.recruiterName);
     const messagesAfterDeletingTheCurrentMessage = messageObj?.slice(
@@ -1195,18 +1195,18 @@ export class BaileysWhatsappService {
         ],
       };
 
-      const responseAfterFetchingAllMessagesByCandidateId = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, variables, apiToken);
+      const responseAfterFetchingAllMessagesByCandidateId = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, variables, apiToken);
       console.log('responseAfterFetchingAllMessagesByCandidateId:', responseAfterFetchingAllMessagesByCandidateId);
 
       const latestMessageObject: any[] =
         responseAfterFetchingAllMessagesByCandidateId?.data?.data
-          ?.whatsappMessages?.edges[0]?.node?.messageObj;
+          ?.chatMessages?.edges[0]?.node?.messageObj;
 
       const updatedMessageHistoryObject: any = [];
 
       for (let i = latestMessageObject.length - 1; i >= 0; i--) {
         if (
-          whatsappMessageToGetDeleted?.data?.whatsappMessage?.message !==
+          chatMessageToGetDeleted?.data?.chatMessage?.message !==
           latestMessageObject[i].content
         ) {
           updatedMessageHistoryObject.unshift(latestMessageObject[i]);
@@ -1216,13 +1216,13 @@ export class BaileysWhatsappService {
       const dataToUpdate = {
         idToUpdate:
           responseAfterFetchingAllMessagesByCandidateId?.data?.data
-            ?.whatsappMessages?.edges[0]?.node?.id,
+            ?.chatMessages?.edges[0]?.node?.id,
         input: {
           messageObj: updatedMessageHistoryObject,
         },
       };
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, dataToUpdate, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateChatMessage, dataToUpdate, apiToken);
 
       console.log('Response from updating the message:', response?.data);
     } catch (error) {
@@ -1759,10 +1759,10 @@ export class BaileysWhatsappService {
       const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
         async (workspaceId, dataSourceSchema) => {
           const query = `
-            SELECT "whatsappMessageId", "createdAt", "phoneFrom", "phoneTo"
-            FROM ${dataSourceSchema}."_whatsappMessage"
+            SELECT "externalMessageId", "createdAt", "phoneFrom", "phoneTo"
+            FROM ${dataSourceSchema}."_chatMessage"
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
-            AND "whatsappMessageId" IS NOT NULL
+            AND "externalMessageId" IS NOT NULL
             ORDER BY "createdAt" ASC
             LIMIT 1
           `;
@@ -1843,14 +1843,14 @@ export class BaileysWhatsappService {
         async (workspaceId, dataSourceSchema) => {
           const query = `
             SELECT
-              "whatsappMessageId",
+              "externalMessageId",
               "createdAt",
               "phoneFrom",
               "phoneTo",
               "message",
               "messageType",
               "mediaUrl"
-            FROM ${dataSourceSchema}."_whatsappMessage"
+            FROM ${dataSourceSchema}."_chatMessage"
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
             ORDER BY "createdAt" DESC
             LIMIT $1
@@ -1875,7 +1875,7 @@ export class BaileysWhatsappService {
 
       // Format messages to match FormattedMessage interface
       const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
-        id: msg.whatsappMessageId || '',
+        id: msg.externalMessageId || '',
         messageTimestamp: typeof msg.createdAt === 'number'
           ? msg.createdAt
           : parseInt(msg.createdAt) || 0,
@@ -1923,14 +1923,14 @@ export class BaileysWhatsappService {
         async (workspaceId, dataSourceSchema) => {
           const query = `
             SELECT
-              "whatsappMessageId",
+              "externalMessageId",
               "createdAt",
               "phoneFrom",
               "phoneTo",
               "message",
               "messageType",
               "mediaUrl"
-            FROM ${dataSourceSchema}."_whatsappMessage"
+            FROM ${dataSourceSchema}."_chatMessage"
             WHERE ("phoneFrom" ILIKE '%${phoneNumber}%' OR "phoneTo" ILIKE '%${phoneNumber}%')
             ${dateFilter}
             ORDER BY "createdAt" DESC
@@ -1956,7 +1956,7 @@ export class BaileysWhatsappService {
 
       // Format messages to match FormattedMessage interface
       const formattedMessages: FormattedMessage[] = sortedMessages.map((msg: any) => ({
-        id: msg.whatsappMessageId || '',
+        id: msg.externalMessageId || '',
         messageTimestamp: typeof msg.createdAt === 'number'
           ? msg.createdAt
           : parseInt(msg.createdAt) || 0,

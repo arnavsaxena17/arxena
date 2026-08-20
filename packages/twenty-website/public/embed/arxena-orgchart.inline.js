@@ -256,8 +256,8 @@ You might need to use a local HTTP server (instead of file://): https://reactjs.
     name
     videoInterviewTemplateId
   }
-}`,PP=`mutation DeleteOneWhatsappMessage($idToDelete: ID!) {
-  deleteWhatsappMessage(id: $idToDelete) {
+}`,PP=`mutation DeleteOneChatMessage($idToDelete: ID!) {
+  deleteChatMessage(id: $idToDelete) {
     __typename
     deletedAt
     id
@@ -293,15 +293,15 @@ mutation DeleteManyPeople($filter: PersonFilterInput!) {
   }
 }
 `,LP=`
-mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
-  updateWhatsappMessage(id: $idToUpdate, data: $input) {
+mutation UpdateOneChatMessage($idToUpdate: ID!, $input: ChatMessageUpdateInput!) {
+  updateChatMessage(id: $idToUpdate, data: $input) {
    id
    createdAt
    updatedAt
   }
 }
-`,EP=`mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
-  deleteWhatsappMessages(filter: $filter) {
+`,EP=`mutation DeleteManyChatMessages($filter: ChatMessageFilterInput!) {
+  deleteChatMessages(filter: $filter) {
     id
     __typename
   }
@@ -641,8 +641,8 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
       primaryPhoneNumber
     }
   }
-}`,oT=`mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
-    createWhatsappMessage(data: $input) {
+}`,oT=`mutation CreateOneChatMessage($input: ChatMessageCreateInput!) {
+    createChatMessage(data: $input) {
       recruiterId
       message
       phoneFrom
@@ -653,7 +653,7 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
       messageObj
       lastEngagementChatControl
       whatsappDeliveryStatus
-      whatsappMessageId
+      externalMessageId
       typeOfMessage
       audioFilePath
     }
@@ -865,11 +865,11 @@ mutation CreateOneViewField($input: ViewFieldCreateInput!) {
     isActive
     updatedAt
   }
-}`,ST=Object.freeze(Object.defineProperty({__proto__:null,CreateManyCandidates:HP,CreateManyCustomMetadataObject:JP,CreateManyPeople:sT,CreateOneCompany:GP,CreateOneFieldMetadataItem:QP,CreateOneObjectMetadataItem:YP,CreateOneRelationMetadata:qP,CreateOneRelationMetadataItem:XP,CreateOneVideoInterviewModel:WP,CreateOneVideoInterviewTemplate:KP,UpdateOneJob:iT,createCvsentMutation:dT,createManyShortlistsMutation:vT,createOneAssistantThread:xT,createResponseMutation:TP,createShortlistMutation:yT,createViewFieldMutation:bT,deleteOneWhatsappMessage:PP,graphQLToCreateOneWorkspaceMemberProfile:zP,graphQLToUpdateOneWorkspaceMemberProfile:VP,graphQLToUpdateWorkspaceMemberLinkedinCookieTokens:_P,graphQLtoCreateOneAttachmentFromFilePath:BP,graphQltoUpdateOneCandidate:aT,graphqlMutationCreateOneClientContact:RP,graphqlMutationCreateOneInterviewSchedule:IP,graphqlMutationToCreatePhoneCall:ZP,graphqlMutationToCreateSMS:tT,graphqlMutationToDeleteManyCandidates:AP,graphqlMutationToDeleteManyPeople:DP,graphqlMutationToUpdateSMS:eT,graphqlQueryToCreateOneClientInterview:OP,graphqlQueryToCreateOneNewWhatsappMessage:oT,graphqlQueryToCreateOneReminder:NP,graphqlQueryToCreateVideoInterview:MP,graphqlQueryToRemoveMessages:EP,graphqlQueryToUpdateOneReminder:kP,graphqlQueryToUpdateReminderStatus:lT,graphqlToAddNewCandidate:pT,graphqlToAddNewContact:fT,graphqlToAddNewJob:hT,graphqlToAddNewPerson:uT,graphqlToCreateOneOrgChart:cT,graphqlToCreateOnePrompt:jP,graphqlToUpdateOneClientInterview:FP,graphqlToUpdateWhatsappMessageId:LP,mutationToCreateOneCandidateEnrichment:nT,mutationToCreateOnePhoneCall:$P,mutationToUpdateOnePerson:rT,mutationToUpdateOnePhoneCall:mT,updateOneAssistantThread:wT,updateOneShortlistMutation:gT,updateOneVideoInterviewMutation:UP},Symbol.toStringTag,{value:"Module"})),CT=`query FindOneWhatsappMessage($whatsappMessageId: String!) {
-  whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
+}`,ST=Object.freeze(Object.defineProperty({__proto__:null,CreateManyCandidates:HP,CreateManyCustomMetadataObject:JP,CreateManyPeople:sT,CreateOneCompany:GP,CreateOneFieldMetadataItem:QP,CreateOneObjectMetadataItem:YP,CreateOneRelationMetadata:qP,CreateOneRelationMetadataItem:XP,CreateOneVideoInterviewModel:WP,CreateOneVideoInterviewTemplate:KP,UpdateOneJob:iT,createCvsentMutation:dT,createManyShortlistsMutation:vT,createOneAssistantThread:xT,createResponseMutation:TP,createShortlistMutation:yT,createViewFieldMutation:bT,deleteOneChatMessage:PP,graphQLToCreateOneWorkspaceMemberProfile:zP,graphQLToUpdateOneWorkspaceMemberProfile:VP,graphQLToUpdateWorkspaceMemberLinkedinCookieTokens:_P,graphQLtoCreateOneAttachmentFromFilePath:BP,graphQltoUpdateOneCandidate:aT,graphqlMutationCreateOneClientContact:RP,graphqlMutationCreateOneInterviewSchedule:IP,graphqlMutationToCreatePhoneCall:ZP,graphqlMutationToCreateSMS:tT,graphqlMutationToDeleteManyCandidates:AP,graphqlMutationToDeleteManyPeople:DP,graphqlMutationToUpdateSMS:eT,graphqlQueryToCreateOneClientInterview:OP,graphqlQueryToCreateOneNewChatMessage:oT,graphqlQueryToCreateOneReminder:NP,graphqlQueryToCreateVideoInterview:MP,graphqlQueryToRemoveMessages:EP,graphqlQueryToUpdateOneReminder:kP,graphqlQueryToUpdateReminderStatus:lT,graphqlToAddNewCandidate:pT,graphqlToAddNewContact:fT,graphqlToAddNewJob:hT,graphqlToAddNewPerson:uT,graphqlToCreateOneOrgChart:cT,graphqlToCreateOnePrompt:jP,graphqlToUpdateOneClientInterview:FP,graphqlToUpdateChatMessage:LP,mutationToCreateOneCandidateEnrichment:nT,mutationToCreateOnePhoneCall:$P,mutationToUpdateOnePerson:rT,mutationToUpdateOnePhoneCall:mT,updateOneAssistantThread:wT,updateOneShortlistMutation:gT,updateOneVideoInterviewMutation:UP},Symbol.toStringTag,{value:"Module"})),CT=`query FindOneWhatsappMessage($externalMessageId: String!) {
+  chatMessage(filter: {externalMessageId: {eq: $externalMessageId}}) {
     id
     candidateId
-    whatsappMessageId
+    externalMessageId
     message
     messageObj
   }
@@ -1880,7 +1880,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
     ) {
       edges {
         node {
-          whatsappMessageId
+          externalMessageId
           authorId
           candidateId
           fullPath
@@ -2372,8 +2372,8 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     }
   }
 }
-`,getGraphqlToFindManyJobs:RT,getGraphqlToFindManyJobsWithCandidateValues:jT,getGraphqlToFindManyJobsWithCandidates:_T,getGraphqlToFindManyJobsWithPrompts:BT,graphQlToFetchWhatsappMessages:`query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
-  whatsappMessages(
+`,getGraphqlToFindManyJobs:RT,getGraphqlToFindManyJobsWithCandidateValues:jT,getGraphqlToFindManyJobsWithCandidates:_T,getGraphqlToFindManyJobsWithPrompts:BT,graphQlToFetchChatMessages:`query FindManyChatMessages($filter: ChatMessageFilterInput, $orderBy: [ChatMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  chatMessages(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -2389,7 +2389,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
         updatedAt
         position
         whatsappDeliveryStatus
-        whatsappMessageId
+        externalMessageId
         phoneFrom
         createdAt
         audioFilePath
@@ -2693,7 +2693,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
                     status
                     updatedAt
                     stopChat
-                    whatsappMessages {
+                    chatMessages {
                       edges {
                         node {
                           recruiterId
@@ -2799,7 +2799,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
                           }
                       }
                     }
-                    whatsappMessages {
+                    chatMessages {
                       edges {
                         node {
                           recruiterId
@@ -3174,7 +3174,7 @@ fragment ParticipantFragment on TimelineThreadParticipant {
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
           startVideoInterviewChatCompleted
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt
@@ -3351,7 +3351,7 @@ fragment ParticipantFragment on TimelineThreadParticipant {
             primaryLinkLabel
           }
           otherFields
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt
@@ -3416,14 +3416,14 @@ fragment ParticipantFragment on TimelineThreadParticipant {
     totalCount
     __typename
   }
-}`,graphqlToFetchWhatsappMessageByWhatsappId:CT,graphqlToFindManyCompanies:LT,graphqlToFindManyJobs:IT,graphqlToFindManyJobsWithCandidateValues:zT,graphqlToFindManyJobsWithCandidates:mw,graphqlToFindManyJobsWithPrompts:$T,isOrgChartEnabledEnv:dw,queryByvideoInterview:`query FindOneVideoInterview($objectRecordId: ID!) {
+}`,graphqlToFetchChatMessageByExternalMessageId:CT,graphqlToFindManyCompanies:LT,graphqlToFindManyJobs:IT,graphqlToFindManyJobsWithCandidateValues:zT,graphqlToFindManyJobsWithCandidates:mw,graphqlToFindManyJobsWithPrompts:$T,isOrgChartEnabledEnv:dw,queryByvideoInterview:`query FindOneVideoInterview($objectRecordId: ID!) {
   videoInterview(filter: {id: {eq: $objectRecordId}}) {
     attachments {
       edges {
         node {
           clientInterviewId
           phoneCallId
-          whatsappMessageId
+          externalMessageId
           candidateReminderId
           opportunityId
           videoInterviewModelId
@@ -3436,7 +3436,6 @@ fragment ParticipantFragment on TimelineThreadParticipant {
           type
           id
           createdAt
-          textMessageId
           fullPath
           videoInterviewQuestionId
           interviewScheduleId
@@ -3688,8 +3687,8 @@ React keys must be passed directly to JSX without using spread:
     name
     videoInterviewTemplateId
   }
-}`,m2=`mutation DeleteOneWhatsappMessage($idToDelete: ID!) {
-  deleteWhatsappMessage(id: $idToDelete) {
+}`,m2=`mutation DeleteOneChatMessage($idToDelete: ID!) {
+  deleteChatMessage(id: $idToDelete) {
     __typename
     deletedAt
     id
@@ -3725,15 +3724,15 @@ mutation DeleteManyPeople($filter: PersonFilterInput!) {
   }
 }
 `,x2=`
-mutation UpdateOneWhatsappMessage($idToUpdate: ID!, $input: WhatsappMessageUpdateInput!) {
-  updateWhatsappMessage(id: $idToUpdate, data: $input) {
+mutation UpdateOneChatMessage($idToUpdate: ID!, $input: ChatMessageUpdateInput!) {
+  updateChatMessage(id: $idToUpdate, data: $input) {
    id
    createdAt
    updatedAt
   }
 }
-`,w2=`mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
-  deleteWhatsappMessages(filter: $filter) {
+`,w2=`mutation DeleteManyChatMessages($filter: ChatMessageFilterInput!) {
+  deleteChatMessages(filter: $filter) {
     id
     __typename
   }
@@ -4073,8 +4072,8 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
       primaryPhoneNumber
     }
   }
-}`,K2=`mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
-    createWhatsappMessage(data: $input) {
+}`,K2=`mutation CreateOneChatMessage($input: ChatMessageCreateInput!) {
+    createChatMessage(data: $input) {
       recruiterId
       message
       phoneFrom
@@ -4085,7 +4084,7 @@ mutation CreatePeople($data: [PersonCreateInput!]!) {
       messageObj
       lastEngagementChatControl
       whatsappDeliveryStatus
-      whatsappMessageId
+      externalMessageId
       typeOfMessage
       audioFilePath
     }
@@ -4297,11 +4296,11 @@ mutation CreateOneViewField($input: ViewFieldCreateInput!) {
     isActive
     updatedAt
   }
-}`,cN=Object.freeze(Object.defineProperty({__proto__:null,CreateManyCandidates:O2,CreateManyCustomMetadataObject:z2,CreateManyPeople:q2,CreateOneCompany:R2,CreateOneFieldMetadataItem:j2,CreateOneObjectMetadataItem:I2,CreateOneRelationMetadata:F2,CreateOneRelationMetadataItem:B2,CreateOneVideoInterviewModel:U2,CreateOneVideoInterviewTemplate:$2,UpdateOneJob:Y2,createCvsentMutation:eN,createManyShortlistsMutation:aN,createOneAssistantThread:uN,createResponseMutation:g2,createShortlistMutation:oN,createViewFieldMutation:lN,deleteOneWhatsappMessage:m2,graphQLToCreateOneWorkspaceMemberProfile:D2,graphQLToUpdateOneWorkspaceMemberProfile:L2,graphQLToUpdateWorkspaceMemberLinkedinCookieTokens:E2,graphQLtoCreateOneAttachmentFromFilePath:P2,graphQltoUpdateOneCandidate:W2,graphqlMutationCreateOneClientContact:C2,graphqlMutationCreateOneInterviewSchedule:k2,graphqlMutationToCreatePhoneCall:V2,graphqlMutationToCreateSMS:_2,graphqlMutationToDeleteManyCandidates:v2,graphqlMutationToDeleteManyPeople:b2,graphqlMutationToUpdateSMS:H2,graphqlQueryToCreateOneClientInterview:S2,graphqlQueryToCreateOneNewWhatsappMessage:K2,graphqlQueryToCreateOneReminder:y2,graphqlQueryToCreateVideoInterview:p2,graphqlQueryToRemoveMessages:w2,graphqlQueryToUpdateOneReminder:f2,graphqlQueryToUpdateReminderStatus:Q2,graphqlToAddNewCandidate:iN,graphqlToAddNewContact:nN,graphqlToAddNewJob:Z2,graphqlToAddNewPerson:J2,graphqlToCreateOneOrgChart:tN,graphqlToCreateOnePrompt:A2,graphqlToUpdateOneClientInterview:M2,graphqlToUpdateWhatsappMessageId:x2,mutationToCreateOneCandidateEnrichment:G2,mutationToCreateOnePhoneCall:T2,mutationToUpdateOnePerson:X2,mutationToUpdateOnePhoneCall:sN,updateOneAssistantThread:hN,updateOneShortlistMutation:rN,updateOneVideoInterviewMutation:N2},Symbol.toStringTag,{value:"Module"})),dN=`query FindOneWhatsappMessage($whatsappMessageId: String!) {
-  whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
+}`,cN=Object.freeze(Object.defineProperty({__proto__:null,CreateManyCandidates:O2,CreateManyCustomMetadataObject:z2,CreateManyPeople:q2,CreateOneCompany:R2,CreateOneFieldMetadataItem:j2,CreateOneObjectMetadataItem:I2,CreateOneRelationMetadata:F2,CreateOneRelationMetadataItem:B2,CreateOneVideoInterviewModel:U2,CreateOneVideoInterviewTemplate:$2,UpdateOneJob:Y2,createCvsentMutation:eN,createManyShortlistsMutation:aN,createOneAssistantThread:uN,createResponseMutation:g2,createShortlistMutation:oN,createViewFieldMutation:lN,deleteOneChatMessage:m2,graphQLToCreateOneWorkspaceMemberProfile:D2,graphQLToUpdateOneWorkspaceMemberProfile:L2,graphQLToUpdateWorkspaceMemberLinkedinCookieTokens:E2,graphQLtoCreateOneAttachmentFromFilePath:P2,graphQltoUpdateOneCandidate:W2,graphqlMutationCreateOneClientContact:C2,graphqlMutationCreateOneInterviewSchedule:k2,graphqlMutationToCreatePhoneCall:V2,graphqlMutationToCreateSMS:_2,graphqlMutationToDeleteManyCandidates:v2,graphqlMutationToDeleteManyPeople:b2,graphqlMutationToUpdateSMS:H2,graphqlQueryToCreateOneClientInterview:S2,graphqlQueryToCreateOneNewChatMessage:K2,graphqlQueryToCreateOneReminder:y2,graphqlQueryToCreateVideoInterview:p2,graphqlQueryToRemoveMessages:w2,graphqlQueryToUpdateOneReminder:f2,graphqlQueryToUpdateReminderStatus:Q2,graphqlToAddNewCandidate:iN,graphqlToAddNewContact:nN,graphqlToAddNewJob:Z2,graphqlToAddNewPerson:J2,graphqlToCreateOneOrgChart:tN,graphqlToCreateOnePrompt:A2,graphqlToUpdateOneClientInterview:M2,graphqlToUpdateChatMessage:x2,mutationToCreateOneCandidateEnrichment:G2,mutationToCreateOnePhoneCall:T2,mutationToUpdateOnePerson:X2,mutationToUpdateOnePhoneCall:sN,updateOneAssistantThread:hN,updateOneShortlistMutation:rN,updateOneVideoInterviewMutation:N2},Symbol.toStringTag,{value:"Module"})),dN=`query FindOneWhatsappMessage($externalMessageId: String!) {
+  chatMessage(filter: {externalMessageId: {eq: $externalMessageId}}) {
     id
     candidateId
-    whatsappMessageId
+    externalMessageId
     message
     messageObj
   }
@@ -5312,7 +5311,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
     ) {
       edges {
         node {
-          whatsappMessageId
+          externalMessageId
           authorId
           candidateId
           fullPath
@@ -5804,8 +5803,8 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     }
   }
 }
-`,getGraphqlToFindManyJobs:CN,getGraphqlToFindManyJobsWithCandidateValues:AN,getGraphqlToFindManyJobsWithCandidates:EN,getGraphqlToFindManyJobsWithPrompts:PN,graphQlToFetchWhatsappMessages:`query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
-  whatsappMessages(
+`,getGraphqlToFindManyJobs:CN,getGraphqlToFindManyJobsWithCandidateValues:AN,getGraphqlToFindManyJobsWithCandidates:EN,getGraphqlToFindManyJobsWithPrompts:PN,graphQlToFetchChatMessages:`query FindManyChatMessages($filter: ChatMessageFilterInput, $orderBy: [ChatMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  chatMessages(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -5821,7 +5820,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
         updatedAt
         position
         whatsappDeliveryStatus
-        whatsappMessageId
+        externalMessageId
         phoneFrom
         createdAt
         audioFilePath
@@ -6125,7 +6124,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
                     status
                     updatedAt
                     stopChat
-                    whatsappMessages {
+                    chatMessages {
                       edges {
                         node {
                           recruiterId
@@ -6231,7 +6230,7 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
                           }
                       }
                     }
-                    whatsappMessages {
+                    chatMessages {
                       edges {
                         node {
                           recruiterId
@@ -6606,7 +6605,7 @@ fragment ParticipantFragment on TimelineThreadParticipant {
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
           startVideoInterviewChatCompleted
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt
@@ -6783,7 +6782,7 @@ fragment ParticipantFragment on TimelineThreadParticipant {
             primaryLinkLabel
           }
           otherFields
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt
@@ -6848,14 +6847,14 @@ fragment ParticipantFragment on TimelineThreadParticipant {
     totalCount
     __typename
   }
-}`,graphqlToFetchWhatsappMessageByWhatsappId:dN,graphqlToFindManyCompanies:xN,graphqlToFindManyJobs:kN,graphqlToFindManyJobsWithCandidateValues:DN,graphqlToFindManyJobsWithCandidates:Tw,graphqlToFindManyJobsWithPrompts:TN,isOrgChartEnabledEnv:kw,queryByvideoInterview:`query FindOneVideoInterview($objectRecordId: ID!) {
+}`,graphqlToFetchChatMessageByExternalMessageId:dN,graphqlToFindManyCompanies:xN,graphqlToFindManyJobs:kN,graphqlToFindManyJobsWithCandidateValues:DN,graphqlToFindManyJobsWithCandidates:Tw,graphqlToFindManyJobsWithPrompts:TN,isOrgChartEnabledEnv:kw,queryByvideoInterview:`query FindOneVideoInterview($objectRecordId: ID!) {
   videoInterview(filter: {id: {eq: $objectRecordId}}) {
     attachments {
       edges {
         node {
           clientInterviewId
           phoneCallId
-          whatsappMessageId
+          externalMessageId
           candidateReminderId
           opportunityId
           videoInterviewModelId
@@ -6868,7 +6867,6 @@ fragment ParticipantFragment on TimelineThreadParticipant {
           type
           id
           createdAt
-          textMessageId
           fullPath
           videoInterviewQuestionId
           interviewScheduleId

@@ -26,11 +26,11 @@ type CreateAttachmentInput = {
   targetPersonId?: string;
   targetCompanyId?: string;
   targetCvSentId?: string;
-  targetWhatsappMessageId?: string;
+  targetChatMessageId?: string;
   videoInterviewResponseId?: string;
   // Legacy aliases — remapped to target*Id before create
   cvSentId?: string;
-  whatsappMessageId?: string;
+  externalMessageId?: string;
   candidateId?: string;
   projectId?: string;
   personId?: string;
@@ -73,7 +73,7 @@ const remapLegacyAttachmentInput = (
     personId,
     companyId,
     cvSentId,
-    whatsappMessageId,
+    externalMessageId,
     fullPath: _fullPath,
     ...rest
   } = input;
@@ -91,8 +91,8 @@ const remapLegacyAttachmentInput = (
       ? { targetCompanyId: companyId }
       : {}),
     // Morph join columns use target{Object}Id; remap legacy short FK names
-    ...(whatsappMessageId && !rest.targetWhatsappMessageId
-      ? { targetWhatsappMessageId: whatsappMessageId }
+    ...(externalMessageId && !rest.targetChatMessageId
+      ? { targetChatMessageId: externalMessageId }
       : {}),
     // cvSent morph may be absent on some workspaces — keep as targetCvSentId when present
     ...(cvSentId && !rest.targetCvSentId

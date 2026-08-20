@@ -23,6 +23,8 @@ import { SyncGtmLogicFunctionSampleOutputCommand } from 'src/database/commands/u
 import { EnsureGtmUploadProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000028-ensure-gtm-upload-profiles-logic-function.command';
 import { GtmOutreachMessageFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000029-gtm-outreach-message-fields.command';
 import { SyncGtmOutreachWorkflowsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000030-sync-gtm-outreach-workflows-skill-content.command';
+import { RenameWhatsappMessageToChatMessageCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000031-rename-whatsapp-message-to-chat-message.command';
+import { DropUnusedArxenaCrmObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000032-drop-unused-arxena-crm-objects.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -68,6 +70,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     EnsureGtmUploadProfilesLogicFunctionCommand,
     GtmOutreachMessageFieldsCommand,
     SyncGtmOutreachWorkflowsSkillContentCommand,
+    RenameWhatsappMessageToChatMessageCommand,
+    DropUnusedArxenaCrmObjectsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

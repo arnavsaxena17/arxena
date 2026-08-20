@@ -92,17 +92,15 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         messagingChannel: 'LINKEDIN',
         chatCount: 0,
         lastEngagementChatControl: 'startChat',
-        whatsappMessages: { edges: [] },
+        chatMessages: { edges: [] },
         emailMessages: { edges: [] },
         otherFields: {},
-        candidateReminders: { edges: [] },
         projects: { id: projectId, name: jobName },
         people: { id: peopleId },
         attachments: { edges: [] },
         videoInterview: { edges: [] },
         whatsappProvider: 'application03',
         input: '',
-        clientInterview: undefined,
         remarks: '',
         name:
           peopleResult.name ||

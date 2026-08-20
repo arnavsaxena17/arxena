@@ -1,11 +1,3 @@
-export const graphqlQueryToUpdateOneReminder = `
-  mutation UpdateOneCandidateReminder($idToUpdate: UUID!, $input: CandidateReminderUpdateInput!) {
-  updateCandidateReminder(id: $idToUpdate, data: $input) {
-    __typename
-  }
-}
-`;
-
 export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterview($input: VideoInterviewCreateInput!) {
   createVideoInterview(data: $input) {
     interviewStarted
@@ -23,8 +15,8 @@ export const graphqlQueryToCreateVideoInterview = `mutation CreateOneVideoInterv
 
 
 
-export const deleteOneWhatsappMessage = `mutation DeleteOneWhatsappMessage($idToDelete: UUID!) {
-  deleteWhatsappMessage(id: $idToDelete) {
+export const deleteOneChatMessage = `mutation DeleteOneChatMessage($idToDelete: UUID!) {
+  deleteChatMessage(id: $idToDelete) {
     __typename
     deletedAt
     id
@@ -41,15 +33,6 @@ export const createResponseMutation = `mutation CreateOneVideoInterviewResponse(
     createdAt
   }
 }`;
-
-export const graphqlQueryToCreateOneReminder = `
-  mutation CreateOneCandidateReminder($input: CandidateReminderCreateInput!) {
-  createCandidateReminder(data: $input) {
-    __typename
-    id
-  }
-}
-`;
 
 export const graphqlMutationToDeleteManyCandidates = `
 mutation DeleteManyCandidates($filter: CandidateFilterInput!) {
@@ -69,9 +52,9 @@ mutation DeleteManyPeople($filter: PersonFilterInput!) {
 }
 `;
 
-export const graphqlToUpdateWhatsappMessageId = `
-mutation UpdateOneWhatsappMessage($idToUpdate: UUID!, $input: WhatsappMessageUpdateInput!) {
-  updateWhatsappMessage(id: $idToUpdate, data: $input) {
+export const graphqlToUpdateChatMessage = `
+mutation UpdateOneChatMessage($idToUpdate: UUID!, $input: ChatMessageUpdateInput!) {
+  updateChatMessage(id: $idToUpdate, data: $input) {
    id
    createdAt
    updatedAt
@@ -79,57 +62,12 @@ mutation UpdateOneWhatsappMessage($idToUpdate: UUID!, $input: WhatsappMessageUpd
 }
 `;
 
-export const graphqlQueryToRemoveMessages = `mutation DeleteManyWhatsappMessages($filter: WhatsappMessageFilterInput!) {
-  deleteWhatsappMessages(filter: $filter) {
+export const graphqlQueryToRemoveMessages = `mutation DeleteManyChatMessages($filter: ChatMessageFilterInput!) {
+  deleteChatMessages(filter: $filter) {
     id
     __typename
   }
 }`;
-export const graphqlQueryToCreateOneClientInterview = `mutation CreateOneClientInterview($input: ClientInterviewCreateInput!) {
-  createClientInterview(data: $input) {
-    __typename
-    id
-  }
-}`;
-
-export const graphqlMutationCreateOneClientContact = `mutation CreateOneClientContact($input: ClientContactCreateInput!) {
-  createClientContact(data: $input) {
-    __typename
-    id
-  }
-}`;
-
-export const graphqlMutationCreateOneInterviewSchedule = `mutation CreateOneInterviewSchedule($input: InterviewScheduleCreateInput!) {
-  createInterviewSchedule(data: $input) {
-    __typename
-    id
-  }
-}`;
-
-export const graphqlToUpdateOneClientInterview = `mutation UpdateOneClientInterview($idToUpdate: UUID!, $input: ClientInterviewUpdateInput!) {
-  updateClientInterview(id: $idToUpdate, data: $input) {
-    __typename
-    createdAt
-    interviewSchedule {
-      __typename
-      meetingType
-      position
-      name
-      slotsAvailable
-      id
-      projectsId
-      updatedAt
-      createdAt
-    }
-    interviewTime
-    updatedAt
-    id
-    name
-    position
-    candidateId
-  }
-}`;
-
 export const graphQLtoCreateOneAttachmentFromFilePath = `mutation CreateOneAttachment($input: AttachmentCreateInput!) {
   createAttachment(data: $input) {
     __typename
@@ -491,8 +429,8 @@ export const mutationToUpdateOnePerson = `mutation UpdateOnePerson($idToUpdate: 
   }
 }`;
 
-export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhatsappMessage($input: WhatsappMessageCreateInput!) {
-    createWhatsappMessage(data: $input) {
+export const graphqlQueryToCreateOneNewChatMessage = `mutation CreateOneChatMessage($input: ChatMessageCreateInput!) {
+    createChatMessage(data: $input) {
       recruiterId
       message
       phoneFrom
@@ -503,7 +441,7 @@ export const graphqlQueryToCreateOneNewWhatsappMessage = `mutation CreateOneWhat
       messageObj
       lastEngagementChatControl
       whatsappDeliveryStatus
-      whatsappMessageId
+      externalMessageId
       typeOfMessage
       audioFilePath
     }
@@ -525,13 +463,6 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
       startVideoInterviewChat
       startVideoInterviewChatCompleted
       position
-    }
-  }`;
-
-export const graphqlQueryToUpdateReminderStatus = `mutation UpdateOneReminder($idToUpdate: UUID!, $input: ReminderUpdateInput!) {
-    updateReminder(id: $idToUpdate, data: $input) {
-      updatedAt
-      id
     }
   }`;
 

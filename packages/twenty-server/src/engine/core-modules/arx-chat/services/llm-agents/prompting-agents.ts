@@ -340,40 +340,15 @@ ${firstChatMessage}`;
     apiToken: string,
   ) {
     try {
-      console.log('candidateJob::', candidateJob);
-      const meetingType =
-        candidateJob?.interviewSchedule?.edges[0]?.node?.meetingType;
-
-      console.log('candidateJob interviewSchedule::', meetingType);
-      if (!meetingType) {
-        return;
-      }
-
-      switch (meetingType) {
-        case 'online':
-          return this.getOnlineStartMeetingSchedulingPrompt(
-            candidate,
-            candidateJob,
-            apiToken,
-          );
-        case 'inPerson':
-          return this.getInPersonMeetingSchedulingPrompt(
-            candidate,
-            candidateJob,
-            apiToken,
-          );
-        case 'walkIn':
-          return this.getWalkinMeetingSchedulingPrompt(
-            candidate,
-            candidateJob,
-            apiToken,
-          );
-      }
+      return this.getOnlineStartMeetingSchedulingPrompt(
+        candidate,
+        candidateJob,
+        apiToken,
+      );
     } catch (error) {
       console.log(
         'Error in getStartMeetingSchedulingPrompt:',
         error,
-        'FUCK FUCK',
       );
     }
   }
@@ -552,7 +527,7 @@ ${firstChatMessage}`;
     //   The current time is `+ new Date() +`. Calculate the amount of time that has passed from the last message. If the time elapsed has gone beyond 1 minute and less than 5 minutes and the user has not been sent the first reminder, Return the stage as "reminder_necessary" else return "reminder_unnecessary". Do not return any other text.
     // `;
     const TIME_MANAGEMENT_PROMPT = `
-      You are responsible for creating and managing reminders for the candidate. When the candidate tells you that they will get back to you, your task is to remind the candidate to reply back after certain hours. You can do this by calling the function "create_reminder". You will not call this function otherwise. For now the reminder time is 1 hour.
+      The current time is ` + new Date() + `. Continue the conversation with the candidate based on the message history.
     `;
 
     return TIME_MANAGEMENT_PROMPT;

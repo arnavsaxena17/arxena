@@ -16,7 +16,7 @@ import {
   ChatControlsObjType,
   graphqlToFetchAllCandidateData,
   graphQltoUpdateOneCandidate,
-  graphqlToUpdateWhatsappMessageId,
+  graphqlToUpdateChatMessage,
   Project,
   MessageNode,
   PersonNode,
@@ -361,11 +361,11 @@ export class ArxChatEndpoint {
   //   try {
   //     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
   //     const candidateJob = personCandidateNode?.projects;
-  //     // const messagesList = personCandidateNode?.whatsappMessages?.edges;
+  //     // const messagesList = personCandidateNode?.chatMessages?.edges;
   //     const messagesList: MessageNode[] = await new FilterCandidates(
   //       this.workspaceQueryService,
   //       this.staticGraphQLService,
-  //     ).fetchAllWhatsappMessages(personCandidateNode?.id as string, apiToken);
+  //     ).fetchAllChatMessages(personCandidateNode?.id as string, apiToken);
   //     let mostRecentMessageArr: ChatHistoryItem[] = new FilterCandidates(
   //       this.workspaceQueryService,
   //       this.staticGraphQLService,
@@ -598,7 +598,7 @@ export class ArxChatEndpoint {
     const chatMessages =
       personObj?.candidates?.edges.filter(
         (candidate) => candidate.node.projects.id == candidateJob?.id,
-      )[0]?.node?.whatsappMessages?.edges;
+      )[0]?.node?.chatMessages?.edges;
     let chatHistory = chatMessages?.[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
@@ -606,7 +606,7 @@ export class ArxChatEndpoint {
     chatHistory =
       personObj?.candidates?.edges.filter(
         (candidate) => candidate.node.projects.id == candidateJob?.id,
-      )[0]?.node?.whatsappMessages?.edges[0]?.node?.messageObj;
+      )[0]?.node?.chatMessages?.edges[0]?.node?.messageObj;
     let messageTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
       ? '91' + personObj?.phones?.primaryPhoneNumber
     : personObj?.phones?.primaryPhoneNumber || '';
@@ -648,7 +648,7 @@ export class ArxChatEndpoint {
       messageObj: chatHistory,
       lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
-      whatsappMessageId: 'startChat',
+      externalMessageId: 'startChat',
       typeOfMessage:
         toMessagingChannelTransportKey(
           personObj?.candidates?.edges.filter(
@@ -664,7 +664,7 @@ export class ArxChatEndpoint {
       (candidate) => candidate.node.projects.id == candidateJob?.id,
     )[0]?.node as CandidateNode;
 
-    const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
     const candidateChatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
@@ -682,7 +682,7 @@ export class ArxChatEndpoint {
       messageObj: candidateChatHistory,
       lastEngagementChatControl: candidateChatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
-      whatsappMessageId: 'startChat',
+      externalMessageId: 'startChat',
       typeOfMessage:
         toMessagingChannelTransportKey(candidateNode?.messagingChannel) ||
         process.env.DEFAULT_WHATSAPP_CLIENT ||
@@ -708,17 +708,17 @@ export class ArxChatEndpoint {
 
   @Post('get-all-messages-by-candidate-id')
   @UseGuards(JwtAuthGuard)
-  async getWhatsappMessagessByCandidateId(
+  async getChatMessagesByCandidateId(
     @Req() request: any,
   ): Promise<object[]> {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidateId = request.body.candidateId;
-    const allWhatsappMessages = await new FilterCandidates(
+    const allChatMessages = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchAllWhatsappMessages(candidateId, apiToken);
+    ).fetchAllChatMessages(candidateId, apiToken);
 
-    return allWhatsappMessages;
+    return allChatMessages;
   }
 
   @Post('get-all-messages-by-phone-number')
@@ -735,15 +735,15 @@ export class ArxChatEndpoint {
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
     const candidateId: string | undefined = personObj?.candidates?.edges[0]?.node?.id;
-    const allWhatsappMessages: MessageNode[] = await new FilterCandidates(
+    const allChatMessages: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchAllWhatsappMessages(candidateId as string, apiToken);
-    const formattedMessages = await formatChat(allWhatsappMessages);
+    ).fetchAllChatMessages(candidateId as string, apiToken);
+    const formattedMessages = await formatChat(allChatMessages);
 
     console.log(
       'All messages length:',
-      allWhatsappMessages?.length,
+      allChatMessages?.length,
       'for phone number:',
       request.body.phoneNumber,
     );
@@ -899,11 +899,11 @@ export class ArxChatEndpoint {
         };
         // debugger
         const graphqlQueryObjForUpdationForDeliveryStatus = JSON.stringify({
-          query: graphqlToUpdateWhatsappMessageId,
+          query: graphqlToUpdateChatMessage,
           variables: variablesToUpdateDeliveryStatus,
         });
 
-        const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateWhatsappMessageId, variablesToUpdateDeliveryStatus, apiToken);
+        const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateChatMessage, variablesToUpdateDeliveryStatus, apiToken);
 
         console.log(
           'responseOfDeliveryStatus::',

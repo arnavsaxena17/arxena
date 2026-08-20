@@ -1,8 +1,8 @@
-export const graphqlToFetchWhatsappMessageByWhatsappId = `query FindOneWhatsappMessage($whatsappMessageId: String!) {
-  whatsappMessage(filter: {whatsappMessageId: {eq: $whatsappMessageId}}) {
+export const graphqlToFetchChatMessageByExternalMessageId = `query FindOneChatMessage($externalMessageId: String!) {
+  chatMessage(filter: {externalMessageId: {eq: $externalMessageId}}) {
     id
     candidateId
-    whatsappMessageId
+    externalMessageId
     message
     messageObj
   }
@@ -76,75 +76,6 @@ export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: S
 
 
 
-
-export const graphqlQueryToFindScheduledClientMeetings = `query FindManyClientInterviews($filter: ClientInterviewFilterInput, $orderBy: [ClientInterviewOrderByInput], $lastCursor: String, $limit: Int) {
-  clientInterviews(
-    filter: $filter
-    orderBy: $orderBy
-    first: $limit
-    after: $lastCursor
-  ) {
-    edges {
-      node {
-        __typename
-        createdAt
-        interviewTime
-        updatedAt
-        clientContactId
-        interviewScheduleId
-        clientInterviewCompleted
-        id
-        name
-        position
-        candidateId
-      }
-      cursor
-      __typename
-    }
-    pageInfo {
-      hasNextPage
-      startCursor
-      endCursor
-      __typename
-    }
-    totalCount
-    __typename
-  }
-}`;
-
-export const graphqlQueryToFindManyClientContacts = `query FindManyClientContacts($filter: ClientContactFilterInput, $orderBy: [ClientContactOrderByInput], $limit: Int) {
-  clientContacts(filter: $filter, orderBy: $orderBy, first: $limit) {
-    edges {
-      node {
-        id
-        name
-        projectsId
-        peopleId
-        createdAt
-        updatedAt
-      }
-    }
-    totalCount
-  }
-}`;
-
-export const graphqlQueryToFindManyInterviewSchedules = `query FindManyInterviewSchedules($filter: InterviewScheduleFilterInput, $orderBy: [InterviewScheduleOrderByInput], $limit: Int) {
-  interviewSchedules(filter: $filter, orderBy: $orderBy, first: $limit) {
-    edges {
-      node {
-        id
-        name
-        projectsId
-        meetingType
-        position
-        slotsAvailable
-        createdAt
-        updatedAt
-      }
-    }
-    totalCount
-  }
-}`;
 
 export const graphqlQueryToFetchPrompts = `
   query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
@@ -1082,9 +1013,7 @@ export const findManyAttachmentsQuery = `query FindManyAttachments($filter: Atta
           targetPersonId
           targetCompanyId
           targetOpportunityId
-          targetWhatsappMessageId
-          targetClientInterviewId
-          targetRecruiterInterviewId
+          targetChatMessageId
           targetCandidateFieldValueId
           targetCandidateFieldId
           updatedAt
@@ -1754,7 +1683,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                             }
 //                         }
 //                     }
-//                     whatsappMessages {
+//                     chatMessages {
 //                       edges {
 //                         node {
 //                           recruiterId
@@ -1991,8 +1920,8 @@ query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCur
     }
 }`;
 
-export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($filter: WhatsappMessageFilterInput, $orderBy: [WhatsappMessageOrderByInput], $lastCursor: String, $limit: Int) {
-  whatsappMessages(
+export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: ChatMessageFilterInput, $orderBy: [ChatMessageOrderByInput], $lastCursor: String, $limit: Int) {
+  chatMessages(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -2008,7 +1937,7 @@ export const graphQlToFetchWhatsappMessages = `query FindManyWhatsappMessages($f
         updatedAt
         position
         whatsappDeliveryStatus
-        whatsappMessageId
+        externalMessageId
         phoneFrom
         createdAt
         audioFilePath
@@ -2197,39 +2126,6 @@ query FindOneWorkspaceMember($objectRecordId: UUID!) {
 }
 `;
 
-export const graphqlQueryToFindManyReminders = `query FindManyCandidateReminders($filter: CandidateReminderFilterInput, $orderBy: [CandidateReminderOrderByInput], $lastCursor: String, $limit: Int) {
-  candidateReminders(
-    filter: $filter
-    orderBy: $orderBy
-    first: $limit
-    after: $lastCursor
-  ) {
-    edges {
-      node {
-        __typename
-        remindCandidateDuration
-        createdAt
-        candidateId
-        remindCandidateAtTimestamp
-        id
-        position
-        name
-        updatedAt
-      }
-      cursor
-      __typename
-    }
-    pageInfo {
-      hasNextPage
-      startCursor
-      endCursor
-      __typename
-    }
-    totalCount
-    __typename
-  }
-}`;
-
 export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordId: UUID!) {
   videoInterview(filter: {id: {eq: $objectRecordId}}) {
     attachments {
@@ -2257,9 +2153,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           targetOpportunityId
           targetVideoInterviewId
           targetVideoInterviewResponseId
-          targetWhatsappMessageId
-          targetClientInterviewId
-          targetRecruiterInterviewId
+          targetChatMessageId
           targetCandidateFieldId
           targetCandidateFieldValueId
           updatedAt
@@ -2592,7 +2486,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //           startMeetingSchedulingChatCompleted
 //           startVideoInterviewChat
 //           startVideoInterviewChatCompleted
-//           whatsappMessages {
+//           chatMessages {
 //             edges {
 //               node {
 //                 updatedAt
@@ -2752,7 +2646,7 @@ export const graphqlToFetchAllCandidateData = `
           startMeetingSchedulingChatCompleted
           startVideoInterviewChat
           startVideoInterviewChatCompleted
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt
@@ -2869,7 +2763,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkLabel
           }
           otherFields
-          whatsappMessages {
+          chatMessages {
             edges {
               node {
                 updatedAt

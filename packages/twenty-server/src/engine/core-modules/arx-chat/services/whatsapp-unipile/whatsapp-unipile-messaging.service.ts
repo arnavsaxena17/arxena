@@ -329,7 +329,7 @@ export class WhatsappUnipileMessagingService {
         const whatappUpdateMessageObjAfterUpdate = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).updateChatHistoryObjCreateWhatsappMessageObj(
+        ).updateChatHistoryObjCreateChatMessageObj(
           `whatsapp_unipile_${Date.now()}`,
           candidate,
           mostRecentMessageArr,

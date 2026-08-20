@@ -4,16 +4,12 @@ import {
     ChatControlsObjType,
     ChatHistoryItem,
     chatMessageType,
-    ClientInterviewEdge,
-    ClientInterviewNode,
-    ClientMeetingEdge,
     emptyCandidateProfileObj,
     FindOneProject,
     graphqlQueryToFindManyPeople,
-    graphqlQueryToFindScheduledClientMeetings,
     graphqlQueryToFindVideoInterviewTemplatesByProjectId,
     graphqlToFetchAllCandidateData,
-    graphQlToFetchWhatsappMessages,
+    graphQlToFetchChatMessages,
     graphqlToFindManyProjects,
     Project,
     MessageNode,
@@ -22,7 +18,7 @@ import {
     PersonNode,
     questionTextToKey,
     whatappUpdateMessageObjType,
-    WhatsAppMessagesEdge
+    ChatMessagesEdge
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -49,7 +45,7 @@ export class FilterCandidates {
     const candidateNode = response?.data?.data?.candidates?.edges[0]?.node as CandidateNode;
     return candidateNode;
   }
-  async updateChatHistoryObjCreateWhatsappMessageObj(
+  async updateChatHistoryObjCreateChatMessageObj(
     wamId: string,
     candidate: CandidateNode,
     chatHistory: ChatHistoryItem[],
@@ -98,7 +94,7 @@ export class FilterCandidates {
 
     console.log("This is the candiadte node messaging Channel:", candidate?.messagingChannel)
     console.log("This is the candiadte node whatsapp provider:", candidate?.whatsappProvider)
-    console.log("This is the candiadte whatsappMessageId:", wamId)
+    console.log("This is the candiadte externalMessageId:", wamId)
     const updatedChatHistoryObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       messageObj: chatHistory,
@@ -110,7 +106,7 @@ export class FilterCandidates {
       messages: chatHistory.slice(-1),
       messageType: 'botMessage',
       whatsappDeliveryStatus: 'created',
-      whatsappMessageId: wamId,
+      externalMessageId: wamId,
       whatsappMessageType: '',
       typeOfMessage:
         toMessagingChannelTransportKey(candidate?.messagingChannel) ||
@@ -168,16 +164,6 @@ export class FilterCandidates {
         ),
       ),
     );
-  }
-
-  async fetchScheduledClientMeetings(job_id: string, apiToken: string) {
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindScheduledClientMeetings, { filter: { projectId: { in: [job_id] } } }, apiToken);
-
-    console.log( 'This is the response from fetchScheduledClientMeetings:', response.data.data, );
-    return response?.data?.data?.clientMeetings as {
-      edges: ClientMeetingEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
   }
 
   async fetchCandidateByCandidateId(
@@ -239,12 +225,12 @@ export class FilterCandidates {
     return allPeople;
   }
 
-  async fetchAllWhatsappMessages(
+  async fetchAllChatMessages(
     candidateId: string,
     apiToken: string,
   ): Promise<MessageNode[]> {
 
-    let allWhatsappMessages: MessageNode[] = [];
+    let allChatMessages: MessageNode[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
     let pageCount = 0;
@@ -263,37 +249,37 @@ export class FilterCandidates {
           processedCursors.add(lastCursor);
         }
 
-        const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchWhatsappMessages, {
+        const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, {
           limit: 400,
           lastCursor: lastCursor,
           filter: { candidateId: { in: [candidateId] } },
           orderBy: [{ position: 'DescNullsFirst' }],
         }, apiToken);
 
-        const whatsappMessages = response?.data?.data?.whatsappMessages as {
-          edges: WhatsAppMessagesEdge[];
+        const chatMessages = response?.data?.data?.chatMessages as {
+          edges: ChatMessagesEdge[];
           pageInfo: PageInfo;
         } | undefined;
 
-        if (!whatsappMessages || whatsappMessages.edges.length === 0) {
+        if (!chatMessages || chatMessages.edges.length === 0) {
           console.log('No more data to fetch.');
           break;
         }
 
-        const newWhatsappMessages = whatsappMessages.edges.map(
+        const newChatMessages = chatMessages.edges.map(
           (edge) => edge.node
         );
 
-        allWhatsappMessages = allWhatsappMessages.concat(newWhatsappMessages);
+        allChatMessages = allChatMessages.concat(newChatMessages);
 
         // Validate pageInfo before using it
-        if (!whatsappMessages.pageInfo) {
+        if (!chatMessages.pageInfo) {
           console.warn('No pageInfo in response, breaking pagination');
           break;
         }
 
-        const newCursor = whatsappMessages.pageInfo.endCursor;
-        const newHasNextPage = whatsappMessages.pageInfo.hasNextPage;
+        const newCursor = chatMessages.pageInfo.endCursor;
+        const newHasNextPage = chatMessages.pageInfo.hasNextPage;
 
         // Check if cursor has changed
         if (newCursor === lastCursor) {
@@ -315,8 +301,8 @@ export class FilterCandidates {
       console.warn(`Reached maximum page limit (${maxPages}) for candidate: ${candidateId}`);
     }
 
-    console.log(`Completed fetching WhatsApp messages for candidate: ${candidateId}, total messages: ${allWhatsappMessages.length}`);
-    return allWhatsappMessages;
+    console.log(`Completed fetching WhatsApp messages for candidate: ${candidateId}, total messages: ${allChatMessages.length}`);
+    return allChatMessages;
   }
 
 
@@ -333,25 +319,25 @@ export class FilterCandidates {
       console.log(
         'This is the videoInterviewTemplates:',
         response?.data?.data?.videoInterviewTemplates as {
-          edges: ClientInterviewEdge[];
+          edges: Array<{ node?: unknown }>;
           pageInfo: PageInfo;
         } | undefined,
       );
       const videoInterviewTemplates = response?.data?.data?.videoInterviewTemplates as {
-        edges: ClientInterviewEdge[];
+        edges: Array<{ node?: unknown }>;
         pageInfo: PageInfo;
       } | undefined;
       const interviewObj =
-        videoInterviewTemplates?.edges[0]?.node as ClientInterviewNode | undefined;
+        videoInterviewTemplates?.edges[0]?.node;
 
       return interviewObj;
     } catch (error) {
       console.log('Error in fetching interviews:: ', error);
     }
   }
-  // Nested people→candidates→whatsappMessages is rejected by TOO_COMPLEX_QUERY;
-  // hydrate messages with a separate root-level whatsappMessages query instead.
-  private async attachWhatsappMessagesToCandidateEdges(
+  // Nested people→candidates→chatMessages is rejected by TOO_COMPLEX_QUERY;
+  // hydrate messages with a separate root-level chatMessages query instead.
+  private async attachChatMessagesToCandidateEdges(
     candidateEdges: CandidatesEdge[],
     apiToken: string,
   ): Promise<void> {
@@ -364,7 +350,7 @@ export class FilterCandidates {
         const candidateId = edge.node.id;
         try {
           const response = await this.staticGraphQLService.executeGraphQL(
-            graphQlToFetchWhatsappMessages,
+            graphQlToFetchChatMessages,
             {
               limit: 20,
               filter: { candidateId: { in: [candidateId] } },
@@ -372,19 +358,19 @@ export class FilterCandidates {
             },
             apiToken,
           );
-          const whatsappMessages = response?.data?.data?.whatsappMessages as
+          const chatMessages = response?.data?.data?.chatMessages as
             | {
-                edges: WhatsAppMessagesEdge[];
+                edges: ChatMessagesEdge[];
                 pageInfo: PageInfo;
               }
             | undefined;
 
-          if (whatsappMessages) {
-            edge.node.whatsappMessages = whatsappMessages;
+          if (chatMessages) {
+            edge.node.chatMessages = chatMessages;
           }
         } catch (error) {
           console.error(
-            `Failed to hydrate whatsappMessages for candidate ${candidateId}:`,
+            `Failed to hydrate chatMessages for candidate ${candidateId}:`,
             error,
           );
         }
@@ -392,7 +378,7 @@ export class FilterCandidates {
     );
   }
 
-  private async attachWhatsappMessagesToPerson(
+  private async attachChatMessagesToPerson(
     personObj: PersonNode,
     apiToken: string,
   ): Promise<PersonNode> {
@@ -402,7 +388,7 @@ export class FilterCandidates {
       return personObj;
     }
 
-    await this.attachWhatsappMessagesToCandidateEdges(
+    await this.attachChatMessagesToCandidateEdges(
       candidateEdges,
       apiToken,
     );
@@ -716,7 +702,7 @@ export class FilterCandidates {
           descriptionOneliner: activeCompany?.descriptionOneliner,
         },
         jobLocation: activeJob?.jobLocation,
-        whatsappMessages: activeJob?.whatsappMessages,
+        chatMessages: activeJob?.chatMessages,
       },
       createdAt: activeJobCandidate?.createdAt,
       videoInterview: activeJobCandidate?.videoInterview,
@@ -742,13 +728,10 @@ export class FilterCandidates {
       startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
       stopChat: activeJobCandidate?.stopChat,
       otherFields: activeJobCandidate?.otherFields ?? {},
-      whatsappMessages: activeJobCandidate?.whatsappMessages,
+      chatMessages: activeJobCandidate?.chatMessages,
       status: activeJobCandidate?.status,
       messagingChannel: activeJobCandidate?.messagingChannel,
       emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
-      candidateReminders: {
-        edges: activeJobCandidate?.candidateReminders?.edges,
-      },
       updatedAt: activeJobCandidate.updatedAt,
       people: (personNode || activeJobCandidate?.people) as PersonNode,
       chatCount: activeJobCandidate.chatCount,
@@ -865,7 +848,7 @@ export class FilterCandidates {
           peopleEdges[0]?.node ||
           activeJobCandidateObj.node?.people;
 
-        await this.attachWhatsappMessagesToCandidateEdges(
+        await this.attachChatMessagesToCandidateEdges(
           [activeJobCandidateObj],
           apiToken,
         );
@@ -985,6 +968,6 @@ export class FilterCandidates {
       return personObj;
     }
 
-    return this.attachWhatsappMessagesToPerson(personObj, apiToken);
+    return this.attachChatMessagesToPerson(personObj, apiToken);
   }
 }

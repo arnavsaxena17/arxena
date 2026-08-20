@@ -48,14 +48,6 @@ type ProjectIntegrityNode = {
   attachments?: { edges?: unknown[] | null } | null;
   jobLocation?: string | null;
   isActive?: boolean | null;
-  interviewSchedule?: {
-    edges?: Array<{
-      node?: {
-        slotsAvailable?: unknown;
-        meetingType?: string | null;
-      } | null;
-    } | null> | null;
-  } | null;
   videoInterviewTemplate?: {
     edges?: Array<{
       node?: {
@@ -159,9 +151,6 @@ export const useCheckDataIntegrityOfProject = ({
           recruiterWorkspaceMemberProfile?.whatsappUnipileAccountId?.trim() ??
           '';
         const chatFlowOrder = jobNode?.chatFlowOrder;
-        const hasMeetingScheduling = chatFlowOrder?.includes(
-          'startMeetingSchedulingChat',
-        );
         const hasVideoInterview = chatFlowOrder?.includes(
           'startVideoInterviewChat',
         );
@@ -227,19 +216,6 @@ export const useCheckDataIntegrityOfProject = ({
 
           !jobNode?.company?.descriptionOneliner &&
             'Company description is missing',
-
-          hasMeetingScheduling &&
-            !jobNode?.interviewSchedule?.edges &&
-            'Interview schedule data structure is missing',
-          hasMeetingScheduling &&
-            jobNode?.interviewSchedule?.edges?.length === 0 &&
-            'Interview schedule is missing',
-          hasMeetingScheduling &&
-            !jobNode?.interviewSchedule?.edges?.[0]?.node?.slotsAvailable &&
-            'Interview slots are not available',
-          hasMeetingScheduling &&
-            !jobNode?.interviewSchedule?.edges?.[0]?.node?.meetingType &&
-            'Meeting type is not specified',
 
           !jobNode?.recruiterId && 'Recruiter ID is missing',
 

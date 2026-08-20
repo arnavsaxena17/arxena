@@ -49,8 +49,8 @@ const allObjects = [
             "icon": "IconMessage",
             "labelPlural": "Messages",
             "labelSingular": "Message",
-            "nameSingular": "whatsappMessage",
-            "namePlural": "whatsappMessages"
+            "nameSingular": "chatMessage",
+            "namePlural": "chatMessages"
         }
     },
     {
@@ -96,41 +96,11 @@ const allObjects = [
     {
         "object": {
             "description": "",
-            "icon": "IconFocus2",
-            "labelPlural": "Offers",
-            "labelSingular": "Offer",
-            "nameSingular": "offer",
-            "namePlural": "offers"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconClockHour3",
-            "labelPlural": "Candidate Reminders",
-            "labelSingular": "Candidate Reminder",
-            "nameSingular": "candidateReminder",
-            "namePlural": "candidateReminders"
-        }
-    },
-    {
-        "object": {
-            "description": "",
             "icon": "IconFilterSearch",
             "labelPlural": "AI Filters",
             "labelSingular": "AI Filter",
             "nameSingular": "candidateEnrichment",
             "namePlural": "candidateEnrichments"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconUsers",
-            "labelPlural": "Client Contacts",
-            "labelSingular": "Client Contact",
-            "nameSingular": "clientContact",
-            "namePlural": "clientContacts"
         }
     },
     //     {
@@ -222,16 +192,6 @@ const allObjects = [
         {
         "object": {
             "description": "",
-            "icon": "IconMessage",
-            "labelPlural": "Text Messages",
-            "labelSingular": "Text Message",
-            "nameSingular": "textMessage",
-            "namePlural": "textMessages"
-        }
-    },    
-        {
-        "object": {
-            "description": "",
             "icon": "IconChecklist",
             "labelPlural": "Shortlists",
             "labelSingular": "Shortlist",
@@ -240,16 +200,6 @@ const allObjects = [
 
         }
 
-    },
-        {
-        "object": {
-            "description": "",
-            "icon": "IconUsersGroup",
-            "labelPlural": "Recruiter Interviews",
-            "labelSingular": "Recruiter Interview",
-            "nameSingular": "recruiterInterview",
-            "namePlural": "recruiterInterviews"
-        }
     },
     {
         "object": {
@@ -291,26 +241,6 @@ const allObjects = [
             "namePlural": "cvSents"
         }
     },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconMoodCheck",
-            "labelPlural": "Client Interviews",
-            "labelSingular": "Client Interview",
-            "nameSingular": "clientInterview",
-            "namePlural": "clientInterviews"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconTimeDuration60",
-            "labelPlural": "Interview Schedules",
-            "labelSingular": "Interview Schedule",
-            "nameSingular": "interviewSchedule",
-            "namePlural": "interviewSchedules"
-        }
-    },
     // {
     //     "object": {
     //         "description": "",
@@ -339,18 +269,11 @@ const OBJECTS_TO_EXCLUDE = [
   'videoInterviewModel',
   'videoInterviewQuestion',
   'videoInterviewResponse',
-  'clientInterview',
-  'interviewSchedule',
   'cvSent',
   'candidateEnrichment',
-  'candidateReminder',
-  'clientContact',
   'phoneCall',
-  'textMessage',
   'shortlist',
-  'recruiterInterview',
   'screening',
-  'offer'
 ];
 
 export function getObjectsToExclude(isOrgChartEnabled?: boolean): string[] {

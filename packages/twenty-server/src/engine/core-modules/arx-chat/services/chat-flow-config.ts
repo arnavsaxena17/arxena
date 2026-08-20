@@ -275,7 +275,7 @@ export class ChatFlowConfigBuilder {
         
         const candidateUpdatedAtISO = new Date(candidate.updatedAt).toISOString();
         const timeComparison = candidateUpdatedAtISO > cutoffTime;
-        const hasMultipleMessages = candidate.whatsappMessages?.edges?.length !== 1;
+        const hasMultipleMessages = candidate.chatMessages?.edges?.length !== 1;
         
         console.log("Time comparison details for", candidate.name, ":", {
           candidateUpdatedAt: candidate.updatedAt,
@@ -283,7 +283,7 @@ export class ChatFlowConfigBuilder {
           cutoffTime,
           timeComparison,
           hasMultipleMessages,
-          whatsappMessagesCount: candidate.whatsappMessages?.edges?.length
+          chatMessagesCount: candidate.chatMessages?.edges?.length
         });
         
         if (timeComparison && hasMultipleMessages) {
@@ -333,7 +333,7 @@ export class ChatFlowConfigBuilder {
 
       if (currentOrder === 1) {
         return (
-          candidate.startChat && candidate.whatsappMessages?.edges.length === 0
+          candidate.startChat && candidate.chatMessages?.edges.length === 0
         );
       }
 
@@ -345,7 +345,7 @@ export class ChatFlowConfigBuilder {
       const previousStage = previousStages[previousStages.length - 1];
       const baseConditions =
         candidate.startChat &&
-        candidate.whatsappMessages?.edges.length > 0 &&
+        candidate.chatMessages?.edges.length > 0 &&
         candidate.lastEngagementChatControl === previousStage;
       const hasCompletedPreviousStages = previousStages.every(
         (stage) => candidate[stage as keyof typeof candidate],

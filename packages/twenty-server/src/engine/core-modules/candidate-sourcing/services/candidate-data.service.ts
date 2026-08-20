@@ -321,7 +321,6 @@ export class CandidateDataService {
         status: candidate.status || 'N/A',
         jobTitle: jobTitleFromCandidate || 'N/A',
         chatCount: candidate.chatCount || 'N/A',
-        clientInterview: candidate.clientInterview || 'N/A',
         hiringNaukriUrl: candidate.hiringNaukriUrl || 'N/A',
         lastEngagementChatControl: candidate.lastEngagementChatControl || 'N/A',
         resdexNaukriUrl: candidate.resdexNaukriUrl || 'N/A',

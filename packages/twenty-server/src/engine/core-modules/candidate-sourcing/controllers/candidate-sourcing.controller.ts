@@ -3020,9 +3020,9 @@ export class CandidateSourcingController {
           c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
           c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
           c."otherFields",
-          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectsId', wm."projectsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as whatsappMessages
+          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectsId', wm."projectsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as chatMessages
         FROM ${dataSourceSchema}."_candidate" c
-        LEFT JOIN ${dataSourceSchema}."_whatsappMessage" wm ON c.id = wm."candidateId"
+        LEFT JOIN ${dataSourceSchema}."_chatMessage" wm ON c.id = wm."candidateId"
         WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."projectsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
         GROUP BY c.id
         ORDER BY c."updatedAt" DESC
@@ -3080,7 +3080,7 @@ export class CandidateSourcingController {
           resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           otherFields: parseRowOtherFields(row),
-          whatsappMessages: { edges: (row.whatsappMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
+          chatMessages: { edges: (row.chatMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
           startChat: row.startChat,
           chatCount: row.chatCount,
           startChatCompleted: row.startChatCompleted,

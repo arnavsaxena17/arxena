@@ -1409,7 +1409,7 @@ const getObjects = async () => {
     'opportunity',
     'candidate',
     'project',
-    'whatsappMessage',
+    'chatMessage',
   ] as const) {
     if (!byName[name]) {
       throw new Error(
@@ -1427,7 +1427,7 @@ const getObjects = async () => {
     opportunity: byName.opportunity,
     candidate: byName.candidate,
     project: byName.project,
-    whatsappMessage: byName.whatsappMessage,
+    chatMessage: byName.chatMessage,
     calendarEvent: byName.calendarEvent,
   };
 };
@@ -1771,7 +1771,7 @@ const seedCandidates = async ({
   return candidateIds;
 };
 
-const seedWhatsappMessages = async ({
+const seedChatMessages = async ({
   projectId,
   candidateIds,
 }: {
@@ -1783,25 +1783,25 @@ const seedWhatsappMessages = async ({
   for (const [index, candidateId] of sampleCandidates.entries()) {
     const messageName = `GTM seed msg ${index + 1}`;
     const existing = await request<{
-      whatsappMessages: { edges: Array<{ node: { id: string } }> };
+      chatMessages: { edges: Array<{ node: { id: string } }> };
     }>(
       '/graphql',
-      `query($filter: WhatsappMessageFilterInput) {
-        whatsappMessages(first: 1, filter: $filter) {
+      `query($filter: ChatMessageFilterInput) {
+        chatMessages(first: 1, filter: $filter) {
           edges { node { id } }
         }
       }`,
       { filter: { name: { eq: messageName } } },
     );
 
-    if (existing.whatsappMessages.edges[0]?.node.id) {
+    if (existing.chatMessages.edges[0]?.node.id) {
       continue;
     }
 
     await request(
       '/graphql',
-      `mutation($data: WhatsappMessageCreateInput!) {
-        createWhatsappMessage(data: $data) { id }
+      `mutation($data: ChatMessageCreateInput!) {
+        createChatMessage(data: $data) { id }
       }`,
       {
         data: {
@@ -1817,7 +1817,7 @@ const seedWhatsappMessages = async ({
       },
     );
 
-    console.log(`  whatsappMessage ${messageName}`);
+    console.log(`  chatMessage ${messageName}`);
   }
 };
 
@@ -2164,11 +2164,11 @@ const buildDashboardLayout = async ({
   companyObjectId,
   candidateObjectId,
   opportunityObjectId,
-  whatsappMessageObjectId,
+  chatMessageObjectId,
   companyFields,
   candidateFields,
   opportunityFields,
-  whatsappMessageFields,
+  chatMessageFields,
   attentionViewId,
   uncoveredViewId,
   stuckCandidatesViewId,
@@ -2179,11 +2179,11 @@ const buildDashboardLayout = async ({
   companyObjectId: string;
   candidateObjectId: string;
   opportunityObjectId: string;
-  whatsappMessageObjectId: string;
+  chatMessageObjectId: string;
   companyFields: FieldMap;
   candidateFields: FieldMap;
   opportunityFields: FieldMap;
-  whatsappMessageFields: FieldMap;
+  chatMessageFields: FieldMap;
   attentionViewId: string;
   uncoveredViewId: string;
   stuckCandidatesViewId: string;
@@ -2480,9 +2480,9 @@ const buildDashboardLayout = async ({
         lineWidget({
           tabId: channelsTabId,
           title: 'WhatsApp / LinkedIn messages over time',
-          objectMetadataId: whatsappMessageObjectId,
-          aggregateFieldId: whatsappMessageFields.id,
-          dateFieldId: whatsappMessageFields.createdAt,
+          objectMetadataId: chatMessageObjectId,
+          aggregateFieldId: chatMessageFields.id,
+          dateFieldId: chatMessageFields.createdAt,
           gridPosition: grid(6, 0, 5, 7),
           color: 'turquoise',
         }),
@@ -2706,7 +2706,7 @@ const main = async () => {
     project: await refreshObject('project'),
     opportunity: await refreshObject('opportunity'),
     person: await refreshObject('person'),
-    whatsappMessage: await refreshObject('whatsappMessage'),
+    chatMessage: await refreshObject('chatMessage'),
   };
 
   const companyFields = fieldMapFromObject(objects.company);
@@ -2714,7 +2714,7 @@ const main = async () => {
   const opportunityFields = fieldMapFromObject(objects.opportunity);
   const candidateFields = fieldMapFromObject(objects.candidate);
   const projectFields = fieldMapFromObject(objects.project);
-  const whatsappMessageFields = fieldMapFromObject(objects.whatsappMessage);
+  const chatMessageFields = fieldMapFromObject(objects.chatMessage);
 
   assertFieldsPresent('company', companyFields, REQUIRED_COMPANY_FIELDS);
   assertFieldsPresent('candidate', candidateFields, REQUIRED_CANDIDATE_FIELDS);
@@ -2755,7 +2755,7 @@ const main = async () => {
 
   console.log('Seeding whatsapp messages...');
   try {
-    await seedWhatsappMessages({ projectId, candidateIds });
+    await seedChatMessages({ projectId, candidateIds });
   } catch (error) {
     console.warn(
       `  skipped whatsapp messages: ${
@@ -2849,11 +2849,11 @@ const main = async () => {
     companyObjectId: objects.company.id,
     candidateObjectId: objects.candidate.id,
     opportunityObjectId: objects.opportunity.id,
-    whatsappMessageObjectId: objects.whatsappMessage.id,
+    chatMessageObjectId: objects.chatMessage.id,
     companyFields,
     candidateFields,
     opportunityFields,
-    whatsappMessageFields,
+    chatMessageFields,
     attentionViewId,
     uncoveredViewId,
     stuckCandidatesViewId,

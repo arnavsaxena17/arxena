@@ -6,10 +6,10 @@ import OpenAI from 'openai';
 import { CandidateNode } from 'twenty-shared';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export function sortWhatsAppMessages (candidates  : CandidateNode[]) {
+export function sortCandidatesByLatestChatMessage (candidates  : CandidateNode[]) {
   const sortedCandidates: CandidateNode[] = candidates;
   sortedCandidates?.forEach((candidate) => {
-    candidate?.whatsappMessages?.edges.sort((a, b) => {
+    candidate?.chatMessages?.edges.sort((a, b) => {
         return (
           new Date(b.node.createdAt).getTime() -
           new Date(a.node.createdAt).getTime()

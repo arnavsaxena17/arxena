@@ -12,7 +12,7 @@ export type CandidateEngagementNode = {
   people: {
     id: string;
   };
-  whatsappMessages?: {
+  chatMessages?: {
     edges: Array<{
       node: {
         id: string;

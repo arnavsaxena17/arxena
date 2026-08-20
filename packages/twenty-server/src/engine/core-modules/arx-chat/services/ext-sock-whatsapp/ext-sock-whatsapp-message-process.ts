@@ -171,8 +171,8 @@ export class ExtSockWhatsappMessageProcessor {
       [0]?.node;
     
     let messageObj: ChatHistoryItem[] = [];
-    if (candidateNode.whatsappMessages?.edges?.length > 0) {
-      const messagesList = candidateNode.whatsappMessages.edges;
+    if (candidateNode.chatMessages?.edges?.length > 0) {
+      const messagesList = candidateNode.chatMessages.edges;
 
       messagesList.sort(
         (a, b) =>
@@ -230,7 +230,7 @@ export class ExtSockWhatsappMessageProcessor {
       lastEngagementChatControl: candidateNode.lastEngagementChatControl,
       whatsappDeliveryStatus: 'dispatched',
       typeOfMessage: candidateNode.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
-      whatsappMessageId: messageData.id,
+      externalMessageId: messageData.id,
       type: 'text',
       databaseFilePath: '',
     };
@@ -238,7 +238,7 @@ export class ExtSockWhatsappMessageProcessor {
     // Update the message in the database
     const updateChat = new UpdateChat(this.workspaceQueryService, this.staticGraphQLService);
 
-    await updateChat.createAndUpdateWhatsappMessage(
+    await updateChat.createAndUpdateChatMessage(
       candidateNode,
       whatappUpdateMessageObj,
       apiToken,
@@ -274,7 +274,7 @@ export class ExtSockWhatsappMessageProcessor {
         console.log('Message sent successfully via ext-sock-whatsapp');
         whatappUpdateMessageObj.whatsappDeliveryStatus = 'dispatched';
             const updateChat = new UpdateChat(this.workspaceQueryService, this.staticGraphQLService);
-        await updateChat.createAndUpdateWhatsappMessage(
+        await updateChat.createAndUpdateChatMessage(
           candidate,
           whatappUpdateMessageObj,
           apiToken,

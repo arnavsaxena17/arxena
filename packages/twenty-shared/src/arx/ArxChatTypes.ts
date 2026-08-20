@@ -606,17 +606,15 @@ export type TransformedCandidateForTable = Omit<
   lastEngagementChatControl: any;
   
   // Relationship edges
-  whatsappMessages: { edges: any[] };
+  chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
   otherFields?: OtherFieldsRecord | null;
-  candidateReminders: { edges: any[] };
   projects: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
   whatsappProvider: string;
   input: string;
-  clientInterview?: any;
   remarks?: string;
   
   // LinkedIn-specific display fields
@@ -1031,7 +1029,7 @@ export interface whatappUpdateMessageObjType {
   whatsappMessageType: string;
   lastEngagementChatControl: string;
 
-  whatsappMessageId: string;
+  externalMessageId: string;
   type?: string;
   typeOfMessage: string;
   databaseFilePath?: string;
@@ -1049,30 +1047,12 @@ export interface sendWhatsappTemplateMessageObjectType {
   jobLocation: string;
 }
 
-export interface WhatsAppMessages {
-  edges: WhatsAppMessagesEdge[];
-}
-
-export interface ClientInterviews {
-  edges: ClientInterviewEdge[];
+export interface ChatMessages {
+  edges: ChatMessagesEdge[];
 }
 
 export interface CandidatesEdge {
   node: CandidateNode;
-}
-
-export interface ClientInterviewEdge {
-  node: ClientInterviewNode;
-}
-
-export interface ClientInterviewNode {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  clientInterviewCompleted: boolean;
-  projectId: boolean;
-  candidateId: boolean;
 }
 
 export interface Candidates {
@@ -1171,7 +1151,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     },
     jobLocation: '',
     jobCode: '',
-    whatsappMessages: {
+    chatMessages: {
       edges: [
         {
           node: {
@@ -1211,19 +1191,6 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-  candidateReminders: {
-    edges: [
-      {
-        node: {
-          remindCandidateAtTimestamp: '',
-          remindCandidateDuration: '',
-          isReminderActive: false,
-          name: '',
-          id: '',
-        },
-      },
-    ],
-  },
   engagementStatus: false,
   phoneNumber: {
     primaryPhoneNumber: '',
@@ -1234,7 +1201,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
   startMeetingSchedulingChat: false,
   lastEngagementChatControl: 'startChat' as chatControlType,
   startVideoInterviewChat: false,
-  whatsappMessages: {
+  chatMessages: {
     edges: [
       {
         node: {
@@ -1298,7 +1265,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
 
 export interface Attachment {
   __typename: string;
-  whatsappMessageId: string | null;
+  chatMessageId: string | null;
   authorId: string | null;
   candidateId: string | null;
   fullPath: string;
@@ -1312,11 +1279,8 @@ export interface Attachment {
   type: string;
   companyId: string | null;
   screeningId: string | null;
-  clientInterviewId: string | null;
   id: string;
-  recruiterInterviewId: string | null;
   activityId: string | null;
-  offerId: string | null;
   questionId: string | null;
   answerId: string | null;
 }
@@ -1715,29 +1679,6 @@ export interface ChatControlsObjType {
   chatMessageTemplate?: string;
 }
 
-// Type for chat history items
-
-export interface ClientMeetingEdge {
-  node: ClientMeetingNode;
-}
-
-export interface ClientMeetings {
-  edges: ClientMeetingEdge[];
-}
-
-export interface ClientMeetingNode {
-  id: string;
-  interviewTime: InterviewTime;
-  candidateId: string;
-  candidateName: string;
-}
-
-export interface InterviewTime {
-  date: string;
-  time: string;
-}
-
-
 export interface MessageNode {
   recruiterId: string;
   message: string;
@@ -1785,7 +1726,7 @@ export interface SendWhatsappUtilityMessageObjectType {
   jobLocation: string | '';
 }
 
-export interface WhatsAppMessagesEdge {
+export interface ChatMessagesEdge {
   node: MessageNode;
 }
 
@@ -1861,14 +1802,12 @@ export interface CandidateNode {
   startChat: boolean;
   stopChat: boolean;
   status: string;
-  whatsappMessages: WhatsAppMessages;
+  chatMessages: ChatMessages;
   emailMessages: EmailMessages;
   projects: Project;
   projectsId?: string;
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
-  candidateReminders: Reminders;
-  clientInterview?: ClientInterviews;
   people: PersonNode;
   startChatCompleted?: boolean;
   startMeetingSchedulingChatCompleted?: boolean;
@@ -1898,7 +1837,7 @@ export interface CandidateNode {
 //   startChat: boolean;
 //   stopChat: boolean;
 //   status: string;
-//   whatsappMessages: WhatsAppMessages;
+//   chatMessages: ChatMessages;
 //   emailMessages: EmailMessages;
 //   projects: Projects;
 //   candidateFieldValues: CandidateFieldValues;
@@ -1938,24 +1877,8 @@ export interface CandidateField {
 //   recruiterId: string;
 //   // companies: Companies;
 //   jobLocation: string;
-//   // whatsappMessages: WhatsAppMessages;
+//   // whatsappMessages: ChatMessages;
 // }
-
-export interface Reminders {
-  edges: ReminderEdge[];
-}
-
-export interface ReminderEdge {
-  node: ReminderObject;
-}
-
-export interface ReminderObject {
-  remindCandidateAtTimestamp: string;
-  remindCandidateDuration: string;
-  isReminderActive: boolean;
-  name: string;
-  id: string;
-}
 
 export interface EmailMessages {
   edges: EmailMessagesEdge[];
@@ -1998,9 +1921,6 @@ export interface company {
 
 
 
-export interface InterviewSchedules {
-  edges: InterviewScheduleEdge[];
-}
 
 
 export interface ProjectEdge {
@@ -2034,26 +1954,13 @@ export interface Project {
   company: company;
   createdAt?: string;
   updatedAt?: string;
-  interviewSchedule?: InterviewSchedules;
   isActive: boolean;
-  whatsappMessages: WhatsAppMessages;
+  chatMessages: ChatMessages;
   arxenaSiteId?: string;
   googleSheetId?: string;
   salaryBracket?: string;
   yearsOfExperience?: string;
   description?: string;
-}
-
-export interface InterviewScheduleEdge {
-  node: InterviewSchedule;
-}
-
-export interface InterviewSchedule {
-  meetingType: string;
-  projectId: string;
-  id: string;
-  slotsAvailable: any;
-  interviewTime: InterviewTime;
 }
 
 interface Entry {

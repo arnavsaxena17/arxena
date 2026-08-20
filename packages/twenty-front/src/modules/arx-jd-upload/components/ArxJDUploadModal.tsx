@@ -140,9 +140,8 @@ export const ArxJDUploadModal = ({
         ) || [];
 
         // Get meeting schedule info
-        const meetingType = jobData.interviewSchedule?.edges?.[0]?.node?.meetingType || 'online';
-        // Format available dates if needed
-        const availableDates = jobData.interviewSchedule?.edges?.[0]?.node?.slotsAvailable || [];
+        const meetingType = 'online';
+        const availableDates: unknown[] = [];
 
         // Fetch attachment and check if parsed job description exists
         let parsedJobDescription: any = null;

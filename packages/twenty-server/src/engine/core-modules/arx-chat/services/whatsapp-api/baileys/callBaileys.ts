@@ -90,7 +90,7 @@ export class BaileysWhatsappAPI {
         await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-        ).updateChatHistoryObjCreateWhatsappMessageObj(
+        ).updateChatHistoryObjCreateChatMessageObj(
           response?.messageId || 'placeholdermessageid',
           candidate,
           mostRecentMessageArr,

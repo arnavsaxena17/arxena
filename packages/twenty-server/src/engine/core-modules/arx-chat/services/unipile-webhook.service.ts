@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
-import { graphQlToFetchWhatsappMessages, graphqlToUpdateWhatsappMessageId } from 'twenty-shared';
+import { graphQlToFetchChatMessages, graphqlToUpdateChatMessage } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../../message-queue/message-queue.constants';
@@ -734,24 +734,24 @@ export class UnipileWebhookService {
         return;
       }
 
-      // Query for the message by whatsappMessageId
+      // Query for the message by externalMessageId
       const variables = {
-        filter: { whatsappMessageId: { ilike: `%${message_id}%` } },
+        filter: { externalMessageId: { ilike: `%${message_id}%` } },
         orderBy: { position: 'AscNullsFirst' },
       };
 
       const response = await this.staticGraphQLService.executeGraphQL(
-        graphQlToFetchWhatsappMessages,
+        graphQlToFetchChatMessages,
         variables,
         apiToken,
       );
 
-      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
+      if (response?.data?.data?.chatMessages?.edges.length === 0) {
         this.logger.warn(`No message found with the given message_id: ${message_id}`);
         return;
       }
 
-      const messageNode = response?.data?.data?.whatsappMessages?.edges[0]?.node;
+      const messageNode = response?.data?.data?.chatMessages?.edges[0]?.node;
 
       // Check if message is already read
       if (messageNode?.whatsappDeliveryStatus === 'read') {
@@ -772,7 +772,7 @@ export class UnipileWebhookService {
       };
 
       const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(
-        graphqlToUpdateWhatsappMessageId,
+        graphqlToUpdateChatMessage,
         variablesToUpdateDeliveryStatus,
         apiToken,
       );
@@ -914,25 +914,25 @@ export class UnipileWebhookService {
         return;
       }
 
-      // Query for the message by whatsappMessageId
+      // Query for the message by externalMessageId
       const variables = {
-        filter: { whatsappMessageId: { ilike: `%${message_id}%` } },
+        filter: { externalMessageId: { ilike: `%${message_id}%` } },
         orderBy: { position: 'AscNullsFirst' },
       };
 
       const response = await this.staticGraphQLService.executeGraphQL(
-        graphQlToFetchWhatsappMessages,
+        graphQlToFetchChatMessages,
         variables,
         apiToken,
       );
 
 
-      if (response?.data?.data?.whatsappMessages?.edges.length === 0) {
+      if (response?.data?.data?.chatMessages?.edges.length === 0) {
         this.logger.warn(`No message found with the given message_id: ${message_id}`);
         return;
       }
 
-      const messageNode = response?.data?.data?.whatsappMessages?.edges[0]?.node;
+      const messageNode = response?.data?.data?.chatMessages?.edges[0]?.node;
 
       // Check if message is already read or delivered
       // Don't update if already read (read is higher status than delivered)
@@ -958,7 +958,7 @@ export class UnipileWebhookService {
       };
 
       const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(
-        graphqlToUpdateWhatsappMessageId,
+        graphqlToUpdateChatMessage,
         variablesToUpdateDeliveryStatus,
         apiToken,
       );

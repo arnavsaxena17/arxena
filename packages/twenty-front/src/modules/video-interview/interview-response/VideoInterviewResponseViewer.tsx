@@ -194,7 +194,7 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
         jobLocation: '',
         jobCode: '',
         isActive: false,
-        whatsappMessages: {
+        chatMessages: {
           edges: [],
         }
       },

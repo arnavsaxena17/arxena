@@ -6,8 +6,6 @@ import {
     allStatusesArray,
     CandidateNode,
     ChatControlsObjType,
-    graphqlQueryToCreateOneClientInterview,
-    graphqlQueryToCreateOneReminder,
     Project,
     questionTextToKey,
 } from 'twenty-shared';
@@ -18,10 +16,6 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
-import {
-    addHoursInDate,
-    toIsoString
-} from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import {
     EmailTemplates,
@@ -89,14 +83,6 @@ export class ToolCallingAgents {
         apiToken: string,
       ) => this.sendEmail(inputs, candidate, candidateJob, apiToken),
 
-      create_reminder: (
-        inputs: { reminderDuration: string },
-        candidate: CandidateNode,
-        candidateJob: Project,
-        chatControl: ChatControlsObjType,
-        apiToken: string,
-      ) => this.createReminder(inputs, candidate, candidateJob, apiToken),
-
       share_interview_link: (
         inputs: any,
         candidate: CandidateNode,
@@ -162,47 +148,6 @@ export class ToolCallingAgents {
     );
 
     return 'Interview link shared successfully.';
-  }
-
-  async createReminder(
-    inputs: { reminderDuration: string },
-    candidate: CandidateNode,
-    candidateJob: Project,
-    apiToken: string,
-  ) {
-    console.log(
-      'Function Called:  candidateProfileDataNodeObj:any',
-      candidate,
-    );
-    const reminderTimestamp = addHoursInDate(
-      new Date(),
-      Number(inputs?.reminderDuration),
-    );
-    const reminderTimestampInIsoFormat = toIsoString(reminderTimestamp);
-
-    console.log('Reminder Timestamp:', reminderTimestamp);
-    const createOneReminderVariables = {
-      input: {
-        remindCandidateDuration: inputs?.reminderDuration,
-        remindCandidateAtTimestamp: reminderTimestampInIsoFormat,
-        candidateId:
-          candidate?.id,
-        name: `Reminder for ${candidate?.name} to remind in ${inputs?.reminderDuration} hours`,
-        isReminderActive: true,
-      },
-    };
-
-    console.log('Function Called: createReminder');
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneReminder,
-      variables: createOneReminderVariables,
-    });
-
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, createOneReminderVariables, apiToken);
-
-    console.log('Response from createReminder:', response.data);
-
-    return 'Reminder created successfully.';
   }
 
   async sendEmail(
@@ -393,42 +338,6 @@ export class ToolCallingAgents {
       calendarEventObj,
       apiToken,
     );
-    const interviewTime = [
-      {
-        date: new Date(gptInputs?.startDateTime).toISOString().split('T')[0],
-        slots: [
-          {
-            startTime: new Date(gptInputs?.startDateTime)
-              .toISOString()
-              .split('T')[1]
-              .substring(0, 5),
-            endTime: new Date(gptInputs?.endDateTime)
-              .toISOString()
-              .split('T')[1]
-              .substring(0, 5),
-          },
-        ],
-      },
-    ];
-    const createClientInterviewVariables = {
-      input: {
-        interviewTime: interviewTime,
-        candidateId:
-          candidate?.id,
-        interviewScheduleId:
-          candidate?.projects
-            ?.interviewSchedule?.edges[0]?.node?.id,
-        name: `Interview with ${candidate?.name} scheduled on ${new Date(gptInputs?.startDateTime).toISOString().split('T')[0]}`,
-        projectId:
-          candidate?.projects?.id,
-      },
-    };
-    const graphqlQueryObj = JSON.stringify({
-      query: graphqlQueryToCreateOneClientInterview,
-      variables: createClientInterviewVariables,
-    });
-
-    await this.staticGraphQLService.executeGraphQL(graphqlQueryObj, createClientInterviewVariables, apiToken);
 
     await this.scheduleReminderNotifications(
       candidate,
@@ -763,27 +672,5 @@ export class ToolCallingAgents {
     ];
 
     return tools;
-  }
-
-  getTimeManagementTools(): ChatCompletionTool[] {
-    return [
-      {
-        type: 'function' as const,
-        function: {
-          name: 'create_reminder',
-          description: 'Create a reminder for the candidate',
-          parameters: {
-            type: 'object',
-            properties: {
-              reminderDuration: {
-                type: 'string',
-                description: 'Number of hours for the reminder.',
-              },
-            },
-            required: ['reminderDuration', 'hours'],
-          },
-        },
-      },
-    ];
   }
 }

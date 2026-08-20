@@ -1,7 +1,6 @@
 import {
   getGraphqlToFindManyProjects,
   graphqlQueryToFindCvsent,
-  graphqlQueryToFindScheduledClientMeetings,
   graphqlQueryToFindShortlists,
   graphqlToFetchAllCandidateData,
   resolveIsOrgChartEnabledFromWorkspace,
@@ -49,31 +48,21 @@ function extractCandidates(data: unknown): Array<{ id: string; status?: string; 
   return edges.map((e) => e.node);
 }
 
-function extractClientInterviews(data: unknown): Array<{
-  id: string;
-  name?: string;
-  candidateId?: string;
-  interviewTime?: string;
-  clientInterviewCompleted?: boolean;
-}> {
-  const result = data as {
-    clientInterviews?: { edges?: Array<{ node: { id: string; name?: string; candidateId?: string; interviewTime?: string; clientInterviewCompleted?: boolean } }> };
-  };
-  const edges = result?.clientInterviews?.edges ?? [];
-  return edges.map((e) => e.node);
+function extractCountFromConnection(data: unknown, key: string): number {
+  const result = data as Record<string, { edges?: unknown[] } | undefined>;
+  return result?.[key]?.edges?.length ?? 0;
 }
 
 /**
  * Returns a summary of pending recruiter actions for the heartbeat prompt:
- * active jobs, candidate counts by status per job, shortlists and CV Sents counts,
- * and upcoming client interviews. Use this to build the "what should I do?" prompt.
+ * active jobs, candidate counts by status per job, shortlists and CV Sents counts.
  */
 export const pendingActionsTools: McpTool[] = [
   {
     definition: {
       name: 'get_pending_recruiter_actions',
       description:
-        'Get a summary of pending recruiter actions for the workspace: active jobs, candidate counts by status per job, shortlist and CV Sent counts, and upcoming client interviews. Use this when building the autonomous recruiter heartbeat prompt or when the user asks what needs attention.',
+        'Get a summary of pending recruiter actions for the workspace: active jobs, candidate counts by status per job, and shortlist and CV Sent counts. Use this when building the autonomous recruiter heartbeat prompt or when the user asks what needs attention.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -85,17 +74,12 @@ export const pendingActionsTools: McpTool[] = [
             type: 'number',
             description: 'When aggregating by status per job, max candidates to fetch per project(default: 200)',
           },
-          upcomingInterviewsLimit: {
-            type: 'number',
-            description: 'Max upcoming client interviews to return (default: 20)',
-          },
         },
       },
     },
     handler: async (args, config) => {
       const maxJobs = typeof args.maxJobs === 'number' ? args.maxJobs : 20;
       const maxCandidatesPerJob = typeof args.maxCandidatesPerJob === 'number' ? args.maxCandidatesPerJob : 200;
-      const upcomingInterviewsLimit = typeof args.upcomingInterviewsLimit === 'number' ? args.upcomingInterviewsLimit : 20;
 
       const isOrgChartEnabled = await getIsOrgChartEnabled(
         config.baseUrl,
@@ -103,7 +87,7 @@ export const pendingActionsTools: McpTool[] = [
       );
       const jobsQuery = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
-      const [jobsData, shortlistsData, cvSentsData, interviewsData] = await Promise.all([
+      const [jobsData, shortlistsData, cvSentsData] = await Promise.all([
         executeGraphQL(config.baseUrl, config.apiToken, jobsQuery, {
           filter: { isActive: { eq: true } },
           limit: maxJobs,
@@ -117,71 +101,46 @@ export const pendingActionsTools: McpTool[] = [
           limit: 500,
           orderBy: [{ createdAt: 'DescNullsLast' }],
         }),
-        executeGraphQL(config.baseUrl, config.apiToken, graphqlQueryToFindScheduledClientMeetings, {
-          limit: upcomingInterviewsLimit,
-          orderBy: [{ interviewTime: 'AscNullsLast' }],
-        }),
       ]);
 
       const projects = extractProjects(jobsData);
-      const shortlists =
-        (shortlistsData as { shortlists?: { edges?: unknown[] } })?.shortlists
-          ?.edges ?? [];
-      const cvSents =
-        (cvSentsData as { cvsent?: { edges?: unknown[] } })?.cvsent?.edges ??
-        [];
-      const interviews = extractClientInterviews(interviewsData);
+      const shortlistsCount = extractCountFromConnection(shortlistsData, 'shortlists');
+      const cvSentsCount = extractCountFromConnection(cvSentsData, 'cvsent');
 
-      const projectIds = projects.map((project) => project.id);
       const candidatesByJob: Record<string, Record<string, number>> = {};
       for (const project of projects) {
         candidatesByJob[project.id] = {};
       }
 
-      if (projectIds.length > 0) {
-        for (const projectId of projectIds) {
-          const candidateData = await executeGraphQL(
-            config.baseUrl,
-            config.apiToken,
-            graphqlToFetchAllCandidateData,
-            {
-              filter: { projectsId: { eq: projectId } },
-              limit: maxCandidatesPerJob,
-            },
-          );
-          const candidates = extractCandidates(candidateData);
-          for (const candidate of candidates) {
-            const status = candidate.status ?? 'Unknown';
-            candidatesByJob[projectId][status] =
-              (candidatesByJob[projectId][status] ?? 0) + 1;
-          }
+      for (const project of projects) {
+        const candidateData = await executeGraphQL(
+          config.baseUrl,
+          config.apiToken,
+          graphqlToFetchAllCandidateData,
+          {
+            filter: { projectsId: { eq: project.id } },
+            limit: maxCandidatesPerJob,
+          },
+        );
+        const candidates = extractCandidates(candidateData);
+        for (const candidate of candidates) {
+          const status = candidate.status ?? 'Unknown';
+          candidatesByJob[project.id][status] =
+            (candidatesByJob[project.id][status] ?? 0) + 1;
         }
       }
-
-      const upcomingInterviews = interviews.filter(
-        (interview) => !interview.clientInterviewCompleted,
-      );
 
       return {
         summary: {
           activeJobsCount: projects.length,
-          totalShortlists: shortlists.length,
-          totalCvSents: cvSents.length,
-          upcomingClientInterviewsCount: upcomingInterviews.length,
+          totalShortlists: shortlistsCount,
+          totalCvSents: cvSentsCount,
         },
         activeJobs: projects.map((project) => ({
           id: project.id,
           name: project.name,
           candidateCountByStatus: candidatesByJob[project.id] ?? {},
         })),
-        upcomingClientInterviews: upcomingInterviews
-          .slice(0, upcomingInterviewsLimit)
-          .map((interview) => ({
-            id: interview.id,
-            name: interview.name,
-            candidateId: interview.candidateId,
-            interviewTime: interview.interviewTime,
-          })),
       };
     },
   },

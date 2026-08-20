@@ -86,7 +86,7 @@ export class MessagingControls {
           },
         ],
         whatsappDeliveryStatus: 'failed',
-        whatsappMessageId: `send_failed_${uuidv4()}`,
+        externalMessageId: `send_failed_${uuidv4()}`,
       };
       await updateChat.updateCandidateEngagementDataInTable(
         candidate,
@@ -166,7 +166,7 @@ export class MessagingControls {
       const whatappUpdateMessageObj = await new FilterCandidates(
         this.workspaceQueryService,
         this.staticGraphQLService,
-      ).updateChatHistoryObjCreateWhatsappMessageObj(
+      ).updateChatHistoryObjCreateChatMessageObj(
         'sendWhatsappMessageToCandidateMulti',
         candidate,
         mostRecentMessageArr,
@@ -499,7 +499,7 @@ export class MessagingControls {
       throw new Error('Recruiter profile not found for job');
     }
 
-    const candidateChatHistory = candidateNode?.whatsappMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
@@ -529,7 +529,7 @@ export class MessagingControls {
       messageObj: candidateChatHistory,
       lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
-      whatsappMessageId: 'startChat',
+      externalMessageId: 'startChat',
       typeOfMessage:
         candidateNode?.messagingChannel ||
         process.env.DEFAULT_WHATSAPP_CLIENT ||
