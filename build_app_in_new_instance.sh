@@ -598,24 +598,46 @@ if findmnt /mnt/builder >/dev/null 2>&1; then
   echo "Data volume already mounted"
   exit 0
 fi
-ROOT_PK="$(lsblk -ndo PKNAME "$(findmnt -n -o SOURCE /)" 2>/dev/null | head -1 || true)"
-DEV=""
-for _ in $(seq 1 30); do
-  for cand in /dev/nvme1n1 /dev/nvme2n1 /dev/xvdf /dev/sdf; do
+ROOT_SRC="$(findmnt -n -o SOURCE / 2>/dev/null || true)"
+ROOT_PK="$(lsblk -ndo PKNAME "$ROOT_SRC" 2>/dev/null | head -1 || true)"
+[ -z "$ROOT_PK" ] && ROOT_PK="$(basename "$ROOT_SRC" | sed 's/p[0-9]*$//')"
+find_data_dev() {
+  local cand base
+  if [ -e /dev/disk/by-label/"$LABEL" ]; then
+    readlink -f /dev/disk/by-label/"$LABEL"
+    return 0
+  fi
+  for cand in /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1 /dev/xvdf /dev/sdf; do
     [ -b "$cand" ] || continue
     base="$(basename "$cand")"
     [ -n "$ROOT_PK" ] && [ "$base" = "$ROOT_PK" ] && continue
-    if findmnt "$cand" >/dev/null 2>&1; then
-      continue
-    fi
-    DEV="$cand"
-    break
+    findmnt "$cand" >/dev/null 2>&1 && continue
+    echo "$cand"
+    return 0
   done
+  while read -r name type; do
+    [ "$type" = "disk" ] || continue
+    [ -n "$ROOT_PK" ] && [ "$name" = "$ROOT_PK" ] && continue
+    cand="/dev/$name"
+    [ -b "$cand" ] || continue
+    findmnt "$cand" >/dev/null 2>&1 && continue
+    echo "$cand"
+    return 0
+  done < <(lsblk -ndo NAME,TYPE)
+  return 1
+}
+DEV=""
+for _ in $(seq 1 45); do
+  DEV="$(find_data_dev || true)"
   [ -n "$DEV" ] && break
   sleep 2
 done
 if [ -z "$DEV" ]; then
   echo "WARNING: data volume device not found; using instance root disk"
+  lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,LABEL || true
+  if [ -L "$HOME/twenty" ]; then
+    rm -f "$HOME/twenty"
+  fi
   mkdir -p "$HOME/twenty"
   exit 0
 fi
@@ -676,7 +698,9 @@ attach_builder_volume() {
   fi
   aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 create-tags --resources "$BUILDER_VOLUME_ID" \
     --tags "Key=AttachedTo,Value=$TEMP_INSTANCE_ID" >/dev/null || true
-  sleep 3
+  # Already-attached volumes on a just-started Nitro instance can take a while
+  # to appear as NVMe. Give udev a moment before the first probe.
+  sleep 8
   mount_builder_volume
   if ssh_builder 'test -d /mnt/builder/twenty'; then
     REMOTE_WORKSPACE="/mnt/builder/twenty"
