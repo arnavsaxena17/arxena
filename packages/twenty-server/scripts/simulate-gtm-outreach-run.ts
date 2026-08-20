@@ -11,7 +11,6 @@ import axios from 'axios';
  *   API_TOKEN (required) — API key or user JWT for CRM updates
  *   SERVER_URL / SERVER_HOST
  *   GTM_PROJECT_ID (preferred) — active Project UUID
- *   GTM_RUN_KEY (legacy fallback when Project id not passed)
  *   GTM_SIMULATE_MODE = accept | ignore | reply | bootstrap | full (default full)
  */
 
@@ -20,7 +19,6 @@ const SERVER_HOST = process.env.SERVER_HOST || 'arxena.localhost';
 const GRAPHQL_URL = `${SERVER_URL}/graphql`;
 const API_TOKEN = process.env.API_TOKEN;
 const GTM_PROJECT_ID = process.env.GTM_PROJECT_ID || '';
-const GTM_RUN_KEY = process.env.GTM_RUN_KEY || '';
 const MODE = (process.env.GTM_SIMULATE_MODE || 'full') as
   | 'accept'
   | 'ignore'
@@ -109,12 +107,8 @@ const graphqlRequest = async <T>(
   return response.data.data;
 };
 
-const findProjects = async (projectId?: string, legacyRunKey?: string) => {
-  const filter = projectId
-    ? { id: { eq: projectId } }
-    : legacyRunKey
-      ? { gtmRunKey: { eq: legacyRunKey } }
-      : undefined;
+const findProjects = async (projectId?: string) => {
+  const filter = projectId ? { id: { eq: projectId } } : undefined;
 
   const data = await graphqlRequest<{
     projects: {
@@ -122,7 +116,6 @@ const findProjects = async (projectId?: string, legacyRunKey?: string) => {
         node: {
           id: string;
           name?: string;
-          gtmRunKey?: string;
           icpSpec?: string | null;
           outreachWorkflowId?: string | null;
         };
@@ -135,7 +128,6 @@ const findProjects = async (projectId?: string, legacyRunKey?: string) => {
           node {
             id
             name
-            gtmRunKey
             icpSpec
             outreachWorkflowId
           }
@@ -157,18 +149,7 @@ const updateProject = async (id: string, data: Record<string, unknown>) => {
   );
 };
 
-const findCandidates = async (projectId: string, legacyRunKey?: string | null) => {
-  const filters: Array<Record<string, unknown>> = [
-    { projectsId: { eq: projectId } },
-    { gtmRunKey: { eq: projectId } },
-    { campaign: { eq: projectId } },
-  ];
-
-  if (legacyRunKey && legacyRunKey !== projectId) {
-    filters.push({ gtmRunKey: { eq: legacyRunKey } });
-    filters.push({ campaign: { eq: legacyRunKey } });
-  }
-
+const findCandidates = async (projectId: string) => {
   const data = await graphqlRequest<{
     candidates: {
       edges: Array<{
@@ -178,7 +159,6 @@ const findCandidates = async (projectId: string, legacyRunKey?: string | null) =
           outreachSequenceStage?: string;
           connectionStatus?: string;
           connectionDegree?: number;
-          gtmRunKey?: string;
         };
       }>;
     };
@@ -192,13 +172,12 @@ const findCandidates = async (projectId: string, legacyRunKey?: string | null) =
             outreachSequenceStage
             connectionStatus
             connectionDegree
-            gtmRunKey
           }
         }
       }
     }`,
     {
-      filter: { or: filters },
+      filter: { projectsId: { eq: projectId } },
     },
   );
 
@@ -218,7 +197,6 @@ const updateCandidate = async (
       id,
       data: {
         projectsId: projectId,
-        gtmRunKey: projectId,
         campaign: projectId,
         ...data,
       },
@@ -229,30 +207,22 @@ const updateCandidate = async (
 type ResolvedGtmProject = {
   id: string;
   name?: string;
-  gtmRunKey?: string | null;
   outreachWorkflowId?: string | null;
 };
 
 const resolveGtmProject = async (): Promise<ResolvedGtmProject> => {
-  const projects = await findProjects(
-    GTM_PROJECT_ID || undefined,
-    GTM_RUN_KEY || undefined,
-  );
-  const project = projects[0];
+  const projects = await findProjects(GTM_PROJECT_ID || undefined);
+  const project =
+    projects.find((row) => row.id === GTM_PROJECT_ID) ??
+    projects.find((row) => (row.name ?? '').startsWith('GTM')) ??
+    projects[0];
 
   if (!project) {
     throw new Error(
       GTM_PROJECT_ID
         ? `No Project id=${GTM_PROJECT_ID}. Open /gtm-home and create a run, or seed dashboard.`
-        : GTM_RUN_KEY
-          ? `No Project with gtmRunKey=${GTM_RUN_KEY}. Seed dashboard / outreach workflow first.`
-          : 'Pass GTM_PROJECT_ID (preferred) or GTM_RUN_KEY. Seed dashboard first.',
+        : 'Pass GTM_PROJECT_ID. Seed dashboard first.',
     );
-  }
-
-  // Canonical scope is Project.id; keep legacy gtmRunKey only when it differs.
-  if (project.gtmRunKey !== project.id) {
-    await updateProject(project.id, { gtmRunKey: project.id });
   }
 
   return project;
@@ -372,14 +342,9 @@ const simulateReply = async (
 
 const main = async () => {
   const project = await resolveGtmProject();
-  const legacyRunKey =
-    project.gtmRunKey && project.gtmRunKey !== project.id
-      ? project.gtmRunKey
-      : GTM_RUN_KEY || null;
 
   console.log(
-    `Simulating GTM outreach projectId=${project.id} mode=${MODE}` +
-      (legacyRunKey ? ` legacyRunKey=${legacyRunKey}` : ''),
+    `Simulating GTM outreach projectId=${project.id} mode=${MODE}`,
   );
   console.log('Compressed delay env GTM_DELAY_MS=', process.env.GTM_DELAY_MS);
 
@@ -388,7 +353,7 @@ const main = async () => {
     await simulateBootstrap(project);
   }
 
-  const candidates = await findCandidates(project.id, legacyRunKey);
+  const candidates = await findCandidates(project.id);
 
   if (candidates.length === 0) {
     throw new Error(

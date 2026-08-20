@@ -1154,11 +1154,9 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
     type: 'NUMBER',
     icon: 'IconTopologyStar',
   },
-  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
 ];
 
 const PROJECT_FIELDS_TO_ENSURE: FieldToCreate[] = [
-  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
   { name: 'icpSegment', label: 'ICP Segment', type: 'TEXT', icon: 'IconTags' },
   {
     name: 'outreachWorkflowId',
@@ -1468,7 +1466,6 @@ const buildCompanyPayload = (
     gtmFunnelStage: company.gtmFunnelStage,
     icpSegment: company.segment,
     icpFit: company.icpFit,
-    gtmRunKey: GTM_RUN_KEY,
     peopleTargeted: company.peopleTargeted,
     peopleReached: company.peopleReached,
     coverageBucket: company.coverageBucket,
@@ -1620,7 +1617,7 @@ const seedPeople = async (
 };
 
 const seedProject = async (companyIdsByKey: Record<string, string>) => {
-  const projectName = 'GTM Command Demo Run';
+  const projectName = GTM_SEED_PROJECT_NAME;
   const primaryCompanyId = companyIdsByKey['co-1'];
 
   const existing = await request<{
@@ -1639,7 +1636,6 @@ const seedProject = async (companyIdsByKey: Record<string, string>) => {
   const payload = {
     name: projectName,
     isActive: true,
-    gtmRunKey: GTM_RUN_KEY,
     icpSegment: 'Series B SaaS',
     ...(primaryCompanyId ? { companyId: primaryCompanyId } : {}),
   };
@@ -1720,7 +1716,7 @@ const seedCandidates = async ({
         person.enrichStatus === 'FOUND' || person.enrichStatus === 'FAILED'
           ? daysAgoIso(person.lastOutboundDaysAgo ?? 7)
           : null,
-      campaign: GTM_RUN_KEY,
+      campaign: projectId,
       source: 'gtm-command-seed',
     };
 
@@ -1825,7 +1821,10 @@ const seedWhatsappMessages = async ({
   }
 };
 
-const seedOpportunities = async (companyIdsByKey: Record<string, string>) => {
+const seedOpportunities = async (
+  companyIdsByKey: Record<string, string>,
+  projectId: string,
+) => {
   for (const opportunity of OPPORTUNITY_SEEDS) {
     const companyId = companyIdsByKey[opportunity.companyKey];
     if (!companyId) {
@@ -1837,7 +1836,7 @@ const seedOpportunities = async (companyIdsByKey: Record<string, string>) => {
       stage: opportunity.stage,
       companyId,
       sourcedFromGtm: true,
-      gtmRunKey: GTM_RUN_KEY,
+      gtmRunKey: projectId,
       amount: {
         amountMicros: opportunity.amountMicros,
         currencyCode: 'USD',
@@ -2174,6 +2173,7 @@ const buildDashboardLayout = async ({
   uncoveredViewId,
   stuckCandidatesViewId,
   opportunitiesViewId,
+  projectId,
 }: {
   pageLayoutId: string;
   companyObjectId: string;
@@ -2188,6 +2188,7 @@ const buildDashboardLayout = async ({
   uncoveredViewId: string;
   stuckCandidatesViewId: string;
   opportunitiesViewId: string;
+  projectId: string;
 }) => {
   const overviewTabId = randomUUID();
   const coverageTabId = randomUUID();
@@ -2216,7 +2217,7 @@ const buildDashboardLayout = async ({
                 id: randomUUID(),
                 fieldMetadataId: companyFields.gtmRunKey,
                 operand: 'CONTAINS',
-                value: GTM_RUN_KEY,
+                value: projectId,
               },
             ],
           },
@@ -2717,7 +2718,7 @@ const main = async () => {
 
   assertFieldsPresent('company', companyFields, REQUIRED_COMPANY_FIELDS);
   assertFieldsPresent('candidate', candidateFields, REQUIRED_CANDIDATE_FIELDS);
-  assertFieldsPresent('project', projectFields, ['gtmRunKey', 'icpSegment']);
+  assertFieldsPresent('project', projectFields, ['icpSegment']);
   assertFieldsPresent('opportunity', opportunityFields, [
     'sourcedFromGtm',
     'gtmRunKey',
@@ -2733,7 +2734,18 @@ const main = async () => {
   await seedPeople(companyIdsByKey, personIdsByEmail);
 
   console.log('Seeding GTM project...');
-  const projectId = await seedProject(companyIdsByKey);
+  const projectId = GTM_PROJECT_ID || (await seedProject(companyIdsByKey));
+
+  console.log('Tagging companies with Project.id as gtmRunKey...');
+  for (const companyId of Object.values(companyIdsByKey)) {
+    await requestWithRetry(
+      '/graphql',
+      `mutation($id: ID!, $data: CompanyUpdateInput!) {
+        updateCompany(id: $id, data: $data) { id }
+      }`,
+      { id: companyId, data: { gtmRunKey: projectId } },
+    );
+  }
 
   console.log('Seeding candidates (execution spine)...');
   const candidateIds = await seedCandidates({
@@ -2753,7 +2765,7 @@ const main = async () => {
   }
 
   console.log('Seeding opportunities...');
-  await seedOpportunities(companyIdsByKey);
+  await seedOpportunities(companyIdsByKey, projectId);
 
   console.log('Creating widget views...');
   const attentionViewId = await createTableWidgetView({
@@ -2846,6 +2858,7 @@ const main = async () => {
     uncoveredViewId,
     stuckCandidatesViewId,
     opportunitiesViewId,
+    projectId,
   });
 
   console.log(`Done. Open /object/dashboard/${dashboard.id}`);

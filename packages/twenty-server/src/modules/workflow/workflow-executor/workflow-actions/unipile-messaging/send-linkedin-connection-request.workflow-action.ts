@@ -6,6 +6,7 @@ import { SendLinkedinConnectionRequestTool } from 'src/engine/core-modules/tool/
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
+import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -31,6 +32,7 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
     gtmUnipilePacingService: GtmUnipilePacingService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     delayedQueue: MessageQueueService,
+    gtmOutreachMessagePersistService: GtmOutreachMessagePersistService,
   ) {
     super(
       SendLinkedinConnectionRequestWorkflowAction.name,
@@ -38,6 +40,7 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
       globalWorkspaceOrmManager,
       gtmUnipilePacingService,
       delayedQueue,
+      gtmOutreachMessagePersistService,
     );
   }
 

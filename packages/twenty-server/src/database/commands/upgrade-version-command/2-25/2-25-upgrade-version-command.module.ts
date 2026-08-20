@@ -20,7 +20,11 @@ import { BackfillGtmOutreachWorkflowsSkillCommand } from 'src/database/commands/
 import { EnsureGtmSearchLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000025-ensure-gtm-search-logic-functions.command';
 import { EnsureGtmFetchLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000026-ensure-gtm-fetch-logic-functions.command';
 import { SyncGtmLogicFunctionSampleOutputCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000027-sync-gtm-logic-function-sample-output.command';
+import { EnsureGtmUploadProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000028-ensure-gtm-upload-profiles-logic-function.command';
+import { GtmOutreachMessageFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000029-gtm-outreach-message-fields.command';
+import { SyncGtmOutreachWorkflowsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000030-sync-gtm-outreach-workflows-skill-content.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
+import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
@@ -40,6 +44,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     WorkspaceMigrationRunnerModule,
     ArxenaStandardMetadataModule,
     StandardObjectsPrefillModule,
+    FieldMetadataModule,
   ],
   providers: [
     BackfillMessageListMembersJunctionTargetCommand,
@@ -60,6 +65,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     EnsureGtmSearchLogicFunctionsCommand,
     EnsureGtmFetchLogicFunctionsCommand,
     SyncGtmLogicFunctionSampleOutputCommand,
+    EnsureGtmUploadProfilesLogicFunctionCommand,
+    GtmOutreachMessageFieldsCommand,
+    SyncGtmOutreachWorkflowsSkillContentCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

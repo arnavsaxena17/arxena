@@ -13,6 +13,10 @@ export const SendLinkedinInmailToolInputZodSchema = z.object({
     ),
   subject: z.string().optional().default('').describe('InMail subject'),
   body: z.string().optional().default('').describe('InMail body'),
+  candidateId: z
+    .string()
+    .optional()
+    .describe('CRM Candidate id for transcript persist'),
 });
 
 export type SendLinkedinInmailToolInput = z.infer<

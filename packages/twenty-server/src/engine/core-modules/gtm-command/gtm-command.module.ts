@@ -20,6 +20,8 @@ import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/service
 import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/services/search-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
 import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
+import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/services/upload-profiles.service';
+import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
@@ -112,6 +114,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     FetchLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
+    UploadProfilesService,
+    GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
     GtmInboundReplyWindowService,
@@ -127,6 +131,8 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     FetchLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
+    UploadProfilesService,
+    GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
     GtmInboundReplyWindowService,

@@ -34,7 +34,6 @@ import {
 } from '@/gtm-home/utils/gtm-people-cache';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -43,7 +42,6 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 
 type GtmProjectRecord = ObjectRecord & {
   name?: string;
-  gtmRunKey?: string | null;
   outreachWorkflowId?: string | null;
   outreachSendMode?: string | null;
   maxPersonasPerCompany?: number | null;
@@ -63,7 +61,6 @@ type GtmCandidateRecord = ObjectRecord & {
   name?: string;
   jobTitle?: string | null;
   jobCompanyName?: string | null;
-  gtmRunKey?: string | null;
   campaign?: string | null;
   projectsId?: string | null;
   outreachSequenceStage?: string | null;
@@ -76,7 +73,6 @@ type GtmCandidateRecord = ObjectRecord & {
 };
 
 const isGtmProject = (project: GtmProjectRecord): boolean =>
-  isNonEmptyString(project.gtmRunKey) ||
   isNonEmptyString(project.outreachWorkflowId) ||
   isNonEmptyString(project.icpSegment) ||
   isNonEmptyString(project.icpSpec) ||
@@ -183,7 +179,6 @@ export const useGtmLiveWorkingSet = () => {
   const { createOneRecord: createWorkflow } = useCreateOneRecord({
     objectNameSingular: 'workflow',
   });
-  const { updateOneRecord } = useUpdateOneRecord();
   const { triggerJobsRefetch } = useProjectRefetch();
 
   const { records: defaultOutreachWorkflows } =
@@ -209,7 +204,6 @@ export const useGtmLiveWorkingSet = () => {
       recordGqlFields: {
         id: true,
         name: true,
-        gtmRunKey: true,
         outreachWorkflowId: true,
         outreachSendMode: true,
         maxPersonasPerCompany: true,
@@ -280,7 +274,6 @@ export const useGtmLiveWorkingSet = () => {
   );
 
   const scopeKey = project?.id ?? null;
-  const legacyRunKey = project?.gtmRunKey ?? null;
 
   // Ephemeral companies from Redis (per projectId) — not CRM membership.
   // Poll so Ask AI upserts appear on the Companies tab without a full reload.
@@ -406,19 +399,8 @@ export const useGtmLiveWorkingSet = () => {
       return undefined;
     }
 
-    const filters: Array<Record<string, unknown>> = [
-      { projectsId: { eq: scopeKey } },
-      { gtmRunKey: { eq: scopeKey } },
-      { campaign: { eq: scopeKey } },
-    ];
-
-    if (isNonEmptyString(legacyRunKey) && legacyRunKey !== scopeKey) {
-      filters.push({ gtmRunKey: { eq: legacyRunKey } });
-      filters.push({ campaign: { eq: legacyRunKey } });
-    }
-
-    return { or: filters };
-  }, [legacyRunKey, scopeKey]);
+    return { projectsId: { eq: scopeKey } };
+  }, [scopeKey]);
 
   const { records: candidateRecords, loading: candidatesLoading } =
     useFindManyRecords<GtmCandidateRecord>({
@@ -431,7 +413,6 @@ export const useGtmLiveWorkingSet = () => {
         name: true,
         jobTitle: true,
         jobCompanyName: true,
-        gtmRunKey: true,
         campaign: true,
         projectsId: true,
         outreachSequenceStage: true,
@@ -476,14 +457,6 @@ export const useGtmLiveWorkingSet = () => {
       return null;
     }
 
-    await updateOneRecord({
-      objectNameSingular: 'project',
-      idToUpdate: created.id,
-      updateOneRecordInput: {
-        gtmRunKey: created.id,
-      },
-    });
-
     setActiveTab('setup');
     setEphemeralCompanies([]);
     setEphemeralPeople([]);
@@ -499,7 +472,6 @@ export const useGtmLiveWorkingSet = () => {
     defaultOutreachWorkflows,
     setActiveProjectId,
     triggerJobsRefetch,
-    updateOneRecord,
   ]);
 
   createGtmProjectRef.current = createGtmProject;
@@ -647,7 +619,7 @@ export const useGtmLiveWorkingSet = () => {
   const projectSettings: GtmProjectSettings = {
     projectId: project?.id ?? null,
     projectName: project?.name ?? null,
-    gtmRunKey: project?.gtmRunKey ?? project?.id ?? null,
+    gtmRunKey: project?.id ?? null,
     outreachWorkflowId: project?.outreachWorkflowId ?? null,
     outreachSendMode:
       (project?.outreachSendMode as GtmOutreachSendMode | null) ?? 'APPROVAL',

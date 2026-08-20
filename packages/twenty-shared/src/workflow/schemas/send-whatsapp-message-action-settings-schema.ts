@@ -6,6 +6,7 @@ export const workflowSendWhatsappMessageActionSettingsSchema =
     input: z.object({
       workspaceMemberId: z.string(),
       phone: z.string(),
+      candidateId: z.string().optional(),
       body: z.string().optional().default(''),
     }),
   });

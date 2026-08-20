@@ -257,11 +257,12 @@ export const useAddGtmRecordsToCrm = () => {
         attentionReason: 'NONE',
         daysSinceLastTouch: 0,
         coverageScore: 0,
+        gtmRunKey: gtmCommandContext.projectId ?? undefined,
       });
 
       return created?.id ?? null;
     },
-    [createCompany, findExistingCompanyId],
+    [createCompany, findExistingCompanyId, gtmCommandContext.projectId],
   );
 
   const addPeopleToCrm = useCallback(
@@ -372,7 +373,6 @@ export const useAddGtmRecordsToCrm = () => {
               },
               projectsId: projectId,
               peopleId: createdPerson.id,
-              gtmRunKey: projectId,
               outreachSequenceStage: sequenceFields.outreachSequenceStage,
               connectionStatus: sequenceFields.connectionStatus,
               enrichStatus: sequenceFields.enrichStatus,

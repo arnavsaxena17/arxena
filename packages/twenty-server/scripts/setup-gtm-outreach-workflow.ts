@@ -7,13 +7,15 @@ const SERVER_HOST = process.env.SERVER_HOST || 'arxena.localhost';
 const GRAPHQL_URL = `${SERVER_URL}/graphql`;
 const API_TOKEN = process.env.API_TOKEN;
 const TRIGGER_STEP_ID = 'trigger';
-const GTM_RUN_KEY = process.env.GTM_RUN_KEY || 'gtm-demo-run-1';
+const GTM_PROJECT_ID = process.env.GTM_PROJECT_ID || '';
+const GTM_PROJECT_NAME = process.env.GTM_PROJECT_NAME || '';
 const DELAY_DAYS = Number(process.env.GTM_OUTREACH_DELAY_DAYS || '3');
 const DELAY_SECONDS =
   process.env.GTM_DELAY_MS !== undefined
     ? Math.max(1, Math.round(Number(process.env.GTM_DELAY_MS) / 1000))
     : 0;
 
+const WORKFLOW_SEARCH_NAME = 'Company Created → ICP People Search';
 const WORKFLOW_B_NAME = 'GTM Outreach — Per Candidate';
 const WORKFLOW_ACCEPT_NAME = 'GTM Outreach — Connection Accepted';
 const WORKFLOW_C_NAME = 'GTM Outreach — Reply';
@@ -324,6 +326,105 @@ const queuedFilterSettings = (groupId: string, filterId: string, stage: string) 
   errorHandlingOptions: errorHandling,
 });
 
+const deployWorkflowSearch = async (workflowVersionId: string) => {
+  const workspaceId = process.env.WORKSPACE_ID;
+  const searchLogicFunctionId = workspaceId
+    ? uuidv5(
+        `${workspaceId}:search-people-for-company`,
+        GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+      )
+    : process.env.GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_ID;
+  const uploadLogicFunctionId = workspaceId
+    ? uuidv5(`${workspaceId}:upload-profiles`, GTM_LOGIC_FUNCTION_ID_NAMESPACE)
+    : process.env.GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_ID;
+
+  await updateWorkflowTrigger({
+    workflowVersionId,
+    name: 'Company is Created',
+    eventName: 'company.created',
+    nextStepIds: [],
+  });
+
+  if (!searchLogicFunctionId || !uploadLogicFunctionId) {
+    throw new Error(
+      'WORKSPACE_ID (or GTM_*_LOGIC_FUNCTION_ID) is required to seed company search + upload-profiles',
+    );
+  }
+
+  const searchPeople = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'LOGIC_FUNCTION',
+    parentStepId: TRIGGER_STEP_ID,
+    defaultSettings: {
+      input: {
+        logicFunctionId: searchLogicFunctionId,
+      },
+    },
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...searchPeople,
+      name: 'Search people for company',
+      valid: true,
+      settings: {
+        input: {
+          logicFunctionId: searchLogicFunctionId,
+          logicFunctionInput: {
+            companyId: '{{trigger.properties.after.id}}',
+          },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  await updateWorkflowTrigger({
+    workflowVersionId,
+    name: 'Company is Created',
+    eventName: 'company.created',
+    nextStepIds: [searchPeople.id],
+  });
+
+  const uploadProfiles = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'LOGIC_FUNCTION',
+    parentStepId: searchPeople.id,
+    defaultSettings: {
+      input: {
+        logicFunctionId: uploadLogicFunctionId,
+      },
+    },
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...uploadProfiles,
+      name: 'Upload profiles',
+      valid: true,
+      settings: {
+        input: {
+          logicFunctionId: uploadLogicFunctionId,
+          logicFunctionInput: {
+            projectId: `{{${searchPeople.id}.result.projectId}}`,
+            people: `{{${searchPeople.id}.result.people}}`,
+          },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  return {
+    searchPeopleId: searchPeople.id,
+    uploadProfilesId: uploadProfiles.id,
+  };
+};
+
 const deployWorkflowB = async (workflowVersionId: string) => {
   const queuedGroupId = v4();
   const queuedFilterId = v4();
@@ -448,6 +549,12 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
   const acceptedGroupId = v4();
   const acceptedFilterId = v4();
   const workspaceId = process.env.WORKSPACE_ID;
+  const fetchMessagesLogicFunctionId = workspaceId
+    ? uuidv5(
+        `${workspaceId}:fetch-linkedin-messages`,
+        GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+      )
+    : process.env.GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_ID;
   const fetchLogicFunctionId = workspaceId
     ? uuidv5(
         `${workspaceId}:fetch-linkedin-profile`,
@@ -516,6 +623,41 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
   });
 
   let parentId = findCandidate.id;
+
+  if (fetchMessagesLogicFunctionId) {
+    const fetchMessages = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'LOGIC_FUNCTION',
+      parentStepId: parentId,
+      defaultSettings: {
+        input: {
+          logicFunctionId: fetchMessagesLogicFunctionId,
+        },
+      },
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...fetchMessages,
+        name: 'Fetch LinkedIn messages',
+        valid: true,
+        settings: {
+          input: {
+            logicFunctionId: fetchMessagesLogicFunctionId,
+            logicFunctionInput: {
+              candidateId: `{{${findCandidate.id}.result.first.id}}`,
+              linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
+              linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
+            },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+    parentId = fetchMessages.id;
+  }
 
   if (fetchLogicFunctionId) {
     const fetchProfile = await createWorkflowStep({
@@ -634,6 +776,7 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
       settings: {
         input: {
           workspaceMemberId: '',
+          candidateId: `{{${findCandidate.id}.result.first.id}}`,
           linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
           body: `{{${approveForm.id}.editedBody}}`,
         },
@@ -818,6 +961,7 @@ const deployWorkflowC = async (workflowVersionId: string) => {
       settings: {
         input: {
           workspaceMemberId: '',
+          candidateId: '{{trigger.recordId}}',
           linkedinProfileId: '{{trigger.linkedinProfileId}}',
           body: `{{${approveForm.id}.editedBody}}`,
         },
@@ -837,30 +981,44 @@ const deployWorkflowC = async (workflowVersionId: string) => {
 };
 
 const bindProjectOutreachWorkflow = async (workflowBId: string) => {
+  const filter = GTM_PROJECT_ID
+    ? { id: { eq: GTM_PROJECT_ID } }
+    : GTM_PROJECT_NAME
+      ? { name: { eq: GTM_PROJECT_NAME } }
+      : undefined;
+
   const projects = await graphqlRequest<{
     projects: {
       edges: Array<{
-        node: { id: string; name?: string; gtmRunKey?: string };
+        node: { id: string; name?: string; icpSpec?: string | null };
       }>;
     };
   }>(
-    `query FindGtmProject($filter: ProjectFilterInput!) {
-      projects(filter: $filter, first: 5) {
-        edges { node { id name gtmRunKey } }
+    `query FindGtmProject($filter: ProjectFilterInput) {
+      projects(
+        filter: $filter
+        first: 20
+        orderBy: { updatedAt: DescNullsLast }
+      ) {
+        edges { node { id name icpSpec } }
       }
     }`,
-    {
-      filter: {
-        gtmRunKey: { eq: GTM_RUN_KEY },
-      },
-    },
+    { filter },
   );
 
-  const projectId = projects.projects.edges[0]?.node.id;
+  const nodes = projects.projects.edges.map((edge) => edge.node);
+  const project =
+    nodes.find((node) => node.id === GTM_PROJECT_ID) ??
+    nodes.find((node) => node.name === GTM_PROJECT_NAME) ??
+    nodes.find((node) => (node.name ?? '').startsWith('GTM')) ??
+    nodes.find((node) => Boolean(node.icpSpec)) ??
+    nodes[0];
+
+  const projectId = project?.id;
 
   if (!projectId) {
     console.warn(
-      `No Project with gtmRunKey=${GTM_RUN_KEY}; skip outreachWorkflowId bind`,
+      'No Project found by GTM_PROJECT_ID / GTM_PROJECT_NAME / GTM name prefix; skip outreachWorkflowId bind',
     );
 
     return null;
@@ -901,10 +1059,21 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
 };
 
 const main = async () => {
+  const workflowSearchId =
+    process.env.GTM_OUTREACH_WORKFLOW_SEARCH_ID || v4();
   const workflowBId = process.env.GTM_OUTREACH_WORKFLOW_B_ID || v4();
   const workflowAcceptId =
     process.env.GTM_OUTREACH_WORKFLOW_ACCEPT_ID || v4();
   const workflowCId = process.env.GTM_OUTREACH_WORKFLOW_C_ID || v4();
+
+  const workflowSearch = await createWorkflow(
+    workflowSearchId,
+    WORKFLOW_SEARCH_NAME,
+  );
+  const stepIdsSearch = await deployWorkflowSearch(
+    workflowSearch.workflowVersionId,
+  );
+  await activateWorkflowVersion(workflowSearch.workflowVersionId);
 
   const workflowB = await createWorkflow(workflowBId, WORKFLOW_B_NAME);
   const stepIdsB = await deployWorkflowB(workflowB.workflowVersionId);
@@ -926,11 +1095,13 @@ const main = async () => {
   const projectId = await bindProjectOutreachWorkflow(workflowB.workflowId);
 
   console.log('GTM outreach workflows setup complete');
+  console.log(`Workflow search (company created): ${workflowSearch.workflowId}`);
   console.log(`Workflow B (per candidate): ${workflowB.workflowId}`);
   console.log(`Workflow accept: ${workflowAccept.workflowId}`);
   console.log(`Workflow C (reply): ${workflowC.workflowId}`);
   console.log(`Project bind: ${projectId ?? 'skipped'}`);
   console.log('Open /gtm-home?workflowId=' + workflowB.workflowId);
+  console.log('Step IDs search:', stepIdsSearch);
   console.log('Step IDs B:', stepIdsB);
   console.log('Step IDs accept:', stepIdsAccept);
   console.log('Step IDs C:', stepIdsC);

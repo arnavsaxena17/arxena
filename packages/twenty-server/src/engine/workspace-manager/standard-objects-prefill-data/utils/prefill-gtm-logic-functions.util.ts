@@ -12,6 +12,7 @@ import {
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+  GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -22,6 +23,7 @@ import {
   GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
   GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   GTM_SEARCH_POSTS_SAMPLE_OUTPUT,
+  GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -63,6 +65,10 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   fetchCompanyDetailsId: uuidv5(
     `${workspaceId}:fetch-company-details`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  uploadProfilesId: uuidv5(
+    `${workspaceId}:upload-profiles`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -568,6 +574,47 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.uploadProfilesId,
+      name: GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+      description:
+        'Enroll people as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId and people[] from search-people-for-company. Hits-only search stays separate.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Upload profiles',
+        icon: 'IconUsersPlus',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              projectId: { type: 'string', label: 'Project ID' },
+              people: { type: 'array', label: 'People' },
+              candidates: { type: 'array', label: 'Candidates' },
+              recruiterId: { type: 'string', label: 'Recruiter ID' },
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              limit: { type: 'number', label: 'Limit' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              queued: { type: 'number', label: 'Queued' },
+              projectId: { type: 'string', label: 'Project ID' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
       },
     },
   ];

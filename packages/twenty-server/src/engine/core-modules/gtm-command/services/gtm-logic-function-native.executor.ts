@@ -10,6 +10,7 @@ import {
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+  GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
@@ -19,6 +20,7 @@ import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
 import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/services/search-people.service';
 import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
+import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/services/upload-profiles.service';
 import { NativeLogicFunctionHandler } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function-handler.interface';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 
@@ -35,6 +37,7 @@ export class GtmLogicFunctionNativeExecutor
     private readonly searchCompaniesService: SearchCompaniesService,
     private readonly searchJobsService: SearchJobsService,
     private readonly searchPostsService: SearchPostsService,
+    private readonly uploadProfilesService: UploadProfilesService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -124,6 +127,20 @@ export class GtmLogicFunctionNativeExecutor
           linkedinUrl?: string;
           workspaceMemberId?: string;
           accountId?: string;
+        },
+      });
+    }
+
+    if (name === GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME) {
+      return this.uploadProfilesService.execute({
+        workspaceId,
+        input: payload as {
+          projectId?: string;
+          people?: Array<Record<string, unknown>>;
+          candidates?: unknown[];
+          recruiterId?: string;
+          workspaceMemberId?: string;
+          limit?: number;
         },
       });
     }

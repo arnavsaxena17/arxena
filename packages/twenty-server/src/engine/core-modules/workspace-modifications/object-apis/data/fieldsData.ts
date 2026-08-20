@@ -834,6 +834,33 @@ export function getFieldsData(
     {
       objectName: 'whatsappMessage',
       field: {
+        description: 'Channel for this transcript row',
+        icon: 'IconMessage',
+        label: 'Channel',
+        name: 'channel',
+        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        type: 'SELECT',
+        options: [
+          { value: 'WHATSAPP', label: 'WhatsApp', color: 'green', position: 0 },
+          { value: 'LINKEDIN', label: 'LinkedIn', color: 'blue', position: 1 },
+          { value: 'EMAIL', label: 'Email', color: 'sky', position: 2 },
+        ],
+      },
+    },
+    {
+      objectName: 'whatsappMessage',
+      field: {
+        description: 'Provider chat id',
+        icon: 'IconHash',
+        label: 'External Chat Id',
+        name: 'externalChatId',
+        objectMetadataId: objectsNameIdMap.whatsappMessage,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'whatsappMessage',
+      field: {
         description: 'lastEngagementChatControl',
         icon: 'IconMessageDots',
         label: 'lastEngagementChatControl',

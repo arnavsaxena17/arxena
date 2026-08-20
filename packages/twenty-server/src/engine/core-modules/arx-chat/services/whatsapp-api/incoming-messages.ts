@@ -1706,26 +1706,45 @@ export class IncomingWhatsappMessages {
 
   private isGtmOutreachCandidate(
     candidate: CandidateNode & {
-      gtmRunKey?: string | null;
+      projectsId?: string | null;
       outreachSequenceStage?: string | null;
     },
-    project: Project & { gtmRunKey?: string | null },
+    project: Project & {
+      icpSpec?: string | null;
+      outreachWorkflowId?: string | null;
+      icpSegment?: string | null;
+      name?: string | null;
+    },
   ): boolean {
     const stage = candidate?.outreachSequenceStage ?? '';
     const gtmStages = new Set([
       'QUEUED',
+      'NEEDS_CONNECTION',
       'CONNECTION_SENT',
       'CONNECTION_ACCEPTED',
-      'MESSAGED',
       'REPLIED',
       'PROFILE_CHECKED',
       'COMMENTED',
       'WARM_PATH',
+      'EMAIL_ENRICHING',
+      'EMAIL_SENT',
+      'INMAIL_SENT',
+      'WHATSAPP_SENT',
+      'NEGOTIATING',
+      'MEETING_BOOKED',
+      'DEFERRED',
+      'STOPPED',
+      'FAILED_ENRICH',
+      'FAILED_NO_REPLY',
     ]);
+    const projectIsGtm =
+      Boolean(project?.icpSpec) ||
+      Boolean(project?.outreachWorkflowId) ||
+      Boolean(project?.icpSegment) ||
+      /gtm/i.test(project?.name ?? '');
 
     return Boolean(
-      candidate?.gtmRunKey ||
-        project?.gtmRunKey ||
+      (Boolean(candidate?.projectsId) && projectIsGtm) ||
         gtmStages.has(stage),
     );
   }

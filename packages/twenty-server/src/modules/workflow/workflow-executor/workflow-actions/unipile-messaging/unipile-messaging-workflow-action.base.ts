@@ -3,6 +3,10 @@ import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
+import {
+  GtmOutreachMessagePersistService,
+  type GtmOutreachTranscriptChannel,
+} from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { type GtmThrottleChannel } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -35,6 +39,10 @@ type UnipileMessagingActionInputWithMember = ToolInput & {
   linkedinUrl?: string;
   skipPacing?: boolean;
   unipileAccountId?: string;
+  candidateId?: string;
+  phone?: string;
+  body?: string;
+  message?: string;
 };
 
 export abstract class UnipileMessagingWorkflowActionBase<
@@ -46,6 +54,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly gtmUnipilePacingService: GtmUnipilePacingService,
     private readonly delayedQueue: MessageQueueService,
+    private readonly gtmOutreachMessagePersistService?: GtmOutreachMessagePersistService,
   ) {
     super(loggerName, unipileStepLogService);
   }
@@ -53,6 +62,10 @@ export abstract class UnipileMessagingWorkflowActionBase<
   protected abstract getAccountType(): UnipileMessagingAccountType;
 
   protected getPacingChannel(): GtmThrottleChannel | null {
+    return null;
+  }
+
+  protected getTranscriptChannel(): GtmOutreachTranscriptChannel | null {
     return null;
   }
 
@@ -114,6 +127,29 @@ export abstract class UnipileMessagingWorkflowActionBase<
       workspaceId: runInfo.workspaceId,
     });
     const durationMs = Date.now() - startedAt;
+
+    if (toolOutput.success) {
+      const transcriptChannel = this.getTranscriptChannel();
+
+      if (isDefined(transcriptChannel) && isDefined(this.gtmOutreachMessagePersistService)) {
+        try {
+          await this.gtmOutreachMessagePersistService.appendOutbound({
+            workspaceId: runInfo.workspaceId,
+            channel: transcriptChannel,
+            body: resolvedInput.body ?? resolvedInput.message ?? '',
+            candidateId: resolvedInput.candidateId,
+            linkedinProfileId: resolvedInput.linkedinProfileId,
+            phone: resolvedInput.phone,
+          });
+        } catch (error) {
+          this.logger.warn(
+            `Failed to persist outreach transcript: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
+    }
 
     if (toolOutput.success && !skipPacing && pacingChannel) {
       await this.gtmUnipilePacingService.stampSuccess({

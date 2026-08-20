@@ -7,6 +7,7 @@ import {
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+  GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -110,6 +111,20 @@ export const main = async (params: {
 };
 `;
 
+const UPLOAD_PROFILES_HANDLER = `// Native GTM action: UploadProfilesService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  projectId: string;
+  people?: Array<Record<string, unknown>>;
+  candidates?: Array<Record<string, unknown>>;
+  recruiterId?: string;
+  workspaceMemberId?: string;
+  limit?: number;
+}) => {
+  return params;
+};
+`;
+
 const FETCH_COMPANY_DETAILS_HANDLER = `// Native GTM action: FetchCompanyDetailsService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
@@ -136,6 +151,7 @@ const NATIVE_HANDLERS: Record<string, string> = {
     FETCH_LINKEDIN_MESSAGES_HANDLER,
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     FETCH_COMPANY_DETAILS_HANDLER,
+  [GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: UPLOAD_PROFILES_HANDLER,
 };
 
 export const getGtmNativeLogicFunctionHandler = (name: string): string => {

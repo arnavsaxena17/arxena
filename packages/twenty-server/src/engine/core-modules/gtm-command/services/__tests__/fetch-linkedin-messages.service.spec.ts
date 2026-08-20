@@ -12,9 +12,14 @@ describe('FetchLinkedinMessagesService', () => {
     makeUnipileRequest: jest.fn(),
   };
 
+  const gtmOutreachMessagePersistService = {
+    mergeFetchedLinkedinMessages: jest.fn().mockResolvedValue(null),
+  };
+
   const service = new FetchLinkedinMessagesService(
     globalWorkspaceOrmManager as never,
     linkedinUnipileRequestService as never,
+    gtmOutreachMessagePersistService as never,
   );
 
   beforeEach(() => {

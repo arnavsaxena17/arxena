@@ -32,7 +32,6 @@ type GtmWorkflowRunRecord = ObjectRecord & {
 };
 
 type GtmProjectRecord = ObjectRecord & {
-  gtmRunKey?: string | null;
   outreachWorkflowId?: string | null;
 };
 
@@ -80,7 +79,6 @@ export const useGtmWorkflowEmbed = (options?: { enabled?: boolean }) => {
       skip: !isEnabled || !isDefined(gtmCommandContext.projectId),
       recordGqlFields: {
         id: true,
-        gtmRunKey: true,
         outreachWorkflowId: true,
       },
     });

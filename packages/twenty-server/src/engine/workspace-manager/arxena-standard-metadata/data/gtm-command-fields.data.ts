@@ -35,6 +35,12 @@ export const GTM_FUNNEL_STAGE_OPTIONS = [
   selectOption('OPPORTUNITY', 'Opportunity', 'orange', 6),
 ];
 
+export const GTM_MESSAGE_CHANNEL_OPTIONS = [
+  selectOption('WHATSAPP', 'WhatsApp', 'green', 0),
+  selectOption('LINKEDIN', 'LinkedIn', 'blue', 1),
+  selectOption('EMAIL', 'Email', 'sky', 2),
+];
+
 export const GTM_ICP_FIT_OPTIONS = [
   selectOption('HIGH', 'High', 'green', 0),
   selectOption('MEDIUM', 'Medium', 'orange', 1),
@@ -410,18 +416,6 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Which Projective Tech follow-up was last sent (0–5)',
-      icon: 'IconListNumbers',
-      label: 'Follow Up Index',
-      name: 'followUpIndex',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-      defaultValue: 0,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
       description: 'Cached Unipile LinkedIn profile JSON for AI draft',
       icon: 'IconBrandLinkedin',
       label: 'LinkedIn Profile Snapshot',
@@ -554,18 +548,6 @@ export const getGtmCommandFieldsData = (
       type: 'NUMBER',
     },
   },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'GTM run key shared with Project for filters',
-      icon: 'IconKey',
-      label: 'GTM Run Key',
-      name: 'gtmRunKey',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'TEXT',
-    },
-  },
-
   // Person — cross-project memory / compliance
   {
     objectName: 'person',
@@ -636,17 +618,6 @@ export const getGtmCommandFieldsData = (
   },
 
   // Project — light run scope
-  {
-    objectName: 'project',
-    field: {
-      description: 'GTM run key for dashboard filters',
-      icon: 'IconKey',
-      label: 'GTM Run Key',
-      name: 'gtmRunKey',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
-  },
   {
     objectName: 'project',
     field: {
@@ -913,6 +884,31 @@ export const getGtmCommandFieldsData = (
       label: 'GTM Run Key',
       name: 'gtmRunKey',
       objectMetadataId: objectsNameIdMap.opportunity,
+      type: 'TEXT',
+    },
+  },
+
+  // Message object (nameSingular stays whatsappMessage)
+  {
+    objectName: 'whatsappMessage',
+    field: {
+      description: 'Channel for this transcript row (one row per candidate × channel)',
+      icon: 'IconMessage',
+      label: 'Channel',
+      name: 'channel',
+      objectMetadataId: objectsNameIdMap.whatsappMessage,
+      type: 'SELECT',
+      options: GTM_MESSAGE_CHANNEL_OPTIONS,
+    },
+  },
+  {
+    objectName: 'whatsappMessage',
+    field: {
+      description: 'Provider chat id (Unipile chat id, WhatsApp thread, etc.)',
+      icon: 'IconHash',
+      label: 'External Chat Id',
+      name: 'externalChatId',
+      objectMetadataId: objectsNameIdMap.whatsappMessage,
       type: 'TEXT',
     },
   },

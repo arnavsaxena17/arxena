@@ -10,6 +10,7 @@ import {
   pickLinkedinAttendeeIdFromUnipileProfile,
 } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-attendee-id.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -79,6 +80,7 @@ export class FetchLinkedinMessagesService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly gtmOutreachMessagePersistService: GtmOutreachMessagePersistService,
   ) {}
 
   async execute({
@@ -207,6 +209,22 @@ export class FetchLinkedinMessagesService {
         limit,
       );
       const messages = rawMessages.map((item) => this.mapMessage(item));
+
+      try {
+        await this.gtmOutreachMessagePersistService.mergeFetchedLinkedinMessages({
+          workspaceId,
+          candidateId: input.candidateId,
+          linkedinProfileId: resolved.identifier,
+          chatId,
+          messages,
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to merge LinkedIn history into messageObj: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
 
       return {
         success: true,

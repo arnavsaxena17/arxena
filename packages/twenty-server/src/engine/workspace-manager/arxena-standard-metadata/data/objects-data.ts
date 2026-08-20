@@ -50,9 +50,9 @@ const allObjects: ArxenaObjectDefinition[] = [
   {
     object: {
       description: '',
-      icon: 'IconBrandWhatsapp',
-      labelPlural: 'Whatsapp Messages',
-      labelSingular: 'Whatsapp Message',
+      icon: 'IconMessage',
+      labelPlural: 'Messages',
+      labelSingular: 'Message',
       nameSingular: 'whatsappMessage',
       namePlural: 'whatsappMessages',
     },

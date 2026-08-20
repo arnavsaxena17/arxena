@@ -671,24 +671,19 @@ export class CandidateService {
       candidateIdMap: Map<string, string>;
     };
     jobObject: Project & {
-      gtmRunKey?: string | null;
       icpSpec?: string | null;
     };
     origin: string;
     apiToken: string;
   }): Promise<void> {
-    const gtmRunKey = jobObject.gtmRunKey || '';
     const isGtmProject =
       origin.includes('gtm') ||
-      Boolean(gtmRunKey) ||
       Boolean(jobObject.icpSpec) ||
       /gtm/i.test(jobObject.name ?? '');
 
     if (!isGtmProject) {
       return;
     }
-
-    const resolvedRunKey = gtmRunKey || jobObject.id;
 
     for (const profile of data) {
       const key = profile.uniqueStringKey;
@@ -713,7 +708,6 @@ export class CandidateService {
             idToUpdate: candidateId,
             input: {
               outreachSequenceStage: 'QUEUED',
-              gtmRunKey: resolvedRunKey,
               ...(linkedinProfileId ? { linkedinProfileId } : {}),
             },
           },

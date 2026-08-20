@@ -6,6 +6,7 @@ import { SendLinkedinMessageTool } from 'src/engine/core-modules/tool/tools/unip
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
+import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -31,6 +32,7 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
     gtmUnipilePacingService: GtmUnipilePacingService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     delayedQueue: MessageQueueService,
+    gtmOutreachMessagePersistService: GtmOutreachMessagePersistService,
   ) {
     super(
       SendLinkedinMessageWorkflowAction.name,
@@ -38,11 +40,16 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
       globalWorkspaceOrmManager,
       gtmUnipilePacingService,
       delayedQueue,
+      gtmOutreachMessagePersistService,
     );
   }
 
   protected override getPacingChannel() {
     return 'message' as const;
+  }
+
+  protected override getTranscriptChannel() {
+    return 'LINKEDIN' as const;
   }
 
   protected getTool(): Tool {

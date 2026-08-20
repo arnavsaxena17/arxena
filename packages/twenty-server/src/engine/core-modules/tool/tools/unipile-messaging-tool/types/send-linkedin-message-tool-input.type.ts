@@ -12,6 +12,10 @@ export const SendLinkedinMessageToolInputZodSchema = z.object({
       'LinkedIn profile ID, public identifier, or LinkedIn profile URL',
     ),
   body: z.string().optional().default('').describe('Message body'),
+  candidateId: z
+    .string()
+    .optional()
+    .describe('CRM Candidate id for transcript persist'),
 });
 
 export type SendLinkedinMessageToolInput = z.infer<

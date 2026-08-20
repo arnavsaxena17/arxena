@@ -18,7 +18,6 @@ type CompanyRecord = ObjectLiteral & {
 type ProjectRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
-  gtmRunKey?: string | null;
   icpSpec?: string | null;
   peopleSearchBlurb?: string | null;
   maxPersonasPerCompany?: number | null;
@@ -71,37 +70,36 @@ export class EnsureGtmProjectService {
               })
             : null;
 
+        const tagCompany = async (resolvedProjectId: string) => {
+          if (isDefined(company) && company.gtmRunKey !== resolvedProjectId) {
+            await companyRepository?.update(company.id, {
+              gtmRunKey: resolvedProjectId,
+            });
+          }
+        };
+
         if (isNonEmptyString(projectId)) {
           const project = await projectRepository.findOne({
             where: { id: projectId },
-            select: ['id', 'gtmRunKey'],
+            select: ['id'],
           });
 
           if (isDefined(project)) {
-            const gtmRunKey = project.gtmRunKey || project.id;
+            await tagCompany(project.id);
 
-            if (isDefined(company) && company.gtmRunKey !== gtmRunKey) {
-              await companyRepository?.update(company.id, { gtmRunKey });
-            }
-
-            if (!isNonEmptyString(project.gtmRunKey)) {
-              await projectRepository.update(project.id, { gtmRunKey });
-            }
-
-            return { projectId: project.id, gtmRunKey };
+            return { projectId: project.id, gtmRunKey: project.id };
           }
         }
 
         if (isNonEmptyString(company?.gtmRunKey)) {
-          const byKey = await projectRepository.findOne({
-            where: [{ id: company.gtmRunKey }, { gtmRunKey: company.gtmRunKey }],
+          const byId = await projectRepository.findOne({
+            where: { id: company.gtmRunKey },
           });
 
-          if (isDefined(byKey)) {
-            return {
-              projectId: byKey.id,
-              gtmRunKey: byKey.gtmRunKey || byKey.id,
-            };
+          if (isDefined(byId)) {
+            await tagCompany(byId.id);
+
+            return { projectId: byId.id, gtmRunKey: byId.id };
           }
         }
 
@@ -112,17 +110,9 @@ export class EnsureGtmProjectService {
         const existingProject = existing[0];
 
         if (isDefined(existingProject)) {
-          const gtmRunKey = existingProject.gtmRunKey || existingProject.id;
+          await tagCompany(existingProject.id);
 
-          if (!isNonEmptyString(existingProject.gtmRunKey)) {
-            await projectRepository.update(existingProject.id, { gtmRunKey });
-          }
-
-          if (isDefined(company) && company.gtmRunKey !== gtmRunKey) {
-            await companyRepository?.update(company.id, { gtmRunKey });
-          }
-
-          return { projectId: existingProject.id, gtmRunKey };
+          return { projectId: existingProject.id, gtmRunKey: existingProject.id };
         }
 
         const createdBy = buildCreatedByFromSystem();
@@ -132,19 +122,14 @@ export class EnsureGtmProjectService {
           updatedBy: createdBy,
         });
         const saved = await projectRepository.save(created);
-        const gtmRunKey = saved.id;
 
-        await projectRepository.update(saved.id, { gtmRunKey });
-
-        if (isDefined(company)) {
-          await companyRepository?.update(company.id, { gtmRunKey });
-        }
+        await tagCompany(saved.id);
 
         this.logger.log(
           `Created GTM Project ${saved.id} for workspace ${workspaceId}`,
         );
 
-        return { projectId: saved.id, gtmRunKey };
+        return { projectId: saved.id, gtmRunKey: saved.id };
       },
       authContext,
     );

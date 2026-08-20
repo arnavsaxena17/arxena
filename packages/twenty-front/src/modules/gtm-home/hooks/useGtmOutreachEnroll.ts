@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { gtmCommandContextState } from '@/gtm-home/states/gtmCommandContextState';
 import { useAddGtmRecordsToCrm } from '@/gtm-home/hooks/useAddGtmRecordsToCrm';
 import {
@@ -8,15 +9,14 @@ import {
   type GtmPersonRow,
 } from '@/gtm-home/types/gtm-home.types';
 import { applyMaxPersonasPerCompany } from '@/gtm-home/utils/gtm-persona-priority.util';
-import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 type GtmProjectRecord = ObjectRecord & {
-  gtmRunKey?: string | null;
   outreachWorkflowId?: string | null;
   maxPersonasPerCompany?: number | null;
 };
@@ -24,10 +24,8 @@ type GtmProjectRecord = ObjectRecord & {
 export const useGtmOutreachEnroll = () => {
   const { enqueueErrorSnackBar, enqueueSuccessSnackBar } = useSnackBar();
   const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const { updateOneRecord } = useUpdateOneRecord();
-  const { createOneRecord: createCandidate } = useCreateOneRecord({
-    objectNameSingular: 'candidate',
-  });
   const { ensureCrmCompany } = useAddGtmRecordsToCrm();
 
   const projectId = gtmCommandContext.projectId;
@@ -43,7 +41,6 @@ export const useGtmOutreachEnroll = () => {
     skip: !isDefined(projectId),
     recordGqlFields: {
       id: true,
-      gtmRunKey: true,
       outreachWorkflowId: true,
       maxPersonasPerCompany: true,
     },
@@ -66,6 +63,14 @@ export const useGtmOutreachEnroll = () => {
         return 0;
       }
 
+      const accessToken =
+        tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+
+      if (!accessToken) {
+        enqueueErrorSnackBar({ message: 'Sign in again to enroll people' });
+        return 0;
+      }
+
       const project = projects[0];
       const maxPersonas = project?.maxPersonasPerCompany ?? 2;
       const ranked = applyMaxPersonasPerCompany({
@@ -73,17 +78,12 @@ export const useGtmOutreachEnroll = () => {
         maxPersonasPerCompany: maxPersonas,
       });
 
-      let enrolled = 0;
       let deferred = 0;
       const companyIdCache = new Map<string, string>();
+      const toUpload: GtmPersonRow[] = [];
 
       for (const person of ranked) {
-        if (person.doNotContact === true) {
-          deferred += 1;
-          continue;
-        }
-
-        if (person.stage === 'deferred') {
+        if (person.doNotContact === true || person.stage === 'deferred') {
           deferred += 1;
           continue;
         }
@@ -102,37 +102,73 @@ export const useGtmOutreachEnroll = () => {
           }
         }
 
-        await createCandidate({
-          name: person.name,
-          jobTitle: person.title,
-          jobCompanyName: person.companyName,
-          projectsId: projectId,
-          gtmRunKey: projectId,
-          outreachSequenceStage: 'QUEUED',
-          connectionStatus: 'NONE',
-          enrichStatus: 'NOT_STARTED',
-          connectionDegree: person.connectionDegree ?? null,
-          personaPriorityScore: person.personaPriorityScore ?? null,
-          messagingChannel: 'LINKEDIN',
-          campaign: projectId,
-          source: 'gtm-home-enroll',
+        toUpload.push(person);
+      }
+
+      if (toUpload.length === 0) {
+        enqueueSuccessSnackBar({
+          message: `Enrolled 0, deferred ${deferred}`,
         });
-        enrolled += 1;
+        return 0;
+      }
+
+      const response = await fetch(
+        `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            linkedin_search_results: toUpload.map((person) => ({
+              name: person.name,
+              title: person.title,
+              company: person.companyName,
+              companyName: person.companyName,
+              linkedinUrl: person.linkedinUrl,
+              profileUrl: person.linkedinUrl,
+              email: person.email,
+            })),
+            data_source: 'linkedin_search',
+            projectId,
+            twenty_job_id: projectId,
+            job_id: projectId,
+            job_name: 'GTM Outreach',
+            job: {
+              id: projectId,
+              name: 'GTM Outreach',
+            },
+          }),
+        },
+      );
+
+      const result = (await response.json()) as {
+        status?: string;
+        message?: string;
+        error?: string;
+      };
+
+      if (result.status !== 'ok' && result.status !== 'success') {
+        enqueueErrorSnackBar({
+          message: result.message || result.error || 'Enroll failed',
+        });
+        return 0;
       }
 
       enqueueSuccessSnackBar({
-        message: `Enrolled ${enrolled}, deferred ${deferred} (Project ${projectId.slice(0, 8)}…)`,
+        message: `Enrolled ${toUpload.length}, deferred ${deferred} (Project ${projectId.slice(0, 8)}…)`,
       });
 
-      return enrolled;
+      return toUpload.length;
     },
     [
-      createCandidate,
       enqueueErrorSnackBar,
       enqueueSuccessSnackBar,
       ensureCrmCompany,
       projectId,
       projects,
+      tokenPair,
     ],
   );
 
