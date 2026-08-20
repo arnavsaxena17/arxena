@@ -1,4 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
+import {
+  isPremiumLinkedInSearchApi,
+  mapUnipileV2SearchBody,
+  normalizeUnipileV2SearchItems,
+} from 'src/engine/core-modules/unipile-client/map-unipile-v2-search.util';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
@@ -17,7 +23,6 @@ import {
     LinkedInSalesNavigatorPeopleSearchRequest,
     LinkedInSearchFromUrlRequest,
     LinkedInSearchRequest,
-    LinkedInSearchWithCursorRequest
 } from '../types/linkedin-search-request.type';
 import {
     LinkedInErrorResponse,
@@ -28,7 +33,7 @@ import {
   normalizeSalesNavigatorCompaniesSearchRequest,
   normalizeSalesNavigatorPeopleSearchRequest,
 } from '../utils/normalize-sales-navigator-search-request.util';
-import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
+import { classifyLinkedInSearchUrl } from '../utils/classify-linkedin-search-url.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 
@@ -116,8 +121,7 @@ export type LinkedInCandidateFetchMode = 'unipile' | 'apify';
 @Injectable()
 export class LinkedInSearchService {
   private readonly logger = new Logger(LinkedInSearchService.name);
-  private readonly baseUrl: string;
-  private readonly apiKey: string;
+  private readonly unipileClient: UnipileV2Client;
   private readonly minRequestIntervalMs: number;
   private lastRequestTimestamp = 0;
   private requestLock: Promise<void> = Promise.resolve();
@@ -128,11 +132,10 @@ export class LinkedInSearchService {
     private readonly htmlParser: LinkedInHtmlParserService,
     private readonly apifyService: ApifyService,
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
+    unipileClient: UnipileV2Client,
   ) {
-    this.baseUrl = process.env.UNIPILE_API_URL || '';
-    this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
-
-    if (!this.apiKey) {
+    this.unipileClient = unipileClient;
+    if (!this.unipileClient.getApiKey()) {
       this.logger.warn('LinkedIn Unipile API key not configured');
     }
 
@@ -166,10 +169,8 @@ export class LinkedInSearchService {
         }
       }
 
-      const url = `${this.baseUrl}/api/v1/linkedin/search`;
       this.logger.debug(
         `LinkedIn search request:
-          URL: ${url}
           Account ID: ${accountId}
           Options: ${JSON.stringify(options, null, 2)}
           Search Request: ${JSON.stringify(searchRequest, null, 2)}`
@@ -180,9 +181,9 @@ export class LinkedInSearchService {
         ...(options.limit != null && { limit: options.limit.toString() }),
       });
 
-      this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
+      this.logger.log(`Making LinkedIn v2 search for account ${accountId}`);
       this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
-      const response = await this.searchWithRetry(url, queryParams, searchRequest);
+      const response = await this.searchWithRetry(queryParams, searchRequest);
       this.logger.log(
         `LinkedIn search response: ${JSON.stringify(
           response.items.map((item) => {
@@ -217,7 +218,6 @@ export class LinkedInSearchService {
    * Uses exponential backoff: 2s, 4s, 8s, 16s
    */
   private async searchWithRetry(
-    url: string,
     queryParams: URLSearchParams,
     searchRequest: LinkedInSearchRequest,
     retryCount = 0,
@@ -225,39 +225,71 @@ export class LinkedInSearchService {
   ): Promise<LinkedInSearchResponse> {
     await this.enforceRequestSpacing();
 
-    const response = await fetch(`${url}?${queryParams}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-KEY': this.apiKey,
-      },
-      body: JSON.stringify(searchRequest),
-    });
-
-    this.logger.log(`LinkedIn API response status: ${response.status}`);
-
-    if (response.status === 503 && retryCount < maxRetries) {
-      // Exponential backoff: 2^retryCount seconds (2s, 4s, 8s, 16s)
-      const backoffMs = Math.min(2000 * Math.pow(2, retryCount), 16000);
-      this.logger.warn(
-        `Received 503 error (Service unavailable), waiting ${backoffMs / 1000}s before retry (attempt ${retryCount + 1}/${maxRetries})`
-      );
-      await this.delay(backoffMs);
-      return this.searchWithRetry(url, queryParams, searchRequest, retryCount + 1, maxRetries);
-    }
-
-    if (!response.ok) {
-      const errorData: LinkedInErrorResponse = await response.json();
-      this.logger.error(`LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`);
-      throw new Error(`LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-    }
-
-    const data: LinkedInSearchResponse = await response.json();
-    this.logger.log(
-      `LinkedIn search completed successfully. Found ${data.items.length} results (paging.total_count=${data.paging?.total_count ?? 'n/a'} page_count=${data.paging?.page_count ?? 'n/a'} cursor=${data.cursor ?? 'none'}).`,
+    const url =
+      'url' in searchRequest && typeof searchRequest.url === 'string'
+        ? searchRequest.url
+        : undefined;
+    const classified = url ? classifyLinkedInSearchUrl(url) : null;
+    const api =
+      'api' in searchRequest
+        ? String(searchRequest.api)
+        : classified?.product && classified.product !== 'classic'
+          ? classified.product
+          : classified?.product === 'classic'
+            ? 'classic'
+            : undefined;
+    const category =
+      'category' in searchRequest
+        ? String(searchRequest.category)
+        : classified?.category;
+    const requestBody = mapUnipileV2SearchBody(
+      api,
+      category,
+      searchRequest as Record<string, unknown>,
     );
+    const premium = isPremiumLinkedInSearchApi(api);
 
-    return data;
+    try {
+      const raw = await this.unipileClient.searchLinkedIn({
+        accountId: queryParams.get('account_id') ?? '',
+        api,
+        category,
+        body: requestBody,
+        cursor: premium
+          ? undefined
+          : queryParams.get('cursor') ?? undefined,
+        offset: premium
+          ? queryParams.get('offset') ?? queryParams.get('cursor') ?? undefined
+          : undefined,
+        limit: queryParams.get('limit') ? Number(queryParams.get('limit')) : undefined,
+      });
+      const normalized = normalizeUnipileV2SearchItems(raw, category);
+      const data: LinkedInSearchResponse = {
+        object: 'LinkedinSearch',
+        items: normalized.items as LinkedInSearchResponse['items'],
+        cursor: normalized.cursor ?? null,
+        paging: {
+          start: null,
+          page_count: normalized.items.length,
+          total_count: normalized.items.length,
+        },
+        config: { params: searchRequest },
+      };
+      this.logger.log(
+        `LinkedIn search completed successfully. Found ${data.items.length} results (cursor=${data.cursor ?? 'none'}).`,
+      );
+      return data;
+    } catch (error) {
+      if (retryCount < maxRetries) {
+        const backoffMs = Math.min(2000 * Math.pow(2, retryCount), 16000);
+        this.logger.warn(
+          `LinkedIn search failed, waiting ${backoffMs / 1000}s before retry (attempt ${retryCount + 1}/${maxRetries})`,
+        );
+        await this.delay(backoffMs);
+        return this.searchWithRetry(queryParams, searchRequest, retryCount + 1, maxRetries);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -272,7 +304,6 @@ export class LinkedInSearchService {
     } = {}
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
       const queryParams = new URLSearchParams({
         type,
         account_id: accountId,
@@ -281,7 +312,7 @@ export class LinkedInSearchService {
       });
       this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
 
-      return await this.getSearchParametersWithRetry(url, queryParams);
+      return await this.getSearchParametersWithRetry(queryParams);
     } catch (error) {
       this.logger.error(`Failed to get LinkedIn search parameters: ${error}`);
       throw error;
@@ -292,33 +323,21 @@ export class LinkedInSearchService {
    * Get search parameters with retry logic for 503 errors
    */
   private async getSearchParametersWithRetry(
-    url: string,
     queryParams: URLSearchParams,
-    retryCount = 0,
-    maxRetries = 1
   ): Promise<LinkedInSearchParametersList> {
     await this.enforceRequestSpacing();
 
-    const response = await fetch(`${url}?${queryParams}`, {
-      method: 'GET',
-      headers: { 'X-API-KEY': this.apiKey, },
-    });
-
-    if (response.status === 503 && retryCount < maxRetries) {
-      this.logger.warn(`Received 503 error when getting search parameters, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`);
-      await this.delay(3000);
-      return this.getSearchParametersWithRetry(url, queryParams, retryCount + 1, maxRetries);
-    }
-
-    if (!response.ok) {
-      const errorData: LinkedInErrorResponse = await response.json();
-      throw new Error(`Failed to get LinkedIn search parameters: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-    }
-
-    const data: LinkedInSearchParametersList = await response.json();
-    this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`);
-
-    return data;
+    const data = (await this.unipileClient.getLinkedInSearchParameters({
+      accountId: queryParams.get('account_id') ?? '',
+      type: queryParams.get('type') ?? '',
+      keywords: queryParams.get('keywords') ?? undefined,
+      limit: queryParams.get('limit') ? Number(queryParams.get('limit')) : undefined,
+    })) as LinkedInSearchParametersList;
+    const items = Array.isArray(data.items)
+      ? data.items
+      : ((data as { data?: LinkedInSearchParametersList['items'] }).data ?? []);
+    this.logger.log(`Retrieved ${items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`);
+    return { ...data, items };
   }
 
   /**
@@ -354,29 +373,11 @@ export class LinkedInSearchService {
       this.logger.log(
         `LinkedIn raw search request:: ${JSON.stringify(rawRequest, null, 2)}`);
 
-      // Call Unipile raw endpoint
-      const url = `${this.baseUrl}/api/v1/linkedin`;
       await this.enforceRequestSpacing();
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': this.apiKey,
-          'accept': 'application/json',
-        },
-        body: JSON.stringify(rawRequest),
-      });
-
-
-      if (!response.ok) {
-        const errorData: LinkedInErrorResponse = await response.json();
-        this.logger.error(`LinkedIn raw API error response: ${JSON.stringify(errorData, null, 2)}`);
-        throw new Error(`LinkedIn raw search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-      }
-
-      // Parse response - Unipile returns JSON with HTML in data field
-      const responseData = await response.json();
+      const responseData = await this.unipileClient.linkedinRaw(
+        accountId,
+        rawRequest as Record<string, unknown>,
+      ) as { data?: unknown };
       const html = responseData.data || responseData;
 
       // Debug: log raw response for troubleshooting (length + truncated sample)
@@ -683,12 +684,26 @@ export class LinkedInSearchService {
    * Continue search using cursor
    */
   async searchWithCursor(
-    cursor: string,
+    searchRequest: LinkedInSearchRequest,
     accountId: string,
-    options: { limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
-    const searchRequest: LinkedInSearchWithCursorRequest = { cursor };
-    return this.search(searchRequest, accountId, options);
+    const cursor =
+      options.cursor ??
+      ('cursor' in searchRequest ? String(searchRequest.cursor ?? '') : '');
+    if (!cursor) {
+      throw new Error('Cursor is required to continue a LinkedIn search');
+    }
+    if (
+      !('url' in searchRequest) &&
+      !('api' in searchRequest) &&
+      !('category' in searchRequest)
+    ) {
+      throw new Error(
+        'Original search payload (api/category or url) is required to continue a Unipile v2 search',
+      );
+    }
+    return this.search(searchRequest, accountId, { ...options, cursor });
   }
 
   /**

@@ -90,6 +90,7 @@ import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { TwentyConfigModule } from 'src/engine/core-modules/twenty-config/twenty-config.module';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { UnipileClientModule } from 'src/engine/core-modules/unipile-client/unipile-client.module';
 import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachments/unipile-attachment.module';
 import { UsageModule } from 'src/engine/core-modules/usage/usage.module';
 import { UserModule } from 'src/engine/core-modules/user/user.module';
@@ -237,6 +238,7 @@ import { FileModule } from './file/file.module';
     VideoInterviewModule,
     WorkspaceModificationsModule,
     WhatsappMediaModule,
+    UnipileClientModule,
     UnipileAttachmentModule,
     OrgChartModule,
     OrgChartEmbedModule,

@@ -15,6 +15,8 @@ import {
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { WhatsappUnipileRequestService } from './whatsapp-unipile-request.service';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
+import { buildUnipileV2HostedAuthLinkBody } from 'src/engine/core-modules/unipile-client/unipile-v2-auth-body.util';
 
 export type UnipileAccountType = 'LINKEDIN' | 'WHATSAPP';
 
@@ -42,8 +44,6 @@ export type EnsureAccountResult =
 @Injectable()
 export class UnipileAccountPoolService {
   private readonly logger = new Logger(UnipileAccountPoolService.name);
-  private readonly unipileApiUrl = process.env.UNIPILE_API_URL || '';
-  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN || '';
   private readonly maxPoolSize = parseInt(
     process.env.UNIPILE_ORGCHART_POOL_SIZE || '5',
     10,
@@ -56,6 +56,7 @@ export class UnipileAccountPoolService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly whatsappUnipileRequestService: WhatsappUnipileRequestService,
+    private readonly unipileV2Client: UnipileV2Client,
   ) {}
 
   async getWorkspaceIdByAccountId(accountId: string): Promise<string | null> {
@@ -360,53 +361,21 @@ export class UnipileAccountPoolService {
       failureRedirectUrl?: string;
     },
   ): Promise<string> {
-    const notifyUrl =
-      `${process.env.SERVER_URL}/linkedin-unipile/webhook/account-connected`;
-    const requestBody = {
-      type: 'create',
-      providers: accountType === 'LINKEDIN' ? ['LINKEDIN'] : ['WHATSAPP'],
-      api_url: this.unipileApiUrl,
-      expiresOn: new Date(
-        Date.now() + 2 * 60 * 60 * 1000,
-      ).toISOString(),
-      success_redirect_url: options?.successRedirectUrl,
-      failure_redirect_url: options?.failureRedirectUrl,
-      notify_url: notifyUrl,
-      name: `${workspaceMemberId}|${workspaceId}`,
-    };
+    const data = await this.unipileV2Client.createHostedAuthLink(
+      buildUnipileV2HostedAuthLinkBody({
+        providers: accountType === 'LINKEDIN' ? ['LINKEDIN'] : ['WHATSAPP'],
+        expiresOn: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        successRedirectUrl: options?.successRedirectUrl,
+        failureRedirectUrl: options?.failureRedirectUrl,
+        name: `${workspaceMemberId}|${workspaceId}`,
+      }),
+    );
 
-    const response = await fetch(`${this.unipileApiUrl}/api/v1/hosted/accounts/link`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': this.unipileAccessToken || '',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      this.logger.error('Unipile hosted auth error:', data);
-      throw new Error(data.detail || data.message || 'Failed to create hosted auth link');
-    }
-
-    return data.url || '';
+    return data.url || data.link || '';
   }
 
   private async deleteUnipileAccount(accountId: string): Promise<void> {
-    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': this.unipileAccessToken || '',
-      },
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.detail || data.message || `DELETE failed: ${response.status}`);
-    }
+    await this.unipileV2Client.deleteAccount(accountId);
   }
 
   private async clearWorkspaceMemberProfileUnipile(

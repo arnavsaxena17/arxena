@@ -19,7 +19,7 @@ import {
     findWhatsappUnipileAccountBlockingNewConnectionForProfile,
     type UnipileWhatsappAccount,
 } from 'twenty-shared';
-import { UnipileClient } from 'unipile-node-sdk';
+import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WhatsappUnipileRequestService } from '../services/whatsapp-unipile-request.service';
 import { WhatsappUnipileSyncService } from '../services/whatsapp-unipile/whatsapp-unipile-sync.service';
@@ -36,22 +36,18 @@ export class WhatsappUnipileController {
   // Unipile configuration - These come from environment variables with fallbacks
   private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
   private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
-  private readonly unipileClient: UnipileClient;
+  private readonly unipileV2Client: UnipileV2Client;
 
   constructor(
     private readonly webhookService: UnipileWebhookService,
     private readonly unipileRequestService: WhatsappUnipileRequestService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly whatsappUnipileSyncService: WhatsappUnipileSyncService,
+    unipileV2Client: UnipileV2Client,
   ) {
+    this.unipileV2Client = unipileV2Client;
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
-
-    // Initialize Unipile SDK client
-    this.unipileClient = new UnipileClient(
-      this.unipileApiUrl || '',
-      this.unipileAccessToken || '',
-    );
   }
 
   @Post('accounts/update-member')
@@ -90,7 +86,7 @@ export class WhatsappUnipileController {
     const newId = body.accountId.trim();
     try {
       const account = await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${newId}`,
+        `/v2/accounts/${newId}`,
       );
       await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
         workspaceMemberId,
@@ -150,7 +146,7 @@ export class WhatsappUnipileController {
           try {
             const accountPayload =
               await this.unipileRequestService.makeUnipileRequest(
-                `/api/v1/accounts/${blocking.id}`,
+                `/v2/accounts/${blocking.id}`,
               );
             await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
               workspaceMemberId,
@@ -174,15 +170,24 @@ export class WhatsappUnipileController {
         }
       }
 
-      // Use Unipile SDK's connectWhatsapp() method
-      const response = await this.unipileClient.account.connectWhatsapp();
-      const { qrCodeString, code } = response;
+      const response = (await this.unipileV2Client.startAuthIntent({
+        provider: 'whatsapp',
+        credentials: { qrcode: true },
+      })) as {
+        qrcode?: string;
+        qrCodeString?: string;
+        intent_id?: string;
+        account_id?: string;
+        id?: string;
+        object?: string;
+      };
 
       return {
         success: true,
-        qrCodeString,
-        code,
-        account_id: (response as any).account_id || (response as any).id,
+        qrCodeString: response.qrcode || response.qrCodeString || '',
+        code: '',
+        intent_id: response.intent_id,
+        account_id: response.intent_id || response.account_id || response.id,
       };
     } catch (error) {
       this.logger.error('Failed to request WhatsApp QR code:', error);
@@ -201,14 +206,33 @@ export class WhatsappUnipileController {
   ) {
    try {
       this.logger.log(`Checking account status for account ${accountId}`);
-      const response = (await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${accountId}`,
-      )) as Record<string, unknown> & {
+      let response: Record<string, unknown> & {
         id?: string;
+        object?: string;
+        intent_id?: string;
         connection_params?: { status?: string; im?: { status?: string } };
         status?: string;
         sources?: { status?: string }[];
       };
+      try {
+        response = (await this.unipileRequestService.makeUnipileRequest(
+          `/v2/accounts/${accountId}`,
+        )) as typeof response;
+      } catch (error) {
+        const checkpoint = (await this.unipileV2Client.solveCheckpoint({
+          intent_id: accountId,
+          code: '',
+        })) as typeof response;
+        if (checkpoint?.object === 'Account' || checkpoint?.id) {
+          response = checkpoint;
+        } else {
+          return {
+            success: true,
+            status: 'connecting',
+            account: checkpoint,
+          };
+        }
+      }
       // this.logger.log(`Account status response: ${JSON.stringify(response)}`);
       const status = this.unipileRequestService.mapAccountStatus(response);
 
@@ -287,7 +311,7 @@ export class WhatsappUnipileController {
     try {
       this.logger.log(`Getting WhatsApp account ${accountId}`);
       const response = await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${accountId}`,
+        `/v2/accounts/${accountId}`,
       );
       return {
         success: true,
@@ -311,7 +335,7 @@ export class WhatsappUnipileController {
 
   /**
    * Check whether a phone number is registered on WhatsApp.
-   * Uses Unipile GET /api/v1/users/{identifier}?account_id=...
+   * Uses Unipile GET /v2/:account_id/users/{identifier}
    * (https://developer.unipile.com/reference/userscontroller_getprofilebyidentifier)
    *
    * Body: { phoneNumber: string; accountId?: string }
@@ -456,13 +480,11 @@ export class WhatsappUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      const response = (await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${accountId}/resync`,
-        'POST',
-      )) as { status?: unknown };
       return {
         success: true,
-        status: response.status,
+        status: 'skipped',
+        message:
+          'Unipile v2 does not support account resync; WhatsApp uses platform initial sync after link.',
       };
     } catch (error) {
       this.logger.error(`Failed to resync WhatsApp account ${accountId}:`, error);
@@ -477,7 +499,7 @@ export class WhatsappUnipileController {
   ) {
     try {
       await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${accountId}`,
+        `/v2/accounts/${accountId}`,
         'DELETE',
       );
       return {

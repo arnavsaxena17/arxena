@@ -609,7 +609,7 @@ export class WorkspaceMemberProfileUnipileService {
 
   /**
    * Persist Unipile account id on the workspace member profile, then sync linkedinUrl / phoneNumber
-   * from the same account payload (GET /api/v1/accounts/:id or list item).
+   * from the same account payload (GET /v2/accounts/:id or list item).
    */
   async applyUnipileAccountToWorkspaceMemberProfile(
     workspaceMemberId: string,

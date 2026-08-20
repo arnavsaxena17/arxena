@@ -1,6 +1,6 @@
-import axios from 'axios';
-import FormData from 'form-data';
 import * as fs from 'fs';
+import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
+import { getUnipileHttpErrorPayload } from 'src/engine/core-modules/unipile-client/get-unipile-http-error.util';
 import {
     CandidateNode,
     ChatControlsObjType,
@@ -20,8 +20,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export class WhatsappUnipileMessagingService {
-  private baseUrl: string;
-  private accessToken: string;
+  private readonly unipileClient: UnipileV2Client;
 
   private resolveCandidatePrimaryPhone(candidate: CandidateNode): string | undefined {
     const fromPerson = candidate?.people?.phones?.primaryPhoneNumber;
@@ -39,8 +38,7 @@ export class WhatsappUnipileMessagingService {
     baseUrl?: string,
     accessToken?: string,
   ) {
-    this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
-    this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
+    this.unipileClient = new UnipileV2Client(baseUrl, accessToken);
   }
 
   private resolveRateLimiter(): WhatsappOutboundRateLimiterService | undefined {
@@ -65,45 +63,22 @@ export class WhatsappUnipileMessagingService {
     await rateLimiter.waitForOutboundSlot(accountId, messagesPerMinute);
   }
 
-  private async makeRequest<T>(
-    endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
-    data?: any,
-    isFormData: boolean = false,
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const headers: Record<string, string> = {
-      'Accept': 'application/json',
-      'X-API-KEY': this.accessToken,
-    };
-
-    if (!isFormData) {
-      headers['Content-Type'] = 'application/json';
+  private encodeAttachments(
+    attachments?: Array<{ filename?: string; content_type?: string; data?: string; fileBuffer?: Buffer; mimetype?: string; fileName?: string }>,
+  ) {
+    if (!attachments?.length) {
+      return undefined;
     }
-
-    const config: any = {
-      method,
-      url,
-      headers,
-    };
-
-    if (data) {
-      if (isFormData) {
-        config.data = data;
-      } else {
-        config.data = JSON.stringify(data);
-      }
-    }
-
-    try {
-      console.log('WhatsApp Unipile API request:', { url, method, headers: Object.keys(headers) });
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      console.error('WhatsApp Unipile API request failed:', error.response?.data || error.message);
-      throw error;
-    }
+    return attachments.map((attachment) => ({
+      filename: attachment.filename || attachment.fileName || 'attachment',
+      content_type:
+        attachment.content_type || attachment.mimetype || 'application/octet-stream',
+      data:
+        attachment.data ||
+        (attachment.fileBuffer
+          ? attachment.fileBuffer.toString('base64')
+          : ''),
+    })).filter((item) => item.data);
   }
 
   /**
@@ -246,24 +221,12 @@ export class WhatsappUnipileMessagingService {
   ): Promise<any> {
     await this.applyOutboundRateLimit(accountId, candidateJob);
 
-    const formData = new FormData();
-    
-    formData.append('account_id', accountId);
-    formData.append('attendees_ids', attendeesIds.join(','));
-    formData.append('text', message);
-    
-    if (attachments && attachments.length > 0) {
-      formData.append('attachments', JSON.stringify(attachments));
-    }
-
-    console.log('Sending WhatsApp message via Unipile API in sendMessage:', {
+    return this.unipileClient.sendChat({
       accountId,
-      attendeesIds,
-      message,
-      messageLength: message.length,
+      usersIds: attendeesIds,
+      text: message,
+      attachments: this.encodeAttachments(attachments),
     });
-
-    return this.makeRequest('/api/v1/chats', 'POST', formData, true);
   }
 
   async sendWhatsappMessageVIAUnipileAPI(
@@ -412,17 +375,8 @@ export class WhatsappUnipileMessagingService {
       const messageText = attachmentMessage.message || 
         `Sharing JD with you`;
 
-      // Create FormData for attachment
-      const formData = new FormData();
-      
-      formData.append('account_id', whatsappAccountId);
-      formData.append('attendees_ids', attendeeId);
-      formData.append('text', messageText);
-      
-      // Add the file attachment
       let fileBuffer = attachmentMessage.fileData.fileBuffer;
       if (!fileBuffer && attachmentMessage.fileData.filePath) {
-        // Read file from path if buffer not provided
         try {
           fileBuffer = await fs.promises.readFile(attachmentMessage.fileData.filePath);
         } catch (error) {
@@ -430,33 +384,34 @@ export class WhatsappUnipileMessagingService {
           return { status: 'failed', message: 'Failed to read file from path' };
         }
       }
-      
-      if (fileBuffer) {
-        formData.append('attachments', fileBuffer, {
-          filename: attachmentMessage.fileData.fileName,
-          contentType: attachmentMessage.fileData.mimetype,
-        });
-      }
-
-      console.log('Sending WhatsApp message with attachment via Unipile:', {
-        accountId: whatsappAccountId,
-        attendeeId,
-        message: messageText,
-        fileName: attachmentMessage.fileData.fileName,
-      });
 
       await this.applyOutboundRateLimit(whatsappAccountId, candidateJob);
 
-      // Send message with attachment
-      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+      const response = await this.unipileClient.sendChat({
+        accountId: whatsappAccountId,
+        usersIds: [attendeeId],
+        text: messageText,
+        attachments: this.encodeAttachments(
+          fileBuffer
+            ? [
+                {
+                  fileName: attachmentMessage.fileData.fileName,
+                  mimetype: attachmentMessage.fileData.mimetype,
+                  fileBuffer,
+                },
+              ]
+            : undefined,
+        ),
+      });
 
       console.log('WhatsApp attachment message sent successfully via Unipile:', response);
       return { status: 'success' };
-    } catch (error: any) {
-      console.error('WhatsApp attachment message failed via Unipile:', error.response?.data || error.message);
+    } catch (error: unknown) {
+      const payload = getUnipileHttpErrorPayload(error);
+      console.error('WhatsApp attachment message failed via Unipile:', payload);
       return { 
         status: 'failed', 
-        message: error.response?.data?.detail || error.message 
+        message: payload.detail || payload.message 
       };
     }
   }

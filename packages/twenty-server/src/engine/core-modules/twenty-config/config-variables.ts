@@ -2593,11 +2593,11 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
-    description: 'Unipile API base URL',
+    description: 'Unipile API base URL (v2: https://api.unipile.com)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
-  UNIPILE_API_URL?: string;
+  UNIPILE_API_URL = 'https://api.unipile.com';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

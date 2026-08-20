@@ -26,7 +26,7 @@ export class CompanySearchHitTransformer {
   fromUnipileItem(item: Record<string, unknown>): CompanySearchHit {
     return {
       id: readString(item, ['id']),
-      name: readString(item, ['name']),
+      name: readString(item, ['name', 'display_name']),
       website: readString(item, ['website']),
       linkedinUrl: readString(item, ['profile_url', 'linkedinUrl', 'url']),
       industry: readString(item, ['industry']),

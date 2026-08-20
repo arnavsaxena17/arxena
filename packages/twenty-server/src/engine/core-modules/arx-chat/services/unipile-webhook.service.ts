@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
+import { normalizeUnipileWebhookPayload } from 'src/engine/core-modules/unipile-client/normalize-unipile-v2-webhook.util';
 import { graphQlToFetchChatMessages, graphqlToUpdateChatMessage } from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
@@ -12,7 +12,6 @@ import {
   type UnipileWebhookJobKind,
 } from '../types/unipile-webhook-job.types';
 import type {
-    CreateWebhookDto,
     UnipileAccountStatusWebhook,
     UnipileEmailWebhook,
     UnipileMessageWebhook,
@@ -21,8 +20,10 @@ import type {
     UnipileWebhookAttachment,
     UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
+import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
+import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
@@ -39,6 +40,7 @@ export class UnipileWebhookService {
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
+    private readonly unipileV2Client: UnipileV2Client,
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
     private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
@@ -60,18 +62,17 @@ export class UnipileWebhookService {
       this.logger.warn(
         'Unipile webhook queue unavailable, processing webhook synchronously',
       );
-      if (kind === 'relations') {
-        await this.processNewRelationWebhook(payload as UnipileNewRelationWebhook);
-        return;
-      }
       await this.processWebhook(payload);
       return;
     }
 
     const receivedAt = new Date().toISOString();
+    const normalizedPayload = normalizeUnipileWebhookPayload(payload) as
+      | UnipileWebhookPayload
+      | UnipileNewRelationWebhook;
     const jobData: UnipileWebhookJobData = {
       kind,
-      payload,
+      payload: normalizedPayload as UnipileWebhookJobData['payload'],
       receivedAt,
     };
 
@@ -79,13 +80,13 @@ export class UnipileWebhookService {
       UNIPILE_WEBHOOK_PROCESSOR_NAME,
       jobData,
       {
-        id: this.buildWebhookProjectId(kind, payload, receivedAt),
+        id: this.buildWebhookProjectId(kind, normalizedPayload, receivedAt),
         retryLimit: 3,
       },
     );
 
     this.logger.log(
-      `Queued Unipile webhook kind=${kind} event=${this.getPayloadEventLabel(payload, kind)} receivedAt=${receivedAt}`,
+      `Queued Unipile webhook kind=${kind} event=${this.getPayloadEventLabel(normalizedPayload, kind)} receivedAt=${receivedAt}`,
     );
   }
 
@@ -141,14 +142,13 @@ export class UnipileWebhookService {
    * Process incoming webhook payload and route to appropriate handler
    */
   async processWebhook(payload: UnipileWebhookPayload): Promise<void> {
-    // this.logger.log('Processing Unipile webhook:', JSON.stringify(payload, null, 2));
+    const normalized = normalizeUnipileWebhookPayload(payload) as UnipileWebhookPayload;
 
     try {
-      // Route to appropriate handler based on payload structure
-      if ('AccountStatus' in payload) {
-        await this.handleAccountStatusWebhook(payload as UnipileAccountStatusWebhook);
-      } else if ('event' in payload) {
-        const eventPayload = payload as UnipileMessageWebhook | UnipileEmailWebhook | UnipileTrackingEmailWebhook | UnipileNewRelationWebhook;
+      if ('AccountStatus' in normalized) {
+        await this.handleAccountStatusWebhook(normalized as UnipileAccountStatusWebhook);
+      } else if ('event' in normalized) {
+        const eventPayload = normalized as UnipileMessageWebhook | UnipileEmailWebhook | UnipileTrackingEmailWebhook | UnipileNewRelationWebhook;
 
         switch (eventPayload.event) {
           case 'message_received':
@@ -209,40 +209,6 @@ export class UnipileWebhookService {
     }
 
     return isValid;
-  }
-
-  /**
-   * Create webhook configuration for Unipile API
-   */
-  createWebhookConfig(config: CreateWebhookDto): {
-    request_url: string;
-    source: string;
-    headers: Array<{ key: string; value: string }>;
-  } {
-    // Use the configured webhook URL or generate one based on the server URL
-    const webhookUrl = config.request_url || `${process.env.SERVER_URL}/linkedin-unipile/webhook`;
-
-    // Default headers for webhook authentication and content type
-    const defaultHeaders = [
-      {
-        key: 'Content-Type',
-        value: 'application/json',
-      },
-    ];
-
-    // Add authentication header if webhook secret is configured
-    if (process.env.UNIPILE_WEBHOOK_SECRET) {
-      defaultHeaders.push({
-        key: 'Unipile-Auth',
-        value: process.env.UNIPILE_WEBHOOK_SECRET,
-      });
-    }
-
-    return {
-      request_url: webhookUrl,
-      source: config.source,
-      headers: config.headers || defaultHeaders,
-    };
   }
 
   /**
@@ -462,22 +428,9 @@ export class UnipileWebhookService {
           break;
       }
     } else {
-      // Flat format from USERS webhook - always treat as accepted
       this.logger.log(`New LinkedIn relation (flat): ${payload.user_full_name} accepted invitation`);
       await this.onConnectionAccepted(payload);
     }
-  }
-
-  /**
-   * Process new_relation webhook from dedicated /relations endpoint.
-   * Treats acceptance as "Yes, I'm keen" and adds to database via receiveIncomingMessageFromLinkedinUnipile.
-   */
-  async processNewRelationWebhook(payload: UnipileNewRelationWebhook): Promise<void> {
-    if (payload.event !== 'new_relation') {
-      this.logger.warn(`Expected new_relation event, got: ${payload.event}`);
-      return;
-    }
-    await this.handleNewRelationWebhook(payload);
   }
 
   // Account status event handlers (to be implemented by consumers)
@@ -565,25 +518,8 @@ export class UnipileWebhookService {
   private async fetchUnipileAccountById(
     accountId: string,
   ): Promise<Record<string, unknown> | null> {
-    const base = process.env.UNIPILE_API_URL;
-    const token = process.env.UNIPILE_ACCESS_TOKEN;
-    if (!base || !token) {
-      return null;
-    }
-    const url = `${base}/api/v1/accounts/${accountId}`;
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'X-API-KEY': token,
-        },
-      });
-      if (!response.ok) {
-        return null;
-      }
-      const data = (await response.json()) as Record<string, unknown>;
-      return data;
+      return await this.unipileV2Client.getAccount(accountId);
     } catch {
       return null;
     }
@@ -642,7 +578,7 @@ export class UnipileWebhookService {
    */
   private async handleAttachments(payload: UnipileMessageWebhook): Promise<void> {
     try {
-      const { attachments, sender, account_type, message_id, timestamp, account_id } = payload;
+      const { attachments, sender, account_type, message_id, timestamp, account_id, chat_id } = payload;
 
       if (!attachments) {
         return;
@@ -682,6 +618,7 @@ export class UnipileWebhookService {
               messageId: message_id,
               timestamp,
               accountId: account_id,
+              chatId: chat_id,
               baseUrl,
               accessToken,
             },
@@ -1004,9 +941,23 @@ export class UnipileWebhookService {
   private async onConnectionAccepted(payload: UnipileNewRelationWebhook): Promise<void> {
     const { account_id, user_full_name, user_provider_id, user_profile_url, relation } = payload;
 
-    const name = user_full_name ?? relation?.name;
-    const providerId = user_provider_id ?? relation?.profile_url;
-    const profileUrl = user_profile_url ?? relation?.profile_url;
+    const publicIdentifier = payload.user_public_identifier;
+    const name =
+      user_full_name ??
+      relation?.name ??
+      publicIdentifier;
+    const providerId =
+      user_provider_id ??
+      publicIdentifier ??
+      relation?.profile_url;
+    const profileUrl =
+      user_profile_url ??
+      relation?.profile_url ??
+      (publicIdentifier
+        ? publicIdentifier.includes('linkedin.com')
+          ? publicIdentifier
+          : `https://www.linkedin.com/in/${publicIdentifier}`
+        : undefined);
 
     if (!name || !providerId || !profileUrl) {
       this.logger.warn('New relation payload missing required fields for accepted connection');

@@ -5,7 +5,7 @@ import type {
   UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 
-export type UnipileWebhookJobKind = 'webhook' | 'relations';
+export type UnipileWebhookJobKind = 'webhook';
 
 export type UnipileWebhookJobData = MessageQueueJobData & {
   kind: UnipileWebhookJobKind;

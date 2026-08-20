@@ -33,11 +33,16 @@ describe('unipile-disconnected-account.util', () => {
     ).toBe(false);
   });
 
-  it('parses account_id from Unipile endpoint query strings', () => {
+  it('parses account_id from Unipile v2 endpoints', () => {
     expect(
       parseAccountIdFromUnipileEndpoint(
-        '/api/v1/users/me?account_id=mCsj-991SfuHRKVcCuSwuA',
+        '/v2/acc_123/users/me',
       ),
-    ).toBe('mCsj-991SfuHRKVcCuSwuA');
+    ).toBe('acc_123');
+    expect(
+      parseAccountIdFromUnipileEndpoint(
+        '/v2/accounts/acc_123',
+      ),
+    ).toBe('acc_123');
   });
 });

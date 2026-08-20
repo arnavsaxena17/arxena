@@ -129,7 +129,7 @@ export class WhatsappUnipileSyncService {
     let recruiterPhone = recruiterProfile?.phoneNumber?.trim() || '';
     if (!recruiterPhone) {
       const account = (await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${encodeURIComponent(whatsappAccountId)}`,
+        `/v2/accounts/${encodeURIComponent(whatsappAccountId)}`,
       )) as {
         connection_params?: { im?: { phone_number?: string } };
         phone_number?: string;
@@ -212,50 +212,22 @@ export class WhatsappUnipileSyncService {
     attendeeId: string,
   ): Promise<string | undefined> {
     const encodedAttendee = encodeURIComponent(attendeeId);
-    const response = (await this.unipileRequestService.makeUnipileRequest(
-      `/api/v1/chat_attendees/${encodedAttendee}/chats?account_id=${encodeURIComponent(accountId)}&limit=10`,
-    )) as UnipileChatListResponse;
-
-    const chat =
-      response.items?.find(
-        (item) => item.attendee_public_identifier === attendeeId,
-      ) ?? response.items?.[0];
-
-    return chat?.id;
+    const chatLookup = (await this.unipileRequestService.makeUnipileRequest(
+      `/v2/${encodeURIComponent(accountId)}/users/${encodedAttendee}/chats?limit=10`,
+    )) as {
+      id?: string;
+      items?: Array<{ id: string }>;
+      data?: Array<{ id: string }>;
+    };
+    return (
+      chatLookup.id ??
+      chatLookup.items?.[0]?.id ??
+      chatLookup.data?.[0]?.id
+    );
   }
 
-  private async triggerChatHistorySyncBestEffort(chatId: string): Promise<void> {
-    try {
-      let response = (await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
-      )) as UnipileChatHistorySyncResponse;
-
-      const terminalStatuses: UnipileChatHistorySyncStatus[] = [
-        'SYNC_DONE',
-        'SYNC_ERROR',
-        'CHAT_DELETED',
-      ];
-
-      let attempts = 0;
-      while (
-        !terminalStatuses.includes(response.status) &&
-        attempts < 5
-      ) {
-        await this.sleep(1500);
-        response = (await this.unipileRequestService.makeUnipileRequest(
-          `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
-        )) as UnipileChatHistorySyncResponse;
-        attempts += 1;
-      }
-
-      this.logger.log(
-        `Chat history sync for ${chatId} finished with status ${response.status}`,
-      );
-    } catch (error) {
-      this.logger.warn(
-        `Chat history sync best-effort failed for ${chatId}: ${error instanceof Error ? error.message : error}`,
-      );
-    }
+  private async triggerChatHistorySyncBestEffort(_chatId: string): Promise<void> {
+    return;
   }
 
   async fetchMessagesForAttendee(
@@ -263,31 +235,33 @@ export class WhatsappUnipileSyncService {
     attendeeId: string,
     limit: number,
   ): Promise<UnipileSyncMessageItem[]> {
-    const encodedAttendee = encodeURIComponent(attendeeId);
+    const chatId = await this.resolveChatId(accountId, attendeeId);
+    if (!chatId) {
+      return [];
+    }
     const collected: UnipileSyncMessageItem[] = [];
     let cursor: string | undefined;
 
     while (collected.length < limit) {
       const pageLimit = Math.min(250, limit - collected.length);
       const query = new URLSearchParams({
-        account_id: accountId,
+        user_id: attendeeId,
         limit: String(pageLimit),
       });
       if (cursor) {
         query.set('cursor', cursor);
       }
-
       const response = (await this.unipileRequestService.makeUnipileRequest(
-        `/api/v1/chat_attendees/${encodedAttendee}/messages?${query.toString()}`,
-      )) as UnipileMessageListResponse;
+        `/v2/${encodeURIComponent(accountId)}/chats/${encodeURIComponent(chatId)}/messages?${query.toString()}`,
+      )) as UnipileMessageListResponse & { data?: UnipileSyncMessageItem[]; next_cursor?: string };
 
-      const items = response.items ?? [];
+      const items = response.items ?? response.data ?? [];
       collected.push(...items);
-
-      if (!response.cursor || items.length === 0) {
+      const nextCursor = response.cursor ?? response.next_cursor;
+      if (!nextCursor || items.length === 0) {
         break;
       }
-      cursor = response.cursor;
+      cursor = nextCursor;
     }
 
     return collected.slice(0, limit);

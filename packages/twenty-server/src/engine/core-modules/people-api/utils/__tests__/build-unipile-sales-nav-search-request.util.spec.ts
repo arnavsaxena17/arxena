@@ -13,6 +13,7 @@ describe('buildUnipileSalesNavSearchRequest', () => {
     expect(request.keywords).toBeUndefined();
     expect(request.function).toEqual({ include: ['15'] });
     expect(request.company).toEqual({ include: ['10155014'] });
+    expect(request.current_company).toEqual({ include: ['10155014'] });
   });
 
   it('should omit keywords when seniority facets are present', () => {
@@ -43,6 +44,9 @@ describe('buildUnipileSalesNavSearchRequest', () => {
 
     expect(request.keywords).toBe('technology OR software');
     expect(request.role).toEqual({
+      include: ['("CTO" OR "chief technology officer")'],
+    });
+    expect(request.current_job_title).toEqual({
       include: ['("CTO" OR "chief technology officer")'],
     });
     expect(request.role?.exclude).toBeUndefined();

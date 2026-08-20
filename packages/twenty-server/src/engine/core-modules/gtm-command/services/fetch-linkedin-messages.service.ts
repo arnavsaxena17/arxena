@@ -272,48 +272,18 @@ export class FetchLinkedinMessagesService {
   ): Promise<string | undefined> {
     const encodedAttendee = encodeURIComponent(attendeeId);
     const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-      `/api/v1/chat_attendees/${encodedAttendee}/chats?account_id=${encodeURIComponent(accountId)}&limit=10`,
-    )) as UnipileChatListResponse;
+      `/v2/${encodeURIComponent(accountId)}/users/${encodedAttendee}/chats?limit=10`,
+    )) as UnipileChatListResponse & { id?: string; data?: Array<{ id: string }> };
 
-    const chat =
-      response.items?.find(
-        (item) => item.attendee_public_identifier === attendeeId,
-      ) ?? response.items?.[0];
-
-    return chat?.id;
+    return (
+      response.id ??
+      response.items?.[0]?.id ??
+      response.data?.[0]?.id
+    );
   }
 
-  private async triggerChatHistorySyncBestEffort(chatId: string): Promise<void> {
-    try {
-      let response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
-      )) as UnipileChatHistorySyncResponse;
-
-      const terminalStatuses: UnipileChatHistorySyncStatus[] = [
-        'SYNC_DONE',
-        'SYNC_ERROR',
-        'CHAT_DELETED',
-      ];
-
-      let attempts = 0;
-      while (
-        isDefined(response.status) &&
-        !terminalStatuses.includes(response.status) &&
-        attempts < 5
-      ) {
-        await this.sleep(1500);
-        response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-          `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
-        )) as UnipileChatHistorySyncResponse;
-        attempts += 1;
-      }
-    } catch (error) {
-      this.logger.warn(
-        `Chat history sync best-effort failed for ${chatId}: ${
-          error instanceof Error ? error.message : error
-        }`,
-      );
-    }
+  private async triggerChatHistorySyncBestEffort(_chatId: string): Promise<void> {
+    return;
   }
 
   private async fetchMessagesForAttendee(
@@ -321,14 +291,17 @@ export class FetchLinkedinMessagesService {
     attendeeId: string,
     limit: number,
   ): Promise<UnipileMessageItem[]> {
-    const encodedAttendee = encodeURIComponent(attendeeId);
+    const chatId = await this.resolveChatId(accountId, attendeeId);
+    if (!chatId) {
+      return [];
+    }
     const collected: UnipileMessageItem[] = [];
     let cursor: string | undefined;
 
     while (collected.length < limit) {
       const pageLimit = Math.min(250, limit - collected.length);
       const query = new URLSearchParams({
-        account_id: accountId,
+        user_id: attendeeId,
         limit: String(pageLimit),
       });
       if (cursor) {
@@ -336,16 +309,17 @@ export class FetchLinkedinMessagesService {
       }
 
       const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/chat_attendees/${encodedAttendee}/messages?${query.toString()}`,
-      )) as UnipileMessageListResponse;
+        `/v2/${encodeURIComponent(accountId)}/chats/${encodeURIComponent(chatId)}/messages?${query.toString()}`,
+      )) as UnipileMessageListResponse & { data?: UnipileMessageItem[]; next_cursor?: string };
 
-      const items = response.items ?? [];
+      const items = response.items ?? response.data ?? [];
       collected.push(...items);
 
-      if (!response.cursor || items.length === 0) {
+      const nextCursor = response.cursor ?? response.next_cursor;
+      if (!nextCursor || items.length === 0) {
         break;
       }
-      cursor = response.cursor;
+      cursor = nextCursor;
     }
 
     return collected.slice(0, limit);

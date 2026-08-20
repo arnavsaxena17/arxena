@@ -33,15 +33,13 @@ import { lookupCountryByIp } from 'twenty-shared';
 import { LinkedinStoredCookieValidationService } from '../services/linkedin-stored-cookie-validation.service';
 import { LinkedinUnipileMemberAccountResolverService } from '../services/linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileRequestService } from '../services/linkedin-unipile-request.service';
+import { buildUnipileV2HostedAuthLinkBody } from 'src/engine/core-modules/unipile-client/unipile-v2-auth-body.util';
 import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { MemberLinkedinUnipileConnectionService } from '../services/member-linkedin-unipile-connection.service';
 import { UnipileAccountPoolService } from '../services/unipile-account-pool.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
-import type {
-  CreateWebhookDto,
-  UnipileAccountStatusWebhook,
-} from '../types/unipile-webhook.types';
+import type { UnipileAccountStatusWebhook } from '../types/unipile-webhook.types';
 import {
   buildUnipileLinkedinCookieConnectBody,
   normalizeLinkedinConnectionCountry,
@@ -90,8 +88,9 @@ interface LinkedinReconnectFromStoredProfileDto {
 }
 
 interface LinkedinCheckpointDto {
-  account_id: string;
-  provider: 'LINKEDIN';
+  account_id?: string;
+  intent_id?: string;
+  provider?: 'LINKEDIN';
   code: string;
 }
 
@@ -133,7 +132,7 @@ interface LinkedinUserCommentsDto {
  * Combined profile overview DTO.
  * NOTE: Unipile does NOT expose a standalone "activity" endpoint for LinkedIn.
  * The only activity-adjacent data available is:
- *   - Posts authored by the user (GET /api/v1/users/{identifier}/posts)
+ *   - Posts authored by the user (GET /v2/:account_id/users/{identifier}/posts)
  *   - "recruiting_activity" profile section — requires LinkedIn Recruiter subscription
  * This endpoint fetches profile + posts in parallel and surfaces recruiting_activity
  * inside the profile if include_recruiting_activity is true and the account has Recruiter.
@@ -765,12 +764,14 @@ export class LinkedinUnipileController {
       }
 
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/accounts',
+        '/v2/auth/intent',
         'POST',
         {
-          provider: 'LINKEDIN',
-          username: credentials.username,
-          password: credentials.password,
+          provider: 'linkedin',
+          credentials: {
+            username: credentials.username,
+            password: credentials.password,
+          },
         },
         { returnStatus: true },
       )) as LinkedinUnipileStatusHttpResult;
@@ -901,7 +902,7 @@ export class LinkedinUnipileController {
       }
 
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/accounts',
+        '/v2/auth/intent',
         'POST',
         buildUnipileLinkedinCookieConnectBody({
           accessToken,
@@ -1670,20 +1671,17 @@ export class LinkedinUnipileController {
       // Use workspace member ID as the name for user matching
       const userName = config.name || workspace.id;
       this.logger.log('userName', userName);
-      const requestBody = {
-        type: config.type || 'create',
+      const requestBody = buildUnipileV2HostedAuthLinkBody({
         providers: config.providers || ['LINKEDIN'],
-        api_url: this.unipileApiUrl,
-        expiresOn: config.expiresOn || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours
-        success_redirect_url: config.success_redirect_url,
-        failure_redirect_url: config.failure_redirect_url,
-        notify_url: notifyUrl,
+        expiresOn: config.expiresOn || new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        successRedirectUrl: config.success_redirect_url,
+        failureRedirectUrl: config.failure_redirect_url,
         name: userName,
-        ...(config.reconnect_account && { reconnect_account: config.reconnect_account }),
-      };
+        reconnectAccountId: config.reconnect_account,
+      });
 
       const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/hosted/accounts/link',
+        '/v2/auth/link',
         'POST',
         requestBody,
       )) as { url?: string };
@@ -1691,7 +1689,7 @@ export class LinkedinUnipileController {
       return {
         success: true,
         hosted_link: response.url,
-        expires_on: requestBody.expiresOn,
+        expires_on: requestBody.expires_on,
         name: userName,
       };
     } catch (error) {
@@ -1708,12 +1706,11 @@ export class LinkedinUnipileController {
   ) {
     try {
       const body = {
-        provider: 'LINKEDIN' as const,
-        account_id: checkpointData.account_id,
+        intent_id: checkpointData.intent_id || checkpointData.account_id,
         code: checkpointData.code,
       };
       const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/accounts/checkpoint',
+        '/v2/auth/checkpoint',
         'POST',
         body,
         { returnStatus: true },
@@ -1767,7 +1764,7 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/accounts/${accountId}`);
+      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/v2/accounts/${encodeURIComponent(accountId)}`);
       return {
         success: true,
         account: response,
@@ -1784,13 +1781,10 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/accounts/${accountId}/resync`,
-        'POST',
-      )) as { status?: unknown };
       return {
         success: true,
-        status: response.status,
+        status: 'skipped',
+        message: 'Unipile v2 does not support account resync; WhatsApp uses initial sync and LinkedIn is on-demand.',
       };
     } catch (error) {
       this.logger.error(`Failed to resync LinkedIn account ${accountId}:`, error);
@@ -1873,19 +1867,14 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      const queryParams = new URLSearchParams({
-        account_id: profileRequest.account_id,
-      });
-
-      if (profileRequest.linkedin_sections) {
-        queryParams.append('linkedin_sections', profileRequest.linkedin_sections.join(','));
-      }
-
-      if (profileRequest.notify !== undefined) {
-        queryParams.append('notify', profileRequest.notify.toString());
-      }
-
-      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/users/${encodeURIComponent(profileRequest.identifier)}?${queryParams}`);
+      const response = await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
+        profileRequest.account_id,
+        profileRequest.identifier,
+        {
+          linkedinSections: profileRequest.linkedin_sections,
+          notify: profileRequest.notify,
+        },
+      );
       return {
         success: true,
         profile: response,
@@ -1902,24 +1891,14 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      const queryParams = new URLSearchParams({
-        account_id: postsRequest.account_id,
-      });
-
-      if (postsRequest.limit !== undefined) {
-        queryParams.append('limit', postsRequest.limit.toString());
-      }
-
-      if (postsRequest.cursor) {
-        queryParams.append('cursor', postsRequest.cursor);
-      }
-
-      if (postsRequest.is_company !== undefined) {
-        queryParams.append('is_company', postsRequest.is_company.toString());
-      }
-
-      const response = await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(postsRequest.identifier)}/posts?${queryParams}`,
+      const response = await this.linkedinUnipileRequestService.fetchLinkedinUserPosts(
+        postsRequest.account_id,
+        postsRequest.identifier,
+        {
+          limit: postsRequest.limit,
+          cursor: postsRequest.cursor,
+          isCompany: postsRequest.is_company,
+        },
       );
 
       return {
@@ -1963,7 +1942,7 @@ export class LinkedinUnipileController {
    *
    * Activity note: Unipile does not provide a standalone LinkedIn activity endpoint.
    * Activity data surfaces via two mechanisms only:
-   *   1. Posts: GET /api/v1/users/{identifier}/posts  (always available)
+   *   1. Posts: GET /v2/:account_id/users/{identifier}/posts  (always available)
    *   2. recruiting_activity profile section           (LinkedIn Recruiter accounts only)
    * Both are fetched in parallel. If recruiting_activity is unavailable (non-Recruiter),
    * the `activity` field in the response will be null with an explanatory message.
@@ -2002,8 +1981,13 @@ export class LinkedinUnipileController {
     let postsResult: PromiseSettledResult<unknown>;
 
     try {
-      const profileData = await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(req.identifier)}?${profileParams}`,
+      const profileData = await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
+        req.account_id,
+        req.identifier,
+        {
+          linkedinSections: profileSections,
+          notify: req.notify,
+        },
       );
       profileResult = { status: 'fulfilled', value: profileData };
     } catch (err) {
@@ -2014,8 +1998,10 @@ export class LinkedinUnipileController {
     await randomDelayMs(2000, 5000);
 
     try {
-      const postsData = await this.linkedinUnipileRequestService.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(req.identifier)}/posts?${postsParams}`,
+      const postsData = await this.linkedinUnipileRequestService.fetchLinkedinUserPosts(
+        req.account_id,
+        req.identifier,
+        { limit: req.posts_limit ?? 10 },
       );
       postsResult = { status: 'fulfilled', value: postsData };
     } catch (err) {
@@ -2133,53 +2119,13 @@ export class LinkedinUnipileController {
   }
 
   /**
-   * Create a webhook in Unipile to receive real-time notifications
-   */
-  @Post('webhook/create')
-  async createWebhook(
-    @Body() config: CreateWebhookDto,
-    @AuthWorkspace() workspace : WorkspaceEntity,
-  ) {
-    try {
-      // Use the webhook service to generate the configuration
-      const requestBody = this.webhookService.createWebhookConfig(config);
-
-      const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/webhooks',
-        'POST',
-        requestBody,
-      )) as {
-        id?: string;
-        created_at?: string;
-        status?: string;
-      };
-
-      this.logger.log(`Created ${config.source} webhook: ${response.id}`);
-
-      return {
-        success: true,
-        webhook: {
-          id: response.id,
-          url: requestBody.request_url,
-          source: config.source,
-          created_at: response.created_at,
-          status: response.status,
-        },
-      };
-    } catch (error) {
-      this.logger.error('Failed to create webhook:', error);
-      throw error;
-    }
-  }
-
-  /**
    * List all configured webhooks
    */
   @Post('webhooks')
   async getWebhooks(@AuthWorkspace() workspace : WorkspaceEntity) {
     try {
       const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-        '/api/v1/webhooks',
+        '/v2/webhooks/endpoints',
       )) as { items?: unknown };
 
       return {
@@ -2201,7 +2147,7 @@ export class LinkedinUnipileController {
     @AuthWorkspace() workspace : WorkspaceEntity,
   ) {
     try {
-      await this.linkedinUnipileRequestService.makeUnipileRequest(`/api/v1/webhooks/${webhookId}`, 'DELETE');
+      await this.linkedinUnipileRequestService.makeUnipileRequest(`/v2/webhooks/endpoints/${webhookId}`, 'DELETE');
       
       return {
         success: true,
@@ -2279,29 +2225,4 @@ export class LinkedinUnipileController {
   }
 
 
-}
-
-
-
-
-
-
-// curl --request POST \
-// --url https://api18.unipile.com:14823/api/v1/webhooks \
-// --header 'X-API-KEY: jzS7Uh0w.rfsm3/s0r5zinYIGCmQ0bOSo2PS4UWtXBKMCY5xG4Lw=' \
-// --header 'accept: application/json' \
-// --header 'content-type: application/json' \
-// --data '{
-// "request_url": "https://51dh0t1p-3000.inc1.devtunnels.ms/linkedin-unipile/webhook",
-// "source": "messaging",
-// "headers": [
-// {
-//  "key": "Content-Type",
-//  "value": "application/json"
-// },
-// {
-//  "key": "Unipile-Auth",
-//  "value": "ACoAAAcDMMQBODyLwZrRcgYhrkCafURGqva0U4E"
-// }
-// ]
-// }'
+  }

@@ -39,6 +39,10 @@ describe('LinkedinUnipileRequestService snapshot reads', () => {
 
     const service = new LinkedinUnipileRequestService(
       { getWorkspaceKeys: jest.fn() } as never,
+      {
+        getBaseUrl: () => 'https://api.unipile.com',
+        getApiKey: () => 'test-key',
+      } as never,
     );
     jest.spyOn(service, 'makeUnipileRequest').mockImplementation(makeUnipileRequest);
     jest.spyOn(service, 'ensureLinkedinSnapshotFresh').mockResolvedValue(undefined);

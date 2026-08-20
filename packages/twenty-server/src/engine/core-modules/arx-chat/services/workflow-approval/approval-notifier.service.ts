@@ -208,11 +208,10 @@ export class ApprovalNotifierService {
 
     try {
       await this.whatsappUnipileRequestService.makeUnipileRequest(
-        '/api/v1/chats',
+        `/v2/${encodeURIComponent(accountId)}/chats/send`,
         'POST',
         {
-          account_id: accountId,
-          attendees_ids: [attendeeId],
+          users_ids: [attendeeId],
           text: message,
         },
       );

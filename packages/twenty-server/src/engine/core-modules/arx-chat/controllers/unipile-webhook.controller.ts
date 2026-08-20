@@ -10,10 +10,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
-import type {
-  UnipileNewRelationWebhook,
-  UnipileWebhookPayload,
-} from '../types/unipile-webhook.types';
+import type { UnipileWebhookPayload } from '../types/unipile-webhook.types';
 
 @Controller('unipile-webhook')
 export class UnipileWebhookController {
@@ -95,36 +92,6 @@ export class UnipileWebhookController {
       success: true,
       count: 0,
     });
-  }
-
-  @Post('relations')
-  async handleRelationsWebhook(
-    @Body() payload: UnipileNewRelationWebhook,
-    @Req() request: any,
-    @Res() response: any,
-  ) {
-    try {
-      const unipileAuth = request.headers['unipile-auth'];
-      if (unipileAuth && !this.webhookService.validateWebhookAuth(unipileAuth)) {
-        return response.status(401).json({
-          success: false,
-          message: 'Unauthorized webhook request',
-        });
-      }
-      await this.webhookService.enqueueWebhook('relations', payload);
-      return response.status(200).json({
-        success: true,
-        message: 'Relations webhook queued successfully',
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      this.logger.error('Failed to queue relations webhook:', error);
-      return response.status(500).json({
-        success: false,
-        message: 'Failed to queue webhook',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
   }
 
   /**

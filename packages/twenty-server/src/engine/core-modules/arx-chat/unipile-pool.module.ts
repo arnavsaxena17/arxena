@@ -4,6 +4,7 @@ import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
+import { UnipileClientModule } from 'src/engine/core-modules/unipile-client/unipile-client.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 
 import { LinkedinStoredCookieValidationService } from './services/linkedin-stored-cookie-validation.service';
@@ -27,6 +28,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     TypeORMModule,
     forwardRef(() => WorkspaceModificationsModule),
     EnvironmentModule,
+    UnipileClientModule,
     GraphQLExecutionModule,
     MessageQueueModule,
   ],

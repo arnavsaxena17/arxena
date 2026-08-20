@@ -10,6 +10,8 @@ import { CandidateAvatarStorageService } from './candidate-avatar-storage.servic
 type UnipileUserProfileResponse = {
   profile_picture_url?: string | null;
   profile_picture_url_large?: string | null;
+  public_picture_url?: string | null;
+  public_picture_url_large?: string | null;
   profile_picture?: string | null;
   picture_url?: string | null;
 };
@@ -30,6 +32,8 @@ export class CandidateAvatarRefreshService {
     const candidates = [
       profile.profile_picture_url,
       profile.profile_picture_url_large,
+      profile.public_picture_url,
+      profile.public_picture_url_large,
       profile.profile_picture,
       profile.picture_url,
     ];
@@ -79,7 +83,7 @@ export class CandidateAvatarRefreshService {
     try {
       const response =
         (await this.linkedinUnipileRequestService.makeUnipileRequest(
-          `/api/v1/users/${encodeURIComponent(slug)}?account_id=${encodeURIComponent(accountResult.accountId)}`,
+          `/v2/${encodeURIComponent(accountResult.accountId)}/users/${encodeURIComponent(slug)}`,
         )) as UnipileUserProfileResponse;
 
       const freshUrl = this.extractProfilePictureFromUnipileResponse(response);

@@ -728,9 +728,14 @@ export class OrgChartSuperImposeService {
     while (out.length < maxProfiles) {
       page += 1;
       const response = cursor
-        ? await this.linkedInSearchService.searchWithCursor(cursor, input.accountId, {
-            limit: pageLimit,
-          })
+        ? await this.linkedInSearchService.searchWithCursor(
+            { url: input.url },
+            input.accountId,
+            {
+              cursor,
+              limit: pageLimit,
+            },
+          )
         : await this.linkedInSearchService.searchFromUrl(input.url, input.accountId, {
             limit: pageLimit,
           });
