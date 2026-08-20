@@ -426,6 +426,10 @@ compute_lingui_flags() {
   LINGUI_SERVER=1
   LINGUI_FRONT=1
   LINGUI_EMAILS=1
+  if [ "${FORCE_FULL_BUILD:-0}" = "1" ]; then
+    echo "Lingui extract: all packages (FORCE_FULL_BUILD=1)"
+    return 0
+  fi
   if [ -z "${LAST_DEPLOY_SHA:-}" ]; then
     echo "Lingui extract: all packages (no last deploy SHA)"
     return 0
