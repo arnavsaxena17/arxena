@@ -2620,6 +2620,15 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
+      'When true, Sales Navigator account-list company search uses Unipile v2 browse (DATE_ADDED sort). Override per request with Company API useV2.',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  UNIPILE_ACCOUNT_LIST_V2 = false;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
       'Create/reconnect Unipile LinkedIn accounts from the extension. Cookie persistence to the workspace member profile still runs when this is false.',
     type: ConfigVariableType.BOOLEAN,
   })

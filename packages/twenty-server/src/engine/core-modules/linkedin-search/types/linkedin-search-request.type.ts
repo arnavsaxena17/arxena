@@ -15,6 +15,8 @@ import {
   LinkedInRecruitingActivityType,
   LinkedInScopeType,
   LinkedInSeniorityType,
+  LinkedInSalesNavigatorAccountListSortBy,
+  LinkedInSalesNavigatorSortOrder,
   LinkedInSortByType,
   LinkedInSpotlightType
 } from './linkedin-search-parameter.type';
@@ -404,6 +406,8 @@ export interface LinkedInSalesNavigatorCompaniesSearchRequest {
   recent_activities?: LinkedInRecentActivityType[];
   saved_accounts?: string[];
   account_lists?: LinkedInAccountListsFilter;
+  sort_by?: LinkedInSalesNavigatorAccountListSortBy;
+  sort_order?: LinkedInSalesNavigatorSortOrder;
 }
 
 export interface LinkedInRecruiterPeopleSearchRequest {

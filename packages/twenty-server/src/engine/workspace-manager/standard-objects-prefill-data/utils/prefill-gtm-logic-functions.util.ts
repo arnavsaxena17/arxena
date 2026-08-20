@@ -296,7 +296,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.searchCompaniesId,
       name: GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
       description:
-        'Search companies via Company API. dataSource auto prefers Unipile Sales Navigator, then Recruiter/classic, Harvest, then index.',
+        'Search companies via Company API. Pass url for a Sales Nav account list or LinkedIn search URL. dataSource auto prefers Unipile Sales Navigator, then Recruiter/classic, Harvest, then index.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
       ),
@@ -313,6 +313,16 @@ export const getGtmOutreachLogicFunctionDefinitions = (
               website: { type: 'string', label: 'Website' },
               industry: { type: 'string', label: 'Industry' },
               location: { type: 'string', label: 'Location' },
+              url: {
+                type: 'string',
+                label: 'LinkedIn URL',
+              },
+              useV2: {
+                type: 'boolean',
+                label: 'Use Unipile v2 account list',
+              },
+              sortBy: { type: 'string', label: 'Sort by' },
+              sortOrder: { type: 'string', label: 'Sort order' },
               dataSource: { type: 'string', label: 'Data source' },
               accountId: { type: 'string', label: 'Account ID' },
               limit: { type: 'number', label: 'Limit' },

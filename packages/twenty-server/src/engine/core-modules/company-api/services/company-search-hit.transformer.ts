@@ -16,17 +16,24 @@ const readString = (item: Record<string, unknown>, keys: string[]): string => {
 @Injectable()
 export class CompanySearchHitTransformer {
   fromUnipileItems(
-    items: Array<{ type?: string } & Record<string, unknown>>,
+    items: Array<{ type?: string; object?: string } & Record<string, unknown>>,
   ): CompanySearchHit[] {
     return items
-      .filter((item) => item.type === 'COMPANY')
+      .filter(
+        (item) =>
+          item.type === 'COMPANY' ||
+          item.object === 'SavedAccount' ||
+          (!item.type &&
+            (typeof item.name === 'string' ||
+              typeof item.display_name === 'string')),
+      )
       .map((item) => this.fromUnipileItem(item));
   }
 
   fromUnipileItem(item: Record<string, unknown>): CompanySearchHit {
     return {
       id: readString(item, ['id']),
-      name: readString(item, ['name']),
+      name: readString(item, ['name', 'display_name']),
       website: readString(item, ['website']),
       linkedinUrl: readString(item, ['profile_url', 'linkedinUrl', 'url']),
       industry: readString(item, ['industry']),

@@ -980,6 +980,19 @@ export class ParameterSanitizer {
       }
     }
 
+    // Handle last_viewed_at (unix timestamp) for saved/account list recency
+    if (typeof request.last_viewed_at === 'number' && Number.isFinite(request.last_viewed_at)) {
+      sanitized.last_viewed_at = request.last_viewed_at;
+    }
+
+    // Unipile account-list sort (DATE_ADDED | NAME). Aliases like date/datetime/timestamp map in normalize.
+    if (typeof request.sort_by === 'string' && request.sort_by.trim()) {
+      sanitized.sort_by = request.sort_by;
+    }
+    if (typeof request.sort_order === 'string' && request.sort_order.trim()) {
+      sanitized.sort_order = request.sort_order;
+    }
+
     this.logger.log(`Sanitized LinkedIn Sales Navigator Companies Search request: ${JSON.stringify(sanitized, null, 2)}`);
     return sanitized;
   }

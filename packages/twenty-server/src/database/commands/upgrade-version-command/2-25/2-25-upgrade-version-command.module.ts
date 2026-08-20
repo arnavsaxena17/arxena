@@ -25,6 +25,7 @@ import { GtmOutreachMessageFieldsCommand } from 'src/database/commands/upgrade-v
 import { SyncGtmOutreachWorkflowsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000030-sync-gtm-outreach-workflows-skill-content.command';
 import { RenameWhatsappMessageToChatMessageCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000031-rename-whatsapp-message-to-chat-message.command';
 import { DropUnusedArxenaCrmObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000032-drop-unused-arxena-crm-objects.command';
+import { SyncGtmSearchCompaniesUrlInputCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000033-sync-gtm-search-companies-url-input.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -72,6 +73,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncGtmOutreachWorkflowsSkillContentCommand,
     RenameWhatsappMessageToChatMessageCommand,
     DropUnusedArxenaCrmObjectsCommand,
+    SyncGtmSearchCompaniesUrlInputCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

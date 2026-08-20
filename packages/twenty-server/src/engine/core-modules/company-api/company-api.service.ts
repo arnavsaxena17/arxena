@@ -3,6 +3,11 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import type { UnipileLinkedinProduct } from 'src/engine/core-modules/linkedin-search/utils/unipile-linkedin-product.util';
+import {
+  classifyLinkedInSearchUrl,
+  extractSalesNavigatorAccountListId,
+} from 'src/engine/core-modules/linkedin-search/utils/classify-linkedin-search-url.util';
+import { isUnipileAccountListV2Enabled } from 'src/engine/core-modules/linkedin-search/utils/sales-navigator-account-list-sort.util';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
 
@@ -65,11 +70,22 @@ export class CompanyApiService {
       apiToken,
     });
     const limit = Math.max(1, Math.min(100, body.limit ?? 20));
+    const searchUrl = this.resolveLinkedInSearchUrl(body);
     const keywords =
       body.keywords?.trim() ||
       body.companyName?.trim() ||
-      body.query?.trim() ||
+      (searchUrl ? '' : body.query?.trim()) ||
       '';
+
+    if (
+      searchUrl &&
+      (resolved.dataSource === 'index' || resolved.dataSource === 'harvest')
+    ) {
+      throw new HttpException(
+        'LinkedIn search URLs require a connected Unipile LinkedIn account (dataSource auto, unipile, pool, or recruiter)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     if (resolved.dataSource === 'index') {
       const result = await this.companiesEsService.searchCompanies({
@@ -121,6 +137,26 @@ export class CompanyApiService {
       );
     }
 
+    if (searchUrl) {
+      const items = await this.searchUnipileCompaniesFromUrl({
+        url: searchUrl,
+        accountId: resolved.accountId,
+        limit,
+        useV2: body.useV2,
+        sortBy: body.sortBy,
+        sortOrder: body.sortOrder,
+        lastViewedAt: body.lastViewedAt,
+      });
+
+      return {
+        status: 'ok',
+        dataSource: resolved.dataSource,
+        unipileProduct: resolved.unipileProduct,
+        total: items.length,
+        items,
+      };
+    }
+
     const items = await this.searchUnipileCompanies({
       keywords: keywords || body.website || body.industry || '',
       location: body.location,
@@ -137,6 +173,89 @@ export class CompanyApiService {
       total: items.length,
       items,
     };
+  }
+
+  private resolveLinkedInSearchUrl(body: CompanySearchDto): string | undefined {
+    const explicit = body.url?.trim();
+    if (explicit) {
+      return explicit;
+    }
+
+    const query = body.query?.trim();
+    if (query && /linkedin\.com/i.test(query)) {
+      return query;
+    }
+
+    return undefined;
+  }
+
+  private async searchUnipileCompaniesFromUrl(input: {
+    url: string;
+    accountId: string;
+    limit: number;
+    useV2?: boolean;
+    sortBy?: string;
+    sortOrder?: string;
+    lastViewedAt?: number;
+  }): Promise<CompanySearchHit[]> {
+    const accountListId = extractSalesNavigatorAccountListId(input.url);
+    if (accountListId) {
+      if (isUnipileAccountListV2Enabled(input.useV2)) {
+        const response = await this.linkedInSearchService.browseSalesAccountList(
+          accountListId,
+          input.accountId,
+          {
+            limit: input.limit,
+            sortBy: input.sortBy,
+            sortOrder: input.sortOrder,
+          },
+        );
+
+        return this.companySearchHitTransformer.fromUnipileItems(
+          (response.items ?? []) as Array<
+            { type?: string } & Record<string, unknown>
+          >,
+        );
+      }
+
+      const response =
+        await this.linkedInSearchService.searchCompaniesSalesNavigator(
+          {
+            account_lists: { include: [accountListId] },
+            ...(typeof input.lastViewedAt === 'number'
+              ? { last_viewed_at: input.lastViewedAt }
+              : {}),
+          },
+          input.accountId,
+          { limit: input.limit },
+        );
+
+      return this.companySearchHitTransformer.fromUnipileItems(
+        (response.items ?? []) as Array<
+          { type?: string } & Record<string, unknown>
+        >,
+      );
+    }
+
+    const classified = classifyLinkedInSearchUrl(input.url);
+    if (!classified) {
+      throw new HttpException(
+        'url must be a LinkedIn Sales Navigator account list URL (/sales/accounts/dashboard?listId=...), a company search URL, or a people search URL',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const response = await this.linkedInSearchService.searchFromUrl(
+      classified.url,
+      input.accountId,
+      { limit: input.limit },
+    );
+
+    return this.companySearchHitTransformer.fromUnipileItems(
+      (response.items ?? []) as Array<
+        { type?: string } & Record<string, unknown>
+      >,
+    );
   }
 
   private async searchUnipileCompanies(input: {

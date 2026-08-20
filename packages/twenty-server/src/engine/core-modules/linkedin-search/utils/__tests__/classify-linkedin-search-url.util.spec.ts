@@ -1,5 +1,6 @@
 import {
   classifyLinkedInSearchUrl,
+  extractSalesNavigatorAccountListId,
   isHarvestSalesNavigatorPeopleSearchUrl,
 } from '../classify-linkedin-search-url.util';
 
@@ -50,6 +51,26 @@ describe('classifyLinkedInSearchUrl', () => {
   it('returns null for profile URLs', () => {
     expect(
       classifyLinkedInSearchUrl('https://www.linkedin.com/in/someone'),
+    ).toBeNull();
+  });
+
+  it('extracts Sales Navigator account list ids', () => {
+    expect(
+      extractSalesNavigatorAccountListId(
+        'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=7378394885466337283',
+      ),
+    ).toBe('7378394885466337283');
+
+    expect(
+      extractSalesNavigatorAccountListId(
+        'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=ACCOUNT_7378394885466337283',
+      ),
+    ).toBe('7378394885466337283');
+
+    expect(
+      extractSalesNavigatorAccountListId(
+        'https://www.linkedin.com/sales/search/company?query=(filters:List((type:COMPANY_HEADCOUNT)))',
+      ),
     ).toBeNull();
   });
 });

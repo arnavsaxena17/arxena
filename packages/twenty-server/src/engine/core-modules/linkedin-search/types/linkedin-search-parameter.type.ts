@@ -66,6 +66,11 @@ export type LinkedInContentType =
 
 export type LinkedInSortByType = 'relevance' | 'date';
 
+/** Unipile Sales Navigator account-list sort (v2 browse; passed on v1 account_lists search). */
+export type LinkedInSalesNavigatorAccountListSortBy = 'DATE_ADDED' | 'NAME';
+
+export type LinkedInSalesNavigatorSortOrder = 'ASCENDING' | 'DESCENDING';
+
 export type LinkedInDatePostedType = 'past_day' | 'past_week' | 'past_month';
 
 export type LinkedInCompanyType =

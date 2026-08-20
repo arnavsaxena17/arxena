@@ -86,6 +86,36 @@ export const isHarvestSalesNavigatorPeopleSearchUrl = (
   classified?.category === 'people' &&
   classified.product === 'sales_navigator';
 
+export const extractSalesNavigatorAccountListId = (
+  raw: string,
+): string | null => {
+  const parsed = parseLinkedInUrl(raw);
+  if (!parsed) {
+    return null;
+  }
+
+  const pathname = parsed.pathname.toLowerCase();
+  const rawId =
+    parsed.searchParams.get('listId') ?? parsed.searchParams.get('list_id');
+  if (!rawId?.trim()) {
+    return null;
+  }
+
+  const id = rawId.trim().replace(/^ACCOUNT_/i, '');
+  if (!/^(\d+|ALL)$/.test(id)) {
+    return null;
+  }
+
+  const listGroup = (parsed.searchParams.get('listGroup') ?? '').toUpperCase();
+  const isAccountListPath =
+    pathname.includes('/sales/accounts') || pathname.includes('/sales/lists');
+  if (!isAccountListPath && listGroup !== 'CUSTOM_LISTS') {
+    return null;
+  }
+
+  return id;
+};
+
 const parseLinkedInUrl = (raw: string): URL | null => {
   const trimmed = raw.trim();
   if (!trimmed) {

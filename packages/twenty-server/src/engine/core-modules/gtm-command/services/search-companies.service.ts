@@ -13,6 +13,10 @@ export type SearchCompaniesInput = {
   website?: string;
   industry?: string;
   location?: string;
+  url?: string;
+  useV2?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
   dataSource?: string;
   accountId?: string;
   limit?: number;
@@ -55,6 +59,10 @@ export class SearchCompaniesService {
           website: input.website,
           industry: input.industry,
           location: input.location,
+          url: input.url,
+          useV2: input.useV2,
+          sortBy: input.sortBy,
+          sortOrder: input.sortOrder,
           dataSource: (input.dataSource as never) ?? 'auto',
           accountId: input.accountId,
           limit: Math.min(Math.max(1, input.limit ?? 10), 25),

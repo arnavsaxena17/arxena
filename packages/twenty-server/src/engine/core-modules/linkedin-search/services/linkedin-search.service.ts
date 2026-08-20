@@ -28,6 +28,11 @@ import {
   normalizeSalesNavigatorCompaniesSearchRequest,
   normalizeSalesNavigatorPeopleSearchRequest,
 } from '../utils/normalize-sales-navigator-search-request.util';
+import {
+  normalizeSalesNavigatorAccountListSortBy,
+  normalizeSalesNavigatorAccountListSortOrder,
+  toUnipileV2AccountListId,
+} from '../utils/sales-navigator-account-list-sort.util';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
@@ -631,6 +636,105 @@ export class LinkedInSearchService {
       `Request in searchCompaniesSalesNavigator:: ${JSON.stringify(searchRequest, null, 2)}`,
     );
     return this.search(searchRequest, accountId, options);
+  }
+
+  /**
+   * Browse a Sales Navigator account list via Unipile v2.
+   * Date ordering (`DATE_ADDED`) is only honored on this route.
+   */
+  async browseSalesAccountList(
+    listId: string,
+    accountId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      sortBy?: string;
+      sortOrder?: string;
+    } = {},
+  ): Promise<LinkedInSearchResponse> {
+    await this.enforceRequestSpacing();
+
+    const v2ListId = toUnipileV2AccountListId(listId);
+    const queryParams = new URLSearchParams();
+    if (options.limit != null) {
+      queryParams.set('limit', String(options.limit));
+    }
+    if (options.offset != null) {
+      queryParams.set('offset', String(options.offset));
+    }
+    const query = queryParams.toString();
+    const url = `${this.baseUrl.replace(/\/$/, '')}/v2/${encodeURIComponent(accountId)}/linkedin/sales-navigator/account-lists/${encodeURIComponent(v2ListId)}${query ? `?${query}` : ''}`;
+    const body = {
+      sort_by:
+        normalizeSalesNavigatorAccountListSortBy(options.sortBy) ??
+        'DATE_ADDED',
+      sort_order:
+        normalizeSalesNavigatorAccountListSortOrder(options.sortOrder) ??
+        'DESCENDING',
+    };
+
+    this.logger.log(
+      `Browsing Sales Nav account list v2 list=${v2ListId} account=${accountId} body=${JSON.stringify(body)}`,
+    );
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-API-KEY': this.apiKey,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData: LinkedInErrorResponse = await response.json().catch(
+        () =>
+          ({
+            title: 'Unipile v2 browse failed',
+            type: 'errors/unexpected_error',
+            status: response.status,
+          }) as LinkedInErrorResponse,
+      );
+      this.logger.error(
+        `Unipile v2 account-list browse failed: ${JSON.stringify(errorData)}`,
+      );
+      throw new Error(
+        `LinkedIn account list browse failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
+      );
+    }
+
+    const payload = (await response.json()) as {
+      data?: Array<Record<string, unknown>>;
+      total_count?: number;
+      next_cursor?: string | null;
+    };
+    const data = payload.data ?? [];
+    const items = data.map((item) => ({
+      ...item,
+      type: (item.type as string | undefined) ?? 'COMPANY',
+      name:
+        (typeof item.name === 'string' && item.name) ||
+        (typeof item.display_name === 'string' && item.display_name) ||
+        '',
+    })) as LinkedInSearchResponse['items'];
+
+    return {
+      object: 'LinkedinSearch',
+      items,
+      config: {
+        params: {
+          api: 'sales_navigator',
+          category: 'companies',
+        },
+      },
+      paging: {
+        start: options.offset ?? 0,
+        page_count: items.length,
+        total_count: payload.total_count ?? items.length,
+      },
+      cursor: payload.next_cursor ?? null,
+    };
   }
 
   /**

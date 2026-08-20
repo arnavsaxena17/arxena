@@ -66,7 +66,7 @@ export const buildCompanyApiOpenApiDocument = (
         operationId: 'searchCompanies',
         summary: 'Search companies',
         description:
-          'Search companies. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest, then the companies index.',
+          'Search companies. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest, then the companies index. Pass `url` for a LinkedIn Sales Navigator account list, company search, or people search URL.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -145,6 +145,31 @@ export const buildCompanyApiOpenApiDocument = (
           website: { type: 'string' },
           industry: { type: 'string' },
           location: { type: 'string' },
+          url: {
+            type: 'string',
+            description:
+              'LinkedIn URL. Sales Navigator account lists (`/sales/accounts/dashboard?listId=...`) are parsed and searched with v1 `account_lists` unless `useV2` is true (or `UNIPILE_ACCOUNT_LIST_V2=true`), which browses the list via Unipile v2 and supports `DATE_ADDED` sort. Other LinkedIn search URLs are sent as Unipile search-from-URL.',
+            example:
+              'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=7378394885466337283',
+          },
+          useV2: {
+            type: 'boolean',
+            description:
+              'When true, Sales Navigator account-list URLs use Unipile v2 browse (`DATE_ADDED` / `NAME` sort). When omitted, `UNIPILE_ACCOUNT_LIST_V2` is the default (false).',
+            example: false,
+          },
+          sortBy: {
+            type: 'string',
+            description:
+              'Account-list sort when useV2 is on. DATE_ADDED (aliases: date, datetime, timestamp) or NAME.',
+            example: 'DATE_ADDED',
+          },
+          sortOrder: {
+            type: 'string',
+            description:
+              'Account-list sort order when useV2 is on. DESCENDING (default) or ASCENDING.',
+            example: 'DESCENDING',
+          },
           limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
         },
         example: {

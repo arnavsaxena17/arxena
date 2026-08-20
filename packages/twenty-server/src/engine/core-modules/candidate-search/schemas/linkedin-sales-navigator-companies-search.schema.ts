@@ -64,4 +64,21 @@ export const salesNavigatorCompaniesSearchSchema = z.object({
     include: z.array(z.string()).nullable(),
     exclude: z.array(z.string()).nullable(),
   }).nullable(),
+  sort_by: z
+    .union([
+      z.literal('DATE_ADDED'),
+      z.literal('NAME'),
+      z.literal('date'),
+      z.literal('datetime'),
+      z.literal('timestamp'),
+    ])
+    .nullable(),
+  sort_order: z
+    .union([
+      z.literal('ASCENDING'),
+      z.literal('DESCENDING'),
+      z.literal('asc'),
+      z.literal('desc'),
+    ])
+    .nullable(),
 });

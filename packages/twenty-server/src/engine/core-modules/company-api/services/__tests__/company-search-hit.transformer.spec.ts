@@ -54,4 +54,27 @@ describe('CompanySearchHitTransformer', () => {
       linkedinUrl: 'https://www.linkedin.com/company/acme',
     });
   });
+
+  it('maps Unipile saved-account list members', () => {
+    expect(
+      transformer.fromUnipileItems([
+        {
+          object: 'SavedAccount',
+          id: '5652',
+          display_name: 'Egon Zehnder',
+          profile_url: 'https://www.linkedin.com/company/egon-zehnder/',
+          industry: 'Business Consulting and Services',
+          website: 'http://www.egonzehnder.com',
+        },
+      ]),
+    ).toEqual([
+      {
+        id: '5652',
+        name: 'Egon Zehnder',
+        website: 'http://www.egonzehnder.com',
+        linkedinUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+        industry: 'Business Consulting and Services',
+      },
+    ]);
+  });
 });
