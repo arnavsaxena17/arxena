@@ -40,11 +40,17 @@
         "command": "tsx packages/twenty-docs/scripts/export-posts-openapi.ts"
       }
     },
+    "check-openapi": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx packages/twenty-docs/scripts/check-openapi-exports.ts"
+      }
+    },
     "validate": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "npx tsx scripts/generate-docs-json.ts && mintlify validate"
+        "command": "npx tsx scripts/check-openapi-exports.ts && npx tsx scripts/generate-docs-json.ts && mintlify validate"
       }
     },
     "export": {

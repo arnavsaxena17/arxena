@@ -6,7 +6,7 @@
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "mintlify dev",
-    "validate": "npx tsx scripts/generate-docs-json.ts && mintlify validate",
+    "validate": "npx tsx scripts/check-openapi-exports.ts && npx tsx scripts/generate-docs-json.ts && mintlify validate",
     "export": "npx tsx scripts/generate-docs-json.ts && mintlify export --output .mintlify/export.zip",
     "export:brands": "node scripts/export-static-sites.mjs",
     "fix-links": "bash scripts/fix-translated-links.sh",

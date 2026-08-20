@@ -79,6 +79,7 @@
     "docs:export-company-openapi": "tsx packages/twenty-docs/scripts/export-company-openapi.ts",
     "docs:export-jobs-openapi": "tsx packages/twenty-docs/scripts/export-jobs-openapi.ts",
     "docs:export-posts-openapi": "tsx packages/twenty-docs/scripts/export-posts-openapi.ts",
+    "docs:check-openapi": "tsx packages/twenty-docs/scripts/check-openapi-exports.ts",
     "docs:generate-navigation-template": "tsx packages/twenty-docs/scripts/generate-navigation-template.ts",
     "docs:generate-paths": "tsx packages/twenty-docs/scripts/generate-documentation-paths.ts",
     "docs:prune-orphans": "tsx packages/twenty-docs/scripts/prune-orphan-translations.ts",

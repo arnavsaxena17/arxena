@@ -21,6 +21,7 @@ jobs:
       files: |
         package.json
         packages/twenty-docs/**
+        packages/twenty-server/src/engine/core-modules/api-docs/**
 
   docs-lint:
     needs: changed-files-check
@@ -38,4 +39,7 @@ jobs:
 
       - name: Docs / Lint
         run: npx nx lint twenty-docs
+
+      - name: Docs / OpenAPI export drift
+        run: yarn docs:check-openapi
 
