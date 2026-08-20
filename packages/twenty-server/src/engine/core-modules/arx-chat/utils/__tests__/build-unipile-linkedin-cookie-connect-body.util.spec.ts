@@ -20,19 +20,13 @@ describe('buildUnipileLinkedinCookieConnectBody', () => {
     });
 
     expect(body).toEqual({
-      provider: 'linkedin',
-      credentials: {
-        access_token: 'li-at',
-        user_agent: 'Mozilla/5.0',
-        premium_access_token: 'li-a',
-      },
-      account_id: 'acc-1',
-      config: {
-        auto_proxy_config: {
-          ip: '203.0.113.10',
-          country: 'IN',
-        },
-      },
+      provider: 'LINKEDIN',
+      access_token: 'li-at',
+      premium_token: 'li-a',
+      user_agent: 'Mozilla/5.0',
+      ip: '203.0.113.10',
+      country: 'IN',
+      reconnect_account: 'acc-1',
     });
   });
 
@@ -44,11 +38,8 @@ describe('buildUnipileLinkedinCookieConnectBody', () => {
     });
 
     expect(body).toEqual({
-      provider: 'linkedin',
-      credentials: {
-        access_token: 'li-at',
-        user_agent: expect.any(String),
-      },
+      provider: 'LINKEDIN',
+      access_token: 'li-at',
     });
   });
 
@@ -58,7 +49,7 @@ describe('buildUnipileLinkedinCookieConnectBody', () => {
         accessToken: '   ',
       }),
     ).toThrow(
-      'Cannot start Unipile LinkedIn cookie auth without a non-empty li_at access_token',
+      'Cannot POST /api/v1/accounts without a non-empty LinkedIn li_at access_token',
     );
     expect(() => assertNonEmptyLinkedinLiAtForUnipileConnect('')).toThrow();
   });

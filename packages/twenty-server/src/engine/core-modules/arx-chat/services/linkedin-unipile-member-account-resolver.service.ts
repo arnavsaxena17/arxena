@@ -505,8 +505,9 @@ export class LinkedinUnipileMemberAccountResolverService {
 
     this.logger.log(`Payload in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(payload, null, 2)}`);
 
+    
     const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
-      '/v2/auth/intent',
+      '/api/v1/accounts',
       'POST',
       payload,
       { returnStatus: true },

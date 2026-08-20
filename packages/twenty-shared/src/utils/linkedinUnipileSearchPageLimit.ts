@@ -10,8 +10,8 @@ export const LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT = 100;
 export const LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT = 10;
 
 /**
- * Unipile LinkedIn search page sizes. Classic uses cursor pages (cap 50 via client loops).
- * Sales Navigator and Recruiter use offset+limit up to 100.
+ * Unipile LinkedIn search API page sizes (`?limit=` on `/api/v1/linkedin/search`).
+ * Single source of truth for pagination and page-count estimates.
  */
 export const LINKEDIN_UNIPILE_SEARCH_PAGE_LIMITS = {
   classic: LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,

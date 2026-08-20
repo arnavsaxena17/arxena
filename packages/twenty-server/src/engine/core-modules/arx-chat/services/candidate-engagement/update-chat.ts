@@ -1362,7 +1362,7 @@ export class UpdateChat {
             whatsappDeliveryStatus: isFromConnectedUser
               ? 'delivered'
               : 'receivedFromCandidate',
-            externalMessageId: providerId || unipileMessageId,
+            externalMessageId: unipileMessageId,
             typeOfMessage: this.determineUnipileMessageType(unipileMessage),
             lastEngagementChatControl: 'startChat',
             candidateProfile: candidate,

@@ -106,9 +106,9 @@ export interface UnipileTrackingEmailWebhook {
 /**
  * New relation webhook - supports both formats:
  *
- * 1. Flat format from Unipile v1 USERS webhook (event: "new_relation") or
- *    normalized v2 relation.new (user.display_name mapped to user_full_name).
+ * 1. Flat format from Unipile USERS webhook (source: "users", event: "new_relation").
  *    Fired when someone accepts your LinkedIn invitation.
+ *    @see https://developer.unipile.com/docs/detecting-accepted-invitations
  *
  * 2. Nested format with relation object (legacy)
  */
@@ -142,3 +142,17 @@ export type UnipileWebhookPayload =
   | UnipileTrackingEmailWebhook 
   | UnipileNewRelationWebhook;
 
+// Webhook management types
+export interface CreateWebhookDto {
+  source: 'messaging' | 'email' | 'tracking' | 'relations';
+  request_url?: string;
+  headers?: Array<{ key: string; value: string }>;
+}
+
+export interface WebhookResponse {
+  id: string;
+  url: string;
+  source: string;
+  created_at: string;
+  status: string;
+}

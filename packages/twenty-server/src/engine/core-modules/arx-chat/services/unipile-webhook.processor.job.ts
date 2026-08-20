@@ -8,6 +8,7 @@ import {
   UNIPILE_WEBHOOK_PROCESSOR_NAME,
   type UnipileWebhookJobData,
 } from '../types/unipile-webhook-job.types';
+import type { UnipileNewRelationWebhook } from '../types/unipile-webhook.types';
 import { UnipileWebhookService } from './unipile-webhook.service';
 
 const parsedConcurrency = parseInt(
@@ -47,6 +48,13 @@ export class UnipileWebhookProcessor {
     this.logger.log(
       `Processing queued Unipile webhook kind=${jobData.kind} event=${eventLabel} receivedAt=${jobData.receivedAt}`,
     );
+
+    if (jobData.kind === 'relations') {
+      await this.unipileWebhookService.processNewRelationWebhook(
+        jobData.payload as UnipileNewRelationWebhook,
+      );
+      return;
+    }
 
     await this.unipileWebhookService.processWebhook(jobData.payload);
   }

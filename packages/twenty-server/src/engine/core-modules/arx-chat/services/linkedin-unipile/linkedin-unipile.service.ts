@@ -7,41 +7,73 @@ import type {
     UnipileLinkedinAccount,
 } from 'twenty-shared';
 
-import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
-import {
-    buildUnipileV2HostedAuthLinkBody,
-    buildUnipileV2LinkedinCookieAuthIntentBody,
-    buildUnipileV2LinkedinCredentialsAuthIntentBody,
-} from 'src/engine/core-modules/unipile-client/unipile-v2-auth-body.util';
-
-type UnipileAuthResponse = {
-  id?: string;
-  account_id?: string;
-  intent_id?: string;
-  status?: string;
-  profile_data?: LinkedinProfileData;
-};
-
 export class LinkedinUnipileService {
-  private unipileClient: UnipileV2Client;
+  private baseUrl: string;
+  private accessToken: string;
 
   constructor(baseUrl: string, accessToken: string) {
-    this.unipileClient = new UnipileV2Client(baseUrl, accessToken);
+    this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.accessToken = accessToken;
+  }
+
+  private async makeRequest<T>(
+    endpoint: string,
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+    body?: any,
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      config.body = JSON.stringify(body);
+    }
+
+    try {
+      console.log('url being made to ', url);
+      console.log('config being made to ', config);
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Unipile API request failed:', error);
+      throw error;
+    }
   }
 
   /**
-   * Connect LinkedIn account with username/password via POST /v2/auth/intent
+   * Connect LinkedIn account with username/password
    */
   async connectWithCredentials(credentials: LinkedinCredentials): Promise<LinkedinSignupResponse> {
     try {
-      const response = (await this.unipileClient.startAuthIntent(
-        buildUnipileV2LinkedinCredentialsAuthIntentBody({
-          username: credentials.username,
-          password: credentials.password,
-        }),
-      )) as UnipileAuthResponse;
+      const response = await this.makeRequest<any>('/api/v1/accounts', 'POST', {
+        provider: 'LINKEDIN',
+        username: credentials.username,
+        password: credentials.password,
+      });
 
-      return this.toSignupResponse(response);
+      return {
+        success: true,
+        data: {
+          account_id: response.id || response.account_id,
+          provider: 'LINKEDIN',
+          status: response.status || 'connected',
+          profile: response.profile_data,
+        },
+      };
     } catch (error) {
       return {
         success: false,
@@ -51,21 +83,28 @@ export class LinkedinUnipileService {
   }
 
   /**
-   * Connect LinkedIn account with cookie/user-agent via POST /v2/auth/intent
+   * Connect LinkedIn account with cookie/user-agent
    */
   async connectWithCookie(cookieAuth: LinkedinCookieAuth): Promise<LinkedinSignupResponse> {
     try {
-      const response = (await this.unipileClient.startAuthIntent(
-        buildUnipileV2LinkedinCookieAuthIntentBody({
-          accessToken: cookieAuth.access_token,
-          premiumToken: cookieAuth.premium_token,
-          userAgent: cookieAuth.user_agent,
-          ip: cookieAuth.ip,
-          country: cookieAuth.country,
-        }),
-      )) as UnipileAuthResponse;
+      const response = await this.makeRequest<any>('/api/v1/accounts', 'POST', {
+        provider: 'LINKEDIN',
+        access_token: cookieAuth.access_token,
+        ...(cookieAuth.premium_token && { premium_token: cookieAuth.premium_token }),
+        ...(cookieAuth.user_agent && { user_agent: cookieAuth.user_agent }),
+        ...(cookieAuth.ip && { ip: cookieAuth.ip }),
+        ...(cookieAuth.country && { country: cookieAuth.country }),
+      });
 
-      return this.toSignupResponse(response);
+      return {
+        success: true,
+        data: {
+          account_id: response.id || response.account_id,
+          provider: 'LINKEDIN',
+          status: response.status || 'connected',
+          profile: response.profile_data,
+        },
+      };
     } catch (error) {
       return {
         success: false,
@@ -75,7 +114,7 @@ export class LinkedinUnipileService {
   }
 
   /**
-   * Create hosted authentication link via POST /v2/auth/link
+   * Create hosted authentication link
    */
   async createHostedAuthLink(options: {
     expiresOn?: string;
@@ -84,28 +123,30 @@ export class LinkedinUnipileService {
     failure_redirect_url?: string;
     notify_url?: string;
   }): Promise<{ hosted_link: string }> {
-    const data = await this.unipileClient.createHostedAuthLink(
-      buildUnipileV2HostedAuthLinkBody({
-        providers: ['linkedin'],
-        expiresOn: options.expiresOn,
-        successRedirectUrl: options.success_redirect_url,
-        failureRedirectUrl: options.failure_redirect_url,
-      }),
-    );
-    return { hosted_link: data.hosted_link ?? data.url ?? data.link ?? '' };
+    return this.makeRequest<{ hosted_link: string }>('/api/v1/accounts/hosted-auth', 'POST', {
+      type: 'create',
+      providers: 'linkedin',
+      expiresOn: options.expiresOn || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      ...options,
+    });
   }
 
   /**
-   * Solve 2FA/OTP checkpoint via POST /v2/auth/checkpoint
+   * Solve 2FA/OTP checkpoint
    */
   async solveCheckpoint(checkpointData: LinkedinCheckpointData): Promise<LinkedinSignupResponse> {
     try {
-      const response = (await this.unipileClient.solveCheckpoint({
-        intent_id: checkpointData.account_id,
-        code: checkpointData.code,
-      })) as UnipileAuthResponse;
+      const response = await this.makeRequest<any>('/api/v1/accounts/checkpoint', 'POST', checkpointData);
 
-      return this.toSignupResponse(response);
+      return {
+        success: true,
+        data: {
+          account_id: response.account_id,
+          provider: 'LINKEDIN',
+          status: response.status || 'connected',
+          profile: response.profile_data,
+        },
+      };
     } catch (error) {
       return {
         success: false,
@@ -115,108 +156,45 @@ export class LinkedinUnipileService {
   }
 
   /**
-   * Get LinkedIn account details via GET /v2/accounts/:account_id
+   * Get LinkedIn account details
    */
   async getAccount(accountId: string): Promise<UnipileLinkedinAccount> {
-    const item = await this.unipileClient.getAccount(accountId);
-    return this.toLinkedinAccount(item);
+    return this.makeRequest<UnipileLinkedinAccount>(`/api/v1/accounts/${accountId}`);
   }
 
   /**
-   * Get all LinkedIn accounts via GET /v2/accounts
+   * Get all LinkedIn accounts
    */
   async getAllAccounts(): Promise<UnipileLinkedinAccount[]> {
-    const items = await this.unipileClient.listAccounts();
-
-    return items
-      .filter((item) => {
-        const type = String(item.type ?? item.provider ?? '').toLowerCase();
-        return type === 'linkedin';
-      })
-      .map((item) => this.toLinkedinAccount(item));
-  }
-
-  /**
-   * Get own LinkedIn profile via GET /v2/:account_id/users/me
-   */
-  async getOwnProfile(accountId: string): Promise<LinkedinProfileData> {
-    return this.unipileClient.getUser(accountId, 'me') as Promise<LinkedinProfileData>;
-  }
-
-  /**
-   * Resync is removed in Unipile v2 (LinkedIn is on-demand).
-   */
-  async resyncAccount(_accountId: string): Promise<{ status: string }> {
-    return { status: 'skipped' };
-  }
-
-  /**
-   * Disconnect LinkedIn account via DELETE /v2/accounts/:account_id
-   */
-  async disconnectAccount(accountId: string): Promise<{ success: boolean }> {
-    try {
-      await this.unipileClient.deleteAccount(accountId);
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to disconnect LinkedIn account:', error);
-      return { success: false };
-    }
-  }
-
-  private toSignupResponse(response: UnipileAuthResponse): LinkedinSignupResponse {
-    return {
-      success: true,
-      data: {
-        account_id: String(
-          response.id || response.account_id || response.intent_id || '',
-        ),
-        provider: 'LINKEDIN',
-        status: response.status || 'connected',
-        profile: response.profile_data,
-      },
-    };
-  }
-
-  private toLinkedinAccount(item: Record<string, unknown>): UnipileLinkedinAccount {
-    return {
-      id: String(item.id ?? ''),
-      username: String(item.name ?? item.username ?? 'Unknown'),
-      name: String(item.name ?? 'Unknown'),
-      type: typeof item.type === 'string' ? item.type : 'LINKEDIN',
+    const response = await this.makeRequest<{ items: any[] }>('/api/v1/accounts?provider=linkedin');
+    
+    // Transform the response to match our expected format
+    return (response.items || []).map((item: any) => ({
+      id: item.id,
+      username: item.name || 'Unknown',
+      name: item.name || 'Unknown', 
+      type: item.type,
       status: this.mapAccountStatus(item),
-      created_at: typeof item.created_at === 'string' ? item.created_at : undefined,
+      created_at: item.created_at,
       provider: 'LINKEDIN',
-      connection_params: item.connection_params as UnipileLinkedinAccount['connection_params'],
-      sources: Array.isArray(item.sources) ? item.sources : [],
-      groups: Array.isArray(item.groups) ? item.groups : [],
-    };
+      connection_params: item.connection_params,
+      sources: item.sources || [],
+      groups: item.groups || [],
+    }));
   }
 
-  private mapAccountStatus(account: Record<string, unknown>): UnipileLinkedinAccount['status'] {
-    const connectionParams =
-      account.connection_params && typeof account.connection_params === 'object'
-        ? (account.connection_params as Record<string, unknown>)
-        : undefined;
-    const im =
-      connectionParams?.im && typeof connectionParams.im === 'object'
-        ? (connectionParams.im as Record<string, unknown>)
-        : undefined;
-    const sources = Array.isArray(account.sources) ? account.sources : [];
-    const firstSource =
-      sources[0] && typeof sources[0] === 'object'
-        ? (sources[0] as Record<string, unknown>)
-        : undefined;
-
+  private mapAccountStatus(account: any): 'connected' | 'disconnected' | 'pending' | 'checkpoint_required' {
+    // Map Unipile account status to our status format
     const rawStatus =
-      connectionParams?.status ??
-      account.status ??
-      im?.status ??
-      firstSource?.status;
+      account?.connection_params?.status ??
+      account?.status ??
+      account?.connection_params?.im?.status ??
+      account?.sources?.[0]?.status;
 
     if (typeof rawStatus === 'string') {
       const status = rawStatus.toLowerCase();
 
-      if (['active', 'ok', 'connected', 'ready', 'synced', 'running'].includes(status)) {
+      if (['active', 'ok', 'connected', 'ready', 'synced'].includes(status)) {
         return 'connected';
       }
       if (['credentials', 'failed', 'error', 'disconnected', 'revoked'].includes(status)) {
@@ -228,27 +206,58 @@ export class LinkedinUnipileService {
       if (status === 'pending' || status === 'syncing') {
         return 'pending';
       }
+      // Fallback for unknown statuses
       return 'disconnected';
     }
+    
+    // Default to connected if we have the account
+    return account?.id ? 'connected' : 'disconnected';
+  }
 
-    return account.id ? 'connected' : 'disconnected';
+  /**
+   * Get own LinkedIn profile
+   */
+  async getOwnProfile(accountId: string): Promise<LinkedinProfileData> {
+    return this.makeRequest<LinkedinProfileData>(`/api/v1/users/me?account_id=${accountId}`);
+  }
+
+  /**
+   * Resync LinkedIn account
+   */
+  async resyncAccount(accountId: string): Promise<{ status: string }> {
+    return this.makeRequest<{ status: string }>(`/api/v1/accounts/${accountId}/resync`, 'POST');
+  }
+
+  /**
+   * Disconnect LinkedIn account
+   */
+  async disconnectAccount(accountId: string): Promise<{ success: boolean }> {
+    try {
+      await this.makeRequest(`/api/v1/accounts/${accountId}`, 'DELETE');
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to disconnect LinkedIn account:', error);
+      return { success: false };
+    }
   }
 }
 
+// Singleton instance for server-side use
 let linkedinService: LinkedinUnipileService | null = null;
 
 export const getLinkedinUnipileService = (baseUrl?: string, accessToken?: string): LinkedinUnipileService => {
   if (!linkedinService && baseUrl && accessToken) {
     linkedinService = new LinkedinUnipileService(baseUrl, accessToken);
   }
-
+  
   if (!linkedinService) {
     throw new Error('LinkedIn Unipile service not initialized. Please provide baseUrl and accessToken.');
   }
-
+  
   return linkedinService;
 };
 
 export const initializeLinkedinUnipileService = (baseUrl: string, accessToken: string): void => {
   linkedinService = new LinkedinUnipileService(baseUrl, accessToken);
 };
+

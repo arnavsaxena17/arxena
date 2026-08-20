@@ -118,7 +118,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       workspaceId,
     );
     expect(linkedinUnipileRequestService.makeUnipileRequest).toHaveBeenCalledWith(
-      '/v2/auth/intent',
+      '/api/v1/accounts',
       'POST',
       expect.not.objectContaining({
         reconnect_account: expect.anything(),

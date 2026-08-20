@@ -24,11 +24,7 @@ export const shouldInvalidateUnipileAccountsListCache = (
   }
 
   const path = endpoint.split('?')[0] ?? endpoint;
-  return (
-    path === '/v2/accounts' ||
-    path.startsWith('/v2/accounts/') ||
-    path.startsWith('/v2/auth/')
-  );
+  return path === '/api/v1/accounts' || path.startsWith('/api/v1/accounts/');
 };
 
 export const invalidateUnipileAccountsListCache = (): void => {

@@ -1,5 +1,3 @@
-import { buildUnipileV2LinkedinCookieAuthIntentBody } from 'src/engine/core-modules/unipile-client/unipile-v2-auth-body.util';
-
 export type LinkedinUnipileCookieConnectParams = {
   accessToken: string;
   premiumToken?: string | null;
@@ -76,7 +74,7 @@ export const assertNonEmptyLinkedinLiAtForUnipileConnect = (
   const trimmed = accessToken?.trim() ?? '';
   if (!trimmed) {
     throw new Error(
-      'Cannot start Unipile LinkedIn cookie auth without a non-empty li_at access_token',
+      'Cannot POST /api/v1/accounts without a non-empty LinkedIn li_at access_token',
     );
   }
 
@@ -119,14 +117,36 @@ export const buildUnipileLinkedinCookieConnectBody = (
     params.accessToken,
   );
 
-  const body = buildUnipileV2LinkedinCookieAuthIntentBody({
-    accessToken,
-    premiumToken: params.premiumToken,
-    userAgent: params.userAgent,
-    ip: normalizeLinkedinConnectionIp(params.ip) ?? null,
-    country: normalizeLinkedinConnectionCountry(params.country) ?? null,
-    reconnectAccountId: params.reconnectAccountId,
-  });
+  const body: Record<string, unknown> = {
+    provider: 'LINKEDIN',
+    access_token: accessToken,
+  };
+
+  const premiumToken = params.premiumToken?.trim();
+  if (premiumToken) {
+    body.premium_token = premiumToken;
+  }
+
+  const userAgent = params.userAgent?.trim();
+  if (userAgent) {
+    body.user_agent = userAgent;
+  }
+
+  const ip = normalizeLinkedinConnectionIp(params.ip);
+  
+  if (ip) {
+    body.ip = ip;
+  }
+
+  const country = normalizeLinkedinConnectionCountry(params.country);
+  if (country) {
+    body.country = country;
+  }
+
+  const reconnectAccountId = params.reconnectAccountId?.trim();
+  if (reconnectAccountId) {
+    body.reconnect_account = reconnectAccountId;
+  }
 
   console.log(`Body in BUILD UNIPILE LINKEDIN COOKIE CONNECT BODY: ${JSON.stringify(body, null, 2)}`);
 

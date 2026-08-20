@@ -10,9 +10,7 @@ describe('UnipileWebhookService.enqueueWebhook', () => {
       {} as any,
       {} as any,
       {} as any,
-      {} as any,
       { applyEventByLinkedinUrl: jest.fn() } as any,
-      undefined,
       undefined,
       queueService as any,
     );

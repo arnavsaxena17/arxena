@@ -4,9 +4,7 @@ import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-sea
 export type UnipileSalesNavSearchRequest = {
   keywords?: string;
   role?: LinkedInRoleFilter;
-  current_job_title?: LinkedInRoleFilter;
   company?: { include: string[] };
-  current_company?: { include: string[] };
   function?: { include: string[] };
   seniority?: { include: LinkedInSeniorityType[] };
 };
@@ -71,16 +69,10 @@ export const buildUnipileSalesNavSearchRequest = (input: {
           role: {
             include: [jobTitle],
           },
-          current_job_title: {
-            include: [jobTitle],
-          },
         }
       : {}),
     ...(input.companyParameterIds.length > 0
-      ? {
-          company: { include: input.companyParameterIds },
-          current_company: { include: input.companyParameterIds },
-        }
+      ? { company: { include: input.companyParameterIds } }
       : {}),
     ...(!omitFunctionAndSeniorityFacets && input.functionIds.length > 0
       ? { function: { include: input.functionIds } }

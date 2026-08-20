@@ -25,7 +25,6 @@ import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/works
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 
 import { UnipileBackfillMemberMappingsCommand } from './commands/unipile-backfill-member-mappings.command';
-import { UnipileRemapV2AccountIdsCommand } from './commands/unipile-remap-v2-account-ids.command';
 import { UpdateAllWorkspacesMetadataCommand } from './commands/update-all-workspaces-metadata.command';
 import { CreateMetadataStructureJob } from './jobs/create-metadata-structure.job';
 import { SeedMetadataStructureJob } from './jobs/seed-metadata-structure.job';
@@ -69,14 +68,9 @@ import { WorkspaceQueryService } from './workspace-modifications.service';
     MetadataUpdateService,
     WorkspaceBulkMetadataUpdateService,
     UnipileBackfillMemberMappingsCommand,
-    UnipileRemapV2AccountIdsCommand,
     UpdateAllWorkspacesMetadataCommand,
   ],
   controllers: [WorkspaceModificationsController],
-  exports: [
-    WorkspaceQueryService,
-    UnipileBackfillMemberMappingsCommand,
-    UnipileRemapV2AccountIdsCommand,
-  ],
+  exports: [WorkspaceQueryService, UnipileBackfillMemberMappingsCommand],
 })
 export class WorkspaceModificationsModule {}

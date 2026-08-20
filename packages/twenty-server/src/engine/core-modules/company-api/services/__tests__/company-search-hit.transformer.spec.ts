@@ -27,19 +27,6 @@ describe('CompanySearchHitTransformer', () => {
     ]);
   });
 
-  it('reads display_name when name is omitted', () => {
-    expect(
-      transformer.fromUnipileItem({
-        type: 'COMPANY',
-        id: '2',
-        display_name: 'Beta Inc',
-      }),
-    ).toMatchObject({
-      id: '2',
-      name: 'Beta Inc',
-    });
-  });
-
   it('maps Harvest and index records', () => {
     expect(
       transformer.fromHarvestItem({

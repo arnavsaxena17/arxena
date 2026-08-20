@@ -5,7 +5,6 @@ import axios from 'axios';
 import { lookup as mimeLookup } from 'mime-types';
 
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
-import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
 import {
     FileStorageException,
     FileStorageExceptionCode,
@@ -47,7 +46,6 @@ export type SaveUnipileAttachmentParams = {
   messageId: string;
   timestamp: string;
   accountId?: string;
-  chatId?: string;
   baseUrl?: string;
   accessToken?: string;
 };
@@ -56,10 +54,7 @@ export type SaveUnipileAttachmentParams = {
 export class UnipileAttachmentStorageService {
   private readonly logger = new Logger(UnipileAttachmentStorageService.name);
 
-  constructor(
-    private readonly fileStorageService: FileStorageService,
-    private readonly unipileV2Client: UnipileV2Client,
-  ) {}
+  constructor(private readonly fileStorageService: FileStorageService) {}
 
   sanitizeSenderIdentifier(nameOrPhone: string): string {
     return nameOrPhone
@@ -138,23 +133,20 @@ export class UnipileAttachmentStorageService {
   private async downloadAttachmentFromUnipile(
     attachmentId: string,
     messageId: string,
-    accountId?: string,
-    chatId?: string,
+    baseUrl: string,
+    accessToken: string,
   ): Promise<Buffer | null> {
-    if (!accountId || !chatId) {
-      this.logger.warn(
-        `Cannot download Unipile attachment ${attachmentId}: missing accountId or chatId`,
-      );
-      return null;
-    }
-
     try {
-      return await this.unipileV2Client.downloadAttachment({
-        accountId,
-        chatId,
-        messageId,
-        attachmentId,
+      const url = `${baseUrl}/api/v1/messages/${messageId}/attachments/${attachmentId}`;
+      const response = await axios.get(url, {
+        headers: {
+          'X-API-KEY': accessToken,
+          Accept: 'application/json',
+        },
+        responseType: 'arraybuffer',
       });
+
+      return Buffer.from(response.data);
     } catch (error) {
       this.logger.error(
         `Failed to download attachment ${attachmentId} from message ${messageId} via Unipile API:`,
@@ -176,8 +168,8 @@ export class UnipileAttachmentStorageService {
         accountType,
         messageId,
         timestamp,
-        accountId,
-        chatId,
+        baseUrl,
+        accessToken,
       } = params;
 
       const senderIdentifier = this.getSenderIdentifier(sender, accountType);
@@ -212,12 +204,12 @@ export class UnipileAttachmentStorageService {
         }
       }
 
-      if (!fileBuffer && attachmentId && messageId && accountId && chatId) {
+      if (!fileBuffer && attachmentId && messageId && baseUrl && accessToken) {
         fileBuffer = await this.downloadAttachmentFromUnipile(
           attachmentId,
           messageId,
-          accountId,
-          chatId,
+          baseUrl,
+          accessToken,
         );
       }
 

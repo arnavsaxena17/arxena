@@ -52,15 +52,5 @@ export const parseAccountIdFromUnipileEndpoint = (
     return decodeURIComponent(queryMatch[1]).trim();
   }
 
-  const v2AccountMatch = endpoint.match(/\/v2\/accounts\/([^/?]+)/);
-  if (v2AccountMatch?.[1]) {
-    return decodeURIComponent(v2AccountMatch[1]).trim();
-  }
-
-  const v2PathMatch = endpoint.match(/\/v2\/([^/?]+)(?:\/|$)/);
-  if (v2PathMatch?.[1] && v2PathMatch[1] !== 'accounts' && v2PathMatch[1] !== 'auth' && v2PathMatch[1] !== 'webhooks') {
-    return decodeURIComponent(v2PathMatch[1]).trim();
-  }
-
   return null;
 };

@@ -8,7 +8,6 @@ import {
     type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
 
-import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
@@ -62,25 +61,6 @@ const getWorkspaceMemberProfileUnipileService = () =>
   require('./workspace-member-profile-unipile.service')
     .WorkspaceMemberProfileUnipileService as typeof import('./workspace-member-profile-unipile.service').WorkspaceMemberProfileUnipileService;
 
-const buildUnipileAccountResourcePath = (
-  accountId: string,
-  resourcePath: string,
-  queryParams?: URLSearchParams,
-): string => {
-  const next = new URLSearchParams(queryParams);
-  next.delete('account_id');
-  const sections = next.get('linkedin_sections');
-  if (sections) {
-    next.set(
-      'with_sections',
-      sections === '*' ? 'linkedin_*' : `linkedin_${sections}`,
-    );
-    next.delete('linkedin_sections');
-  }
-  const query = next.toString();
-  return `/v2/${encodeURIComponent(accountId)}${resourcePath}${query ? `?${query}` : ''}`;
-};
-
 type LinkedinUnipileAccountItem = Record<string, unknown> & {
   id?: string;
   name?: string;
@@ -99,11 +79,12 @@ type LinkedinUnipileAccountItem = Record<string, unknown> & {
 export class LinkedinUnipileRequestService {
   private readonly logger = new Logger(LinkedinUnipileRequestService.name);
 
+  private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
+  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
   private snapshotRefreshInFlight: Promise<void> | null = null;
 
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly unipileV2Client: UnipileV2Client,
     @Optional()
     @Inject(forwardRef(getMemberLinkedinUnipileConnectionService))
     private readonly memberLinkedinUnipileConnectionService?: MemberLinkedinUnipileConnectionService,
@@ -114,9 +95,9 @@ export class LinkedinUnipileRequestService {
     @Inject(forwardRef(getLinkedinProfileCacheService))
     private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
   ) {
-    this.logger.log(`Unipile API URL: ${this.unipileV2Client.getBaseUrl()}`);
+    this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
-      `Unipile Access Token configured: ${!!this.unipileV2Client.getApiKey()}`,
+      `Unipile Access Token configured: ${!!this.unipileAccessToken}`,
     );
   }
 
@@ -129,57 +110,64 @@ export class LinkedinUnipileRequestService {
       linkedinAccountCleanup?: LinkedinUnipileAccountCleanupContext;
     },
   ): Promise<unknown> {
+    const url = `${this.unipileApiUrl}${endpoint}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+      'Content-Type': 'application/json',
+    };
+
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      config.body = JSON.stringify(body);
+    }
+
     try {
-      this.logger.log(`Making Unipile v2 request for: ${endpoint}`);
-      const path = endpoint.split('?')[0] ?? endpoint;
+      this.logger.log(`Making Unipile request to: ${url}`);
+      this.logger.log(
+        `Using API key: ${this.unipileAccessToken?.substring(0, 10) || ''}...`,
+      );
 
-      if (method === 'GET' && path === '/v2/accounts') {
-        const items = await this.unipileV2Client.listAccounts();
-        const payload = { items };
-        if (shouldInvalidateUnipileAccountsListCache(endpoint, method)) {
-          invalidateUnipileAccountsListCache();
-        }
-        return options?.returnStatus
-          ? { status: 200, data: payload }
-          : payload;
-      }
-
-      if (method === 'POST' && path === '/v2/auth/link') {
-        const result = await this.unipileV2Client.createHostedAuthLink(
-          (body ?? {}) as Record<string, unknown>,
+      const response = await fetch(url, config);
+      const data = await response.json().catch(() => ({}));
+      this.logger.log(`Data in MAKE UNIPILE REQUEST: ${JSON.stringify(data, null, 2)}`);
+      if (!response.ok) {
+        this.logger.error(
+          `Unipile API error: ${response.status} ${response.statusText}`,
         );
-        return options?.returnStatus ? { status: 200, data: result } : result;
-      }
-
-      if (method === 'POST' && path === '/v2/webhooks/endpoints') {
-        const result = await this.unipileV2Client.createWebhookEndpoint(
-          (body ?? {}) as Record<string, unknown>,
+        this.logger.error(
+          `Unipile API error: Object:`,
+          JSON.stringify(data, null, 2),
         );
-        return options?.returnStatus ? { status: 200, data: result } : result;
-      }
 
-      const result = await this.unipileV2Client.requestNormalized({
-        path: endpoint,
-        method,
-        body,
-        returnStatus: options?.returnStatus,
-      });
+        await this.handleDisconnectedAccountApiErrorIfNeeded(
+          response.status,
+          data,
+          endpoint,
+          options?.linkedinAccountCleanup,
+        );
+
+        const message =
+          (data as { detail?: string; message?: string }).detail ||
+          (data as { message?: string }).message ||
+          `Unipile API error: ${response.statusText}`;
+        throw new HttpException(message, response.status);
+      }
 
       if (shouldInvalidateUnipileAccountsListCache(endpoint, method)) {
         invalidateUnipileAccountsListCache();
       }
 
-      return result;
+      if (options?.returnStatus) {
+        return { status: response.status, data };
+      }
+      return data;
     } catch (error) {
       if (error instanceof HttpException) {
-        const status = error.getStatus();
-        const data = error.getResponse();
-        await this.handleDisconnectedAccountApiErrorIfNeeded(
-          status,
-          data,
-          endpoint,
-          options?.linkedinAccountCleanup,
-        );
         throw error;
       }
 
@@ -284,18 +272,34 @@ export class LinkedinUnipileRequestService {
       }
     }
 
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
     try {
-      const data = await this.unipileV2Client.getAccount(trimmed);
-      patchSnapshotRawAccount(data as UnipileLinkedinSnapshotRawAccount);
-      return data as LinkedinUnipileAccountItem;
-    } catch (err) {
-      if (err instanceof HttpException && err.getStatus() === 404) {
+      const response = await fetch(url, { method: 'GET', headers });
+      const data = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      if (response.status === 404) {
         this.logger.warn(
           `Workspace linked account ${trimmed} not found in Unipile (404); it may have been disconnected`,
         );
         invalidateUnipileAccountsListCache();
         return null;
       }
+      if (!response.ok) {
+        this.logger.error(
+          `Unipile API error: ${response.status} ${response.statusText}`,
+          data,
+        );
+        return null;
+      }
+      patchSnapshotRawAccount(data as UnipileLinkedinSnapshotRawAccount);
+      return data as LinkedinUnipileAccountItem;
+    } catch (err) {
       this.logger.warn(
         `Could not fetch account ${trimmed}: ${err instanceof Error ? err.message : err}`,
       );
@@ -339,7 +343,7 @@ export class LinkedinUnipileRequestService {
       `Refreshing Unipile LinkedIn server snapshot (trigger=${trigger})`,
     );
 
-    const response = (await this.makeUnipileRequest('/v2/accounts')) as {
+    const response = (await this.makeUnipileRequest('/api/v1/accounts')) as {
       items?: LinkedinUnipileAccountItem[];
     };
 
@@ -347,9 +351,7 @@ export class LinkedinUnipileRequestService {
       items: (response.items ?? []) as UnipileLinkedinSnapshotRawAccount[],
     };
     const linkedinAccounts = (response.items ?? [])
-      .filter((item) =>
-        ['LINKEDIN', 'linkedin'].includes(String(item.type ?? item.provider ?? '')),
-      )
+      .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
       .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
     const ownerProfilesByAccountId = new Map<
@@ -395,18 +397,10 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      const response = (await this.unipileV2Client.getUser(
-        trimmed,
-        'me',
+      const response = (await this.makeUnipileRequest(
+        `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
+        'GET',
       )) as UnipileAccountOwnerProfile;
-      if (response && !response.public_identifier) {
-        const record = response as UnipileAccountOwnerProfile & {
-          display_name?: string;
-        };
-        if (record.display_name && !record.first_name) {
-          (record as { first_name?: string }).first_name = record.display_name;
-        }
-      }
 
       return response ?? null;
     } catch (err) {
@@ -429,7 +423,7 @@ export class LinkedinUnipileRequestService {
     if (typeof rawStatus === 'string') {
       const status = rawStatus.toLowerCase();
 
-      if (['active', 'ok', 'connected', 'ready', 'synced', 'running'].includes(status)) {
+      if (['active', 'ok', 'connected', 'ready', 'synced'].includes(status)) {
         return 'connected';
       }
 
@@ -559,7 +553,7 @@ export class LinkedinUnipileRequestService {
       this.logger.log(
         'Fetching Unipile account list from API (cache miss or expired)',
       );
-      return (await this.makeUnipileRequest('/v2/accounts')) as {
+      return (await this.makeUnipileRequest('/api/v1/accounts')) as {
         items?: LinkedinUnipileAccountItem[];
       };
     });
@@ -582,9 +576,7 @@ export class LinkedinUnipileRequestService {
     const response = await this.fetchRawUnipileAccountsListCached();
 
     const accounts = (response.items || [])
-      .filter((item) =>
-        ['LINKEDIN', 'linkedin'].includes(String(item.type ?? item.provider ?? '')),
-      )
+      .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
       .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
     this.logger.log(
@@ -660,9 +652,15 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      const response = (await this.unipileV2Client.getUser(
-        trimmed,
-        'me',
+      const response = (await this.makeUnipileRequest(
+        `/api/v1/users/me?account_id=${encodeURIComponent(trimmed)}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: cleanupContext
+            ? { ...cleanupContext, accountId: trimmed }
+            : undefined,
+        },
       )) as UnipileAccountOwnerProfile & { public_identifier?: string };
 
       if (response && workspaceMemberId && authToken && this.workspaceMemberProfileUnipileService) {
@@ -689,14 +687,6 @@ export class LinkedinUnipileRequestService {
 
       return response ?? null;
     } catch (err) {
-      if (err instanceof HttpException) {
-        await this.handleDisconnectedAccountApiErrorIfNeeded(
-          err.getStatus(),
-          err.getResponse(),
-          `/v2/${encodeURIComponent(trimmed)}/users/me`,
-          cleanupContext ? { ...cleanupContext, accountId: trimmed } : undefined,
-        );
-      }
       this.logger.warn(
         `fetchLinkedinOwnerProfile failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
       );
@@ -784,11 +774,21 @@ export class LinkedinUnipileRequestService {
     }
 
     const publicIdentifier = meWithIdentifier.public_identifier.trim();
+    const queryParams = new URLSearchParams({
+      account_id: trimmed,
+      linkedin_sections: '*',
+    });
+
     try {
-      const fullProfile = (await this.unipileV2Client.getUser(
-        trimmed,
-        publicIdentifier,
-        { linkedin_sections: '*' },
+      const fullProfile = (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(publicIdentifier)}?${queryParams}`,
+        'GET',
+        undefined,
+        {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmed }
+            : undefined,
+        },
       )) as Record<string, unknown>;
 
       const entry: LinkedinSenderFullProfileCacheEntry = {
@@ -846,20 +846,28 @@ export class LinkedinUnipileRequestService {
       return cachedProfile;
     }
 
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
     const sections = options?.linkedinSections ?? ['*'];
+    if (sections.length > 0) {
+      queryParams.append('linkedin_sections', sections.join(','));
+    }
+    if (options?.notify !== undefined) {
+      queryParams.append('notify', String(options.notify));
+    }
 
     try {
-      const profile = (await this.unipileV2Client.getUser(
-        trimmedAccountId,
-        trimmedIdentifier,
+      const profile = (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
+        'GET',
+        undefined,
         {
-          linkedin_sections: sections.join(','),
-          notify: options?.notify !== undefined ? String(options.notify) : undefined,
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
         },
       )) as Record<string, unknown>;
-      if (profile && !profile.name && profile.display_name) {
-        profile.name = profile.display_name;
-      }
 
       if (profile && this.linkedinProfileCacheService) {
         const cacheKey =
@@ -911,18 +919,28 @@ export class LinkedinUnipileRequestService {
       return null;
     }
 
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor) {
+      queryParams.append('cursor', options.cursor);
+    }
+    if (options?.isCompany !== undefined) {
+      queryParams.append('is_company', String(options.isCompany));
+    }
+
     try {
-      return (await this.unipileV2Client.getUserPosts(
-        trimmedAccountId,
-        trimmedIdentifier,
+      return (await this.makeUnipileRequest(
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/posts?${queryParams}`,
+        'GET',
+        undefined,
         {
-          limit:
-            options?.limit !== undefined ? String(options.limit) : undefined,
-          cursor: options?.cursor,
-          is_company:
-            options?.isCompany !== undefined
-              ? String(options.isCompany)
-              : undefined,
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
         },
       )) as Record<string, unknown>;
     } catch (err) {
@@ -953,11 +971,7 @@ export class LinkedinUnipileRequestService {
 
     try {
       return (await this.makeUnipileRequest(
-        buildUnipileAccountResourcePath(
-          trimmedAccountId,
-          `/posts/${encodeURIComponent(trimmedPostId)}`,
-          queryParams,
-        ),
+        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}?${queryParams}`,
         'GET',
         undefined,
         {
@@ -1006,11 +1020,7 @@ export class LinkedinUnipileRequestService {
 
     try {
       return (await this.makeUnipileRequest(
-        buildUnipileAccountResourcePath(
-          trimmedAccountId,
-          `/posts/${encodeURIComponent(trimmedPostId)}/comments`,
-          queryParams,
-        ),
+        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments?${queryParams}`,
         'GET',
         undefined,
         {
@@ -1061,6 +1071,7 @@ export class LinkedinUnipileRequestService {
     }
 
     const body: Record<string, unknown> = {
+      account_id: trimmedAccountId,
       text: trimmedText,
     };
     if (options?.commentId) {
@@ -1081,10 +1092,7 @@ export class LinkedinUnipileRequestService {
     );
 
     return (await this.makeUnipileRequest(
-      buildUnipileAccountResourcePath(
-        trimmedAccountId,
-        `/posts/${encodeURIComponent(trimmedPostId)}/comments`,
-      ),
+      `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
       'POST',
       body,
       {
@@ -1117,17 +1125,23 @@ export class LinkedinUnipileRequestService {
       );
     }
 
+    const body: Record<string, unknown> = {
+      account_id: trimmedAccountId,
+      provider_id: trimmedProviderId,
+    };
+    if (trimmedMessage) {
+      // LinkedIn hard-caps invitation notes at 300 characters.
+      body.message = trimmedMessage.slice(0, 300);
+    }
+
     this.logger.log(
       `Sending LinkedIn invitation to ${trimmedProviderId} via account ${trimmedAccountId} (${trimmedMessage.length} chars)`,
     );
 
     return (await this.makeUnipileRequest(
-      `/v2/${encodeURIComponent(trimmedAccountId)}/users/me/relation-requests`,
+      '/api/v1/users/invite',
       'POST',
-      {
-        user_id: trimmedProviderId,
-        ...(trimmedMessage ? { message: trimmedMessage.slice(0, 300) } : {}),
-      },
+      body,
       {
         linkedinAccountCleanup: options?.cleanupContext
           ? { ...options.cleanupContext, accountId: trimmedAccountId }
@@ -1163,11 +1177,7 @@ export class LinkedinUnipileRequestService {
 
     try {
       return (await this.makeUnipileRequest(
-        buildUnipileAccountResourcePath(
-          trimmedAccountId,
-          `/users/${encodeURIComponent(trimmedIdentifier)}/comments`,
-          queryParams,
-        ),
+        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/comments?${queryParams}`,
         'GET',
         undefined,
         {
@@ -1215,9 +1225,7 @@ export class LinkedinUnipileRequestService {
       );
 
       const allAccounts = (response.items || [])
-        .filter((item) =>
-        ['LINKEDIN', 'linkedin'].includes(String(item.type ?? item.provider ?? '')),
-      )
+        .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
         .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
       const accounts = allAccounts.filter((account) => {
@@ -1298,17 +1306,26 @@ export class LinkedinUnipileRequestService {
     this.logger.log(
       `Deleting LinkedIn Unipile account accountId=${trimmed} context=${context}`,
     );
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
     try {
-      await this.unipileV2Client.deleteAccount(trimmed);
-      invalidateUnipileAccountsListCache();
-      this.logger.log(
-        `Deleted LinkedIn Unipile account accountId=${trimmed} context=${context}`,
-      );
-    } catch (err) {
-      if (err instanceof HttpException && err.getStatus() === 404) {
+      const response = await fetch(url, { method: 'DELETE', headers });
+      if (response.ok || response.status === 404) {
         invalidateUnipileAccountsListCache();
+        this.logger.log(
+          `Deleted LinkedIn Unipile account accountId=${trimmed} context=${context} httpStatus=${response.status}`,
+        );
         return;
       }
+      const data = await response.json().catch(() => ({}));
+      this.logger.warn(
+        `Best-effort LinkedIn Unipile disconnect failed (${context}): ${response.status}`,
+        data,
+      );
+    } catch (err) {
       this.logger.warn(
         `Best-effort LinkedIn Unipile disconnect error (${context}): ${err instanceof Error ? err.message : err}`,
       );

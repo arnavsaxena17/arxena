@@ -548,29 +548,24 @@ export class LinkedInSearchController {
    */
   @Post('search/continue')
   async searchWithCursor(
-    @Body()
-    body: LinkedInSearchRequest & {
-      cursor?: string;
-    },
+    @Body() body: { cursor: string },
     @Query('account_id') accountId: string | undefined,
-    @Query('cursor') cursorQuery?: string,
     @Query('limit') limit?: number,
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
       const resolvedAccountId = await this.getAccountId(accountId, headers || {});
-      const cursor = body.cursor?.trim() || cursorQuery?.trim() || '';
 
-      if (!cursor) {
+      if (!body.cursor) {
         throw new HttpException('Cursor is required', HttpStatus.BAD_REQUEST);
       }
 
       this.logger.log(`Continuing LinkedIn search with cursor for account: ${resolvedAccountId}`);
       
       const result = await this.linkedInSearchService.searchWithCursor(
-        body,
+        body.cursor,
         resolvedAccountId,
-        { cursor, limit }
+        { limit }
       );
 
       this.logger.log(`Cursor search completed successfully. Found ${result.items.length} results.`);

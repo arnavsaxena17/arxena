@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { UnipileV2Client } from 'src/engine/core-modules/unipile-client/unipile-v2.client';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 import {
@@ -27,10 +26,13 @@ type UnipileAccountItem = Record<string, unknown> & {
 export class WhatsappUnipileRequestService {
   private readonly logger = new Logger(WhatsappUnipileRequestService.name);
 
-  constructor(private readonly unipileV2Client: UnipileV2Client) {
-    this.logger.log(`Unipile API URL: ${this.unipileV2Client.getBaseUrl()}`);
+  private readonly unipileApiUrl = process.env.UNIPILE_API_URL;
+  private readonly unipileAccessToken = process.env.UNIPILE_ACCESS_TOKEN;
+
+  constructor() {
+    this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
-      `Unipile Access Token configured: ${!!this.unipileV2Client.getApiKey()}`,
+      `Unipile Access Token configured: ${!!this.unipileAccessToken}`,
     );
   }
 
@@ -39,28 +41,57 @@ export class WhatsappUnipileRequestService {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
     body?: unknown,
   ): Promise<unknown> {
+    const url = `${this.unipileApiUrl}${endpoint}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+      'Content-Type': 'application/json',
+    };
+
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      config.body = JSON.stringify(body);
+    }
+
     try {
-      this.logger.log(`Making Unipile v2 request for: ${endpoint}`);
-      const path = endpoint.split('?')[0] ?? endpoint;
-      let data: unknown;
-      if (method === 'GET' && path === '/v2/accounts') {
-        data = { items: await this.unipileV2Client.listAccounts() };
-      } else {
-        data = await this.unipileV2Client.requestNormalized({
-          path: endpoint,
-          method,
-          body,
-        });
+      this.logger.log(`Making Unipile request to: ${url}`);
+      this.logger.log(
+        `Using API key: ${this.unipileAccessToken?.substring(0, 10) || ''}...`,
+      );
+
+      const response = await fetch(url, config);
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+
+        if (response.status === HttpStatus.NOT_FOUND) {
+          this.logger.warn(`Unipile API 404: ${response.statusText}`, errorData);
+        } else {
+          this.logger.error(
+            `Unipile API error: ${response.status} ${response.statusText}`,
+            errorData,
+          );
+        }
+
+        throw new HttpException(
+          errorData.message || `Unipile API error: ${response.statusText}`,
+          response.status,
+        );
       }
+
       if (shouldInvalidateUnipileAccountsListCache(endpoint, method)) {
         invalidateUnipileAccountsListCache();
       }
-      return data;
+
+      return await response.json();
     } catch (error) {
       if (error instanceof HttpException) {
-        if (error.getStatus() === HttpStatus.NOT_FOUND) {
-          this.logger.warn(`Unipile API 404: ${error.message}`);
-        }
         throw error;
       }
 
@@ -78,7 +109,7 @@ export class WhatsappUnipileRequestService {
 
   /**
    * Check whether a phone number is registered on WhatsApp via Unipile
-   * GET /v2/:account_id/users/{identifier}
+   * GET /api/v1/users/{identifier}?account_id=...
    * See: https://developer.unipile.com/docs/users-overview
    * 200 = on WhatsApp; 404 = not on WhatsApp / invalid identifier.
    */
@@ -116,7 +147,7 @@ export class WhatsappUnipileRequestService {
 
     try {
       const profile = (await this.makeUnipileRequest(
-        `/v2/${encodeURIComponent(accountId)}/users/${encodeURIComponent(phoneNumber)}`,
+        `/api/v1/users/${encodeURIComponent(phoneNumber)}?account_id=${encodeURIComponent(accountId)}`,
       )) as {
         provider?: string;
         id?: string;
@@ -152,17 +183,32 @@ export class WhatsappUnipileRequestService {
   async fetchAccountByIdIfExists(
     accountId: string,
   ): Promise<UnipileAccountItem | null> {
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
     try {
-      return (await this.unipileV2Client.getAccount(
-        accountId,
-      )) as UnipileAccountItem;
-    } catch (err) {
-      if (err instanceof HttpException && err.getStatus() === 404) {
+      const response = await fetch(url, { method: 'GET', headers });
+      const data = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      if (response.status === 404) {
         this.logger.warn(
           `Workspace linked WhatsApp account ${accountId} not found in Unipile (404); it may have been disconnected`,
         );
         return null;
       }
+      if (!response.ok) {
+        this.logger.error(
+          `Unipile API error: ${response.status} ${response.statusText}`,
+          data,
+        );
+        return null;
+      }
+      return data as UnipileAccountItem;
+    } catch (err) {
       this.logger.warn(
         `Could not fetch WhatsApp account ${accountId}: ${err instanceof Error ? err.message : err}`,
       );
@@ -182,11 +228,7 @@ export class WhatsappUnipileRequestService {
     if (typeof rawStatus === 'string') {
       const status = rawStatus.toLowerCase();
 
-      if (
-        ['active', 'ok', 'connected', 'ready', 'synced', 'running'].includes(
-          status,
-        )
-      ) {
+      if (['active', 'ok', 'connected', 'ready', 'synced'].includes(status)) {
         return 'connected';
       }
 
@@ -247,7 +289,7 @@ export class WhatsappUnipileRequestService {
       this.logger.log(
         'Fetching Unipile account list from API for WhatsApp (cache miss or expired)',
       );
-      return (await this.makeUnipileRequest('/v2/accounts')) as {
+      return (await this.makeUnipileRequest('/api/v1/accounts')) as {
         items?: UnipileAccountItem[];
       };
     });
@@ -269,9 +311,7 @@ export class WhatsappUnipileRequestService {
       );
 
       const accounts = (response.items || [])
-        .filter((item) =>
-          ['WHATSAPP', 'whatsapp'].includes(String(item.type ?? item.provider ?? '')),
-        )
+        .filter((item) => String(item.type ?? '').toUpperCase() === 'WHATSAPP')
         .map((item) => this.mapWhatsappApiItemToAccountRow(item));
 
       this.logger.log(
@@ -299,18 +339,26 @@ export class WhatsappUnipileRequestService {
     if (!trimmed) {
       return;
     }
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const headers = {
+      Accept: 'application/json',
+      'X-API-KEY': this.unipileAccessToken || '',
+    };
     try {
-      await this.unipileV2Client.deleteAccount(trimmed);
-      invalidateUnipileAccountsListCache();
-      this.logger.log(
-        `Unipile WhatsApp account ${trimmed} disconnected (${context})`,
-      );
-      return;
-    } catch (err) {
-      if (err instanceof HttpException && err.getStatus() === 404) {
+      const response = await fetch(url, { method: 'DELETE', headers });
+      if (response.ok || response.status === 404) {
         invalidateUnipileAccountsListCache();
+        this.logger.log(
+          `Unipile WhatsApp account ${trimmed} disconnected (${context}); status=${response.status}`,
+        );
         return;
       }
+      const data = await response.json().catch(() => ({}));
+      this.logger.warn(
+        `Best-effort WhatsApp Unipile disconnect failed (${context}): ${response.status}`,
+        data,
+      );
+    } catch (err) {
       this.logger.warn(
         `Best-effort WhatsApp Unipile disconnect error (${context}): ${err instanceof Error ? err.message : err}`,
       );

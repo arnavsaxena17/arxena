@@ -30,14 +30,8 @@ describe('LinkedinUnipileRequestService sender profile persistence', () => {
       getWorkspaceKeys: jest.fn(),
     };
 
-    const unipileV2Client = {
-      getBaseUrl: () => 'https://api.unipile.com',
-      getApiKey: () => 'test-key',
-    };
-
     const service = new LinkedinUnipileRequestService(
       workspaceQueryService as never,
-      unipileV2Client as never,
       undefined,
       workspaceMemberProfileUnipileService as never,
     );
@@ -105,7 +99,7 @@ describe('LinkedinUnipileRequestService sender profile persistence', () => {
 
     expect(result?.fromCache).toBe(false);
     expect(makeUnipileRequest).toHaveBeenCalledWith(
-      expect.stringContaining('/users/saikrshna'),
+      expect.stringContaining('/api/v1/users/saikrshna'),
       'GET',
       undefined,
       expect.any(Object),

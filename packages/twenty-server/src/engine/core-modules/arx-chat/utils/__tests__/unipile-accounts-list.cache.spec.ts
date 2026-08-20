@@ -15,25 +15,19 @@ describe('unipile-accounts-list.cache', () => {
   it('shouldInvalidateUnipileAccountsListCache returns true for account mutations', () => {
     console.log('testing invalidate rules for POST /accounts');
     expect(
-      shouldInvalidateUnipileAccountsListCache('/v2/accounts', 'POST'),
+      shouldInvalidateUnipileAccountsListCache('/api/v1/accounts', 'POST'),
     ).toBe(true);
     console.log('testing invalidate rules for DELETE /accounts/:id');
     expect(
       shouldInvalidateUnipileAccountsListCache(
-        '/v2/accounts/abc',
+        '/api/v1/accounts/abc',
         'DELETE',
       ),
     ).toBe(true);
     console.log('testing invalidate rules for GET /accounts');
     expect(
-      shouldInvalidateUnipileAccountsListCache('/v2/accounts', 'GET'),
+      shouldInvalidateUnipileAccountsListCache('/api/v1/accounts', 'GET'),
     ).toBe(false);
-    expect(
-      shouldInvalidateUnipileAccountsListCache('/v2/accounts', 'POST'),
-    ).toBe(true);
-    expect(
-      shouldInvalidateUnipileAccountsListCache('/v2/auth/intent', 'POST'),
-    ).toBe(true);
   });
 
   it('fetchUnipileAccountsListWithCache coalesces concurrent fetches', async () => {
