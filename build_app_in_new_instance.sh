@@ -860,10 +860,17 @@ acquire_builder_instance() {
   wait_builder_ssh
 }
 
+status_file_is_for_this_run() {
+  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ] || [ -z "${BUILD_RUN_ID:-}" ]; then
+    return 1
+  fi
+  grep -q "^BUILD_RUN_ID=${BUILD_RUN_ID}$" "$BUILD_STATUS_LOCAL_FILE"
+}
+
 get_build_status() {
   local build_name="$1"
 
-  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ]; then
+  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ] || ! status_file_is_for_this_run; then
     echo "unknown"
     return 0
   fi
@@ -875,7 +882,7 @@ get_build_status() {
 
 get_build_ready_path() {
   local build_name="$1"
-  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ]; then
+  if [ ! -f "$BUILD_STATUS_LOCAL_FILE" ] || ! status_file_is_for_this_run; then
     echo ""
     return 0
   fi
@@ -899,6 +906,9 @@ refresh_build_status() {
   fi
   scp -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" \
     "ubuntu@$TEMP_DNS:/home/ubuntu/build_status.env" "$BUILD_STATUS_LOCAL_FILE" 2>/dev/null || return 1
+  if ! status_file_is_for_this_run; then
+    return 1
+  fi
   return 0
 }
 
@@ -1060,8 +1070,14 @@ maybe_stream_component() {
   local destination="$3"
   shift 3
 
-  if [ "$(get_deploy_status "$build_name")" = "updated" ] || \
-     [ "$(get_deploy_status "$build_name")" = "skipped" ]; then
+  if [ "$(get_deploy_status "$build_name")" = "skipped" ]; then
+    return 0
+  fi
+
+  # During the poll, skip packages already copied. After the remote build
+  # finishes, recopy successes so a leftover/stale dist cannot stick.
+  if [ "${STREAM_PHASE:-poll}" != "final" ] && \
+     [ "$(get_deploy_status "$build_name")" = "updated" ]; then
     return 0
   fi
 
@@ -1101,17 +1117,35 @@ maybe_stream_component() {
     return 1
   fi
 
-  local stage_path="$STAGING_ROOT/$build_name"
-  if ! stage_remote_dir "$remote_path" "$stage_path"; then
-    echo "$label build succeeded but artifact copy failed. Keeping existing files."
-    return 1
+  local already_updated=0
+  if [ "$(get_deploy_status "$build_name")" = "updated" ]; then
+    already_updated=1
   fi
 
-  activate_staged_dir "$stage_path" "$destination"
-  DEPLOYMENTS_APPLIED=1
-  set_deploy_status "$build_name" updated
-  mark_package_sha "$build_name"
-  echo "$label streamed to $destination"
+  local stage_path="$STAGING_ROOT/$build_name"
+  if ! stage_remote_dir "$remote_path" "$stage_path"; then
+    if [ "${STREAM_PHASE:-poll}" = "final" ] && [ "$already_updated" = "1" ]; then
+      echo "$label final recopy failed; using artifacts streamed during this run."
+    else
+      echo "$label build succeeded but artifact copy failed. Keeping existing files."
+      return 1
+    fi
+  else
+    activate_staged_dir "$stage_path" "$destination"
+    DEPLOYMENTS_APPLIED=1
+    set_deploy_status "$build_name" updated
+    mark_package_sha "$build_name"
+    echo "$label streamed to $destination"
+  fi
+
+  if [ "${STREAM_PHASE:-poll}" != "final" ]; then
+    case "$build_name" in
+      TWENTY_SERVER|TWENTY_WEBSITE|TWENTY_MCP_SERVER)
+        echo "Deferring $label process cutover until the remote build finishes."
+        return 0
+        ;;
+    esac
+  fi
 
   case "$build_name" in
     TWENTY_SERVER)
@@ -1341,13 +1375,17 @@ STAGING_ROOT="$(mktemp -d /tmp/twenty-build-stage.XXXXXX)"
 REMOTE_BUILD_EXIT_CODE=0
 mkdir -p "$BUILD_LOG_DIR"
 BUILD_LOG_SSH_FALLBACK="$(mktemp "$BUILD_LOG_DIR/build_app.ssh.XXXXXX")"
+BUILD_RUN_ID="$(date +%s)-$$-$RANDOM"
+STREAM_PHASE=poll
+echo "BUILD_RUN_ID=$BUILD_RUN_ID"
+ssh_builder 'rm -f /home/ubuntu/build_status.env' || true
 
 YARN_CACHE_REMOTE="$(dirname "$REMOTE_WORKSPACE")/yarn-cache"
 if [ "$REMOTE_WORKSPACE" = "/home/ubuntu/twenty" ]; then
   YARN_CACHE_REMOTE="/home/ubuntu/yarn-cache"
 fi
 
-REMOTE_BUILD_ENV="BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' LOCKFILE_CHANGED=$LOCKFILE_CHANGED LINGUI_SERVER=$LINGUI_SERVER LINGUI_FRONT=$LINGUI_FRONT LINGUI_EMAILS=$LINGUI_EMAILS YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE"
+REMOTE_BUILD_ENV="BUILD_RUN_ID=$BUILD_RUN_ID BUILD_BRANCH=$BUILD_BRANCH BUILD_WORKSPACE=$REMOTE_WORKSPACE SELECTED_BUILDS='$SELECTED_BUILDS' LAST_DEPLOY_SHA='$LAST_DEPLOY_SHA' LOCKFILE_CHANGED=$LOCKFILE_CHANGED LINGUI_SERVER=$LINGUI_SERVER LINGUI_FRONT=$LINGUI_FRONT LINGUI_EMAILS=$LINGUI_EMAILS YARN_CACHE_FOLDER=$YARN_CACHE_REMOTE"
 set +e
 ssh -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" ubuntu@$TEMP_DNS \
   "$REMOTE_BUILD_ENV chmod +x script_to_build_app_in_new_instance.sh && $REMOTE_BUILD_ENV ./script_to_build_app_in_new_instance.sh" \
@@ -1365,6 +1403,8 @@ if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ] && grep -E -q 'Required build check passe
   REMOTE_BUILD_EXIT_CODE=0
 fi
 
+echo "Final artifact recopy and process cutover"
+STREAM_PHASE=final
 stream_ready_packages || true
 fetch_remote_build_log 0
 push_nx_cache_to_s3 || true

@@ -41,6 +41,10 @@ export YARN_CACHE_FOLDER
 BUILD_STATUS_FILE="${HOME}/build_status.env"
 rm -f "$BUILD_STATUS_FILE"
 touch "$BUILD_STATUS_FILE"
+if [ -n "${BUILD_RUN_ID:-}" ]; then
+  echo "BUILD_RUN_ID=$BUILD_RUN_ID" >> "$BUILD_STATUS_FILE"
+  sync >/dev/null 2>&1 || true
+fi
 
 record_status() {
   local name="$1"
