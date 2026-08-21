@@ -14,7 +14,10 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
+import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
 
 /**
  * Truncates LinkedIn invitation message to under 300 characters
@@ -125,7 +128,11 @@ export class LinkedinUnipileMessagingService {
       'X-API-KEY': this.accessToken,
     };
 
-    if (!isFormData) {
+    if (isFormData && data && typeof data.getHeaders === 'function') {
+      Object.assign(headers, data.getHeaders());
+      headers['Accept'] = 'application/json';
+      headers['X-API-KEY'] = this.accessToken;
+    } else if (!isFormData) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -160,7 +167,7 @@ export class LinkedinUnipileMessagingService {
     accountId: string,
     attendeesIds: string[],
     message: string,
-    attachments?: any[],
+    attachments?: UnipileChatAttachment[],
     voiceMessage?: any,
     videoMessage?: any,
     subject?: string,
@@ -187,9 +194,7 @@ export class LinkedinUnipileMessagingService {
     formData.append('attendees_ids', convertedAttendeesIds.join(','));
     formData.append('text', message);
 
-    if (attachments && attachments.length > 0) {
-      formData.append('attachments', JSON.stringify(attachments));
-    }
+    appendUnipileChatAttachments(formData, attachments);
 
     if (voiceMessage) {
       formData.append('voice_message', voiceMessage);
@@ -250,7 +255,12 @@ export class LinkedinUnipileMessagingService {
         publicIdentifier,
       });
 
-      // Make request to get profile information
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'profile',
+      });
+
       const response = await this.makeRequest(
         `/api/v1/users/${publicIdentifier}?account_id=${accountId}`,
         'GET',
@@ -296,6 +306,11 @@ export class LinkedinUnipileMessagingService {
     // If it's neither, assume it's a public identifier and try to get the profile
     console.log('Treating as public identifier:', providerIdOrUrl);
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'profile',
+      });
       const response = await this.makeRequest(
         `/api/v1/users/${providerIdOrUrl}?account_id=${accountId}`,
         'GET',
@@ -325,6 +340,11 @@ export class LinkedinUnipileMessagingService {
       // Use the provided actualProviderId if available, otherwise get it
       const finalProviderId = actualProviderId || await this.getProviderId(accountId, providerId);
       console.log("This is the actual provider id to which we are sending the invitation!!!", finalProviderId);
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'connection_request',
+      });
       const data = {
         provider_id: finalProviderId,
         account_id: accountId,
@@ -448,7 +468,7 @@ export class LinkedinUnipileMessagingService {
     accountId: string,
     attendeesIds: string[],
     message: string,
-    attachments?: any[],
+    attachments?: UnipileChatAttachment[],
     voiceMessage?: any,
     videoMessage?: any,
     subject?: string,
@@ -481,9 +501,7 @@ export class LinkedinUnipileMessagingService {
       formData.append('attendees_ids', convertedAttendeesIds.join(','));
       formData.append('text', message);
 
-      if (attachments && attachments.length > 0) {
-        formData.append('attachments', JSON.stringify(attachments));
-      }
+      appendUnipileChatAttachments(formData, attachments);
 
       if (voiceMessage) {
         formData.append('voice_message', voiceMessage);

@@ -1143,6 +1143,12 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
     icon: 'IconHandStop',
   },
   {
+    name: 'linkedinFollowUpCount',
+    label: 'LinkedIn Follow-up Count',
+    type: 'NUMBER',
+    icon: 'IconRepeat',
+  },
+  {
     name: 'personaPriorityScore',
     label: 'Persona Priority Score',
     type: 'NUMBER',
@@ -2477,6 +2483,16 @@ const buildDashboardLayout = async ({
           gridPosition: grid(0, 6, 6, 6),
           color: 'green',
         }),
+        barWidget({
+          tabId: channelsTabId,
+          title: 'LinkedIn follow-up count',
+          objectMetadataId: candidateObjectId,
+          aggregateFieldId: candidateFields.id,
+          groupByFieldId: candidateFields.linkedinFollowUpCount,
+          gridPosition: grid(11, 0, 5, 6),
+          layout: 'VERTICAL',
+          color: 'orange',
+        }),
         lineWidget({
           tabId: channelsTabId,
           title: 'WhatsApp / LinkedIn messages over time',
@@ -2810,6 +2826,7 @@ const main = async () => {
       candidateFields.enrichStatus,
       candidateFields.messagingChannel,
       candidateFields.lastOutboundAt,
+      candidateFields.linkedinFollowUpCount,
     ].filter(Boolean),
   });
 

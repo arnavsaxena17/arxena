@@ -20,7 +20,7 @@ export const createListLogicFunctionToolsTool = (
 ) => ({
   name: 'list_logic_function_tools' as const,
   description:
-    'List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (search-people-for-company, search-people, search-companies, search-jobs, search-posts, fetch-linkedin-profile, fetch-linkedin-messages, fetch-company-details, upload-profiles) include isNative=true — do not read their source; use inputSchema. search-people-for-company, search-people, search-companies, search-jobs, and search-posts return hits only (no CRM enroll). Enroll via native upload-profiles.',
+    `List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (${[...GTM_NATIVE_LOGIC_FUNCTION_NAMES].join(', ')}) include isNative=true — do not read their source; use inputSchema. Search LFs return hits only. Persist people with upload-profiles; persist harvested companies with upsert-companies. enrich-contact and get-calendar-availability are native.`,
   inputSchema: listLogicFunctionToolsSchema,
   execute: async () => {
     const { flatLogicFunctionMaps } =

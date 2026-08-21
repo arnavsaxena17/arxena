@@ -43,6 +43,7 @@ export class GtmCommandMaterializeService {
     existingFirstOutboundAt,
     companyId,
     companyCreatedAt,
+    classifiedOutreachStage,
   }: {
     candidateId: string;
     event: GtmCandidateEventKind;
@@ -51,12 +52,14 @@ export class GtmCommandMaterializeService {
     existingFirstOutboundAt?: string | null;
     companyId?: string | null;
     companyCreatedAt?: string | null;
+    classifiedOutreachStage?: string | null;
   }): Promise<void> {
     try {
       const input = buildCandidateEventUpdate({
         event,
         messagingChannel,
         existingFirstOutboundAt,
+        classifiedOutreachStage,
       });
 
       if (Object.keys(input).length > 0) {

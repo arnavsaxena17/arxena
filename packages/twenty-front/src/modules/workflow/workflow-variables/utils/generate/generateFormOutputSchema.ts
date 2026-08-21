@@ -39,6 +39,9 @@ export const generateFormOutputSchema = (
         type: formField.type as FieldMetadataType,
         label: formField.label,
         value:
+          (typeof formField.value === 'string' && formField.value.length > 0
+            ? formField.value
+            : undefined) ??
           formField.placeholder ??
           generateFakeValue(formField.type, 'FieldMetadataType'),
       };

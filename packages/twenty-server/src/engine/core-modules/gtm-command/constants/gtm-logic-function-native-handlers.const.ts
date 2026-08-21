@@ -8,6 +8,9 @@ import {
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -138,6 +141,40 @@ export const main = async (params: {
 };
 `;
 
+const UPSERT_COMPANIES_HANDLER = `// Native GTM action: UpsertCompaniesService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  projectId: string;
+  companies?: Array<Record<string, unknown>>;
+  limit?: number;
+}) => {
+  return params;
+};
+`;
+
+const ENRICH_CONTACT_HANDLER = `// Native GTM action: EnrichContactService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  candidateId?: string;
+  linkedinUrl?: string;
+  wantEmail?: boolean;
+  wantPhone?: boolean;
+}) => {
+  return params;
+};
+`;
+
+const GET_CALENDAR_AVAILABILITY_HANDLER = `// Native GTM action: GetCalendarAvailabilityService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  workspaceMemberId?: string;
+  days?: number;
+  slotMinutes?: number;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -152,6 +189,10 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     FETCH_COMPANY_DETAILS_HANDLER,
   [GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: UPLOAD_PROFILES_HANDLER,
+  [GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME]: UPSERT_COMPANIES_HANDLER,
+  [GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: ENRICH_CONTACT_HANDLER,
+  [GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
+    GET_CALENDAR_AVAILABILITY_HANDLER,
 };
 
 export const getGtmNativeLogicFunctionHandler = (name: string): string => {

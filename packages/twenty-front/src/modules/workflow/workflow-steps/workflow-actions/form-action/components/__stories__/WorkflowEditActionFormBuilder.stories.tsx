@@ -140,9 +140,11 @@ export const OpenFieldSettings: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    const companyInput = await canvas.findByText('Select a company');
+    const settingsButtons = await canvas.findAllByRole('button', {
+      name: 'Field settings',
+    });
 
-    await userEvent.click(companyInput);
+    await userEvent.click(settingsButtons[0]);
 
     const inputSettingsLabel = await canvas.findByText('Input settings');
 

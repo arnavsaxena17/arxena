@@ -8,6 +8,9 @@ import {
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
@@ -185,6 +188,37 @@ export const GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT = {
   error: '',
 };
 
+export const GTM_UPSERT_COMPANIES_SAMPLE_OUTPUT = {
+  success: true,
+  created: 1,
+  updated: 0,
+  skipped: 0,
+  projectId: 'project-id',
+  companyIds: ['company-id'],
+  error: '',
+};
+
+export const GTM_ENRICH_CONTACT_SAMPLE_OUTPUT = {
+  success: true,
+  email: 'arapahara@acme.com',
+  emails: ['arapahara@acme.com'],
+  phones: [],
+  source: 'arxena',
+  enrichStatus: 'FOUND',
+  error: '',
+};
+
+export const GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT = {
+  success: true,
+  error: '',
+  slots: [
+    {
+      startsAt: '2026-08-24T16:00:00.000Z',
+      endsAt: '2026-08-24T16:30:00.000Z',
+    },
+  ],
+};
+
 export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   string,
   Record<string, unknown>
@@ -202,4 +236,8 @@ export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   [GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  [GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME]: GTM_UPSERT_COMPANIES_SAMPLE_OUTPUT,
+  [GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  [GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
+    GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
 };

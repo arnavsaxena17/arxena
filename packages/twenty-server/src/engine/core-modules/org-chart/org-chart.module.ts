@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 
+import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
@@ -74,6 +75,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     EnvironmentModule,
     RedisClientModule,
     GraphQLExecutionModule,
+    AccountRateLimitModule,
     LinkedInSearchModule,
     LinkedinXrayModule,
     TheOrgModule,

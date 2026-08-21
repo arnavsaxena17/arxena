@@ -529,6 +529,18 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
+      description: 'LinkedIn no-reply follow-ups sent (cap 3)',
+      icon: 'IconRepeat',
+      label: 'LinkedIn Follow-up Count',
+      name: 'linkedinFollowUpCount',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+      defaultValue: 0,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
       description: 'Priority score vs other ICP personas at the same company',
       icon: 'IconSortDescending',
       label: 'Persona Priority Score',

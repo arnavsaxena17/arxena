@@ -290,8 +290,8 @@ export const getFlowNameForRegistry = (
 export const getFlowTemplateNameForRegistry = (
   registryName: WorkflowFormRegistryName,
 ): string => {
-  // Prefer v2 templates that include Backdrop {{1}} + Details {{2}}
-  // (older *_flow names may still be PENDING with single-variable bodies)
+  // v2 templates include Backdrop {{1}} + Details {{2}}.
+  // Do not use legacy `*_flow` names — several are single-variable.
   return `${registryName}_flow_v2`;
 };
 

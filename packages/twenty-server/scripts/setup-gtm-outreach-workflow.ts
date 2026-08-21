@@ -14,11 +14,18 @@ const DELAY_SECONDS =
   process.env.GTM_DELAY_MS !== undefined
     ? Math.max(1, Math.round(Number(process.env.GTM_DELAY_MS) / 1000))
     : 0;
+const GTM_WORKSPACE_MEMBER_ID = process.env.GTM_WORKSPACE_MEMBER_ID || '';
+const GTM_CONNECTED_ACCOUNT_ID = process.env.GTM_CONNECTED_ACCOUNT_ID || '';
+const GTM_HARVEST_HOURS = Number(process.env.GTM_HARVEST_HOURS || '6');
+const GTM_HARVEST_QUERY =
+  process.env.GTM_HARVEST_QUERY || 'SaaS companies hiring GTM leaders';
 
+const WORKFLOW_HARVEST_NAME = 'GTM Harvest — LinkedIn Companies';
 const WORKFLOW_SEARCH_NAME = 'Company Created → ICP People Search';
 const WORKFLOW_B_NAME = 'GTM Outreach — Per Candidate';
 const WORKFLOW_ACCEPT_NAME = 'GTM Outreach — Connection Accepted';
 const WORKFLOW_C_NAME = 'GTM Outreach — Reply';
+const WORKFLOW_MEETING_NAME = 'GTM Outreach — Meeting Booked';
 const GTM_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
 
 type GraphQLResponse<T> = {
@@ -57,9 +64,7 @@ const extractCreatedStep = (
 
     const value = diff.value as WorkflowStep | undefined;
 
-    return (
-      isDefinedWorkflowStep(value) && value.id === preferredId
-    );
+    return isDefinedWorkflowStep(value);
   });
 
   if (createDiff && isDefinedWorkflowStep(createDiff.value)) {
@@ -71,13 +76,23 @@ const extractCreatedStep = (
       return false;
     }
 
-    const firstValue = diff.value[0];
-
-    return isDefinedWorkflowStep(firstValue) && firstValue.id === preferredId;
+    return diff.value.some(
+      (value) =>
+        isDefinedWorkflowStep(value) &&
+        (value.id === preferredId || preferredId.length > 0),
+    );
   });
 
   if (changeDiff && Array.isArray(changeDiff.value)) {
-    const firstValue = changeDiff.value[0];
+    const matchingValue = changeDiff.value.find(
+      (value) => isDefinedWorkflowStep(value) && value.id === preferredId,
+    );
+
+    if (isDefinedWorkflowStep(matchingValue)) {
+      return matchingValue;
+    }
+
+    const firstValue = changeDiff.value.find(isDefinedWorkflowStep);
 
     if (isDefinedWorkflowStep(firstValue)) {
       return firstValue;
@@ -119,7 +134,17 @@ const graphqlRequest = async <T>(
 
   if (response.data.errors?.length) {
     throw new Error(
-      response.data.errors.map((error) => error.message).join('; '),
+      response.data.errors
+        .map((error) => {
+          const extra = JSON.stringify(
+            (error as { extensions?: unknown }).extensions ?? {},
+          );
+
+          return extra === '{}'
+            ? error.message
+            : `${error.message} ${extra}`;
+        })
+        .join('; '),
     );
   }
 
@@ -164,7 +189,38 @@ const createWorkflow = async (workflowId: string, name: string) => {
     throw new Error('Workflow version was not created');
   }
 
+  await waitForWorkflowVersion(workflowVersionId);
+
   return { workflowId: data.createWorkflow.id, workflowVersionId };
+};
+
+const waitForWorkflowVersion = async (workflowVersionId: string) => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const data = await graphqlRequest<{
+      workflowVersions: { edges: Array<{ node: { id: string } }> };
+    }>(
+      `query GetWorkflowVersionById($workflowVersionId: ID!) {
+        workflowVersions(filter: { id: { eq: $workflowVersionId } } first: 1) {
+          edges { node { id } }
+        }
+      }`,
+      { workflowVersionId },
+    );
+
+    if (
+      data.workflowVersions.edges.some(
+        (edge) => edge.node.id === workflowVersionId,
+      )
+    ) {
+      return;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 150);
+    });
+  }
+
+  throw new Error(`Workflow version ${workflowVersionId} was not readable`);
 };
 
 const updateWorkflowTrigger = async ({
@@ -190,6 +246,7 @@ const updateWorkflowTrigger = async ({
           type: 'DATABASE_EVENT',
           name,
           nextStepIds,
+          position: { x: 0, y: 0 },
           settings: {
             eventName,
             outputSchema: {},
@@ -198,6 +255,77 @@ const updateWorkflowTrigger = async ({
       },
     },
   );
+
+  await waitForTrigger(workflowVersionId);
+};
+
+const waitForTrigger = async (workflowVersionId: string) => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const data = await graphqlRequest<{
+      workflowVersions: {
+        edges: Array<{ node: { id: string; trigger: unknown } }>;
+      };
+    }>(
+      `query GetWorkflowVersionTrigger($workflowVersionId: ID!) {
+        workflowVersions(filter: { id: { eq: $workflowVersionId } } first: 1) {
+          edges { node { id trigger } }
+        }
+      }`,
+      { workflowVersionId },
+    );
+
+    const node = data.workflowVersions.edges.find(
+      (edge) => edge.node.id === workflowVersionId,
+    )?.node;
+
+    if (node?.trigger) {
+      return;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 150);
+    });
+  }
+
+  throw new Error(
+    `Workflow version ${workflowVersionId} still has no trigger after update`,
+  );
+};
+
+const updateCronTrigger = async ({
+  workflowVersionId,
+  name,
+  nextStepIds,
+  hours,
+}: {
+  workflowVersionId: string;
+  name: string;
+  nextStepIds: string[];
+  hours: number;
+}) => {
+  await graphqlRequest(
+    `mutation UpdateWorkflowVersionTrigger($input: UpdateWorkflowVersionTriggerInput!) {
+      updateWorkflowVersionTrigger(input: $input) { trigger }
+    }`,
+    {
+      input: {
+        workflowVersionId,
+        trigger: {
+          type: 'CRON',
+          name,
+          nextStepIds,
+          position: { x: 0, y: 0 },
+          settings: {
+            type: 'HOURS',
+            schedule: { hour: hours, minute: 0 },
+            outputSchema: {},
+          },
+        },
+      },
+    },
+  );
+
+  await waitForTrigger(workflowVersionId);
 };
 
 const createWorkflowStep = async ({
@@ -303,6 +431,12 @@ const formNotifyOnPending = (contextTemplate: string, detailsTemplate: string) =
   whatsappOfficialRegistryName: 'wf_form_boolean_text',
 });
 
+const formDetailsFromFind = (findStepId: string, draftStepId: string) =>
+  `Contact: {{${findStepId}.first.name}} | Title: {{${findStepId}.first.jobTitle}} | Company: {{${findStepId}.first.jobCompanyName}} | Draft: {{${draftStepId}.message}}`;
+
+const formDetailsFromTrigger = (draftStepId: string) =>
+  `Contact: {{trigger.properties.after.name}} | Title: {{trigger.properties.after.jobTitle}} | Company: {{trigger.properties.after.jobCompanyName}} | Draft: {{${draftStepId}.message}}`;
+
 const queuedFilterSettings = (groupId: string, filterId: string, stage: string) => ({
   input: {
     stepFilterGroups: [
@@ -315,7 +449,7 @@ const queuedFilterSettings = (groupId: string, filterId: string, stage: string) 
       {
         id: filterId,
         type: 'SELECT',
-        stepOutputKey: '{{trigger.outreachSequenceStage}}',
+        stepOutputKey: '{{trigger.properties.after.outreachSequenceStage}}',
         operand: ViewFilterOperand.IS,
         value: stage,
         stepFilterGroupId: groupId,
@@ -325,6 +459,44 @@ const queuedFilterSettings = (groupId: string, filterId: string, stage: string) 
   outputSchema: {},
   errorHandlingOptions: errorHandling,
 });
+
+const recordStageFilterSettings = (
+  stepId: string,
+  groupId: string,
+  filterId: string,
+  stage: string,
+) => ({
+  input: {
+    stepFilterGroups: [
+      {
+        id: groupId,
+        logicalOperator: StepLogicalOperator.AND,
+      },
+    ],
+    stepFilters: [
+      {
+        id: filterId,
+        type: 'SELECT',
+        stepOutputKey: `{{${stepId}.first.outreachSequenceStage}}`,
+        operand: ViewFilterOperand.IS,
+        value: stage,
+        stepFilterGroupId: groupId,
+      },
+    ],
+  },
+  outputSchema: {},
+  errorHandlingOptions: errorHandling,
+});
+
+const logicFunctionIdFor = (name: string) => {
+  const workspaceId = process.env.WORKSPACE_ID;
+
+  if (!workspaceId) {
+    return undefined;
+  }
+
+  return uuidv5(`${workspaceId}:${name}`, GTM_LOGIC_FUNCTION_ID_NAMESPACE);
+};
 
 const deployWorkflowSearch = async (workflowVersionId: string) => {
   const workspaceId = process.env.WORKSPACE_ID;
@@ -409,8 +581,8 @@ const deployWorkflowSearch = async (workflowVersionId: string) => {
         input: {
           logicFunctionId: uploadLogicFunctionId,
           logicFunctionInput: {
-            projectId: `{{${searchPeople.id}.result.projectId}}`,
-            people: `{{${searchPeople.id}.result.people}}`,
+            projectId: `{{${searchPeople.id}.projectId}}`,
+            people: `{{${searchPeople.id}.people}}`,
           },
         },
         outputSchema: {},
@@ -476,7 +648,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
           objectName: 'candidate',
           limit: 1,
           filter: {
-            id: { eq: '{{trigger.recordId}}' },
+            id: { eq: '{{trigger.properties.after.id}}' },
           },
         },
         outputSchema: {},
@@ -499,9 +671,9 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          workspaceMemberId: '',
-          linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
-          linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
+          workspaceMemberId: GTM_WORKSPACE_MEMBER_ID,
+          linkedinProfileId: `{{${findCandidate.id}.first.linkedinProfileId}}`,
+          linkedinUrl: `{{${findCandidate.id}.first.linkedinUrl.primaryLinkUrl}}`,
           message: 'Happy to connect — would love to share how we help GTM teams.',
         },
         outputSchema: {},
@@ -525,10 +697,265 @@ const deployWorkflowB = async (workflowVersionId: string) => {
       settings: {
         input: {
           objectName: 'candidate',
-          objectRecordId: `{{${findCandidate.id}.result.first.id}}`,
+          objectRecordId: `{{${findCandidate.id}.first.id}}`,
           objectRecord: {
             outreachSequenceStage: 'CONNECTION_SENT',
             connectionStatus: 'SENT',
+          },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const waitAcceptOrEmail = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'DELAY',
+    parentStepId: markConnectionSent.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...waitAcceptOrEmail,
+      name: 'Wait 3 days for accept',
+      valid: true,
+      settings: {
+        input: delaySettings(),
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const findAfterDelay = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FIND_RECORDS',
+    parentStepId: waitAcceptOrEmail.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...findAfterDelay,
+      name: 'Reload candidate after wait',
+      valid: true,
+      settings: {
+        input: {
+          objectName: 'candidate',
+          limit: 1,
+          filter: { id: { eq: '{{trigger.properties.after.id}}' } },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const stillSentGroupId = v4();
+  const stillSentFilterId = v4();
+  const filterStillSent = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FILTER',
+    parentStepId: findAfterDelay.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...filterStillSent,
+      name: 'Still CONNECTION_SENT',
+      valid: true,
+      settings: recordStageFilterSettings(
+        findAfterDelay.id,
+        stillSentGroupId,
+        stillSentFilterId,
+        'CONNECTION_SENT',
+      ),
+    },
+  });
+
+  const enrichLogicFunctionId = logicFunctionIdFor('enrich-contact');
+  let emailParentId = filterStillSent.id;
+
+  if (enrichLogicFunctionId) {
+    const enrichContact = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'LOGIC_FUNCTION',
+      parentStepId: emailParentId,
+      defaultSettings: { input: { logicFunctionId: enrichLogicFunctionId } },
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...enrichContact,
+        name: 'Enrich email',
+        valid: true,
+        settings: {
+          input: {
+            logicFunctionId: enrichLogicFunctionId,
+            logicFunctionInput: {
+              candidateId: `{{${findAfterDelay.id}.first.id}}`,
+              linkedinUrl: `{{${findAfterDelay.id}.first.linkedinUrl.primaryLinkUrl}}`,
+            },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+    emailParentId = enrichContact.id;
+  }
+
+  const draftEmail = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'AI_AGENT',
+    parentStepId: emailParentId,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...draftEmail,
+      name: 'Draft fallback email',
+      valid: true,
+      settings: {
+        input: {
+          agentId: '',
+          prompt: [
+            'Draft a short ICP-aligned email because the LinkedIn connection was not accepted.',
+            `Name: {{${findAfterDelay.id}.first.name}}`,
+            `Title: {{${findAfterDelay.id}.first.jobTitle}}`,
+            'Do not invent LinkedIn facts. Return JSON only: { "subject": "<subject>", "message": "<body>" }',
+          ].join('\n'),
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const approveEmailForm = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FORM',
+    parentStepId: draftEmail.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...approveEmailForm,
+      name: 'Approve / edit email',
+      valid: true,
+      settings: {
+        input: [
+          {
+            id: v4(),
+            name: 'approve',
+            label: 'Approve send',
+            type: 'BOOLEAN',
+            value: true,
+          },
+          {
+            id: v4(),
+            name: 'editedBody',
+            label: 'Edited message',
+            type: 'TEXT',
+            value: `{{${draftEmail.id}.message}}`,
+          },
+        ],
+        notifyOnPending: formNotifyOnPending(
+          'Review fallback email',
+          formDetailsFromFind(findAfterDelay.id, draftEmail.id),
+        ),
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const saveDraft = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'DRAFT_EMAIL',
+    parentStepId: approveEmailForm.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...saveDraft,
+      name: 'Save email draft',
+      valid: true,
+      settings: {
+        input: {
+          connectedAccountId: GTM_CONNECTED_ACCOUNT_ID,
+          recipients: {
+            to: enrichLogicFunctionId
+              ? `{{${emailParentId}.email}}`
+              : '',
+            cc: '',
+            bcc: '',
+          },
+          subject: `{{${draftEmail.id}.subject}}`,
+          body: `{{${approveEmailForm.id}.editedBody}}`,
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const sendEmail = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'SEND_EMAIL',
+    parentStepId: saveDraft.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...sendEmail,
+      name: 'Send email',
+      valid: true,
+      settings: {
+        input: {
+          connectedAccountId: GTM_CONNECTED_ACCOUNT_ID,
+          recipients: {
+            to: enrichLogicFunctionId
+              ? `{{${emailParentId}.email}}`
+              : '',
+            cc: '',
+            bcc: '',
+          },
+          subject: `{{${draftEmail.id}.subject}}`,
+          body: `{{${approveEmailForm.id}.editedBody}}`,
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const markEmailSent = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'UPDATE_RECORD',
+    parentStepId: sendEmail.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...markEmailSent,
+      name: 'Mark EMAIL_SENT',
+      valid: true,
+      settings: {
+        input: {
+          objectName: 'candidate',
+          objectRecordId: `{{${findAfterDelay.id}.first.id}}`,
+          objectRecord: {
+            outreachSequenceStage: 'EMAIL_SENT',
           },
         },
         outputSchema: {},
@@ -542,6 +969,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
     findCandidateId: findCandidate.id,
     sendConnectId: sendConnect.id,
     markConnectionSentId: markConnectionSent.id,
+    waitAcceptOrEmailId: waitAcceptOrEmail.id,
   };
 };
 
@@ -613,7 +1041,7 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
           objectName: 'candidate',
           limit: 1,
           filter: {
-            id: { eq: '{{trigger.recordId}}' },
+            id: { eq: '{{trigger.properties.after.id}}' },
           },
         },
         outputSchema: {},
@@ -646,9 +1074,9 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
           input: {
             logicFunctionId: fetchMessagesLogicFunctionId,
             logicFunctionInput: {
-              candidateId: `{{${findCandidate.id}.result.first.id}}`,
-              linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
-              linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
+              candidateId: `{{${findCandidate.id}.first.id}}`,
+              linkedinProfileId: `{{${findCandidate.id}.first.linkedinProfileId}}`,
+              linkedinUrl: `{{${findCandidate.id}.first.linkedinUrl.primaryLinkUrl}}`,
             },
           },
           outputSchema: {},
@@ -681,9 +1109,9 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
           input: {
             logicFunctionId: fetchLogicFunctionId,
             logicFunctionInput: {
-              candidateId: `{{${findCandidate.id}.result.first.id}}`,
-              linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
-              linkedinUrl: `{{${findCandidate.id}.result.first.linkedinUrl.primaryLinkUrl}}`,
+              candidateId: `{{${findCandidate.id}.first.id}}`,
+              linkedinProfileId: `{{${findCandidate.id}.first.linkedinProfileId}}`,
+              linkedinUrl: `{{${findCandidate.id}.first.linkedinUrl.primaryLinkUrl}}`,
             },
           },
           outputSchema: {},
@@ -711,8 +1139,9 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
           agentId: '',
           prompt: [
             'Draft a short first LinkedIn message after the connection was accepted.',
-            `Name: {{${findCandidate.id}.result.first.name}}`,
-            `Title: {{${findCandidate.id}.result.first.jobTitle}}`,
+            'Prioritise rapport. Meeting is a light close, not a calendar dump.',
+            `Name: {{${findCandidate.id}.first.name}}`,
+            `Title: {{${findCandidate.id}.first.jobTitle}}`,
             'Return JSON only: { "message": "<body>" }',
           ].join('\n'),
         },
@@ -748,12 +1177,12 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
             name: 'editedBody',
             label: 'Edited message',
             type: 'TEXT',
-            value: `{{${draftMessage.id}.result.message}}`,
+            value: `{{${draftMessage.id}.message}}`,
           },
         ],
         notifyOnPending: formNotifyOnPending(
           'Review first LinkedIn message',
-          `Draft: {{${draftMessage.id}.result.message}}`,
+          formDetailsFromFind(findCandidate.id, draftMessage.id),
         ),
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -775,9 +1204,9 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          workspaceMemberId: '',
-          candidateId: `{{${findCandidate.id}.result.first.id}}`,
-          linkedinProfileId: `{{${findCandidate.id}.result.first.linkedinProfileId}}`,
+          workspaceMemberId: GTM_WORKSPACE_MEMBER_ID,
+          candidateId: `{{${findCandidate.id}.first.id}}`,
+          linkedinProfileId: `{{${findCandidate.id}.first.linkedinProfileId}}`,
           body: `{{${approveForm.id}.editedBody}}`,
         },
         outputSchema: {},
@@ -805,6 +1234,207 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
       },
     },
   });
+
+  let followUpParentId = waitFollowUp.id;
+
+  for (let followUpIndex = 1; followUpIndex <= 3; followUpIndex += 1) {
+    const findFollowUp = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'FIND_RECORDS',
+      parentStepId: followUpParentId,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...findFollowUp,
+        name: `Reload candidate before follow-up ${followUpIndex}`,
+        valid: true,
+        settings: {
+          input: {
+            objectName: 'candidate',
+            limit: 1,
+            filter: { id: { eq: '{{trigger.properties.after.id}}' } },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+
+    const followGroupId = v4();
+    const followFilterId = v4();
+    const filterStillOpen = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'FILTER',
+      parentStepId: findFollowUp.id,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...filterStillOpen,
+        name: `No reply yet (follow-up ${followUpIndex})`,
+        valid: true,
+        settings: recordStageFilterSettings(
+          findFollowUp.id,
+          followGroupId,
+          followFilterId,
+          'CONNECTION_ACCEPTED',
+        ),
+      },
+    });
+
+    const draftFollowUp = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'AI_AGENT',
+      parentStepId: filterStillOpen.id,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...draftFollowUp,
+        name: `Draft LinkedIn follow-up ${followUpIndex}`,
+        valid: true,
+        settings: {
+          input: {
+            agentId: '',
+            prompt: [
+              `Draft LinkedIn follow-up ${followUpIndex} of 3. Escalate value, do not pressure.`,
+              followUpIndex === 3
+                ? 'This is the breakup note if they are silent.'
+                : '',
+              `Name: {{${findFollowUp.id}.first.name}}`,
+              'Return JSON only: { "message": "<body>" }',
+            ]
+              .filter(Boolean)
+              .join('\n'),
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+
+    const approveFollowUp = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'FORM',
+      parentStepId: draftFollowUp.id,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...approveFollowUp,
+        name: `Approve follow-up ${followUpIndex}`,
+        valid: true,
+        settings: {
+          input: [
+            {
+              id: v4(),
+              name: 'approve',
+              label: 'Approve send',
+              type: 'BOOLEAN',
+              value: true,
+            },
+            {
+              id: v4(),
+              name: 'editedBody',
+              label: 'Edited message',
+              type: 'TEXT',
+              value: `{{${draftFollowUp.id}.message}}`,
+            },
+          ],
+          notifyOnPending: formNotifyOnPending(
+            `Review LinkedIn follow-up ${followUpIndex}`,
+            formDetailsFromFind(findFollowUp.id, draftFollowUp.id),
+          ),
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+
+    const sendFollowUp = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'SEND_LINKEDIN_MESSAGE',
+      parentStepId: approveFollowUp.id,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...sendFollowUp,
+        name: `Send follow-up ${followUpIndex}`,
+        valid: true,
+        settings: {
+          input: {
+            workspaceMemberId: GTM_WORKSPACE_MEMBER_ID,
+            candidateId: `{{${findFollowUp.id}.first.id}}`,
+            linkedinProfileId: `{{${findFollowUp.id}.first.linkedinProfileId}}`,
+            body: `{{${approveFollowUp.id}.editedBody}}`,
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+
+    const markFollowUp = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'UPDATE_RECORD',
+      parentStepId: sendFollowUp.id,
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...markFollowUp,
+        name: `Stamp follow-up ${followUpIndex}`,
+        valid: true,
+        settings: {
+          input: {
+            objectName: 'candidate',
+            objectRecordId: `{{${findFollowUp.id}.first.id}}`,
+            objectRecord: {
+              linkedinFollowUpCount: followUpIndex,
+              ...(followUpIndex === 3
+                ? { outreachSequenceStage: 'FAILED_NO_REPLY' }
+                : {}),
+            },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+
+    followUpParentId = markFollowUp.id;
+
+    if (followUpIndex < 3) {
+      const waitNext = await createWorkflowStep({
+        workflowVersionId,
+        stepType: 'DELAY',
+        parentStepId: followUpParentId,
+      });
+
+      await updateWorkflowStep({
+        workflowVersionId,
+        step: {
+          ...waitNext,
+          name: `Wait before follow-up ${followUpIndex + 1}`,
+          valid: true,
+          settings: {
+            input: delaySettings(),
+            outputSchema: {},
+            errorHandlingOptions: errorHandling,
+          },
+        },
+      });
+      followUpParentId = waitNext.id;
+    }
+  }
 
   return {
     filterAcceptedId: filterAccepted.id,
@@ -871,7 +1501,7 @@ const deployWorkflowC = async (workflowVersionId: string) => {
           objectName: 'chatMessage',
           limit: 20,
           filter: {
-            candidateId: { eq: '{{trigger.recordId}}' },
+            candidateId: { eq: '{{trigger.properties.after.id}}' },
           },
         },
         outputSchema: {},
@@ -880,10 +1510,48 @@ const deployWorkflowC = async (workflowVersionId: string) => {
     },
   });
 
+  const calendarLogicFunctionId = logicFunctionIdFor(
+    'get-calendar-availability',
+  );
+  let replyParentId = findMessages.id;
+
+  if (calendarLogicFunctionId) {
+    const calendarSlots = await createWorkflowStep({
+      workflowVersionId,
+      stepType: 'LOGIC_FUNCTION',
+      parentStepId: replyParentId,
+      defaultSettings: {
+        input: { logicFunctionId: calendarLogicFunctionId },
+      },
+    });
+
+    await updateWorkflowStep({
+      workflowVersionId,
+      step: {
+        ...calendarSlots,
+        name: 'Get calendar availability',
+        valid: true,
+        settings: {
+          input: {
+            logicFunctionId: calendarLogicFunctionId,
+            logicFunctionInput: {
+              workspaceMemberId: GTM_WORKSPACE_MEMBER_ID,
+              days: 5,
+              slotMinutes: 30,
+            },
+          },
+          outputSchema: {},
+          errorHandlingOptions: errorHandling,
+        },
+      },
+    });
+    replyParentId = calendarSlots.id;
+  }
+
   const draftReply = await createWorkflowStep({
     workflowVersionId,
     stepType: 'AI_AGENT',
-    parentStepId: findMessages.id,
+    parentStepId: replyParentId,
   });
 
   await updateWorkflowStep({
@@ -896,9 +1564,12 @@ const deployWorkflowC = async (workflowVersionId: string) => {
         input: {
           agentId: '',
           prompt: [
-            'Draft a reply using the latest inbound chatMessage.message texts.',
-            'Do not book a meeting automatically.',
-            'Return JSON only: { "message": "<body>" }',
+            'Build rapport. Goal is a meeting, not a hard close.',
+            'Use canonical chatMessage.messageObj or concatenated chatMessage.message.',
+            calendarLogicFunctionId
+              ? `Only propose times from these slots: {{${replyParentId}.slots}}. Never invent times.`
+              : 'Do not invent calendar times.',
+            'Return JSON only: { "message": "<body>", "intent": "interested|not_now|times_proposed|book|unsubscribe", "proposedSlots": [] }',
           ].join('\n'),
         },
         outputSchema: {},
@@ -933,12 +1604,12 @@ const deployWorkflowC = async (workflowVersionId: string) => {
             name: 'editedBody',
             label: 'Edited message',
             type: 'TEXT',
-            value: `{{${draftReply.id}.result.message}}`,
+            value: `{{${draftReply.id}.message}}`,
           },
         ],
         notifyOnPending: formNotifyOnPending(
           'Review inbound reply',
-          `Draft: {{${draftReply.id}.result.message}}`,
+          formDetailsFromTrigger(draftReply.id),
         ),
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -960,9 +1631,9 @@ const deployWorkflowC = async (workflowVersionId: string) => {
       valid: true,
       settings: {
         input: {
-          workspaceMemberId: '',
-          candidateId: '{{trigger.recordId}}',
-          linkedinProfileId: '{{trigger.linkedinProfileId}}',
+          workspaceMemberId: GTM_WORKSPACE_MEMBER_ID,
+          candidateId: '{{trigger.properties.after.id}}',
+          linkedinProfileId: '{{trigger.properties.after.linkedinProfileId}}',
           body: `{{${approveForm.id}.editedBody}}`,
         },
         outputSchema: {},
@@ -977,6 +1648,222 @@ const deployWorkflowC = async (workflowVersionId: string) => {
     draftReplyId: draftReply.id,
     approveFormId: approveForm.id,
     sendReplyId: sendReply.id,
+  };
+};
+
+const deployWorkflowHarvest = async (
+  workflowVersionId: string,
+  projectId: string,
+) => {
+  const searchCompaniesId = logicFunctionIdFor('search-companies');
+  const upsertCompaniesId = logicFunctionIdFor('upsert-companies');
+
+  if (!searchCompaniesId || !upsertCompaniesId) {
+    throw new Error(
+      'WORKSPACE_ID is required to seed harvest search-companies + upsert-companies',
+    );
+  }
+
+  await updateCronTrigger({
+    workflowVersionId,
+    name: 'Every few hours',
+    nextStepIds: [],
+    hours: GTM_HARVEST_HOURS,
+  });
+
+  const searchCompanies = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'LOGIC_FUNCTION',
+    parentStepId: TRIGGER_STEP_ID,
+    defaultSettings: { input: { logicFunctionId: searchCompaniesId } },
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...searchCompanies,
+      name: 'Search LinkedIn companies',
+      valid: true,
+      settings: {
+        input: {
+          logicFunctionId: searchCompaniesId,
+          logicFunctionInput: {
+            query: GTM_HARVEST_QUERY,
+            keywords: GTM_HARVEST_QUERY,
+            limit: 15,
+          },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  await updateCronTrigger({
+    workflowVersionId,
+    name: 'Every few hours',
+    nextStepIds: [searchCompanies.id],
+    hours: GTM_HARVEST_HOURS,
+  });
+
+  const upsertCompanies = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'LOGIC_FUNCTION',
+    parentStepId: searchCompanies.id,
+    defaultSettings: { input: { logicFunctionId: upsertCompaniesId } },
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...upsertCompanies,
+      name: 'Upsert companies to CRM',
+      valid: true,
+      settings: {
+        input: {
+          logicFunctionId: upsertCompaniesId,
+          logicFunctionInput: {
+            projectId,
+            companies: `{{${searchCompanies.id}.companies}}`,
+          },
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  return {
+    searchCompaniesId: searchCompanies.id,
+    upsertCompaniesId: upsertCompanies.id,
+  };
+};
+
+const deployWorkflowMeeting = async (workflowVersionId: string) => {
+  const bookedGroupId = v4();
+  const bookedFilterId = v4();
+
+  await updateWorkflowTrigger({
+    workflowVersionId,
+    name: 'Candidate is Updated',
+    eventName: 'candidate.updated',
+    nextStepIds: [],
+  });
+
+  const filterBooked = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FILTER',
+    parentStepId: TRIGGER_STEP_ID,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...filterBooked,
+      name: 'Only MEETING_BOOKED',
+      valid: true,
+      settings: queuedFilterSettings(
+        bookedGroupId,
+        bookedFilterId,
+        'MEETING_BOOKED',
+      ),
+    },
+  });
+
+  await updateWorkflowTrigger({
+    workflowVersionId,
+    name: 'Candidate is Updated',
+    eventName: 'candidate.updated',
+    nextStepIds: [filterBooked.id],
+  });
+
+  const approveMeeting = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'FORM',
+    parentStepId: filterBooked.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...approveMeeting,
+      name: 'Confirm meeting times',
+      valid: true,
+      settings: {
+        input: [
+          {
+            id: v4(),
+            name: 'approve',
+            label: 'Send calendar invite',
+            type: 'BOOLEAN',
+            value: true,
+          },
+          {
+            id: v4(),
+            name: 'startsAt',
+            label: 'Starts at (ISO)',
+            type: 'TEXT',
+            value: '',
+          },
+          {
+            id: v4(),
+            name: 'endsAt',
+            label: 'Ends at (ISO)',
+            type: 'TEXT',
+            value: '',
+          },
+        ],
+        notifyOnPending: formNotifyOnPending(
+          'Confirm calendar invite',
+          [
+            'Set start/end then approve to invite both sides.',
+            'Contact: {{trigger.properties.after.name}}',
+            'Title: {{trigger.properties.after.jobTitle}}',
+            'Company: {{trigger.properties.after.jobCompanyName}}',
+          ].join(' | '),
+        ),
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  const createEvent = await createWorkflowStep({
+    workflowVersionId,
+    stepType: 'CREATE_CALENDAR_EVENT',
+    parentStepId: approveMeeting.id,
+  });
+
+  await updateWorkflowStep({
+    workflowVersionId,
+    step: {
+      ...createEvent,
+      name: 'Create calendar invite',
+      valid: true,
+      settings: {
+        input: {
+          connectedAccountId: GTM_CONNECTED_ACCOUNT_ID,
+          title: 'Intro call',
+          description: 'GTM outreach meeting',
+          location: '',
+          startsAt: `{{${approveMeeting.id}.startsAt}}`,
+          endsAt: `{{${approveMeeting.id}.endsAt}}`,
+          isFullDay: false,
+          timeZone: '',
+          attendees: '',
+          sendInvitations: true,
+          addConferencing: true,
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
+    },
+  });
+
+  return {
+    filterBookedId: filterBooked.id,
+    approveMeetingId: approveMeeting.id,
+    createEventId: createEvent.id,
   };
 };
 
@@ -1092,19 +1979,54 @@ const main = async () => {
   const stepIdsC = await deployWorkflowC(workflowC.workflowVersionId);
   await activateWorkflowVersion(workflowC.workflowVersionId);
 
+  const workflowMeetingId =
+    process.env.GTM_OUTREACH_WORKFLOW_MEETING_ID || v4();
+  const workflowMeeting = await createWorkflow(
+    workflowMeetingId,
+    WORKFLOW_MEETING_NAME,
+  );
+  const stepIdsMeeting = await deployWorkflowMeeting(
+    workflowMeeting.workflowVersionId,
+  );
+  await activateWorkflowVersion(workflowMeeting.workflowVersionId);
+
   const projectId = await bindProjectOutreachWorkflow(workflowB.workflowId);
+
+  let stepIdsHarvest: Record<string, string> | undefined;
+
+  if (projectId) {
+    const workflowHarvestId =
+      process.env.GTM_OUTREACH_WORKFLOW_HARVEST_ID || v4();
+    const workflowHarvest = await createWorkflow(
+      workflowHarvestId,
+      WORKFLOW_HARVEST_NAME,
+    );
+    stepIdsHarvest = await deployWorkflowHarvest(
+      workflowHarvest.workflowVersionId,
+      projectId,
+    );
+    await activateWorkflowVersion(workflowHarvest.workflowVersionId);
+    console.log(`Workflow harvest: ${workflowHarvest.workflowId}`);
+  } else {
+    console.warn('Skip harvest workflow — no Project id to tag gtmRunKey');
+  }
 
   console.log('GTM outreach workflows setup complete');
   console.log(`Workflow search (company created): ${workflowSearch.workflowId}`);
   console.log(`Workflow B (per candidate): ${workflowB.workflowId}`);
   console.log(`Workflow accept: ${workflowAccept.workflowId}`);
   console.log(`Workflow C (reply): ${workflowC.workflowId}`);
+  console.log(`Workflow meeting: ${workflowMeeting.workflowId}`);
   console.log(`Project bind: ${projectId ?? 'skipped'}`);
   console.log('Open /gtm-home?workflowId=' + workflowB.workflowId);
   console.log('Step IDs search:', stepIdsSearch);
   console.log('Step IDs B:', stepIdsB);
   console.log('Step IDs accept:', stepIdsAccept);
   console.log('Step IDs C:', stepIdsC);
+  console.log('Step IDs meeting:', stepIdsMeeting);
+  if (stepIdsHarvest) {
+    console.log('Step IDs harvest:', stepIdsHarvest);
+  }
 };
 
 main().catch((error: unknown) => {

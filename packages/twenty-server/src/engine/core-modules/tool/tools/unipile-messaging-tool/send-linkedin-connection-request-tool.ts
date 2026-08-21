@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import {
   SendLinkedinConnectionRequestToolInputZodSchema,
   type SendLinkedinConnectionRequestToolInput,
@@ -77,6 +78,9 @@ export class SendLinkedinConnectionRequestTool implements Tool {
         },
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to send LinkedIn connection request: ${getUnipileToolErrorMessage(error)}`,
       );

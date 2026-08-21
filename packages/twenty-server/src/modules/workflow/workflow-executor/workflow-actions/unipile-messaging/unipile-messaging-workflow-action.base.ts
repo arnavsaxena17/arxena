@@ -1,6 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
 import {
@@ -151,9 +152,31 @@ export abstract class UnipileMessagingWorkflowActionBase<
     }
 
     const startedAt = Date.now();
-    const toolOutput = await this.getTool().execute(resolvedInput, {
-      workspaceId: runInfo.workspaceId,
-    });
+    let toolOutput;
+    try {
+      toolOutput = await this.getTool().execute(resolvedInput, {
+        workspaceId: runInfo.workspaceId,
+      });
+    } catch (error) {
+      if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
+        await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
+          RESUME_DELAYED_WORKFLOW_JOB_NAME,
+          {
+            workspaceId: runInfo.workspaceId,
+            workflowRunId: runInfo.workflowRunId,
+            stepId: currentStepId,
+          },
+          {
+            ...buildRunWorkflowJobOptions(runInfo.workflowRunId),
+            delay: error.waitMs,
+          },
+        );
+
+        return { pendingEvent: true };
+      }
+
+      throw error;
+    }
     const durationMs = Date.now() - startedAt;
 
     if (toolOutput.success) {

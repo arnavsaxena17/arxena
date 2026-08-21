@@ -389,11 +389,6 @@ export class GtmCommandController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    await this.gtmCommandMaterializeService.applyCandidateEvent({
-      candidateId: body.candidateId,
-      event: 'inbound_reply',
-      apiToken,
-    });
     await this.gtmInboundReplyWindowService.schedule({
       workspaceId,
       candidateId: body.candidateId,

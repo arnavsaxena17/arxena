@@ -1,6 +1,10 @@
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import type { UnipileWhatsappAccount, WhatsappQrCodeResponse } from 'twenty-shared/arx';
+import type {
+  UnipileWhatsappAccount,
+  WhatsappAccountRateLimits,
+  WhatsappQrCodeResponse,
+} from 'twenty-shared/arx';
 
 export class WhatsappUnipileBackendService {
   private baseUrl: string;
@@ -165,6 +169,33 @@ export class WhatsappUnipileBackendService {
       console.error('Failed to disconnect WhatsApp account:', error);
       return { success: false };
     }
+  }
+
+  async getAccountRateLimits(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<WhatsappAccountRateLimits> {
+    const response = await this.makeRequest<{ limits: WhatsappAccountRateLimits }>(
+      `/accounts/${accountId}/rate-limits`,
+      'GET',
+      undefined,
+      accessToken,
+    );
+    return response.limits;
+  }
+
+  async saveAccountRateLimits(
+    accountId: string,
+    limits: WhatsappAccountRateLimits,
+    accessToken?: string,
+  ): Promise<WhatsappAccountRateLimits> {
+    const response = await this.makeRequest<{ limits: WhatsappAccountRateLimits }>(
+      `/accounts/${accountId}/rate-limits`,
+      'POST',
+      { limits },
+      accessToken,
+    );
+    return response.limits;
   }
 
   /**

@@ -346,11 +346,13 @@ export const buildCandidateEventUpdate = ({
   nowIso = new Date().toISOString(),
   messagingChannel,
   existingFirstOutboundAt,
+  classifiedOutreachStage,
 }: {
   event: GtmCandidateEventKind;
   nowIso?: string;
   messagingChannel?: string | null;
   existingFirstOutboundAt?: string | null;
+  classifiedOutreachStage?: string | null;
 }): Record<string, unknown> => {
   switch (event) {
     case 'connection_sent':
@@ -414,7 +416,7 @@ export const buildCandidateEventUpdate = ({
       };
     case 'inbound_reply_flush':
       return {
-        outreachSequenceStage: 'REPLIED',
+        outreachSequenceStage: classifiedOutreachStage ?? 'REPLIED',
         lastInboundAt: nowIso,
       };
     case 'meeting_booked':

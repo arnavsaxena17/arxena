@@ -28,32 +28,16 @@ export interface EngagedCandidateJobData {
   isIncomingMessage?: boolean; // Flag to distinguish incoming vs outgoing messages
   /** Delay in minutes after last message before processing. From job.engagementProcessingDelayMinutes; default 2. */
   slidingWindowDelayMinutes?: number;
+  /** Skip debounce; inbound grouping already flushed via Redis delayed job. */
+  processImmediately?: boolean;
 }
 
 const PROCESSING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout per candidate
-
-/** Default delay (minutes) after last message before processing. Matches Job.engagementProcessingDelayMinutes default. */
-const DEFAULT_SLIDING_WINDOW_DELAY_MINUTES = 2;
-/** Min/max allowed delay (minutes) for sliding window; values outside are clamped. */
-const MIN_SLIDING_WINDOW_DELAY_MINUTES = 1;
-const MAX_SLIDING_WINDOW_DELAY_MINUTES = 60;
-
-function getSlidingWindowDelayMs(jobData: EngagedCandidateJobData): number {
-  const minutes = jobData.slidingWindowDelayMinutes ?? DEFAULT_SLIDING_WINDOW_DELAY_MINUTES;
-  const clamped = Math.min(MAX_SLIDING_WINDOW_DELAY_MINUTES, Math.max(MIN_SLIDING_WINDOW_DELAY_MINUTES, minutes));
-  return clamped * 60 * 1000;
-}
 
 @Injectable()
 @Processor(MessageQueue.engagedCandidateProcessingQueue)
 export class EngagedCandidateProcessor {
   private readonly logger = new Logger(EngagedCandidateProcessor.name);
-  private readonly candidateWindows = new Map<string, {
-    lastMessageTime: number;
-    candidateId: string;
-    workspaceId: string;
-    timeoutId?: NodeJS.Timeout;
-  }>();
   private readonly chatFlowConfigBuilder: ChatFlowConfigBuilder;
 
   constructor(
@@ -88,40 +72,14 @@ export class EngagedCandidateProcessor {
         return;
       }
 
-      // Update or create sliding window for this candidate
-      const windowKey = `${workspaceId}-${candidateId}`;
-      const existingWindow = this.candidateWindows.get(windowKey);
-
-      // Clear existing timeout if any
-      if (existingWindow?.timeoutId) {
-        clearTimeout(existingWindow.timeoutId);
-      }
-
-      // Update the window with new timestamp
-      const windowData = {
-        lastMessageTime: timestamp,
+      this.logger.log(
+        `Processing engaged candidate ${candidateId} immediately (inbound grouping uses Redis delayed flush)`,
+      );
+      await this.processCandidateEngagement(
         candidateId,
         workspaceId,
-      };
-
-      const slidingWindowDelayMs = getSlidingWindowDelayMs(jobData);
-      // Set new timeout for processing
-      const timeoutId = setTimeout(async () => {
-        try {
-          await this.processCandidateEngagement(candidateId, workspaceId, isIncomingMessage);
-          this.candidateWindows.delete(windowKey);
-        } catch (error) {
-          this.logger.error(`Error processing candidate ${candidateId}:`, error);
-          this.candidateWindows.delete(windowKey);
-        }
-      }, slidingWindowDelayMs);
-
-      this.candidateWindows.set(windowKey, {
-        ...windowData,
-        timeoutId,
-      });
-
-      this.logger.log(`Updated sliding window for candidate ${candidateId}, will process after ${slidingWindowDelayMs}ms delay (${jobData.slidingWindowDelayMinutes ?? DEFAULT_SLIDING_WINDOW_DELAY_MINUTES} min)`);
+        isIncomingMessage,
+      );
 
     } catch (error) {
       this.logger.error(`Error handling engaged candidate job for ${candidateId}:`, error);
@@ -577,25 +535,5 @@ export class EngagedCandidateProcessor {
     }
 
     return null;
-  }
-
-  // Cleanup method to clear all timeouts when shutting down
-  public cleanup(): void {
-    this.logger.log('Cleaning up engaged candidate processor');
-    this.candidateWindows.forEach((window) => {
-      if (window.timeoutId) {
-        clearTimeout(window.timeoutId);
-      }
-    });
-    this.candidateWindows.clear();
-  }
-
-  // Method to get current window status (for debugging/monitoring)
-  public getWindowStatus(): { candidateId: string; workspaceId: string; lastMessageTime: number }[] {
-    return Array.from(this.candidateWindows.values()).map(window => ({
-      candidateId: window.candidateId,
-      workspaceId: window.workspaceId,
-      lastMessageTime: window.lastMessageTime,
-    }));
   }
 }

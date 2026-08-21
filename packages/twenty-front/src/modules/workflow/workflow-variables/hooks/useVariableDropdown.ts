@@ -24,6 +24,7 @@ type UseVariableDropdownProps = {
   step: StepOutputSchemaV2;
   onSelect: (value: string) => void;
   onBack: () => void;
+  initialPath?: string[];
 };
 
 type UseVariableDropdownReturn = {
@@ -40,10 +41,11 @@ export const useVariableDropdown = ({
   step,
   onSelect,
   onBack,
+  initialPath = [],
 }: UseVariableDropdownProps): UseVariableDropdownReturn => {
   const { getIcon } = useIcons();
 
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
+  const [currentPath, setCurrentPath] = useState<string[]>(initialPath);
   const [searchInputValue, setSearchInputValue] = useState('');
 
   const { openWorkflowEditStepInSidePanel } = useSidePanelWorkflowNavigation();

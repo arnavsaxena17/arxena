@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
+import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GraphQLExecutionModule } from 'src/engine/core-modules/graphql/graphql-execution.module';
 import { MessageQueueModule } from 'src/engine/core-modules/message-queue/message-queue.module';
@@ -25,6 +26,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
 @Module({
   imports: [
     TypeORMModule,
+    AccountRateLimitModule,
     forwardRef(() => WorkspaceModificationsModule),
     EnvironmentModule,
     GraphQLExecutionModule,

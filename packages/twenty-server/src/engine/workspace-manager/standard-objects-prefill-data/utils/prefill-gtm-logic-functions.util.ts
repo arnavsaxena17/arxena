@@ -13,6 +13,9 @@ import {
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -24,6 +27,9 @@ import {
   GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   GTM_SEARCH_POSTS_SAMPLE_OUTPUT,
   GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  GTM_UPSERT_COMPANIES_SAMPLE_OUTPUT,
+  GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -69,6 +75,18 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   uploadProfilesId: uuidv5(
     `${workspaceId}:upload-profiles`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  upsertCompaniesId: uuidv5(
+    `${workspaceId}:upsert-companies`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  enrichContactId: uuidv5(
+    `${workspaceId}:enrich-contact`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  getCalendarAvailabilityId: uuidv5(
+    `${workspaceId}:get-calendar-availability`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -625,6 +643,130 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.upsertCompaniesId,
+      name: GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+      description:
+        'Upsert Company search hits into CRM and tag gtmRunKey to the Project. Pass projectId and companies[] from search-companies. Skips rows already tagged to this run.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Upsert companies',
+        icon: 'IconBuildingSkyscraper',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              projectId: { type: 'string', label: 'Project ID' },
+              companies: { type: 'array', label: 'Companies' },
+              limit: { type: 'number', label: 'Limit' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              created: { type: 'number', label: 'Created' },
+              updated: { type: 'number', label: 'Updated' },
+              skipped: { type: 'number', label: 'Skipped' },
+              projectId: { type: 'string', label: 'Project ID' },
+              companyIds: { type: 'array', label: 'Company IDs' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: GTM_UPSERT_COMPANIES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.enrichContactId,
+      name: GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+      description:
+        'Find email/phone for a candidate via contact enrichment waterfall. Pass candidateId and/or linkedinUrl. Stamps enrichStatus and EMAIL_ENRICHING / FAILED_ENRICH.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Enrich contact',
+        icon: 'IconMail',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              candidateId: { type: 'string', label: 'Candidate ID' },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              wantEmail: { type: 'boolean', label: 'Want email' },
+              wantPhone: { type: 'boolean', label: 'Want phone' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              email: { type: 'string', label: 'Email' },
+              emails: { type: 'array', label: 'Emails' },
+              phones: { type: 'array', label: 'Phones' },
+              source: { type: 'string', label: 'Source' },
+              enrichStatus: { type: 'string', label: 'Enrich status' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.getCalendarAvailabilityId,
+      name: GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+      description:
+        'Return free seller calendar slots from Google Calendar busy times. Pass optional workspaceMemberId, days, slotMinutes. Inject slots into AI_AGENT — do not invent times.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Get calendar availability',
+        icon: 'IconCalendarTime',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              days: { type: 'number', label: 'Days ahead' },
+              slotMinutes: { type: 'number', label: 'Slot minutes' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              error: { type: 'string', label: 'Error' },
+              slots: {
+                type: 'array',
+                label: 'Slots',
+                items: {
+                  type: 'object',
+                  properties: {
+                    startsAt: { type: 'string', label: 'Starts at' },
+                    endsAt: { type: 'string', label: 'Ends at' },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
       },
     },
   ];

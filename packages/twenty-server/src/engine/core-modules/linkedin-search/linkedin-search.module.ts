@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
 import { AppTokenEntity } from 'src/engine/core-modules/app-token/app-token.entity';
@@ -37,6 +38,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 @Module({
   imports: [
     EnvironmentModule,
+    AccountRateLimitModule,
     ApifyModule,
     WorkspaceModificationsModule,
     UnipilePoolModule,

@@ -12,6 +12,7 @@ import {
     Res,
     UseGuards,
 } from '@nestjs/common';
+import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -43,6 +44,7 @@ export class WhatsappUnipileController {
     private readonly unipileRequestService: WhatsappUnipileRequestService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly whatsappUnipileSyncService: WhatsappUnipileSyncService,
+    private readonly accountRateLimitConfigService: AccountRateLimitConfigService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -307,6 +309,32 @@ export class WhatsappUnipileController {
       this.logger.error(`Failed to get WhatsApp account ${accountId}:`, error);
       throw error;
     }
+  }
+
+  @Get('accounts/:accountId/rate-limits')
+  async getAccountRateLimits(
+    @Param('accountId') accountId: string,
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ) {
+    const limits = await this.accountRateLimitConfigService.getWhatsappLimits(
+      workspace.id,
+      accountId,
+    );
+    return { success: true, limits };
+  }
+
+  @Post('accounts/:accountId/rate-limits')
+  async saveAccountRateLimits(
+    @Param('accountId') accountId: string,
+    @Body() body: { limits?: Record<string, unknown> },
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ) {
+    const limits = await this.accountRateLimitConfigService.saveWhatsappLimits(
+      workspace.id,
+      accountId,
+      body.limits ?? {},
+    );
+    return { success: true, limits };
   }
 
   /**

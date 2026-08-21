@@ -147,7 +147,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
       <StyledHeader>
         <StyledTitle>{t`Notify on pending`}</StyledTitle>
         <StyledHint>
-          {t`Send this form to WhatsApp when the run pauses. Backdrop and details support workflow variables and appear in the Official template.`}
+          {t`When this run pauses, send a WhatsApp to the GTM owner with a title, contact details, and a link to fill the form.`}
         </StyledHint>
       </StyledHeader>
 
@@ -202,7 +202,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
       {enabled && (
         <StyledFieldsGroup>
           <FormTextFieldInput
-            label={t`Backdrop (WhatsApp {{1}})`}
+            label={t`WhatsApp title`}
             readonly={readonly}
             defaultValue={
               notifyOnPending?.contextTemplate ?? DEFAULT_CONTEXT_TEMPLATE
@@ -211,11 +211,12 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               updateNotify(withCurrentNotify({ contextTemplate: value }));
             }}
             VariablePicker={WorkflowVariablePicker}
+            hint={t`Shown as the first line of the Official WhatsApp template.`}
           />
 
           <StyledFieldWithHint>
             <FormTextFieldInput
-              label={t`Details (WhatsApp {{2}})`}
+              label={t`WhatsApp details`}
               readonly={readonly}
               defaultValue={notifyOnPending?.detailsTemplate ?? ''}
               onChange={(value) => {
@@ -228,56 +229,79 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               VariablePicker={WorkflowVariablePicker}
             />
             <StyledFieldHint>
-              {t`If Details is empty, field labels are used. Insert workflow variables so the approver sees company, contact, etc.`}
+              {t`Contact and draft context for the approver. Insert variables from earlier steps (name, title, company, draft).`}
             </StyledFieldHint>
           </StyledFieldWithHint>
 
-          <FormTextFieldInput
-            label={t`Official recipient phone (optional)`}
-            readonly={readonly}
-            defaultValue={
-              notifyOnPending?.recipients?.WHATSAPP_OFFICIAL ?? ''
-            }
-            onChange={(value) => {
-              updateNotify(
-                withCurrentNotify({
-                  recipients: {
-                    ...notifyOnPending?.recipients,
-                    WHATSAPP_OFFICIAL: value || undefined,
-                  },
-                }),
-              );
-            }}
-          />
+          {channels.includes('WHATSAPP_OFFICIAL') && (
+            <FormTextFieldInput
+              label={t`Official recipient phone`}
+              readonly={readonly}
+              defaultValue={
+                notifyOnPending?.recipients?.WHATSAPP_OFFICIAL ?? ''
+              }
+              onChange={(value) => {
+                updateNotify(
+                  withCurrentNotify({
+                    recipients: {
+                      ...notifyOnPending?.recipients,
+                      WHATSAPP_OFFICIAL: value || undefined,
+                    },
+                  }),
+                );
+              }}
+              VariablePicker={WorkflowVariablePicker}
+              hint={t`Who receives the Official WhatsApp ping — the GTM owner's profile phone, not the candidate.`}
+            />
+          )}
 
-          <FormTextFieldInput
-            label={t`Unipile recipient phone (optional)`}
-            readonly={readonly}
-            defaultValue={notifyOnPending?.recipients?.WHATSAPP_UNIPILE ?? ''}
-            onChange={(value) => {
-              updateNotify(
-                withCurrentNotify({
-                  recipients: {
-                    ...notifyOnPending?.recipients,
-                    WHATSAPP_UNIPILE: value || undefined,
-                  },
-                }),
-              );
-            }}
-          />
+          {channels.includes('WHATSAPP_UNIPILE') && (
+            <FormTextFieldInput
+              label={t`Unipile recipient phone`}
+              readonly={readonly}
+              defaultValue={notifyOnPending?.recipients?.WHATSAPP_UNIPILE ?? ''}
+              onChange={(value) => {
+                updateNotify(
+                  withCurrentNotify({
+                    recipients: {
+                      ...notifyOnPending?.recipients,
+                      WHATSAPP_UNIPILE: value || undefined,
+                    },
+                  }),
+                );
+              }}
+              VariablePicker={WorkflowVariablePicker}
+              hint={t`Personal Unipile WhatsApp number. Can be the same as Official if both channels use one phone.`}
+            />
+          )}
 
           <StyledFieldWithHint>
             <Select
-              label={t`Force Official template (optional)`}
+              label={t`Official WhatsApp template`}
               dropdownId="workflow-form-notify-registry"
               disabled={readonly}
               value={notifyOnPending?.whatsappOfficialRegistryName ?? ''}
               options={[
                 { label: t`Auto from field types`, value: '' },
-                { label: 'wf_form_boolean', value: 'wf_form_boolean' },
-                { label: 'wf_form_hosted', value: 'wf_form_hosted' },
-                { label: 'wf_form_text', value: 'wf_form_text' },
-                { label: 'wf_form_generic', value: 'wf_form_generic' },
+                { label: t`Yes / No`, value: 'wf_form_boolean' },
+                {
+                  label: t`Yes / No + message`,
+                  value: 'wf_form_boolean_text',
+                },
+                { label: t`Message only`, value: 'wf_form_text' },
+                { label: t`Number`, value: 'wf_form_number' },
+                { label: t`Date`, value: 'wf_form_date' },
+                { label: t`Select`, value: 'wf_form_select' },
+                {
+                  label: t`Multi-select`,
+                  value: 'wf_form_multi_select',
+                },
+                {
+                  label: t`Text + number + date`,
+                  value: 'wf_form_text_number_date',
+                },
+                { label: t`Generic form`, value: 'wf_form_generic' },
+                { label: t`Hosted fill link`, value: 'wf_form_hosted' },
               ]}
               onChange={(value) => {
                 updateNotify(
@@ -288,7 +312,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               }}
             />
             <StyledFieldHint>
-              {t`Forms with RECORD fields always use the hosted fill link template.`}
+              {t`Leave on Auto unless the Official send must use a specific template. Yes / No + message matches Approve send + Edited message.`}
             </StyledFieldHint>
           </StyledFieldWithHint>
         </StyledFieldsGroup>

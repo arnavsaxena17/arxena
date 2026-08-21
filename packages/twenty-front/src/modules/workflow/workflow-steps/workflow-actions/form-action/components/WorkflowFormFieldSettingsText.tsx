@@ -3,6 +3,7 @@ import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/c
 import { InputLabel } from '@/ui/input/components/InputLabel';
 import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormActionField';
 import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
+import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { t } from '@lingui/core/macro';
 import { styled } from '@linaria/react';
 import camelCase from 'lodash.camelcase';
@@ -16,6 +17,12 @@ type WorkflowFormFieldSettingsTextProps = {
 
 const StyledContainer = styled.div`
   display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledRow = styled.div`
+  display: flex;
   flex-direction: row;
   gap: ${themeCssVariables.spacing[2]};
 `;
@@ -26,35 +33,51 @@ export const WorkflowFormFieldSettingsText = ({
 }: WorkflowFormFieldSettingsTextProps) => {
   return (
     <StyledContainer>
+      <StyledRow>
+        <FormFieldInputContainer>
+          <InputLabel>{t`Label`}</InputLabel>
+          <FormTextFieldInput
+            onChange={(newLabel: string) => {
+              onChange({
+                ...field,
+                label: newLabel,
+                name: camelCase(newLabel),
+              });
+            }}
+            defaultValue={field.label}
+            placeholder={
+              getDefaultFormFieldSettings(FieldMetadataType.TEXT).label
+            }
+          />
+        </FormFieldInputContainer>
+        <FormFieldInputContainer>
+          <InputLabel>{t`Placeholder`}</InputLabel>
+          <FormTextFieldInput
+            onChange={(newPlaceholder: string) => {
+              onChange({
+                ...field,
+                placeholder: newPlaceholder,
+              });
+            }}
+            defaultValue={field.placeholder}
+            placeholder={
+              getDefaultFormFieldSettings(FieldMetadataType.TEXT).placeholder
+            }
+          />
+        </FormFieldInputContainer>
+      </StyledRow>
       <FormFieldInputContainer>
-        <InputLabel>{t`Label`}</InputLabel>
+        <InputLabel>{t`Default value`}</InputLabel>
         <FormTextFieldInput
-          onChange={(newLabel: string) => {
+          onChange={(newValue: string) => {
             onChange({
               ...field,
-              label: newLabel,
-              name: camelCase(newLabel),
+              value: newValue,
             });
           }}
-          defaultValue={field.label}
-          placeholder={
-            getDefaultFormFieldSettings(FieldMetadataType.TEXT).label
-          }
-        />
-      </FormFieldInputContainer>
-      <FormFieldInputContainer>
-        <InputLabel>{t`Placeholder`}</InputLabel>
-        <FormTextFieldInput
-          onChange={(newPlaceholder: string) => {
-            onChange({
-              ...field,
-              placeholder: newPlaceholder,
-            });
-          }}
-          defaultValue={field.placeholder}
-          placeholder={
-            getDefaultFormFieldSettings(FieldMetadataType.TEXT).placeholder
-          }
+          defaultValue={typeof field.value === 'string' ? field.value : ''}
+          placeholder={t`Prefilled when the form opens`}
+          VariablePicker={WorkflowVariablePicker}
         />
       </FormFieldInputContainer>
     </StyledContainer>

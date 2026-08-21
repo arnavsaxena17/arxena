@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
 
 export type UnipileCompanyProfileDto = {
@@ -125,6 +126,11 @@ export class UnipileCompanyService {
 
     const baseUrl = process.env.UNIPILE_API_URL ?? '';
     const apiKey = process.env.UNIPILE_ACCESS_TOKEN ?? '';
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId,
+      method: 'company_profile',
+    });
     const url = `${baseUrl.replace(/\/$/, '')}/api/v1/linkedin/company/${encodeURIComponent(slug)}?account_id=${encodeURIComponent(accountId)}`;
 
     try {

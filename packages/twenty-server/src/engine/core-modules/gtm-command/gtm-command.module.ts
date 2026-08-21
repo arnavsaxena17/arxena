@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 
+import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
@@ -21,6 +22,9 @@ import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/serv
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
 import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/services/upload-profiles.service';
+import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
+import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
+import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
 import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
@@ -34,6 +38,7 @@ import {
 } from 'src/engine/core-modules/gtm-command/services/gtm-company-enrichment-collector.service';
 import { GtmCompanyProfileSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-company-profile-summarizer.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { GtmInboundReplyClassifierService } from 'src/engine/core-modules/gtm-command/services/gtm-inbound-reply-classifier.service';
 import { GtmCompaniesCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-companies-cache.service';
 import { GtmLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-linkedin-pool-company-enrichment.source';
 import { GtmOutreachThrottleService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
@@ -48,10 +53,13 @@ import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-funct
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
+import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
+import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 
 @Module({
   imports: [
     GraphQLExecutionModule,
+    AccountRateLimitModule,
     LogicFunctionExecutorModule,
     WorkspaceModificationsModule,
     CandidateSearchModule,
@@ -66,10 +74,13 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     PostsApiModule,
     JwtModule,
     forwardRef(() => CandidateSourcingModule),
+    ContactEnrichmentModule,
+    GoogleCalendarModule,
   ],
   controllers: [GtmCommandController],
   providers: [
     GtmCommandMaterializeService,
+    GtmInboundReplyClassifierService,
     GtmOutreachThrottleService,
     GtmCompaniesCacheService,
     GtmPeopleCacheService,
@@ -115,6 +126,9 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
     UploadProfilesService,
+    UpsertCompaniesService,
+    EnrichContactService,
+    GetCalendarAvailabilityService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
@@ -122,6 +136,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
   ],
   exports: [
     GtmCommandMaterializeService,
+    GtmInboundReplyClassifierService,
     GtmOutreachThrottleService,
     GtmCompaniesCacheService,
     GtmPeopleCacheService,
@@ -132,6 +147,9 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
     UploadProfilesService,
+    UpsertCompaniesService,
+    EnrichContactService,
+    GetCalendarAvailabilityService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,

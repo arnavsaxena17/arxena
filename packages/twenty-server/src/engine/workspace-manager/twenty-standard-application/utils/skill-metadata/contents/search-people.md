@@ -17,9 +17,10 @@ Load this skill when the user wants to:
 | Context | Destination | Tool |
 | --- | --- | --- |
 | User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks to find people for this run | **Ephemeral GTM People tab** (Redis) | `upsert_gtm_target_people` |
+| User wants a **workflow** that enrolls ICP people on `company.created` | CRM Person + Candidate (`QUEUED`) | Load `gtm-outreach-workflows` + `workflow-building`; native `upload-profiles` — do **not** Redis-upsert for that automation |
 | User explicitly asks to **save to CRM** / create Candidates / "add these people to the project as candidates" **after confirming** | CRM `candidate` / `person` | `create_candidate` / `create_one_person` / update |
 
-On GTM Command: **never** end after a chat-only table. Persist with `upsert_gtm_target_people({ projectId, mode: "merge", people })` first, then summarize. Do **not** `create_candidate` / `create_one_person` for the People tab — the user selects rows and clicks Add to CRM / Enroll.
+On GTM Command **People tab / Find people**: **never** end after a chat-only table. Persist with `upsert_gtm_target_people({ projectId, mode: "merge", people })` first, then summarize. Do **not** `create_candidate` / `create_one_person` **for that tab**. Workflow enroll (`upload-profiles`) is the exception in the table above.
 
 `upsert_gtm_target_people` person shape:
 
@@ -224,5 +225,5 @@ existing = arxena.lookup_by('candidates', 'email', [r['email'] for r in people_r
 - Prefer the internal index to avoid duplicate CRM people (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by email/LinkedIn before any write.
-- On GTM Command, persistence to `upsert_gtm_target_people` is mandatory before ending the turn; never `create_candidate` until the user confirms.
+- On GTM Command People tab, persistence to `upsert_gtm_target_people` is mandatory before ending the turn; never `create_candidate` until the user confirms. Scheduled enroll is `gtm-outreach-workflows` (`upload-profiles`), not this skill.
 - Present results with name, title, company, location, and source (Apollo / LinkedIn / Harvest / Exa) so the user can judge quality; note when Recruiter results hide public identifiers.

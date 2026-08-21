@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import {
   SendLinkedinMessageToolInputZodSchema,
   type SendLinkedinMessageToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-message-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { loadUnipileChatAttachments } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/load-unipile-chat-attachments.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,
@@ -20,13 +22,15 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 export class SendLinkedinMessageTool implements Tool {
   private readonly logger = new Logger(SendLinkedinMessageTool.name);
 
+  constructor(private readonly fileService: FileService) {}
+
   description =
-    'Send a LinkedIn direct message via Unipile. Requires a Unipile LinkedIn account ID and recipient profile.';
+    'Send a LinkedIn direct message via Unipile. Requires a Unipile LinkedIn account ID and recipient profile. Supports PDF, image, or video attachments up to 15MB.';
   inputSchema = SendLinkedinMessageToolInputZodSchema;
 
   async execute(
     parameters: ToolInput,
-    _context: ToolExecutionContext,
+    context: ToolExecutionContext,
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinMessageToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
@@ -52,11 +56,17 @@ export class SendLinkedinMessageTool implements Tool {
     }
 
     try {
+      const attachments = await loadUnipileChatAttachments({
+        files: input.files,
+        workspaceId: context.workspaceId,
+        fileService: this.fileService,
+      });
       const messagingService = createLinkedinUnipileMessagingServiceForTools();
       const result = await messagingService.sendMessage(
         unipileAccountId,
         [linkedinProfileId],
         body,
+        attachments,
       );
 
       this.logger.log(
@@ -70,6 +80,7 @@ export class SendLinkedinMessageTool implements Tool {
           unipileAccountId,
           linkedinProfileId,
           body,
+          attachmentCount: attachments.length,
           response: result,
         },
       };

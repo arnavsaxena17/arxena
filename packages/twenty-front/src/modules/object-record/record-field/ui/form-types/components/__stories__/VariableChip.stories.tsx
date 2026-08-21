@@ -22,6 +22,9 @@ export const Default: Story = {
     const canvas = within(canvasElement);
 
     expect(await canvas.findByText('Address Street1')).toBeVisible();
+    expect(
+      await canvas.findByLabelText(/Address Street1/),
+    ).toBeVisible();
   },
 };
 
@@ -38,6 +41,9 @@ export const DefaultDeleteHovered: Story = {
     const canvas = within(canvasElement);
 
     expect(await canvas.findByText('Address Street1')).toBeVisible();
+    expect(
+      await canvas.findByLabelText(/Address Street1/),
+    ).toBeVisible();
   },
 };
 

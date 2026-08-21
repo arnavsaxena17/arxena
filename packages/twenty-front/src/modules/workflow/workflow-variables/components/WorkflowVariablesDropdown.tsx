@@ -126,6 +126,7 @@ export const WorkflowVariablesDropdown = ({
             dropdownId={dropdownId}
             steps={availableVariablesInWorkflowStep}
             onSelect={handleStepSelect}
+            onSelectVariable={handleSubItemSelect}
           />
         ) : (
           <WorkflowVariablesDropdownStepItems

@@ -11,6 +11,9 @@ import {
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
@@ -21,6 +24,9 @@ import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-comma
 import { SearchPeopleService } from 'src/engine/core-modules/gtm-command/services/search-people.service';
 import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/services/upload-profiles.service';
+import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
+import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
+import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
 import { NativeLogicFunctionHandler } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function-handler.interface';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 
@@ -38,6 +44,9 @@ export class GtmLogicFunctionNativeExecutor
     private readonly searchJobsService: SearchJobsService,
     private readonly searchPostsService: SearchPostsService,
     private readonly uploadProfilesService: UploadProfilesService,
+    private readonly upsertCompaniesService: UpsertCompaniesService,
+    private readonly enrichContactService: EnrichContactService,
+    private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -141,6 +150,46 @@ export class GtmLogicFunctionNativeExecutor
           recruiterId?: string;
           workspaceMemberId?: string;
           limit?: number;
+        },
+      });
+    }
+
+    if (name === GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME) {
+      return this.upsertCompaniesService.execute({
+        workspaceId,
+        input: payload as {
+          projectId?: string;
+          companies?: Array<{
+            name?: string;
+            website?: string;
+            domain?: string;
+            linkedinUrl?: string;
+            industry?: string;
+          }>;
+          limit?: number;
+        },
+      });
+    }
+
+    if (name === GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME) {
+      return this.enrichContactService.execute({
+        workspaceId,
+        input: payload as {
+          candidateId?: string;
+          linkedinUrl?: string;
+          wantEmail?: boolean;
+          wantPhone?: boolean;
+        },
+      });
+    }
+
+    if (name === GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME) {
+      return this.getCalendarAvailabilityService.execute({
+        workspaceId,
+        input: payload as {
+          workspaceMemberId?: string;
+          days?: number;
+          slotMinutes?: number;
         },
       });
     }

@@ -1,6 +1,7 @@
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type {
+  LinkedinAccountRateLimits,
   LinkedinCheckpointData,
   LinkedinCookieAuth,
   LinkedinCredentials,
@@ -321,6 +322,33 @@ export class LinkedinBackendService {
   }, accessToken?: string): Promise<any> {
     const response = await this.makeRequest<{ chat: any }>('/message/send', 'POST', messageData, accessToken);
     return response.chat;
+  }
+
+  async getAccountRateLimits(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<LinkedinAccountRateLimits> {
+    const response = await this.makeRequest<{ limits: LinkedinAccountRateLimits }>(
+      `/accounts/${accountId}/rate-limits`,
+      'GET',
+      undefined,
+      accessToken,
+    );
+    return response.limits;
+  }
+
+  async saveAccountRateLimits(
+    accountId: string,
+    limits: LinkedinAccountRateLimits,
+    accessToken?: string,
+  ): Promise<LinkedinAccountRateLimits> {
+    const response = await this.makeRequest<{ limits: LinkedinAccountRateLimits }>(
+      `/accounts/${accountId}/rate-limits`,
+      'POST',
+      { limits },
+      accessToken,
+    );
+    return response.limits;
   }
 
   /**

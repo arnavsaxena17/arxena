@@ -83,12 +83,13 @@ describe('gtm-command-materialize.util', () => {
 
     expect(
       buildCandidateEventUpdate({
-        event: 'enrich_failed',
+        event: 'inbound_reply_flush',
+        classifiedOutreachStage: 'DEFERRED',
         nowIso: '2026-01-01T00:00:00.000Z',
       }),
     ).toMatchObject({
-      outreachSequenceStage: 'FAILED_ENRICH',
-      enrichStatus: 'FAILED',
+      outreachSequenceStage: 'DEFERRED',
+      lastInboundAt: '2026-01-01T00:00:00.000Z',
     });
   });
 

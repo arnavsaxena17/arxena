@@ -20,6 +20,7 @@ import {
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
+import { WhatsappAccountRateLimitsPanel } from './WhatsappAccountRateLimitsPanel';
 
 const AccountsContainer = styled.div`
   margin-top: 2rem;
@@ -33,14 +34,19 @@ const AccountsTitle = styled.h3`
 `;
 
 const AccountCard = styled.div`
-  align-items: center;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   margin-bottom: 1rem;
   padding: 1rem;
+`;
+
+const AccountHeader = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 `;
 
 const AccountInfo = styled.div`
@@ -440,6 +446,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       ) : (
         displayedAccounts.map((account) => (
           <AccountCard key={account.id}>
+            <AccountHeader>
             <AccountInfo>
               <Avatar>{getInitials(account.username)}</Avatar>
               <AccountDetails>
@@ -479,6 +486,13 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
                 Disconnect
               </ActionButton>
             </AccountActions>
+            </AccountHeader>
+            {getNormalizedStatus(account.status) === 'connected' && (
+              <WhatsappAccountRateLimitsPanel
+                accountId={account.id}
+                accessToken={accessToken}
+              />
+            )}
           </AccountCard>
         ))
       )}

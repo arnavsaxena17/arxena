@@ -1,3 +1,4 @@
+import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
@@ -127,6 +128,7 @@ const conditionalImports = isWorker
 
 @Module({
   imports: [
+    AccountRateLimitModule,
     WorkspaceCacheStorageModule,
     EmailModule,
     EnvironmentModule,

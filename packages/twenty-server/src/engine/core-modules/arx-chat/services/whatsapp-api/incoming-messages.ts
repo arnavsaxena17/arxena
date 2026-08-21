@@ -44,7 +44,7 @@ export class IncomingWhatsappMessages {
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
     private readonly gtmInboundReplyWindowService?: GtmInboundReplyWindowService,
-    private readonly gtmCommandMaterializeService?: GtmCommandMaterializeService,
+    private readonly _gtmCommandMaterializeService?: GtmCommandMaterializeService,
     ) {
   }
 
@@ -234,8 +234,11 @@ export class IncomingWhatsappMessages {
     console.log('This is the apiToken to use in receiving LinkedIn messages:', apiToken);
     console.log('This is the workspaceId to use in receiving LinkedIn messages:', workspaceId);
 
-    // Check if message is from the connected user (self message) or external contact
-    const isFromConnectedUser = account_info?.user_id === sender.attendee_provider_id;
+    const isFromConnectedUser =
+      payload.is_sender === true ||
+      (payload.is_sender !== false &&
+        Boolean(account_info?.user_id) &&
+        account_info?.user_id === sender.attendee_provider_id);
 
     console.log('LinkedIn message from connected user:', isFromConnectedUser);
     console.log('Message content:', message);
@@ -1614,6 +1617,61 @@ export class IncomingWhatsappMessages {
     console.log("This is the replyObject in createAndUpdate Incoming CandidateChatMessage::", replyObject);
 
     try {
+      const isGtmCandidate = this.isGtmOutreachCandidate(
+        candidateProfileDataNodeObj,
+        candidateJob,
+      );
+      const shouldBufferInbound =
+        Boolean(this.gtmInboundReplyWindowService) &&
+        shouldQueue &&
+        !replyObject.isFromMe &&
+        Boolean(candidateProfileDataNodeObj?.id);
+
+      if (shouldBufferInbound) {
+        const workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+        if (workspaceId) {
+          const channel =
+            replyObject.messageType === 'linkedin' ||
+            replyObject.messageType === 'LINKEDIN'
+              ? 'LINKEDIN'
+              : 'WHATSAPP';
+
+          await this.gtmInboundReplyWindowService?.schedule({
+            workspaceId,
+            candidateId: candidateProfileDataNodeObj.id,
+            delayMinutes:
+              candidateJob?.engagementProcessingDelayMinutes ?? 2,
+            apiToken,
+            kind: isGtmCandidate ? 'gtm' : 'recruiter',
+            channel,
+            turn: {
+              role: 'user',
+              content: replyObject.chatReply,
+              externalMessageId: replyObject.externalMessageId,
+              receivedAt: new Date().toISOString(),
+            },
+          });
+
+          const recruiterId = candidateJob?.recruiterId;
+          if (recruiterId) {
+            this.workspaceQueryService.webSocketService.sendToUser(
+              recruiterId,
+              'chat_message_updated',
+              {
+                candidateId: candidateProfileDataNodeObj.id,
+                projectId: candidateJob.id,
+                messageId: replyObject.externalMessageId,
+                pending: true,
+              },
+            );
+          }
+
+          return null;
+        }
+      }
+
       const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
 
       const queueService = new EngagedCandidateQueueService(
@@ -1628,41 +1686,6 @@ export class IncomingWhatsappMessages {
         candidateJob,
         apiToken,
       );
-
-      console.log("Message was processed successfully and we should queue for engagement");
-      const isGtmCandidate = this.isGtmOutreachCandidate(
-        candidateProfileDataNodeObj,
-        candidateJob,
-      );
-
-      if (
-        isGtmCandidate &&
-        whatappUpdateMessageObj &&
-        !replyObject.isFromMe &&
-        candidateProfileDataNodeObj?.id
-      ) {
-        try {
-          await this.gtmCommandMaterializeService?.applyCandidateEvent({
-            candidateId: candidateProfileDataNodeObj.id,
-            event: 'inbound_reply',
-            apiToken,
-          });
-          const workspaceId =
-            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-
-          if (workspaceId) {
-            await this.gtmInboundReplyWindowService?.schedule({
-              workspaceId,
-              candidateId: candidateProfileDataNodeObj.id,
-              delayMinutes:
-                candidateJob?.engagementProcessingDelayMinutes ?? 2,
-              apiToken,
-            });
-          }
-        } catch (error) {
-          console.error('Error scheduling GTM inbound reply window:', error);
-        }
-      }
 
       if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && !isGtmCandidate) {
         try {

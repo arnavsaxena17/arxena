@@ -26,6 +26,13 @@ import { SyncGtmOutreachWorkflowsSkillContentCommand } from 'src/database/comman
 import { RenameWhatsappMessageToChatMessageCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000031-rename-whatsapp-message-to-chat-message.command';
 import { DropUnusedArxenaCrmObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000032-drop-unused-arxena-crm-objects.command';
 import { SyncGtmSearchCompaniesUrlInputCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000033-sync-gtm-search-companies-url-input.command';
+import { SyncWorkflowBuilderCompositionSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000034-sync-workflow-builder-composition-skill-content.command';
+import { SyncGtmSequencerSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000035-sync-gtm-sequencer-skill-content.command';
+import { EnsureGtmSequencerLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000036-ensure-gtm-sequencer-logic-functions.command';
+import { SyncGtmSequencerSkillRecipesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000037-sync-gtm-sequencer-skill-recipes.command';
+import { PrefillGtmOutreachWorkflowsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000038-prefill-gtm-outreach-workflows.command';
+import { ResyncGtmOutreachWorkflowGraphsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000039-resync-gtm-outreach-workflow-graphs.command';
+import { ResyncGtmOutreachWhatsappFormDetailsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000040-resync-gtm-outreach-whatsapp-form-details.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -74,6 +81,13 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     RenameWhatsappMessageToChatMessageCommand,
     DropUnusedArxenaCrmObjectsCommand,
     SyncGtmSearchCompaniesUrlInputCommand,
+    SyncWorkflowBuilderCompositionSkillContentCommand,
+    SyncGtmSequencerSkillContentCommand,
+    EnsureGtmSequencerLogicFunctionsCommand,
+    SyncGtmSequencerSkillRecipesCommand,
+    PrefillGtmOutreachWorkflowsCommand,
+    ResyncGtmOutreachWorkflowGraphsCommand,
+    ResyncGtmOutreachWhatsappFormDetailsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

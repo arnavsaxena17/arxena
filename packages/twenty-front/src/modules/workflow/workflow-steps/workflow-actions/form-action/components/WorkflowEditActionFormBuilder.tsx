@@ -1,8 +1,6 @@
 import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
 import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
 import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
-import { FormFieldPlaceholder } from '@/object-record/record-field/ui/form-types/components/FormFieldPlaceholder';
-import { InputLabel } from '@/ui/input/components/InputLabel';
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { DraggableList } from '@/ui/layout/draggable-list/components/DraggableList';
 import { type DraggableListDropResult } from '@/ui/layout/draggable-list/types/DraggableListDropResult';
@@ -13,21 +11,21 @@ import {
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
 import { WorkflowEditActionFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFieldSettings';
+import { WorkflowFormBuilderFieldValue } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormBuilderFieldValue';
 import { WorkflowFormNotifyOnPendingSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormNotifyOnPendingSettings';
 import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormActionField';
 import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
-import { isNonEmptyString } from '@sniptt/guards';
 import { useContext, useEffect, useState } from 'react';
 import { FieldMetadataType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { Callout } from 'twenty-ui/feedback';
 import {
   IconAlertTriangle,
-  IconChevronDown,
   IconGripVertical,
   IconPlus,
+  IconSettings,
   IconTrash,
 } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
@@ -55,9 +53,9 @@ const StyledFormFieldContainer = styled.div`
   column-gap: ${themeCssVariables.spacing[1]};
   display: grid;
   grid-template-areas:
-    'grip input delete'
-    '. settings .';
-  grid-template-columns: 24px 1fr 24px;
+    'grip input gear delete'
+    '. settings settings settings';
+  grid-template-columns: 24px 1fr 24px 24px;
   margin-bottom: ${themeCssVariables.spacing[4]};
   position: relative;
 `;
@@ -80,6 +78,13 @@ const StyledTrashButtonContainer = styled.div`
   align-items: flex-end;
   display: flex;
   grid-area: delete;
+  margin-bottom: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledGearButtonContainer = styled.div`
+  align-items: flex-end;
+  display: flex;
+  grid-area: gear;
   margin-bottom: ${themeCssVariables.spacing[1]};
 `;
 
@@ -115,10 +120,6 @@ const StyledFieldContainer = styled.div<{
   }
 `;
 
-const StyledPlaceholderContainer = styled.div`
-  width: 100%;
-`;
-
 const StyledAddFieldButtonContainer = styled.div`
   padding-left: ${themeCssVariables.spacing[7]};
   padding-right: ${themeCssVariables.spacing[7]};
@@ -133,6 +134,14 @@ const StyledAddFieldButtonContentContainer = styled.div`
   gap: ${themeCssVariables.spacing[0.5]};
   justify-content: center;
   width: 100%;
+`;
+
+const StyledFormFieldsHint = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.4;
+  padding-left: ${themeCssVariables.spacing[7]};
+  padding-right: ${themeCssVariables.spacing[7]};
 `;
 
 const StyledCalloutContainer = styled.div`
@@ -307,42 +316,28 @@ export const WorkflowEditActionFormBuilder = ({
                         )}
 
                         <StyledFormFieldInputContainerWrapper>
-                          <InputLabel>{field.label || ''}</InputLabel>
+                          <WorkflowFormBuilderFieldValue
+                            field={field}
+                            readonly={actionOptions.readonly === true}
+                            isSelected={isFieldSelected(field.id)}
+                            onChange={onFieldUpdate}
+                            onOpenSettings={() => {
+                              handleFieldClick(field.id);
+                            }}
+                          />
+                        </StyledFormFieldInputContainerWrapper>
 
-                          <FormFieldInputRowContainer>
-                            <FormFieldInputInnerContainer
-                              formFieldInputInstanceId={field.id}
-                              hasRightElement={false}
+                        {!actionOptions.readonly && (
+                          <StyledGearButtonContainer>
+                            <LightIconButton
+                              Icon={IconSettings}
+                              aria-label={t`Field settings`}
                               onClick={() => {
                                 handleFieldClick(field.id);
                               }}
-                            >
-                              <StyledFieldContainer
-                                readonly={actionOptions.readonly}
-                              >
-                                <StyledPlaceholderContainer>
-                                  <FormFieldPlaceholder>
-                                    {isDefined(field.placeholder) &&
-                                    isNonEmptyString(field.placeholder)
-                                      ? field.placeholder
-                                      : getDefaultFormFieldSettings(field.type)
-                                          .placeholder}
-                                  </FormFieldPlaceholder>
-                                </StyledPlaceholderContainer>
-                                {(field.type === 'RECORD' ||
-                                  field.type === 'SELECT' ||
-                                  field.type === 'MULTI_SELECT') && (
-                                  <IconChevronDown
-                                    size={theme.icon.size.md}
-                                    color={
-                                      themeCssVariables.font.color.tertiary
-                                    }
-                                  />
-                                )}
-                              </StyledFieldContainer>
-                            </FormFieldInputInnerContainer>
-                          </FormFieldInputRowContainer>
-                        </StyledFormFieldInputContainerWrapper>
+                            />
+                          </StyledGearButtonContainer>
+                        )}
 
                         {showButtons && (
                           <StyledTrashButtonContainer>
@@ -388,6 +383,11 @@ export const WorkflowEditActionFormBuilder = ({
             </>
           }
         />
+        {formData.length > 0 && (
+          <StyledFormFieldsHint>
+            {t`These are the fields the approver fills. Default values can use variables from earlier steps.`}
+          </StyledFormFieldsHint>
+        )}
 
         {!actionOptions.readonly && (
           <StyledAddFieldButtonContainer>

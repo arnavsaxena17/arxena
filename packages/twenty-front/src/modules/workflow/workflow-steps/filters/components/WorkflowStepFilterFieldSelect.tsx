@@ -4,6 +4,7 @@ import { SelectControl } from '@/ui/input/components/SelectControl';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { WorkflowDropdownStepOutputItems } from '@/workflow/workflow-steps/components/WorkflowDropdownStepOutputItems';
+import { useApplyStepFilterFieldFromVariable } from '@/workflow/workflow-steps/filters/hooks/useApplyStepFilterFieldFromVariable';
 import { WorkflowStepFilterContext } from '@/workflow/workflow-steps/filters/states/context/WorkflowStepFilterContext';
 import { WorkflowVariablesDropdownSteps } from '@/workflow/workflow-variables/components/WorkflowVariablesDropdownSteps';
 import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variables/hooks/useAvailableVariablesInWorkflowStep';
@@ -54,14 +55,26 @@ export const WorkflowStepFilterFieldSelect = ({
       ? availableVariablesInWorkflowStep[0]
       : undefined;
 
+  const [isChoosingStep, setIsChoosingStep] = useState(false);
   const [selectedStep, setSelectedStep] = useState<
     StepOutputSchemaV2 | undefined
-  >(initialStep);
+  >(undefined);
+
+  const { applyStepFilterFieldFromVariable } =
+    useApplyStepFilterFieldFromVariable();
 
   const stepId = extractRawVariableNamePart({
     rawVariableName: stepFilter.stepOutputKey,
     part: 'stepId',
   });
+
+  const currentFilterStep = availableVariablesInWorkflowStep.find(
+    (step) => step.id === stepId,
+  );
+
+  const displayedStep = isChoosingStep
+    ? undefined
+    : (selectedStep ?? currentFilterStep ?? initialStep);
 
   const { variableLabel, variablePathLabel } = useSearchVariable({
     stepId,
@@ -76,19 +89,46 @@ export const WorkflowStepFilterFieldSelect = ({
 
   const dropdownId = `step-filter-field-${stepFilter.id}`;
 
-  const handleStepSelect = (stepId: string) => {
+  const handleStepSelect = (stepIdToSelect: string) => {
+    setIsChoosingStep(false);
     setSelectedStep(
-      availableVariablesInWorkflowStep.find((step) => step.id === stepId),
+      availableVariablesInWorkflowStep.find(
+        (step) => step.id === stepIdToSelect,
+      ),
     );
   };
 
   const handleSubItemSelect = () => {
-    setSelectedStep(initialStep);
+    setIsChoosingStep(false);
+    setSelectedStep(undefined);
     closeDropdown(dropdownId);
   };
 
   const handleBack = () => {
+    setIsChoosingStep(true);
     setSelectedStep(undefined);
+  };
+
+  const handleVariableSelect = (rawVariableName: string) => {
+    const selectedStepId = extractRawVariableNamePart({
+      rawVariableName,
+      part: 'stepId',
+    });
+    const stepForVariable = availableVariablesInWorkflowStep.find(
+      (step) => step.id === selectedStepId,
+    );
+
+    if (!isDefined(stepForVariable)) {
+      return;
+    }
+
+    applyStepFilterFieldFromVariable({
+      stepFilter,
+      rawVariableName,
+      isFullRecord: false,
+      stepType: stepForVariable.type,
+    });
+    handleSubItemSelect();
   };
 
   const isSelectedFieldNotFound = !isDefined(variableLabel);
@@ -154,16 +194,18 @@ export const WorkflowStepFilterFieldSelect = ({
         />
       }
       dropdownComponents={
-        !isDefined(selectedStep) ? (
+        !isDefined(displayedStep) ? (
           <WorkflowVariablesDropdownSteps
             dropdownId={dropdownId}
             steps={availableVariablesInWorkflowStep}
             onSelect={handleStepSelect}
+            onSelectVariable={handleVariableSelect}
           />
         ) : (
           <WorkflowDropdownStepOutputItems
+            key={displayedStep.id}
             stepFilter={stepFilter}
-            step={selectedStep}
+            step={displayedStep}
             onSelect={handleSubItemSelect}
             onBack={handleBack}
           />

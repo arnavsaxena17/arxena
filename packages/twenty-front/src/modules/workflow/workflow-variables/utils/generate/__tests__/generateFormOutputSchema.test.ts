@@ -39,6 +39,25 @@ describe('generateFormOutputSchema', () => {
       });
     });
 
+    it('should use default value over placeholder when defined', () => {
+      const formFields: WorkflowFormActionField[] = [
+        {
+          id: 'field-1',
+          name: 'editedBody',
+          label: 'Edited message',
+          type: FieldMetadataType.TEXT,
+          placeholder: 'Enter your text',
+          value: '{{draft.message}}',
+        },
+      ];
+
+      const result = generateFormOutputSchema(formFields, []);
+
+      expect(result.editedBody).toMatchObject({
+        value: '{{draft.message}}',
+      });
+    });
+
     it('should use placeholder as value when defined', () => {
       const formFields: WorkflowFormActionField[] = [
         {

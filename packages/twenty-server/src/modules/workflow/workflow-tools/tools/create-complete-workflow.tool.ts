@@ -91,11 +91,13 @@ export const createCreateCompleteWorkflowTool = (
 
 Do NOT inspect the spilled JSON Schema with code_interpreter. Use this description + list_logic_function_tools (includes inputSchema).
 
+This call creates ONE workflow with ONE trigger. Immediate-on-update AND timeout fallback = two calls. DELAY is a timer only; after DELAY, FIND the record by id before IF_ELSE/FILTER. Load_skills(["workflow-building"]) for how DELAY / DATABASE_EVENT / IF_ELSE compose.
+
 Trigger:
 - type MUST be DATABASE_EVENT | MANUAL | CRON | WEBHOOK (never RECORD_CREATED)
 - DATABASE_EVENT settings.eventName is "objectName.action" e.g. "company.created"
 - Trigger record fields: {{trigger.properties.after.<field>}} — NOT {{trigger.fieldName}} or {{trigger.object.fieldName}}
-- Step outputs: {{<step-uuid>.<field>}} — NOT {{step.result.field}}
+- Step outputs use the step UUID. CODE / LOGIC_FUNCTION / HTTP / AI_AGENT: {{<step-uuid>.result.<field>}}. FORM: {{<form-step-uuid>.<fieldName>}} (no .result).
 
 Edges:
 - { "source": "trigger", "target": "<step-uuid>" } — never from/to
@@ -104,7 +106,7 @@ LOGIC_FUNCTION steps:
 - settings.input.logicFunctionId
 - settings.input.logicFunctionInput (never flatten params onto settings.input)
 - Call list_logic_function_tools for inputSchema. Native functions (isNative) ignore source code — do not call get_logic_function_source for them.
-- GTM company.created / outreach recipes: load_skills(["gtm-outreach-workflows"]) — do not invent FIND_RECORDS + icpSpec unpacking.
+- GTM harvest (CRON + upsert-companies), company.created enroll, LinkedIn/email sequencer: load_skills(["gtm-outreach-workflows"]) — do not invent FIND_RECORDS + icpSpec unpacking or Redis upserts for harvest.
 
 Other:
 - Each step needs id (UUID), name, type, valid, settings

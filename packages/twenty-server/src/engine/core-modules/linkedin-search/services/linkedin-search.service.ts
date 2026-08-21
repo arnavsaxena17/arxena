@@ -5,6 +5,7 @@ import {
     ApifyService,
     type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
+import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
@@ -158,6 +159,12 @@ export class LinkedInSearchService {
     } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'search',
+      });
+
       // Track request if workspaceId is provided
       if (options.workspaceId) {
         const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
@@ -277,6 +284,11 @@ export class LinkedInSearchService {
     } = {}
   ): Promise<LinkedInSearchParametersList> {
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'search',
+      });
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
       const queryParams = new URLSearchParams({
         type,
@@ -336,6 +348,12 @@ export class LinkedInSearchService {
     options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId,
+        method: 'search',
+      });
+
       // Track request if workspaceId is provided
       if (options.workspaceId) {
         const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
@@ -652,6 +670,11 @@ export class LinkedInSearchService {
       sortOrder?: string;
     } = {},
   ): Promise<LinkedInSearchResponse> {
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId,
+      method: 'search',
+    });
     await this.enforceRequestSpacing();
 
     const v2ListId = toUnipileV2AccountListId(listId);

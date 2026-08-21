@@ -102,6 +102,7 @@ type BaseChipProps = {
   chipId?: string;
   label: string;
   title?: string;
+  ariaLabel?: string;
   onRemove?: (event: MouseEvent) => void;
   removeAriaLabel?: string;
   danger?: boolean;
@@ -116,6 +117,7 @@ export const BaseChip = ({
   chipId,
   label,
   title,
+  ariaLabel,
   onRemove,
   removeAriaLabel = 'Remove',
   danger = false,
@@ -135,12 +137,12 @@ export const BaseChip = ({
       danger={danger}
       selected={selected}
       data-flashing={isFlashing}
+      title={title}
+      aria-label={ariaLabel ?? title ?? label}
       onDoubleClick={onDoubleClick}
     >
       {leftIcon}
-      <StyledLabel title={title ?? label} maxWidth={maxWidth}>
-        {label}
-      </StyledLabel>
+      <StyledLabel maxWidth={maxWidth}>{label}</StyledLabel>
 
       {isDeletable && (
         <StyledDelete

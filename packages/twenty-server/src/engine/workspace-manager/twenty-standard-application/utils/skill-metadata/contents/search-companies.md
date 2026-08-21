@@ -18,8 +18,9 @@ Load this skill when the user wants to:
 | --- | --- | --- |
 | User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks for a **target list** for this run | **Ephemeral GTM Companies tab** (Redis) | `upsert_gtm_target_companies` |
 | User explicitly asks to **save to CRM** / create Company records / "add to companies object" | CRM `companies` | `create_one_company` / `create_many_companies` / update |
+| User wants a **scheduled / workflow** harvest into the companies table (tag to project) | CRM `companies` + `gtmRunKey` | Load `gtm-outreach-workflows` + `workflow-building`; do **not** use Redis for that automation |
 
-On GTM Command: **never** end after a chat-only table. Persist with `upsert_gtm_target_companies({ projectId, mode: "merge", companies })` first, then summarize. Do **not** create CRM Company rows for the Companies tab.
+On GTM Command **Companies tab / Find companies**: **never** end after a chat-only table. Persist with `upsert_gtm_target_companies({ projectId, mode: "merge", companies })` first, then summarize. Do **not** create CRM Company rows **for that tab**. Workflow harvest is the exception in the table above.
 
 `upsert_gtm_target_companies` company shape:
 
@@ -237,4 +238,4 @@ company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by domain/normalized name before any write.
 - Present results with name, domain, industry, location, size, and source (Apollo / LinkedIn / Harvest / Exa / Wikidata) so the user can judge quality.
-- On GTM Command, persistence to `upsert_gtm_target_companies` is mandatory before ending the turn.
+- On GTM Command Companies tab, persistence to `upsert_gtm_target_companies` is mandatory before ending the turn. Scheduled CRM harvest is `gtm-outreach-workflows`, not this skill.

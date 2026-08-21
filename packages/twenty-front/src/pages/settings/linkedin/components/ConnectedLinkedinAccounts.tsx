@@ -12,6 +12,7 @@ import React, {
 import type { UnipileLinkedinAccount } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Mixpanel } from '~/mixpanel';
+import { LinkedinAccountRateLimitsPanel } from './LinkedinAccountRateLimitsPanel';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
@@ -35,14 +36,19 @@ const AccountsTitle = styled.h3`
 `;
 
 const AccountCard = styled.div`
-  align-items: center;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: 8px;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   margin-bottom: 1rem;
   padding: 1rem;
+`;
+
+const AccountHeader = styled.div`
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
 `;
 
 const AccountInfo = styled.div`
@@ -465,6 +471,7 @@ export const ConnectedLinkedinAccounts: React.FC<
       ) : (
         displayedAccounts.map((account) => (
           <AccountCard key={account.id}>
+            <AccountHeader>
             <AccountInfo>
               <Avatar>{getInitials(account.username)}</Avatar>
               <AccountDetails>
@@ -502,6 +509,13 @@ export const ConnectedLinkedinAccounts: React.FC<
                 Disconnect
               </ActionButton>
             </AccountActions>
+            </AccountHeader>
+            {account.status === 'connected' && (
+              <LinkedinAccountRateLimitsPanel
+                accountId={account.id}
+                accessToken={accessToken}
+              />
+            )}
           </AccountCard>
         ))
       )}

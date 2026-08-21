@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpException,
   HttpStatus,
   Logger,
@@ -12,6 +13,8 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { Request } from 'express';
+import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
@@ -210,6 +213,7 @@ export class LinkedinUnipileController {
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
     private readonly linkedinStoredCookieValidationService: LinkedinStoredCookieValidationService,
+    private readonly accountRateLimitConfigService: AccountRateLimitConfigService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -1773,9 +1777,35 @@ export class LinkedinUnipileController {
         account: response,
       };
     } catch (error) {
-      this.logger.error(`Failed to get LinkedIn account ${accountId}:`, error);
+      this.logger.error('Failed to get LinkedIn account:', error);
       throw error;
     }
+  }
+
+  @Get('accounts/:accountId/rate-limits')
+  async getAccountRateLimits(
+    @Param('accountId') accountId: string,
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ) {
+    const limits = await this.accountRateLimitConfigService.getLinkedinLimits(
+      workspace.id,
+      accountId,
+    );
+    return { success: true, limits };
+  }
+
+  @Post('accounts/:accountId/rate-limits')
+  async saveAccountRateLimits(
+    @Param('accountId') accountId: string,
+    @Body() body: { limits?: Record<string, unknown> },
+    @AuthWorkspace() workspace: WorkspaceEntity,
+  ) {
+    const limits = await this.accountRateLimitConfigService.saveLinkedinLimits(
+      workspace.id,
+      accountId,
+      body.limits ?? {},
+    );
+    return { success: true, limits };
   }
 
   @Post('accounts/:accountId/resync')
@@ -2117,6 +2147,15 @@ export class LinkedinUnipileController {
       };
     } catch (error) {
       this.logger.error('Failed to send LinkedIn invitation:', error);
+      if (error instanceof AccountRateLimitDeferredError) {
+        throw new HttpException(
+          {
+            message: error.message,
+            retryAfterMs: error.waitMs,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
       throw error;
     }
   }

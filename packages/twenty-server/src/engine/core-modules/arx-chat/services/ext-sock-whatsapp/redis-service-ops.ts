@@ -224,4 +224,79 @@ export class RedisService implements OnModuleInit {
 
     return { acquired: false, waitMs: Math.max(100, Math.ceil(result)) };
   }
+
+  async tryAcquireMultiWindowSlots(
+    windows: Array<{ key: string; windowMs: number; limit: number }>,
+    member: string,
+    now: number,
+  ): Promise<{ acquired: boolean; waitMs: number }> {
+    if (windows.length === 0) {
+      return { acquired: true, waitMs: 0 };
+    }
+
+    const script = `
+      local now = tonumber(ARGV[1])
+      local member = ARGV[2]
+      local n = tonumber(ARGV[3])
+      local maxWait = 0
+      for i = 1, n do
+        local key = KEYS[i]
+        local window = tonumber(ARGV[3 + (i - 1) * 2 + 1])
+        local limit = tonumber(ARGV[3 + (i - 1) * 2 + 2])
+        redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+        local count = redis.call('ZCARD', key)
+        if count >= limit then
+          local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+          local wait = window
+          if #oldest >= 2 then
+            wait = tonumber(oldest[2]) + window - now
+          end
+          if wait > maxWait then
+            maxWait = wait
+          end
+        end
+      end
+      if maxWait > 0 then
+        return maxWait
+      end
+      for i = 1, n do
+        local key = KEYS[i]
+        local window = tonumber(ARGV[3 + (i - 1) * 2 + 1])
+        redis.call('ZADD', key, now, member .. ':' .. i)
+        redis.call('EXPIRE', key, math.ceil(window / 1000) * 2)
+      end
+      return 0
+    `;
+
+    const args: string[] = [
+      String(now),
+      member,
+      String(windows.length),
+      ...windows.flatMap((window) => [
+        String(window.windowMs),
+        String(window.limit),
+      ]),
+    ];
+
+    const result = (await this.redisClient.eval(
+      script,
+      windows.length,
+      ...windows.map((window) => window.key),
+      ...args,
+    )) as number;
+
+    if (result === 0) {
+      return { acquired: true, waitMs: 0 };
+    }
+
+    return { acquired: false, waitMs: Math.max(100, Math.ceil(result)) };
+  }
+
+  async getString(key: string): Promise<string | null> {
+    return this.redisClient.get(key);
+  }
+
+  async setString(key: string, value: string): Promise<void> {
+    await this.redisClient.set(key, value);
+  }
 }

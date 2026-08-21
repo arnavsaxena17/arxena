@@ -8,6 +8,7 @@ import {
     type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
 
+import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
@@ -779,6 +780,12 @@ export class LinkedinUnipileRequestService {
       linkedin_sections: '*',
     });
 
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId: trimmed,
+      method: 'profile',
+    });
+
     try {
       const fullProfile = (await this.makeUnipileRequest(
         `/api/v1/users/${encodeURIComponent(publicIdentifier)}?${queryParams}`,
@@ -1137,6 +1144,12 @@ export class LinkedinUnipileRequestService {
     this.logger.log(
       `Sending LinkedIn invitation to ${trimmedProviderId} via account ${trimmedAccountId} (${trimmedMessage.length} chars)`,
     );
+
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId: trimmedAccountId,
+      method: 'connection_request',
+    });
 
     return (await this.makeUnipileRequest(
       '/api/v1/users/invite',

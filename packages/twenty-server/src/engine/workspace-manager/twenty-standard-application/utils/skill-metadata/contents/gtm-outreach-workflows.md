@@ -1,39 +1,54 @@
 # GTM Outreach Workflows Skill
 
-You build and run **GTM Command automation graphs** (company enroll + LinkedIn outreach). Generic workflow mechanics live in `workflow-building` — load both when creating or editing these graphs.
+You build and run **GTM Command automation graphs** (company harvest + enroll + LinkedIn/email sequencer). Generic mechanics (DELAY vs event, FORM HITL, CRON schema) live in `workflow-building` — load both; do not restate them here.
 
-This is **not** ICP preference collection (`gtm-icp-onboarding`) and **not** ephemeral People/Companies search (`search-people` / `search-companies`).
+Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}` for LOGIC_FUNCTION / AI_AGENT, `{{<step-uuid>.first.<field>}}` for FIND_RECORDS, `{{trigger.properties.after.<field>}}` for DATABASE_EVENT, and `{{<form-uuid>.<fieldName>}}` for FORM (no extra `.result`).
+
+This is **not** ICP preference collection (`gtm-icp-onboarding`) and **not** Ask AI target-list search (`search-companies` / `search-people` → Redis tabs). Interactive GTM Companies tab stays Redis. **Scheduled harvest that writes the CRM companies table** is this skill.
 
 ## When to load this skill
 
 Load `gtm-outreach-workflows` (with `workflow-building`) when:
 
-- The user wants a workflow that fires on **company created/added** and fetches people from Project ICP
-- The user asks to start LinkedIn / connection / outreach / enroll for a GTM run
-- The user wants to clone or edit **GTM Outreach — Per Candidate** (Stage B), Connection Accepted, or Reply graphs
-- Browsing context is GTM Command (`/gtm-home`) and the ask is about outreach workflows
+- The user wants a **workflow** that harvests LinkedIn companies on a schedule, enrolls people on company create, or runs LinkedIn / email / meeting outreach
+- The user wants to clone or edit the seeded GTM outreach graphs, or browsing context is GTM Command (`/gtm-home`) and the ask is about outreach **workflows**
 
-Do **not** load this skill for generic CRM automations (email on person create, cron reports, etc.) — use `workflow-building` only.
+Do **not** load this skill for generic CRM automations (email on person create) or for chat-only company/people lists — use `workflow-building` or `search-companies` / `search-people`. Dashboards: load `dashboard-building` and **extend** the existing GTM Command dashboard.
 
 ## Plan → Skill → Learn → Execute
 
 1. `load_skills(["gtm-outreach-workflows", "workflow-building"])`.
-2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`.
+2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
 3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
 
-Native GTM functions (`search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`) have stub source. Do **not** call `get_logic_function_source` for them.
+Native GTM functions (`search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`) have stub source. Do **not** call `get_logic_function_source` for them.
 
-Generic search (hits only, no CRM enroll): `search-people-for-company` (ICP people for a company, transformer-standardized), `search-people` (People API), `search-companies` (Company API — Unipile Sales Nav auto, Recruiter/classic, Harvest, index), `search-jobs` (Jobs API). Persist on send decision with native `upload-profiles`.
+Search LFs return hits only. People persist with `upload-profiles`. Company persist for automation is CRM + `gtmRunKey` (not Redis).
 
 ## GTM workflows (do not conflate)
 
+FILTER every graph on `outreachSequenceStage` (and often `connectionStatus`). FIND `workspaceMember` then `workspaceMemberProfile` and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{profile.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
+
+Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED` / `connectionStatus=ACCEPTED`.
+
 | Workflow | Trigger | Role |
 | --- | --- | --- |
-| **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles` (optional FORM between) |
+| **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `gtmRunKey`). Seed Project **GTM Harvest**. Do **not** `upsert_gtm_target_companies`. Skip rows already tagged to this run. |
+| **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Workflow U** (manual) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
-| **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` using `workspaceMemberId` + `linkedinProfileId`. Do **not** DELAY-poll accept. |
-| **Stage B accept** (`GTM Outreach — Connection Accepted`) | `candidate.updated` `CONNECTION_ACCEPTED` / ACCEPTED | `fetch-linkedin-messages` (merge `messageObj`) → `fetch-linkedin-profile` → AI_AGENT draft → FORM `notifyOnPending` (`wf_form_boolean_text`, WhatsApp to workspace member phone) → SEND `{{form.editedBody}}`. Follow-up DELAY until inbound. |
-| **Stage C** (`GTM Outreach — Reply`) | `candidate.updated` `REPLIED` | FIND `chatMessages` → AI_AGENT → FORM → send. No instant calendar create. Inbound sets `lastInboundAt` immediately; `REPLIED` only after a silence window. |
+| **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
+| **Stage B accept** (`GTM Outreach — Connection Accepted`) | `candidate.updated` `CONNECTION_ACCEPTED` | `fetch-linkedin-messages` → `fetch-linkedin-profile` → AI_AGENT (rapport opener; JSON `{ "message" }`) → FORM → SEND `{{form.editedBody}}`. Then DELAY 3d → FIND → IF not `REPLIED` and `linkedinFollowUpCount` < 3 → AI follow-up → FORM → SEND → increment count; else `FAILED_NO_REPLY`. DELAY is not wait-for-reply. |
+| **Stage C inbound classify** | silence-window flush (not a workflow) | LLM classifies the **recipient burst** → stamps stage. `unsubscribe`→`STOPPED` (no send). `not_now`→`DEFERRED`. `interested`→`NEGOTIATING`. `times_proposed`/`question`→`REPLIED`. `book`→`MEETING_BOOKED`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
+| **Stage C** (`GTM Outreach — Reply`) | `candidate.updated` `REPLIED` | FIND `chatMessage` → `get-calendar-availability` → AI_AGENT draft (answer / confirm their times using injected slots only) → FORM → SEND. Classifier already ran; do not re-route intent here. |
+| **Negotiating** | `candidate.updated` `NEGOTIATING` | Same shape as Reply with the negotiating prompt (advance toward a meeting). |
+| **Deferred** | `candidate.updated` `DEFERRED` | Short ack, no pitch, no times → FORM → SEND, then stay paused. |
+| **Meeting booked** | `candidate.updated` `MEETING_BOOKED` | FORM confirm start/end from last inbound → `CREATE_CALENDAR_EVENT`. |
+
+AI drafts (before FORM): opener = short hook + one question, meeting as a light close; follow-ups escalate value (3rd is a breakup); email fallback matches ICP, no invented LinkedIn facts; replies never invent calendar times. Inbound classification (not the draft agent) stamps `STOPPED` / `DEFERRED` / `NEGOTIATING` / `REPLIED` / `MEETING_BOOKED`. AI_AGENT JSON output is `{{aiStep.message}}`. Missed enrich → `FAILED_ENRICH`.
+
+## Harvest — CRON companies into CRM
+
+`create_complete_workflow` trigger `CRON` `{ "type": "HOURS", "schedule": { "hour": 6, "minute": 0 }, "outputSchema": {} }`. Steps: `search-companies` then `upsert-companies` with `projectId` (GTM Harvest Project id) and `companies: "{{<search-uuid>.companies}}"`. Edges trigger → search → upsert. Activate. This is **not** the Companies tab Redis path.
 
 ## Workflow 1 — company created → ICP people → enroll
 
@@ -76,8 +91,8 @@ Use `create_complete_workflow` with:
         "input": {
           "logicFunctionId": "<upload-profiles id from list_logic_function_tools>",
           "logicFunctionInput": {
-            "projectId": "{{<uuid-search>.result.projectId}}",
-            "people": "{{<uuid-search>.result.people}}"
+            "projectId": "{{<uuid-search>.projectId}}",
+            "people": "{{<uuid-search>.people}}"
           }
         },
         "errorHandlingOptions": {
@@ -94,21 +109,13 @@ Use `create_complete_workflow` with:
 }
 ```
 
-Trigger fields are `{{trigger.properties.after.<field>}}`. Edges use `source` / `target` (never `from` / `to`).
+## Clone / copy → edit → activate
 
-## Clone / copy → edit → activate (preferred over rebuild)
+When the user is **tweaking** an existing graph (especially Stage B / `outreachWorkflowId`): clone the draft, edit only what changed, pin `workspaceMemberId`, FORM+IF_ELSE before SEND_* (`workflow-building`), `linkedinProfileId` is the Unipile slug (never a URL; Person uses `linkedinLink`), validate once, activate.
 
-When the user wants a LinkedIn connection / outreach workflow and a template already exists (especially GTM Command Stage B **`GTM Outreach — Per Candidate`** or browsing context `outreachWorkflowId`):
+When the user asks for the **full sequencer**, create **missing** graphs from the table above. Do not fold harvest / email fallback / follow-ups / calendar into Stage B.
 
-1. **Resolve** — `list_workflows` (or use `outreachWorkflowId` from `<browsing_context>`). Prefer the Project-pinned id. Do **not** create a brand-new blank workflow if a Stage B template exists.
-2. **Inspect** — `get_workflow_current_version({ workflowId })`.
-3. **Clone draft to edit safely** — `create_draft_from_workflow_version({ workflowId, workflowVersionIdToCopy })`.
-4. **Edit only what the request needs** — remap field paths, messages, filters, caps. For approval mode, insert FORM (`BOOLEAN`+`TEXT` + WhatsApp `notifyOnPending`) + IF_ELSE immediately before SEND_*.
-5. **Candidate LinkedIn fields** — `linkedinUrl.primaryLinkUrl` is the profile URL. `linkedinProfileId` is the Unipile/public identifier only (never a URL). Person uses `linkedinLink`. SEND_* should pass `linkedinProfileId`.
-6. **Validate once** — `validate_workflow` at the end (`validate: false` on intermediate step updates).
-7. **Activate** — `activate_workflow_version` on the draft you edited.
-8. **Execute for GTM people** — enroll with native `upload-profiles` (`projectId` + `people[]`). That sets `projectsId` = Project id, `outreachSequenceStage` = `QUEUED`, LinkedIn URL, and `linkedinProfileId` slug. `search-people-for-company` returns hits only. Enroll then fires `candidate.created` → Stage B. Then `list_workflow_runs`.
-9. **Do not** burn the turn on metadata rabbit holes or parse-glitch retries.
+**Execute** enroll with native `upload-profiles` (`projectId` + `people[]`) → `QUEUED` + LinkedIn ids → `candidate.created` → Stage B. Then `list_workflow_runs`. Do not burn the turn on metadata rabbit holes.
 
 ## GTM Command “start LinkedIn connection outreach”
 

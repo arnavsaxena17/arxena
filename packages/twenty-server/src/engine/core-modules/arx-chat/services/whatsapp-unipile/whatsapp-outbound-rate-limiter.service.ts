@@ -1,8 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
+import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 
-import { WHATSAPP_OUTBOUND_WINDOW_MS, computeOutboundSendJitterMs } from './whatsapp-outbound-rate-limit.util';
+import {
+  WHATSAPP_OUTBOUND_WINDOW_MS,
+  computeOutboundSendJitterMs,
+} from './whatsapp-outbound-rate-limit.util';
 import { registerWhatsappOutboundRateLimiter } from './whatsapp-outbound-rate-limiter.registry';
 
 const KEY_PREFIX = 'whatsapp-outbound:';
@@ -25,6 +29,18 @@ export class WhatsappOutboundRateLimiterService implements OnModuleInit {
     accountId: string,
     messagesPerMinute: number,
   ): Promise<void> {
+    const accountLimiter = getRegisteredAccountRateLimiter();
+    if (accountLimiter) {
+      await accountLimiter.acquireOrDefer({
+        provider: 'whatsapp',
+        accountId,
+        method: 'start_chat',
+        startChatPerMinuteOverride: messagesPerMinute,
+      });
+      await this.applySendJitter(accountId);
+      return;
+    }
+
     const limit = Math.max(1, Math.floor(messagesPerMinute));
     const key = `${KEY_PREFIX}${accountId}`;
 

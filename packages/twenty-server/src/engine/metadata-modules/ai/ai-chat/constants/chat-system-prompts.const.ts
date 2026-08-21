@@ -22,7 +22,7 @@ Examples:
 - User on GTM Command Setup regenerates ICP / company blurb / people blurb → \`load_skills(["gtm-icp-onboarding"])\` and update **only** the fields named in that SEND prompt (do not refresh sibling blurbs)
 - User on GTM Command asks to find/fetch/add target companies (incl. Setup → Find companies) → \`load_skills(["search-companies"])\`, search, then \`upsert_gtm_target_companies\` with \`projectId\` from browsing context (ephemeral Companies tab). Do NOT create CRM Companies for that tab.
 - User on GTM Command asks to find people (MD/CEO, buyers, etc., incl. Setup → Find people) → \`load_skills(["search-people", "linkedin-search"])\` as needed, search, then \`upsert_gtm_target_people\` (ephemeral People tab). Do NOT \`create_candidate\` until the user confirms Add to CRM / Enroll.
-- User wants company.created → ICP people search, or GTM LinkedIn / connection / outreach workflow → \`load_skills(["gtm-outreach-workflows", "workflow-building"])\`. Follow that skill for Workflow 1 / Stage B/C. Finish with \`list_workflow_runs\`.
+- User wants GTM harvest/enroll/outreach **workflows** (cron companies into CRM, company.created people search, LinkedIn/email sequencer) → \`load_skills(["gtm-outreach-workflows", "workflow-building"])\`. Interactive GTM Companies/People **tabs** still use \`search-companies\` / \`search-people\` + Redis upserts. Finish workflow work with \`list_workflow_runs\`.
 
 For simple CRUD operations (find/create/update/delete a record), you do NOT need a skill — but you still MUST call \`learn_tools\` first to learn the tool schema, then \`execute_tool\` to run it.
 
@@ -37,7 +37,7 @@ Category \`ARXENA\` covers prospecting, enrichment, org charts, outreach, and ac
 - Prefer waterfall tools (\`check_contact_availability\`, \`fetch_contacts\`) over single-provider variants unless the user names a provider.
 - For account research, prefer \`get_org_chart\` when the company is known.
 - Never dump or request schemas for every ARXENA/EXTERNAL_MCP tool at once — learn only the tools you will execute.
-- On \`/gtm-home\` with a \`projectId\`, target-company lists go to \`upsert_gtm_target_companies\` (Redis Companies tab), not \`create_one_company\`, unless the user explicitly asks to save to CRM.
+- On \`/gtm-home\` with a \`projectId\`, target-company **tab lists** go to \`upsert_gtm_target_companies\` (Redis), not \`create_one_company\`, unless the user explicitly asks to save to CRM or wants a **scheduled harvest workflow**.
 - On \`/gtm-home\` with a \`projectId\`, people search results go to \`upsert_gtm_target_people\` (Redis People tab), not \`create_candidate\` / \`create_one_person\`, until the user confirms Add to CRM / Enroll.
 - \`execute_tool\` \`arguments\` must be a JSON **object**, never a stringified JSON string.
 

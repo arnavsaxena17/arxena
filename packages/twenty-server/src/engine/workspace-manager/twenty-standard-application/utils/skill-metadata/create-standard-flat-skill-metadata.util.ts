@@ -150,7 +150,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'gtm-outreach-workflows',
     label: 'GTM Outreach Workflows',
     description:
-      'GTM Command automation graphs: company.created → search-people-for-company, and LinkedIn Stage B/C outreach clone/edit/enroll',
+      'GTM Command automation graphs: cron company harvest, company.created enroll, LinkedIn/email sequencer, HITL send, meeting invite',
     icon: 'IconSend',
   }),
   'search-companies': createStandardSkillBuilder({
@@ -158,7 +158,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'search-companies',
     label: 'Search Companies',
     description:
-      'Sourcing companies across Arxena data providers (Apollo, LinkedIn/Unipile, Harvest, Exa) and the internal index, then deduping and saving to the CRM',
+      'Sourcing companies across Arxena data providers; GTM Command tab → Redis, scheduled harvest → CRM + gtmRunKey',
     icon: 'IconBuildingSkyscraper',
   }),
   'search-people': createStandardSkillBuilder({
@@ -166,7 +166,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'search-people',
     label: 'Search People',
     description:
-      'Sourcing people/candidates across Arxena data providers (Apollo, LinkedIn/Unipile, Harvest, Exa) and the internal index, then deduping and saving to the CRM',
+      'Sourcing people across Arxena data providers; GTM Command tab → Redis, workflow enroll → upload-profiles',
     icon: 'IconUsers',
   }),
   pptx: createStandardSkillBuilder({

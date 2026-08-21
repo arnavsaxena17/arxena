@@ -3,17 +3,12 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSearchInput } from '@/ui/layout/dropdown/components/DropdownMenuSearchInput';
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 
-import { useGetFieldMetadataItemByIdOrThrow } from '@/object-metadata/hooks/useGetFieldMetadataItemById';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useObjectMetadataSelectHelpers } from '@/object-metadata/hooks/useObjectMetadataSelectHelpers';
-import { useGetInitialFilterValue } from '@/object-record/object-filter-dropdown/hooks/useGetInitialFilterValue';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuHeaderLeftComponent } from '@/ui/layout/dropdown/components/DropdownMenuHeader/internal/DropdownMenuHeaderLeftComponent';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
-import { useWorkflowVersionIdOrThrow } from '@/workflow/hooks/useWorkflowVersionIdOrThrow';
-import { stepsOutputSchemaFamilySelector } from '@/workflow/states/selectors/stepsOutputSchemaFamilySelector';
-import { useUpsertStepFilterSettings } from '@/workflow/workflow-steps/filters/hooks/useUpsertStepFilterSettings';
-import { getStepFilterOperands } from '@/workflow/workflow-steps/filters/utils/getStepFilterOperands';
+import { useApplyStepFilterFieldFromVariable } from '@/workflow/workflow-steps/filters/hooks/useApplyStepFilterFieldFromVariable';
 import { useVariableDropdown } from '@/workflow/workflow-variables/hooks/useVariableDropdown';
 import { isRecordOutputSchemaV2 } from '@/workflow/workflow-variables/types/guards/isRecordOutputSchemaV2';
 import { type StepOutputSchemaV2 } from '@/workflow/workflow-variables/types/StepOutputSchemaV2';
@@ -23,9 +18,7 @@ import { getStepItemIcon } from '@/workflow/workflow-variables/utils/getStepItem
 import { getVariableTemplateFromPath } from '@/workflow/workflow-variables/utils/getVariableTemplateFromPath';
 import { searchVariableThroughOutputSchemaV2 } from '@/workflow/workflow-variables/utils/searchVariableThroughOutputSchemaV2';
 import { useLingui } from '@lingui/react/macro';
-import { useStore } from 'jotai';
-import { useCallback } from 'react';
-import type { FilterableAndTSVectorFieldType, StepFilter } from 'twenty-shared/types';
+import type { StepFilter } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { extractRawVariableNamePart } from 'twenty-shared/workflow';
 import { IconChevronLeft, useIcons } from 'twenty-ui/icon';
@@ -50,88 +43,24 @@ export const WorkflowDropdownStepOutputItems = ({
   const { getSelectIconPropsFromObjectMetadataItem } =
     useObjectMetadataSelectHelpers();
 
-  const { upsertStepFilterSettings } = useUpsertStepFilterSettings();
-  const { getFieldMetadataItemByIdOrThrow } =
-    useGetFieldMetadataItemByIdOrThrow();
-
-  const workflowVersionId = useWorkflowVersionIdOrThrow();
+  const { applyStepFilterFieldFromVariable } =
+    useApplyStepFilterFieldFromVariable();
   const { objectMetadataItems } = useObjectMetadataItems();
 
-  const { getInitialFilterValue } = useGetInitialFilterValue();
-
-  const jotaiStore = useStore();
-
-  const updateStepFilter = useCallback(
-    ({
+  const updateStepFilter = ({
+    rawVariableName,
+    isFullRecord,
+  }: {
+    rawVariableName: string;
+    isFullRecord: boolean;
+  }) => {
+    applyStepFilterFieldFromVariable({
+      stepFilter,
       rawVariableName,
       isFullRecord,
-    }: {
-      rawVariableName: string;
-      isFullRecord: boolean;
-    }) => {
-      const stepId = extractRawVariableNamePart({
-        rawVariableName,
-        part: 'stepId',
-      });
-      const [currentStepOutputSchema] = jotaiStore.get(
-        stepsOutputSchemaFamilySelector.selectorFamily({
-          workflowVersionId,
-          stepIds: [stepId],
-        }),
-      );
-
-      const { variableType, fieldMetadataId, compositeFieldSubFieldName } =
-        searchVariableThroughOutputSchemaV2({
-          stepOutputSchema: currentStepOutputSchema,
-          stepType: step.type,
-          rawVariableName,
-          isFullRecord: false,
-        });
-
-      const { fieldMetadataItem: filterFieldMetadataItem } = isDefined(
-        fieldMetadataId,
-      )
-        ? getFieldMetadataItemByIdOrThrow(fieldMetadataId)
-        : { fieldMetadataItem: undefined };
-
-      const filterType = isDefined(fieldMetadataId)
-        ? (filterFieldMetadataItem?.type ?? 'unknown')
-        : variableType;
-
-      const availableOperandsForFilter = getStepFilterOperands({
-        filterType,
-        subFieldName: compositeFieldSubFieldName,
-      });
-      const defaultOperand = availableOperandsForFilter[0];
-
-      const { value } = getInitialFilterValue(
-        filterType as FilterableAndTSVectorFieldType,
-        defaultOperand,
-      );
-
-      upsertStepFilterSettings({
-        stepFilterToUpsert: {
-          ...stepFilter,
-          stepOutputKey: rawVariableName,
-          isFullRecord,
-          type: filterType ?? 'unknown',
-          value: value,
-          fieldMetadataId,
-          compositeFieldSubFieldName,
-          operand: defaultOperand,
-        },
-      });
-    },
-    [
-      jotaiStore,
-      workflowVersionId,
-      step.type,
-      getFieldMetadataItemByIdOrThrow,
-      upsertStepFilterSettings,
-      stepFilter,
-      getInitialFilterValue,
-    ],
-  );
+      stepType: step.type,
+    });
+  };
 
   const handleStepFilterFieldSelect = (key: string) => {
     updateStepFilter({
@@ -140,6 +69,18 @@ export const WorkflowDropdownStepOutputItems = ({
     });
     onSelect();
   };
+
+  const selectedFieldStepId = extractRawVariableNamePart({
+    rawVariableName: stepFilter.stepOutputKey,
+    part: 'stepId',
+  });
+  const initialPath =
+    selectedFieldStepId === step.id && stepFilter.stepOutputKey
+      ? stepFilter.stepOutputKey
+          .replace(/^\{\{|\}\}$/g, '')
+          .split('.')
+          .slice(1, -1)
+      : [];
 
   const {
     searchInputValue,
@@ -152,6 +93,7 @@ export const WorkflowDropdownStepOutputItems = ({
     step,
     onSelect: handleStepFilterFieldSelect,
     onBack,
+    initialPath,
   });
 
   const getDisplayedSubStepObject = () => {
@@ -245,6 +187,17 @@ export const WorkflowDropdownStepOutputItems = ({
             return null;
           }
 
+          const rawVariableName = getVariableTemplateFromPath({
+            stepId: step.id,
+            path: [...currentPath, key],
+          });
+          const { variablePathLabel } = searchVariableThroughOutputSchemaV2({
+            stepOutputSchema: step,
+            stepType: step.type,
+            rawVariableName,
+            isFullRecord: false,
+          });
+
           return (
             <MenuItemSelect
               key={key}
@@ -253,6 +206,7 @@ export const WorkflowDropdownStepOutputItems = ({
               onClick={() => handleSelectField(key)}
               text={subStep.label || key}
               hasSubMenu={!subStep.isLeaf}
+              tooltip={variablePathLabel}
               LeftIcon={
                 subStep.icon
                   ? getIcon(subStep.icon)

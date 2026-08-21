@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { baseWorkflowActionSettingsSchema } from './base-workflow-action-settings-schema';
+import { workflowEmailFilesSchema } from './send-email-action-settings-schema';
 
 export const workflowSendLinkedinMessageActionSettingsSchema =
   baseWorkflowActionSettingsSchema.extend({
@@ -8,5 +9,6 @@ export const workflowSendLinkedinMessageActionSettingsSchema =
       linkedinProfileId: z.string(),
       candidateId: z.string().optional(),
       body: z.string().optional().default(''),
+      files: workflowEmailFilesSchema,
     }),
   });

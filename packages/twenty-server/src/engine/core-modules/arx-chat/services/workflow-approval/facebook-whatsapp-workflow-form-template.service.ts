@@ -819,7 +819,8 @@ export class FacebookWhatsappWorkflowFormTemplateService {
       return this.sendUrlButtonTemplate(credentials, input, entry.name);
     }
 
-    // Prefer in-WhatsApp Flow v2 (2-var body); fall back to legacy URL template
+    // Prefer in-WhatsApp Flow v2 (Backdrop {{1}} + Details {{2}}).
+    // Do not fall back to legacy `*_flow` templates — several only have {{1}}.
     const flowTemplateName = getFlowTemplateNameForRegistry(entry.name);
 
     try {
@@ -829,29 +830,18 @@ export class FacebookWhatsappWorkflowFormTemplateService {
         flowTemplateName,
       );
     } catch (flowError) {
-      // Older single-var FLOW templates if v2 not approved yet
-      const legacyFlowTemplateName = `${entry.name}_flow`;
+      const flowErrorMessage =
+        axios.isAxiosError(flowError) && flowError.response?.data
+          ? JSON.stringify(flowError.response.data)
+          : flowError instanceof Error
+            ? flowError.message
+            : String(flowError);
 
-      try {
-        return await this.sendFlowButtonTemplate(
-          credentials,
-          input,
-          legacyFlowTemplateName,
-        );
-      } catch {
-        const flowErrorMessage =
-          axios.isAxiosError(flowError) && flowError.response?.data
-            ? JSON.stringify(flowError.response.data)
-            : flowError instanceof Error
-              ? flowError.message
-              : String(flowError);
+      this.logger.warn(
+        `FLOW send failed for ${flowTemplateName}, falling back to URL: ${flowErrorMessage}`,
+      );
 
-        this.logger.warn(
-          `FLOW send failed for ${flowTemplateName}, falling back to URL: ${flowErrorMessage}`,
-        );
-
-        return this.sendUrlButtonTemplate(credentials, input, entry.name);
-      }
+      return this.sendUrlButtonTemplate(credentials, input, entry.name);
     }
   }
 

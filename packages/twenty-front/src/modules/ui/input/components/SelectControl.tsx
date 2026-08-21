@@ -87,7 +87,6 @@ export const SelectControl = ({
       selectSizeVariant={selectSizeVariant}
       textAccent={textAccent}
       hasRightElement={hasRightElement}
-      title={selectedOption.fullLabel}
     >
       {isDefined(selectedOption?.Icon) ? (
         isDefined(selectedOption.iconThemeColor) ? (
@@ -113,6 +112,8 @@ export const SelectControl = ({
             ? `${selectedOption.label} · ${selectedOption.contextualText}`
             : selectedOption.label
         }
+        tooltipContent={selectedOption.fullLabel}
+        alwaysShowTooltip={isDefined(selectedOption.fullLabel)}
       />
       <StyledIconChevronDownWrapper disabled={isDisabled}>
         <IconChevronDown size={theme.icon.size.md} />

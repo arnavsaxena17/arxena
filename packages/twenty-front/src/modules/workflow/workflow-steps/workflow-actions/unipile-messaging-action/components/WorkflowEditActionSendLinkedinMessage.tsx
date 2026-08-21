@@ -1,3 +1,4 @@
+import { WorkflowSendEmailAttachments } from '@/advanced-text-editor/components/WorkflowSendEmailAttachments';
 import { FormSingleRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormSingleRecordPicker';
 import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormTextFieldInput';
 import { type WorkflowSendLinkedinMessageAction } from '@/workflow/types/Workflow';
@@ -8,11 +9,13 @@ import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components
 import { t } from '@lingui/core/macro';
 import { useEffect } from 'react';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
 
 type FormData = {
   workspaceMemberId: string;
   linkedinProfileId: string;
   body: string;
+  files: WorkflowEmailFiles;
 };
 
 type WorkflowEditActionSendLinkedinMessageProps = {
@@ -36,6 +39,7 @@ export const WorkflowEditActionSendLinkedinMessage = ({
       workspaceMemberId: action.settings.input.workspaceMemberId,
       linkedinProfileId: action.settings.input.linkedinProfileId,
       body: action.settings.input.body ?? '',
+      files: action.settings.input.files ?? [],
     },
     readonly: actionOptions.readonly === true,
     onSave: (nextFormData: FormData) => {
@@ -47,7 +51,10 @@ export const WorkflowEditActionSendLinkedinMessage = ({
         ...action,
         settings: {
           ...action.settings,
-          input: nextFormData,
+          input: {
+            ...action.settings.input,
+            ...nextFormData,
+          },
         },
       });
     },
@@ -87,6 +94,15 @@ export const WorkflowEditActionSendLinkedinMessage = ({
           readonly={actionOptions.readonly}
           defaultValue={formData.body}
           onChange={(value) => handleFieldChange('body', value)}
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <WorkflowSendEmailAttachments
+          label={t`Attachments`}
+          files={formData.files}
+          readonly={actionOptions.readonly}
+          onChange={(files) => {
+            handleFieldChange('files', files);
+          }}
           VariablePicker={WorkflowVariablePicker}
         />
       </WorkflowStepBody>

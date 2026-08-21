@@ -198,6 +198,11 @@ export const WorkflowVariablesDropdownStepItems = ({
               onClick={() => handleSelectField(key)}
               text={subStep.label || key}
               hasSubMenu={!subStep.isLeaf}
+              tooltip={
+                subStep.isLeaf
+                  ? `${getStepHeaderLabel(step, currentPath)} > ${subStep.label || key}`
+                  : getStepHeaderLabel(step, [...currentPath, key])
+              }
               LeftIcon={
                 subStep.icon
                   ? getIcon(subStep.icon)

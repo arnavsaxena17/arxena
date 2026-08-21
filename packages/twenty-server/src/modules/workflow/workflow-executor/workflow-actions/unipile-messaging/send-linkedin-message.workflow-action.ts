@@ -15,6 +15,7 @@ import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
+import { resolveEmailFiles } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/utils/resolve-email-files.util';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { isWorkflowSendLinkedinMessageAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/guards/is-workflow-send-linkedin-message-action.guard';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
@@ -50,6 +51,16 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
 
   protected override getTranscriptChannel() {
     return 'LINKEDIN' as const;
+  }
+
+  protected override async preprocessInput(
+    rawInput: WorkflowSendLinkedinMessageActionInput,
+    context: Record<string, unknown>,
+  ): Promise<WorkflowSendLinkedinMessageActionInput> {
+    return {
+      ...rawInput,
+      files: resolveEmailFiles(rawInput.files, context),
+    };
   }
 
   protected getTool(): Tool {

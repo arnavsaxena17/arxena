@@ -7,6 +7,7 @@ import { type ObjectLiteral } from 'typeorm';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { concatenatedUserBurst } from 'src/engine/core-modules/gtm-command/utils/inbound-reply-window.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -191,6 +192,37 @@ export class GtmOutreachMessagePersistService {
     return resolvedCandidateId;
   }
 
+  async persistInboundFlush({
+    workspaceId,
+    candidateId,
+    channel,
+    turns,
+    chatId,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    channel: GtmOutreachTranscriptChannel;
+    turns: ChatTurn[];
+    chatId?: string | null;
+  }): Promise<boolean> {
+    if (turns.length === 0) {
+      return false;
+    }
+
+    await this.mergeTurns({
+      workspaceId,
+      candidateId,
+      channel,
+      turns,
+      chatId,
+      latestExternalMessageId: turns.at(-1)?.id,
+      typeOfMessage: channel === 'LINKEDIN' ? 'linkedin' : 'whatsapp-unipile',
+      messageFromUserBurst: true,
+    });
+
+    return true;
+  }
+
   private async resolveCandidateId({
     workspaceId,
     candidateId,
@@ -256,6 +288,7 @@ export class GtmOutreachMessagePersistService {
     chatId,
     latestExternalMessageId,
     typeOfMessage,
+    messageFromUserBurst,
   }: {
     workspaceId: string;
     candidateId: string;
@@ -264,6 +297,7 @@ export class GtmOutreachMessagePersistService {
     chatId?: string | null;
     latestExternalMessageId?: string | null;
     typeOfMessage: string;
+    messageFromUserBurst?: boolean;
   }): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -298,8 +332,9 @@ export class GtmOutreachMessagePersistService {
           turns,
         );
         const lastContent = mergedObj.at(-1)?.content ?? '';
+        const burstContent = concatenatedUserBurst(mergedObj);
         const patch: Record<string, unknown> = {
-          message: lastContent,
+          message: messageFromUserBurst && burstContent ? burstContent : lastContent,
           messageObj: mergedObj,
           messageObjWithTimeStamp: mergedTs,
           typeOfMessage,

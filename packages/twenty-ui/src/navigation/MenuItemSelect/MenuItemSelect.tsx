@@ -59,6 +59,7 @@ type MenuItemSelectProps = {
   hasSubMenu?: boolean;
   contextualText?: ReactNode;
   contextualTextPosition?: 'left' | 'right';
+  tooltip?: string;
 };
 
 export const MenuItemSelect = ({
@@ -75,6 +76,7 @@ export const MenuItemSelect = ({
   hasSubMenu = false,
   contextualText,
   contextualTextPosition = 'left',
+  tooltip,
 }: MenuItemSelectProps) => {
   const theme = useTheme();
 
@@ -87,6 +89,7 @@ export const MenuItemSelect = ({
       role="option"
       aria-selected={selected}
       aria-disabled={disabled}
+      title={tooltip}
     >
       <MenuItemLeftContent
         LeftIcon={LeftIcon}

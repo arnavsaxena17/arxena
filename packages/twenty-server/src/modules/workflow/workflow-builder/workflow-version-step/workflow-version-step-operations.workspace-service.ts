@@ -591,6 +591,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
                 workspaceMemberId: '',
                 linkedinProfileId: '',
                 body: '',
+                files: [],
               },
             },
           },

@@ -29,6 +29,7 @@ import { ProxyRotationManager } from './utils/proxy-rotation';
 
 import { FilterCandidates } from '../arx-chat/services/candidate-engagement/filter-candidates';
 import { IncomingWhatsappMessages } from '../arx-chat/services/whatsapp-api/incoming-messages';
+import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
 import { InjectMessageQueue } from '../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../message-queue/message-queue.constants';
@@ -184,6 +185,7 @@ export class BaileysWhatsappService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
+    private readonly gtmInboundReplyWindowService?: GtmInboundReplyWindowService,
   ) {}
 
   async initializeSession(recruiterId: string, eventsGateway: IEventsGateway, recruiterName?: string): Promise<void> {
@@ -894,6 +896,8 @@ export class BaileysWhatsappService {
                     this.workspaceQueryService,
                     this.staticGraphQLService,
                     this.messageQueueService,
+                    undefined,
+                    this.gtmInboundReplyWindowService,
                   ).receiveIncomingMessages(
                     baileysWhatsappIncomingObj,
                     apiToken,
@@ -941,6 +945,8 @@ export class BaileysWhatsappService {
                       this.workspaceQueryService,
                       this.staticGraphQLService,
                       this.messageQueueService,
+                      undefined,
+                      this.gtmInboundReplyWindowService,
                     ).receiveIncomingMessagesFromSelfFromBaileys(
                       baileysWhatsappIncomingObj,
                       apiToken,

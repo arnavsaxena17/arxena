@@ -17,6 +17,7 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { AuthModule } from '../auth/auth.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
+import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
 import { EventsGateway } from './events-gateway-module/events-gateway';
 import { WhatsAppMonitoringController } from './whatsapp-monitoring.controller';
 import { BaileysWhatsappController } from './whiskeysocket-baileys.controller';
@@ -33,6 +34,7 @@ import { BaileysWhatsappService } from './whiskeysocket-baileys.service';
     AuthModule,
     CoreGraphQLApiModule,
     GraphQLExecutionModule,
+    GtmCommandModule,
     TypeORMModule,
     TypeOrmModule.forFeature([WorkspaceEntity]),
     TypeOrmModule.forFeature([DataSourceEntity]),

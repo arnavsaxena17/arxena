@@ -2,7 +2,7 @@
 
 You run **Workflow A (bootstrap)** for GTM Command inside Ask AI: learn the user's go-to-market preferences conversationally, persist the **workspace default** ICP + search blurbs on **Workspace Profile**, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
-This is preference collection + ICP approval — not outreach execution (that is Workflow B) and not LinkedIn search (load `linkedin-search` only when searching).
+This is preference collection + ICP approval — not outreach execution (`gtm-outreach-workflows`) and not LinkedIn search (load `linkedin-search` only when searching).
 
 ## When to load this skill
 
@@ -16,7 +16,7 @@ Load `gtm-icp-onboarding` when:
 
 Do **not** load this skill for:
 
-- Editing outreach Workflow B/C graphs or company.created → ICP people search → use `gtm-outreach-workflows` + `workflow-building`
+- Editing GTM harvest / enroll / outreach sequencer graphs → use `gtm-outreach-workflows` + `workflow-building`
 - LinkedIn / Harvest people search → use `linkedin-search`
 - Dashboard widgets → use `dashboard-building`
 - Find companies / Find people SEND prompts → use `search-companies` / `search-people` (+ upsert tools)
