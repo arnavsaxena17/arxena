@@ -23,7 +23,7 @@ const GTM_HARVEST_QUERY =
 const WORKFLOW_HARVEST_NAME = 'GTM Harvest — LinkedIn Companies';
 const WORKFLOW_SEARCH_NAME = 'Company Created → ICP People Search';
 const WORKFLOW_B_NAME = 'GTM Outreach — Per Candidate';
-const WORKFLOW_ACCEPT_NAME = 'GTM Outreach — Connection Accepted';
+const WORKFLOW_ACCEPT_NAME = 'GTM Outreach — Candidate Updated';
 const WORKFLOW_C_NAME = 'GTM Outreach — Reply';
 const WORKFLOW_MEETING_NAME = 'GTM Outreach — Meeting Booked';
 const GTM_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
@@ -228,11 +228,13 @@ const updateWorkflowTrigger = async ({
   name,
   eventName,
   nextStepIds,
+  fields,
 }: {
   workflowVersionId: string;
   name: string;
   eventName: string;
   nextStepIds: string[];
+  fields?: string[];
 }) => {
   // Dedicated mutation required — CRM updateWorkflowVersion blocks trigger writes
   await graphqlRequest(
@@ -250,6 +252,7 @@ const updateWorkflowTrigger = async ({
           settings: {
             eventName,
             outputSchema: {},
+            ...(fields && fields.length > 0 ? { fields } : {}),
           },
         },
       },
@@ -702,6 +705,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
             outreachSequenceStage: 'CONNECTION_SENT',
             connectionStatus: 'SENT',
           },
+          fieldsToUpdate: ['outreachSequenceStage', 'connectionStatus'],
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -957,6 +961,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
           objectRecord: {
             outreachSequenceStage: 'EMAIL_SENT',
           },
+          fieldsToUpdate: ['outreachSequenceStage'],
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -974,8 +979,6 @@ const deployWorkflowB = async (workflowVersionId: string) => {
 };
 
 const deployWorkflowAccept = async (workflowVersionId: string) => {
-  const acceptedGroupId = v4();
-  const acceptedFilterId = v4();
   const workspaceId = process.env.WORKSPACE_ID;
   const fetchMessagesLogicFunctionId = workspaceId
     ? uuidv5(
@@ -994,26 +997,56 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
     workflowVersionId,
     name: 'Candidate is Updated',
     eventName: 'candidate.updated',
+    fields: ['outreachSequenceStage'],
     nextStepIds: [],
   });
 
-  const filterAccepted = await createWorkflowStep({
+  const stageRouter = await createWorkflowStep({
     workflowVersionId,
-    stepType: 'FILTER',
+    stepType: 'IF_ELSE',
     parentStepId: TRIGGER_STEP_ID,
   });
+
+  const acceptedGroupIdForRouter = v4();
+  const acceptedFilterIdForRouter = v4();
+  const acceptedBranchId = v4();
+  const elseBranchId = v4();
 
   await updateWorkflowStep({
     workflowVersionId,
     step: {
-      ...filterAccepted,
-      name: 'Only ACCEPTED candidates',
+      ...stageRouter,
+      name: 'Route by outreach stage',
       valid: true,
-      settings: queuedFilterSettings(
-        acceptedGroupId,
-        acceptedFilterId,
-        'CONNECTION_ACCEPTED',
-      ),
+      nextStepIds: [],
+      settings: {
+        input: {
+          stepFilterGroups: [
+            { id: acceptedGroupIdForRouter, logicalOperator: StepLogicalOperator.AND },
+          ],
+          stepFilters: [
+            {
+              id: acceptedFilterIdForRouter,
+              type: 'SELECT',
+              value: 'CONNECTION_ACCEPTED',
+              operand: ViewFilterOperand.IS,
+              stepOutputKey: '{{trigger.properties.after.outreachSequenceStage}}',
+              stepFilterGroupId: acceptedGroupIdForRouter,
+              positionInStepFilterGroup: 0,
+            },
+          ],
+          branches: [
+            {
+              id: acceptedBranchId,
+              filterGroupId: acceptedGroupIdForRouter,
+              nextStepIds: [],
+            },
+            { id: elseBranchId, nextStepIds: [] },
+          ],
+        },
+        outputSchema: {},
+        errorHandlingOptions: errorHandling,
+      },
     },
   });
 
@@ -1021,13 +1054,15 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
     workflowVersionId,
     name: 'Candidate is Updated',
     eventName: 'candidate.updated',
-    nextStepIds: [filterAccepted.id],
+    fields: ['outreachSequenceStage'],
+    nextStepIds: [stageRouter.id],
   });
 
   const findCandidate = await createWorkflowStep({
     workflowVersionId,
     stepType: 'FIND_RECORDS',
-    parentStepId: filterAccepted.id,
+    parentStepId: stageRouter.id,
+    parentStepConnectionOptions: { branchId: acceptedBranchId },
   });
 
   await updateWorkflowStep({
@@ -1403,6 +1438,10 @@ const deployWorkflowAccept = async (workflowVersionId: string) => {
                 ? { outreachSequenceStage: 'FAILED_NO_REPLY' }
                 : {}),
             },
+            fieldsToUpdate:
+              followUpIndex === 3
+                ? ['linkedinFollowUpCount', 'outreachSequenceStage']
+                : ['linkedinFollowUpCount'],
           },
           outputSchema: {},
           errorHandlingOptions: errorHandling,
@@ -1951,7 +1990,6 @@ const main = async () => {
   const workflowBId = process.env.GTM_OUTREACH_WORKFLOW_B_ID || v4();
   const workflowAcceptId =
     process.env.GTM_OUTREACH_WORKFLOW_ACCEPT_ID || v4();
-  const workflowCId = process.env.GTM_OUTREACH_WORKFLOW_C_ID || v4();
 
   const workflowSearch = await createWorkflow(
     workflowSearchId,
@@ -1974,21 +2012,6 @@ const main = async () => {
     workflowAccept.workflowVersionId,
   );
   await activateWorkflowVersion(workflowAccept.workflowVersionId);
-
-  const workflowC = await createWorkflow(workflowCId, WORKFLOW_C_NAME);
-  const stepIdsC = await deployWorkflowC(workflowC.workflowVersionId);
-  await activateWorkflowVersion(workflowC.workflowVersionId);
-
-  const workflowMeetingId =
-    process.env.GTM_OUTREACH_WORKFLOW_MEETING_ID || v4();
-  const workflowMeeting = await createWorkflow(
-    workflowMeetingId,
-    WORKFLOW_MEETING_NAME,
-  );
-  const stepIdsMeeting = await deployWorkflowMeeting(
-    workflowMeeting.workflowVersionId,
-  );
-  await activateWorkflowVersion(workflowMeeting.workflowVersionId);
 
   const projectId = await bindProjectOutreachWorkflow(workflowB.workflowId);
 
@@ -2014,16 +2037,12 @@ const main = async () => {
   console.log('GTM outreach workflows setup complete');
   console.log(`Workflow search (company created): ${workflowSearch.workflowId}`);
   console.log(`Workflow B (per candidate): ${workflowB.workflowId}`);
-  console.log(`Workflow accept: ${workflowAccept.workflowId}`);
-  console.log(`Workflow C (reply): ${workflowC.workflowId}`);
-  console.log(`Workflow meeting: ${workflowMeeting.workflowId}`);
+  console.log(`Workflow candidate updated: ${workflowAccept.workflowId}`);
   console.log(`Project bind: ${projectId ?? 'skipped'}`);
   console.log('Open /gtm-home?workflowId=' + workflowB.workflowId);
   console.log('Step IDs search:', stepIdsSearch);
   console.log('Step IDs B:', stepIdsB);
-  console.log('Step IDs accept:', stepIdsAccept);
-  console.log('Step IDs C:', stepIdsC);
-  console.log('Step IDs meeting:', stepIdsMeeting);
+  console.log('Step IDs candidate updated:', stepIdsAccept);
   if (stepIdsHarvest) {
     console.log('Step IDs harvest:', stepIdsHarvest);
   }

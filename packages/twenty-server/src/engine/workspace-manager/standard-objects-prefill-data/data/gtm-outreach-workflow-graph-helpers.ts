@@ -312,6 +312,80 @@ export const gtmWfIfElseStep = ({
   };
 };
 
+export const gtmWfMultiIfElseStep = ({
+  id,
+  name,
+  branches,
+}: {
+  id: string;
+  name: string;
+  branches: Array<{
+    id: string;
+    filterGroupId?: string;
+    filterId?: string;
+    stepOutputKey?: string;
+    value?: string;
+    type?: string;
+    operand?: string;
+    nextStepIds: string[];
+  }>;
+}): StepBase => {
+  const stepFilterGroups: Array<Record<string, unknown>> = [];
+  const stepFilters: Array<Record<string, unknown>> = [];
+  const ifElseBranches: Array<Record<string, unknown>> = [];
+
+  for (const branch of branches) {
+    if (
+      !branch.filterGroupId ||
+      !branch.filterId ||
+      !branch.stepOutputKey ||
+      branch.value === undefined
+    ) {
+      ifElseBranches.push({
+        id: branch.id,
+        nextStepIds: branch.nextStepIds,
+      });
+      continue;
+    }
+
+    stepFilterGroups.push({
+      id: branch.filterGroupId,
+      logicalOperator: 'AND',
+    });
+    stepFilters.push({
+      id: branch.filterId,
+      type: branch.type ?? 'SELECT',
+      value: branch.value,
+      operand: branch.operand ?? 'IS',
+      stepOutputKey: branch.stepOutputKey,
+      stepFilterGroupId: branch.filterGroupId,
+      positionInStepFilterGroup: 0,
+    });
+    ifElseBranches.push({
+      id: branch.id,
+      filterGroupId: branch.filterGroupId,
+      nextStepIds: branch.nextStepIds,
+    });
+  }
+
+  return {
+    id,
+    name,
+    type: 'IF_ELSE',
+    valid: true,
+    nextStepIds: [],
+    settings: {
+      input: {
+        stepFilterGroups,
+        stepFilters,
+        branches: ifElseBranches,
+      },
+      outputSchema: {},
+      errorHandlingOptions: GTM_WF_ERROR_HANDLING,
+    },
+  };
+};
+
 export const gtmWfAiAgentStep = ({
   id,
   name,
@@ -465,6 +539,7 @@ export const gtmWfUpdateRecordStep = ({
           objectName: 'candidate',
           objectRecord,
           objectRecordId,
+          fieldsToUpdate: Object.keys(objectRecord),
         },
         outputSchema: {},
         errorHandlingOptions: GTM_WF_ERROR_HANDLING,
@@ -500,6 +575,7 @@ export const gtmWfSendLinkedInMessageStep = ({
           candidateId,
           linkedinProfileId,
           workspaceMemberId: gtmWfMemberId(),
+          files: [],
         },
         outputSchema: {},
         errorHandlingOptions: GTM_WF_ERROR_HANDLING,
@@ -531,10 +607,12 @@ export const gtmWfDatabaseEventTrigger = ({
   name,
   eventName,
   nextStepIds,
+  fields,
 }: {
   name: string;
   eventName: string;
   nextStepIds: string[];
+  fields?: string[];
 }) => ({
   name,
   type: 'DATABASE_EVENT',
@@ -542,6 +620,7 @@ export const gtmWfDatabaseEventTrigger = ({
   settings: {
     eventName,
     outputSchema: {},
+    ...(fields && fields.length > 0 ? { fields } : {}),
   },
   nextStepIds,
 });

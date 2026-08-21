@@ -20,11 +20,151 @@ const GRAPH_SLUGS: Record<string, string> = {
   'GTM Harvest — LinkedIn Companies': 'harvest',
   'Company Created → ICP People Search': 'companySearch',
   'GTM Outreach — Per Candidate': 'perCandidate',
-  'GTM Outreach — Connection Accepted': 'connectionAccepted',
-  'GTM Outreach — Reply': 'reply',
-  'GTM Outreach — Negotiating': 'negotiating',
-  'GTM Outreach — Deferred': 'deferred',
-  'GTM Outreach — Meeting Booked': 'meetingBooked',
+  'GTM Outreach — Candidate Updated': 'candidateUpdated',
+};
+
+export const RETIRED_GTM_OUTREACH_WORKFLOW_NAMES = [
+  'GTM Outreach — Connection Accepted',
+  'GTM Outreach — Reply',
+  'GTM Outreach — Negotiating',
+  'GTM Outreach — Deferred',
+  'GTM Outreach — Meeting Booked',
+];
+
+const tableExists = async ({
+  schemaName,
+  tableName,
+  entityManager,
+}: {
+  schemaName: string;
+  tableName: string;
+  entityManager: EntityManager;
+}) => {
+  const rows = (await entityManager.query(
+    `
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = $1
+        AND table_name = $2
+      LIMIT 1
+    `,
+    [schemaName, tableName],
+  )) as unknown[];
+
+  return rows.length > 0;
+};
+
+export const deleteObsoleteGtmOutreachWorkflows = async ({
+  schemaName,
+  entityManager,
+}: {
+  schemaName: string;
+  entityManager: EntityManager;
+}) => {
+  const retired = (await entityManager.query(
+    `
+      SELECT id, "coreWorkflowId"
+      FROM ${schemaName}.workflow
+      WHERE name = ANY($1)
+    `,
+    [RETIRED_GTM_OUTREACH_WORKFLOW_NAMES],
+  )) as Array<{ id: string; coreWorkflowId: string | null }>;
+
+  if (retired.length === 0) {
+    return { workflowIds: [] as string[] };
+  }
+
+  const workflowIds = retired.map((row) => row.id);
+  const coreWorkflowIds = retired
+    .map((row) => row.coreWorkflowId)
+    .filter((id): id is string => typeof id === 'string');
+
+  if (await tableExists({ schemaName, tableName: 'project', entityManager })) {
+    const projectColumns = (await entityManager.query(
+      `
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = $1
+          AND table_name = 'project'
+          AND column_name = 'outreachWorkflowId'
+      `,
+      [schemaName],
+    )) as Array<{ column_name: string }>;
+
+    if (projectColumns.length > 0) {
+      await entityManager.query(
+        `
+          UPDATE ${schemaName}.project
+          SET "outreachWorkflowId" = NULL, "updatedAt" = NOW()
+          WHERE "outreachWorkflowId" = ANY($1)
+        `,
+        [workflowIds],
+      );
+    }
+  }
+
+  await entityManager.query(
+    `
+      DELETE FROM ${schemaName}."workflowAutomatedTrigger"
+      WHERE "workflowId" = ANY($1)
+    `,
+    [workflowIds],
+  );
+
+  await entityManager.query(
+    `
+      UPDATE ${schemaName}."workflowRun"
+      SET "deletedAt" = COALESCE("deletedAt", NOW()), "updatedAt" = NOW()
+      WHERE "workflowId" = ANY($1)
+        AND "deletedAt" IS NULL
+    `,
+    [workflowIds],
+  );
+
+  await entityManager.query(
+    `
+      UPDATE ${schemaName}."workflowVersion"
+      SET status = 'DEACTIVATED',
+          "deletedAt" = COALESCE("deletedAt", NOW()),
+          "updatedAt" = NOW()
+      WHERE "workflowId" = ANY($1)
+        AND "deletedAt" IS NULL
+    `,
+    [workflowIds],
+  );
+
+  await entityManager.query(
+    `
+      UPDATE ${schemaName}.workflow
+      SET statuses = ARRAY['DEACTIVATED']::${schemaName}.workflow_statuses_enum[],
+          "lastPublishedVersionId" = NULL,
+          "deletedAt" = COALESCE("deletedAt", NOW()),
+          "updatedAt" = NOW()
+      WHERE id = ANY($1)
+        AND "deletedAt" IS NULL
+    `,
+    [workflowIds],
+  );
+
+  if (coreWorkflowIds.length > 0) {
+    await entityManager.query(
+      `
+        DELETE FROM core."workflowVersion"
+        WHERE "workflowId" = ANY($1)
+      `,
+      [coreWorkflowIds],
+    );
+
+    await entityManager.query(
+      `
+        DELETE FROM core.workflow
+        WHERE id = ANY($1)
+      `,
+      [coreWorkflowIds],
+    );
+  }
+
+  return { workflowIds };
 };
 
 const LF_TOKEN_TO_ID_KEY = {
@@ -557,6 +697,9 @@ export const prefillGtmOutreachWorkflows = async ({
           trigger: JSON.stringify(trigger),
           steps: JSON.stringify(steps),
           coreWorkflowVersionId: version.coreWorkflowVersionId,
+          workflowId: version.workflowId,
+          coreWorkflowId: version.coreWorkflowId,
+          name: graph.name,
         });
         coreVersionRows.push({
           _update: true,
@@ -596,8 +739,8 @@ export const prefillGtmOutreachWorkflows = async ({
       workspaceId,
       universalIdentifier: ids.workflowUniversalIdentifier,
       applicationId,
-      name: graph.name,
       lastPublishedVersionId: null,
+      name: graph.name,
     });
 
     versionRows.push({
@@ -647,6 +790,53 @@ export const prefillGtmOutreachWorkflows = async ({
 
   const insertVersions = versionRows.filter((item) => !item._update);
   const insertCoreVersions = coreVersionRows.filter((item) => !item._update);
+
+  for (const row of versionRows.filter((item) => item._update)) {
+    if (typeof row.name !== 'string' || typeof row.workflowId !== 'string') {
+      continue;
+    }
+
+    await entityManager.query(
+      `
+        UPDATE ${schemaName}.workflow
+        SET name = $2, "updatedAt" = NOW()
+        WHERE id = $1
+      `,
+      [row.workflowId, row.name],
+    );
+
+    if (typeof row.coreWorkflowId === 'string') {
+      await entityManager.query(
+        `
+          UPDATE core.workflow
+          SET name = $2
+          WHERE id = $1
+        `,
+        [row.coreWorkflowId, row.name],
+      );
+    }
+  }
+
+  await deleteObsoleteGtmOutreachWorkflows({ schemaName, entityManager });
+
+  await entityManager.query(
+    `
+      UPDATE ${schemaName}."workflowAutomatedTrigger"
+      SET settings = jsonb_set(
+        COALESCE(settings, '{}'::jsonb),
+        '{fields}',
+        '["outreachSequenceStage"]'::jsonb
+      )
+      WHERE type = 'DATABASE_EVENT'
+        AND settings->>'eventName' = 'candidate.updated'
+        AND "workflowId" IN (
+          SELECT id
+          FROM ${schemaName}.workflow
+          WHERE name = 'GTM Outreach — Candidate Updated'
+            AND "deletedAt" IS NULL
+        )
+    `,
+  );
 
   if (workflowRows.length === 0 && insertVersions.length === 0) {
     return;
@@ -723,7 +913,13 @@ export const prefillGtmOutreachWorkflows = async ({
         'workflowId',
       ])
       .orIgnore()
-      .values(insertCoreVersions)
+      .values(
+        insertCoreVersions.map((row) => ({
+          ...row,
+          triggers: JSON.stringify(row.triggers),
+          steps: JSON.stringify(row.steps),
+        })),
+      )
       .execute();
   }
 };

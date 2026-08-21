@@ -27,7 +27,7 @@ Search LFs return hits only. People persist with `upload-profiles`. Company pers
 
 ## GTM workflows (do not conflate)
 
-FILTER every graph on `outreachSequenceStage` (and often `connectionStatus`). FIND `workspaceMember` then `workspaceMemberProfile` and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{profile.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
+FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` then `workspaceMemberProfile` and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{profile.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
 
 Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED` / `connectionStatus=ACCEPTED`.
 
@@ -37,12 +37,8 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Workflow U** (manual) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
 | **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
-| **Stage B accept** (`GTM Outreach — Connection Accepted`) | `candidate.updated` `CONNECTION_ACCEPTED` | `fetch-linkedin-messages` → `fetch-linkedin-profile` → AI_AGENT (rapport opener; JSON `{ "message" }`) → FORM → SEND `{{form.editedBody}}`. Then DELAY 3d → FIND → IF not `REPLIED` and `linkedinFollowUpCount` < 3 → AI follow-up → FORM → SEND → increment count; else `FAILED_NO_REPLY`. DELAY is not wait-for-reply. |
+| **Candidate Updated** (`GTM Outreach — Candidate Updated`) | `candidate.updated` watching `outreachSequenceStage` | IF_ELSE on `{{trigger.properties.after.outreachSequenceStage}}`. **CONNECTION_ACCEPTED**: `fetch-linkedin-messages` → `fetch-linkedin-profile` → AI opener → FORM → SEND, then DELAY follow-ups. **REPLIED**: FIND `chatMessage` → calendar slots → AI → FORM → SEND. **NEGOTIATING** / **DEFERRED**: same shape, different prompts. **MEETING_BOOKED**: FORM times → `CREATE_CALENDAR_EVENT`. Else: end with no work. Do not use FILTER-first twins of this trigger. |
 | **Stage C inbound classify** | silence-window flush (not a workflow) | LLM classifies the **recipient burst** → stamps stage. `unsubscribe`→`STOPPED` (no send). `not_now`→`DEFERRED`. `interested`→`NEGOTIATING`. `times_proposed`/`question`→`REPLIED`. `book`→`MEETING_BOOKED`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
-| **Stage C** (`GTM Outreach — Reply`) | `candidate.updated` `REPLIED` | FIND `chatMessage` → `get-calendar-availability` → AI_AGENT draft (answer / confirm their times using injected slots only) → FORM → SEND. Classifier already ran; do not re-route intent here. |
-| **Negotiating** | `candidate.updated` `NEGOTIATING` | Same shape as Reply with the negotiating prompt (advance toward a meeting). |
-| **Deferred** | `candidate.updated` `DEFERRED` | Short ack, no pitch, no times → FORM → SEND, then stay paused. |
-| **Meeting booked** | `candidate.updated` `MEETING_BOOKED` | FORM confirm start/end from last inbound → `CREATE_CALENDAR_EVENT`. |
 
 AI drafts (before FORM): opener = short hook + one question, meeting as a light close; follow-ups escalate value (3rd is a breakup); email fallback matches ICP, no invented LinkedIn facts; replies never invent calendar times. Inbound classification (not the draft agent) stamps `STOPPED` / `DEFERRED` / `NEGOTIATING` / `REPLIED` / `MEETING_BOOKED`. AI_AGENT JSON output is `{{aiStep.message}}`. Missed enrich → `FAILED_ENRICH`.
 

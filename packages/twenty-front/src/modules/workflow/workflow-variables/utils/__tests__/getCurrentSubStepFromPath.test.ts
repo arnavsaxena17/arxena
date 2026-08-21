@@ -42,4 +42,10 @@ describe('getCurrentSubStepFromPath', () => {
     const path = ['company', 'unknown'];
     expect(getCurrentSubStepFromPath(mockStep, path)).toBe(undefined);
   });
+
+  it('should not throw when a nested key is walked after a missing parent', () => {
+    expect(
+      getCurrentSubStepFromPath(mockStep, ['properties', 'after']),
+    ).toBeUndefined();
+  });
 });

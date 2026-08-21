@@ -11,13 +11,13 @@ import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/works
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
 
-@RegisteredWorkspaceCommand('2.25.0', 1785600000039)
+@RegisteredWorkspaceCommand('2.25.0', 1785600000041)
 @Command({
-  name: 'upgrade:2-25:resync-gtm-outreach-workflow-graphs',
+  name: 'upgrade:2-25:merge-gtm-outreach-candidate-updated-workflows',
   description:
-    'Replace System GTM outreach DRAFT graphs, merge candidate.updated into one IF_ELSE workflow, and deactivate leftover stage listeners',
+    'Remove the five GTM candidate.updated stage workflows and seed GTM Outreach — Candidate Updated as a Draft',
 })
-export class ResyncGtmOutreachWorkflowGraphsCommand extends ProvisionedWorkspaceCommandRunner {
+export class MergeGtmOutreachCandidateUpdatedWorkflowsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,
@@ -36,7 +36,7 @@ export class ResyncGtmOutreachWorkflowGraphsCommand extends ProvisionedWorkspace
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     this.logger.log(
-      `${isDryRun ? '[DRY RUN] ' : ''}Resyncing GTM outreach draft workflows for workspace ${workspaceId}`,
+      `${isDryRun ? '[DRY RUN] ' : ''}Merging GTM outreach candidate.updated workflows for workspace ${workspaceId}`,
     );
 
     const { workspaceCustomFlatApplication } =
@@ -80,7 +80,7 @@ export class ResyncGtmOutreachWorkflowGraphsCommand extends ProvisionedWorkspace
     ]);
 
     this.logger.log(
-      `Resync GTM outreach draft workflows complete for workspace ${workspaceId}`,
+      `Merge GTM outreach candidate.updated workflows complete for workspace ${workspaceId}`,
     );
   }
 }

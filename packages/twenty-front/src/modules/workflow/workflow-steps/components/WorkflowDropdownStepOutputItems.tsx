@@ -13,6 +13,7 @@ import { useVariableDropdown } from '@/workflow/workflow-variables/hooks/useVari
 import { isRecordOutputSchemaV2 } from '@/workflow/workflow-variables/types/guards/isRecordOutputSchemaV2';
 import { type StepOutputSchemaV2 } from '@/workflow/workflow-variables/types/StepOutputSchemaV2';
 import { getCurrentSubStepFromPath } from '@/workflow/workflow-variables/utils/getCurrentSubStepFromPath';
+import { getFilterFieldPickerInitialPath } from '@/workflow/workflow-variables/utils/getFilterFieldPickerInitialPath';
 import { getStepHeaderLabel } from '@/workflow/workflow-variables/utils/getStepHeaderLabel';
 import { getStepItemIcon } from '@/workflow/workflow-variables/utils/getStepItemIcon';
 import { getVariableTemplateFromPath } from '@/workflow/workflow-variables/utils/getVariableTemplateFromPath';
@@ -76,10 +77,10 @@ export const WorkflowDropdownStepOutputItems = ({
   });
   const initialPath =
     selectedFieldStepId === step.id && stepFilter.stepOutputKey
-      ? stepFilter.stepOutputKey
-          .replace(/^\{\{|\}\}$/g, '')
-          .split('.')
-          .slice(1, -1)
+      ? getFilterFieldPickerInitialPath({
+          step,
+          stepOutputKey: stepFilter.stepOutputKey,
+        })
       : [];
 
   const {
