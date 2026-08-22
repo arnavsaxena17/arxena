@@ -14,6 +14,9 @@ import { DuplicateWorkflowVersionStepInput } from 'src/engine/core-modules/workf
 import { SubmitFormStepInput } from 'src/engine/core-modules/workflow/dtos/submit-form-step.input';
 import { TestHttpRequestInput } from 'src/engine/core-modules/workflow/dtos/test-http-request.input';
 import { TestHttpRequestDTO } from 'src/engine/core-modules/workflow/dtos/test-http-request.dto';
+import { TestWorkflowFormNotifyInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.input';
+import { TestWorkflowFormNotifyDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.dto';
+import { WorkflowFormNotifyTestService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.service';
 import { UpdateWorkflowRunStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-run-step.input';
 import { UpdateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-step.input';
 import { UpdateWorkflowVersionTriggerInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-trigger.input';
@@ -52,6 +55,7 @@ export class WorkflowVersionStepResolver {
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly httpTool: HttpTool,
     private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
+    private readonly workflowFormNotifyTestService: WorkflowFormNotifyTestService,
   ) {}
 
   // Related to https://github.com/twentyhq/private-issues/issues/478
@@ -190,5 +194,30 @@ export class WorkflowVersionStepResolver {
       },
       { workspaceId: workspace.id },
     );
+  }
+
+  @Mutation(() => TestWorkflowFormNotifyDTO)
+  async testWorkflowFormNotify(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('input') input: TestWorkflowFormNotifyInput,
+  ): Promise<TestWorkflowFormNotifyDTO> {
+    return this.workflowFormNotifyTestService.startTest({
+      workspaceId: workspace.id,
+      stepId: input.stepId,
+      fields: input.fields,
+      notifyOnPending: input.notifyOnPending,
+      variableValues: input.variableValues ?? {},
+    });
+  }
+
+  @Query(() => TestWorkflowFormNotifyDTO)
+  async workflowFormNotifyTest(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('testId', { type: () => UUIDScalarType }) testId: string,
+  ): Promise<TestWorkflowFormNotifyDTO> {
+    return this.workflowFormNotifyTestService.getTest({
+      workspaceId: workspace.id,
+      testId,
+    });
   }
 }

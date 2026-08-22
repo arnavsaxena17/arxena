@@ -20,6 +20,12 @@ const SORT_ORDER_ALIASES: Record<string, LinkedInSalesNavigatorSortOrder> = {
   desc: 'DESCENDING',
 };
 
+export const SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY: LinkedInSalesNavigatorAccountListSortBy =
+  'DATE_ADDED';
+
+export const SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER: LinkedInSalesNavigatorSortOrder =
+  'DESCENDING';
+
 export const toUnipileV2AccountListId = (listId: string): string => {
   const trimmed = listId.trim();
   if (/^ACCOUNT_/i.test(trimmed)) {

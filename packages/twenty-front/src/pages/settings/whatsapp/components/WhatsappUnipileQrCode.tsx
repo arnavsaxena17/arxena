@@ -1,10 +1,13 @@
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { styled } from '@linaria/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import QRCode from 'react-qr-code';
+import QRCodeModule from 'react-qr-code';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
+import { resolveCjsModuleDefaultExport } from '~/utils/resolveCjsModuleDefaultExport';
+
+const QRCode = resolveCjsModuleDefaultExport(QRCodeModule);
 
 const Card = styled.div`
   background: ${themeCssVariables.background.secondary};

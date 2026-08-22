@@ -171,6 +171,25 @@ describe('jsonSchemaToInputSchema', () => {
     });
   });
 
+  it('preserves objectNameSingular on record properties', () => {
+    const result = jsonSchemaToInputSchema({
+      type: 'object',
+      properties: {
+        projectId: {
+          type: 'record',
+          label: 'Project',
+          objectNameSingular: 'project',
+        },
+      },
+    });
+
+    expect(result[0].properties?.projectId).toEqual({
+      type: 'record',
+      label: 'Project',
+      objectNameSingular: 'project',
+    });
+  });
+
   it('passes record/records types through with objectUniversalIdentifier', () => {
     const result = jsonSchemaToInputSchema({
       type: 'object',

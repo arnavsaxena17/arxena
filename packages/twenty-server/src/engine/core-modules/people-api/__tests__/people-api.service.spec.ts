@@ -442,7 +442,8 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
   } as unknown as PeopleEsService;
 
   const titleTaxonomyRemoteService = {
-    classifyTitles: jest.fn().mockResolvedValue([
+    classifyTitles: jest.fn(),
+    classifyProfiles: jest.fn().mockResolvedValue([
       {
         title: 'VP Engineering',
         normalized_title: 'vp engineering',
@@ -460,7 +461,6 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
         confidence: 0.7,
       },
     ]),
-    classifyProfiles: jest.fn(),
     getFunctions: jest.fn().mockResolvedValue([
       {
         id: 'software engineering',
@@ -554,11 +554,11 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
         apiToken: 'token',
       }),
     );
-    expect(titleTaxonomyRemoteService.classifyTitles).toHaveBeenCalledWith([
-      'VP Engineering',
-      'Account Executive',
+    expect(titleTaxonomyRemoteService.classifyTitles).not.toHaveBeenCalled();
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      { jobTitle: 'VP Engineering', experience: [] },
+      { jobTitle: 'Account Executive', experience: [] },
     ]);
-    expect(titleTaxonomyRemoteService.classifyProfiles).not.toHaveBeenCalled();
     expect(result.dataSource).toBe('unipile');
     expect(result.totalBeforeFilter).toBe(2);
     expect(result.total).toBe(1);
@@ -632,9 +632,88 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     expect(result.items[0].resolved.stdFunctionRoot).toBe('product');
   });
 
+  it('sends Unipile current_positions and work_experience to classifyProfiles', async () => {
+    (
+      peopleLinkedInSourcingService.search as jest.Mock
+    ).mockResolvedValueOnce({
+      dataSource: 'unipile',
+      keywords: null,
+      appliedFilters: { functionIds: [], seniorities: [] },
+      company: {
+        name: 'Korn Ferry',
+        slug: 'kornferry',
+        linkedinUrl: 'https://www.linkedin.com/company/kornferry/',
+      },
+      items: [
+        {
+          headline:
+            'Director of Talent Solutions | Speaker & Facilitator | Strategic Communication',
+          current_positions: [
+            {
+              role: 'Director of Talent Solutions | Interim Executive & Professional Search',
+              start: { year: 2021, month: 3 },
+            },
+          ],
+          work_experience: [
+            {
+              role: 'Talent Lead',
+              start: { year: 2018, month: 1 },
+              end: { year: 2021, month: 2 },
+            },
+          ],
+        },
+      ],
+    });
+    (
+      titleTaxonomyRemoteService.classifyProfiles as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        title:
+          'Director of Talent Solutions | Interim Executive & Professional Search',
+        normalized_title: 'director of talent solutions',
+        function_root: { id: 'human resources', name: 'human resources' },
+        function: { id: 'talent acquisition', name: 'talent acquisition' },
+        grade: { id: 'leadership', name: 'leadership' },
+        confidence: 0.8,
+      },
+    ]);
+
+    await service.searchPeopleByTaxonomy(
+      {
+        website: 'kornferry.com',
+        stdFunctionRoot: 'human resources',
+        stdGrade: 'leadership',
+        accountId: 'acct-1',
+      },
+      'token',
+    );
+
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      {
+        jobTitle:
+          'Director of Talent Solutions | Interim Executive & Professional Search',
+        experience: [
+          {
+            title:
+              'Director of Talent Solutions | Interim Executive & Professional Search',
+            startDate: '2021-03-01',
+            endDate: null,
+            isCurrent: true,
+          },
+          {
+            title: 'Talent Lead',
+            startDate: '2018-01-01',
+            endDate: '2021-02-01',
+            isCurrent: false,
+          },
+        ],
+      },
+    ]);
+  });
+
   it('throws when taxonomy batch classify is unavailable', async () => {
     (
-      titleTaxonomyRemoteService.classifyTitles as jest.Mock
+      titleTaxonomyRemoteService.classifyProfiles as jest.Mock
     ).mockResolvedValueOnce(null);
 
     await expect(

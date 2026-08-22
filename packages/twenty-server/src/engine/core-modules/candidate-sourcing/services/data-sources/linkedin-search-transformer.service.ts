@@ -91,6 +91,20 @@ export type TransformedCandidateForTable = Omit<
   m7kqHasOrgPhone?: boolean;
 }
 
+type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
+  firstName?: string;
+  lastName?: string;
+  linkedinUrl?: string;
+  profileUrl?: string;
+  profilePictureUrl?: string;
+  displayPicture?: string;
+  jobCompanyId?: string;
+  companyId?: string;
+  jobTitle?: string;
+  company?: string;
+  jobCompanyName?: string;
+};
+
 @Injectable()
 export class LinkedInSearchTransformerService extends BaseDataSourceTransformerService {
   constructor(dataProcessingUtils: DataProcessingUtils) {
@@ -121,19 +135,19 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     return userProfile;
   }
 
-  private processLinkedInProfileData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+  private processLinkedInProfileData(candidateData: LinkedInSearchOrMappedHit, userProfile: UserProfile): void {
     if (candidateData.name) {
       const nameParts = candidateData.name.split(' ');
       userProfile.firstName = nameParts[0] || '';
       userProfile.lastName = nameParts.slice(1).join(' ') || '';
     }
 
-    if (candidateData.first_name) {
-      userProfile.firstName = candidateData.first_name;
+    if (candidateData.first_name || candidateData.firstName) {
+      userProfile.firstName = candidateData.first_name || candidateData.firstName;
     }
 
-    if (candidateData.last_name) {
-      userProfile.lastName = candidateData.last_name;
+    if (candidateData.last_name || candidateData.lastName) {
+      userProfile.lastName = candidateData.last_name || candidateData.lastName;
     }
 
     if (candidateData.headline) {
@@ -153,14 +167,36 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       userProfile.linkedinUrl = `https://www.linkedin.com/in/${candidateData.public_identifier}`;
     } else if (candidateData.profile_url) {
       userProfile.linkedinUrl = candidateData.profile_url;
+    } else if (candidateData.linkedinUrl) {
+      userProfile.linkedinUrl = candidateData.linkedinUrl;
+    } else if (candidateData.profileUrl) {
+      userProfile.linkedinUrl = candidateData.profileUrl;
     }
 
     if (candidateData.public_profile_url) {
       userProfile.profileUrl = candidateData.public_profile_url;
+    } else if (candidateData.profileUrl) {
+      userProfile.profileUrl = candidateData.profileUrl;
+    } else if (userProfile.linkedinUrl) {
+      userProfile.profileUrl = userProfile.linkedinUrl;
     }
 
     if (candidateData.profile_picture_url) {
       userProfile.displayPicture = candidateData.profile_picture_url;
+    } else if (candidateData.profilePictureUrl) {
+      userProfile.displayPicture = candidateData.profilePictureUrl;
+    } else if (typeof candidateData.displayPicture === 'string') {
+      userProfile.displayPicture = candidateData.displayPicture;
+    }
+
+    const jobCompanyId =
+      (typeof candidateData.jobCompanyId === 'string'
+        ? candidateData.jobCompanyId
+        : '') ||
+      (typeof candidateData.companyId === 'string' ? candidateData.companyId : '');
+
+    if (jobCompanyId.trim()) {
+      userProfile.jobCompanyId = jobCompanyId.trim();
     }
 
     // Store LinkedIn-specific data in linkedinSpecificData
@@ -193,7 +229,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
   }
 
-  private processLinkedInExperienceData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+  private processLinkedInExperienceData(candidateData: LinkedInSearchOrMappedHit, userProfile: UserProfile): void {
     if (candidateData.current_positions && candidateData.current_positions.length > 0) {
       const currentPosition = candidateData.current_positions[0];
 
@@ -219,6 +255,20 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         tenure: currentPosition.tenure_at_company?.years,
       });
     } else {
+      if (typeof candidateData.jobTitle === 'string' && candidateData.jobTitle.trim()) {
+        userProfile.jobTitle = candidateData.jobTitle.trim();
+        userProfile.profileTitle = candidateData.jobTitle.trim();
+      }
+
+      if (typeof candidateData.company === 'string' && candidateData.company.trim()) {
+        userProfile.jobCompanyName = candidateData.company.trim();
+      } else if (
+        typeof candidateData.jobCompanyName === 'string' &&
+        candidateData.jobCompanyName.trim()
+      ) {
+        userProfile.jobCompanyName = candidateData.jobCompanyName.trim();
+      }
+
       // If no current positions, try to extract job title and company from headline
       if (typeof candidateData.headline === 'string' && candidateData.headline.trim()) {
         // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)

@@ -10,6 +10,8 @@ import type { LinkedinSignupCompleteData } from 'twenty-shared/arx';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
 import { Button } from 'twenty-ui/input';
+import { Section } from 'twenty-ui/layout';
+import { H2Title } from 'twenty-ui/typography';
 import { Mixpanel } from '~/mixpanel';
 import { ConnectedLinkedinAccounts } from './components/ConnectedLinkedinAccounts';
 import { LinkedinSignup } from './LinkedinSignup';
@@ -94,6 +96,11 @@ export const LinkedinAccounts = () => {
       ]}
     >
       <SettingsPageContainer>
+        <ConnectedLinkedinAccounts
+          refreshTrigger={accountsRefreshTrigger}
+          onAccountConnected={handleAccountConnected}
+          onAccountsLoaded={handleAccountsLoaded}
+        />
         {accountsLoadSettled &&
           hasConnectedAccounts &&
           !isAddingAnotherAccount && (
@@ -112,14 +119,15 @@ export const LinkedinAccounts = () => {
             onSignupCancel={handleSignupCancel}
           />
         )}
-        <LinkedinCookieSyncConsentSetting
-          onLinkedinStoredProfileAction={bumpLinkedinUnipileUi}
-        />
-        <ConnectedLinkedinAccounts
-          refreshTrigger={accountsRefreshTrigger}
-          onAccountConnected={handleAccountConnected}
-          onAccountsLoaded={handleAccountsLoaded}
-        />
+        <Section>
+          <H2Title
+            title={t`Saved session`}
+            description={t`Connect Unipile from LinkedIn cookies and the Unipile account ID stored on your recruiter profile. The Chrome extension is optional if those are already saved.`}
+          />
+          <LinkedinCookieSyncConsentSetting
+            onLinkedinStoredProfileAction={bumpLinkedinUnipileUi}
+          />
+        </Section>
       </SettingsPageContainer>
     </SettingsPageLayout>
   );

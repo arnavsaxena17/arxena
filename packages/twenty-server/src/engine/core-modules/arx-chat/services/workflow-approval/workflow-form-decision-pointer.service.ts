@@ -12,6 +12,10 @@ import {
   verifyWorkflowFormDecisionPointer,
   type WorkflowFormDecisionPointerParts,
 } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.util';
+import {
+  WORKFLOW_FORM_NOTIFY_TEST_TTL_MS,
+  type WorkflowFormNotifyTestSession,
+} from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.types';
 import { isWorkflowFormAction } from 'src/modules/workflow/workflow-executor/workflow-actions/form/guards/is-workflow-form-action.guard';
 import { type FormFieldMetadata } from 'src/modules/workflow/workflow-executor/workflow-actions/form/types/workflow-form-action-settings.type';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
@@ -43,6 +47,66 @@ export class WorkflowFormDecisionPointerService {
 
   private usedCacheKey(pointer: string): string {
     return `form-decision-used:${pointer}`;
+  }
+
+  private formNotifyTestCacheKey(testId: string): string {
+    return `form-notify-test:${testId}`;
+  }
+
+  async saveFormNotifyTestSession(
+    session: WorkflowFormNotifyTestSession,
+  ): Promise<void> {
+    await this.cacheStorageService.set(
+      this.formNotifyTestCacheKey(session.testId),
+      session,
+      WORKFLOW_FORM_NOTIFY_TEST_TTL_MS,
+    );
+  }
+
+  async getFormNotifyTestSession(
+    testId: string,
+  ): Promise<WorkflowFormNotifyTestSession | undefined> {
+    try {
+      return await this.cacheStorageService.get<WorkflowFormNotifyTestSession>(
+        this.formNotifyTestCacheKey(testId),
+      );
+    } catch {
+      return undefined;
+    }
+  }
+
+  async tryCompleteFormNotifyTestSession(input: {
+    parts: WorkflowFormDecisionPointerParts;
+    response: Record<string, unknown>;
+  }): Promise<boolean> {
+    const session = await this.getFormNotifyTestSession(
+      input.parts.workflowRunId,
+    );
+
+    if (
+      !session ||
+      session.workspaceId !== input.parts.workspaceId ||
+      session.stepId !== input.parts.stepId
+    ) {
+      return false;
+    }
+
+    if (session.status === 'captured') {
+      return true;
+    }
+
+    await this.saveFormNotifyTestSession({
+      ...session,
+      status: 'captured',
+      capturedResponse: input.response,
+      capturedAt: new Date().toISOString(),
+    });
+
+    this.logger.log(
+      `Form notify test ${session.testId} captured WhatsApp / form response`,
+    );
+
+    return true;
   }
 
   async tryMarkPointerUsed(pointer: string): Promise<boolean> {
@@ -83,6 +147,25 @@ export class WorkflowFormDecisionPointerService {
     stepStatus: string | undefined;
     contextText: string;
   }> {
+    const testSession = await this.getFormNotifyTestSession(
+      parts.workflowRunId,
+    );
+
+    if (
+      isDefined(testSession) &&
+      testSession.workspaceId === parts.workspaceId &&
+      testSession.stepId === parts.stepId
+    ) {
+      return {
+        fields: testSession.fields,
+        stepStatus:
+          testSession.status === 'captured'
+            ? StepStatus.SUCCESS
+            : StepStatus.PENDING,
+        contextText: testSession.contextText,
+      };
+    }
+
     const workflowRun = await this.getWorkflowRunService().getWorkflowRunOrFail(
       {
         workspaceId: parts.workspaceId,

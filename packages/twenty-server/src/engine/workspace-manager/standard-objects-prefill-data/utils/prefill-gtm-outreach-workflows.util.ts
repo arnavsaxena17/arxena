@@ -526,6 +526,12 @@ const upsertHarvestProject = async ({
     tableName,
     columnName: 'outreachWorkflowId',
   });
+  const hasIsActive = await tableHasColumn({
+    entityManager,
+    schemaName,
+    tableName,
+    columnName: 'isActive',
+  });
 
   const columns = ['id', 'name', 'createdBySource', 'createdByWorkspaceMemberId', 'createdByName', 'updatedBySource', 'updatedByWorkspaceMemberId', 'updatedByName'];
   const values: unknown[] = [
@@ -550,6 +556,11 @@ const upsertHarvestProject = async ({
     values.splice(insertAt, 0, outreachWorkflowId);
   }
 
+  if (hasIsActive) {
+    columns.push('isActive');
+    values.push(true);
+  }
+
   const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
   const quotedColumns = columns.map((column) =>
     column === 'id' || column === 'name' ? column : `"${column}"`,
@@ -559,6 +570,7 @@ const upsertHarvestProject = async ({
       ? `"outreachWorkflowId" = EXCLUDED."outreachWorkflowId"`
       : null,
     hasGtmRunKey ? `"gtmRunKey" = EXCLUDED."gtmRunKey"` : null,
+    hasIsActive ? `"isActive" = EXCLUDED."isActive"` : null,
     `name = EXCLUDED.name`,
   ]
     .filter(Boolean)
@@ -603,6 +615,12 @@ export const prefillGtmOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['id'],
   });
+  const outreachSequenceStageFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['outreachSequenceStage'],
+  });
   const profileMemberFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -629,6 +647,7 @@ export const prefillGtmOutreachWorkflows = async ({
     [GTM_WF_AGENT_REPLY]: agentIds.reply,
     [GTM_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [GTM_WF_FIELD.candidateId]: candidateIdFieldId,
+    [GTM_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
     [GTM_WF_FIELD.profileMemberId]: profileMemberFieldId,
     [GTM_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
   };

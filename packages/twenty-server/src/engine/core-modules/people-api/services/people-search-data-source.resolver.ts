@@ -136,6 +136,10 @@ export class PeopleSearchDataSourceResolver {
       };
     }
 
+    this.logger.log(
+      `People API dataSource auto/omitted no workspace Unipile account workspaceId=${resolvedWorkspaceId}`,
+    );
+
     return null;
   }
 

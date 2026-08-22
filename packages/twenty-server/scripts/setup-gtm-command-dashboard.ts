@@ -810,7 +810,7 @@ const COMPANY_FIELDS_TO_ENSURE: FieldToCreate[] = [
       { value: 'LOW', label: 'Low', color: 'red', position: 2 },
     ],
   },
-  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
+  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'ARRAY', icon: 'IconKey' },
   {
     name: 'peopleTargeted',
     label: 'People Targeted',

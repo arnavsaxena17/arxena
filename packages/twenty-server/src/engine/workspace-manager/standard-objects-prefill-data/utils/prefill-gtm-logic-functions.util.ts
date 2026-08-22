@@ -35,6 +35,18 @@ import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engin
 
 const GTM_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
 
+const GTM_PROJECT_RECORD_INPUT = {
+  type: 'record' as const,
+  label: 'Project',
+  objectNameSingular: 'project',
+};
+
+const GTM_COMPANY_RECORD_INPUT = {
+  type: 'record' as const,
+  label: 'Company',
+  objectNameSingular: 'company',
+};
+
 export type PrefilledGtmLogicFunctionDefinition =
   PrefilledWorkflowCodeStepLogicFunctionDefinition & {
     workflowActionTriggerSettings: WorkflowActionTriggerSettings;
@@ -112,8 +124,8 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              companyId: { type: 'string', label: 'Company ID' },
-              projectId: { type: 'string', label: 'Project ID' },
+              companyId: GTM_COMPANY_RECORD_INPUT,
+              projectId: GTM_PROJECT_RECORD_INPUT,
               limit: { type: 'number', label: 'Limit' },
             },
           },
@@ -126,6 +138,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
               total: { type: 'number', label: 'Total' },
               dataSource: { type: 'string', label: 'Data source' },
               projectId: { type: 'string', label: 'Project ID' },
+              companyId: { type: 'string', label: 'Company ID' },
               error: { type: 'string', label: 'Error' },
               people: {
                 type: 'array',
@@ -139,6 +152,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                     title: { type: 'string', label: 'Title' },
                     headline: { type: 'string', label: 'Headline' },
                     company: { type: 'string', label: 'Company' },
+                    companyId: { type: 'string', label: 'Company ID' },
                     location: { type: 'string', label: 'Location' },
                     linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
                     linkedinProfileId: {
@@ -253,7 +267,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
               naturalLanguage: { type: 'string', label: 'Natural language' },
               companyName: { type: 'string', label: 'Company name' },
               website: { type: 'string', label: 'Website' },
-              companyId: { type: 'string', label: 'Company ID' },
+              companyId: GTM_COMPANY_RECORD_INPUT,
               jobTitle: { type: 'string', label: 'Job title' },
               location: { type: 'string', label: 'Location' },
               country: { type: 'string', label: 'Country' },
@@ -325,24 +339,28 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              query: { type: 'string', label: 'Query' },
-              keywords: { type: 'string', label: 'Keywords' },
-              companyName: { type: 'string', label: 'Company name' },
-              website: { type: 'string', label: 'Website' },
-              industry: { type: 'string', label: 'Industry' },
-              location: { type: 'string', label: 'Location' },
               url: {
                 type: 'string',
                 label: 'LinkedIn URL',
               },
-              useV2: {
-                type: 'boolean',
-                label: 'Use Unipile v2 account list',
+              companyName: {
+                type: 'string',
+                label: 'Company name',
+                linkedinParameterType: 'COMPANY',
               },
-              sortBy: { type: 'string', label: 'Sort by' },
-              sortOrder: { type: 'string', label: 'Sort order' },
-              dataSource: { type: 'string', label: 'Data source' },
-              accountId: { type: 'string', label: 'Account ID' },
+              location: {
+                type: 'string',
+                label: 'Location',
+                linkedinParameterType: 'LOCATION',
+              },
+              industry: {
+                type: 'string',
+                label: 'Industry',
+                linkedinParameterType: 'INDUSTRY',
+              },
+              keywords: { type: 'string', label: 'Keywords' },
+              website: { type: 'string', label: 'Website' },
+              query: { type: 'string', label: 'Query' },
               limit: { type: 'number', label: 'Limit' },
             },
           },
@@ -608,7 +626,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.uploadProfilesId,
       name: GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       description:
-        'Enroll people as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId and people[] from search-people-for-company. Hits-only search stays separate.',
+        'Enroll people as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId, optional companyId, and people[] from search-people-for-company. Recruiter is taken from the Project.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       ),
@@ -619,13 +637,34 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              projectId: { type: 'string', label: 'Project ID' },
-              people: { type: 'array', label: 'People' },
-              candidates: { type: 'array', label: 'Candidates' },
-              recruiterId: { type: 'string', label: 'Recruiter ID' },
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
+              projectId: GTM_PROJECT_RECORD_INPUT,
+              companyId: GTM_COMPANY_RECORD_INPUT,
+              people: {
+                type: 'array',
+                label: 'People',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', label: 'Name' },
+                    firstName: { type: 'string', label: 'First name' },
+                    lastName: { type: 'string', label: 'Last name' },
+                    title: { type: 'string', label: 'Title' },
+                    headline: { type: 'string', label: 'Headline' },
+                    company: { type: 'string', label: 'Company' },
+                    companyId: { type: 'string', label: 'Company ID' },
+                    location: { type: 'string', label: 'Location' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    linkedinProfileId: {
+                      type: 'string',
+                      label: 'LinkedIn profile ID',
+                    },
+                    peopleId: { type: 'string', label: 'People ID' },
+                    profilePictureUrl: {
+                      type: 'string',
+                      label: 'Profile picture URL',
+                    },
+                  },
+                },
               },
               limit: { type: 'number', label: 'Limit' },
             },
@@ -649,7 +688,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.upsertCompaniesId,
       name: GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
       description:
-        'Upsert Company search hits into CRM and tag gtmRunKey to the Project. Pass projectId and companies[] from search-companies. Skips rows already tagged to this run.',
+        'Upsert Company search hits into CRM and append projectId onto gtmRunKey[]. Pass projectId and companies[] from search-companies. Skips rows already tagged to this run.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
       ),
@@ -660,8 +699,21 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              projectId: { type: 'string', label: 'Project ID' },
-              companies: { type: 'array', label: 'Companies' },
+              projectId: GTM_PROJECT_RECORD_INPUT,
+              companies: {
+                type: 'array',
+                label: 'Companies',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    name: { type: 'string', label: 'Name' },
+                    website: { type: 'string', label: 'Website' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    industry: { type: 'string', label: 'Industry' },
+                  },
+                },
+              },
               limit: { type: 'number', label: 'Limit' },
             },
           },

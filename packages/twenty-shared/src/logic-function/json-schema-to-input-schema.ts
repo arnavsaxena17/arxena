@@ -65,6 +65,18 @@ const convertProperty = (jsonSchema: InputJsonSchema): InputSchemaProperty => {
     property.objectUniversalIdentifier = jsonSchema.objectUniversalIdentifier;
   }
 
+  if (isNonEmptyString(jsonSchema.objectNameSingular)) {
+    property.objectNameSingular = jsonSchema.objectNameSingular;
+  }
+
+  if (
+    jsonSchema.linkedinParameterType === 'COMPANY' ||
+    jsonSchema.linkedinParameterType === 'LOCATION' ||
+    jsonSchema.linkedinParameterType === 'INDUSTRY'
+  ) {
+    property.linkedinParameterType = jsonSchema.linkedinParameterType;
+  }
+
   return property;
 };
 

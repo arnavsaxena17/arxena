@@ -20,4 +20,6 @@ export type InputJsonSchema = {
   multiline?: boolean;
   label?: string;
   objectUniversalIdentifier?: string;
+  objectNameSingular?: string;
+  linkedinParameterType?: 'COMPANY' | 'LOCATION' | 'INDUSTRY';
 };

@@ -114,6 +114,7 @@ export type { FunctionInput } from './types/FunctionInput';
 export type {
   RecordSchemaType,
   InputSchemaPropertyType,
+  LinkedInParameterType,
   InputSchemaProperty,
   InputSchema,
 } from './types/InputSchema';

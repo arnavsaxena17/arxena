@@ -68,7 +68,7 @@ type LinkedinUnipileAccountItem = Record<string, unknown> & {
   type?: string;
   created_at?: string;
   connection_params?: {
-    im?: { publicIdentifier?: string; status?: string };
+    im?: { publicIdentifier?: string; username?: string; status?: string };
     status?: string;
   };
   status?: string;
@@ -522,12 +522,13 @@ export class LinkedinUnipileRequestService {
   mapLinkedinApiItemToAccountRow(item: LinkedinUnipileAccountItem) {
     const publicIdentifier =
       item.connection_params?.im?.publicIdentifier?.trim() ?? '';
-    const displayUsername =
-      publicIdentifier !== '' ? publicIdentifier : item.name || 'Unknown';
+    const imUsername = item.connection_params?.im?.username?.trim() ?? '';
+    const fullName = item.name?.trim() || imUsername;
+    const displayName = fullName || publicIdentifier || 'Unknown';
     return {
       id: item.id,
-      username: displayUsername,
-      name: item.name || 'Unknown',
+      username: displayName,
+      name: displayName,
       type: item.type,
       status: this.mapAccountStatus(item),
       created_at: item.created_at,
@@ -1216,30 +1217,28 @@ export class LinkedinUnipileRequestService {
       const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(
         workspace.id,
       );
-      const linkedinUrl = workspaceKeys.linkedin_url;
-      const linkedinUnipileAccountId = workspaceKeys.linkedin_unipile_account_id;
+      const linkedinUrl = workspaceKeys.linkedin_url?.trim() || undefined;
+      const linkedinUnipileAccountId =
+        workspaceKeys.linkedin_unipile_account_id?.trim() || undefined;
 
+      const listed = await this.listAllLinkedinAccountsFromUnipileApi();
+      const allAccounts = listed.accounts;
+
+      // Workspace API keys are optional. Settings / member matching filter on
+      // recruiter profile (linkedin URL or stored Unipile account id) in the UI.
       if (!linkedinUrl && !linkedinUnipileAccountId) {
-        this.logger.warn(
-          `No linkedin_url or linkedin_unipile_account_id for workspace ${workspace.id}, skipping Unipile accounts call`,
+        this.logger.log(
+          `No workspace linkedin_url / linkedin_unipile_account_id for ${workspace.id}; returning ${allAccounts.length} LinkedIn account(s) for member-level filtering`,
         );
         return {
           success: true,
-          accounts: [],
-          message: 'linkedin_url not configured for workspace',
+          accounts: allAccounts,
         };
       }
-
-      const response = await this.fetchRawUnipileAccountsListCached();
-      this.logger.log('Getting getAllAccounts response');
 
       this.logger.log(
         `Filtering LinkedIn accounts for workspace ${workspace.id} with linkedin_url: ${linkedinUrl ?? 'none'}, linkedin_unipile_account_id: ${linkedinUnipileAccountId ?? 'none'}`,
       );
-
-      const allAccounts = (response.items || [])
-        .filter((item) => String(item.type ?? '').toUpperCase() === 'LINKEDIN')
-        .map((item) => this.mapLinkedinApiItemToAccountRow(item));
 
       const accounts = allAccounts.filter((account) => {
         if (linkedinUnipileAccountId && account.id === linkedinUnipileAccountId) {

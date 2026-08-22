@@ -4,6 +4,7 @@ import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/servic
 import { FacebookWhatsappWorkflowFormFlowService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/facebook-whatsapp-workflow-form-flow.service';
 import { FacebookWhatsappWorkflowFormTemplateService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/facebook-whatsapp-workflow-form-template.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
+import { WorkflowFormNotifyTestService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.service';
 import { WorkflowFormWhatsappDecisionService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-whatsapp-decision.service';
 import { WhatsappUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile-request.service';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
@@ -16,6 +17,7 @@ import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-
     WhatsappUnipileRequestService,
     ApprovalNotifierService,
     WorkflowFormDecisionPointerService,
+    WorkflowFormNotifyTestService,
     WorkflowFormWhatsappDecisionService,
   ],
   exports: [
@@ -23,6 +25,7 @@ import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-
     FacebookWhatsappWorkflowFormTemplateService,
     ApprovalNotifierService,
     WorkflowFormDecisionPointerService,
+    WorkflowFormNotifyTestService,
     WorkflowFormWhatsappDecisionService,
   ],
 })

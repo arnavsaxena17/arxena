@@ -6,6 +6,11 @@ import {
     type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
 import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import {
+  isLinkedInSearchCursorRequest,
+  shouldCountLinkedInSearchQuota,
+  type LinkedInSearchQuotaInput,
+} from 'src/engine/core-modules/linkedin-search/utils/linkedin-search-quota.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
@@ -30,13 +35,14 @@ import {
   normalizeSalesNavigatorPeopleSearchRequest,
 } from '../utils/normalize-sales-navigator-search-request.util';
 import {
-  normalizeSalesNavigatorAccountListSortBy,
-  normalizeSalesNavigatorAccountListSortOrder,
+  SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY,
+  SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
   toUnipileV2AccountListId,
 } from '../utils/sales-navigator-account-list-sort.util';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
+import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
 
 /** Default Apify actor: LinkedIn company profile / employee scraper (console id). Override via APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID. */
 export const LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID =
@@ -134,6 +140,7 @@ export class LinkedInSearchService {
     private readonly htmlParser: LinkedInHtmlParserService,
     private readonly apifyService: ApifyService,
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
+    private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -156,14 +163,18 @@ export class LinkedInSearchService {
       cursor?: string;
       limit?: number;
       workspaceId?: string;
+      start?: number;
+      offset?: number;
+      countSearchQuota?: boolean;
     } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'search',
-      });
+      await this.acquireSearchQuotaIfNeeded(accountId, {
+        cursor: options.cursor,
+        start: options.start,
+        offset: options.offset,
+        countSearchQuota: options.countSearchQuota,
+      }, searchRequest);
 
       // Track request if workspaceId is provided
       if (options.workspaceId) {
@@ -348,10 +359,9 @@ export class LinkedInSearchService {
     options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'search',
+      await this.acquireSearchQuotaIfNeeded(accountId, {
+        cursor: options.cursor,
+        start: options.start,
       });
 
       // Track request if workspaceId is provided
@@ -540,7 +550,12 @@ export class LinkedInSearchService {
   async searchPeopleClassic(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number; workspaceId?: string } = {}
+    options: {
+      cursor?: string;
+      limit?: number;
+      start?: number;
+      workspaceId?: string;
+    } = {}
   ): Promise<LinkedInSearchResponse> {
     // Check if raw endpoint should be used
     if (request.useRawEndpoint) {
@@ -658,7 +673,7 @@ export class LinkedInSearchService {
 
   /**
    * Browse a Sales Navigator account list via Unipile v2.
-   * Date ordering (`DATE_ADDED`) is only honored on this route.
+   * Always sorts by date added, newest first (`DATE_ADDED` / `DESCENDING`).
    */
   async browseSalesAccountList(
     listId: string,
@@ -666,17 +681,16 @@ export class LinkedInSearchService {
     options: {
       limit?: number;
       offset?: number;
-      sortBy?: string;
-      sortOrder?: string;
     } = {},
   ): Promise<LinkedInSearchResponse> {
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId,
-      method: 'search',
+    await this.acquireSearchQuotaIfNeeded(accountId, {
+      offset: options.offset,
     });
     await this.enforceRequestSpacing();
 
+    const { baseUrl, apiKey } = this.unipileV2AccountResolver.getCredentials();
+    const v2AccountId =
+      await this.unipileV2AccountResolver.resolveAccountId(accountId);
     const v2ListId = toUnipileV2AccountListId(listId);
     const queryParams = new URLSearchParams();
     if (options.limit != null) {
@@ -686,18 +700,14 @@ export class LinkedInSearchService {
       queryParams.set('offset', String(options.offset));
     }
     const query = queryParams.toString();
-    const url = `${this.baseUrl.replace(/\/$/, '')}/v2/${encodeURIComponent(accountId)}/linkedin/sales-navigator/account-lists/${encodeURIComponent(v2ListId)}${query ? `?${query}` : ''}`;
+    const url = `${baseUrl}/v2/${encodeURIComponent(v2AccountId)}/linkedin/sales-navigator/account-lists/${encodeURIComponent(v2ListId)}${query ? `?${query}` : ''}`;
     const body = {
-      sort_by:
-        normalizeSalesNavigatorAccountListSortBy(options.sortBy) ??
-        'DATE_ADDED',
-      sort_order:
-        normalizeSalesNavigatorAccountListSortOrder(options.sortOrder) ??
-        'DESCENDING',
+      sort_by: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY,
+      sort_order: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
     };
 
     this.logger.log(
-      `Browsing Sales Nav account list v2 list=${v2ListId} account=${accountId} body=${JSON.stringify(body)}`,
+      `Browsing Sales Nav account list v2 list=${v2ListId} v1Account=${accountId} v2Account=${v2AccountId} body=${JSON.stringify(body)}`,
     );
 
     const response = await fetch(url, {
@@ -705,7 +715,7 @@ export class LinkedInSearchService {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'X-API-KEY': this.apiKey,
+        'X-API-KEY': apiKey,
       },
       body: JSON.stringify(body),
     });
@@ -815,7 +825,10 @@ export class LinkedInSearchService {
     options: { limit?: number } = {}
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInSearchWithCursorRequest = { cursor };
-    return this.search(searchRequest, accountId, options);
+    return this.search(searchRequest, accountId, {
+      ...options,
+      countSearchQuota: false,
+    });
   }
 
   /**
@@ -1221,6 +1234,33 @@ export class LinkedInSearchService {
       employment: 'past',
     });
     return { current, past };
+  }
+
+  private async acquireSearchQuotaIfNeeded(
+    accountId: string,
+    input: LinkedInSearchQuotaInput,
+    searchRequest?: LinkedInSearchRequest,
+  ): Promise<void> {
+    const cursor =
+      input.cursor ??
+      (isLinkedInSearchCursorRequest(searchRequest)
+        ? searchRequest.cursor
+        : undefined);
+
+    if (
+      !shouldCountLinkedInSearchQuota({
+        ...input,
+        cursor,
+      })
+    ) {
+      return;
+    }
+
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId,
+      method: 'search',
+    });
   }
 
   private async enforceRequestSpacing(): Promise<void> {

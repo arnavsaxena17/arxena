@@ -7,6 +7,7 @@ import { type ObjectLiteral } from 'typeorm';
 
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
+import { mapUploadProfileToLinkedinSearchRow } from 'src/engine/core-modules/gtm-command/utils/map-upload-profile-to-linkedin-search-row.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -14,6 +15,8 @@ type ProjectRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   recruiterId?: string | null;
+  createdBy?: { workspaceMemberId?: string | null } | null;
+  createdByWorkspaceMemberId?: string | null;
 };
 
 export type UploadProfilesPerson = {
@@ -24,6 +27,8 @@ export type UploadProfilesPerson = {
   headline?: string;
   company?: string;
   companyName?: string;
+  companyId?: string;
+  jobCompanyId?: string;
   location?: string;
   linkedinUrl?: string;
   linkedinProfileId?: string;
@@ -33,10 +38,9 @@ export type UploadProfilesPerson = {
 
 export type UploadProfilesInput = {
   projectId?: string;
+  companyId?: string;
   people?: UploadProfilesPerson[];
   candidates?: unknown[];
-  recruiterId?: string;
-  workspaceMemberId?: string;
   limit?: number;
 };
 
@@ -64,7 +68,9 @@ export class UploadProfilesService {
   }> {
     const projectId = input.projectId?.trim() ?? '';
     const people = Array.isArray(input.people) ? input.people : [];
-    const candidates = Array.isArray(input.candidates) ? input.candidates : [];
+    const legacyCandidates = Array.isArray(input.candidates)
+      ? input.candidates
+      : [];
     const limit = Math.min(Math.max(1, input.limit ?? 25), 50);
 
     if (!isNonEmptyString(projectId)) {
@@ -76,14 +82,17 @@ export class UploadProfilesService {
       };
     }
 
-    const rows = (candidates.length > 0 ? candidates : people).slice(0, limit);
+    const rows = (people.length > 0 ? people : legacyCandidates).slice(
+      0,
+      limit,
+    );
 
     if (rows.length === 0) {
       return {
         success: false,
         queued: 0,
         projectId,
-        error: 'people or candidates is required',
+        error: 'people is required',
       };
     }
 
@@ -100,12 +109,17 @@ export class UploadProfilesService {
 
     const apiToken =
       await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
-    const recruiterId =
-      input.recruiterId?.trim() ||
-      input.workspaceMemberId?.trim() ||
-      project.recruiterId ||
-      '';
-    const mapped = rows.map((row) => this.toLinkedinSearchRow(row));
+    const recruiterId = this.resolveRecruiterId(project);
+
+    if (!isNonEmptyString(recruiterId)) {
+      this.logger.warn(
+        `upload-profiles project ${projectId} has no recruiter; queueing without workspace member`,
+      );
+    }
+    const companyId = input.companyId?.trim() ?? '';
+    const mapped = rows.map((row) =>
+      mapUploadProfileToLinkedinSearchRow(row, companyId),
+    );
 
     await this.processCandidatesService.queueRawDataForProcessing(
       mapped,
@@ -148,36 +162,25 @@ export class UploadProfilesService {
 
         return projectRepository.findOne({
           where: { id: projectId },
-          select: ['id', 'name', 'recruiterId'],
+          select: ['id', 'name', 'recruiterId', 'createdByWorkspaceMemberId'],
         });
       },
       authContext,
     );
   }
 
-  private toLinkedinSearchRow(row: unknown): Record<string, unknown> {
-    if (typeof row !== 'object' || row === null) {
-      return {};
+  private resolveRecruiterId(project: ProjectRecord): string {
+    const fromRelation = project.recruiterId?.trim() ?? '';
+
+    if (isNonEmptyString(fromRelation)) {
+      return fromRelation;
     }
 
-    const person = row as UploadProfilesPerson & Record<string, unknown>;
-    const linkedinUrl =
-      (typeof person.linkedinUrl === 'string' ? person.linkedinUrl : '') ||
-      (typeof person.linkedinProfileId === 'string'
-        ? `https://www.linkedin.com/in/${person.linkedinProfileId}`
-        : '');
+    const fromCreatedBy =
+      project.createdBy?.workspaceMemberId?.trim() ??
+      project.createdByWorkspaceMemberId?.trim() ??
+      '';
 
-    return {
-      ...person,
-      name: person.name ?? '',
-      firstName: person.firstName ?? '',
-      lastName: person.lastName ?? '',
-      jobTitle: person.title ?? person.headline ?? '',
-      headline: person.headline ?? person.title ?? '',
-      company: person.company ?? person.companyName ?? '',
-      location: person.location ?? '',
-      linkedinUrl,
-      profileUrl: linkedinUrl,
-    };
+    return fromCreatedBy;
   }
 }

@@ -34,6 +34,11 @@ import { PrefillGtmOutreachWorkflowsCommand } from 'src/database/commands/upgrad
 import { ResyncGtmOutreachWorkflowGraphsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000039-resync-gtm-outreach-workflow-graphs.command';
 import { ResyncGtmOutreachWhatsappFormDetailsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000040-resync-gtm-outreach-whatsapp-form-details.command';
 import { MergeGtmOutreachCandidateUpdatedWorkflowsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000041-merge-gtm-outreach-candidate-updated-workflows.command';
+import { ResyncGtmOutreachSelectFiltersAndHarvestQueryCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000042-resync-gtm-outreach-select-filters-and-harvest-query.command';
+import { SyncGtmSearchCompaniesDropSortParamsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000043-sync-gtm-search-companies-drop-sort-params.command';
+import { SyncGtmSearchCompaniesParameterAutocompleteCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000044-sync-gtm-search-companies-parameter-autocomplete.command';
+import { SyncGtmCompanyHarvestFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000045-sync-gtm-company-harvest-fields.command';
+import { SyncGtmProjectIdRecordPickerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000046-sync-gtm-project-id-record-picker.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -90,6 +95,11 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ResyncGtmOutreachWorkflowGraphsCommand,
     ResyncGtmOutreachWhatsappFormDetailsCommand,
     MergeGtmOutreachCandidateUpdatedWorkflowsCommand,
+    ResyncGtmOutreachSelectFiltersAndHarvestQueryCommand,
+    SyncGtmSearchCompaniesDropSortParamsCommand,
+    SyncGtmSearchCompaniesParameterAutocompleteCommand,
+    SyncGtmCompanyHarvestFieldsCommand,
+    SyncGtmProjectIdRecordPickerCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

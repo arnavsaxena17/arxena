@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
@@ -710,7 +710,10 @@ export class CandidateSearchBaseService {
     this.logger.error(
       'LinkedIn account ID not found on workspace member profile and no env fallback',
     );
-    throw new Error('Failed to get LinkedIn account ID');
+    throw new HttpException(
+      'Failed to get LinkedIn account ID',
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   /**

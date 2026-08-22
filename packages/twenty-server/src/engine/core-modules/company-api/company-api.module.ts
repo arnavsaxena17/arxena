@@ -29,6 +29,6 @@ import { CompanySearchHitTransformer } from './services/company-search-hit.trans
     CompanySearchHitTransformer,
     JwtAuthGuard,
   ],
-  exports: [CompanyApiService],
+  exports: [CompanyApiService, CompanySearchHitTransformer],
 })
 export class CompanyApiModule {}

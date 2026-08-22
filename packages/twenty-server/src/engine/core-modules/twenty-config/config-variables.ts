@@ -2610,6 +2610,23 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
+    description: 'Unipile v2 API base URL (Sales Navigator account-list browse)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  UNIPILE_API_URL_V2?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description: 'Unipile v2 API access token',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  UNIPILE_ACCESS_TOKEN_V2?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
     description:
       'Fallback Unipile LinkedIn account id (testing / legacy env mode)',
     type: ConfigVariableType.STRING,

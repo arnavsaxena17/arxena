@@ -145,10 +145,9 @@ export class GtmLogicFunctionNativeExecutor
         workspaceId,
         input: payload as {
           projectId?: string;
-          people?: Array<Record<string, unknown>>;
+          companyId?: string;
+      people?: Array<Record<string, unknown>>;
           candidates?: unknown[];
-          recruiterId?: string;
-          workspaceMemberId?: string;
           limit?: number;
         },
       });
@@ -159,13 +158,7 @@ export class GtmLogicFunctionNativeExecutor
         workspaceId,
         input: payload as {
           projectId?: string;
-          companies?: Array<{
-            name?: string;
-            website?: string;
-            domain?: string;
-            linkedinUrl?: string;
-            industry?: string;
-          }>;
+          companies?: unknown;
           limit?: number;
         },
       });

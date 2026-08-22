@@ -4,7 +4,7 @@ description: Search companies across Unipile LinkedIn, Harvest, and the companie
 openapi: 'openapi/company-api.json POST /company-api/companies/search'
 ---
 
-Pass `companyName`, `keywords`, `query`, `website`, `industry`, `location`, or a LinkedIn `url` (Sales Navigator account list, company search, or people search). Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically (Sales Navigator seat first), then Harvest, then the companies index. Pin `index`, `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve. Account-list URLs also accept `useV2`, `sortBy`, and `sortOrder`.
+Pass `companyName`, `keywords`, `query`, `website`, `industry`, `location`, or a LinkedIn `url` (Sales Navigator account list, company search, or people search). Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically (Sales Navigator seat first), then Harvest, then the companies index. Pin `index`, `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve. Account-list URLs also accept `useV2`; Unipile v2 browse always returns newest-added first.
 
 Each hit is a standard company record: `id`, `name`, `website`, `linkedinUrl`, `industry`.
 

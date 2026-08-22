@@ -11,6 +11,8 @@ type WorkflowCodeFieldsLeafKind =
   | 'array'
   | 'boolean'
   | 'enum'
+  | 'json'
+  | 'linkedin-parameter'
   | 'number'
   | 'record'
   | 'record-array'
@@ -21,6 +23,14 @@ export const getWorkflowCodeFieldsLeafKind = (
 ): WorkflowCodeFieldsLeafKind => {
   if (!isDefined(property)) {
     return 'text';
+  }
+
+  if (
+    property.linkedinParameterType === 'COMPANY' ||
+    property.linkedinParameterType === 'LOCATION' ||
+    property.linkedinParameterType === 'INDUSTRY'
+  ) {
+    return 'linkedin-parameter';
   }
 
   if (isRecordObjectSchema(property)) {
@@ -39,6 +49,20 @@ export const getWorkflowCodeFieldsLeafKind = (
   }
 
   if (property.type === 'array' || property.type === FieldMetadataType.ARRAY) {
+    const itemType = property.items?.type;
+
+    if (
+      itemType === 'string' ||
+      itemType === 'number' ||
+      itemType === 'boolean'
+    ) {
+      return 'array';
+    }
+
+    if (property.type === 'array') {
+      return 'json';
+    }
+
     return 'array';
   }
 

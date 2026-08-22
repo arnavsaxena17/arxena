@@ -4,6 +4,9 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { createPortal } from 'react-dom';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { useNotifyLinkedInNotConnected } from '@/unipile/hooks/useNotifyLinkedInNotConnected';
+import { extractHttpErrorMessage } from '@/unipile/utils/linkedinNotConnectedError';
+
 import type { SuperImposeAutocompleteItem } from '../types/superImposeTypes';
 
 const DROPDOWN_MIN_WIDTH = 420;
@@ -172,6 +175,7 @@ export const SuperImposeLinkedInFacetAutocomplete = ({
   });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
+  const { notifyLinkedInNotConnected } = useNotifyLinkedInNotConnected();
 
   const updateDropdownPosition = useCallback(() => {
     const wrapper = wrapperRef.current;
@@ -213,15 +217,26 @@ export const SuperImposeLinkedInFacetAutocomplete = ({
         });
         const json = (await res.json()) as {
           items?: SuperImposeAutocompleteItem[];
+          message?: unknown;
         };
+        if (!res.ok) {
+          notifyLinkedInNotConnected(
+            extractHttpErrorMessage(json, `Request failed (${res.status})`),
+          );
+          setItems([]);
+          return;
+        }
         setItems(Array.isArray(json.items) ? json.items : []);
-      } catch {
+      } catch (error) {
+        notifyLinkedInNotConnected(
+          error instanceof Error ? error.message : String(error),
+        );
         setItems([]);
       } finally {
         setIsLoading(false);
       }
     },
-    [accessToken, kind, serverBaseUrl],
+    [accessToken, kind, notifyLinkedInNotConnected, serverBaseUrl],
   );
 
   const debouncedFetch = useDebouncedCallback(fetchItems, 300);

@@ -257,7 +257,9 @@ export const useAddGtmRecordsToCrm = () => {
         attentionReason: 'NONE',
         daysSinceLastTouch: 0,
         coverageScore: 0,
-        gtmRunKey: gtmCommandContext.projectId ?? undefined,
+        gtmRunKey: gtmCommandContext.projectId
+          ? [gtmCommandContext.projectId]
+          : undefined,
       });
 
       return created?.id ?? null;

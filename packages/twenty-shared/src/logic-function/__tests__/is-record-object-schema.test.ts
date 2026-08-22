@@ -19,7 +19,16 @@ describe('isRecordObjectSchema', () => {
     ).toBe(true);
   });
 
-  it('returns false for a record schema without an objectUniversalIdentifier', () => {
+  it('returns true for a record schema with objectNameSingular', () => {
+    expect(
+      isRecordObjectSchema({
+        type: 'record',
+        objectNameSingular: 'project',
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false for a record schema without an object marker', () => {
     expect(isRecordObjectSchema({ type: 'record' })).toBe(false);
   });
 

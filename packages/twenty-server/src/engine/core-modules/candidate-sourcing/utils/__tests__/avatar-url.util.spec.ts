@@ -1,6 +1,7 @@
 import {
   extractDisplayPictureUrl,
   resolveAvatarUrlFromDisplayPictureUrl,
+  toCrmPrimaryLink,
 } from '../avatar-url.util';
 
 describe('avatar-url.util', () => {
@@ -42,5 +43,19 @@ describe('avatar-url.util', () => {
     );
 
     expect(result).toBe('https://p.naukri.com/jphoto/abc');
+  });
+
+  it('converts persisted avatar paths into CRM link metadata', () => {
+    const avatarKey = 'b'.repeat(64);
+    const link = toCrmPrimaryLink(`/avatars/${avatarKey}`, 'Display Picture');
+
+    expect(link).toEqual({
+      primaryLinkLabel: 'Display Picture',
+      primaryLinkUrl: `https://app.arxena.com/avatars/${avatarKey}`,
+    });
+  });
+
+  it('omits non-http values from CRM link metadata', () => {
+    expect(toCrmPrimaryLink('not-a-url', 'Display Picture')).toBeUndefined();
   });
 });

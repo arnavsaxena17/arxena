@@ -1,4 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { useNotifyLinkedInNotConnected } from '@/unipile/hooks/useNotifyLinkedInNotConnected';
+import { readHttpErrorMessageFromResponse } from '@/unipile/utils/linkedinNotConnectedError';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useCallback, useState } from 'react';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -32,6 +34,7 @@ export interface ParsedJobDescription {
 
 export const useSearchParameters = () => {
   const tokenPair = useAtomStateValue(tokenPairState);
+  const { notifyLinkedInNotConnected } = useNotifyLinkedInNotConnected();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
@@ -114,7 +117,9 @@ export const useSearchParameters = () => {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to resolve parameters: ${response.statusText}`);
+        const errorMessage = await readHttpErrorMessageFromResponse(response);
+        notifyLinkedInNotConnected(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const resolvedParams = await response.json();
@@ -129,7 +134,7 @@ export const useSearchParameters = () => {
     } finally {
       setIsResolving(false);
     }
-  }, [tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+  }, [notifyLinkedInNotConnected, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
   /**
    * Generate and resolve search parameters in one operation

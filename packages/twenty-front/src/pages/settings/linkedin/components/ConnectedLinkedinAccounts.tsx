@@ -1,6 +1,5 @@
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
-import { LinkedinStoredProfileUnipileActions } from '@/unipile/components/LinkedinStoredProfileUnipileActions';
 import { styled } from '@linaria/react';
 import React, {
     useCallback,
@@ -25,7 +24,7 @@ import {
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
 const AccountsContainer = styled.div`
-  margin-top: 2rem;
+  width: 100%;
 `;
 
 const AccountsTitle = styled.h3`
@@ -417,8 +416,25 @@ export const ConnectedLinkedinAccounts: React.FC<
     }
   };
 
-  const getInitials = (username: string): string => {
-    return username.substring(0, 2).toUpperCase();
+  const getDisplayName = (account: UnipileLinkedinAccount): string => {
+    const name = account.name?.trim();
+    if (name) {
+      return name;
+    }
+    return account.username || 'Unknown';
+  };
+
+  const getInitials = (displayName: string): string => {
+    const parts = displayName
+      .split(/\s+/)
+      .map((part) => part.replace(/[^A-Za-z]/g, ''))
+      .filter((part) => part.length > 0);
+
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+
+    return displayName.substring(0, 2).toUpperCase();
   };
 
   const displayedAccounts = useMemo(
@@ -442,12 +458,6 @@ export const ConnectedLinkedinAccounts: React.FC<
   return (
     <AccountsContainer>
       <AccountsTitle>Connected LinkedIn Accounts</AccountsTitle>
-
-      <LinkedinStoredProfileUnipileActions
-        onAfterChange={() => {
-          void loadAccounts();
-        }}
-      />
 
       {error && (
         <ErrorContainer>
@@ -473,9 +483,9 @@ export const ConnectedLinkedinAccounts: React.FC<
           <AccountCard key={account.id}>
             <AccountHeader>
             <AccountInfo>
-              <Avatar>{getInitials(account.username)}</Avatar>
+              <Avatar>{getInitials(getDisplayName(account))}</Avatar>
               <AccountDetails>
-                <AccountName>{account.username}</AccountName>
+                <AccountName>{getDisplayName(account)}</AccountName>
                 <AccountStatus status={account.status}>
                   {account.status}
                 </AccountStatus>

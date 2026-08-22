@@ -1,18 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getTokenPair } from '@/apollo/utils/getTokenPair';
+import { SettingsEmptyPlaceholder } from '@/settings/components/SettingsEmptyPlaceholder';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
+import { SettingsTableListSection } from '@/settings/components/SettingsTableListSection';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
+import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
+import { Status } from 'twenty-ui/data-display';
 import { Button } from 'twenty-ui/input';
+import { Section } from 'twenty-ui/layout';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { type ThemeColor } from 'twenty-ui/theme';
+import { H2Title } from 'twenty-ui/typography';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 type EnsureResult = {
   name: string;
   status: string;
   templateStatus?: string;
   error?: string;
+};
+
+type TemplateRow = {
+  id: string;
+  name: string;
+  status: string;
+};
+
+const StyledError = styled.p`
+  color: ${themeCssVariables.color.red};
+  font-size: ${themeCssVariables.font.size.sm};
+  margin: 0;
+`;
+
+const StyledName = styled.span`
+  word-break: break-word;
+`;
+
+const getStatusColor = (status: string): ThemeColor => {
+  const normalized = status.toUpperCase();
+
+  if (normalized === 'APPROVED' || normalized === 'CREATED') {
+    return 'green';
+  }
+
+  if (normalized === 'REJECTED' || normalized === 'ERROR' || normalized === 'FAILED') {
+    return 'red';
+  }
+
+  if (normalized === 'PENDING' || normalized === 'PAUSED') {
+    return 'orange';
+  }
+
+  return 'gray';
 };
 
 export const SettingsWorkflowApprovals = () => {
@@ -23,6 +66,7 @@ export const SettingsWorkflowApprovals = () => {
   >([]);
   const [error, setError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
+  const [listing, setListing] = useState(true);
 
   const getAuthHeaders = (): HeadersInit => {
     const tokenPair = getTokenPair();
@@ -34,26 +78,65 @@ export const SettingsWorkflowApprovals = () => {
     };
   };
 
-  const refreshTemplates = async () => {
-    try {
-      const response = await fetch('/workflow-form-whatsapp/message-templates', {
-        headers: getAuthHeaders(),
-      });
-      const data = await response.json();
+  const parseJson = async (response: Response) => {
+    const text = await response.text();
 
-      setTemplates(data.templates ?? []);
-    } catch (refreshError) {
-      setError(
-        refreshError instanceof Error
-          ? refreshError.message
-          : 'Failed to list templates',
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(
+        response.ok
+          ? 'Invalid JSON from workflow-form-whatsapp'
+          : `Request failed (${response.status})`,
       );
     }
   };
 
-  useEffect(() => {
-    void refreshTemplates();
+  const refreshTemplates = useCallback(async () => {
+    const response = await fetch(
+      `${REACT_APP_SERVER_BASE_URL}/workflow-form-whatsapp/message-templates`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+    const data = await parseJson(response);
+
+    setTemplates(
+      (data.templates as Array<{ name?: string; status?: string }>) ?? [],
+    );
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setListing(true);
+      try {
+        await refreshTemplates();
+        if (!cancelled) {
+          setError(undefined);
+        }
+      } catch (refreshError) {
+        if (!cancelled) {
+          setError(
+            refreshError instanceof Error
+              ? refreshError.message
+              : 'Failed to list templates',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setListing(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTemplates]);
 
   const ensureTemplates = async () => {
     setLoading(true);
@@ -61,19 +144,21 @@ export const SettingsWorkflowApprovals = () => {
 
     try {
       const response = await fetch(
-        '/workflow-form-whatsapp/workflow-form-templates/ensure',
+        `${REACT_APP_SERVER_BASE_URL}/workflow-form-whatsapp/workflow-form-templates/ensure`,
         {
           method: 'POST',
           headers: getAuthHeaders(),
         },
       );
-      const data = await response.json();
+      const data = await parseJson(response);
 
       if (!response.ok) {
-        throw new Error(data.message ?? 'Ensure failed');
+        throw new Error(
+          typeof data.message === 'string' ? data.message : 'Ensure failed',
+        );
       }
 
-      setResults(data.results ?? []);
+      setResults((data.results as EnsureResult[] | undefined) ?? []);
       await refreshTemplates();
     } catch (ensureError) {
       setError(
@@ -84,53 +169,123 @@ export const SettingsWorkflowApprovals = () => {
     }
   };
 
+  const templateRows = useMemo<TemplateRow[]>(
+    () =>
+      templates.map((template, index) => ({
+        id: template.name ?? String(index),
+        name: template.name ?? t`unknown`,
+        status: template.status ?? t`unknown`,
+      })),
+    [t, templates],
+  );
+
+  const resultRows = useMemo(
+    () =>
+      results.map((result, index) => ({
+        id: result.name || String(index),
+        name: result.name,
+        status: result.templateStatus ?? result.status,
+        error: result.error,
+      })),
+    [results],
+  );
+
   return (
-    <SettingsPageContainer>
-      <SettingsPageLayout
-        title={t`Workflow Approvals`}
-        links={[
-          {
-            children: t`Accounts`,
-            href: getSettingsPath(SettingsPath.Accounts),
-          },
-          { children: t`Workflow Approvals` },
-        ]}
-      >
-        <p>
-          {t`Create or refresh Meta WhatsApp templates used when a Form step notifies approvers on pending.`}
-        </p>
+    <SettingsPageLayout
+      title={t`Workflow Approvals`}
+      links={[
+        {
+          children: t`User`,
+          href: getSettingsPath(SettingsPath.ProfilePage),
+        },
+        {
+          children: t`Accounts`,
+          href: getSettingsPath(SettingsPath.Accounts),
+        },
+        { children: t`Workflow Approvals` },
+      ]}
+      actionButton={
         <Button
-          title={loading ? t`Ensuring…` : t`Ensure WhatsApp form templates`}
+          title={loading ? t`Ensuring…` : t`Ensure templates`}
+          variant="primary"
+          accent="blue"
           onClick={() => {
             void ensureTemplates();
           }}
           disabled={loading}
         />
-        {error ? <p>{error}</p> : null}
-        {results.length > 0 ? (
-          <ul>
-            {results.map((result) => (
-              <li key={result.name}>
-                {result.name}: {result.status}
-                {result.templateStatus ? ` (${result.templateStatus})` : ''}
-                {result.error ? ` — ${result.error}` : ''}
-              </li>
-            ))}
-          </ul>
+      }
+    >
+      <SettingsPageContainer>
+        <Section>
+          <H2Title
+            title={t`WhatsApp form templates`}
+            description={t`Create or refresh Meta WhatsApp templates used when a Form step notifies approvers on pending.`}
+          />
+          {error ? <StyledError>{error}</StyledError> : null}
+        </Section>
+
+        {resultRows.length > 0 ? (
+          <SettingsTableListSection
+            title={t`Last ensure run`}
+            description={t`Status of the templates created or refreshed just now.`}
+            items={resultRows}
+            gridAutoColumns="minmax(0, 2fr) minmax(0, 1fr) minmax(0, 2fr)"
+            columns={[
+              {
+                label: t`Template`,
+                Cell: ({ item }) => <StyledName>{item.name}</StyledName>,
+              },
+              {
+                label: t`Status`,
+                Cell: ({ item }) => (
+                  <Status
+                    color={getStatusColor(item.status)}
+                    text={item.status}
+                    weight="medium"
+                  />
+                ),
+              },
+              {
+                label: t`Details`,
+                Cell: ({ item }) => (
+                  <StyledName>{item.error ?? '—'}</StyledName>
+                ),
+              },
+            ]}
+          />
         ) : null}
-        {templates.length > 0 ? (
-          <>
-            <h3>{t`Current templates`}</h3>
-            <ul>
-              {templates.map((template) => (
-                <li key={template.name ?? JSON.stringify(template)}>
-                  {template.name ?? 'unknown'} — {template.status ?? 'unknown'}
-                </li>
-              ))}
-            </ul>
-          </>
+
+        <SettingsTableListSection<TemplateRow>
+          title={t`Current templates`}
+          description={t`Approved templates can be sent to approvers from Form steps.`}
+          items={templateRows}
+          gridAutoColumns="minmax(0, 3fr) minmax(0, 1fr)"
+          columns={[
+            {
+              label: t`Name`,
+              Cell: ({ item }) => <StyledName>{item.name}</StyledName>,
+            },
+            {
+              label: t`Status`,
+              align: 'right',
+              Cell: ({ item }) => (
+                <Status
+                  color={getStatusColor(item.status)}
+                  text={item.status}
+                  weight="medium"
+                />
+              ),
+            },
+          ]}
+        />
+
+        {!listing && templateRows.length === 0 && !error ? (
+          <SettingsEmptyPlaceholder>
+            {t`No templates yet. Use Ensure templates to create them in Meta.`}
+          </SettingsEmptyPlaceholder>
         ) : null}
-      </SettingsPageLayout>
-    </SettingsPageContainer>
+      </SettingsPageContainer>
+    </SettingsPageLayout>
   );
 };

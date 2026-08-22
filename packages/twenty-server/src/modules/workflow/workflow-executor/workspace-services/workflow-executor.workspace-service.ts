@@ -382,8 +382,25 @@ export class WorkflowExecutorWorkspaceService {
     let stepInfo: WorkflowRunStepInfo;
 
     if (isPendingEvent) {
+      const hasRateLimitDeferral =
+        typeof actionOutput.waitMs === 'number' ||
+        typeof actionOutput.scheduledAt === 'string' ||
+        typeof actionOutput.pendingReason === 'string';
+
       stepInfo = {
         status: StepStatus.PENDING,
+        ...(hasRateLimitDeferral
+          ? {
+              waitMs: actionOutput.waitMs,
+              scheduledAt: actionOutput.scheduledAt,
+              pendingReason: actionOutput.pendingReason,
+              result: {
+                waitMs: actionOutput.waitMs,
+                scheduledAt: actionOutput.scheduledAt,
+                pendingReason: actionOutput.pendingReason,
+              },
+            }
+          : {}),
       };
     } else if (isStopped) {
       stepInfo = {

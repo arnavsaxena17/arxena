@@ -192,6 +192,7 @@ describe('super-impose-input-resolver.util', () => {
         entity_urn: 'urn:li:fsd_company:27444961',
       }),
     ).toBe('27444961');
+    expect(extractLinkedinCompanyIdFromUnipileProfile(null)).toBeNull();
   });
 });
 

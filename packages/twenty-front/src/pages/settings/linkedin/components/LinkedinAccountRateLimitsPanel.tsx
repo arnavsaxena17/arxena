@@ -33,7 +33,7 @@ export const LinkedinAccountRateLimitsPanel = ({
   return (
     <AccountRateLimitsPanel<LinkedinAccountRateLimits>
       title="Rate limits for this LinkedIn account"
-      description="The maximum number of requests in a window of time for this LinkedIn account."
+      description="The maximum number of requests in a window of time for this LinkedIn account. People / org chart search counts once per search, not once per paginated Unipile page."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}
@@ -93,14 +93,14 @@ export const LinkedinAccountRateLimitsPanel = ({
         },
         {
           key: 'searchPerMinute',
-          label: 'LinkedIn search',
+          label: 'People / org chart search',
           windowLabel: 'per 1 min',
           ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.searchPerMinute,
           recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.searchPerMinute,
         },
         {
           key: 'searchPerDay',
-          label: 'LinkedIn search',
+          label: 'People / org chart search',
           windowLabel: 'per 1 day',
           ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.searchPerDay,
           recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.searchPerDay,

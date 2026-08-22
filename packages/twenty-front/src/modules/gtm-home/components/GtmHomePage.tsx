@@ -46,6 +46,7 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/WorkflowRunRateLimitSnackBarEffect';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
@@ -153,7 +154,7 @@ const GtmHomePageContent = () => {
     selectOutreachWorkflow,
     isSelectingWorkflow,
   } = useGtmWorkflowEmbed({
-    enabled: isWorkflowTab && isDefined(activeProjectId),
+    enabled: isDefined(activeProjectId),
   });
   const { isExtensionInstalled, isChecking: isExtensionChecking } =
     useChromeExtensionDetection();
@@ -515,6 +516,9 @@ const GtmHomePageContent = () => {
         gmailConnected={gmailConnected}
         whatsappConnected={whatsappConnected}
       />
+      {isDefined(workflowRunId) && (
+        <WorkflowRunRateLimitSnackBarEffect workflowRunId={workflowRunId} />
+      )}
       <PageBody>
         <StyledMain>
           <GtmMainTabs

@@ -11,7 +11,7 @@ const Row = styled.div`
   align-items: center;
   display: grid;
   gap: ${themeCssVariables.spacing[3]};
-  grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1.4fr) 72px auto auto;
+  grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1.4fr) 72px max-content auto;
   padding: ${themeCssVariables.spacing[2]} 0;
 `;
 
@@ -31,6 +31,11 @@ const Label = styled.span`
 const WindowLabel = styled.span`
   color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
+`;
+
+const RecommendedSlot = styled.div`
+  justify-self: start;
+  min-height: ${themeCssVariables.spacing[4]};
 `;
 
 export type AccountRateLimitSliderRowProps = {
@@ -83,7 +88,14 @@ export const AccountRateLimitSliderRow = ({
           }
         }}
       />
-      {value === recommended ? <Pill label="Recommended" /> : <span />}
+      <RecommendedSlot
+        aria-hidden={value !== recommended}
+        style={{
+          visibility: value === recommended ? 'visible' : 'hidden',
+        }}
+      >
+        <Pill label="Recommended" />
+      </RecommendedSlot>
       <LightIconButton
         Icon={IconReload}
         aria-label="Reset to recommended"

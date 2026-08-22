@@ -12,11 +12,11 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
 import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
 import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
+import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
 import {
   WorkflowRunException,
   WorkflowRunExceptionCode,
 } from 'src/modules/workflow/workflow-runner/exceptions/workflow-run.exception';
-import { RunWorkflowJob } from 'src/modules/workflow/workflow-runner/jobs/run-workflow.job';
 import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
 import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
@@ -38,6 +38,7 @@ export class ResumeDelayedWorkflowJob {
     workspaceId,
     workflowRunId,
     stepId,
+    retryPendingStep,
   }: ResumeDelayedWorkflowJobData): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -66,6 +67,29 @@ export class ResumeDelayedWorkflowJob {
           );
         }
 
+        if (retryPendingStep === true) {
+          await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
+            stepId,
+            stepInfo: {
+              status: StepStatus.NOT_STARTED,
+            },
+            workspaceId,
+            workflowRunId,
+          });
+
+          await this.messageQueueService.add<RunWorkflowJobData>(
+            RUN_WORKFLOW_JOB_NAME,
+            {
+              workspaceId,
+              workflowRunId,
+              stepIdsToRetry: [stepId],
+            },
+            buildRunWorkflowJobOptions(workflowRunId),
+          );
+
+          return;
+        }
+
         await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
           stepId,
           stepInfo: {
@@ -79,7 +103,7 @@ export class ResumeDelayedWorkflowJob {
         });
 
         await this.messageQueueService.add<RunWorkflowJobData>(
-          RunWorkflowJob.name,
+          RUN_WORKFLOW_JOB_NAME,
           {
             workspaceId,
             workflowRunId,

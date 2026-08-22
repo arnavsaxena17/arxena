@@ -2,6 +2,8 @@ import { randomUUID } from 'crypto';
 
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
+import { isValidUuid } from 'twenty-shared/utils';
+
 import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
 import {
   extractLinkedinCompanyIdFromUnipileProfile,
@@ -22,8 +24,18 @@ import {
   OrgChartSuperImposeService,
   type SuperImposeFetchContext,
 } from 'src/engine/core-modules/org-chart/services/org-chart-super-impose.service';
-import type { SuperImposeInputs } from 'src/engine/core-modules/org-chart/types/super-impose.types';
-import { normalizeLinkedinCompanyUrl } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
+import type {
+  SuperImposeInputs,
+  SuperImposeResolvedCompany,
+} from 'src/engine/core-modules/org-chart/types/super-impose.types';
+import {
+  extractCompanyNameStemFromDomain,
+  normalizeBareCompanyDomain,
+} from 'src/engine/core-modules/org-chart/utils/org-chart-resolve-domain.util';
+import {
+  buildResolvedCompanyFromUrl,
+  normalizeLinkedinCompanyUrl,
+} from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
   andMergeBooleanSearchClauses,
   extractJobTitleClauseFromGeneratedSearchParameters,
@@ -145,15 +157,22 @@ export class PeopleLinkedInSourcingService {
       companyName,
     });
 
-    const resolved = await this.orgChartSuperImposeService.resolveInputs({
-      inputs,
-      primaryCompanyId: companyId,
-      primaryCompanyName: companyName || undefined,
-      primaryLinkedinCompanyUrl: companyId
-        ? (normalizeLinkedinCompanyUrl(companyId) ?? undefined)
-        : undefined,
-      apiToken: input.apiToken,
-    });
+    const resolved =
+      account.candidateSource === 'harvest'
+        ? await this.orgChartSuperImposeService.resolveInputs({
+            inputs,
+            primaryCompanyId: companyId,
+            primaryCompanyName: companyName || undefined,
+            primaryLinkedinCompanyUrl: companyId
+              ? (normalizeLinkedinCompanyUrl(companyId) ?? undefined)
+              : undefined,
+            apiToken: input.apiToken,
+          })
+        : this.resolveUnipileCompaniesFromWebsite({
+            website,
+            companyId,
+            companyName,
+          });
 
     if (resolved.errors.length > 0 && resolved.resolvedCompanies.length === 0) {
       throw new HttpException(
@@ -422,7 +441,7 @@ export class PeopleLinkedInSourcingService {
             this.unipileCompanyService.extractPublicIdentifier(
               companyLinkedinUrl,
             ) ?? undefined;
-          if (!slug) {
+          if (!slug || isValidUuid(slug)) {
             continue;
           }
           try {
@@ -549,6 +568,63 @@ export class PeopleLinkedInSourcingService {
     return parts.map((part) => `(${part})`).join(' AND ');
   }
 
+  private resolveUnipileCompaniesFromWebsite(args: {
+    website?: string;
+    companyId?: string;
+    companyName?: string;
+  }): {
+    resolvedCompanies: SuperImposeResolvedCompany[];
+    salesNavigatorSearchUrls: string[];
+    errors: string[];
+  } {
+    const resolvedCompanies: SuperImposeResolvedCompany[] = [];
+    const seen = new Set<string>();
+    const addUrl = (url: string | null | undefined, from: SuperImposeResolvedCompany['resolvedFrom']) => {
+      if (!url) {
+        return;
+      }
+      const company = buildResolvedCompanyFromUrl(
+        url,
+        from,
+        args.companyName,
+      );
+      if (!company || seen.has(company.linkedinUrl) || isValidUuid(company.slug)) {
+        return;
+      }
+      seen.add(company.linkedinUrl);
+      resolvedCompanies.push(company);
+    };
+
+    const companyId = args.companyId?.trim();
+    if (companyId && !isValidUuid(companyId)) {
+      addUrl(
+        normalizeLinkedinCompanyUrl(companyId) ??
+          `https://www.linkedin.com/company/${companyId}/`,
+        'linkedin_url',
+      );
+    }
+
+    const bareDomain = normalizeBareCompanyDomain(args.website);
+    const stem = bareDomain
+      ? extractCompanyNameStemFromDomain(bareDomain)
+      : undefined;
+    if (stem && !isValidUuid(stem)) {
+      addUrl(`https://www.linkedin.com/company/${stem}/`, 'website_url');
+    }
+
+    this.logger.log(
+      `People API Unipile company urls=${resolvedCompanies
+        .map((company) => company.slug)
+        .join(',') || 'none'} website=${args.website ?? ''} companyId=${companyId ?? ''}`,
+    );
+
+    return {
+      resolvedCompanies,
+      salesNavigatorSearchUrls: [],
+      errors: [],
+    };
+  }
+
   private buildSuperImposeInputs(args: {
     website?: string;
     companyId?: string;
@@ -560,7 +636,7 @@ export class PeopleLinkedInSourcingService {
       inputs.websiteUrls = [args.website.trim()];
     }
 
-    if (args.companyId?.trim()) {
+    if (args.companyId?.trim() && !isValidUuid(args.companyId.trim())) {
       const linkedinUrl =
         normalizeLinkedinCompanyUrl(args.companyId) ??
         `https://www.linkedin.com/company/${args.companyId.trim()}/`;

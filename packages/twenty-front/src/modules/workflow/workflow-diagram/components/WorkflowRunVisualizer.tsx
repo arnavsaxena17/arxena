@@ -1,4 +1,5 @@
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/WorkflowRunRateLimitSnackBarEffect';
 import { useWorkflowRun } from '@/workflow/hooks/useWorkflowRun';
 import { WorkflowRunDiagramCanvas } from '@/workflow/workflow-diagram/components/WorkflowRunDiagramCanvas';
 import { workflowDiagramStatusComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramStatusComponentState';
@@ -14,12 +15,13 @@ export const WorkflowRunVisualizer = ({
     workflowDiagramStatusComponentState,
   );
 
-  if (
-    !isDefined(workflowRun) ||
-    workflowDiagramStatus === 'computing-diagram'
-  ) {
-    return null;
-  }
-
-  return <WorkflowRunDiagramCanvas workflowRunStatus={workflowRun.status} />;
+  return (
+    <>
+      <WorkflowRunRateLimitSnackBarEffect workflowRunId={workflowRunId} />
+      {isDefined(workflowRun) &&
+        workflowDiagramStatus !== 'computing-diagram' && (
+          <WorkflowRunDiagramCanvas workflowRunStatus={workflowRun.status} />
+        )}
+    </>
+  );
 };

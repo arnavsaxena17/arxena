@@ -2,6 +2,7 @@ import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadat
 import { FormArrayFieldInput } from '@/object-record/record-field/ui/form-types/components/FormArrayFieldInput';
 import { FormBooleanFieldInput } from '@/object-record/record-field/ui/form-types/components/FormBooleanFieldInput';
 import { FormMultiRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormMultiRecordPicker';
+import { FormLinkedInParameterAutocomplete } from '@/workflow/workflow-steps/workflow-actions/form-action/components/FormLinkedInParameterAutocomplete';
 import { FormNumberFieldInput } from '@/object-record/record-field/ui/form-types/components/FormNumberFieldInput';
 import { FormSelectFieldInput } from '@/object-record/record-field/ui/form-types/components/FormSelectFieldInput';
 import { FormSingleRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormSingleRecordPicker';
@@ -20,8 +21,13 @@ import {
   isNumber,
   isString,
 } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isPlainObject } from 'twenty-shared/utils';
 import { type InputSchemaProperty } from 'twenty-shared/workflow';
+
+const RECORD_PICKER_OBJECT_NAME_BY_ID_LABEL: Record<string, string> = {
+  'Project ID': 'project',
+  'Company ID': 'company',
+};
 
 type WorkflowEditActionCodeFieldLeafProps = {
   label: string;
@@ -43,22 +49,36 @@ export const WorkflowEditActionCodeFieldLeaf = ({
   const { objectMetadataItems } = useObjectMetadataItems();
 
   const leafKind = getWorkflowCodeFieldsLeafKind(schemaProperty);
+  const recordNameSingularFromIdLabel =
+    leafKind === 'text'
+      ? RECORD_PICKER_OBJECT_NAME_BY_ID_LABEL[label]
+      : undefined;
+  const isRecordIdTextField = isNonEmptyString(recordNameSingularFromIdLabel);
 
-  if (leafKind === 'record' || leafKind === 'record-array') {
+  if (
+    leafKind === 'record' ||
+    leafKind === 'record-array' ||
+    isRecordIdTextField
+  ) {
     const objectUniversalIdentifier =
       schemaProperty?.objectUniversalIdentifier ??
       schemaProperty?.items?.objectUniversalIdentifier;
+    const objectNameSingular =
+      schemaProperty?.objectNameSingular ??
+      schemaProperty?.items?.objectNameSingular ??
+      recordNameSingularFromIdLabel;
 
-    const recordObjectMetadataItem = isNonEmptyString(objectUniversalIdentifier)
-      ? objectMetadataItems.find(
-          (objectMetadataItem) =>
-            objectMetadataItem.universalIdentifier ===
-            objectUniversalIdentifier,
-        )
-      : undefined;
+    const recordObjectMetadataItem = objectMetadataItems.find(
+      (objectMetadataItem) =>
+        (isNonEmptyString(objectUniversalIdentifier) &&
+          objectMetadataItem.universalIdentifier ===
+            objectUniversalIdentifier) ||
+        (isNonEmptyString(objectNameSingular) &&
+          objectMetadataItem.nameSingular === objectNameSingular),
+    );
 
     if (isDefined(recordObjectMetadataItem)) {
-      if (leafKind === 'record') {
+      if (leafKind === 'record' || isRecordIdTextField) {
         return (
           <FormSingleRecordPicker
             label={label}
@@ -91,6 +111,48 @@ export const WorkflowEditActionCodeFieldLeaf = ({
     }
   }
 
+  if (leafKind === 'json') {
+    const jsonDefaultValue = isStandaloneVariableString(inputValue)
+      ? inputValue
+      : Array.isArray(inputValue) || isPlainObject(inputValue)
+        ? JSON.stringify(inputValue, null, 2)
+        : isDefined(inputValue)
+          ? `${inputValue}`
+          : '';
+
+    return (
+      <FormTextFieldInput
+        label={label}
+        placeholder={t`Paste a JSON array`}
+        defaultValue={jsonDefaultValue}
+        readonly={readonly}
+        onChange={(value) => {
+          if (isStandaloneVariableString(value)) {
+            onChange(value);
+
+            return;
+          }
+
+          const trimmed = value.trim();
+
+          if (trimmed === '') {
+            onChange([]);
+
+            return;
+          }
+
+          try {
+            onChange(JSON.parse(trimmed));
+          } catch {
+            onChange(value);
+          }
+        }}
+        VariablePicker={VariablePicker}
+        multiline
+      />
+    );
+  }
+
   if (leafKind === 'array') {
     return (
       <FormArrayFieldInput
@@ -118,6 +180,19 @@ export const WorkflowEditActionCodeFieldLeaf = ({
         }
         readonly={readonly}
         onChange={onChange}
+        VariablePicker={VariablePicker}
+      />
+    );
+  }
+
+  if (leafKind === 'linkedin-parameter' && isDefined(schemaProperty?.linkedinParameterType)) {
+    return (
+      <FormLinkedInParameterAutocomplete
+        label={label}
+        defaultValue={isNonEmptyString(inputValue) ? inputValue : undefined}
+        onChange={onChange}
+        parameterType={schemaProperty.linkedinParameterType}
+        readonly={readonly}
         VariablePicker={VariablePicker}
       />
     );

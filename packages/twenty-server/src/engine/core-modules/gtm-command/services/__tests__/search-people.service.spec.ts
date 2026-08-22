@@ -7,10 +7,14 @@ describe('SearchPeopleService', () => {
   const gtmWorkspaceAuthTokenService = {
     resolveApiKeyToken: jest.fn(),
   };
+  const unipileSearchAccountResolver = {
+    resolveDefaultWorkspaceAccount: jest.fn(),
+  };
 
   const service = new SearchPeopleService(
     peopleApiService as never,
     gtmWorkspaceAuthTokenService as never,
+    unipileSearchAccountResolver as never,
   );
 
   beforeEach(() => {
@@ -19,6 +23,9 @@ describe('SearchPeopleService', () => {
 
   it('searches using workspace context when there is no API key', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'classic', via: 'member' },
+    );
     peopleApiService.searchPeople.mockResolvedValue({
       status: 'ok',
       dataSource: 'index',
@@ -37,7 +44,11 @@ describe('SearchPeopleService', () => {
       dataSource: 'index',
     });
     expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
-      expect.objectContaining({ naturalLanguage: 'CEO at Acme' }),
+      expect.objectContaining({
+        naturalLanguage: 'CEO at Acme',
+        accountId: 'member-unipile',
+        dataSource: 'auto',
+      }),
       undefined,
       { workspaceId: 'ws-1' },
     );
@@ -45,6 +56,9 @@ describe('SearchPeopleService', () => {
 
   it('maps People API hits', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue('tok');
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'classic', via: 'member' },
+    );
     peopleApiService.searchPeople.mockResolvedValue({
       status: 'ok',
       dataSource: 'index',
@@ -81,5 +95,30 @@ describe('SearchPeopleService', () => {
         },
       ],
     });
+  });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'classic', via: 'member' },
+    );
+    peopleApiService.searchPeople.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81711000,
+        accountId: 'BD4e0PSwT6eA5PMo_1KB0w',
+        method: 'search',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { naturalLanguage: 'CEO at Acme' },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
   });
 });

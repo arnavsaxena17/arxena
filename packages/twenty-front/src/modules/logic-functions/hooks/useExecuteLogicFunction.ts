@@ -1,6 +1,7 @@
 import { EXECUTE_ONE_LOGIC_FUNCTION } from '@/logic-functions/graphql/mutations/executeOneLogicFunction';
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
 import { useSetAtomFamilyState } from '@/ui/utilities/state/jotai/hooks/useSetAtomFamilyState';
+import { useNotifyLinkedInNotConnected } from '@/unipile/hooks/useNotifyLinkedInNotConnected';
 import { logicFunctionTestDataFamilyState } from '@/workflow/workflow-steps/workflow-actions/code-action/states/logicFunctionTestDataFamilyState';
 import { useMutation } from '@apollo/client/react';
 import { useState } from 'react';
@@ -33,6 +34,8 @@ export const useExecuteLogicFunction = ({
   callback?: (result: object) => void;
 }) => {
   const [isExecuting, setIsExecuting] = useState(false);
+  const { notifyLinkedInNotConnected, notifyLinkedInNotConnectedFromUnknown } =
+    useNotifyLinkedInNotConnected();
   const [executeOneLogicFunctionMutation] = useMutation<
     { executeOneLogicFunction: ExecuteOneLogicFunctionResult },
     { input: ExecuteOneLogicFunctionInput }
@@ -76,6 +79,10 @@ export const useExecuteLogicFunction = ({
 
       const executionResult = result?.data?.executeOneLogicFunction;
 
+      if (isDefined(executionResult?.error?.errorMessage)) {
+        notifyLinkedInNotConnected(executionResult.error.errorMessage);
+      }
+
       if (isDefined(executionResult?.data)) {
         callback?.(executionResult.data);
       }
@@ -98,6 +105,7 @@ export const useExecuteLogicFunction = ({
       }));
     } catch (error) {
       setIsExecuting(false);
+      notifyLinkedInNotConnectedFromUnknown(error);
       throw error;
     }
   };

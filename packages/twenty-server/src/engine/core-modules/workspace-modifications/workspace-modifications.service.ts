@@ -29,6 +29,20 @@ import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
+const readTrimmedId = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    return trimmed || undefined;
+  }
+
+  if (value && typeof value === 'object' && 'id' in value) {
+    return readTrimmedId((value as { id?: unknown }).id);
+  }
+
+  return undefined;
+};
+
 export type UnipileAccountMappingType = 'LINKEDIN' | 'WHATSAPP';
 
 export type WorkspaceIntegrationKeys = {
@@ -223,26 +237,23 @@ export class WorkspaceQueryService {
     try {
       return await this.executeInWorkspaceContext(workspaceId, async () => {
         const profileRepository = await this.getObjectRepository<{
+          id: string;
           workspaceMemberId: string | null;
           linkedinUnipileAccountId: string | null;
           linkedinProfile: unknown;
         }>(workspaceId, 'workspaceMemberProfile');
-        const profiles = await profileRepository.find({
-          select: {
-            workspaceMemberId: true,
-            linkedinUnipileAccountId: true,
-            linkedinProfile: true,
-          },
-        });
+        const profiles = await profileRepository.find();
 
         return profiles.flatMap((profile) => {
-          const workspaceMemberId = profile.workspaceMemberId?.trim();
-          const linkedinUnipileAccountId =
-            profile.linkedinUnipileAccountId?.trim();
-
-          if (!workspaceMemberId || !linkedinUnipileAccountId) {
+          const linkedinUnipileAccountId = readTrimmedId(
+            profile.linkedinUnipileAccountId,
+          );
+          if (!linkedinUnipileAccountId) {
             return [];
           }
+
+          const workspaceMemberId =
+            readTrimmedId(profile.workspaceMemberId) ?? profile.id ?? '';
 
           return [
             {

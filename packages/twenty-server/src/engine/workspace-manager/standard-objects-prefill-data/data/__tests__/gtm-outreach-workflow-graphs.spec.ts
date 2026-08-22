@@ -45,6 +45,64 @@ describe('GTM outreach workflow graphs', () => {
 
     expect(branches).toHaveLength(6);
     expect(branches.filter((branch) => !branch.filterGroupId)).toHaveLength(1);
+
+    const stepFilters = (
+      router?.settings as {
+        input: {
+          stepFilters: Array<{
+            type: string;
+            value: string;
+            fieldMetadataId?: string;
+          }>;
+        };
+      }
+    ).input.stepFilters;
+
+    expect(stepFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['CONNECTION_ACCEPTED']),
+          fieldMetadataId: expect.stringContaining('outreachSequenceStage'),
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['REPLIED']),
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['NEGOTIATING']),
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['DEFERRED']),
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['MEETING_BOOKED']),
+        }),
+      ]),
+    );
+  });
+
+  it('keeps harvest Search LinkedIn companies query and keywords blank', () => {
+    const harvest = GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'GTM Harvest — LinkedIn Companies',
+    );
+
+    const search = (
+      harvest?.steps as Array<{
+        name?: string;
+        settings?: {
+          input?: {
+            logicFunctionInput?: { query?: string; keywords?: string };
+          };
+        };
+      }>
+    ).find((step) => step.name === 'Search LinkedIn companies');
+
+    expect(search?.settings?.input?.logicFunctionInput?.query).toBe('');
+    expect(search?.settings?.input?.logicFunctionInput?.keywords).toBe('');
   });
 
   it('keeps Per Candidate on candidate.created', () => {

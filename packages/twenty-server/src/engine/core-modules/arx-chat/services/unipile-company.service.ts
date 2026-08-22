@@ -51,8 +51,12 @@ type UnipileCompanyProfileRaw = {
 };
 
 export const extractLinkedinCompanyIdFromUnipileProfile = (
-  profile: Pick<UnipileCompanyProfileDto, 'id' | 'entity_urn'>,
+  profile?: Pick<UnipileCompanyProfileDto, 'id' | 'entity_urn'> | null,
 ): string | null => {
+  if (!profile) {
+    return null;
+  }
+
   if (typeof profile.id === 'string' && /^\d+$/.test(profile.id.trim())) {
     return profile.id.trim();
   }

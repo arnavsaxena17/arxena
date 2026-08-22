@@ -19,6 +19,12 @@ describe('getWorkflowCodeFieldsLeafKind', () => {
     expect(
       getWorkflowCodeFieldsLeafKind({
         type: 'string',
+        linkedinParameterType: 'LOCATION',
+      }),
+    ).toBe('linkedin-parameter');
+    expect(
+      getWorkflowCodeFieldsLeafKind({
+        type: 'string',
         enum: ['plain', 'markdown'],
       }),
     ).toBe('enum');
@@ -47,6 +53,12 @@ describe('getWorkflowCodeFieldsLeafKind', () => {
         objectUniversalIdentifier: 'person-universal-identifier',
       }),
     ).toBe('record-array');
+    expect(
+      getWorkflowCodeFieldsLeafKind({
+        type: 'record',
+        objectNameSingular: 'project',
+      }),
+    ).toBe('record');
   });
 
   it('should map arrays of primitives to the array kind', () => {
@@ -71,6 +83,16 @@ describe('getWorkflowCodeFieldsLeafKind', () => {
     expect(
       getWorkflowCodeFieldsLeafKind({ type: FieldMetadataType.ARRAY }),
     ).toBe('array');
+    expect(
+      getWorkflowCodeFieldsLeafKind({
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { name: { type: 'string' } },
+        },
+      }),
+    ).toBe('json');
+    expect(getWorkflowCodeFieldsLeafKind({ type: 'array' })).toBe('json');
   });
 
   it('should map the legacy object/array+marker form to record kinds', () => {

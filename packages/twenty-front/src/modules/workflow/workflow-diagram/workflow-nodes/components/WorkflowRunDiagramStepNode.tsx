@@ -1,6 +1,7 @@
 import { CommandMenuContext } from '@/command-menu-item/contexts/CommandMenuContext';
 import { useSidePanelWorkflowNavigation } from '@/side-panel/pages/workflow/hooks/useSidePanelWorkflowNavigation';
 import { sidePanelNavigationStackState } from '@/side-panel/states/sidePanelNavigationStackState';
+import { isLinkedinRateLimitPendingStep } from '@/unipile/utils/accountRateLimitError';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -62,6 +63,16 @@ const StyledColorIcon = styled.div<{
   height: 14px;
   justify-content: center;
   width: 14px;
+`;
+
+const StyledNodeSubtitle = styled.div`
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: ${themeCssVariables.font.color.tertiary};
+  display: -webkit-box;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.regular};
+  overflow: hidden;
 `;
 
 const StyledIterationCounter = styled.div<{
@@ -201,6 +212,12 @@ export const WorkflowRunDiagramStepNode = ({
           <WorkflowNodeTitle runStatus={data.runStatus} selected={selected}>
             {data.name}
           </WorkflowNodeTitle>
+          {data.runStatus === StepStatus.PENDING &&
+            isLinkedinRateLimitPendingStep(stepInfo) && (
+              <StyledNodeSubtitle>
+                Waiting for LinkedIn rate limit
+              </StyledNodeSubtitle>
+            )}
         </WorkflowNodeRightPart>
       </WorkflowNodeContainer>
 

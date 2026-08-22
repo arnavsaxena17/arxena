@@ -48,6 +48,7 @@ export const buildToolInputJsonSchema = (
 
   const {
     objectUniversalIdentifier: _objectUniversalIdentifier,
+    objectNameSingular: _objectNameSingular,
     multiline: _multiline,
     label: _label,
     items,

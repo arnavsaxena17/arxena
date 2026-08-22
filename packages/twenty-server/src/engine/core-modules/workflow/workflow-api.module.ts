@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { WorkflowApprovalModule } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-approval.module';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { WorkflowTriggerController } from 'src/engine/core-modules/workflow/controllers/workflow-trigger.controller';
 import { WorkflowBuilderResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-builder.resolver';
@@ -33,6 +34,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
     WorkflowRunnerModule,
     PermissionsModule,
     ToolModule,
+    WorkflowApprovalModule,
     LogicFunctionModule,
     CodeStepBuildModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,

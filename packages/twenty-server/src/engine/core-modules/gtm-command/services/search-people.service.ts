@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
 
 export type SearchPeopleInput = {
@@ -54,6 +57,7 @@ export class SearchPeopleService {
   constructor(
     private readonly peopleApiService: PeopleApiService,
     private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
+    private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
   ) {}
 
   async execute({
@@ -66,6 +70,10 @@ export class SearchPeopleService {
     try {
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
+      const defaultAccount =
+        await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
+          workspaceId,
+        );
 
       const limit = Math.min(Math.max(1, input.limit ?? 10), 25);
       const search = await this.peopleApiService.searchPeople(
@@ -78,7 +86,7 @@ export class SearchPeopleService {
           location: input.location,
           country: input.country,
           dataSource: (input.dataSource as never) ?? 'auto',
-          accountId: input.accountId,
+          accountId: input.accountId ?? defaultAccount?.accountId,
           limit,
         },
         apiToken ?? undefined,
@@ -127,6 +135,9 @@ export class SearchPeopleService {
             'profile_picture_url',
           ]),
           source: readString(item, ['source']) || search.dataSource,
+          ...(input.companyId?.trim()
+            ? { companyId: input.companyId.trim() }
+            : {}),
           ...taxonomy,
         };
       });
@@ -139,6 +150,10 @@ export class SearchPeopleService {
         people,
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.error('search-people failed', error);
 
       return {

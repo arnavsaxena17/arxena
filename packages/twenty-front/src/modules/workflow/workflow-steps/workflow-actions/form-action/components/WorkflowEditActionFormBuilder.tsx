@@ -4,17 +4,27 @@ import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { DraggableList } from '@/ui/layout/draggable-list/components/DraggableList';
 import { type DraggableListDropResult } from '@/ui/layout/draggable-list/types/DraggableListDropResult';
+import { TabList } from '@/ui/layout/tab-list/components/TabList';
+import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import {
   type WorkflowFormAction,
   type WorkflowTriggerType,
 } from '@/workflow/types/Workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
+import { WorkflowStepCmdEnterButton } from '@/workflow/workflow-steps/components/WorkflowStepCmdEnterButton';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
 import { WorkflowEditActionFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFieldSettings';
 import { WorkflowFormBuilderFieldValue } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormBuilderFieldValue';
 import { WorkflowFormNotifyOnPendingSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormNotifyOnPendingSettings';
+import { WorkflowFormNotifyTestResult } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormNotifyTestResult';
+import { WorkflowFormNotifyTestVariableInput } from '@/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowFormNotifyTestVariableInput';
+import { WORKFLOW_FORM_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/form-action/constants/WorkflowFormTabListComponentId';
+import { useTestWorkflowFormNotify } from '@/workflow/workflow-steps/workflow-actions/form-action/hooks/useTestWorkflowFormNotify';
 import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormActionField';
+import { WorkflowFormTabId } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormTabId';
 import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
+import { type WorkflowFormNotifyOnPendingSettings as NotifyOnPendingSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getWorkflowFormNotifyVariablesUsed';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useContext, useEffect, useState } from 'react';
@@ -24,6 +34,7 @@ import { Callout } from 'twenty-ui/feedback';
 import {
   IconAlertTriangle,
   IconGripVertical,
+  IconPlayerPlay,
   IconPlus,
   IconSettings,
   IconTrash,
@@ -158,6 +169,23 @@ const StyledNotClosableCalloutContainer = styled.div`
   padding-top: ${themeCssVariables.spacing[2]};
 `;
 
+const StyledTabListContainer = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  padding-left: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledTestTabContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[4]};
+  height: 100%;
+  min-height: 400px;
+  padding-left: ${themeCssVariables.spacing[5]};
+  padding-right: ${themeCssVariables.spacing[5]};
+  padding-top: ${themeCssVariables.spacing[2]};
+`;
+
 export const WorkflowEditActionFormBuilder = ({
   triggerType,
   action,
@@ -165,6 +193,18 @@ export const WorkflowEditActionFormBuilder = ({
 }: WorkflowEditActionFormBuilderProps) => {
   const { t } = useLingui();
   const { theme } = useContext(ThemeContext);
+  const activeTabId = useAtomComponentStateValue(
+    activeTabIdComponentState,
+    WORKFLOW_FORM_TAB_LIST_COMPONENT_ID,
+  );
+  const { testWorkflowFormNotify, isSending, isWaiting, testData } =
+    useTestWorkflowFormNotify(action.id);
+  const notifyOnPending = (
+    action.settings as { notifyOnPending?: NotifyOnPendingSettings }
+  ).notifyOnPending;
+  const canTestNotify =
+    Boolean(notifyOnPending?.channels?.length) &&
+    actionOptions.readonly !== true;
 
   const [formData, setFormData] = useState<FormData>(action.settings.input);
 
@@ -243,13 +283,62 @@ export const WorkflowEditActionFormBuilder = ({
     };
   }, [saveAction]);
 
+  const isTestTab = activeTabId === WorkflowFormTabId.TEST;
+  const tabs = [
+    {
+      id: WorkflowFormTabId.CONFIGURATION,
+      title: t`Configuration`,
+      Icon: IconSettings,
+    },
+    {
+      id: WorkflowFormTabId.TEST,
+      title: t`Test`,
+      Icon: IconPlayerPlay,
+    },
+  ];
+
+  const handleTestNotify = async () => {
+    if (!canTestNotify) {
+      return;
+    }
+
+    await testWorkflowFormNotify(action);
+  };
+
   return (
     <>
+      <StyledTabListContainer>
+        <TabList
+          tabs={tabs}
+          behaveAsLinks={false}
+          componentInstanceId={WORKFLOW_FORM_TAB_LIST_COMPONENT_ID}
+        />
+      </StyledTabListContainer>
+      {isTestTab ? (
+        <WorkflowStepBody>
+          <StyledTestTabContent>
+            <Callout
+              variant={'warning'}
+              Icon={IconAlertTriangle}
+              title={t`Sends a real WhatsApp message`}
+              description={t`Fill test variables (use your own Official recipient phone), then press Test. The editor waits until you reply in WhatsApp or submit the fill form. This does not resume the workflow.`}
+            />
+            <WorkflowFormNotifyTestVariableInput
+              action={action}
+              readonly={actionOptions.readonly === true}
+            />
+            <WorkflowFormNotifyTestResult
+              testData={testData}
+              isTesting={isSending}
+            />
+          </StyledTestTabContent>
+        </WorkflowStepBody>
+      ) : (
       <WorkflowStepBody
         display="block"
         paddingInline={themeCssVariables.spacing[2]}
       >
-        {triggerType && triggerType !== 'MANUAL' && isCalloutVisible && (
+        {/* {triggerType && triggerType !== 'MANUAL' && isCalloutVisible && (
           <StyledCalloutContainer>
             <Callout
               variant={'warning'}
@@ -269,7 +358,7 @@ export const WorkflowEditActionFormBuilder = ({
               }}
             />
           </StyledCalloutContainer>
-        )}
+        )} */}
         {formData.length === 0 && (
           <StyledNotClosableCalloutContainer>
             <Callout
@@ -446,7 +535,23 @@ export const WorkflowEditActionFormBuilder = ({
           />
         )}
       </WorkflowStepBody>
-      {!actionOptions.readonly && <WorkflowStepFooter stepId={action.id} />}
+      )}
+      {!actionOptions.readonly && (
+        <WorkflowStepFooter
+          stepId={action.id}
+          additionalActions={
+            isTestTab
+              ? [
+                  <WorkflowStepCmdEnterButton
+                    title={t`Test`}
+                    onClick={handleTestNotify}
+                    disabled={!canTestNotify || isSending || isWaiting}
+                  />,
+                ]
+              : []
+          }
+        />
+      )}
     </>
   );
 };

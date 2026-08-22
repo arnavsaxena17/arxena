@@ -21,8 +21,10 @@ import {
   getGtmNativeLogicFunctionSampleOutput,
   isNativeGtmLogicFunction,
 } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+import { applyGtmNativeLogicFunctionInputSchema } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/applyGtmNativeLogicFunctionInputSchema';
 import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
+import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variables/hooks/useAvailableVariablesInWorkflowStep';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isObject } from '@sniptt/guards';
@@ -83,15 +85,33 @@ export const WorkflowEditActionLogicFunction = ({
     logicFunction?.applicationId,
   );
 
+  const availableVariablesInWorkflowStep = useAvailableVariablesInWorkflowStep({
+    shouldDisplayRecordFields: true,
+    shouldDisplayRecordObjects: false,
+  });
+  const actionVariablePicker =
+    availableVariablesInWorkflowStep.length > 0
+      ? WorkflowVariablePicker
+      : undefined;
+
   const activeTabId = useAtomComponentStateValue(
     activeTabIdComponentState,
     WORKFLOW_LOGIC_FUNCTION_ACTION_TAB_LIST_COMPONENT_ID,
   );
 
-  const functionInput = useMemo(() => {
-    const inputSchema =
-      logicFunction?.workflowActionTriggerSettings?.inputSchema;
+  const inputSchema = useMemo(
+    () =>
+      applyGtmNativeLogicFunctionInputSchema(
+        logicFunction?.name,
+        logicFunction?.workflowActionTriggerSettings?.inputSchema,
+      ),
+    [
+      logicFunction?.name,
+      logicFunction?.workflowActionTriggerSettings?.inputSchema,
+    ],
+  );
 
+  const functionInput = useMemo(() => {
     if (!isDefined(inputSchema)) {
       return action.settings.input.logicFunctionInput ?? {};
     }
@@ -107,7 +127,7 @@ export const WorkflowEditActionLogicFunction = ({
       oldInput: action.settings.input.logicFunctionInput ?? {},
     });
   }, [
-    logicFunction?.workflowActionTriggerSettings?.inputSchema,
+    inputSchema,
     action.settings.input.logicFunctionInput,
   ]);
 
@@ -295,9 +315,7 @@ export const WorkflowEditActionLogicFunction = ({
           <>
             <WorkflowEditActionCodeFields
               functionInput={testInput}
-              inputSchema={
-                logicFunction?.workflowActionTriggerSettings?.inputSchema
-              }
+              inputSchema={inputSchema}
               onInputChange={handleTestInputChange}
               readonly={actionOptions.readonly}
             />
@@ -322,12 +340,10 @@ export const WorkflowEditActionLogicFunction = ({
             {hasInputFields ? (
               <WorkflowEditActionCodeFields
                 functionInput={functionInput}
-                inputSchema={
-                  logicFunction?.workflowActionTriggerSettings?.inputSchema
-                }
+                inputSchema={inputSchema}
                 readonly={actionOptions.readonly}
                 onInputChange={handleInputChange}
-                VariablePicker={WorkflowVariablePicker}
+                VariablePicker={actionVariablePicker}
                 fullWidth
               />
             ) : (

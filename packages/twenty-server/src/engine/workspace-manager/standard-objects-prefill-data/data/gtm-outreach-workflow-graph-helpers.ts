@@ -19,7 +19,10 @@ export const GTM_WF_FIELD = {
   memberId: '__FIELD_workspaceMember.id__',
   profileMemberId: '__FIELD_workspaceMemberProfile.workspaceMemberId__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
+  outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
 } as const;
+
+export const gtmWfSelectIsValue = (option: string) => JSON.stringify([option]);
 
 export const GTM_WF_AI_MESSAGE_OUTPUT = {
   message: {
@@ -217,6 +220,7 @@ export const gtmWfFilterStep = ({
   stepOutputKey,
   value,
   type = 'SELECT',
+  fieldMetadataId = GTM_WF_FIELD.outreachSequenceStage,
   nextStepIds,
 }: {
   id: string;
@@ -224,6 +228,7 @@ export const gtmWfFilterStep = ({
   stepOutputKey: string;
   value: string;
   type?: string;
+  fieldMetadataId?: string;
   nextStepIds?: string[];
 }): StepBase => {
   const groupId = `${id.slice(0, 8)}-0000-4000-8000-00000000a001`;
@@ -241,10 +246,11 @@ export const gtmWfFilterStep = ({
             {
               id: filterId,
               type,
-              value,
+              value: gtmWfSelectIsValue(value),
               operand: 'IS',
               stepOutputKey,
               stepFilterGroupId: groupId,
+              fieldMetadataId,
             },
           ],
           stepFilterGroups: [{ id: groupId, logicalOperator: 'AND' }],
@@ -294,11 +300,15 @@ export const gtmWfIfElseStep = ({
           {
             id: filterId,
             type,
-            value,
+            value: type === 'SELECT' ? gtmWfSelectIsValue(value) : value,
             operand,
             stepOutputKey,
             stepFilterGroupId: groupId,
             positionInStepFilterGroup: 0,
+            fieldMetadataId:
+              type === 'SELECT'
+                ? GTM_WF_FIELD.outreachSequenceStage
+                : undefined,
           },
         ],
         branches: [
@@ -327,6 +337,7 @@ export const gtmWfMultiIfElseStep = ({
     value?: string;
     type?: string;
     operand?: string;
+    fieldMetadataId?: string;
     nextStepIds: string[];
   }>;
 }): StepBase => {
@@ -352,14 +363,24 @@ export const gtmWfMultiIfElseStep = ({
       id: branch.filterGroupId,
       logicalOperator: 'AND',
     });
+    const filterType = branch.type ?? 'SELECT';
+
     stepFilters.push({
       id: branch.filterId,
-      type: branch.type ?? 'SELECT',
-      value: branch.value,
+      type: filterType,
+      value:
+        filterType === 'SELECT'
+          ? gtmWfSelectIsValue(branch.value)
+          : branch.value,
       operand: branch.operand ?? 'IS',
       stepOutputKey: branch.stepOutputKey,
       stepFilterGroupId: branch.filterGroupId,
       positionInStepFilterGroup: 0,
+      fieldMetadataId:
+        branch.fieldMetadataId ??
+        (filterType === 'SELECT'
+          ? GTM_WF_FIELD.outreachSequenceStage
+          : undefined),
     });
     ifElseBranches.push({
       id: branch.id,

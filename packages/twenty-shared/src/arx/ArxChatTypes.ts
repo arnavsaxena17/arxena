@@ -815,6 +815,7 @@ export interface ArxenaCandidateNode {
   avatarUrl?: string;
   projectsId: string;
   peopleId: string;
+  linkedinProfileId?: string;
   messagingChannel: string;
   otherFields?: Record<string, unknown>;
 }
@@ -891,6 +892,7 @@ export interface ArxenaPersonNode {
   phones?: { primaryPhoneNumber: string };
   uniqueStringKey?: string | null;
   jobTitle?: string | null;
+  companyId?: string;
   jsUserName?: string;
   keySkills?: string;
   focusedSkills?: string;

@@ -63,8 +63,7 @@ export const main = async (params: {
   website?: string;
   industry?: string;
   location?: string;
-  dataSource?: string;
-  accountId?: string;
+  url?: string;
   limit?: number;
 }) => {
   return params;
@@ -118,10 +117,8 @@ const UPLOAD_PROFILES_HANDLER = `// Native GTM action: UploadProfilesService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
   projectId: string;
+  companyId?: string;
   people?: Array<Record<string, unknown>>;
-  candidates?: Array<Record<string, unknown>>;
-  recruiterId?: string;
-  workspaceMemberId?: string;
   limit?: number;
 }) => {
   return params;

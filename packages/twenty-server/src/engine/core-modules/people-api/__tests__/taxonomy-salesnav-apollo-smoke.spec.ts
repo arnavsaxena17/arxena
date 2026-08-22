@@ -70,6 +70,22 @@ describe('taxonomy → Sales Nav / Apollo smoke', () => {
     expect(
       matchesTaxonomyFilter(
         {
+          stdFunction: 'talent acquisition',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+          confidence: 0.8,
+        },
+        {
+          stdFunction: 'human resources',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      matchesTaxonomyFilter(
+        {
           stdFunction: 'engineering',
           stdFunctionRoot: 'engineering',
           stdGrade: 'entry',

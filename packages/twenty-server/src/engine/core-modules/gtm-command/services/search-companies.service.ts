@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { CompanyApiService } from 'src/engine/core-modules/company-api/company-api.service';
+import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 export type SearchCompaniesInput = {
@@ -15,8 +16,6 @@ export type SearchCompaniesInput = {
   location?: string;
   url?: string;
   useV2?: boolean;
-  sortBy?: string;
-  sortOrder?: string;
   dataSource?: string;
   accountId?: string;
   limit?: number;
@@ -30,6 +29,7 @@ export class SearchCompaniesService {
     private readonly companyApiService: CompanyApiService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly apiKeyService: ApiKeyService,
+    private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
   ) {}
 
   async execute({
@@ -45,11 +45,16 @@ export class SearchCompaniesService {
         return {
           success: false,
           total: 0,
-          dataSource: input.dataSource ?? 'auto',
+          dataSource: 'unipile',
           error: 'Workspace API token is required to search companies',
           companies: [],
         };
       }
+
+      const defaultAccount =
+        await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
+          workspaceId,
+        );
 
       const search = await this.companyApiService.searchCompanies(
         {
@@ -60,11 +65,9 @@ export class SearchCompaniesService {
           industry: input.industry,
           location: input.location,
           url: input.url,
-          useV2: input.useV2,
-          sortBy: input.sortBy,
-          sortOrder: input.sortOrder,
-          dataSource: (input.dataSource as never) ?? 'auto',
-          accountId: input.accountId,
+          useV2: true,
+          dataSource: 'auto',
+          accountId: defaultAccount?.accountId,
           limit: Math.min(Math.max(1, input.limit ?? 10), 25),
         },
         apiToken,
@@ -83,7 +86,7 @@ export class SearchCompaniesService {
       return {
         success: false,
         total: 0,
-        dataSource: input.dataSource ?? 'auto',
+        dataSource: 'unipile',
         error: error instanceof Error ? error.message : String(error),
         companies: [],
       };

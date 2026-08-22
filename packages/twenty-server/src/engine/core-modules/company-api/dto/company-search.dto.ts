@@ -68,14 +68,6 @@ export class CompanySearchDto {
   useV2?: boolean;
 
   @IsOptional()
-  @IsString()
-  sortBy?: string;
-
-  @IsOptional()
-  @IsString()
-  sortOrder?: string;
-
-  @IsOptional()
   @IsNumber()
   lastViewedAt?: number;
 

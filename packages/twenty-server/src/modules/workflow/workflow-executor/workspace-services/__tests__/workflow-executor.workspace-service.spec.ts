@@ -362,6 +362,40 @@ describe('WorkflowExecutorWorkspaceService', () => {
       );
     });
 
+    it('should persist rate-limit wait metadata on pending steps', async () => {
+      mockWorkflowExecutor.execute.mockResolvedValueOnce({
+        pendingEvent: true,
+        waitMs: 81_711_000,
+        scheduledAt: '2026-08-23T12:04:00.000Z',
+        pendingReason: 'linkedin_rate_limit',
+      });
+
+      await service.executeFromSteps({
+        workflowRunId: mockWorkflowRunId,
+        stepIds: ['step-1'],
+        workspaceId: mockWorkspaceId,
+      });
+
+      expect(
+        workflowRunWorkspaceService.updateWorkflowRunStepInfo,
+      ).toHaveBeenNthCalledWith(2, {
+        stepId: 'step-1',
+        stepInfo: {
+          status: StepStatus.PENDING,
+          waitMs: 81_711_000,
+          scheduledAt: '2026-08-23T12:04:00.000Z',
+          pendingReason: 'linkedin_rate_limit',
+          result: {
+            waitMs: 81_711_000,
+            scheduledAt: '2026-08-23T12:04:00.000Z',
+            pendingReason: 'linkedin_rate_limit',
+          },
+        },
+        workflowRunId: mockWorkflowRunId,
+        workspaceId: 'workspace-id',
+      });
+    });
+
     it('should not emit billing event for skipped steps', async () => {
       (shouldExecuteStep as jest.Mock).mockReturnValue(false);
       (shouldSkipStepExecution as jest.Mock).mockReturnValue(true);

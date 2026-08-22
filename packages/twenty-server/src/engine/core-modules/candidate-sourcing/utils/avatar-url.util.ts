@@ -70,3 +70,22 @@ export const resolveAvatarUrlFromDisplayPictureUrl = (
 
   return trimmed;
 };
+
+export const toCrmPrimaryLink = (
+  url: string,
+  label = '',
+): { primaryLinkLabel: string; primaryLinkUrl: string } | undefined => {
+  const absolute = resolveAvatarUrlFromDisplayPictureUrl(url);
+
+  if (
+    !absolute.startsWith('http://') &&
+    !absolute.startsWith('https://')
+  ) {
+    return undefined;
+  }
+
+  return {
+    primaryLinkLabel: label || absolute,
+    primaryLinkUrl: absolute,
+  };
+};

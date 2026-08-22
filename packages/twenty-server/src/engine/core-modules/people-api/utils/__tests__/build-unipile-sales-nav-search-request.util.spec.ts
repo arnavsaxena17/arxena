@@ -99,4 +99,21 @@ describe('buildUnipileSalesNavSearchRequest', () => {
     expect(request.keywords).toBe('market OR strategy');
     expect(request.company).toEqual({ include: ['10155014'] });
   });
+
+  it('scopes keywords to the company name when LinkedIn company ids are missing', () => {
+    const request = buildUnipileSalesNavSearchRequest({
+      jobTitle: '("Human Resources" OR HR)',
+      companyParameterIds: [],
+      primaryCompanyName: 'Page Executive',
+      functionIds: [],
+      seniorities: [],
+      includeManualLinkedInQuery: true,
+    });
+
+    expect(request.keywords).toBe('"Page Executive"');
+    expect(request.company).toBeUndefined();
+    expect(request.role).toEqual({
+      include: ['("Human Resources" OR HR)'],
+    });
+  });
 });

@@ -214,6 +214,7 @@ export type Mutation = {
   stopWorkflowRun: WorkflowRun;
   submitFormStep: Scalars['Boolean']['output'];
   testHttpRequest: TestHttpRequest;
+  testWorkflowFormNotify: TestWorkflowFormNotify;
   updateWorkflowRunStep: WorkflowAction;
   updateWorkflowVersionPositions: Scalars['Boolean']['output'];
   updateWorkflowVersionStep: WorkflowAction;
@@ -306,6 +307,11 @@ export type MutationTestHttpRequestArgs = {
 };
 
 
+export type MutationTestWorkflowFormNotifyArgs = {
+  input: TestWorkflowFormNotifyInput;
+};
+
+
 export type MutationUpdateWorkflowRunStepArgs = {
   input: UpdateWorkflowRunStepInput;
 };
@@ -355,6 +361,7 @@ export type Query = {
   getTimelineThreadsFromPersonId: TimelineThreadsWithTotal;
   isMaintenanceModeBannerDismissed: Scalars['Boolean']['output'];
   search: SearchResultConnection;
+  workflowFormNotifyTest: TestWorkflowFormNotify;
   workflowStepConnectedAccountHandle?: Maybe<ConnectedAccountHandleDto>;
 };
 
@@ -424,6 +431,11 @@ export type QuerySearchArgs = {
   includedObjectNameSingulars?: InputMaybe<Array<Scalars['String']['input']>>;
   limit: Scalars['Int']['input'];
   searchInput: Scalars['String']['input'];
+};
+
+
+export type QueryWorkflowFormNotifyTestArgs = {
+  testId: Scalars['UUID']['input'];
 };
 
 
@@ -510,6 +522,31 @@ export type TestHttpRequestInput = {
   method: Scalars['String']['input'];
   /** URL to make the request to */
   url: Scalars['String']['input'];
+};
+
+export type TestWorkflowFormNotify = {
+  __typename?: 'TestWorkflowFormNotify';
+  capturedResponse?: Maybe<Scalars['JSON']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  fillUrl?: Maybe<Scalars['String']['output']>;
+  pointer: Scalars['String']['output'];
+  sendResults: Array<TestWorkflowFormNotifySendResult>;
+  status: Scalars['String']['output'];
+  testId: Scalars['UUID']['output'];
+};
+
+export type TestWorkflowFormNotifyInput = {
+  fields: Scalars['JSON']['input'];
+  notifyOnPending: Scalars['JSON']['input'];
+  stepId: Scalars['UUID']['input'];
+  variableValues: Scalars['JSON']['input'];
+};
+
+export type TestWorkflowFormNotifySendResult = {
+  __typename?: 'TestWorkflowFormNotifySendResult';
+  channel: Scalars['String']['output'];
+  detail?: Maybe<Scalars['String']['output']>;
+  status: Scalars['String']['output'];
 };
 
 export type TimelineCalendarEvent = {

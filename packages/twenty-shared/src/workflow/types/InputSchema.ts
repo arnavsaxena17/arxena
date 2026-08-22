@@ -9,6 +9,8 @@ export type InputSchemaPropertyType =
   | RecordSchemaType
   | FieldMetadataType;
 
+export type LinkedInParameterType = 'COMPANY' | 'LOCATION' | 'INDUSTRY';
+
 export type InputSchemaProperty = {
   type: InputSchemaPropertyType;
   enum?: string[];
@@ -17,6 +19,8 @@ export type InputSchemaProperty = {
   multiline?: boolean;
   label?: string;
   objectUniversalIdentifier?: string;
+  objectNameSingular?: string;
+  linkedinParameterType?: LinkedInParameterType;
 };
 
 type Properties = {

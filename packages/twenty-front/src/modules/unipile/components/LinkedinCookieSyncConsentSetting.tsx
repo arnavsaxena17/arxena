@@ -14,11 +14,9 @@ import {
 } from '../utils/linkedinUnipileExtensionBridge';
 
 const StyledRow = styled.div`
-  border-top: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[3]} 0;
+  gap: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledLabel = styled.label`
@@ -113,7 +111,8 @@ export const LinkedinCookieSyncConsentSetting = ({
         <StyledHint>
           <Trans>
             Install the Arx Chrome extension and refresh this page to manage
-            LinkedIn cookie sync for Unipile.
+            LinkedIn cookie sync for Unipile. You can still connect from cookies
+            already saved on your recruiter profile.
           </Trans>
         </StyledHint>
         <LinkedinStoredProfileUnipileActions

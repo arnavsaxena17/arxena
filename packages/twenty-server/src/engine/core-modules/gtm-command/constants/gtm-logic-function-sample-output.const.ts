@@ -18,6 +18,7 @@ export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   total: 1,
   dataSource: 'unipile',
   projectId: 'project-id',
+  companyId: 'company-id',
   error: '',
   people: [
     {
@@ -32,6 +33,7 @@ export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
       linkedinProfileId: 'example',
       peopleId: 'ACwAAAExample',
       profilePictureUrl: '',
+      companyId: 'company-id',
       source: 'linkedin_sales_navigator',
       stdFunction: 'sales',
       stdFunctionRoot: 'go-to-market',

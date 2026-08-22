@@ -75,6 +75,37 @@ export class UnipileSearchAccountResolver {
     return null;
   }
 
+  async resolveDefaultWorkspaceAccount(
+    workspaceId: string,
+  ): Promise<ResolvedUnipileSearchAccount | null> {
+    const salesNav = await this.findWorkspaceAccountByProduct(
+      workspaceId,
+      'sales_navigator',
+    );
+    if (salesNav) {
+      return {
+        accountId: salesNav.accountId,
+        product: 'sales_navigator',
+        via: 'workspace_sales_navigator',
+      };
+    }
+
+    const profiles =
+      await this.workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles(
+        workspaceId,
+      );
+    const first = profiles[0];
+    if (!first) {
+      return null;
+    }
+
+    return {
+      accountId: first.linkedinUnipileAccountId,
+      product: inferUnipileLinkedinProduct(first.linkedinProfile),
+      via: 'member',
+    };
+  }
+
   async resolvePoolAccount(): Promise<ResolvedUnipileSearchAccount | null> {
     if (!this.linkedinUnipileEstimateAccountService || !this.isUnipileConfigured()) {
       return null;
@@ -179,7 +210,7 @@ export class UnipileSearchAccountResolver {
       };
     }
 
-    return null;
+    return this.resolveDefaultWorkspaceAccount(workspaceId);
   }
 
   private async detectProductForAccount(

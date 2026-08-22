@@ -17,8 +17,7 @@ const DELAY_SECONDS =
 const GTM_WORKSPACE_MEMBER_ID = process.env.GTM_WORKSPACE_MEMBER_ID || '';
 const GTM_CONNECTED_ACCOUNT_ID = process.env.GTM_CONNECTED_ACCOUNT_ID || '';
 const GTM_HARVEST_HOURS = Number(process.env.GTM_HARVEST_HOURS || '6');
-const GTM_HARVEST_QUERY =
-  process.env.GTM_HARVEST_QUERY || 'SaaS companies hiring GTM leaders';
+const GTM_HARVEST_QUERY = process.env.GTM_HARVEST_QUERY || '';
 
 const WORKFLOW_HARVEST_NAME = 'GTM Harvest — LinkedIn Companies';
 const WORKFLOW_SEARCH_NAME = 'Company Created → ICP People Search';

@@ -5,6 +5,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
+import { appendGtmRunKey, parseGtmRunKeys } from 'src/engine/core-modules/gtm-command/utils/gtm-run-key.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -12,7 +13,7 @@ type CompanyRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   domainName?: { primaryLinkUrl?: string } | null;
-  gtmRunKey?: string | null;
+  gtmRunKey?: string | string[] | null;
 };
 
 type ProjectRecord = ObjectLiteral & {
@@ -71,11 +72,20 @@ export class EnsureGtmProjectService {
             : null;
 
         const tagCompany = async (resolvedProjectId: string) => {
-          if (isDefined(company) && company.gtmRunKey !== resolvedProjectId) {
-            await companyRepository?.update(company.id, {
-              gtmRunKey: resolvedProjectId,
-            });
+          if (!isDefined(company) || !isDefined(companyRepository)) {
+            return;
           }
+
+          const nextKeys = appendGtmRunKey(company.gtmRunKey, resolvedProjectId);
+
+          if (nextKeys.length === parseGtmRunKeys(company.gtmRunKey).length) {
+            return;
+          }
+
+          await companyRepository.update(company.id, {
+            gtmRunKey: nextKeys,
+          });
+          company.gtmRunKey = nextKeys;
         };
 
         if (isNonEmptyString(projectId)) {
@@ -91,9 +101,11 @@ export class EnsureGtmProjectService {
           }
         }
 
-        if (isNonEmptyString(company?.gtmRunKey)) {
+        const existingRunKeys = parseGtmRunKeys(company?.gtmRunKey);
+
+        for (const runKey of existingRunKeys) {
           const byId = await projectRepository.findOne({
-            where: { id: company.gtmRunKey },
+            where: { id: runKey },
           });
 
           if (isDefined(byId)) {

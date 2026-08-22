@@ -44,6 +44,13 @@ describe('CompanyApiService', () => {
         })),
     ),
   };
+  const linkedinParameterResolver = {
+    resolveLocationName: jest.fn(async (value: string) => ({
+      id: value,
+      title: value,
+    })),
+    resolveParameterIds: jest.fn(async (params: { industry?: { include?: string[] } }) => params),
+  };
 
   const service = new CompanyApiService(
     companiesEsService as never,
@@ -52,6 +59,7 @@ describe('CompanyApiService', () => {
     unipileSearchAccountResolver as never,
     companySearchDataSourceResolver as never,
     companySearchHitTransformer as never,
+    linkedinParameterResolver as never,
   );
 
   beforeEach(() => {
@@ -172,8 +180,6 @@ describe('CompanyApiService', () => {
         {
           url: 'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=7378394885466337283',
           useV2: true,
-          sortBy: 'DATE_ADDED',
-          sortOrder: 'DESCENDING',
         },
         'token',
       ),
@@ -185,8 +191,6 @@ describe('CompanyApiService', () => {
       'acc_123',
       {
         limit: 20,
-        sortBy: 'DATE_ADDED',
-        sortOrder: 'DESCENDING',
       },
     );
     expect(

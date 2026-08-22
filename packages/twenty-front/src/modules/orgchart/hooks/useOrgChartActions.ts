@@ -12,7 +12,12 @@ import { orgChartQueryGeneratorPreferenceState } from '@/orgchart/states/orgChar
 import { isOrgChartM7kqCandidateSource } from '@/orgchart/utils/isOrgChartM7kqCandidateSource';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
+import { formatAccountRateLimitErrorFromUnknown } from '@/unipile/utils/accountRateLimitError';
 import { tryExtensionLinkedinUnipileRecovery } from '@/unipile/utils/linkedinUnipileExtensionBridge';
+import {
+    isLinkedInNotConnectedErrorMessage,
+    LINKEDIN_NOT_CONNECTED_USER_MESSAGE,
+} from '@/unipile/utils/linkedinNotConnectedError';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -148,6 +153,13 @@ const formatInsufficientOrgChartCreditsMessage = (input: {
 
 const formatOrgChartTransportErrorMessage = (message: string): string => {
   const normalized = message.trim();
+  const linkedInAccountRateLimitMessage =
+    formatAccountRateLimitErrorFromUnknown(normalized);
+
+  if (linkedInAccountRateLimitMessage) {
+    return linkedInAccountRateLimitMessage;
+  }
+
   const isRateLimited =
     /status\s*code\s*429/i.test(normalized) ||
     /status\s*429/i.test(normalized) ||
@@ -156,6 +168,10 @@ const formatOrgChartTransportErrorMessage = (message: string): string => {
 
   if (isRateLimited) {
     return 'Rate limited by Apollo. Please retry later or upgrade your Apollo plan.';
+  }
+
+  if (isLinkedInNotConnectedErrorMessage(normalized)) {
+    return LINKEDIN_NOT_CONNECTED_USER_MESSAGE;
   }
 
   return normalized;
@@ -668,17 +684,22 @@ export const useOrgChartActions = ({
       };
 
       if (payload.event === 'error') {
-        const msg = formatInsufficientOrgChartCreditsMessage({
-          message: eventData.message,
-          creditsNeeded:
-            typeof eventData.creditsNeeded === 'number'
-              ? eventData.creditsNeeded
-              : undefined,
-          creditsAvailable:
-            typeof eventData.creditsAvailable === 'number'
-              ? eventData.creditsAvailable
-              : undefined,
-        });
+        const rateLimitMessage = formatAccountRateLimitErrorFromUnknown(
+          eventData.message,
+        );
+        const msg =
+          rateLimitMessage ??
+          formatInsufficientOrgChartCreditsMessage({
+            message: eventData.message,
+            creditsNeeded:
+              typeof eventData.creditsNeeded === 'number'
+                ? eventData.creditsNeeded
+                : undefined,
+            creditsAvailable:
+              typeof eventData.creditsAvailable === 'number'
+                ? eventData.creditsAvailable
+                : undefined,
+          });
         if (payload.mode === 'entire_company' && companyId) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         }
@@ -1807,14 +1828,17 @@ export const useOrgChartActions = ({
         typeof (json as { orgChartError?: unknown }).orgChartError === 'string'
           ? (json as { orgChartError: string }).orgChartError.trim()
           : '';
+      const formattedOrgChartError =
+        formatAccountRateLimitErrorFromUnknown(orgChartErrorFromResponse) ??
+        orgChartErrorFromResponse;
 
-      if (orgChartErrorFromResponse.length > 0) {
-        setContextError(orgChartErrorFromResponse);
+      if (formattedOrgChartError.length > 0) {
+        setContextError(formattedOrgChartError);
         setContextProgressMessage(null);
         setContextProgressPage(null);
         setContextProgressTotalPages(null);
         setContextProgressTotalCandidates(null);
-        enqueueSnackBar(orgChartErrorFromResponse, {
+        enqueueSnackBar(formattedOrgChartError, {
           variant: SnackBarVariant.Error,
           dedupeKey: requestId
             ? `orgchart-request-error-${requestId}`
@@ -2010,7 +2034,11 @@ export const useOrgChartActions = ({
       message?: string;
     };
     if (!res.ok) {
-      throw new Error(json.message ?? `Estimate failed (${res.status})`);
+      throw new Error(
+        formatOrgChartTransportErrorMessage(
+          json.message ?? `Estimate failed (${res.status})`,
+        ),
+      );
     }
 
     return json;

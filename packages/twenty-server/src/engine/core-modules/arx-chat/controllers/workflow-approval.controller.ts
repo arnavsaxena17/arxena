@@ -335,6 +335,18 @@ export class WorkflowApprovalController {
       formResponse = { [booleanField]: approved };
     }
 
+    const capturedTest =
+      await this.workflowFormDecisionPointerService.tryCompleteFormNotifyTestSession(
+        {
+          parts,
+          response: formResponse,
+        },
+      );
+
+    if (capturedTest) {
+      return { status: 'ok', response: formResponse };
+    }
+
     try {
       await this.getWorkflowRunner().submitFormStep({
         workspaceId: parts.workspaceId,

@@ -49,6 +49,9 @@ export type SelectProps<Value extends SelectValue> = {
   options: SelectOption<Value>[];
   value?: Value;
   withSearchInput?: boolean;
+  onSearchChange?: (value: string) => void;
+  disableClientFilter?: boolean;
+  onDropdownOpen?: () => void;
   needIconCheck?: boolean;
   pinnedOption?: SelectOption<Value>;
   callToActionButton?: CallToActionButton;
@@ -90,6 +93,9 @@ export const Select = <Value extends SelectValue>({
   options,
   value,
   withSearchInput,
+  onSearchChange,
+  disableClientFilter,
+  onDropdownOpen,
   needIconCheck,
   pinnedOption,
   callToActionButton,
@@ -126,7 +132,7 @@ export const Select = <Value extends SelectValue>({
   }, [emptyOption, options, pinnedOption, value]);
 
   const filteredOptions = useMemo(() => {
-    if (!isNonEmptyString(searchInputValue)) {
+    if (disableClientFilter === true || !isNonEmptyString(searchInputValue)) {
       return options;
     }
 
@@ -138,11 +144,12 @@ export const Select = <Value extends SelectValue>({
         (isDefined(searchKeywords) &&
           normalizeSearchText(searchKeywords).includes(normalizedSearch)),
     );
-  }, [options, searchInputValue]);
+  }, [disableClientFilter, options, searchInputValue]);
 
   const isDisabled =
     disabledFromProps ||
-    (options.length <= 1 &&
+    (withSearchInput !== true &&
+      options.length <= 1 &&
       !isDefined(pinnedOption) &&
       !isDefined(callToActionButton) &&
       (!isDefined(emptyOption) || selectedOption !== emptyOption));
@@ -174,6 +181,7 @@ export const Select = <Value extends SelectValue>({
   }, [selectedOption, showContextualTextInControl]);
 
   const handleDropdownOpen = () => {
+    onDropdownOpen?.();
     if (
       isDefined(controlSelectedOption) &&
       !isNonEmptyString(searchInputValue)
@@ -222,7 +230,11 @@ export const Select = <Value extends SelectValue>({
                 <DropdownMenuSearchInput
                   autoFocus
                   value={searchInputValue}
-                  onChange={(event) => setSearchInputValue(event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setSearchInputValue(nextValue);
+                    onSearchChange?.(nextValue);
+                  }}
                 />
               )}
               {withSearchInput === true && isNonEmptyArray(filteredOptions) && (

@@ -315,8 +315,8 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         logicFunctionId: '__LF_search-companies__',
         logicFunctionInput: {
           limit: 15,
-          query: 'SaaS companies hiring GTM leaders',
-          keywords: 'SaaS companies hiring GTM leaders',
+          query: '',
+          keywords: '',
         },
         sampleOutput: GTM_SEARCH_COMPANIES_SAMPLE_OUTPUT,
         nextStepIds: [IDS.upsertCompanies],

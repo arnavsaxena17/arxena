@@ -27,6 +27,61 @@ describe('CompanySearchHitTransformer', () => {
     ]);
   });
 
+  it('maps CRM composite links and full search payloads', () => {
+    expect(
+      transformer.fromAnyItem({
+        name: 'Acme',
+        domainName: { primaryLinkUrl: 'https://acme.com' },
+        linkedinLink: {
+          primaryLinkUrl: 'https://www.linkedin.com/company/acme',
+        },
+      }),
+    ).toEqual({
+      id: '',
+      name: 'Acme',
+      website: 'https://acme.com',
+      linkedinUrl: 'https://www.linkedin.com/company/acme',
+      industry: '',
+    });
+
+    expect(
+      transformer.fromUnknownInput(
+        JSON.stringify({
+          success: true,
+          companies: [
+            {
+              id: '14440515',
+              name: 'Heidrick & Struggles',
+              website: 'http://www.heidrick.com',
+              linkedinUrl:
+                'https://www.linkedin.com/company/heidrick-and-struggles/',
+              industry: 'Human Resources Services',
+            },
+          ],
+        }),
+      ),
+    ).toEqual([
+      {
+        id: '14440515',
+        name: 'Heidrick & Struggles',
+        website: 'http://www.heidrick.com',
+        linkedinUrl: 'https://www.linkedin.com/company/heidrick-and-struggles/',
+        industry: 'Human Resources Services',
+      },
+    ]);
+
+    expect(
+      transformer.fromUnknownInput([
+        JSON.stringify({
+          name: 'Apple',
+          website: '',
+          linkedinUrl: 'https://www.linkedin.com/company/apple/',
+          industry: 'Computers and Electronics Manufacturing',
+        }),
+      ]),
+    ).toMatchObject([{ name: 'Apple', website: '' }]);
+  });
+
   it('maps Harvest and index records', () => {
     expect(
       transformer.fromHarvestItem({
@@ -52,6 +107,20 @@ describe('CompanySearchHitTransformer', () => {
       }),
     ).toMatchObject({
       linkedinUrl: 'https://www.linkedin.com/company/acme',
+    });
+  });
+
+  it('maps websites arrays and LinkedIn public identifiers', () => {
+    expect(
+      transformer.fromAnyItem({
+        name: 'Korn Ferry',
+        websites: [{ url: 'https://www.kornferry.com' }],
+        public_identifier: 'korn-ferry',
+      }),
+    ).toMatchObject({
+      name: 'Korn Ferry',
+      website: 'https://www.kornferry.com',
+      linkedinUrl: 'https://www.linkedin.com/company/korn-ferry',
     });
   });
 

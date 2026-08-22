@@ -14,6 +14,7 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
+import { useNotifyLinkedInNotConnected } from '@/unipile/hooks/useNotifyLinkedInNotConnected';
 import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
@@ -297,6 +298,7 @@ export const OrgChartSuperImposeModal = ({
 }: OrgChartSuperImposeModalProps) => {
   const { t } = useLingui();
   const { enqueueSnackBar } = useOrgChartSnackBar();
+  const { notifyLinkedInNotConnected } = useNotifyLinkedInNotConnected();
 
   const [linkedinUrlsText, setLinkedinUrlsText] = useState('');
   const [websiteUrlsText, setWebsiteUrlsText] = useState('');
@@ -450,11 +452,12 @@ export const OrgChartSuperImposeModal = ({
       errors?: string[];
     };
     if (!res.ok) {
-      throw new Error(
+      const message =
         typeof json === 'object' && json && 'message' in json
           ? String((json as { message?: string }).message)
-          : `Resolve failed (${res.status})`,
-      );
+          : `Resolve failed (${res.status})`;
+      notifyLinkedInNotConnected(message);
+      throw new Error(message);
     }
     setResolvedPreview(json.resolvedCompanies ?? []);
     setResolveErrors(json.errors ?? []);
@@ -463,6 +466,7 @@ export const OrgChartSuperImposeModal = ({
     effectiveCompanyId,
     effectiveCompanyName,
     effectiveLinkedinUrl,
+    notifyLinkedInNotConnected,
     serverBaseUrl,
     superImposePayload,
   ]);
@@ -502,15 +506,23 @@ export const OrgChartSuperImposeModal = ({
         message?: string;
       };
       if (!res.ok) {
-        throw new Error(json.message ?? `Estimate failed (${res.status})`);
+        const message = json.message ?? `Estimate failed (${res.status})`;
+        notifyLinkedInNotConnected(message);
+        throw new Error(message);
       }
       setEstimate(json);
     } catch (error) {
       setEstimate(null);
-      enqueueSnackBar(
-        error instanceof Error ? error.message : 'Estimate failed',
-        { variant: SnackBarVariant.Warning, duration: 5000 },
-      );
+      if (
+        !notifyLinkedInNotConnected(
+          error instanceof Error ? error.message : String(error),
+        )
+      ) {
+        enqueueSnackBar(
+          error instanceof Error ? error.message : 'Estimate failed',
+          { variant: SnackBarVariant.Warning, duration: 5000 },
+        );
+      }
     } finally {
       setEstimateLoading(false);
     }
@@ -521,6 +533,7 @@ export const OrgChartSuperImposeModal = ({
     effectiveCompanyId,
     effectiveCompanyName,
     effectiveLinkedinUrl,
+    notifyLinkedInNotConnected,
     enqueueSnackBar,
     functionRoot,
     leadershipOnly,

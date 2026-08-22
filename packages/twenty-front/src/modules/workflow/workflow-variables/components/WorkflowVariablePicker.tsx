@@ -3,6 +3,7 @@ import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDrop
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { WorkflowVariablesDropdown } from '@/workflow/workflow-variables/components/WorkflowVariablesDropdown';
 import { SEARCH_VARIABLES_DROPDOWN_ID } from '@/workflow/workflow-variables/constants/SearchVariablesDropdownId';
+import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variables/hooks/useAvailableVariablesInWorkflowStep';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -70,6 +71,18 @@ export const WorkflowVariablePicker: VariablePickerComponent = ({
     isDropdownOpenComponentState,
     dropdownId,
   );
+
+  const availableVariablesInWorkflowStep = useAvailableVariablesInWorkflowStep({
+    shouldDisplayRecordFields,
+    shouldDisplayRecordObjects,
+  });
+
+  if (
+    disabled === true ||
+    availableVariablesInWorkflowStep.length === 0
+  ) {
+    return null;
+  }
 
   return (
     <StyledSearchVariablesDropdownContainer

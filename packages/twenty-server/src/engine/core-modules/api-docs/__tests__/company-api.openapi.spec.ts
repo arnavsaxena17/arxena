@@ -24,8 +24,8 @@ describe('buildCompanyApiOpenApiDocument', () => {
       /Sales Navigator account lists/,
     );
     expect(searchRequest.properties?.useV2).toBeDefined();
-    expect(searchRequest.properties?.sortBy).toBeDefined();
-    expect(searchRequest.properties?.sortOrder).toBeDefined();
+    expect(searchRequest.properties?.sortBy).toBeUndefined();
+    expect(searchRequest.properties?.sortOrder).toBeUndefined();
   });
 
   it('includes production and local servers by default', () => {

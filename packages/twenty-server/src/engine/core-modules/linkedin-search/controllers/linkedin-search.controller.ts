@@ -98,6 +98,9 @@ export class LinkedInSearchController {
       return linkedinAccountId;
     } catch (error) {
       this.logger.error(`Error getting LinkedIn account ID from token: ${error}`);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         'Failed to get LinkedIn account ID from token',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -131,6 +134,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -202,6 +208,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn people search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn people search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -253,6 +262,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn classic vs raw people search comparison failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn classic vs raw people search comparison failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -298,6 +310,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn companies search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn companies search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -331,6 +346,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn posts search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn posts search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -364,6 +382,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn jobs search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn jobs search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -409,6 +430,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn Sales Navigator people search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn Sales Navigator people search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -454,6 +478,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn Sales Navigator companies search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn Sales Navigator companies search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -499,6 +526,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn Recruiter people search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn Recruiter people search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -536,6 +566,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn URL search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn URL search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -572,6 +605,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('LinkedIn cursor search failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'LinkedIn cursor search failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -604,6 +640,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn location parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn location parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -636,6 +675,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn industry parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn industry parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -668,6 +710,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn company parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn company parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -700,6 +745,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn school parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn school parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -732,6 +780,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn job title parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn job title parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -764,6 +815,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn skill parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn skill parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -794,6 +848,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn saved searches parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn saved searches parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -824,6 +881,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn recent searches parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn recent searches parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -876,6 +936,9 @@ export class LinkedInSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn search parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to get LinkedIn search parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,

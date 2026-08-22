@@ -77,6 +77,39 @@ describe('extractCandidateJobTitle', () => {
       }),
     ).toBe('Account Executive');
   });
+
+  it('prefers Unipile current_positions.role over headline', () => {
+    expect(
+      extractCandidateJobTitle({
+        headline:
+          'Director of Talent Solutions | Interim Executive Search | Hogan Assessment & Leadership Development | Speaker & Facilitator | Strategic Communication',
+        current_positions: [
+          {
+            role: 'Director of Talent Solutions | Interim Executive & Professional Search',
+          },
+        ],
+      }),
+    ).toBe(
+      'Director of Talent Solutions | Interim Executive & Professional Search',
+    );
+  });
+
+  it('uses jobTitles when current positions are missing', () => {
+    expect(
+      extractCandidateJobTitle({
+        headline: 'Managing Partner @ 3-P Solutions Consulting, LLC',
+        jobTitles: ['Executive Consultant - Business and People Transformation'],
+      }),
+    ).toBe('Executive Consultant - Business and People Transformation');
+  });
+
+  it('falls back to headline only when no role exists', () => {
+    expect(
+      extractCandidateJobTitle({
+        headline: 'Head of Talent at Korn Ferry',
+      }),
+    ).toBe('Head of Talent at Korn Ferry');
+  });
 });
 
 describe('extractCandidateExperience', () => {
@@ -98,6 +131,58 @@ describe('extractCandidateExperience', () => {
         title: 'VP Product',
         startDate: '2022-01-01',
         endDate: '2024-06-01',
+        isCurrent: false,
+      },
+    ]);
+  });
+
+  it('merges current_positions, work_experience, and experience', () => {
+    expect(
+      extractCandidateExperience({
+        headline: 'Speaker & Facilitator | Strategic Communication',
+        current_positions: [
+          {
+            role: 'Director of Talent Solutions',
+            start: { year: 2021, month: 3 },
+          },
+        ],
+        work_experience: [
+          {
+            role: 'Director of Talent Solutions',
+            start: { year: 2021, month: 3 },
+          },
+          {
+            role: 'Talent Lead',
+            start: { year: 2018, month: 1 },
+            end: { year: 2021, month: 2 },
+          },
+        ],
+        experience: [
+          {
+            title: 'HR Coordinator',
+            start_date: '2015-06-01',
+            end_date: '2017-12-01',
+            is_current: false,
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        title: 'Director of Talent Solutions',
+        startDate: '2021-03-01',
+        endDate: null,
+        isCurrent: true,
+      },
+      {
+        title: 'Talent Lead',
+        startDate: '2018-01-01',
+        endDate: '2021-02-01',
+        isCurrent: false,
+      },
+      {
+        title: 'HR Coordinator',
+        startDate: '2015-06-01',
+        endDate: '2017-12-01',
         isCurrent: false,
       },
     ]);
@@ -152,6 +237,46 @@ describe('matchesTaxonomyFilter', () => {
       matchesTaxonomyFilter(resolved, {
         stdGrade: 'leadership',
       }),
+    ).toBe(false);
+  });
+
+  it('treats project stdFunction == stdFunctionRoot as a root match', () => {
+    expect(
+      matchesTaxonomyFilter(resolved, {
+        stdFunction: 'engineering',
+        stdFunctionRoot: 'engineering',
+        stdGrade: 'leadership',
+      }),
+    ).toBe(true);
+    expect(
+      matchesTaxonomyFilter(
+        {
+          stdFunction: 'talent acquisition',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+          confidence: 0.8,
+        },
+        {
+          stdFunction: 'human resources',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+        },
+      ),
+    ).toBe(true);
+    expect(
+      matchesTaxonomyFilter(
+        {
+          stdFunction: 'talent acquisition',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+          confidence: 0.8,
+        },
+        {
+          stdFunction: 'compensation',
+          stdFunctionRoot: 'human resources',
+          stdGrade: 'leadership',
+        },
+      ),
     ).toBe(false);
   });
 });

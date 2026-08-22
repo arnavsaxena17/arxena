@@ -3,8 +3,10 @@ import { normalizeMessagingChannel } from 'src/engine/core-modules/arx-chat/util
 import {
   extractDisplayPictureUrl,
   resolveAvatarUrlFromDisplayPictureUrl,
+  toCrmPrimaryLink,
 } from './avatar-url.util';
 import { DataProcessingUtils } from './data-processing.utils';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
 // Define enhanced types that support additional phone and email fields
@@ -29,8 +31,15 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
   const lastName = candidate?.lastName || "";
   const displayPictureUrl = extractDisplayPictureUrl(candidate as Record<string, unknown>);
   const avatarUrl =
-    (typeof candidate?.avatarUrl === 'string' && candidate.avatarUrl.trim()) ||
+    (typeof candidate?.avatarUrl === 'string' &&
+      (candidate.avatarUrl.startsWith('http://') ||
+        candidate.avatarUrl.startsWith('https://')) &&
+      candidate.avatarUrl.trim()) ||
     resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
+  const displayPictureLink = toCrmPrimaryLink(
+    displayPictureUrl,
+    'Display Picture',
+  );
 
   // Initialize DataProcessingUtils for enhanced cleaning
   const dataProcessingUtils = new DataProcessingUtils();
@@ -70,11 +79,22 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
 
   // Extract LinkedIn URL
   let linkedinUrl = '';
-  if (candidate?.linkedinUrl) {
+  if (typeof candidate?.linkedinUrl === 'string') {
     linkedinUrl = candidate.linkedinUrl;
+  } else if (
+    candidate?.linkedinUrl &&
+    typeof candidate.linkedinUrl === 'object' &&
+    typeof candidate.linkedinUrl.primaryLinkUrl === 'string'
+  ) {
+    linkedinUrl = candidate.linkedinUrl.primaryLinkUrl;
   } else if (candidate?.profileUrl && candidate.profileUrl.includes('linkedin')) {
     linkedinUrl = candidate.profileUrl;
   }
+  const linkedinLink =
+    toCrmPrimaryLink(
+      normalizeLinkedInUrl(linkedinUrl),
+      normalizeLinkedInUrl(linkedinUrl),
+    ) ?? { primaryLinkUrl: '', primaryLinkLabel: '' };
 
   // Extract job title (current designation) and job name (applied position)
   let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
@@ -85,13 +105,13 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
     phones: EnhancedPhonesValue;
   } = {
     name: { firstName, lastName },
-    displayPicture: {"primaryLinkLabel":"Display Picture", "primaryLinkUrl": displayPictureUrl},
+    ...(displayPictureLink ? { displayPicture: displayPictureLink } : {}),
     avatarUrl,
     emails: {
       primaryEmail: emailData.primaryEmail,
       additionalEmails: emailData.additionalEmails
     },
-    linkedinLink: linkedinUrl ? { primaryLinkUrl: normalizeLinkedInUrl(linkedinUrl), primaryLinkLabel: normalizeLinkedInUrl(linkedinUrl) } : { primaryLinkUrl: '', primaryLinkLabel: '' },
+    linkedinLink,
     phones: {
       primaryPhoneNumber: phoneData.primaryPhoneNumber,
       primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
@@ -100,6 +120,11 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
     },
     uniqueStringKey : candidate?.uniqueStringKey || '',
     jobTitle: jobTitle,
+    ...(typeof candidate?.companyId === 'string' && candidate.companyId.trim()
+      ? { companyId: candidate.companyId.trim() }
+      : typeof candidate?.jobCompanyId === 'string' && candidate.jobCompanyId.trim()
+        ? { companyId: candidate.jobCompanyId.trim() }
+        : {}),
   };
   return personNode;
 };
@@ -124,6 +149,7 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   jobCompanyName?: string;
   emails?: any;
   linkedinUrl?: string;
+  linkedinProfileId?: string;
 }, jobNode: { id: any }, whatsapp_key: string) => {
   const dataSource = candidate?.dataSource || '';
   // Use LinkedIn messaging channel for any LinkedIn-derived data source
@@ -179,24 +205,56 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   const raw = candidate as Record<string, unknown>;
   const displayPictureUrl = extractDisplayPictureUrl(raw);
   const avatarUrl =
-    (typeof raw.avatarUrl === 'string' && raw.avatarUrl.trim()) ||
+    (typeof raw.avatarUrl === 'string' &&
+      (raw.avatarUrl.startsWith('http://') ||
+        raw.avatarUrl.startsWith('https://')) &&
+      raw.avatarUrl.trim()) ||
     resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
+  const displayPictureLink = toCrmPrimaryLink(
+    displayPictureUrl,
+    'Display Picture',
+  );
 
   // Extract hiring Naukri URL from candidate data
   let hiringNaukriUrl = '';
   if ((candidate as any)?.hiringNaukriUrl?.primaryLinkUrl) {
     hiringNaukriUrl = (candidate as any).hiringNaukriUrl.primaryLinkUrl;
-  } else if ((candidate as any)?.hiringNaukriUrl) {
+  } else if (typeof (candidate as any)?.hiringNaukriUrl === 'string') {
     hiringNaukriUrl = (candidate as any).hiringNaukriUrl;
   }
 
   // Extract LinkedIn URL
   let linkedinUrl = '';
-  if (candidate?.linkedinUrl) {
+  if (typeof candidate?.linkedinUrl === 'string') {
     linkedinUrl = candidate.linkedinUrl;
+  } else if (
+    candidate?.linkedinUrl &&
+    typeof candidate.linkedinUrl === 'object' &&
+    typeof (candidate.linkedinUrl as { primaryLinkUrl?: string }).primaryLinkUrl ===
+      'string'
+  ) {
+    linkedinUrl = (candidate.linkedinUrl as { primaryLinkUrl: string })
+      .primaryLinkUrl;
   } else if (profileUrl && profileUrl.includes('linkedin')) {
     linkedinUrl = profileUrl;
   }
+  const linkedinLink =
+    toCrmPrimaryLink(
+      normalizeLinkedInUrl(linkedinUrl),
+      normalizeLinkedInUrl(linkedinUrl),
+    ) ?? { primaryLinkUrl: '', primaryLinkLabel: '' };
+  const hiringLink =
+    toCrmPrimaryLink(
+      hiringNaukriUrl ||
+        (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''),
+      hiringNaukriUrl ||
+        (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''),
+    ) ?? { primaryLinkUrl: '', primaryLinkLabel: '' };
+  const resdexLink =
+    toCrmPrimaryLink(
+      profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
+      profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
+    ) ?? { primaryLinkUrl: '', primaryLinkLabel: '' };
 
   // Extract job title (current designation) and job name (applied position)
   let jobTitle = candidate?.jobTitle || candidate?.profileTitle || '';
@@ -225,24 +283,22 @@ export const mapArxCandidateToCandidateNode = (candidate: {
     startVideoInterviewChat: false,
     startMeetingSchedulingChat: false,
     uniqueStringKey: uniqueStringKey,
-    hiringNaukriUrl: {
-        "primaryLinkLabel": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : ''),
-      "primaryLinkUrl": hiringNaukriUrl || (profileUrl && profileUrl.includes('hiring') ? profileUrl : '')
-    },
-    resdexNaukriUrl: {
-      "primaryLinkLabel": profileUrl && profileUrl.includes('resdex') ? profileUrl : '',
-      "primaryLinkUrl": profileUrl && profileUrl.includes('resdex') ? profileUrl : ''
-    },
-
-    displayPicture: {
-      "primaryLinkLabel": "Display Picture",
-      "primaryLinkUrl": displayPictureUrl
+    hiringNaukriUrl: hiringLink,
+    resdexNaukriUrl: resdexLink,
+    displayPicture: displayPictureLink ?? {
+      primaryLinkLabel: 'Display Picture',
+      primaryLinkUrl: '',
     },
     avatarUrl,
-    linkedinUrl: {
-      "primaryLinkLabel": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : '',
-      "primaryLinkUrl": linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : ''
-    },
+    linkedinUrl: linkedinLink,
+    ...(extractLinkedinProfileId(linkedinUrl) || candidate?.linkedinProfileId
+      ? {
+          linkedinProfileId:
+            extractLinkedinProfileId(linkedinUrl) ||
+            candidate?.linkedinProfileId ||
+            '',
+        }
+      : {}),
     peopleId: '',
     campaign: candidate?.campaign || '',
     source: dataSource || '',

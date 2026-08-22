@@ -1532,11 +1532,24 @@ export class OrgChartController {
     const limit =
       Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
 
-    const items = await this.orgChartSuperImposeAutocompleteService.searchLocations(
-      { apiToken, keywords: trimmed, limit },
-    );
+    try {
+      const items = await this.orgChartSuperImposeAutocompleteService.searchLocations(
+        { apiToken, keywords: trimmed, limit },
+      );
 
-    return { status: 'ok' as const, items };
+      return { status: 'ok' as const, items };
+    } catch (error) {
+      this.logger.error('Super-impose location autocomplete failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Super-impose location autocomplete failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('super-impose/autocomplete/company')
@@ -1565,11 +1578,24 @@ export class OrgChartController {
         apiToken,
       );
 
-    const items = await this.orgChartSuperImposeAutocompleteService.searchCompanies(
-      { apiToken, keywords: trimmed, limit, searchType },
-    );
+    try {
+      const items = await this.orgChartSuperImposeAutocompleteService.searchCompanies(
+        { apiToken, keywords: trimmed, limit, searchType },
+      );
 
-    return { status: 'ok' as const, items };
+      return { status: 'ok' as const, items };
+    } catch (error) {
+      this.logger.error('Super-impose company autocomplete failed', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Super-impose company autocomplete failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('companies/:companyId/top-hired-from')

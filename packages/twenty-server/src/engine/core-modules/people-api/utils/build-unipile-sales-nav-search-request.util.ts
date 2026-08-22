@@ -39,13 +39,13 @@ export const buildUnipileSalesNavSearchRequest = (input: {
   if (!omitGeneratedText && input.keywords?.trim()) {
     keywordParts.push(input.keywords.trim());
   }
+  const companyName = input.primaryCompanyName.trim();
   if (
-    !omitGeneratedText &&
-    !input.includeManualLinkedInQuery &&
     input.companyParameterIds.length === 0 &&
-    input.primaryCompanyName.trim()
+    companyName &&
+    companyName.toLowerCase() !== 'company'
   ) {
-    keywordParts.push(`"${input.primaryCompanyName.trim()}"`);
+    keywordParts.push(`"${companyName}"`);
   }
   if (
     !omitGeneratedText &&

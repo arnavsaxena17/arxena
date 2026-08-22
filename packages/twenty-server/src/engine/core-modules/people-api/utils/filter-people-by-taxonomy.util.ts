@@ -42,12 +42,22 @@ export const matchesTaxonomyFilter = (
   const requestedRoot = normalizeTaxonomyLabel(criteria.stdFunctionRoot);
   const requestedGrade = normalizeTaxonomyLabel(criteria.stdGrade);
 
-  if (requestedFunction) {
-    if (normalizeTaxonomyLabel(resolved.stdFunction) !== requestedFunction) {
+  const candidateFunction = normalizeTaxonomyLabel(resolved.stdFunction);
+  const candidateRoot = normalizeTaxonomyLabel(resolved.stdFunctionRoot);
+
+  if (requestedFunction && requestedRoot && requestedFunction === requestedRoot) {
+    if (
+      candidateRoot !== requestedRoot &&
+      candidateFunction !== requestedFunction
+    ) {
+      return false;
+    }
+  } else if (requestedFunction) {
+    if (candidateFunction !== requestedFunction) {
       return false;
     }
   } else if (requestedRoot) {
-    if (normalizeTaxonomyLabel(resolved.stdFunctionRoot) !== requestedRoot) {
+    if (candidateRoot !== requestedRoot) {
       return false;
     }
   } else {

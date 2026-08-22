@@ -934,20 +934,12 @@ export class PeopleApiService {
       }
     >
   > {
-    const anyHasExperience = items.some(
-      (item) => extractCandidateExperience(item).length > 0,
-    );
-
-    const classifications = anyHasExperience
-      ? await this.titleTaxonomyRemoteService.classifyProfiles(
-          items.map((item) => ({
-            jobTitle: extractCandidateJobTitle(item) ?? '',
-            experience: extractCandidateExperience(item),
-          })),
-        )
-      : await this.titleTaxonomyRemoteService.classifyTitles(
-          items.map((item) => extractCandidateJobTitle(item) ?? ''),
-        );
+    const profiles = items.map((item) => ({
+      jobTitle: extractCandidateJobTitle(item) ?? '',
+      experience: extractCandidateExperience(item),
+    }));
+    const classifications =
+      await this.titleTaxonomyRemoteService.classifyProfiles(profiles);
 
     if (!classifications) {
       throw new HttpException(
@@ -956,28 +948,45 @@ export class PeopleApiService {
       );
     }
 
-    return items.reduce<
-      Array<
-        Record<string, unknown> & {
-          resolved: {
-            stdFunction: string | null;
-            stdFunctionRoot: string | null;
-            stdGrade: string | null;
-            confidence: number;
-          };
-        }
-      >
-    >((accumulator, item, index) => {
+    const kept: Array<
+      Record<string, unknown> & {
+        resolved: {
+          stdFunction: string | null;
+          stdFunctionRoot: string | null;
+          stdGrade: string | null;
+          confidence: number;
+        };
+      }
+    > = [];
+    const dropped: Array<{
+      jobTitle: string;
+      stdFunction: string | null;
+      stdFunctionRoot: string | null;
+      stdGrade: string | null;
+    }> = [];
+
+    for (const [index, item] of items.entries()) {
       const resolved = classificationToResolvedFields(classifications[index]);
       if (!matchesTaxonomyFilter(resolved, criteria)) {
-        return accumulator;
+        dropped.push({
+          jobTitle: extractCandidateJobTitle(item) ?? '',
+          stdFunction: resolved.stdFunction,
+          stdFunctionRoot: resolved.stdFunctionRoot,
+          stdGrade: resolved.stdGrade,
+        });
+        continue;
       }
-      accumulator.push({
+      kept.push({
         ...item,
         resolved,
       });
-      return accumulator;
-    }, []);
+    }
+
+    this.logger.log(
+      `People API taxonomy filter received=${items.length} kept=${kept.length} dropped=${dropped.length} criteria=stdFunction=${criteria.stdFunction ?? ''} stdFunctionRoot=${criteria.stdFunctionRoot ?? ''} stdGrade=${criteria.stdGrade ?? ''} dropped=${JSON.stringify(dropped)}`,
+    );
+
+    return kept;
   }
 
   async expandJobTitles(

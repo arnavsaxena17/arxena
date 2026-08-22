@@ -453,7 +453,7 @@ export class CandidateAvatarStorageService {
       ...profile,
       displayPicture: {
         primaryLinkLabel: 'Display Picture',
-        primaryLinkUrl: persisted,
+        primaryLinkUrl: avatarUrl || persisted,
       },
       profilePictureUrl: persisted,
       avatarUrl,

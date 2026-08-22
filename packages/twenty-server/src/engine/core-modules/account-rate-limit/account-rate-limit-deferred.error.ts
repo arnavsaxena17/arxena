@@ -1,3 +1,23 @@
+export const LINKEDIN_RATE_LIMIT_PENDING_REASON = 'linkedin_rate_limit';
+
+const RETRY_IN_SECONDS_PATTERN = /retry in (\d+)\s*s/i;
+
+export const parseWaitMsFromAccountRateLimitMessage = (
+  message: string,
+): number | undefined => {
+  const match = message.match(RETRY_IN_SECONDS_PATTERN);
+  if (!match) {
+    return undefined;
+  }
+
+  const seconds = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return undefined;
+  }
+
+  return seconds * 1000;
+};
+
 export class AccountRateLimitDeferredError extends Error {
   readonly waitMs: number;
   readonly accountId: string;

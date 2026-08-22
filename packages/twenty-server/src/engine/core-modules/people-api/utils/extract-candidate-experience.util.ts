@@ -1,3 +1,5 @@
+import { extractTitleFromPositionLike } from './extract-candidate-job-title.util';
+
 const asNonEmptyString = (value: unknown): string | null => {
   if (typeof value !== 'string') {
     return null;
@@ -13,31 +15,35 @@ export type CandidateExperienceForClassify = {
   isCurrent?: boolean;
 };
 
-const extractTitleFromExperienceEntry = (
-  entry: Record<string, unknown>,
-): string | null => {
-  const direct =
-    asNonEmptyString(entry.title) ??
-    asNonEmptyString(entry.jobTitle) ??
-    asNonEmptyString(entry.job_title);
-  if (direct) {
-    return direct;
+const padMonth = (month: number): string => String(month).padStart(2, '0');
+
+const formatLinkedInDate = (value: unknown): string | null => {
+  const asString = asNonEmptyString(value);
+  if (asString) {
+    return asString;
   }
-  const nestedTitle = entry.title;
-  if (nestedTitle && typeof nestedTitle === 'object') {
-    return asNonEmptyString((nestedTitle as { name?: unknown }).name);
+  if (!value || typeof value !== 'object') {
+    return null;
   }
-  const nestedPosition = entry.position;
-  if (nestedPosition && typeof nestedPosition === 'object') {
-    return asNonEmptyString((nestedPosition as { name?: unknown }).name);
+  const year = (value as { year?: unknown }).year;
+  if (typeof year !== 'number' || year < 1) {
+    return null;
   }
-  return asNonEmptyString(entry.position);
+  const month = (value as { month?: unknown }).month;
+  const mm =
+    typeof month === 'number' && month >= 1 && month <= 12
+      ? padMonth(month)
+      : '01';
+  return `${year}-${mm}-01`;
 };
 
-export const extractCandidateExperience = (
-  candidate: Record<string, unknown>,
+const isTruthyFlag = (value: unknown): boolean =>
+  value === true || value === 'true';
+
+const mapPositionArray = (
+  raw: unknown,
+  options?: { assumeCurrent?: boolean; currentIfNoEnd?: boolean },
 ): CandidateExperienceForClassify[] => {
-  const raw = candidate.experience;
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -48,23 +54,61 @@ export const extractCandidateExperience = (
       continue;
     }
     const entry = value as Record<string, unknown>;
-    const title = extractTitleFromExperienceEntry(entry);
+    const title = extractTitleFromPositionLike(entry);
     if (!title) {
       continue;
     }
+    const endDate =
+      formatLinkedInDate(entry.endDate) ??
+      formatLinkedInDate(entry.end_date) ??
+      formatLinkedInDate(entry.end);
     items.push({
       title,
       startDate:
-        asNonEmptyString(entry.startDate) ??
-        asNonEmptyString(entry.start_date),
-      endDate:
-        asNonEmptyString(entry.endDate) ?? asNonEmptyString(entry.end_date),
+        formatLinkedInDate(entry.startDate) ??
+        formatLinkedInDate(entry.start_date) ??
+        formatLinkedInDate(entry.start),
+      endDate,
       isCurrent:
-        entry.isCurrent === true ||
-        entry.is_current === true ||
-        entry.isCurrent === 'true' ||
-        entry.is_current === 'true',
+        isTruthyFlag(entry.isCurrent) ||
+        isTruthyFlag(entry.is_current) ||
+        (options?.assumeCurrent === true && endDate == null) ||
+        (options?.currentIfNoEnd === true && endDate == null),
     });
   }
   return items;
+};
+
+const experienceKey = (item: CandidateExperienceForClassify): string =>
+  `${(item.title ?? '').trim().toLowerCase()}|${item.startDate ?? ''}`;
+
+export const extractCandidateExperience = (
+  candidate: Record<string, unknown>,
+): CandidateExperienceForClassify[] => {
+  const merged: CandidateExperienceForClassify[] = [];
+  const seen = new Set<string>();
+
+  const sources = [
+    mapPositionArray(
+      candidate.current_positions ?? candidate.currentPositions,
+      { assumeCurrent: true },
+    ),
+    mapPositionArray(
+      candidate.work_experience ?? candidate.workExperience,
+      { currentIfNoEnd: true },
+    ),
+    mapPositionArray(candidate.experience),
+  ];
+
+  for (const source of sources) {
+    for (const item of source) {
+      const key = experienceKey(item);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      merged.push(item);
+    }
+  }
+  return merged;
 };

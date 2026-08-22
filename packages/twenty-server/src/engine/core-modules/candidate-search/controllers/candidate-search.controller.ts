@@ -77,6 +77,9 @@ export class CandidateSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to fetch LinkedIn parameters', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to fetch LinkedIn parameters',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -124,6 +127,9 @@ export class CandidateSearchController {
       return result;
     } catch (error) {
       this.logger.error('Failed to resolve parameter IDs', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new HttpException(
         error.message || 'Failed to resolve parameter IDs',
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import type { UnipileLinkedinProduct } from 'src/engine/core-modules/linkedin-search/utils/unipile-linkedin-product.util';
@@ -35,6 +36,7 @@ export class CompanyApiService {
     private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
     private readonly companySearchDataSourceResolver: CompanySearchDataSourceResolver,
     private readonly companySearchHitTransformer: CompanySearchHitTransformer,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
   ) {}
 
   getDataSourcesStatus(): CompanyDataSourcesStatusResponse {
@@ -143,8 +145,6 @@ export class CompanyApiService {
         accountId: resolved.accountId,
         limit,
         useV2: body.useV2,
-        sortBy: body.sortBy,
-        sortOrder: body.sortOrder,
         lastViewedAt: body.lastViewedAt,
       });
 
@@ -194,8 +194,6 @@ export class CompanyApiService {
     accountId: string;
     limit: number;
     useV2?: boolean;
-    sortBy?: string;
-    sortOrder?: string;
     lastViewedAt?: number;
   }): Promise<CompanySearchHit[]> {
     const accountListId = extractSalesNavigatorAccountListId(input.url);
@@ -206,8 +204,6 @@ export class CompanyApiService {
           input.accountId,
           {
             limit: input.limit,
-            sortBy: input.sortBy,
-            sortOrder: input.sortOrder,
           },
         );
 
@@ -266,12 +262,18 @@ export class CompanyApiService {
     product: UnipileLinkedinProduct;
     limit: number;
   }): Promise<CompanySearchHit[]> {
-    const location = input.location?.trim()
-      ? [input.location.trim()]
-      : undefined;
-    const industry = input.industry?.trim()
-      ? [input.industry.trim()]
-      : undefined;
+    const locationId = await this.resolveParameterId(
+      'location',
+      input.location,
+      input.accountId,
+    );
+    const industryId = await this.resolveParameterId(
+      'industry',
+      input.industry,
+      input.accountId,
+    );
+    const location = locationId ? [locationId] : undefined;
+    const industry = industryId ? [industryId] : undefined;
 
     if (input.product === 'recruiter') {
       const response = await this.linkedInSearchService.searchCompaniesRecruiter(
@@ -300,7 +302,11 @@ export class CompanyApiService {
     try {
       const response =
         await this.linkedInSearchService.searchCompaniesSalesNavigator(
-          { keywords: input.keywords || undefined },
+          {
+            keywords: input.keywords || undefined,
+            ...(locationId ? { location: { include: [locationId] } } : {}),
+            ...(industryId ? { industry: { include: [industryId] } } : {}),
+          },
           input.accountId,
           { limit: input.limit },
         );
@@ -325,5 +331,33 @@ export class CompanyApiService {
         response.items as Array<{ type?: string } & Record<string, unknown>>,
       );
     }
+  }
+
+  private async resolveParameterId(
+    kind: 'location' | 'industry',
+    value: string | undefined,
+    accountId: string,
+  ): Promise<string | undefined> {
+    const trimmed = value?.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+
+    if (kind === 'location') {
+      const resolved = await this.linkedinParameterResolver.resolveLocationName(
+        trimmed,
+        accountId,
+      );
+
+      return resolved?.id ?? trimmed;
+    }
+
+    const resolved = (await this.linkedinParameterResolver.resolveParameterIds(
+      { industry: { include: [trimmed] } },
+      accountId,
+      'company-api',
+    )) as { industry?: { include?: string[] } };
+
+    return resolved.industry?.include?.[0]?.trim() || trimmed;
   }
 }

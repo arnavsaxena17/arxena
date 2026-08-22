@@ -11,7 +11,9 @@ import {
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -56,6 +58,7 @@ export type SearchPeopleForCompanyPerson = {
   linkedinProfileId: string;
   peopleId: string | null;
   profilePictureUrl: string;
+  companyId: string;
   source: string;
   stdFunction: string | null;
   stdFunctionRoot: string | null;
@@ -124,6 +127,7 @@ export class SearchPeopleForCompanyService {
     private readonly linkedInSearchTransformer: LinkedInSearchTransformerService,
     private readonly ensureGtmProjectService: EnsureGtmProjectService,
     private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
+    private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
   ) {}
 
   async execute({
@@ -241,42 +245,69 @@ export class SearchPeopleForCompanyService {
 
     const apiKeyToken =
       await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
+    const defaultAccount =
+      await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
+        workspaceId,
+      );
 
-    const search = await this.peopleApiService.searchPeople(
-      {
+    try {
+      const search = await this.peopleApiService.searchPeople(
+        {
+          companyId,
+          companyName: context.company.name ?? undefined,
+          website,
+          jobTitle: buyerTitle,
+          naturalLanguage: buyerTitle
+            ? `${buyerTitle} at ${context.company.name ?? 'the company'}`
+            : peopleSearchBlurb || undefined,
+          limit,
+          dataSource: 'auto',
+          accountId: defaultAccount?.accountId,
+        },
+        apiKeyToken ?? undefined,
+        { workspaceId },
+      );
+
+      const items = (search.items ?? []) as Array<Record<string, unknown>>;
+      const people = this.toStandardizedPeople(
+        items,
+        search.dataSource,
+        ensured.projectId,
+        context.project.name || 'GTM Outreach',
         companyId,
-        companyName: context.company.name ?? undefined,
-        website,
-        jobTitle: buyerTitle,
-        naturalLanguage: buyerTitle
-          ? `${buyerTitle} at ${context.company.name ?? 'the company'}`
-          : peopleSearchBlurb || undefined,
-        limit,
-        dataSource: 'auto',
-      },
-      apiKeyToken ?? undefined,
-      { workspaceId },
-    );
+      );
 
-    const items = (search.items ?? []) as Array<Record<string, unknown>>;
-    const people = this.toStandardizedPeople(
-      items,
-      search.dataSource,
-      ensured.projectId,
-      context.project.name || 'GTM Outreach',
-    );
+      this.logger.log(
+        `search-people-for-company returned ${people.length} standardized profiles for company ${companyId} dataSource=${search.dataSource ?? ''}`,
+      );
 
-    this.logger.log(
-      `search-people-for-company returned ${people.length} standardized profiles for company ${companyId} dataSource=${search.dataSource ?? ''}`,
-    );
+      return {
+        success: true,
+        total: people.length,
+        dataSource: search.dataSource ?? '',
+        people,
+        projectId: ensured.projectId,
+        companyId,
+      };
+    } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
 
-    return {
-      success: true,
-      total: people.length,
-      dataSource: search.dataSource ?? '',
-      people,
-      projectId: ensured.projectId,
-    };
+      this.logger.error(
+        `search-people-for-company failed for company ${companyId}`,
+        error,
+      );
+
+      return {
+        success: false,
+        total: 0,
+        dataSource: '',
+        people: [],
+        projectId: ensured.projectId,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   private toStandardizedPeople(
@@ -284,6 +315,7 @@ export class SearchPeopleForCompanyService {
     dataSource: string | undefined,
     projectId: string,
     projectName: string,
+    companyId: string,
   ): SearchPeopleForCompanyPerson[] {
     if (items.length === 0) {
       return [];
@@ -326,6 +358,7 @@ export class SearchPeopleForCompanyService {
         peopleId: row.peopleId ?? null,
         profilePictureUrl:
           row.profilePictureUrl?.trim() || row.displayPicture?.trim() || '',
+        companyId,
         source: row.source || dataSource || '',
         ...taxonomy,
       };

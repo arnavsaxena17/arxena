@@ -194,13 +194,24 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'company',
     field: {
-      // Multi-run scope tag (= Project.id). Not a CRM relation — Project.companyId
-      // is only the project's primary company, not the GTM target list.
+      // Harvest / command membership. Project.companyId stays the job employer;
+      // do not use Company.project or a second GTM relation for this list.
       description:
-        'GTM run scope; set to the owning Project id (legacy slug still accepted)',
+        'GTM Project ids this company is tagged to (harvest and command runs)',
       icon: 'IconKey',
       label: 'GTM Run Key',
       name: 'gtmRunKey',
+      objectMetadataId: objectsNameIdMap.company,
+      type: 'ARRAY',
+    },
+  },
+  {
+    objectName: 'company',
+    field: {
+      description: 'LinkedIn company numeric id or Unipile account id',
+      icon: 'IconId',
+      label: 'LinkedIn Id',
+      name: 'linkedinId',
       objectMetadataId: objectsNameIdMap.company,
       type: 'TEXT',
     },

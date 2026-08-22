@@ -139,6 +139,18 @@ export class WorkflowFormWhatsappDecisionService {
       };
     }
 
+    const capturedTest =
+      await this.workflowFormDecisionPointerService.tryCompleteFormNotifyTestSession(
+        {
+          parts,
+          response: formResponse,
+        },
+      );
+
+    if (capturedTest) {
+      return { status: 'ok' };
+    }
+
     await this.getWorkflowRunner().submitFormStep({
       workspaceId: parts.workspaceId,
       workflowRunId: parts.workflowRunId,
