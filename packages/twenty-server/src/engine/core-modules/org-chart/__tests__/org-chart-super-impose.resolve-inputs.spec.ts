@@ -65,17 +65,33 @@ describe('OrgChartSuperImposeService.resolveInputs', () => {
     );
   });
 
-  it('expands Meta alias group to facebook LinkedIn slug', async () => {
-    const result = await OrgChartSuperImposeService.prototype.resolveInputs.call(
-      ctx,
-      {
-        inputs: {
-          linkedinCompanyUrls: ['https://www.linkedin.com/company/meta/'],
-        },
-      },
-    );
+  it('resolves website URLs via orgChartService.resolveCompanyByDomain', async () => {
+    const orgChartService = {
+      resolveCompanyByDomain: jest.fn().mockResolvedValue({
+        found: true,
+        companyId: 'egon-zehnder',
+        companyName: 'Egon Zehnder',
+      }),
+    };
+    const ctx = Object.create(OrgChartSuperImposeService.prototype) as OrgChartSuperImposeService;
+    Object.assign(ctx, { orgChartService });
 
-    const slugs = result.resolvedCompanies.map((company) => company.slug);
-    expect(slugs).toEqual(expect.arrayContaining(['meta', 'facebook']));
+    const result = await ctx.resolveInputs({
+      inputs: {
+        websiteUrls: ['www.egonzehnder.com'],
+      },
+    });
+
+    expect(orgChartService.resolveCompanyByDomain).toHaveBeenCalledWith(
+      'egonzehnder.com',
+    );
+    expect(result.resolvedCompanies).toEqual([
+      expect.objectContaining({
+        slug: 'egon-zehnder',
+        companyName: 'Egon Zehnder',
+        resolvedFrom: 'website_url',
+        linkedinUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+      }),
+    ]);
   });
 });

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isValidUuid } from 'twenty-shared/utils';
+
 import { SerpCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import {
@@ -36,6 +38,7 @@ export type ResolvePeopleCompanyScopeInput = {
   companyName?: string;
   companyId?: string;
   website?: string;
+  linkedinCompanyUrl?: string;
   country?: string;
   authToken?: string;
 };
@@ -64,13 +67,14 @@ export class PeopleCompanyScopeResolver {
     const companyId = input.companyId?.trim() || undefined;
     const website = input.website?.trim() || undefined;
     const companyName = input.companyName?.trim() || undefined;
+    const linkedinSlug = this.linkedinSlugFromProvided(input);
 
-    if (companyId) {
+    if (linkedinSlug) {
       return {
         companyName,
-        companyId,
+        companyId: linkedinSlug,
         website,
-        linkedinUrl: normalizeLinkedinCompanyUrl(companyId) ?? undefined,
+        linkedinUrl: normalizeLinkedinCompanyUrl(linkedinSlug) ?? undefined,
         resolvedVia: 'provided',
       };
     }
@@ -82,6 +86,16 @@ export class PeopleCompanyScopeResolver {
         country: input.country,
         authToken: input.authToken,
       });
+    }
+
+    if (companyId && !isValidUuid(companyId)) {
+      return {
+        companyName,
+        companyId,
+        website,
+        linkedinUrl: normalizeLinkedinCompanyUrl(companyId) ?? undefined,
+        resolvedVia: 'provided',
+      };
     }
 
     if (!companyName) {
@@ -116,6 +130,27 @@ export class PeopleCompanyScopeResolver {
       country: input.country,
       authToken: input.authToken,
     });
+  }
+
+  private linkedinSlugFromProvided(
+    input: ResolvePeopleCompanyScopeInput,
+  ): string | undefined {
+    const fromUrl = extractLinkedinCompanySlugFromUrl(
+      input.linkedinCompanyUrl?.trim() ?? '',
+    );
+    if (fromUrl && !isValidUuid(fromUrl)) {
+      return fromUrl;
+    }
+
+    const companyId = input.companyId?.trim();
+    if (!companyId || isValidUuid(companyId)) {
+      return undefined;
+    }
+
+    return (
+      extractLinkedinCompanySlugFromUrl(companyId) ??
+      (companyId.includes('/') ? undefined : companyId)
+    );
   }
 
   private async resolveFromCompaniesIndex(

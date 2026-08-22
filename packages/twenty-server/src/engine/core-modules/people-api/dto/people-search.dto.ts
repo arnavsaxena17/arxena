@@ -44,6 +44,10 @@ export class PeopleSearchDto {
   website?: string;
 
   @IsOptional()
+  @IsString()
+  linkedinCompanyUrl?: string;
+
+  @IsOptional()
   @Transform(toOptionalNormalizedTaxonomyLabel)
   @IsString()
   stdFunction?: string;

@@ -22,6 +22,8 @@ type CompanyRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   domainName?: { primaryLinkUrl?: string } | null;
+  linkedinLink?: { primaryLinkUrl?: string | null } | null;
+  linkedinLinkPrimaryLinkUrl?: string | null;
   gtmRunKey?: string | null;
 };
 
@@ -63,6 +65,24 @@ export type SearchPeopleForCompanyPerson = {
   stdFunction: string | null;
   stdFunctionRoot: string | null;
   stdGrade: string | null;
+};
+
+const companyWebsite = (company: CompanyRecord): string | undefined => {
+  const website =
+    company.domainName?.primaryLinkUrl
+      ?.replace(/^https?:\/\//, '')
+      .split('/')[0] ?? undefined;
+
+  return website?.trim() || undefined;
+};
+
+const companyLinkedinUrl = (company: CompanyRecord): string | undefined => {
+  const url =
+    company.linkedinLink?.primaryLinkUrl ??
+    company.linkedinLinkPrimaryLinkUrl ??
+    '';
+
+  return url.trim() || undefined;
 };
 
 const parseStringList = (value: unknown): string[] => {
@@ -244,14 +264,8 @@ export class SearchPeopleForCompanyService {
       context.workspaceProfile?.peopleSearchBlurb ||
       '';
     const buyerTitle = icp.buyerTitles[0];
-    const website =
-      context.company.domainName?.primaryLinkUrl
-        ?.replace(/^https?:\/\//, '')
-        .split('/')[0] ?? undefined;
-    const limit = Math.min(
-      Math.max(1, input.limit ?? context.project.maxPersonasPerCompany ?? 5),
-      25,
-    );
+    const website = companyWebsite(context.company);
+    const linkedinCompanyUrl = companyLinkedinUrl(context.company);
 
     const apiKeyToken =
       await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
@@ -259,6 +273,12 @@ export class SearchPeopleForCompanyService {
       await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
         workspaceId,
       );
+    const maxLimit =
+      defaultAccount?.product === 'sales_navigator' ? 50 : 10;
+    const limit = Math.min(
+      Math.max(1, input.limit ?? maxLimit),
+      maxLimit,
+    );
 
     try {
       const search = await this.peopleApiService.searchPeople(
@@ -266,6 +286,7 @@ export class SearchPeopleForCompanyService {
           companyId,
           companyName: context.company.name ?? undefined,
           website,
+          linkedinCompanyUrl,
           jobTitle: buyerTitle,
           naturalLanguage: buyerTitle
             ? `${buyerTitle} at ${context.company.name ?? 'the company'}`

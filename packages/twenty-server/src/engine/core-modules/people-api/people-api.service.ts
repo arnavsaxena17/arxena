@@ -216,10 +216,11 @@ export class PeopleApiService {
     const companyId = body.companyId?.trim() || undefined;
     const companyName = body.companyName?.trim() || parsed.companyName;
     const website = body.website?.trim() || parsed.website;
+    const linkedinCompanyUrl = body.linkedinCompanyUrl?.trim() || undefined;
     const location =
       body.location?.trim() || parsed.location || body.country?.trim();
 
-    if (!companyId && !companyName && !website) {
+    if (!companyId && !companyName && !website && !linkedinCompanyUrl) {
       throw new HttpException(
         PEOPLE_SEARCH_COMPANY_REQUIRED_MESSAGE,
         HttpStatus.BAD_REQUEST,
@@ -260,6 +261,7 @@ export class PeopleApiService {
         companyId,
         companyName,
         website,
+        linkedinCompanyUrl,
         location,
         country: body.country,
         stdFunction: stdFunction ?? undefined,
@@ -307,6 +309,7 @@ export class PeopleApiService {
       companyName: sourcedBody.companyName,
       companyId: sourcedBody.companyId,
       website: sourcedBody.website,
+      linkedinCompanyUrl: sourcedBody.linkedinCompanyUrl,
       country: sourcedBody.country,
       authToken: apiToken,
     });
@@ -321,6 +324,8 @@ export class PeopleApiService {
       companyName: companyScope.companyName ?? sourcedBody.companyName,
       companyId: companyScope.companyId ?? sourcedBody.companyId,
       website: companyScope.website ?? sourcedBody.website,
+      linkedinCompanyUrl:
+        companyScope.linkedinUrl ?? sourcedBody.linkedinCompanyUrl,
       location: locationScope.raw ?? sourcedBody.location,
       country:
         locationScope.linkedinLocationName ??
@@ -472,6 +477,7 @@ export class PeopleApiService {
       stdFunctionRoot,
       stdGrade,
       website: body.website,
+      linkedinCompanyUrl: body.linkedinCompanyUrl,
       companyId: body.companyId,
       companyName: body.companyName,
     });
@@ -482,6 +488,7 @@ export class PeopleApiService {
         dataSource,
         accountId: body.accountId,
         website: body.website,
+        linkedinCompanyUrl: body.linkedinCompanyUrl,
         companyId: body.companyId,
         companyName: body.companyName,
         stdFunction,
@@ -731,11 +738,12 @@ export class PeopleApiService {
     const hasCompany =
       !!body.website?.trim() ||
       !!body.companyId?.trim() ||
-      !!body.companyName?.trim();
+      !!body.companyName?.trim() ||
+      !!body.linkedinCompanyUrl?.trim();
 
     if (!searchUrl && !hasCompany) {
       throw new HttpException(
-        'companyName, companyId, or website is required for LinkedIn search',
+        'companyName, companyId, linkedinCompanyUrl, or website is required for LinkedIn search',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -759,6 +767,7 @@ export class PeopleApiService {
     const sourcingResult = await this.peopleLinkedInSourcingService.search({
       apiToken: apiToken ?? '',
       website: body.website,
+      linkedinCompanyUrl: body.linkedinCompanyUrl,
       companyId: body.companyId,
       companyName: body.companyName,
       stdFunction,
@@ -884,16 +893,18 @@ export class PeopleApiService {
     stdFunctionRoot?: string;
     stdGrade?: string;
     website?: string;
+    linkedinCompanyUrl?: string;
     companyId?: string;
     companyName?: string;
   }): void {
     const hasCompany =
       !!args.website?.trim() ||
+      !!args.linkedinCompanyUrl?.trim() ||
       !!args.companyId?.trim() ||
       !!args.companyName?.trim();
     if (!hasCompany) {
       throw new HttpException(
-        'At least one of website, companyId, or companyName is required',
+        'At least one of website, linkedinCompanyUrl, companyId, or companyName is required',
         HttpStatus.BAD_REQUEST,
       );
     }

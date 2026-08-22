@@ -38,6 +38,7 @@ describe('PeopleCompanyScopeResolver', () => {
     expect(result).toMatchObject({
       companyName: 'Stripe',
       companyId: 'stripe',
+      linkedinUrl: 'https://www.linkedin.com/company/stripe/',
       resolvedVia: 'provided',
     });
     expect(companiesEsService.searchCompanies).not.toHaveBeenCalled();
@@ -45,6 +46,48 @@ describe('PeopleCompanyScopeResolver', () => {
     expect(
       serpCompanySearchService.resolveLinkedinCompanyUrlFromDomain,
     ).not.toHaveBeenCalled();
+  });
+
+  it('uses a provided company LinkedIn URL over a workspace UUID', async () => {
+    const result = await resolver.resolve({
+      companyName: 'Egon Zehnder',
+      companyId: 'c811bdd7-0489-46b2-b7d7-3bab7c93e610',
+      website: 'www.egonzehnder.com',
+      linkedinCompanyUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+    });
+
+    expect(result).toMatchObject({
+      companyName: 'Egon Zehnder',
+      companyId: 'egon-zehnder',
+      website: 'www.egonzehnder.com',
+      linkedinUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+      resolvedVia: 'provided',
+    });
+    expect(orgChartService.resolveCompanyByDomain).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a workspace UUID as a LinkedIn company slug', async () => {
+    orgChartService.resolveCompanyByDomain.mockResolvedValue({
+      found: true,
+      companyId: 'egon-zehnder',
+      companyName: 'Egon Zehnder',
+      source: 'orgcharts',
+      hasOrgChart: true,
+    });
+
+    const result = await resolver.resolve({
+      companyId: 'c811bdd7-0489-46b2-b7d7-3bab7c93e610',
+      website: 'www.egonzehnder.com',
+    });
+
+    expect(orgChartService.resolveCompanyByDomain).toHaveBeenCalledWith(
+      'www.egonzehnder.com',
+      { authToken: undefined },
+    );
+    expect(result).toMatchObject({
+      companyId: 'egon-zehnder',
+      resolvedVia: 'provided',
+    });
   });
 
   it('should map a provided domain through ES when the domain hit is strong', async () => {

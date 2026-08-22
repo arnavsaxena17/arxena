@@ -25,6 +25,10 @@ export class PeopleSearchByTaxonomyDto {
 
   @IsOptional()
   @IsString()
+  linkedinCompanyUrl?: string;
+
+  @IsOptional()
+  @IsString()
   companyId?: string;
 
   @IsOptional()

@@ -24,18 +24,8 @@ import {
   OrgChartSuperImposeService,
   type SuperImposeFetchContext,
 } from 'src/engine/core-modules/org-chart/services/org-chart-super-impose.service';
-import type {
-  SuperImposeInputs,
-  SuperImposeResolvedCompany,
-} from 'src/engine/core-modules/org-chart/types/super-impose.types';
-import {
-  extractCompanyNameStemFromDomain,
-  normalizeBareCompanyDomain,
-} from 'src/engine/core-modules/org-chart/utils/org-chart-resolve-domain.util';
-import {
-  buildResolvedCompanyFromUrl,
-  normalizeLinkedinCompanyUrl,
-} from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
+import type { SuperImposeInputs } from 'src/engine/core-modules/org-chart/types/super-impose.types';
+import { normalizeLinkedinCompanyUrl } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
   andMergeBooleanSearchClauses,
   extractJobTitleClauseFromGeneratedSearchParameters,
@@ -61,6 +51,7 @@ export type PeopleLinkedInSourcingInput = {
   apiToken: string;
   website?: string;
   companyId?: string;
+  linkedinCompanyUrl?: string;
   companyName?: string;
   stdFunction?: string;
   stdFunctionRoot?: string;
@@ -120,10 +111,11 @@ export class PeopleLinkedInSourcingService {
     const companyName = input.companyName?.trim() || '';
     const website = input.website?.trim();
     const companyId = input.companyId?.trim();
+    const linkedinCompanyUrl = input.linkedinCompanyUrl?.trim();
 
-    if (!website && !companyId && !companyName) {
+    if (!website && !companyId && !companyName && !linkedinCompanyUrl) {
       throw new HttpException(
-        'At least one of website, companyId, or companyName is required',
+        'At least one of website, companyId, linkedinCompanyUrl, or companyName is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -154,25 +146,29 @@ export class PeopleLinkedInSourcingService {
     const inputs = this.buildSuperImposeInputs({
       website,
       companyId,
+      linkedinCompanyUrl,
       companyName,
     });
+    const primaryLinkedinCompanyUrl =
+      this.toLinkedinCompanyUrl(linkedinCompanyUrl) ??
+      this.toLinkedinCompanyUrl(companyId);
 
-    const resolved =
-      account.candidateSource === 'harvest'
-        ? await this.orgChartSuperImposeService.resolveInputs({
-            inputs,
-            primaryCompanyId: companyId,
-            primaryCompanyName: companyName || undefined,
-            primaryLinkedinCompanyUrl: companyId
-              ? (normalizeLinkedinCompanyUrl(companyId) ?? undefined)
-              : undefined,
-            apiToken: input.apiToken,
-          })
-        : this.resolveUnipileCompaniesFromWebsite({
-            website,
-            companyId,
-            companyName,
-          });
+    const resolved = await this.orgChartSuperImposeService.resolveInputs({
+      inputs,
+      primaryCompanyId: this.toLinkedinCompanyId(
+        primaryLinkedinCompanyUrl ?? companyId,
+      ),
+      primaryCompanyName: companyName || undefined,
+      primaryLinkedinCompanyUrl,
+      apiToken: input.apiToken,
+    });
+
+    this.logger.log(
+      `People API resolved companies=${
+        resolved.resolvedCompanies.map((company) => company.slug).join(',') ||
+        'none'
+      } website=${website ?? ''} companyId=${companyId ?? ''} linkedinCompanyUrl=${linkedinCompanyUrl ?? primaryLinkedinCompanyUrl ?? ''} dataSource=${account.candidateSource}`,
+    );
 
     if (resolved.errors.length > 0 && resolved.resolvedCompanies.length === 0) {
       throw new HttpException(
@@ -568,66 +564,31 @@ export class PeopleLinkedInSourcingService {
     return parts.map((part) => `(${part})`).join(' AND ');
   }
 
-  private resolveUnipileCompaniesFromWebsite(args: {
-    website?: string;
-    companyId?: string;
-    companyName?: string;
-  }): {
-    resolvedCompanies: SuperImposeResolvedCompany[];
-    salesNavigatorSearchUrls: string[];
-    errors: string[];
-  } {
-    const resolvedCompanies: SuperImposeResolvedCompany[] = [];
-    const seen = new Set<string>();
-    const addUrl = (url: string | null | undefined, from: SuperImposeResolvedCompany['resolvedFrom']) => {
-      if (!url) {
-        return;
-      }
-      const company = buildResolvedCompanyFromUrl(
-        url,
-        from,
-        args.companyName,
-      );
-      if (!company || seen.has(company.linkedinUrl) || isValidUuid(company.slug)) {
-        return;
-      }
-      seen.add(company.linkedinUrl);
-      resolvedCompanies.push(company);
-    };
-
-    const companyId = args.companyId?.trim();
-    if (companyId && !isValidUuid(companyId)) {
-      addUrl(
-        normalizeLinkedinCompanyUrl(companyId) ??
-          `https://www.linkedin.com/company/${companyId}/`,
-        'linkedin_url',
-      );
+  private toLinkedinCompanyId(companyId?: string): string | undefined {
+    const trimmed = companyId?.trim();
+    if (!trimmed || isValidUuid(trimmed)) {
+      return undefined;
     }
 
-    const bareDomain = normalizeBareCompanyDomain(args.website);
-    const stem = bareDomain
-      ? extractCompanyNameStemFromDomain(bareDomain)
-      : undefined;
-    if (stem && !isValidUuid(stem)) {
-      addUrl(`https://www.linkedin.com/company/${stem}/`, 'website_url');
+    return trimmed;
+  }
+
+  private toLinkedinCompanyUrl(value?: string): string | undefined {
+    const identifier = this.toLinkedinCompanyId(value);
+    if (!identifier) {
+      return undefined;
     }
 
-    this.logger.log(
-      `People API Unipile company urls=${resolvedCompanies
-        .map((company) => company.slug)
-        .join(',') || 'none'} website=${args.website ?? ''} companyId=${companyId ?? ''}`,
+    return (
+      normalizeLinkedinCompanyUrl(identifier) ??
+      `https://www.linkedin.com/company/${identifier}/`
     );
-
-    return {
-      resolvedCompanies,
-      salesNavigatorSearchUrls: [],
-      errors: [],
-    };
   }
 
   private buildSuperImposeInputs(args: {
     website?: string;
     companyId?: string;
+    linkedinCompanyUrl?: string;
     companyName?: string;
   }): SuperImposeInputs {
     const inputs: SuperImposeInputs = {};
@@ -636,11 +597,11 @@ export class PeopleLinkedInSourcingService {
       inputs.websiteUrls = [args.website.trim()];
     }
 
-    if (args.companyId?.trim() && !isValidUuid(args.companyId.trim())) {
-      const linkedinUrl =
-        normalizeLinkedinCompanyUrl(args.companyId) ??
-        `https://www.linkedin.com/company/${args.companyId.trim()}/`;
-      inputs.linkedinCompanyUrls = [linkedinUrl];
+    const linkedinCompanyUrl =
+      this.toLinkedinCompanyUrl(args.linkedinCompanyUrl) ??
+      this.toLinkedinCompanyUrl(args.companyId);
+    if (linkedinCompanyUrl) {
+      inputs.linkedinCompanyUrls = [linkedinCompanyUrl];
     }
 
     return inputs;
