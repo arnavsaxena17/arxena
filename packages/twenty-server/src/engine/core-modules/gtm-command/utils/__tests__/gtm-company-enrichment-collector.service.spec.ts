@@ -190,6 +190,34 @@ describe('GtmCompanyEnrichmentCollectorService', () => {
     expect(collected.wikiCompany?.name).toBe('Index Co');
   });
 
+  it('skips Wikidata when the companies index already returned a hit', async () => {
+    const wikidataEnrich = jest.fn(async () => ({
+      sourceId: 'wikidata' as const,
+      wikidataCompany: { name: 'Wikidata Co', id: 'Q1' },
+    }));
+
+    const collector = new GtmCompanyEnrichmentCollectorService([
+      {
+        sourceId: 'companies_index_wiki',
+        enrich: async () => ({
+          sourceId: 'companies_index_wiki',
+          wikiCompany: { name: 'Index Co', website: 'acme.io' },
+        }),
+      },
+      {
+        sourceId: 'wikidata',
+        enrich: wikidataEnrich,
+      },
+    ]);
+
+    const collected = await collector.collect({ domain: 'acme.io' });
+
+    expect(wikidataEnrich).not.toHaveBeenCalled();
+    expect(collected.sourceIds).toEqual(['companies_index_wiki']);
+    expect(collected.wikiCompany?.name).toBe('Index Co');
+    expect(collected.wikidataCompany).toBeNull();
+  });
+
   it('merges web_search website snapshot from a later source', async () => {
     const linkedInSource: GtmCompanyEnrichmentSource = {
       sourceId: 'linkedin_unipile_pool',

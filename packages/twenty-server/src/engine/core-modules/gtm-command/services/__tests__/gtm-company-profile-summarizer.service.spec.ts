@@ -91,7 +91,9 @@ describe('GtmCompanyProfileSummarizerService', () => {
       enrichment,
     });
 
-    expect(aiModelRegistryService.getDefaultSpeedModel).toHaveBeenCalled();
+    expect(aiModelRegistryService.getModel).toHaveBeenCalledWith(
+      'nous/tencent/hy3:free',
+    );
     expect(result).toEqual({
       companyName: 'Acme Inc',
       industry: 'Software',

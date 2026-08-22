@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import type {
   GtmCollectedCompanyEnrichment,
@@ -44,6 +45,16 @@ export class GtmCompanyEnrichmentCollectorService {
     const enrichmentSources = this.sources ?? [];
 
     for (const source of enrichmentSources) {
+      if (
+        source.sourceId === 'wikidata' &&
+        isDefined(collected.wikiCompany)
+      ) {
+        this.logger.log(
+          `Skipping Wikidata enrich for ${input.domain}: companies index already returned a hit`,
+        );
+        continue;
+      }
+
       try {
         const hints = {
           companyName:

@@ -2,15 +2,15 @@ import { z } from 'zod';
 
 export const gtmWebSearchCompanyLlmResultSchema = z.object({
   companyName: z.string(),
-  websiteUrl: z.string().optional().default(''),
+  websiteUrl: z.string(),
   summary: z.string(),
-  productsOrServices: z.array(z.string()).optional().default([]),
-  industry: z.string().optional().default(''),
-  hq: z.string().optional().default(''),
-  employeeHint: z.string().optional().default(''),
-  keyFacts: z.array(z.string()).optional().default([]),
-  sourceUrls: z.array(z.string()).optional().default([]),
-  notes: z.string().optional().default(''),
+  productsOrServices: z.array(z.string()),
+  industry: z.string(),
+  hq: z.string(),
+  employeeHint: z.string(),
+  keyFacts: z.array(z.string()),
+  sourceUrls: z.array(z.string()),
+  notes: z.string(),
 });
 
 export type GtmWebSearchCompanyLlmResult = z.infer<

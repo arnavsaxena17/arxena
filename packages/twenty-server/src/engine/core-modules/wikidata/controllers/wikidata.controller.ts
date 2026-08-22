@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { isNonEmptyString } from 'twenty-shared/utils';
+import { isNonEmptyString } from '@sniptt/guards';
 
 import { WikidataCompanySearchService } from 'src/engine/core-modules/wikidata/services/wikidata-company-search.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';

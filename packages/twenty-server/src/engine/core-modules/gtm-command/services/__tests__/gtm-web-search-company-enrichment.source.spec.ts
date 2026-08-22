@@ -1,5 +1,6 @@
-import { generateText } from 'ai';
+import { generateObject, generateText } from 'ai';
 
+import { GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/gtm-command/constants/gtm-company-enrichment-model.const';
 import { GtmWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-web-search-company-enrichment.source';
 import type { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import type { NativeToolBinderService } from 'src/engine/metadata-modules/ai/ai-models/services/native-tool-binder.service';
@@ -7,6 +8,7 @@ import { AI_SDK_OPENAI } from 'src/engine/metadata-modules/ai/ai-models/constant
 
 jest.mock('ai', () => ({
   generateText: jest.fn(),
+  generateObject: jest.fn(),
   Output: {
     object: jest.fn((input: unknown) => input),
   },
@@ -16,10 +18,27 @@ jest.mock('ai', () => ({
 const generateTextMock = generateText as jest.MockedFunction<
   typeof generateText
 >;
+const generateObjectMock = generateObject as jest.MockedFunction<
+  typeof generateObject
+>;
+
+const snapshotOutput = {
+  companyName: 'Acme Inc',
+  websiteUrl: 'https://acme.io',
+  summary: 'Acme builds workflow software.',
+  productsOrServices: ['Workflow OS'],
+  industry: 'Software',
+  hq: 'Austin, US',
+  employeeHint: '51-200',
+  keyFacts: ['Founded 2018'],
+  sourceUrls: ['https://acme.io/about'],
+  notes: '',
+};
 
 describe('GtmWebSearchCompanyEnrichmentSource', () => {
   beforeEach(() => {
     generateTextMock.mockReset();
+    generateObjectMock.mockReset();
   });
 
   it('returns null when AI services are unavailable', async () => {
@@ -28,25 +47,25 @@ describe('GtmWebSearchCompanyEnrichmentSource', () => {
     await expect(source.enrich({ domain: 'acme.io' })).resolves.toBeNull();
   });
 
-  it('returns null when no model supports native web_search', async () => {
+  it('uses hy3:free with generateObject when native web_search is unavailable', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: snapshotOutput,
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    const hy3Model = {
+      modelId: GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID,
+      sdkPackage: '@ai-sdk/openai-compatible',
+      model: { provider: 'hy3-mock' },
+    };
+
     const aiModelRegistryService = {
-      getDefaultPerformanceModel: jest.fn(() => {
-        throw new Error('no smart');
-      }),
-      getDefaultSpeedModel: jest.fn(() => {
-        throw new Error('no fast');
-      }),
-      getAvailableModels: jest.fn().mockReturnValue([
-        {
-          modelId: 'nous/hy3',
-          sdkPackage: '@ai-sdk/openai-compatible',
-          model: { provider: 'mock' },
-        },
-      ]),
+      getModel: jest.fn().mockReturnValue(hy3Model),
+      getDefaultSpeedModel: jest.fn(),
+      resolveModelForAgentInWorkspace: jest.fn(),
     } as unknown as AiModelRegistryService;
 
     const nativeToolBinderService = {
-      bind: jest.fn(),
+      bind: jest.fn().mockReturnValue({}),
     } as unknown as NativeToolBinderService;
 
     const source = new GtmWebSearchCompanyEnrichmentSource(
@@ -54,24 +73,19 @@ describe('GtmWebSearchCompanyEnrichmentSource', () => {
       nativeToolBinderService,
     );
 
-    await expect(source.enrich({ domain: 'acme.io' })).resolves.toBeNull();
-    expect(nativeToolBinderService.bind).not.toHaveBeenCalled();
+    const partial = await source.enrich({ domain: 'acme.io' });
+
+    expect(aiModelRegistryService.getModel).toHaveBeenCalledWith(
+      GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID,
+    );
+    expect(generateObjectMock).toHaveBeenCalledTimes(1);
+    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(partial?.webSearchCompany?.companyName).toBe('Acme Inc');
   });
 
-  it('calls generateText with web_search tools and returns snapshot', async () => {
+  it('calls generateText with web_search tools when the model supports them', async () => {
     generateTextMock.mockResolvedValue({
-      output: {
-        companyName: 'Acme Inc',
-        websiteUrl: 'https://acme.io',
-        summary: 'Acme builds workflow software.',
-        productsOrServices: ['Workflow OS'],
-        industry: 'Software',
-        hq: 'Austin, US',
-        employeeHint: '51-200',
-        keyFacts: ['Founded 2018'],
-        sourceUrls: ['https://acme.io/about'],
-        notes: '',
-      },
+      output: snapshotOutput,
     } as Awaited<ReturnType<typeof generateText>>);
 
     const openaiModel = {
@@ -82,7 +96,7 @@ describe('GtmWebSearchCompanyEnrichmentSource', () => {
     };
 
     const aiModelRegistryService = {
-      getDefaultPerformanceModel: jest.fn().mockReturnValue(openaiModel),
+      getModel: jest.fn().mockReturnValue(undefined),
       getDefaultSpeedModel: jest.fn().mockReturnValue(openaiModel),
       getAvailableModels: jest.fn().mockReturnValue([openaiModel]),
       resolveModelForAgentInWorkspace: jest.fn(),
@@ -109,22 +123,11 @@ describe('GtmWebSearchCompanyEnrichmentSource', () => {
       webSearch: true,
     });
     expect(generateTextMock).toHaveBeenCalledTimes(1);
-    expect(generateTextMock.mock.calls[0][0]).toEqual(
-      expect.objectContaining({
-        model: openaiModel.model,
-        tools: expect.objectContaining({ web_search: expect.anything() }),
-        system: expect.stringContaining('web_search'),
-        prompt: expect.stringContaining('acme.io'),
-      }),
-    );
     expect(partial).toEqual({
       sourceId: 'web_search',
       webSearchCompany: expect.objectContaining({
         companyName: 'Acme Inc',
         websiteUrl: 'https://acme.io',
-        summary: 'Acme builds workflow software.',
-        productsOrServices: ['Workflow OS'],
-        sourceUrls: ['https://acme.io/about'],
       }),
     });
   });

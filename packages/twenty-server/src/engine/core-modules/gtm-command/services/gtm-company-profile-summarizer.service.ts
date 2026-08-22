@@ -3,6 +3,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { generateObject, type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
+import { GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/gtm-command/constants/gtm-company-enrichment-model.const';
 import {
   buildGtmCompanyProfileSummarizerUserPrompt,
   GTM_COMPANY_PROFILE_SUMMARIZER_SYSTEM_PROMPT,
@@ -98,9 +99,11 @@ export class GtmCompanyProfileSummarizerService {
     }
 
     try {
-      // Prefer AI_MODELS_DEFAULT_FAST (via getDefaultSpeedModel) unless overridden
+      const hy3Model = this.aiModelRegistryService.getModel(
+        GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID,
+      );
       const defaultFastModel =
-        this.aiModelRegistryService.getDefaultSpeedModel();
+        hy3Model ?? this.aiModelRegistryService.getDefaultSpeedModel();
       const modelId = hasText(input.modelId)
         ? input.modelId
         : defaultFastModel.modelId;
