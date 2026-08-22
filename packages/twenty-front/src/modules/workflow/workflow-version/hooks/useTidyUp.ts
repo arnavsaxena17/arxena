@@ -1,6 +1,7 @@
 import { useGetUpdatableWorkflowVersionOrThrow } from '@/workflow/hooks/useGetUpdatableWorkflowVersionOrThrow';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
 import { workflowDiagramComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramComponentState';
+import { getOrganizedDiagram } from '@/workflow/workflow-diagram/utils/getOrganizedDiagram';
 import { useTidyUpWorkflowVersion } from '@/workflow/workflow-version/hooks/useTidyUpWorkflowVersion';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -12,6 +13,14 @@ export const useTidyUp = () => {
   const { tidyUpWorkflowVersion } = useTidyUpWorkflowVersion();
   const { getUpdatableWorkflowVersion } =
     useGetUpdatableWorkflowVersionOrThrow();
+
+  const tidyUpLocally = () => {
+    if (!isDefined(workflowDiagram)) {
+      return;
+    }
+
+    setWorkflowDiagram(getOrganizedDiagram(workflowDiagram));
+  };
 
   const tidyUp = async () => {
     if (!isDefined(workflowDiagram)) {
@@ -30,5 +39,5 @@ export const useTidyUp = () => {
     }
   };
 
-  return { tidyUp };
+  return { tidyUp, tidyUpLocally };
 };

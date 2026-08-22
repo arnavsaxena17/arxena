@@ -1,5 +1,7 @@
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { type WorkflowRunStatus } from '@/workflow/types/Workflow';
 import { WorkflowDiagramCanvasBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase';
+import { workflowDiagramRightClickMenuPositionState } from '@/workflow/workflow-diagram/states/workflowDiagramRightClickMenuPositionState';
 
 import { getWorkflowRunStatusTagProps } from '@/workflow/workflow-diagram/utils/getWorkflowRunStatusTagProps';
 import { WorkflowDiagramDefaultEdgeReadonly } from '@/workflow/workflow-diagram/workflow-edges/components/WorkflowDiagramDefaultEdgeReadonly';
@@ -15,6 +17,17 @@ export const WorkflowRunDiagramCanvas = ({
     workflowRunStatus,
   });
 
+  const setWorkflowDiagramRightClickMenuPosition = useSetAtomComponentState(
+    workflowDiagramRightClickMenuPositionState,
+  );
+
+  const handlePaneContextMenu = ({ x, y }: { x: number; y: number }) => {
+    setWorkflowDiagramRightClickMenuPosition({
+      x,
+      y,
+    });
+  };
+
   return (
     <ReactFlowProvider>
       <WorkflowDiagramCanvasBase
@@ -27,6 +40,8 @@ export const WorkflowRunDiagramCanvas = ({
         tagContainerTestId="workflow-run-status"
         tagColor={tagProps.color}
         tagText={tagProps.text}
+        handlePaneContextMenu={handlePaneContextMenu}
+        showAddNodeInContextMenu={false}
       />
     </ReactFlowProvider>
   );

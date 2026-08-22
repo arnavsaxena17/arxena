@@ -28,7 +28,10 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import {
+  buildGtmQueuedCreateFields,
+  isGtmSourcingEnrollment,
+} from 'src/engine/core-modules/gtm-command/utils/gtm-queued-enrollment.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { resolveAvatarUrlFromDisplayPictureUrl } from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
 import {
@@ -426,6 +429,7 @@ export class CandidateService {
       jobObject,
       results,
       tracking,
+      origin,
       apiToken,
       existingCandidatesLookup,
     );
@@ -644,87 +648,12 @@ export class CandidateService {
 
       const createdCandidateIds = Array.from(tracking.candidateIdMap.values());
 
-      await this.applyGtmQueuedEnrollment({
-        data,
-        tracking,
-        jobObject,
-        origin,
-        apiToken,
-      });
-
       return { ...results, timestamp, createdCandidateIds };
     } catch (error) {
       console.error('Error in profile processing:', error);
       throw error;
     }
   }
-
-  private async applyGtmQueuedEnrollment({
-    data,
-    tracking,
-    jobObject,
-    origin,
-    apiToken,
-  }: {
-    data: UserProfile[];
-    tracking: {
-      candidateIdMap: Map<string, string>;
-    };
-    jobObject: Project & {
-      icpSpec?: string | null;
-    };
-    origin: string;
-    apiToken: string;
-  }): Promise<void> {
-    const isGtmProject =
-      origin.includes('gtm') ||
-      Boolean(jobObject.icpSpec) ||
-      /gtm/i.test(jobObject.name ?? '');
-
-    if (!isGtmProject) {
-      return;
-    }
-
-    for (const profile of data) {
-      const key = profile.uniqueStringKey;
-      const candidateId = key
-        ? tracking.candidateIdMap.get(key)
-        : undefined;
-
-      if (!candidateId) {
-        continue;
-      }
-
-      const linkedinUrl =
-        profile.linkedinUrl ||
-        (profile as { profileUrl?: string }).profileUrl ||
-        '';
-      const linkedinProfileId = extractLinkedinProfileId(linkedinUrl);
-
-      try {
-        await this.staticGraphQLService.executeGraphQL(
-          graphQltoUpdateOneCandidate,
-          {
-            idToUpdate: candidateId,
-            input: {
-              outreachSequenceStage: 'QUEUED',
-              ...(linkedinProfileId ? { linkedinProfileId } : {}),
-            },
-          },
-          apiToken,
-        );
-      } catch (error) {
-        console.error(
-          `Failed to mark GTM QUEUED for candidate ${candidateId}:`,
-          error,
-        );
-      }
-    }
-  }
-
-
-
-
 
   private displayProcessingSummary(): void {
     if (!this.processingStats) {
@@ -1196,6 +1125,7 @@ export class CandidateService {
     jobObject: Project,
     results: any,
     tracking: any,
+    origin: string,
     apiToken: string,
     candidatesLookup: CandidateUploadLookup,
   ) {
@@ -1369,11 +1299,21 @@ export class CandidateService {
             whatsapp_key,
           );
           const otherFields = buildOtherFieldsFromUnmapped(unmappedCandidateObject);
+          const enrollGtm = isGtmSourcingEnrollment(origin, jobObject);
 
           const candidateWithOtherFields = {
             ...candidateNode,
             peopleId: personId || undefined,
             otherFields,
+            ...(enrollGtm
+              ? buildGtmQueuedCreateFields({
+                  linkedinUrl: profile.linkedinUrl,
+                  profileUrl: profile.profileUrl,
+                  linkedinProfileId: (
+                    profile as UserProfile & { linkedinProfileId?: string }
+                  ).linkedinProfileId,
+                })
+              : {}),
           };
           candidatesToCreate.push(candidateWithOtherFields);
           candidateKeys.push(key);

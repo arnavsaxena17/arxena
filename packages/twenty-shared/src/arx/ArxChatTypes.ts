@@ -816,6 +816,7 @@ export interface ArxenaCandidateNode {
   projectsId: string;
   peopleId: string;
   linkedinProfileId?: string;
+  outreachSequenceStage?: string;
   messagingChannel: string;
   otherFields?: Record<string, unknown>;
 }

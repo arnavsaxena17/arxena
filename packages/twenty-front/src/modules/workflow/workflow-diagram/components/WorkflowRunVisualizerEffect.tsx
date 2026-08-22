@@ -142,12 +142,13 @@ export const WorkflowRunVisualizerEffect = ({
         nodes: generatedWorkflowRunDiagram.nodes.map((node) => {
           const previousNode = previousNodesById.get(node.id);
 
-          if (!isDefined(previousNode?.measured)) {
+          if (!isDefined(previousNode)) {
             return node;
           }
 
           return {
             ...node,
+            position: previousNode.position,
             measured: previousNode.measured,
             width: previousNode.width,
             height: previousNode.height,

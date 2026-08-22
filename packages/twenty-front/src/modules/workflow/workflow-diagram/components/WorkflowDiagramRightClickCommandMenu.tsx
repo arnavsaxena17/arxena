@@ -25,9 +25,14 @@ const StyledContainer = styled.div<{ x: number; y: number }>`
   position: absolute;
   top: ${({ y }) => `${y}px`};
   width: 200px;
+  z-index: 10;
 `;
 
-export const WorkflowDiagramRightClickCommandMenu = () => {
+export const WorkflowDiagramRightClickCommandMenu = ({
+  showAddNode = true,
+}: {
+  showAddNode?: boolean;
+}) => {
   const { t } = useLingui();
   const rightClickCommandMenuRef = useRef<HTMLDivElement>(null);
 
@@ -42,10 +47,14 @@ export const WorkflowDiagramRightClickCommandMenu = () => {
     workflowDiagramRightClickMenuPositionState,
   );
 
-  const { tidyUp } = useTidyUp();
+  const { tidyUp, tidyUpLocally } = useTidyUp();
 
   const handleReorderWorkflowDiagram = async () => {
-    await tidyUp();
+    if (showAddNode) {
+      await tidyUp();
+    } else {
+      tidyUpLocally();
+    }
     closeRightClickMenu();
   };
 
@@ -71,7 +80,9 @@ export const WorkflowDiagramRightClickCommandMenu = () => {
         x={workflowDiagramRightClickMenuPosition.x}
         y={workflowDiagramRightClickMenuPosition.y}
       >
-        <MenuItem text={t`Add node`} LeftIcon={IconPlus} onClick={addNode} />
+        {showAddNode && (
+          <MenuItem text={t`Add node`} LeftIcon={IconPlus} onClick={addNode} />
+        )}
         <MenuItem
           text={t`Tidy up workflow`}
           LeftIcon={IconReorder}

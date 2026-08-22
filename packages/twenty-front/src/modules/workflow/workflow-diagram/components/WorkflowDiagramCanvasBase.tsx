@@ -114,6 +114,7 @@ export const WorkflowDiagramCanvasBase = ({
   onReconnectEnd,
   startNodeCreation,
   handlePaneContextMenu,
+  showAddNodeInContextMenu = true,
   nodesConnectable = false,
   nodesDraggable = false,
 }: {
@@ -162,6 +163,7 @@ export const WorkflowDiagramCanvasBase = ({
     y: number;
     event: MouseEvent | React.MouseEvent<Element, MouseEvent>;
   }) => void;
+  showAddNodeInContextMenu?: boolean;
 }) => {
   const { theme, colorScheme } = useContext(ThemeContext);
   const store = useStore();
@@ -474,6 +476,7 @@ export const WorkflowDiagramCanvasBase = ({
   const onPaneContextMenu = useCallback(
     (event: MouseEvent | React.MouseEvent<Element, MouseEvent>) => {
       event.preventDefault();
+      event.stopPropagation();
 
       const bounds = containerRef.current?.getBoundingClientRect();
       if (!bounds) return;
@@ -631,7 +634,19 @@ export const WorkflowDiagramCanvasBase = ({
         edgesFocusable={isDefined(onDeleteEdge)}
         panOnDrag={workflowDiagramPanOnDrag}
         panOnScroll={true}
-        onPaneContextMenu={onPaneContextMenu}
+        onPaneContextMenu={
+          isDefined(handlePaneContextMenu) ? onPaneContextMenu : undefined
+        }
+        onNodeContextMenu={
+          isDefined(handlePaneContextMenu)
+            ? (event) => onPaneContextMenu(event)
+            : undefined
+        }
+        onEdgeContextMenu={
+          isDefined(handlePaneContextMenu)
+            ? (event) => onPaneContextMenu(event)
+            : undefined
+        }
         nodesConnectable={nodesConnectable}
         paneClickDistance={10} // Fix small unwanted user dragging does not select node
         preventScrolling={true}
@@ -645,7 +660,9 @@ export const WorkflowDiagramCanvasBase = ({
       </ReactFlow>
 
       {isDefined(handlePaneContextMenu) && (
-        <WorkflowDiagramRightClickCommandMenu />
+        <WorkflowDiagramRightClickCommandMenu
+          showAddNode={showAddNodeInContextMenu}
+        />
       )}
 
       <StyledStatusTagContainer data-testid={tagContainerTestId}>
