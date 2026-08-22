@@ -8,6 +8,9 @@ import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useOpenAskAiPageWithPreprompt } from '@/ai/hooks/useOpenAskAiPageWithPreprompt';
+import { currentUserState } from '@/auth/states/currentUserState';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CreditHistoryModal } from '@/billing/components/CreditHistoryModal';
 import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
@@ -34,13 +37,13 @@ import {
 import {
   buildGtmFindCompaniesSendPrompt,
   buildGtmFindPeopleSendPrompt,
-  buildGtmRegenerateIcpSendPrompt,
   buildGtmRegenerateSearchBlurbSendPrompt,
 } from '@/gtm-home/types/gtm-home.types';
 import {
   parseGtmIcpSpec,
   stripBlurbFromIcpSpec,
 } from '@/gtm-home/utils/gtm-effective-icp.util';
+import { regenerateGtmWorkspaceProfile } from '@/gtm-home/utils/gtm-workspace-profile-regenerate';
 import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
@@ -69,6 +72,13 @@ const StyledContent = styled.div`
   min-height: 0;
   overflow: auto;
   padding: ${themeCssVariables.spacing[4]};
+`;
+
+const StyledSetupWrap = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 `;
 
 const StyledWorkflowContent = styled.div`
@@ -106,6 +116,7 @@ const GtmHomePageContent = () => {
     loading,
     workspaceCompany,
     workspaceProfile,
+    refetchWorkspaceProfiles,
     companies,
     people,
     projectSettings,
@@ -133,6 +144,9 @@ const GtmHomePageContent = () => {
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const setGtmCommandContext = useSetAtomState(gtmCommandContextState);
   const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
+  const currentUser = useAtomStateValue(currentUserState);
+  const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const tokenPair = useAtomStateValue(tokenPairState);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
@@ -141,6 +155,7 @@ const GtmHomePageContent = () => {
     useState(false);
   const [isSavingPeopleSearchBlurb, setIsSavingPeopleSearchBlurb] =
     useState(false);
+  const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
   const [workflowMode, setWorkflowMode] =
     useState<GtmWorkflowEmbedMode>('definition');
   const {
@@ -310,15 +325,31 @@ const GtmHomePageContent = () => {
     }
   };
 
-  const handleRegenerateIcp = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'SEND',
-      text: buildGtmRegenerateIcpSendPrompt({
-        workspaceCompany,
-        currentIcpSpec: projectSettings.icpSpec,
-        currentIcpBlurb: projectSettings.icpBlurb,
-      }),
-    });
+  const handleRegenerateIcp = async () => {
+    setIsRegeneratingIcp(true);
+
+    try {
+      await regenerateGtmWorkspaceProfile({
+        accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+        userEmail: currentUser?.email,
+        workspaceDisplayName: currentWorkspace?.displayName,
+        userFirstName: currentUser?.firstName,
+        userLastName: currentUser?.lastName,
+      });
+      await refetchWorkspaceProfiles();
+      enqueueSuccessSnackBar({
+        message: 'Seller company and workspace ICP regenerated from enrichment.',
+      });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to regenerate workspace ICP.',
+      });
+    } finally {
+      setIsRegeneratingIcp(false);
+    }
   };
 
   const handleRegenerateCompanySearchBlurb = () => {
@@ -567,31 +598,36 @@ const GtmHomePageContent = () => {
           ) : (
             <StyledContent>
               {isSetupTab && (
-                <GtmSetupPanel
-                  workspaceCompany={workspaceCompany}
-                  icpSpec={projectSettings.icpSpec}
-                  icpBlurb={projectSettings.icpBlurb}
-                  companySearchBlurb={projectSettings.companySearchBlurb}
-                  peopleSearchBlurb={projectSettings.peopleSearchBlurb}
-                  isIcpRunOverride={isIcpRunOverride}
-                  hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
-                  hasProject={isDefined(activeProjectId)}
-                  isSavingIcp={isSavingIcp}
-                  isSavingCompanySearchBlurb={isSavingCompanySearchBlurb}
-                  isSavingPeopleSearchBlurb={isSavingPeopleSearchBlurb}
-                  onRegenerateIcp={handleRegenerateIcp}
-                  onRegenerateCompanySearchBlurb={
-                    handleRegenerateCompanySearchBlurb
-                  }
-                  onRegeneratePeopleSearchBlurb={
-                    handleRegeneratePeopleSearchBlurb
-                  }
-                  onSaveIcp={handleSaveIcp}
-                  onSaveCompanySearchBlurb={handleSaveCompanySearchBlurb}
-                  onSavePeopleSearchBlurb={handleSavePeopleSearchBlurb}
-                  onFindCompanies={handleFindCompanies}
-                  onFindPeople={handleFindPeople}
-                />
+                <StyledSetupWrap>
+                  <GtmSetupPanel
+                    workspaceCompany={workspaceCompany}
+                    icpSpec={projectSettings.icpSpec}
+                    icpBlurb={projectSettings.icpBlurb}
+                    companySearchBlurb={projectSettings.companySearchBlurb}
+                    peopleSearchBlurb={projectSettings.peopleSearchBlurb}
+                    isIcpRunOverride={isIcpRunOverride}
+                    hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
+                    hasProject={isDefined(activeProjectId)}
+                    isSavingIcp={isSavingIcp}
+                    isSavingCompanySearchBlurb={isSavingCompanySearchBlurb}
+                    isSavingPeopleSearchBlurb={isSavingPeopleSearchBlurb}
+                    onRegenerateIcp={() => {
+                      void handleRegenerateIcp();
+                    }}
+                    isRegeneratingIcp={isRegeneratingIcp}
+                    onRegenerateCompanySearchBlurb={
+                      handleRegenerateCompanySearchBlurb
+                    }
+                    onRegeneratePeopleSearchBlurb={
+                      handleRegeneratePeopleSearchBlurb
+                    }
+                    onSaveIcp={handleSaveIcp}
+                    onSaveCompanySearchBlurb={handleSaveCompanySearchBlurb}
+                    onSavePeopleSearchBlurb={handleSavePeopleSearchBlurb}
+                    onFindCompanies={handleFindCompanies}
+                    onFindPeople={handleFindPeople}
+                  />
+                </StyledSetupWrap>
               )}
               {activeTab === 'companies' && (
                 <GtmCompaniesPanel

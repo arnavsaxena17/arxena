@@ -149,23 +149,23 @@ export const useNaukriQueueStatus = () => {
   }, [setNaukriQueueStatus]);
 
   useEffect(() => {
-    if (!queueStatus) {
+    if (!naukriQueueStatus) {
       return;
     }
 
-    const isTerminal = isTerminalNaukriQueueState(queueStatus.state);
+    const isTerminal = isTerminalNaukriQueueState(naukriQueueStatus.state);
 
     if (!isTerminal) {
       const snackBarOptions = {
         showProgressBar: true,
-        progress: getProgressPercentage(queueStatus),
-        progressMessage: getProgressMessage(queueStatus),
+        progress: getProgressPercentage(naukriQueueStatus),
+        progressMessage: getProgressMessage(naukriQueueStatus),
         duration: PERSISTENT_SNACKBAR_DURATION_MS,
         dedupeKey: ACTIVE_SNACKBAR_DEDUPE_KEY,
         onCancel:
-          queueStatus.state === 'stopping'
+          naukriQueueStatus.state === 'stopping'
             ? undefined
-            : () => handleStopQueue(queueStatus.queueId),
+            : () => handleStopQueue(naukriQueueStatus.queueId),
       };
 
       if (!activeSnackBarShownRef.current) {
@@ -191,38 +191,39 @@ export const useNaukriQueueStatus = () => {
       activeSnackBarShownRef.current = false;
     }
 
-    if (lastTerminalQueueIdRef.current === queueStatus.queueId) {
+    if (lastTerminalQueueIdRef.current === naukriQueueStatus.queueId) {
       return;
     }
-    lastTerminalQueueIdRef.current = queueStatus.queueId;
+    lastTerminalQueueIdRef.current = naukriQueueStatus.queueId;
 
-    const processed = queueStatus.completedCount + queueStatus.failedCount;
+    const processed =
+      naukriQueueStatus.completedCount + naukriQueueStatus.failedCount;
 
-    if (queueStatus.state === 'completed') {
+    if (naukriQueueStatus.state === 'completed') {
       const message =
-        queueStatus.failedCount > 0
-          ? `Saved ${queueStatus.completedCount}/${queueStatus.totalCount} Naukri profile(s), ${queueStatus.failedCount} failed`
-          : `Saved ${queueStatus.completedCount}/${queueStatus.totalCount} Naukri profile(s)`;
+        naukriQueueStatus.failedCount > 0
+          ? `Saved ${naukriQueueStatus.completedCount}/${naukriQueueStatus.totalCount} Naukri profile(s), ${naukriQueueStatus.failedCount} failed`
+          : `Saved ${naukriQueueStatus.completedCount}/${naukriQueueStatus.totalCount} Naukri profile(s)`;
 
-      if (queueStatus.failedCount > 0) {
+      if (naukriQueueStatus.failedCount > 0) {
         enqueueWarningSnackBar({ message, options: { duration: 5000 } });
       } else {
         enqueueSuccessSnackBar({ message, options: { duration: 5000 } });
       }
-    } else if (queueStatus.state === 'stopped') {
+    } else if (naukriQueueStatus.state === 'stopped') {
       enqueueWarningSnackBar({
-        message: `Stopped Naukri queue after ${processed}/${queueStatus.totalCount} profile(s)`,
+        message: `Stopped Naukri queue after ${processed}/${naukriQueueStatus.totalCount} profile(s)`,
         options: { duration: 5000 },
       });
-    } else if (queueStatus.state === 'failed') {
+    } else if (naukriQueueStatus.state === 'failed') {
       enqueueErrorSnackBar({
-        message: queueStatus.error ?? 'Naukri queue failed',
+        message: naukriQueueStatus.error ?? 'Naukri queue failed',
         options: { duration: 6000 },
       });
     }
 
-    if (refreshDataFunction) {
-      refreshDataFunction().catch((error) => {
+    if (dataTableRefreshFunction) {
+      dataTableRefreshFunction().catch((error) => {
         console.error(
           '[useNaukriQueueStatus] Failed to refresh table after queue finished:',
           error,
@@ -230,16 +231,16 @@ export const useNaukriQueueStatus = () => {
       });
     }
   }, [
-    queueStatus,
+    naukriQueueStatus,
     enqueueInfoSnackBar,
     enqueueSuccessSnackBar,
     enqueueWarningSnackBar,
     enqueueErrorSnackBar,
     updateSnackBarByDedupeKey,
     closeSnackBarByDedupeKey,
-    refreshDataFunction,
+    dataTableRefreshFunction,
     handleStopQueue,
   ]);
 
-  return { queueStatus };
+  return { queueStatus: naukriQueueStatus };
 };

@@ -24,6 +24,7 @@ import {
   GtmPeopleCacheService,
 } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
+import { GtmWorkspaceProfileProvisioningService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-profile-provisioning.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('gtm-command')
@@ -39,6 +40,7 @@ export class GtmCommandController {
     private readonly fetchLinkedinMessagesService: FetchLinkedinMessagesService,
     private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
+    private readonly gtmWorkspaceProfileProvisioningService: GtmWorkspaceProfileProvisioningService,
   ) {}
 
   @Get('cache/companies')
@@ -397,5 +399,54 @@ export class GtmCommandController {
     });
 
     return { ok: true, candidateId: body.candidateId };
+  }
+
+  @Post('workspace-profile/regenerate')
+  async regenerateWorkspaceProfile(
+    @Body()
+    body: {
+      userEmail?: string;
+      workspaceDisplayName?: string;
+      userFirstName?: string;
+      userLastName?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      await this.gtmWorkspaceProfileProvisioningService.regenerateWorkspaceProfile(
+        {
+          workspaceId,
+          userEmail: body?.userEmail,
+          workspaceDisplayName: body?.workspaceDisplayName,
+          userFirstName: body?.userFirstName,
+          userLastName: body?.userLastName,
+          force: true,
+          preserveSearchBlurbs: true,
+        },
+      );
+
+      return { ok: true };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to regenerate GTM workspace profile', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to regenerate GTM workspace profile',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

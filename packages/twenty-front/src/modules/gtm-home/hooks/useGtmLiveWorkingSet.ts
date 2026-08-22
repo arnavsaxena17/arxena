@@ -220,7 +220,7 @@ export const useGtmLiveWorkingSet = () => {
       },
     });
 
-  const { records: workspaceProfiles, loading: workspaceProfilesLoading } =
+  const { records: workspaceProfiles, loading: workspaceProfilesLoading, refetch: refetchWorkspaceProfiles } =
     useFindManyRecords<WorkspaceProfileRecord>({
       objectNameSingular: 'workspaceProfile',
       orderBy: [{ createdAt: 'AscNullsLast' }],
@@ -671,6 +671,7 @@ export const useGtmLiveWorkingSet = () => {
       candidatesLoading,
     workspaceCompany,
     workspaceProfile,
+    refetchWorkspaceProfiles,
     companies,
     people,
     projectSettings,

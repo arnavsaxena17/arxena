@@ -33,8 +33,8 @@ describe('gtm-effective-icp.util', () => {
       industries: ['HR Tech'],
       employeeRange: '50-200',
       geos: ['US'],
-      buyerTitles: ['VP People'],
-      painSignals: ['capacity'],
+      // buyerTitles: ['VP People'],
+      // painSignals: ['capacity'],
       // stdFunctions: ['people'],
       // stdGrades: ['vp'],
     });

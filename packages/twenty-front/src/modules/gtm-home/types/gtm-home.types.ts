@@ -33,8 +33,8 @@ export type GtmIcpSpec = {
   industries: string[];
   employeeRange: string;
   geos: string[];
-  buyerTitles: string[];
-  painSignals: string[];
+  // buyerTitles: string[];
+  // painSignals: string[];
   // stdFunctions?: string[];
   // stdGrades?: string[];
   // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
@@ -201,12 +201,12 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
         proposedIcp.geos.length > 0
           ? `- Geos: ${proposedIcp.geos.join(', ')}`
           : null,
-        proposedIcp.buyerTitles.length > 0
-          ? `- Buyer titles: ${proposedIcp.buyerTitles.join(', ')}`
-          : null,
-        proposedIcp.painSignals.length > 0
-          ? `- Pain signals: ${proposedIcp.painSignals.join('; ')}`
-          : null,
+        // proposedIcp.buyerTitles.length > 0
+        //   ? `- Buyer titles: ${proposedIcp.buyerTitles.join(', ')}`
+        //   : null,
+        // proposedIcp.painSignals.length > 0
+        //   ? `- Pain signals: ${proposedIcp.painSignals.join('; ')}`
+        //   : null,
         // (proposedIcp.stdFunctions?.length ?? 0) > 0
         //   ? `- Functions: ${(proposedIcp.stdFunctions ?? []).join(', ')}`
         //   : null,
@@ -292,12 +292,6 @@ export const buildGtmRegenerateIcpSendPrompt = (
     }.`,
     company.industry ? `Industry: ${company.industry}.` : null,
     company.summary ? `Company summary: ${company.summary}` : null,
-    input.currentIcpSpec
-      ? `Current ICP JSON (replace with an improved draft): ${input.currentIcpSpec}`
-      : 'No ICP JSON yet — draft one from the seller company.',
-    input.currentIcpBlurb
-      ? `Current icpBlurb (replace with an improved NL definition): ${input.currentIcpBlurb}`
-      : 'No icpBlurb yet — write a 2–4 sentence NL definition of who we sell to.',
     'load_skills(["gtm-icp-onboarding"]), then save icpSpec + icpBlurb + icpSegment on workspaceProfile (workspace default).',
     'Do NOT change companySearchBlurb or peopleSearchBlurb — those have their own Regenerate actions.',
     'Do not write Project.icpSpec unless I ask for a run-specific override.',

@@ -1969,11 +1969,11 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         minMessageGapMinutes: 15,
         maxCommentsPerDay: 20,
         maxEmailsPerDay: 50,
-        icpSpec: JSON.stringify({
-          std_function: ['talent acquisition', 'people'],
-          std_grade: ['leadership', 'mid'],
-          buyerTitles: ['Head of Talent', 'VP People'],
-        }),
+        // icpSpec: JSON.stringify({
+          // std_function: ['talent acquisition', 'people'],
+          // std_grade: ['leadership', 'mid'],
+          // buyerTitles: ['Head of Talent', 'VP People'],
+        // }),
         complianceCopy:
           'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
       },

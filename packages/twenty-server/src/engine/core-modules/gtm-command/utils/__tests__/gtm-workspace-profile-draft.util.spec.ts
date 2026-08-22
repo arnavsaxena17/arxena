@@ -22,10 +22,15 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.companyDomain).toBe('acme.io');
     expect(draft.industry).toBe('SaaS');
     expect(draft.icpSpec.industries).toEqual(['SaaS']);
-    expect(draft.icpSegment).toContain('SaaS');
+    expect(draft.icpSpec.employeeRange).toBe('120+');
+    expect(draft.icpSpec.geos).toEqual(['United States']);
+    expect(draft.icpSpec.buyerTitles).toBeUndefined();
     expect(draft.icpBlurb).toContain('Ideal customers');
+    expect(draft.icpBlurb).not.toContain('Buyers:');
     expect(draft.companySearchBlurb).toContain('ICP');
-    expect(draft.peopleSearchBlurb).toContain('titles');
+    expect(draft.companySearchBlurb).not.toContain('recruiting');
+    expect(draft.peopleSearchBlurb).toContain('SaaS');
+    expect(draft.peopleSearchBlurb).not.toContain('titles:');
     expect(draft.enrichmentJson.source).toBe('apollo');
     expect(draft.enrichmentJson.companyDetails).toEqual(
       expect.objectContaining({
@@ -72,6 +77,8 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.companyName).toBe('Brightpath');
     expect(draft.companyDomain).toBe('brightpath.com');
     expect(draft.enrichmentJson.source).toBe('domain_heuristic');
+    expect(draft.icpSpec.employeeRange).toBe('');
+    expect(draft.icpBlurb).not.toContain('50-500');
     expect(draft.icpBlurb.length).toBeGreaterThan(0);
     expect(draft.companySearchBlurb.length).toBeGreaterThan(0);
     expect(draft.peopleSearchBlurb.length).toBeGreaterThan(0);

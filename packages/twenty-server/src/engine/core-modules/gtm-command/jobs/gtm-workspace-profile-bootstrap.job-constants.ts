@@ -7,4 +7,6 @@ export type GtmWorkspaceProfileBootstrapJobData = {
   workspaceDisplayName?: string | null;
   userFirstName?: string | null;
   userLastName?: string | null;
+  force?: boolean;
+  preserveSearchBlurbs?: boolean;
 };

@@ -91,6 +91,16 @@ export class GtmWorkspaceProfileProvisioningService {
     );
   }
 
+  async regenerateWorkspaceProfile(
+    data: GtmWorkspaceProfileBootstrapJobData,
+  ): Promise<void> {
+    await this.bootstrapWorkspaceProfile({
+      ...data,
+      force: true,
+      preserveSearchBlurbs: data.preserveSearchBlurbs ?? true,
+    });
+  }
+
   async bootstrapWorkspaceProfile(
     data: GtmWorkspaceProfileBootstrapJobData,
   ): Promise<void> {
@@ -121,8 +131,11 @@ export class GtmWorkspaceProfileProvisioningService {
             order: { createdAt: 'ASC' },
           });
           const existingProfile = existingProfiles[0];
+          const force = data.force === true;
+          const preserveSearchBlurbs = data.preserveSearchBlurbs === true;
 
           if (
+            !force &&
             isDefined(existingProfile) &&
             (isNonEmptyString(existingProfile.icpSpec) ||
               isDefined(existingProfile.enrichmentJson))
@@ -138,11 +151,23 @@ export class GtmWorkspaceProfileProvisioningService {
             isNonEmptyString(userEmail) && isWorkEmail(userEmail)
               ? userEmail
               : null;
-          const domain = workEmail
+          const domainFromProfile = existingProfile?.companyDomain
+            ?.trim()
+            .toLowerCase();
+          const domainFromEmail = workEmail
             ? getDomainFromEmail(workEmail)?.toLowerCase()
             : undefined;
+          const domain = isNonEmptyString(domainFromProfile)
+            ? domainFromProfile
+            : domainFromEmail;
 
           if (!isNonEmptyString(domain)) {
+            if (force) {
+              throw new Error(
+                'Cannot regenerate workspace profile: no company domain on the profile or work email.',
+              );
+            }
+
             if (!isDefined(existingProfile)) {
               const systemActor = buildCreatedByFromSystem();
 
@@ -189,6 +214,12 @@ export class GtmWorkspaceProfileProvisioningService {
           };
 
           const systemActor = buildCreatedByFromSystem();
+          const keepCompanySearchBlurb =
+            preserveSearchBlurbs &&
+            isNonEmptyString(existingProfile?.companySearchBlurb);
+          const keepPeopleSearchBlurb =
+            preserveSearchBlurbs &&
+            isNonEmptyString(existingProfile?.peopleSearchBlurb);
           const profileFields = {
             name: 'Workspace GTM Profile',
             companyName: draft.companyName,
@@ -201,8 +232,12 @@ export class GtmWorkspaceProfileProvisioningService {
             icpSegment: draft.icpSegment,
             icpSpec: JSON.stringify(draft.icpSpec),
             icpBlurb: draft.icpBlurb,
-            companySearchBlurb: draft.companySearchBlurb,
-            peopleSearchBlurb: draft.peopleSearchBlurb,
+            companySearchBlurb: keepCompanySearchBlurb
+              ? (existingProfile?.companySearchBlurb ?? draft.companySearchBlurb)
+              : draft.companySearchBlurb,
+            peopleSearchBlurb: keepPeopleSearchBlurb
+              ? (existingProfile?.peopleSearchBlurb ?? draft.peopleSearchBlurb)
+              : draft.peopleSearchBlurb,
             updatedBy: systemActor,
           };
 

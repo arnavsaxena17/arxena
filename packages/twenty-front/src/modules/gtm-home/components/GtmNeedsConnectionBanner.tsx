@@ -54,7 +54,7 @@ export const GtmNeedsConnectionBanner = ({
   return (
     <InformationBanner
       componentInstanceId={COMPONENT_INSTANCE_ID}
-      color="danger"
+      color="blue"
       variant="secondary"
       message={t`Connect ${channels} to start live outreach.`}
       buttonTitle={t`Open accounts`}

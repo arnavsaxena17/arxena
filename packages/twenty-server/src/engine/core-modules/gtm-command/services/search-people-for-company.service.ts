@@ -65,25 +65,35 @@ export type SearchPeopleForCompanyPerson = {
   stdGrade: string | null;
 };
 
+const parseStringList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+  );
+};
+
 const parseIcpSpec = (
   raw: string | null | undefined,
 ): {
-  buyerTitles?: string[];
+  buyerTitles: string[];
 } => {
   if (!isNonEmptyString(raw)) {
-    return {};
+    return { buyerTitles: [] };
   }
 
   try {
     const parsed = JSON.parse(raw) as {
-      buyerTitles?: string[];
+      buyerTitles?: unknown;
     };
 
     return {
-      buyerTitles: parsed.buyerTitles,
+      buyerTitles: parseStringList(parsed.buyerTitles),
     };
   } catch {
-    return {};
+    return { buyerTitles: [] };
   }
 };
 
@@ -233,7 +243,7 @@ export class SearchPeopleForCompanyService {
       context.project.peopleSearchBlurb ||
       context.workspaceProfile?.peopleSearchBlurb ||
       '';
-    const buyerTitle = icp.buyerTitles?.[0];
+    const buyerTitle = icp.buyerTitles[0];
     const website =
       context.company.domainName?.primaryLinkUrl
         ?.replace(/^https?:\/\//, '')

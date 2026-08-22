@@ -61,9 +61,9 @@ GTM Setup has **three separate Regenerate buttons**. Each SEND prompt is intenti
 
 | Mode | Update only | Do not touch |
 | --- | --- | --- |
-| Regenerate ICP | `icpSpec` (JSON string), `icpBlurb` (NL definition), `icpSegment` | `companySearchBlurb`, `peopleSearchBlurb` |
-| Regenerate company search blurb | `companySearchBlurb` | `icpSpec`, `icpBlurb`, `peopleSearchBlurb` (unless ICP empty — then draft minimal ICP first) |
-| Regenerate people search blurb | `peopleSearchBlurb` | `icpSpec`, `icpBlurb`, `companySearchBlurb` (unless ICP empty — then draft minimal ICP first) |
+| **Regenerate ICP** (Setup button) | Re-runs company enrichment and writes seller fields + `icpSpec` / `icpBlurb` / `icpSegment` on `workspaceProfile` | Existing `companySearchBlurb` / `peopleSearchBlurb` |
+| Regenerate company search blurb | `companySearchBlurb` via Ask AI | `icpSpec`, `icpBlurb`, `peopleSearchBlurb` (unless ICP empty — then draft minimal ICP first) |
+| Regenerate people search blurb | `peopleSearchBlurb` via Ask AI | `icpSpec`, `icpBlurb`, `companySearchBlurb` (unless ICP empty — then draft minimal ICP first) |
 
 For regenerate-only turns: skip the full preference interview when enough seller + current ICP context is in the prompt; propose the draft, then persist on approval (or immediately if the user said to regenerate/save without asking).
 

@@ -5,10 +5,10 @@ export type GtmIcpSpec = {
   industries: string[];
   employeeRange: string;
   geos: string[];
-  buyerTitles: string[];
-  painSignals: string[];
-  // stdFunctions?: string[];
-  // stdGrades?: string[];
+  buyerTitles?: string[];
+  painSignals?: string[];
+  stdFunctions?: string[];
+  stdGrades?: string[];
   // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
   blurb?: string;
 };
@@ -70,15 +70,6 @@ export type GtmLinkedInCompanySearchHit = {
   location?: string | null;
   summary?: string | null;
 };
-
-const DEFAULT_BUYER_TITLES = [
-  'Head of Talent',
-  'VP People',
-  'Director of Recruiting',
-];
-
-const DEFAULT_STD_FUNCTIONS = ['talent acquisition', 'people'];
-const DEFAULT_STD_GRADES = ['director', 'vp'];
 
 const titleCaseFromDomain = (domain: string): string => {
   const root = domain.split('.')[0] ?? domain;
@@ -273,11 +264,14 @@ const pickSummary = (input: {
     return input.linkedInSearchHit.summary.trim();
   }
 
-  return isNonEmptyString(input.industry)
-    ? `${input.companyName} (${input.domain}) — ${input.industry}${
-        input.employeeRange ? `, ~${input.employeeRange} employees` : ''
-      }.`
-    : `${input.companyName} (${input.domain}) — GTM seller profile seeded from signup domain.`;
+  const facts = [
+    input.industry || null,
+    input.employeeRange ? `~${input.employeeRange} employees` : null,
+  ].filter(isNonEmptyString);
+
+  return facts.length > 0
+    ? `${input.companyName} (${input.domain}) — ${facts.join(', ')}.`
+    : `${input.companyName} (${input.domain}).`;
 };
 
 const resolveEnrichmentSource = (input: {
@@ -435,25 +429,17 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
       ? `${industry} buyers`
       : `Buyers for ${companyName}`,
     industries,
-    employeeRange: employeeRange || '50-500',
+    employeeRange,
     geos,
-    buyerTitles: DEFAULT_BUYER_TITLES,
-    painSignals: [
-      'slow hiring pipelines',
-      'recruiter capacity constraints',
-      'inconsistent outreach quality',
-    ],
-    // stdFunctions: DEFAULT_STD_FUNCTIONS,
-    // stdGrades: DEFAULT_STD_GRADES,
   };
 
   const icpBlurb = [
     `Ideal customers for ${companyName}: ${icpSpec.name}.`,
     industries.length > 0 ? `Industries: ${industries.join(', ')}.` : null,
-    `Company size around ${icpSpec.employeeRange}.`,
+    isNonEmptyString(employeeRange)
+      ? `Company size around ${employeeRange}.`
+      : null,
     geos.length > 0 ? `Geos: ${geos.join(', ')}.` : null,
-    `Buyers: ${icpSpec.buyerTitles.join(', ')}.`,
-    `Pain: ${icpSpec.painSignals.join('; ')}.`,
   ]
     .filter(Boolean)
     .join(' ');
@@ -461,9 +447,10 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
   const companySearchBlurb = [
     `Find target companies matching our ICP "${icpSpec.name}".`,
     industries.length > 0 ? `Industries: ${industries.join(', ')}.` : null,
-    `Company size around ${icpSpec.employeeRange}.`,
+    isNonEmptyString(employeeRange)
+      ? `Company size around ${employeeRange}.`
+      : null,
     geos.length > 0 ? `Geos: ${geos.join(', ')}.` : null,
-    'Prefer accounts that would buy recruiting / talent / GTM tooling.',
     'Return ~15–25 high-fit companies with name, domain, industry, employees.',
   ]
     .filter(Boolean)
@@ -471,10 +458,11 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
 
   const peopleSearchBlurb = [
     `Find buyers at the target companies already on this GTM run.`,
-    `Focus on titles: ${icpSpec.buyerTitles.join(', ')}.`,
-    // `Functions/grades: ${icpSpec.stdFunctions.join(', ')} / ${icpSpec.stdGrades.join(', ')}.`,
+    isNonEmptyString(industry) ? `Prefer roles relevant to ${industry}.` : null,
     'Prefer decision-makers with LinkedIn URLs; keep to a few personas per company.',
-  ].join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const enrichmentSource = resolveEnrichmentSource({
     linkedInProfile,
