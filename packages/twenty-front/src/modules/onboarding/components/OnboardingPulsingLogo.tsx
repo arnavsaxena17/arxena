@@ -3,6 +3,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const StyledLogo = styled.img`
   animation: onboardingPulsingLogo 0.8s ease-in-out infinite alternate;
+  border-radius: ${themeCssVariables.border.radius.md};
   height: ${themeCssVariables.spacing[12]};
   margin-bottom: ${themeCssVariables.spacing[8]};
   width: ${themeCssVariables.spacing[12]};
@@ -23,5 +24,5 @@ const StyledLogo = styled.img`
 `;
 
 export const OnboardingPulsingLogo = () => (
-  <StyledLogo src="/images/integrations/arxena-logo.png" alt="" />
+  <StyledLogo src="/images/favicon/arxena-A-logo-PQ-HDR-rounded.png" alt="" />
 );

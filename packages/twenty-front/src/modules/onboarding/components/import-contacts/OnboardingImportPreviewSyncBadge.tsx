@@ -46,7 +46,7 @@ export const OnboardingImportPreviewSyncBadge = () => {
         size={theme.icon.size.md}
         color={themeCssVariables.font.color.tertiary}
       />
-      <StyledArxenaLogo src="/images/integrations/arxena-logo.png" alt="" />
+      <StyledArxenaLogo src="/images/favicon/arxena-A-logo-PQ-HDR-rounded.png" alt="" />
     </StyledBadge>
   );
 };

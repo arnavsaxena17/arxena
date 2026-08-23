@@ -58,8 +58,9 @@ const StyledRightSide = styled(StyledSide)`
 `;
 
 const StyledLogo = styled.div`
-  background-image: url('/images/integrations/arxena-logo.png');
+  background-image: url('/images/favicon/arxena-A-logo-PQ-HDR-rounded.png');
   background-size: cover;
+  border-radius: ${themeCssVariables.border.radius.sm};
   height: ${themeCssVariables.spacing[6]};
   opacity: 0.4;
   width: ${themeCssVariables.spacing[6]};

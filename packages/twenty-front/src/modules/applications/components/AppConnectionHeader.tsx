@@ -66,7 +66,10 @@ export const AppConnectionHeader = ({
   return (
     <StyledContainer>
       <StyledAppLogoTile>
-        <StyledAppLogo src={'/images/integrations/arxena-logo.png'} alt="" />
+        <StyledAppLogo
+          src="/images/favicon/arxena-A-logo-PQ-HDR-rounded.png"
+          alt=""
+        />
       </StyledAppLogoTile>
       <StyledLinkIconContainer aria-hidden>
         <IconRefresh size={theme.icon.size.md} stroke={theme.icon.stroke.lg} />
