@@ -30,6 +30,15 @@ describe('account rate limit sanitization', () => {
     expect(map.acc_1.searchPerDay).toBe(
       DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.searchPerDay,
     );
+    expect(map.acc_1.commentPerDay).toBe(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.commentPerDay,
+    );
+    expect(map.acc_1.messagePerDay).toBe(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.messagePerDay,
+    );
+    expect(map.acc_1.inmailPerDay).toBe(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.inmailPerDay,
+    );
   });
 
   it('uses conservative WhatsApp start-chat defaults', () => {

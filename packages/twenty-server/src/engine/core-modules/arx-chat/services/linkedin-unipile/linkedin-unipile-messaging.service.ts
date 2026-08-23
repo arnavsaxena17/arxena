@@ -215,6 +215,7 @@ export class LinkedinUnipileMessagingService {
     }
 
     console.log("This is the form data!!!", formData);
+    await this.acquireLinkedinChatSendLimit(accountId, isInMail);
     return this.makeRequest('/api/v1/chats', 'POST', formData, true);
   }
 
@@ -325,6 +326,17 @@ export class LinkedinUnipileMessagingService {
       console.error('Error getting provider_id from public identifier:', error);
       throw error;
     }
+  }
+
+  private async acquireLinkedinChatSendLimit(
+    accountId: string,
+    isInMail?: boolean,
+  ): Promise<void> {
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId,
+      method: isInMail ? 'inmail' : 'message',
+    });
   }
 
   /**
@@ -522,6 +534,7 @@ export class LinkedinUnipileMessagingService {
       }
 
       console.log("This is the form data!!!", formData);
+      await this.acquireLinkedinChatSendLimit(accountId, isInMail);
       const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
 
       console.log('LinkedIn message sent successfully:', response);
@@ -864,6 +877,7 @@ export class LinkedinUnipileMessagingService {
       });
 
       // Send message with attachment
+      await this.acquireLinkedinChatSendLimit(linkedinAccountId, false);
       const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
 
       console.log('LinkedIn attachment message sent successfully:', response);
@@ -994,6 +1008,7 @@ export class LinkedinUnipileMessagingService {
       });
 
       // Send InMail with attachment
+      await this.acquireLinkedinChatSendLimit(linkedinAccountId, true);
       const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
 
       console.log('LinkedIn InMail attachment message sent successfully:', response);

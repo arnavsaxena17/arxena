@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { JobApiService } from 'src/engine/core-modules/jobs-api/jobs-api.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -66,6 +67,10 @@ export class SearchJobsService {
         jobs: search.items,
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.error('search-jobs failed', error);
 
       return {

@@ -4,6 +4,8 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import {
   isValidLinkedInProviderId,
@@ -200,7 +202,10 @@ export class FetchLinkedinMessagesService {
       const chatId = await this.resolveChatId(resolved.accountId, attendeeId);
 
       if (isNonEmptyString(chatId)) {
-        await this.triggerChatHistorySyncBestEffort(chatId);
+        await this.triggerChatHistorySyncBestEffort(
+          resolved.accountId,
+          chatId,
+        );
       }
 
       const rawMessages = await this.fetchMessagesForAttendee(
@@ -235,6 +240,10 @@ export class FetchLinkedinMessagesService {
         error: '',
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.error('fetch-linkedin-messages failed', error);
 
       return {
@@ -266,12 +275,26 @@ export class FetchLinkedinMessagesService {
     return identifier.trim();
   }
 
+  private async makeInboxUnipileRequest(
+    accountId: string,
+    endpoint: string,
+  ): Promise<unknown> {
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId,
+      method: 'endpoint',
+    });
+
+    return this.linkedinUnipileRequestService.makeUnipileRequest(endpoint);
+  }
+
   private async resolveChatId(
     accountId: string,
     attendeeId: string,
   ): Promise<string | undefined> {
     const encodedAttendee = encodeURIComponent(attendeeId);
-    const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
+    const response = (await this.makeInboxUnipileRequest(
+      accountId,
       `/api/v1/chat_attendees/${encodedAttendee}/chats?account_id=${encodeURIComponent(accountId)}&limit=10`,
     )) as UnipileChatListResponse;
 
@@ -283,9 +306,13 @@ export class FetchLinkedinMessagesService {
     return chat?.id;
   }
 
-  private async triggerChatHistorySyncBestEffort(chatId: string): Promise<void> {
+  private async triggerChatHistorySyncBestEffort(
+    accountId: string,
+    chatId: string,
+  ): Promise<void> {
     try {
-      let response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
+      let response = (await this.makeInboxUnipileRequest(
+        accountId,
         `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
       )) as UnipileChatHistorySyncResponse;
 
@@ -302,12 +329,17 @@ export class FetchLinkedinMessagesService {
         attempts < 5
       ) {
         await this.sleep(1500);
-        response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
+        response = (await this.makeInboxUnipileRequest(
+          accountId,
           `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
         )) as UnipileChatHistorySyncResponse;
         attempts += 1;
       }
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.warn(
         `Chat history sync best-effort failed for ${chatId}: ${
           error instanceof Error ? error.message : error
@@ -335,7 +367,8 @@ export class FetchLinkedinMessagesService {
         query.set('cursor', cursor);
       }
 
-      const response = (await this.linkedinUnipileRequestService.makeUnipileRequest(
+      const response = (await this.makeInboxUnipileRequest(
+        accountId,
         `/api/v1/chat_attendees/${encodedAttendee}/messages?${query.toString()}`,
       )) as UnipileMessageListResponse;
 

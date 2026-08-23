@@ -26,6 +26,9 @@ export type LinkedinRateLimitMethod =
   | 'company_profile'
   | 'profile'
   | 'connection_request'
+  | 'comment'
+  | 'message'
+  | 'inmail'
   | 'search';
 
 export type WhatsappRateLimitMethod = 'endpoint' | 'start_chat';
@@ -221,6 +224,69 @@ export class AccountRateLimiterService implements OnModuleInit {
           'week',
           limits.connectionRequestPerWeek,
           MS_PER_WEEK,
+        ),
+      );
+    }
+
+    if (method === 'comment') {
+      windows.push(
+        this.window(
+          accountId,
+          'linkedin',
+          'comment',
+          '30s',
+          limits.commentPer30Seconds,
+          MS_PER_THIRTY_SECONDS,
+        ),
+        this.window(
+          accountId,
+          'linkedin',
+          'comment',
+          'day',
+          limits.commentPerDay,
+          MS_PER_DAY,
+        ),
+      );
+    }
+
+    if (method === 'message') {
+      windows.push(
+        this.window(
+          accountId,
+          'linkedin',
+          'message',
+          '30s',
+          limits.messagePer30Seconds,
+          MS_PER_THIRTY_SECONDS,
+        ),
+        this.window(
+          accountId,
+          'linkedin',
+          'message',
+          'day',
+          limits.messagePerDay,
+          MS_PER_DAY,
+        ),
+      );
+    }
+
+    if (method === 'inmail') {
+      windows.push(
+        this.window(
+          accountId,
+          'linkedin',
+          'inmail',
+          '30s',
+          limits.inmailPer30Seconds,
+          MS_PER_THIRTY_SECONDS,
+        ),
+        this.window(
+          accountId,
+          'linkedin',
+          'inmail',
+          'day',
+          limits.inmailPerDay,
+          MS_PER_DAY,
         ),
       );
     }

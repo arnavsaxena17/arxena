@@ -39,6 +39,7 @@ import { SyncGtmSearchCompaniesDropSortParamsCommand } from 'src/database/comman
 import { SyncGtmSearchCompaniesParameterAutocompleteCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000044-sync-gtm-search-companies-parameter-autocomplete.command';
 import { SyncGtmCompanyHarvestFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000045-sync-gtm-company-harvest-fields.command';
 import { SyncGtmProjectIdRecordPickerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000046-sync-gtm-project-id-record-picker.command';
+import { DropGtmProjectRateLimitFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000047-drop-gtm-project-rate-limit-fields.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -100,6 +101,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncGtmSearchCompaniesParameterAutocompleteCommand,
     SyncGtmCompanyHarvestFieldsCommand,
     SyncGtmProjectIdRecordPickerCommand,
+    DropGtmProjectRateLimitFieldsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

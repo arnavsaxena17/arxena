@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import {
   SendLinkedinMessageToolInputZodSchema,
@@ -85,6 +86,9 @@ export class SendLinkedinMessageTool implements Tool {
         },
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
       this.logger.error(
         `Failed to send LinkedIn message: ${getUnipileToolErrorMessage(error)}`,
       );

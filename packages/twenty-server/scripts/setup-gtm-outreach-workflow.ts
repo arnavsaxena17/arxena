@@ -1728,7 +1728,11 @@ const deployWorkflowHarvest = async (
           logicFunctionInput: {
             query: GTM_HARVEST_QUERY,
             keywords: GTM_HARVEST_QUERY,
-            limit: 15,
+            ...(GTM_HARVEST_QUERY.includes('linkedin.com')
+              ? { url: GTM_HARVEST_QUERY }
+              : {}),
+            projectId,
+            limit: 100,
           },
         },
         outputSchema: {},
@@ -1963,12 +1967,6 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         sendTimezone: 'America/Los_Angeles',
         sendWindowStart: '09:00',
         sendWindowEnd: '17:00',
-        maxConnectsPerDay: 25,
-        maxConnectsPerWeek: 100,
-        minConnectGapMinutes: 60,
-        minMessageGapMinutes: 15,
-        maxCommentsPerDay: 20,
-        maxEmailsPerDay: 50,
         // icpSpec: JSON.stringify({
           // std_function: ['talent acquisition', 'people'],
           // std_grade: ['leadership', 'mid'],

@@ -14,6 +14,7 @@ describe('CompanyApiService', () => {
     searchCompaniesSalesNavigator: jest.fn(),
     searchCompaniesRecruiter: jest.fn(),
     searchFromUrl: jest.fn(),
+    searchWithCursor: jest.fn(),
     browseSalesAccountList: jest.fn(),
   };
   const unipileSearchAccountResolver = {
@@ -191,6 +192,7 @@ describe('CompanyApiService', () => {
       'acc_123',
       {
         limit: 20,
+        offset: 0,
       },
     );
     expect(
@@ -230,5 +232,140 @@ describe('CompanyApiService', () => {
     expect(
       linkedInSearchService.searchCompaniesSalesNavigator,
     ).not.toHaveBeenCalled();
+  });
+
+  it('pages Unipile company search with cursor until limit or last page', async () => {
+    companySearchDataSourceResolver.resolve.mockResolvedValue({
+      dataSource: 'unipile',
+      accountId: 'sn-acct',
+      unipileProduct: 'sales_navigator',
+    });
+    const page = (start: number, count: number, cursor: string | null) => ({
+      items: Array.from({ length: count }, (_, index) => ({
+        type: 'COMPANY',
+        id: String(start + index),
+        name: `Co ${start + index}`,
+      })),
+      paging: { start, page_count: count, total_count: 25 },
+      cursor,
+    });
+    linkedInSearchService.searchCompaniesSalesNavigator.mockResolvedValue(
+      page(0, 10, 'cursor-1'),
+    );
+    linkedInSearchService.searchWithCursor
+      .mockResolvedValueOnce(page(10, 10, 'cursor-2'))
+      .mockResolvedValueOnce(page(20, 5, null));
+
+    const result = await service.searchCompanies(
+      { companyName: 'Acme', limit: 25 },
+      'token',
+    );
+
+    expect(result.items).toHaveLength(25);
+    expect(result.total).toBe(25);
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledTimes(2);
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenNthCalledWith(
+      1,
+      'cursor-1',
+      'sn-acct',
+      { limit: 25 },
+    );
+  });
+
+  it('stops v2 account-list paging at the first already-known company', async () => {
+    companySearchDataSourceResolver.resolve.mockResolvedValue({
+      dataSource: 'unipile',
+      accountId: 'sn-acct',
+      unipileProduct: 'sales_navigator',
+    });
+    linkedInSearchService.browseSalesAccountList.mockResolvedValue({
+      items: [
+        { type: 'COMPANY', id: '1', name: 'New 1' },
+        { type: 'COMPANY', id: '2', name: 'New 2' },
+        { type: 'COMPANY', id: '3', name: 'Old 3' },
+        { type: 'COMPANY', id: '4', name: 'New 4' },
+      ],
+      paging: { start: 0, page_count: 4, total_count: 40 },
+      cursor: 'next',
+    });
+
+    const url =
+      'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=ACCOUNT_7378394885466337283';
+
+    const result = await service.searchCompanies(
+      { url, useV2: true, limit: 20 },
+      'token',
+      {
+        isKnownHit: (hit) => hit.id === '3',
+        stopAtKnown: true,
+      },
+    );
+
+    expect(result.items.map((item) => item.id)).toEqual(['1', '2']);
+    expect(linkedInSearchService.browseSalesAccountList).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(linkedInSearchService.searchWithCursor).not.toHaveBeenCalled();
+  });
+
+  it('skips already-known companies on keyword search without stopping pagination', async () => {
+    companySearchDataSourceResolver.resolve.mockResolvedValue({
+      dataSource: 'unipile',
+      accountId: 'sn-acct',
+      unipileProduct: 'sales_navigator',
+    });
+    const page = (start: number, count: number, cursor: string | null) => ({
+      items: Array.from({ length: count }, (_, index) => ({
+        type: 'COMPANY',
+        id: String(start + index),
+        name: `Co ${start + index}`,
+      })),
+      paging: { start, page_count: count, total_count: 20 },
+      cursor,
+    });
+    linkedInSearchService.searchCompaniesSalesNavigator.mockResolvedValue(
+      page(0, 2, 'cursor-1'),
+    );
+    linkedInSearchService.searchWithCursor.mockResolvedValue(
+      page(2, 2, null),
+    );
+
+    const result = await service.searchCompanies(
+      { companyName: 'Acme', limit: 3 },
+      'token',
+      {
+        isKnownHit: (hit) => hit.id === '1',
+        stopAtKnown: false,
+      },
+    );
+
+    expect(result.items.map((item) => item.id)).toEqual(['0', '2', '3']);
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses Harvest company search total and collected items', async () => {
+    companySearchDataSourceResolver.resolve.mockResolvedValue({
+      dataSource: 'harvest',
+    });
+    harvestLinkedinService.isConfigured.mockReturnValue(true);
+    harvestLinkedinService.searchCompanies.mockResolvedValue({
+      total: 40,
+      items: [{ name: 'Acme' }],
+    });
+    companySearchHitTransformer.fromHarvestItem.mockImplementation((item) => ({
+      id: '',
+      name: item.name ?? '',
+      website: '',
+      linkedinUrl: '',
+      industry: '',
+    }));
+
+    await expect(
+      service.searchCompanies({ companyName: 'Acme', limit: 10 }, 'token'),
+    ).resolves.toMatchObject({
+      dataSource: 'harvest',
+      total: 40,
+      items: [{ name: 'Acme' }],
+    });
   });
 });

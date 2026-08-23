@@ -31,7 +31,12 @@ export class HarvestLinkedinService {
     search?: string;
     location?: string;
     limit?: number;
-  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+  }): Promise<{
+    total: number;
+    pageSize: number;
+    totalPages: number;
+    items: HarvestLeadItem[];
+  }> {
     return this.searchPaginatedCollection({
       path: '/linkedin/company-search',
       search: input.search,
@@ -492,10 +497,10 @@ export class HarvestLinkedinService {
     };
 
     return {
-      totalPages: readNumber('totalPages'),
-      totalElements: readNumber('totalElements'),
-      pageNumber: readNumber('pageNumber'),
-      pageSize: readNumber('pageSize'),
+      totalPages: readNumber('totalPages') ?? readNumber('totalPages'),
+      totalElements: readNumber('totalElements') ?? readNumber('totalElements'),
+      pageNumber: readNumber('pageNumber') ?? readNumber('pageNumber'),
+      pageSize: readNumber('pageSize') ?? readNumber('pageSize'),
     };
   }
 
@@ -539,7 +544,12 @@ export class HarvestLinkedinService {
     sortBy?: string;
     contentType?: string;
     limit?: number;
-  }): Promise<{ total: number; items: HarvestLeadItem[] }> {
+  }): Promise<{
+    total: number;
+    pageSize: number;
+    totalPages: number;
+    items: HarvestLeadItem[];
+  }> {
     const limit = Math.max(1, Math.min(100, input.limit ?? 20));
     const firstPage = await this.fetchCollectionPage({
       ...input,
@@ -547,15 +557,31 @@ export class HarvestLinkedinService {
     });
     const out = [...firstPage.items];
     const total = firstPage.pagination?.totalElements ?? out.length;
+    const pageSize =
+      firstPage.pagination?.pageSize && firstPage.pagination.pageSize > 0
+        ? firstPage.pagination.pageSize
+        : out.length || limit;
+    const totalPages =
+      firstPage.pagination?.totalPages && firstPage.pagination.totalPages > 0
+        ? firstPage.pagination.totalPages
+        : total === 0
+          ? 0
+          : Math.ceil(total / Math.max(pageSize, 1));
+
+    const toResult = (items: HarvestLeadItem[]) => ({
+      total,
+      pageSize,
+      totalPages,
+      items: items.slice(0, limit),
+    });
 
     if (out.length >= limit) {
-      return { total, items: out.slice(0, limit) };
+      return toResult(out);
     }
 
-    const totalPages = firstPage.pagination?.totalPages;
     const lastPage =
-      typeof totalPages === 'number'
-        ? Math.min(totalPages, 10)
+      typeof firstPage.pagination?.totalPages === 'number'
+        ? Math.min(firstPage.pagination.totalPages, 10)
         : Math.ceil(limit / Math.max(out.length, 1));
 
     for (let page = 2; page <= lastPage; page += 1) {
@@ -569,7 +595,7 @@ export class HarvestLinkedinService {
       }
     }
 
-    return { total, items: out.slice(0, limit) };
+    return toResult(out);
   }
 
   private async fetchCollectionPage(input: {

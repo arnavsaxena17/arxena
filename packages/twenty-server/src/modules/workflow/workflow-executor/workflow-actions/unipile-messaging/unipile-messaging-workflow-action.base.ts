@@ -19,12 +19,10 @@ import {
 import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
+import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-executor/utils/defer-workflow-for-account-rate-limit.util';
 import { ToolBackedWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/tool-backed/tool-backed.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
-import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
-import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
-import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
 const extractProviderMessageId = (result: unknown): string | undefined => {
@@ -134,20 +132,14 @@ export abstract class UnipileMessagingWorkflowActionBase<
       pacingPatch = check.counterPatch;
 
       if (!check.allowed && check.delayMs > 0) {
-        await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
-          RESUME_DELAYED_WORKFLOW_JOB_NAME,
-          {
-            workspaceId: runInfo.workspaceId,
-            workflowRunId: runInfo.workflowRunId,
-            stepId: currentStepId,
-          },
-          {
-            ...buildRunWorkflowJobOptions(runInfo.workflowRunId),
-            delay: check.delayMs,
-          },
-        );
-
-        return { pendingEvent: true };
+        return deferWorkflowForAccountRateLimit({
+          delayedQueue: this.delayedQueue,
+          waitMs: check.delayMs,
+          currentStepId,
+          workspaceId: runInfo.workspaceId,
+          workflowRunId: runInfo.workflowRunId,
+          pendingReason: 'gtm_unipile_pacing',
+        });
       }
     }
 
@@ -159,20 +151,13 @@ export abstract class UnipileMessagingWorkflowActionBase<
       });
     } catch (error) {
       if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
-        await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
-          RESUME_DELAYED_WORKFLOW_JOB_NAME,
-          {
-            workspaceId: runInfo.workspaceId,
-            workflowRunId: runInfo.workflowRunId,
-            stepId: currentStepId,
-          },
-          {
-            ...buildRunWorkflowJobOptions(runInfo.workflowRunId),
-            delay: error.waitMs,
-          },
-        );
-
-        return { pendingEvent: true };
+        return deferWorkflowForAccountRateLimit({
+          delayedQueue: this.delayedQueue,
+          waitMs: error.waitMs,
+          currentStepId,
+          workspaceId: runInfo.workspaceId,
+          workflowRunId: runInfo.workflowRunId,
+        });
       }
 
       throw error;

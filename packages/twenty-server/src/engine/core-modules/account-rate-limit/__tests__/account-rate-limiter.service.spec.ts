@@ -113,6 +113,78 @@ describe('AccountRateLimiterService', () => {
     );
   });
 
+  it('applies LinkedIn message 30s and day windows', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'message',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        'linkedin:acc-1:message:30s',
+        'linkedin:acc-1:message:day',
+        'linkedin:acc-1:endpoint:minute',
+        'linkedin:acc-1:endpoint:day',
+      ]),
+    );
+  });
+
+  it('applies LinkedIn InMail 30s and day windows', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'inmail',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        'linkedin:acc-1:inmail:30s',
+        'linkedin:acc-1:inmail:day',
+        'linkedin:acc-1:endpoint:minute',
+        'linkedin:acc-1:endpoint:day',
+      ]),
+    );
+  });
+
+  it('applies LinkedIn comment 30s and day windows', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'comment',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        'linkedin:acc-1:comment:30s',
+        'linkedin:acc-1:comment:day',
+        'linkedin:acc-1:endpoint:minute',
+        'linkedin:acc-1:endpoint:day',
+      ]),
+    );
+  });
+
   it('defers instead of waiting in-process when the wait exceeds the cap', async () => {
     const acquire = jest.fn().mockResolvedValue({
       acquired: false,

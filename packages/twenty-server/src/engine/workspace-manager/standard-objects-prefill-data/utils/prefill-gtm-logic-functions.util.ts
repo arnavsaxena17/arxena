@@ -361,6 +361,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
               keywords: { type: 'string', label: 'Keywords' },
               website: { type: 'string', label: 'Website' },
               query: { type: 'string', label: 'Query' },
+              projectId: { type: 'string', label: 'Project ID' },
               limit: { type: 'number', label: 'Limit' },
             },
           },

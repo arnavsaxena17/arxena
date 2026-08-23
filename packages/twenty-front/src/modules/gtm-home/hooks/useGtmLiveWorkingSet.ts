@@ -445,9 +445,6 @@ export const useGtmLiveWorkingSet = () => {
       sendTimezone: 'America/Los_Angeles',
       sendWindowStart: '09:00',
       sendWindowEnd: '17:00',
-      maxConnectsPerDay: 25,
-      maxCommentsPerDay: 20,
-      maxEmailsPerDay: 50,
       complianceCopy:
         'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
       ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),

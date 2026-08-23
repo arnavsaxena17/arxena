@@ -16,22 +16,8 @@ import {
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-type ProjectThrottleRecord = ObjectLiteral & {
+type ProjectPacingRecord = ObjectLiteral & {
   id: string;
-  linkedinConnectsToday?: number | null;
-  commentsToday?: number | null;
-  emailsToday?: number | null;
-  maxConnectsPerDay?: number | null;
-  maxCommentsPerDay?: number | null;
-  maxEmailsPerDay?: number | null;
-  linkedinConnectsThisWeek?: number | null;
-  maxConnectsPerWeek?: number | null;
-  linkedinConnectsWeekStartedAt?: string | Date | null;
-  minConnectGapMinutes?: number | null;
-  minMessageGapMinutes?: number | null;
-  sendTimezone?: string | null;
-  sendWindowStart?: string | null;
-  sendWindowEnd?: string | null;
 };
 
 type WorkspaceMemberProfilePacingRecord = ObjectLiteral & {
@@ -87,7 +73,7 @@ export class GtmUnipilePacingService {
     channel: GtmThrottleChannel;
     linkedinProfileId?: string;
   }): Promise<GtmOutreachThrottleCheckResult & { projectId: string | null }> {
-    const loaded = await this.loadCounters({
+    const loaded = await this.loadPacingContext({
       workspaceId,
       workspaceMemberId,
       linkedinProfileId,
@@ -96,9 +82,6 @@ export class GtmUnipilePacingService {
     const result = this.gtmOutreachThrottleService.checkAndReserve({
       counters: loaded.counters,
       channel,
-      sendTimezone: loaded.project?.sendTimezone,
-      sendWindowStart: loaded.project?.sendWindowStart,
-      sendWindowEnd: loaded.project?.sendWindowEnd,
       linkedinConnected: isNonEmptyString(
         loaded.profile?.linkedinUnipileAccountId,
       ),
@@ -110,8 +93,6 @@ export class GtmUnipilePacingService {
   async stampSuccess({
     workspaceId,
     workspaceMemberId,
-    projectId,
-    channel,
     patch,
   }: {
     workspaceId: string;
@@ -143,34 +124,10 @@ export class GtmUnipilePacingService {
             : {}),
         });
       }
-
-      if (isNonEmptyString(projectId) && channel === 'connect') {
-        const projectRepository =
-          await this.globalWorkspaceOrmManager.getRepository<ProjectThrottleRecord>(
-            workspaceId,
-            'project',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        await projectRepository.update(projectId, {
-          ...(typeof patch.linkedinConnectsToday === 'number'
-            ? { linkedinConnectsToday: patch.linkedinConnectsToday }
-            : {}),
-          ...(typeof patch.linkedinConnectsThisWeek === 'number'
-            ? { linkedinConnectsThisWeek: patch.linkedinConnectsThisWeek }
-            : {}),
-          ...(patch.linkedinConnectsWeekStartedAt
-            ? {
-                linkedinConnectsWeekStartedAt:
-                  patch.linkedinConnectsWeekStartedAt,
-              }
-            : {}),
-        });
-      }
     }, authContext);
   }
 
-  private async loadCounters({
+  private async loadPacingContext({
     workspaceId,
     workspaceMemberId,
     linkedinProfileId,
@@ -180,7 +137,7 @@ export class GtmUnipilePacingService {
     linkedinProfileId?: string;
   }): Promise<{
     counters: GtmThrottleCounters;
-    project: ProjectThrottleRecord | null;
+    project: ProjectPacingRecord | null;
     profile: WorkspaceMemberProfilePacingRecord | null;
   }> {
     const authContext = buildSystemAuthContext(workspaceId);
@@ -194,7 +151,7 @@ export class GtmUnipilePacingService {
             { shouldBypassPermissionChecks: true },
           );
         const projectRepository =
-          await this.globalWorkspaceOrmManager.getRepository<ProjectThrottleRecord>(
+          await this.globalWorkspaceOrmManager.getRepository<ProjectPacingRecord>(
             workspaceId,
             'project',
             { shouldBypassPermissionChecks: true },
@@ -204,7 +161,7 @@ export class GtmUnipilePacingService {
           where: { workspaceMemberId },
         });
 
-        let project: ProjectThrottleRecord | null = null;
+        let project: ProjectPacingRecord | null = null;
 
         if (isNonEmptyString(linkedinProfileId)) {
           const candidateRepository =
@@ -239,18 +196,6 @@ export class GtmUnipilePacingService {
           profile,
           project,
           counters: {
-            linkedinConnectsToday: project?.linkedinConnectsToday ?? 0,
-            commentsToday: project?.commentsToday ?? 0,
-            emailsToday: project?.emailsToday ?? 0,
-            maxConnectsPerDay: project?.maxConnectsPerDay ?? 25,
-            maxCommentsPerDay: project?.maxCommentsPerDay ?? 20,
-            maxEmailsPerDay: project?.maxEmailsPerDay ?? 50,
-            linkedinConnectsThisWeek: project?.linkedinConnectsThisWeek ?? 0,
-            maxConnectsPerWeek: project?.maxConnectsPerWeek ?? 100,
-            linkedinConnectsWeekStartedAt:
-              project?.linkedinConnectsWeekStartedAt ?? null,
-            minConnectGapMinutes: project?.minConnectGapMinutes ?? 60,
-            minMessageGapMinutes: project?.minMessageGapMinutes ?? 15,
             lastLinkedinConnectAt: profile?.lastLinkedinConnectAt ?? null,
             lastLinkedinMessageAt: profile?.lastLinkedinMessageAt ?? null,
           },

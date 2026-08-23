@@ -16,6 +16,12 @@ export type LinkedinAccountRateLimits = {
   connectionRequestPer30Seconds: number;
   connectionRequestPerDay: number;
   connectionRequestPerWeek: number;
+  commentPer30Seconds: number;
+  commentPerDay: number;
+  messagePer30Seconds: number;
+  messagePerDay: number;
+  inmailPer30Seconds: number;
+  inmailPerDay: number;
   searchPerMinute: number;
   searchPerDay: number;
 };
@@ -45,6 +51,12 @@ export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
   connectionRequestPer30Seconds: 1,
   connectionRequestPerDay: 20,
   connectionRequestPerWeek: 80,
+  commentPer30Seconds: 1,
+  commentPerDay: 20,
+  messagePer30Seconds: 1,
+  messagePerDay: 50,
+  inmailPer30Seconds: 1,
+  inmailPerDay: 20,
   searchPerMinute: 4,
   searchPerDay: 10,
 };
@@ -67,6 +79,12 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   connectionRequestPer30Seconds: { min: 1, max: 5 },
   connectionRequestPerDay: { min: 1, max: 50 },
   connectionRequestPerWeek: { min: 5, max: 200 },
+  commentPer30Seconds: { min: 1, max: 5 },
+  commentPerDay: { min: 1, max: 50 },
+  messagePer30Seconds: { min: 1, max: 5 },
+  messagePerDay: { min: 1, max: 150 },
+  inmailPer30Seconds: { min: 1, max: 5 },
+  inmailPerDay: { min: 1, max: 50 },
   searchPerMinute: { min: 1, max: 10 },
   searchPerDay: { min: 1, max: 20 },
 };

@@ -65,4 +65,51 @@ describe('SearchJobsService', () => {
       jobs: [{ title: 'Engineer', companyName: 'Acme' }],
     });
   });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
+    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    jobApiService.searchJobs.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81_711_000,
+        accountId: 'acc-1',
+        method: 'search',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { keywords: 'engineer' },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
+    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    jobApiService.searchJobs.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81_711_000,
+        accountId: 'acc-1',
+        method: 'search',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { keywords: 'engineer' },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
 });

@@ -90,4 +90,30 @@ describe('FetchLinkedinMessagesService', () => {
       messages: [{ id: 'msg-1', text: 'Hello', isSender: false }],
     });
   });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    linkedinUnipileRequestService.makeUnipileRequest.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81_711_000,
+        accountId: 'acc-1',
+        method: 'endpoint',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { linkedinProfileId: VALID_PROVIDER_ID },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
 });

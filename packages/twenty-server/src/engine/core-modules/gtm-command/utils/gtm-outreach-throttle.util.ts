@@ -1,145 +1,19 @@
 export type GtmThrottleChannel = 'connect' | 'comment' | 'email' | 'message';
 
 export type GtmThrottleCounters = {
-  linkedinConnectsToday: number;
-  commentsToday: number;
-  emailsToday: number;
-  maxConnectsPerDay: number;
-  maxCommentsPerDay: number;
-  maxEmailsPerDay: number;
-  linkedinConnectsThisWeek?: number;
-  maxConnectsPerWeek?: number;
-  linkedinConnectsWeekStartedAt?: string | Date | null;
-  minConnectGapMinutes?: number;
-  minMessageGapMinutes?: number;
   lastLinkedinConnectAt?: string | Date | null;
   lastLinkedinMessageAt?: string | Date | null;
 };
 
-export const isOverDailyCap = (
-  counters: GtmThrottleCounters,
-  channel: GtmThrottleChannel,
-): boolean => {
-  switch (channel) {
-    case 'connect':
-      return counters.linkedinConnectsToday >= counters.maxConnectsPerDay;
-    case 'comment':
-      return counters.commentsToday >= counters.maxCommentsPerDay;
-    case 'email':
-      return counters.emailsToday >= counters.maxEmailsPerDay;
-    case 'message':
-      return false;
-    default:
-      return false;
-  }
-};
-
-const startOfIsoWeekUtc = (date: Date): Date => {
-  const copy = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-  const day = copy.getUTCDay() || 7;
-
-  copy.setUTCDate(copy.getUTCDate() - day + 1);
-  copy.setUTCHours(0, 0, 0, 0);
-
-  return copy;
-};
-
-export const isOverWeeklyConnectCap = (
-  counters: GtmThrottleCounters,
-  now: Date = new Date(),
-): { over: boolean; weekStartedAt: Date; connectsThisWeek: number } => {
-  const max = counters.maxConnectsPerWeek ?? 100;
-  const weekStart = startOfIsoWeekUtc(now);
-  const storedStart = counters.linkedinConnectsWeekStartedAt
-    ? new Date(counters.linkedinConnectsWeekStartedAt)
-    : null;
-  const sameWeek =
-    storedStart !== null &&
-    Number.isFinite(storedStart.getTime()) &&
-    storedStart.getTime() === weekStart.getTime();
-  const connectsThisWeek = sameWeek
-    ? (counters.linkedinConnectsThisWeek ?? 0)
-    : 0;
-
-  return {
-    over: connectsThisWeek >= max,
-    weekStartedAt: weekStart,
-    connectsThisWeek,
-  };
-};
-
-const toDate = (value: string | Date | null | undefined): Date | null => {
-  if (!value) {
-    return null;
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-
-  return Number.isFinite(date.getTime()) ? date : null;
-};
-
-export const computeSeatGapDelayMs = ({
-  channel,
-  counters,
-  now = new Date(),
-}: {
-  channel: GtmThrottleChannel;
-  counters: GtmThrottleCounters;
-  now?: Date;
-}): number => {
-  const lastAt =
-    channel === 'connect'
-      ? toDate(counters.lastLinkedinConnectAt)
-      : channel === 'message'
-        ? toDate(counters.lastLinkedinMessageAt)
-        : null;
-
-  if (!lastAt) {
-    return 0;
-  }
-
-  const gapMinutes =
-    channel === 'connect'
-      ? (counters.minConnectGapMinutes ?? 60)
-      : channel === 'message'
-        ? (counters.minMessageGapMinutes ?? 15)
-        : 0;
-
-  if (gapMinutes <= 0) {
-    return 0;
-  }
-
-  const elapsed = now.getTime() - lastAt.getTime();
-  const required = gapMinutes * 60 * 1000;
-
-  return Math.max(0, required - elapsed);
-};
-
 export const incrementThrottleCounter = (
-  counters: GtmThrottleCounters,
+  _counters: GtmThrottleCounters,
   channel: GtmThrottleChannel,
   now: Date = new Date(),
 ): Partial<GtmThrottleCounters> => {
   switch (channel) {
-    case 'connect': {
-      const weekly = isOverWeeklyConnectCap(counters, now);
-
+    case 'connect':
       return {
-        linkedinConnectsToday: counters.linkedinConnectsToday + 1,
-        linkedinConnectsThisWeek: weekly.connectsThisWeek + 1,
-        linkedinConnectsWeekStartedAt: weekly.weekStartedAt,
         lastLinkedinConnectAt: now,
-      };
-    }
-    case 'comment':
-      return {
-        commentsToday: counters.commentsToday + 1,
-      };
-    case 'email':
-      return {
-        emailsToday: counters.emailsToday + 1,
       };
     case 'message':
       return {

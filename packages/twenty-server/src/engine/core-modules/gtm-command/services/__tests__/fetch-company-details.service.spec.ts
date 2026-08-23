@@ -138,4 +138,53 @@ describe('FetchCompanyDetailsService', () => {
     });
     expect(unipileCompanyService.getCompanyProfile).not.toHaveBeenCalled();
   });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    unipileCompanyService.getCompanyProfile.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81_711_000,
+        accountId: 'acc-1',
+        method: 'company_profile',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          linkedinUrl: 'https://www.linkedin.com/company/acme',
+          accountId: 'acc-1',
+        },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } = await import(
+      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+    );
+
+    unipileCompanyService.getCompanyProfile.mockRejectedValue(
+      new AccountRateLimitDeferredError({
+        waitMs: 81_711_000,
+        accountId: 'acc-1',
+        method: 'company_profile',
+      }),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          linkedinUrl: 'https://www.linkedin.com/company/acme',
+          accountId: 'acc-1',
+        },
+      }),
+    ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
 });

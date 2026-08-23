@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 import { type ObjectLiteral } from 'typeorm';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/services/search-companies.service';
 import {
@@ -87,6 +88,10 @@ export class FetchCompanyDetailsService {
         accountId,
       });
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.error('fetch-company-details failed', error);
 
       return {

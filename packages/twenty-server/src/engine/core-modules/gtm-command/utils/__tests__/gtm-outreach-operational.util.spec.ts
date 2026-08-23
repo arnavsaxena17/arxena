@@ -1,8 +1,5 @@
 import {
   computeNextSendWindow,
-  computeSeatGapDelayMs,
-  isOverDailyCap,
-  isOverWeeklyConnectCap,
   parseHhMmToMinutes,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
 import {
@@ -59,22 +56,9 @@ describe('gtm outreach operational utils', () => {
     expect(isCandidatePastQueued('CONNECTION_SENT')).toBe(true);
   });
 
-  it('parses HH:mm and daily caps', () => {
+  it('parses HH:mm', () => {
     expect(parseHhMmToMinutes('09:30')).toBe(9 * 60 + 30);
     expect(parseHhMmToMinutes('bad')).toBeNull();
-    expect(
-      isOverDailyCap(
-        {
-          linkedinConnectsToday: 25,
-          commentsToday: 0,
-          emailsToday: 0,
-          maxConnectsPerDay: 25,
-          maxCommentsPerDay: 20,
-          maxEmailsPerDay: 50,
-        },
-        'connect',
-      ),
-    ).toBe(true);
   });
 
   it('honors GTM_DELAY_MS-style override in send window', () => {
@@ -118,59 +102,5 @@ describe('gtm outreach operational utils', () => {
     expect(decisions.get('b')?.stage).toBe('QUEUED');
     expect(decisions.get('c')?.stage).toBe('QUEUED');
     expect(decisions.get('a')?.stage).toBe('DEFERRED');
-  });
-
-  it('enforces weekly connect cap and seat gaps', () => {
-    const weekStart = new Date(Date.UTC(2026, 0, 5));
-    const weekly = isOverWeeklyConnectCap(
-      {
-        linkedinConnectsToday: 0,
-        commentsToday: 0,
-        emailsToday: 0,
-        maxConnectsPerDay: 25,
-        maxCommentsPerDay: 20,
-        maxEmailsPerDay: 50,
-        linkedinConnectsThisWeek: 100,
-        maxConnectsPerWeek: 100,
-        linkedinConnectsWeekStartedAt: weekStart,
-      },
-      new Date(Date.UTC(2026, 0, 6, 12)),
-    );
-
-    expect(weekly.over).toBe(true);
-
-    const gapMs = computeSeatGapDelayMs({
-      channel: 'connect',
-      counters: {
-        linkedinConnectsToday: 0,
-        commentsToday: 0,
-        emailsToday: 0,
-        maxConnectsPerDay: 25,
-        maxCommentsPerDay: 20,
-        maxEmailsPerDay: 50,
-        minConnectGapMinutes: 60,
-        lastLinkedinConnectAt: new Date('2026-01-06T12:00:00.000Z'),
-      },
-      now: new Date('2026-01-06T12:10:00.000Z'),
-    });
-
-    expect(gapMs).toBe(50 * 60 * 1000);
-
-    const messageGapMs = computeSeatGapDelayMs({
-      channel: 'message',
-      counters: {
-        linkedinConnectsToday: 0,
-        commentsToday: 0,
-        emailsToday: 0,
-        maxConnectsPerDay: 25,
-        maxCommentsPerDay: 20,
-        maxEmailsPerDay: 50,
-        minMessageGapMinutes: 15,
-        lastLinkedinMessageAt: new Date('2026-01-06T12:00:00.000Z'),
-      },
-      now: new Date('2026-01-06T12:15:00.000Z'),
-    });
-
-    expect(messageGapMs).toBe(0);
   });
 });

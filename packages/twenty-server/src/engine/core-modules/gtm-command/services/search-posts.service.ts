@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { PostsApiService } from 'src/engine/core-modules/posts-api/posts-api.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -66,6 +67,10 @@ export class SearchPostsService {
         posts: search.items,
       };
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
+
       this.logger.error('search-posts failed', error);
 
       return {

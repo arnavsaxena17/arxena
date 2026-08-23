@@ -8,6 +8,14 @@ import { type ObjectLiteral } from 'typeorm';
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
 import type { CompanySearchHit } from 'src/engine/core-modules/company-api/company-api.types';
 import { CompanySearchHitTransformer } from 'src/engine/core-modules/company-api/services/company-search-hit.transformer';
+import {
+  companyLinkedinUrl as identityCompanyLinkedinUrl,
+  companyWebsiteUrl as identityCompanyWebsiteUrl,
+  extractLinkedinCompanyId,
+  identityKeysForHit,
+  identityKeysForRecord,
+  normalizeCompanyUrl,
+} from 'src/engine/core-modules/company-api/utils/company-identity.util';
 import { appendGtmRunKey, gtmRunKeyHasProject } from 'src/engine/core-modules/gtm-command/utils/gtm-run-key.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -33,20 +41,6 @@ export type UpsertCompaniesInput = {
   limit?: number;
 };
 
-const normalizeUrl = (value?: string | null): string => {
-  if (!isNonEmptyString(value)) {
-    return '';
-  }
-
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/[?#].*$/, '')
-    .replace(/\/+$/, '');
-};
-
 const toPrimaryLink = (url: string) => {
   if (!isNonEmptyString(url)) {
     return null;
@@ -64,7 +58,7 @@ const toPrimaryLink = (url: string) => {
   href = href.replace(/\/+$/, '');
 
   const primaryLinkUrl = href.startsWith('http') ? href : `https://${href}`;
-  const primaryLinkLabel = normalizeUrl(primaryLinkUrl).split('/')[0] ?? '';
+  const primaryLinkLabel = normalizeCompanyUrl(primaryLinkUrl).split('/')[0] ?? '';
 
   return {
     primaryLinkUrl,
@@ -73,34 +67,10 @@ const toPrimaryLink = (url: string) => {
 };
 
 const companyLinkedinUrl = (row: CompanyRecord): string =>
-  row.linkedinLink?.primaryLinkUrl ?? row.linkedinLinkPrimaryLinkUrl ?? '';
+  identityCompanyLinkedinUrl(row);
 
 const companyWebsiteUrl = (row: CompanyRecord): string =>
-  row.domainName?.primaryLinkUrl ?? row.domainNamePrimaryLinkUrl ?? '';
-
-const extractLinkedinCompanyId = (hit: CompanySearchHit): string => {
-  if (/^\d+$/.test(hit.id.trim())) {
-    return hit.id.trim();
-  }
-
-  const fromUrl = hit.linkedinUrl.match(
-    /linkedin\.com\/(?:company|school|showcase)\/(\d+)/i,
-  );
-
-  if (fromUrl?.[1]) {
-    return fromUrl[1];
-  }
-
-  if (
-    isNonEmptyString(hit.id) &&
-    !hit.id.includes('/') &&
-    !hit.id.includes('http')
-  ) {
-    return hit.id.trim();
-  }
-
-  return '';
-};
+  identityCompanyWebsiteUrl(row);
 
 const columnNamesFromRepository = (repository: {
   metadata?: { columns?: Array<{ propertyName?: string }> };
@@ -244,8 +214,8 @@ export class UpsertCompaniesService {
           const linkedinId = extractLinkedinCompanyId(hit);
           const domainLink = toPrimaryLink(website);
           const linkedinLink = toPrimaryLink(linkedinUrl);
-          const normalizedLinkedin = normalizeUrl(linkedinUrl);
-          const normalizedDomain = normalizeUrl(website);
+          const normalizedLinkedin = normalizeCompanyUrl(linkedinUrl);
+          const normalizedDomain = normalizeCompanyUrl(website);
 
           if (
             !isNonEmptyString(name) &&
@@ -257,28 +227,19 @@ export class UpsertCompaniesService {
             continue;
           }
 
-          const match = existing.find((row) => {
-            const rowLinkedin = normalizeUrl(companyLinkedinUrl(row));
-            const rowDomain = normalizeUrl(companyWebsiteUrl(row));
-            const rowLinkedinId = (row.linkedinId ?? '').trim();
-
-            return (
-              (isNonEmptyString(linkedinId) && rowLinkedinId === linkedinId) ||
-              (normalizedLinkedin.length > 0 &&
-                rowLinkedin === normalizedLinkedin) ||
-              (normalizedDomain.length > 0 && rowDomain === normalizedDomain) ||
-              (isNonEmptyString(name) &&
-                (row.name ?? '').trim().toLowerCase() === name.toLowerCase())
-            );
-          });
+          const hitKeys = identityKeysForHit(hit);
+          const match = existing.find((row) =>
+            identityKeysForRecord(row).some((key) => hitKeys.includes(key)),
+          );
 
           const nextGtmRunKey = appendGtmRunKey(match?.gtmRunKey, projectId);
           const patch = pickWritable(
             {
-              ...(domainLink && !normalizeUrl(companyWebsiteUrl(match ?? {}))
+              ...(domainLink && !normalizeCompanyUrl(companyWebsiteUrl(match ?? {}))
                 ? { domainName: domainLink }
                 : {}),
-              ...(linkedinLink && !normalizeUrl(companyLinkedinUrl(match ?? {}))
+              ...(linkedinLink &&
+              !normalizeCompanyUrl(companyLinkedinUrl(match ?? {}))
                 ? { linkedinLink }
                 : {}),
               ...(isNonEmptyString(linkedinId) &&

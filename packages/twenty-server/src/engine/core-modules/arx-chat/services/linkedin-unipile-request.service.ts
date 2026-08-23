@@ -9,6 +9,7 @@ import {
 } from 'twenty-shared';
 
 import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
@@ -866,6 +867,11 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'profile',
+      });
       const profile = (await this.makeUnipileRequest(
         `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
         'GET',
@@ -891,6 +897,10 @@ export class LinkedinUnipileRequestService {
 
       return profile;
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
+
       if (isUnipileLinkedinAccountUnusableError(err)) {
         this.logger.warn(
           `fetchLinkedinUserProfile unusable LinkedIn Unipile account ${trimmedAccountId} for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
@@ -941,6 +951,11 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      });
       return (await this.makeUnipileRequest(
         `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/posts?${queryParams}`,
         'GET',
@@ -952,6 +967,9 @@ export class LinkedinUnipileRequestService {
         },
       )) as Record<string, unknown>;
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
       this.logger.warn(
         `fetchLinkedinUserPosts failed for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
       );
@@ -978,6 +996,11 @@ export class LinkedinUnipileRequestService {
     });
 
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      });
       return (await this.makeUnipileRequest(
         `/api/v1/posts/${encodeURIComponent(trimmedPostId)}?${queryParams}`,
         'GET',
@@ -989,6 +1012,9 @@ export class LinkedinUnipileRequestService {
         },
       )) as Record<string, unknown>;
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
       this.logger.warn(
         `fetchLinkedinPost failed for ${trimmedPostId}: ${err instanceof Error ? err.message : err}`,
       );
@@ -1027,6 +1053,11 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      });
       return (await this.makeUnipileRequest(
         `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments?${queryParams}`,
         'GET',
@@ -1038,6 +1069,9 @@ export class LinkedinUnipileRequestService {
         },
       )) as Record<string, unknown>;
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
       this.logger.warn(
         `fetchLinkedinPostComments failed for ${trimmedPostId}: ${err instanceof Error ? err.message : err}`,
       );
@@ -1098,6 +1132,12 @@ export class LinkedinUnipileRequestService {
     this.logger.log(
       `Commenting on LinkedIn post ${trimmedPostId} via account ${trimmedAccountId} (${trimmedText.length} chars)`,
     );
+
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId: trimmedAccountId,
+      method: 'comment',
+    });
 
     return (await this.makeUnipileRequest(
       `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
@@ -1190,6 +1230,11 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
+      await acquireAccountRateLimitOrDefer({
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      });
       return (await this.makeUnipileRequest(
         `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/comments?${queryParams}`,
         'GET',
@@ -1201,6 +1246,9 @@ export class LinkedinUnipileRequestService {
         },
       )) as Record<string, unknown>;
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
       this.logger.warn(
         `fetchLinkedinUserComments failed for ${trimmedIdentifier}: ${err instanceof Error ? err.message : err}`,
       );

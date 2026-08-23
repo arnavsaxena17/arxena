@@ -6,7 +6,6 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/inte
 
 import {
   isAccountRateLimitDeferredError,
-  LINKEDIN_RATE_LIMIT_PENDING_REASON,
   parseWaitMsFromAccountRateLimitMessage,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -23,12 +22,10 @@ import {
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
 import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
+import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-executor/utils/defer-workflow-for-account-rate-limit.util';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
-import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
-import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
 import { isWorkflowLogicFunctionAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/guards/is-workflow-logic-function-action.guard';
 import { WorkflowLogicFunctionActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/types/workflow-logic-function-action-input.type';
-import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 
 @Injectable()
 export class LogicFunctionWorkflowAction implements WorkflowAction {
@@ -202,25 +199,12 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
     workspaceId: string;
     workflowRunId: string;
   }): Promise<WorkflowActionOutput> {
-    await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
-      RESUME_DELAYED_WORKFLOW_JOB_NAME,
-      {
-        workspaceId,
-        workflowRunId,
-        stepId: currentStepId,
-        retryPendingStep: true,
-      },
-      {
-        ...buildRunWorkflowJobOptions(workflowRunId),
-        delay: waitMs,
-      },
-    );
-
-    return {
-      pendingEvent: true,
+    return deferWorkflowForAccountRateLimit({
+      delayedQueue: this.delayedQueue,
       waitMs,
-      scheduledAt: new Date(Date.now() + waitMs).toISOString(),
-      pendingReason: LINKEDIN_RATE_LIMIT_PENDING_REASON,
-    };
+      currentStepId,
+      workspaceId,
+      workflowRunId,
+    });
   }
 }

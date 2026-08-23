@@ -64,6 +64,7 @@ export const main = async (params: {
   industry?: string;
   location?: string;
   url?: string;
+  projectId?: string;
   limit?: number;
 }) => {
   return params;
