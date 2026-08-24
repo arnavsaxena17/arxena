@@ -11,6 +11,8 @@ export const GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME =
 export const GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME =
   'fetch-company-details';
 export const GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME = 'upload-profiles';
+export const GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME =
+  'detect-fake-profiles';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
@@ -189,6 +191,34 @@ export const GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT = {
   error: '',
 };
 
+export const GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT = {
+  success: true,
+  total: 1,
+  fakeCount: 1,
+  genuineCount: 0,
+  uncertainCount: 0,
+  error: '',
+  fakeProfiles: [
+    {
+      index: 0,
+      isLikelyFake: true,
+      verdict: 'fake',
+      confidence: 0.92,
+      riskScore: 88,
+      name: 'TS Dadapeer',
+      publicIdentifier: 'syed-dadapeer5410',
+      headline: 'Change',
+      summary:
+        'Education ends in 2023 but elite search-firm tenure starts in 2013.',
+      redFlags: ['Education vs Egon Zehnder dates', 'Self-employed at Egon Zehnder'],
+      supportingSignals: [],
+      profile: {},
+    },
+  ],
+  genuineProfiles: [],
+  assessments: [],
+};
+
 export const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
@@ -199,6 +229,7 @@ export const GTM_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   GTM_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
 ]);
 
 const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
@@ -215,6 +246,8 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
   [GTM_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   [GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  [GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
+    GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
 };
 
 export const isNativeGtmLogicFunction = (name?: string | null): boolean =>

@@ -1,10 +1,8 @@
 import {
   parseIcpSpecObject,
   readIcpChipValues,
-  readIcpStringField,
   toStringList,
   writeIcpChipValues,
-  writeIcpStringField,
 } from '@/gtm-home/utils/gtm-icp-chip-fields.util';
 
 describe('gtm-icp-chip-fields.util', () => {
@@ -15,29 +13,28 @@ describe('gtm-icp-chip-fields.util', () => {
     ]);
   });
 
-  it('reads and writes chip fields without dropping unknown keys', () => {
+  it('reads buyer titles and migrates geos into locations', () => {
     const spec = JSON.stringify({
-      name: 'Buyers',
-      painSignals: ['hiring'],
-      extra: true,
+      buyerTitles: ['VP People'],
+      geos: ['US'],
+      name: 'ignored',
     });
 
-    expect(readIcpChipValues(spec, 'painSignals')).toEqual(['hiring']);
-    expect(readIcpChipValues(spec, 'stdGrades')).toEqual([]);
-
-    const next = writeIcpChipValues(spec, 'stdGrades', ['VP', 'Director']);
-    const parsed = parseIcpSpecObject(next);
-
-    expect(parsed?.name).toBe('Buyers');
-    expect(parsed?.extra).toBe(true);
-    expect(parsed?.stdGrades).toEqual(['VP', 'Director']);
+    expect(readIcpChipValues(spec, 'buyerTitles')).toEqual(['VP People']);
+    expect(readIcpChipValues(spec, 'locations')).toEqual(['US']);
+    expect(parseIcpSpecObject('[]')).toBeNull();
   });
 
-  it('reads and writes scalar fields', () => {
-    const spec = writeIcpStringField('{}', 'employeeRange', '51-200');
+  it('writes only buyerTitles and locations', () => {
+    const next = writeIcpChipValues(
+      JSON.stringify({ name: 'Buyers', geos: ['UK'] }),
+      'buyerTitles',
+      ['Head of Talent'],
+    );
 
-    expect(readIcpStringField(spec, 'employeeRange')).toBe('51-200');
-    expect(readIcpStringField('not-json', 'name')).toBe('');
-    expect(parseIcpSpecObject('[]')).toBeNull();
+    expect(parseIcpSpecObject(next)).toEqual({
+      buyerTitles: ['Head of Talent'],
+      locations: ['UK'],
+    });
   });
 });

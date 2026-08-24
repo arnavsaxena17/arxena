@@ -13,7 +13,7 @@ export type SearchPeopleInput = {
   website?: string;
   companyId?: string;
   jobTitle?: string;
-  location?: string;
+  locations?: string[];
   country?: string;
   dataSource?: string;
   accountId?: string;
@@ -83,7 +83,7 @@ export class SearchPeopleService {
           website: input.website,
           companyId: input.companyId,
           jobTitle: input.jobTitle,
-          location: input.location,
+          locations: input.locations,
           country: input.country,
           dataSource: (input.dataSource as never) ?? 'auto',
           accountId: input.accountId ?? defaultAccount?.accountId,

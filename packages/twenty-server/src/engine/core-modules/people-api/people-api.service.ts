@@ -46,6 +46,7 @@ import {
   type PeopleLocationScope,
 } from './services/people-location-scope.resolver';
 import { buildTaxonomyTreeFromFlatLists } from './utils/build-taxonomy-tree.util';
+import { collectPeopleSearchLocations } from './utils/collect-people-search-locations.util';
 import { extractCandidateExperience } from './utils/extract-candidate-experience.util';
 import { extractCandidateJobTitle } from './utils/extract-candidate-job-title.util';
 import { extractTaxonomyItemValue } from './utils/extract-taxonomy-item-value.util';
@@ -217,8 +218,10 @@ export class PeopleApiService {
     const companyName = body.companyName?.trim() || parsed.companyName;
     const website = body.website?.trim() || parsed.website;
     const linkedinCompanyUrl = body.linkedinCompanyUrl?.trim() || undefined;
-    const location =
-      body.location?.trim() || parsed.location || body.country?.trim();
+    const locations = collectPeopleSearchLocations({
+      locations: [...(body.locations ?? []), parsed.location],
+      country: body.country,
+    });
 
     if (!companyId && !companyName && !website && !linkedinCompanyUrl) {
       throw new HttpException(
@@ -251,7 +254,7 @@ export class PeopleApiService {
     }
 
     this.logger.log(
-      `Title resolve jobTitle="${jobTitle}" stdFunction=${stdFunction ?? ''} stdGrade=${stdGrade ?? ''} stdFunctionRoot=${stdFunctionRoot ?? ''} location=${location ?? ''}`,
+      `Title resolve jobTitle="${jobTitle}" stdFunction=${stdFunction ?? ''} stdGrade=${stdGrade ?? ''} stdFunctionRoot=${stdFunctionRoot ?? ''} locations=${locations.join('|')}`,
     );
 
     const searchResult = await this.executePeopleSearch(
@@ -262,7 +265,7 @@ export class PeopleApiService {
         companyName,
         website,
         linkedinCompanyUrl,
-        location,
+        locations,
         country: body.country,
         stdFunction: stdFunction ?? undefined,
         stdFunctionRoot: stdFunctionRoot ?? undefined,
@@ -313,12 +316,31 @@ export class PeopleApiService {
       country: sourcedBody.country,
       authToken: apiToken,
     });
+    const searchLocations = collectPeopleSearchLocations(sourcedBody);
     const locationScope = await this.peopleLocationScopeResolver.resolve({
-      location: sourcedBody.location,
+      location: searchLocations[0],
       country: sourcedBody.country,
       accountId: sourcedBody.accountId,
       dataSource: sourcedBody.dataSource,
     });
+    const additionalLocationIds: string[] = [];
+    for (const extraLocation of searchLocations.slice(1)) {
+      const extraScope = await this.peopleLocationScopeResolver.resolve({
+        location: extraLocation,
+        accountId: sourcedBody.accountId,
+        dataSource: sourcedBody.dataSource,
+      });
+      if (extraScope.linkedinLocationId) {
+        additionalLocationIds.push(extraScope.linkedinLocationId);
+      }
+    }
+    const locationIds = [
+      ...(locationScope.linkedinLocationId
+        ? [locationScope.linkedinLocationId]
+        : []),
+      ...additionalLocationIds,
+    ];
+    locationScope.linkedinLocationIds = locationIds;
     const scopedBody: PeopleSearchDto = {
       ...sourcedBody,
       companyName: companyScope.companyName ?? sourcedBody.companyName,
@@ -326,7 +348,7 @@ export class PeopleApiService {
       website: companyScope.website ?? sourcedBody.website,
       linkedinCompanyUrl:
         companyScope.linkedinUrl ?? sourcedBody.linkedinCompanyUrl,
-      location: locationScope.raw ?? sourcedBody.location,
+      locations: searchLocations,
       country:
         locationScope.linkedinLocationName ??
         locationScope.raw ??
@@ -561,7 +583,7 @@ export class PeopleApiService {
       !!body.stdFunction?.trim() ||
       !!body.stdGrade?.trim() ||
       !!body.country?.trim() ||
-      !!body.location?.trim() ||
+      !!body.locations?.some((value) => value.trim().length > 0) ||
       !!locationScope?.raw ||
       !!body.linkedinUrl?.trim();
 
@@ -636,7 +658,7 @@ export class PeopleApiService {
     const personLocations = (
       locationScope?.linkedinLocationName ??
       locationScope?.raw ??
-      body.location ??
+      body.locations?.[0] ??
       body.country
     )?.trim();
 
@@ -777,6 +799,7 @@ export class PeopleApiService {
         locationScope?.linkedinLocationName ??
         locationScope?.raw ??
         body.country,
+      locationIds: locationScope?.linkedinLocationIds,
       dataSource,
       accountId: body.accountId,
       limit: body.limit ?? 20,

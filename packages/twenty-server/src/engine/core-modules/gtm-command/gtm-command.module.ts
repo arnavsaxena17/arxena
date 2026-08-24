@@ -25,6 +25,7 @@ import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/servi
 import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
+import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
 import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
@@ -37,6 +38,7 @@ import {
   GtmCompanyEnrichmentCollectorService,
 } from 'src/engine/core-modules/gtm-command/services/gtm-company-enrichment-collector.service';
 import { GtmCompanyProfileSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-company-profile-summarizer.service';
+import { GtmIcpBootstrapSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-icp-bootstrap-summarizer.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmInboundReplyClassifierService } from 'src/engine/core-modules/gtm-command/services/gtm-inbound-reply-classifier.service';
 import { GtmCompaniesCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-companies-cache.service';
@@ -113,6 +115,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     },
     GtmCompanyEnrichmentCollectorService,
     GtmCompanyProfileSummarizerService,
+    GtmIcpBootstrapSummarizerService,
     GtmWorkspaceProfileProvisioningService,
     GtmWorkspaceProfileBootstrapJob,
     GtmWorkspaceAuthTokenService,
@@ -129,6 +132,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
+    GtmFakeProfileDetectorService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
@@ -150,6 +154,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
+    GtmFakeProfileDetectorService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,

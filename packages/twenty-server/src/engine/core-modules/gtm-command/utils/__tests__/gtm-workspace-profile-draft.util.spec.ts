@@ -5,7 +5,7 @@ import {
 } from 'src/engine/core-modules/gtm-command/utils/gtm-workspace-profile-draft.util';
 
 describe('gtm-workspace-profile-draft.util', () => {
-  it('builds draft ICP and search blurbs from a work domain', () => {
+  it('builds seller company fields without copying them into ICP', () => {
     const draft = buildGtmWorkspaceProfileDraftFromDomain({
       domain: 'acme.io',
       workspaceDisplayName: 'Acme Workspace',
@@ -21,22 +21,9 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.companyName).toBe('Acme Inc');
     expect(draft.companyDomain).toBe('acme.io');
     expect(draft.industry).toBe('SaaS');
-    expect(draft.icpSpec.industries).toEqual(['SaaS']);
-    expect(draft.icpSpec.employeeRange).toBe('120+');
-    expect(draft.icpSpec.geos).toEqual(['United States']);
-    expect(draft.icpSpec.buyerTitles).toBeUndefined();
-    expect(draft.icpBlurb).toContain('Ideal customers');
-    expect(draft.icpBlurb).not.toContain('Buyers:');
-    expect(draft.companySearchBlurb).toContain('ICP');
-    expect(draft.companySearchBlurb).not.toContain('recruiting');
-    expect(draft.peopleSearchBlurb).toContain('SaaS');
-    expect(draft.peopleSearchBlurb).not.toContain('titles:');
+    expect(draft.hq).toContain('United States');
+    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
     expect(draft.enrichmentJson.source).toBe('apollo');
-    expect(draft.enrichmentJson.companyDetails).toEqual(
-      expect.objectContaining({
-        apolloOrganization: expect.objectContaining({ name: 'Acme Inc' }),
-      }),
-    );
   });
 
   it('prefers companies ES index over LinkedIn and Apollo', () => {
@@ -57,7 +44,11 @@ describe('gtm-workspace-profile-draft.util', () => {
         employee_count: 420,
         industry: ['Computer Software'],
         locations: [
-          { city: 'SF', country: 'United States', is_headquarter: true },
+          {
+            city: 'SF',
+            country: 'United States',
+            is_headquarter: true,
+          },
         ],
       },
     });
@@ -67,6 +58,7 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.employeeRange).toBe('51-200');
     expect(draft.summary).toContain('Full LinkedIn company description');
     expect(draft.enrichmentJson.source).toBe('companies_index_wiki');
+    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
   });
 
   it('falls back to domain heuristics without enrichment sources', () => {
@@ -77,11 +69,7 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.companyName).toBe('Brightpath');
     expect(draft.companyDomain).toBe('brightpath.com');
     expect(draft.enrichmentJson.source).toBe('domain_heuristic');
-    expect(draft.icpSpec.employeeRange).toBe('');
-    expect(draft.icpBlurb).not.toContain('50-500');
-    expect(draft.icpBlurb.length).toBeGreaterThan(0);
-    expect(draft.companySearchBlurb.length).toBeGreaterThan(0);
-    expect(draft.peopleSearchBlurb.length).toBeGreaterThan(0);
+    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
   });
 
   it('prefers LLM multi-source summary over raw LinkedIn/wiki fields', () => {
@@ -120,15 +108,25 @@ describe('gtm-workspace-profile-draft.util', () => {
     expect(draft.employeeRange).toBe('10000+');
     expect(draft.hq).toBe('Muttenz, Switzerland');
     expect(draft.enrichmentJson.source).toBe('llm_multi_source_summary');
-    expect(draft.enrichmentJson.companyDetails).toEqual(
-      expect.objectContaining({
-        wikidataCompany: expect.objectContaining({ id: 'Q667505' }),
-        wikiCompany: expect.objectContaining({ name: 'Index Clariant' }),
-        webSearchCompany: expect.objectContaining({
-          companyName: 'Clariant Web',
-        }),
-      }),
-    );
+  });
+
+  it('uses LLM ICP when provided instead of seller HQ', () => {
+    const draft = buildGtmWorkspaceProfileDraftFromDomain({
+      domain: 'acme.io',
+      apolloOrganization: {
+        name: 'Acme Inc',
+        country: 'United States',
+      },
+      llmIcp: {
+        buyerTitles: ['Head of Talent'],
+        locations: ['United Kingdom'],
+      },
+    });
+
+    expect(draft.icpSpec).toEqual({
+      buyerTitles: ['Head of Talent'],
+      locations: ['United Kingdom'],
+    });
   });
 
   it('uses web search website snapshot when LinkedIn/LLM are missing', () => {

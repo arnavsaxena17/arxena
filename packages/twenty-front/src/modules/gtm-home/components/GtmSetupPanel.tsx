@@ -10,13 +10,10 @@ import {
   GTM_ICP_CHIP_FIELDS,
   parseIcpSpecObject,
   readIcpChipValues,
-  readIcpStringField,
   writeIcpChipValues,
-  writeIcpStringField,
   type GtmIcpChipFieldKey,
 } from '@/gtm-home/utils/gtm-icp-chip-fields.util';
 import { TextArea } from '@/ui/input/components/TextArea';
-import { TextInput } from '@/ui/input/components/TextInput';
 
 const StyledPanel = styled.div`
   display: flex;
@@ -98,26 +95,6 @@ const StyledMuted = styled.span`
   font-size: ${themeCssVariables.font.size.sm};
 `;
 
-const StyledScalarGrid = styled.div`
-  display: grid;
-  gap: ${themeCssVariables.spacing[3]};
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
-  @media (max-width: 720px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-`;
-
-const StyledSearchGrid = styled.div`
-  display: grid;
-  gap: ${themeCssVariables.spacing[4]};
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
-  @media (max-width: 900px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-`;
-
 const StyledJsonToggle = styled.button`
   align-self: flex-start;
   appearance: none;
@@ -162,22 +139,13 @@ const formatIcpDraft = (icpSpec: string | null): string => {
 type GtmSetupPanelProps = {
   workspaceCompany: GtmWorkspaceCompany;
   icpSpec: string | null;
-  icpBlurb: string | null;
-  companySearchBlurb: string | null;
-  peopleSearchBlurb: string | null;
   isIcpRunOverride: boolean;
   hasWorkspaceProfile: boolean;
   hasProject: boolean;
   isSavingIcp: boolean;
-  isSavingCompanySearchBlurb: boolean;
-  isSavingPeopleSearchBlurb: boolean;
   onRegenerateIcp: () => void;
   isRegeneratingIcp: boolean;
-  onRegenerateCompanySearchBlurb: () => void;
-  onRegeneratePeopleSearchBlurb: () => void;
-  onSaveIcp: (input: { icpSpec: string; icpBlurb: string }) => Promise<void>;
-  onSaveCompanySearchBlurb: (value: string) => Promise<void>;
-  onSavePeopleSearchBlurb: (value: string) => Promise<void>;
+  onSaveIcp: (input: { icpSpec: string }) => Promise<void>;
   onFindCompanies: () => void;
   onFindPeople: () => void;
 };
@@ -185,33 +153,17 @@ type GtmSetupPanelProps = {
 export const GtmSetupPanel = ({
   workspaceCompany,
   icpSpec,
-  icpBlurb,
-  companySearchBlurb,
-  peopleSearchBlurb,
   isIcpRunOverride,
   hasWorkspaceProfile,
   hasProject,
   isSavingIcp,
-  isSavingCompanySearchBlurb,
-  isSavingPeopleSearchBlurb,
   onRegenerateIcp,
   isRegeneratingIcp,
-  onRegenerateCompanySearchBlurb,
-  onRegeneratePeopleSearchBlurb,
   onSaveIcp,
-  onSaveCompanySearchBlurb,
-  onSavePeopleSearchBlurb,
   onFindCompanies,
   onFindPeople,
 }: GtmSetupPanelProps) => {
   const [icpDraft, setIcpDraft] = useState(() => formatIcpDraft(icpSpec));
-  const [icpBlurbDraft, setIcpBlurbDraft] = useState(() => icpBlurb ?? '');
-  const [companySearchBlurbDraft, setCompanySearchBlurbDraft] = useState(
-    () => companySearchBlurb ?? '',
-  );
-  const [peopleSearchBlurbDraft, setPeopleSearchBlurbDraft] = useState(
-    () => peopleSearchBlurb ?? '',
-  );
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
@@ -219,21 +171,7 @@ export const GtmSetupPanel = ({
     setIcpDraft(formatIcpDraft(icpSpec));
   }, [icpSpec]);
 
-  useEffect(() => {
-    setIcpBlurbDraft(icpBlurb ?? '');
-  }, [icpBlurb]);
-
-  useEffect(() => {
-    setCompanySearchBlurbDraft(companySearchBlurb ?? '');
-  }, [companySearchBlurb]);
-
-  useEffect(() => {
-    setPeopleSearchBlurbDraft(peopleSearchBlurb ?? '');
-  }, [peopleSearchBlurb]);
-
   const canPersist = hasWorkspaceProfile || hasProject;
-  const isSaving =
-    isSavingIcp || isSavingCompanySearchBlurb || isSavingPeopleSearchBlurb;
   const parsedIcp = parseIcpSpecObject(icpDraft);
   const canEditChips = parsedIcp !== null || icpDraft.trim().length === 0;
   const sellerChips = [
@@ -252,19 +190,10 @@ export const GtmSetupPanel = ({
     setIcpDraft((current) => writeIcpChipValues(current, key, values));
   };
 
-  const updateStringField = (key: string, value: string) => {
-    setIcpDraft((current) => writeIcpStringField(current, key, value));
-  };
-
   const handleSaveAll = async () => {
-    await Promise.all([
-      onSaveIcp({
-        icpSpec: icpDraft,
-        icpBlurb: icpBlurbDraft,
-      }),
-      onSaveCompanySearchBlurb(companySearchBlurbDraft),
-      onSavePeopleSearchBlurb(peopleSearchBlurbDraft),
-    ]);
+    await onSaveIcp({
+      icpSpec: icpDraft,
+    });
   };
 
   return (
@@ -313,35 +242,6 @@ export const GtmSetupPanel = ({
             disabled={isRegeneratingIcp}
           />
         </StyledTitleRow>
-        <StyledFieldLabel>Description</StyledFieldLabel>
-        <TextArea
-          textAreaId="gtm-setup-icp-blurb"
-          minRows={2}
-          maxRows={5}
-          value={icpBlurbDraft}
-          onChange={setIcpBlurbDraft}
-          placeholder="Short NL definition of who you sell to will appear here after bootstrap or regenerate."
-        />
-        <StyledScalarGrid>
-          <TextInput
-            label="Name"
-            fullWidth
-            sizeVariant="sm"
-            value={readIcpStringField(icpDraft, 'name')}
-            onChange={(value) => updateStringField('name', value)}
-            disabled={!canEditChips}
-            placeholder="ICP name"
-          />
-          <TextInput
-            label="Company size"
-            fullWidth
-            sizeVariant="sm"
-            value={readIcpStringField(icpDraft, 'employeeRange')}
-            onChange={(value) => updateStringField('employeeRange', value)}
-            disabled={!canEditChips}
-            placeholder="e.g. 51-200"
-          />
-        </StyledScalarGrid>
         {GTM_ICP_CHIP_FIELDS.map((field) => (
           <div key={field.key}>
             <StyledFieldLabel>{field.label}</StyledFieldLabel>
@@ -377,59 +277,16 @@ export const GtmSetupPanel = ({
         )}
       </StyledSection>
 
-      <StyledSearchGrid>
-        <StyledSection>
-          <StyledTitleRow>
-            <StyledTitle>Company search</StyledTitle>
-            <Button
-              title="Regenerate"
-              variant="secondary"
-              size="small"
-              onClick={onRegenerateCompanySearchBlurb}
-              disabled={!hasProject}
-            />
-          </StyledTitleRow>
-          <TextArea
-            textAreaId="gtm-setup-company-search-blurb"
-            minRows={4}
-            maxRows={8}
-            value={companySearchBlurbDraft}
-            onChange={setCompanySearchBlurbDraft}
-            placeholder="Will be generated when ICP is saved on the workspace profile."
-          />
-        </StyledSection>
-        <StyledSection>
-          <StyledTitleRow>
-            <StyledTitle>People search</StyledTitle>
-            <Button
-              title="Regenerate"
-              variant="secondary"
-              size="small"
-              onClick={onRegeneratePeopleSearchBlurb}
-              disabled={!hasProject}
-            />
-          </StyledTitleRow>
-          <TextArea
-            textAreaId="gtm-setup-people-search-blurb"
-            minRows={4}
-            maxRows={8}
-            value={peopleSearchBlurbDraft}
-            onChange={setPeopleSearchBlurbDraft}
-            placeholder="Will be generated when ICP is saved on the workspace profile."
-          />
-        </StyledSection>
-      </StyledSearchGrid>
-
       <StyledStickyBar>
         <StyledActions>
           <Button
-            title={isSaving ? 'Saving…' : 'Save'}
+            title={isSavingIcp ? 'Saving…' : 'Save'}
             variant="secondary"
             size="small"
             onClick={() => {
               void handleSaveAll();
             }}
-            disabled={!canPersist || isSaving}
+            disabled={!canPersist || isSavingIcp}
           />
           <Button
             title="Find companies"

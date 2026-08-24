@@ -69,7 +69,10 @@ describe('SearchPeopleForCompanyService', () => {
     projectRepository.findOne.mockResolvedValue({
       id: projectId,
       name: 'GTM Harvest',
-      icpSpec: JSON.stringify({ buyerTitles: ['Head of Talent'] }),
+      icpSpec: JSON.stringify({
+        buyerTitles: ['Head of Talent'],
+        locations: ['United States', 'United Kingdom'],
+      }),
       maxPersonasPerCompany: 2,
     });
     workspaceProfileRepository.find.mockResolvedValue([]);
@@ -103,6 +106,8 @@ describe('SearchPeopleForCompanyService', () => {
         companyName: 'Egon Zehnder',
         website: 'www.egonzehnder.com',
         linkedinCompanyUrl: 'https://www.linkedin.com/company/egon-zehnder/',
+        jobTitle: 'Head of Talent',
+        locations: ['United States', 'United Kingdom'],
         accountId: 'acct-1',
         dataSource: 'auto',
         limit: 10,

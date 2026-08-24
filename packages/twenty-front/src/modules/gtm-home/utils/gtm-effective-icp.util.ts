@@ -2,12 +2,19 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { type GtmIcpSpec } from '@/gtm-home/types/gtm-home.types';
 
-export type GtmProfileIcpSource = {
+export type GtmIcpProfileSource = {
   icpSpec?: string | null;
-  icpSegment?: string | null;
-  icpBlurb?: string | null;
-  companySearchBlurb?: string | null;
-  peopleSearchBlurb?: string | null;
+};
+
+const toStringList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 };
 
 export const parseGtmIcpSpec = (
@@ -18,46 +25,31 @@ export const parseGtmIcpSpec = (
   }
 
   try {
-    return JSON.parse(icpSpec) as GtmIcpSpec;
+    return normalizeGtmIcpSpec(JSON.parse(icpSpec));
   } catch {
     return null;
   }
 };
 
-export const extractIcpBlurbFromSpec = (
-  icpSpec: string | null | undefined,
-): string | null => {
-  const parsedIcp = parseGtmIcpSpec(icpSpec);
-
-  if (!isNonEmptyString(parsedIcp?.blurb)) {
-    return null;
+export const normalizeGtmIcpSpec = (value: unknown): GtmIcpSpec => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return { buyerTitles: [], locations: [] };
   }
 
-  return parsedIcp.blurb;
+  const record = value as Record<string, unknown>;
+  const locations = [
+    ...toStringList(record.locations),
+    ...toStringList(record.geos),
+  ];
+
+  return {
+    buyerTitles: toStringList(record.buyerTitles),
+    locations: [...new Set(locations)],
+  };
 };
 
-// Structured filters only — NL definition belongs in icpBlurb
-export const stripBlurbFromIcpSpec = (
-  icpSpec: string | null | undefined,
-): string | null => {
-  if (!isNonEmptyString(icpSpec)) {
-    return null;
-  }
-
-  try {
-    const parsedIcp = JSON.parse(icpSpec) as Record<string, unknown>;
-
-    if (!('blurb' in parsedIcp)) {
-      return icpSpec;
-    }
-
-    const { blurb: _blurb, ...structuredIcp } = parsedIcp;
-
-    return JSON.stringify(structuredIcp);
-  } catch {
-    return icpSpec;
-  }
-};
+export const stringifyGtmIcpSpec = (spec: GtmIcpSpec): string =>
+  JSON.stringify(normalizeGtmIcpSpec(spec));
 
 export const resolveInheritedTextField = (
   projectValue: string | null | undefined,
@@ -78,76 +70,25 @@ export const resolveEffectiveGtmIcp = ({
   project,
   workspaceProfile,
 }: {
-  project: GtmProfileIcpSource | null | undefined;
-  workspaceProfile: GtmProfileIcpSource | null | undefined;
+  project: GtmIcpProfileSource | null | undefined;
+  workspaceProfile: GtmIcpProfileSource | null | undefined;
 }): {
   icpSpec: string | null;
-  icpSegment: string | null;
   parsedIcp: GtmIcpSpec | null;
-  icpBlurb: string | null;
-  companySearchBlurb: string | null;
-  peopleSearchBlurb: string | null;
   isIcpRunOverride: boolean;
-  isIcpBlurbRunOverride: boolean;
-  isCompanySearchBlurbRunOverride: boolean;
-  isPeopleSearchBlurbRunOverride: boolean;
 } => {
   const icpSpecResolution = resolveInheritedTextField(
     project?.icpSpec,
     workspaceProfile?.icpSpec,
   );
-  const icpSegmentResolution = resolveInheritedTextField(
-    project?.icpSegment,
-    workspaceProfile?.icpSegment,
-  );
-  const icpBlurbResolution = resolveInheritedTextField(
-    project?.icpBlurb,
-    workspaceProfile?.icpBlurb,
-  );
-  const companySearchBlurbResolution = resolveInheritedTextField(
-    project?.companySearchBlurb,
-    workspaceProfile?.companySearchBlurb,
-  );
-  const peopleSearchBlurbResolution = resolveInheritedTextField(
-    project?.peopleSearchBlurb,
-    workspaceProfile?.peopleSearchBlurb,
-  );
-
   const parsedIcp = parseGtmIcpSpec(icpSpecResolution.value);
-  const embeddedIcpBlurb = extractIcpBlurbFromSpec(icpSpecResolution.value);
-  const normalizedIcpSpec = stripBlurbFromIcpSpec(icpSpecResolution.value);
+  const normalizedIcpSpec = parsedIcp
+    ? stringifyGtmIcpSpec(parsedIcp)
+    : icpSpecResolution.value;
 
   return {
     icpSpec: normalizedIcpSpec,
-    icpSegment: icpSegmentResolution.value,
-    parsedIcp: parseGtmIcpSpec(normalizedIcpSpec) ?? parsedIcp,
-    // Prefer dedicated column; fall back to legacy blurb key inside icpSpec JSON
-    icpBlurb: icpBlurbResolution.value ?? embeddedIcpBlurb,
-    companySearchBlurb: companySearchBlurbResolution.value,
-    peopleSearchBlurb: peopleSearchBlurbResolution.value,
+    parsedIcp,
     isIcpRunOverride: icpSpecResolution.isRunOverride,
-    isIcpBlurbRunOverride: icpBlurbResolution.isRunOverride,
-    isCompanySearchBlurbRunOverride: companySearchBlurbResolution.isRunOverride,
-    isPeopleSearchBlurbRunOverride: peopleSearchBlurbResolution.isRunOverride,
-  };
-};
-
-export const toGtmIcpSpec = (
-  parsedIcp: GtmIcpSpec | null,
-  icpSegment: string | null,
-): GtmIcpSpec | null => {
-  if (!parsedIcp && !isNonEmptyString(icpSegment)) {
-    return null;
-  }
-
-  return {
-    name: parsedIcp?.name ?? icpSegment ?? 'ICP',
-    industries: parsedIcp?.industries ?? [],
-    employeeRange: parsedIcp?.employeeRange ?? '',
-    geos: parsedIcp?.geos ?? [],
-    buyerTitles: parsedIcp?.buyerTitles ?? [],
-    painSignals: parsedIcp?.painSignals ?? [],
-    // stdFunctions: parsedIcp?.stdFunctions ?? [],
-    // stdGrades: parsedIcp?.stdGrades ?? [],
   };
 };

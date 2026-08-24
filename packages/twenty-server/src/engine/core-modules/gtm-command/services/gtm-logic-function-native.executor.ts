@@ -14,6 +14,7 @@ import {
   GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+  GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
@@ -27,6 +28,7 @@ import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/servi
 import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
+import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
 import { NativeLogicFunctionHandler } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function-handler.interface';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 
@@ -47,6 +49,7 @@ export class GtmLogicFunctionNativeExecutor
     private readonly upsertCompaniesService: UpsertCompaniesService,
     private readonly enrichContactService: EnrichContactService,
     private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
+    private readonly gtmFakeProfileDetectorService: GtmFakeProfileDetectorService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -183,6 +186,18 @@ export class GtmLogicFunctionNativeExecutor
           workspaceMemberId?: string;
           days?: number;
           slotMinutes?: number;
+        },
+      });
+    }
+
+    if (name === GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME) {
+      return this.gtmFakeProfileDetectorService.execute({
+        workspaceId,
+        input: payload as {
+          profile?: unknown;
+          snapshot?: unknown;
+          profiles?: unknown;
+          modelId?: string;
         },
       });
     }

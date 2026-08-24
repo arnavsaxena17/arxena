@@ -37,11 +37,10 @@ import {
 import {
   buildGtmFindCompaniesSendPrompt,
   buildGtmFindPeopleSendPrompt,
-  buildGtmRegenerateSearchBlurbSendPrompt,
 } from '@/gtm-home/types/gtm-home.types';
 import {
   parseGtmIcpSpec,
-  stripBlurbFromIcpSpec,
+  stringifyGtmIcpSpec,
 } from '@/gtm-home/utils/gtm-effective-icp.util';
 import { regenerateGtmWorkspaceProfile } from '@/gtm-home/utils/gtm-workspace-profile-regenerate';
 import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
@@ -151,10 +150,6 @@ const GtmHomePageContent = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingIcp, setIsSavingIcp] = useState(false);
-  const [isSavingCompanySearchBlurb, setIsSavingCompanySearchBlurb] =
-    useState(false);
-  const [isSavingPeopleSearchBlurb, setIsSavingPeopleSearchBlurb] =
-    useState(false);
   const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
   const [workflowMode, setWorkflowMode] =
     useState<GtmWorkflowEmbedMode>('definition');
@@ -240,7 +235,7 @@ const GtmHomePageContent = () => {
       selectedCompanyId,
       selectedPersonId,
       selectedCandidateStage: selectedPerson?.stage ?? null,
-      icpName: projectSettings.icpSegment,
+      icpName: projectSettings.icpSpec,
       icpSpecSummary: projectSettings.icpSpec,
       linkedinConnected,
       gmailConnected,
@@ -352,68 +347,29 @@ const GtmHomePageContent = () => {
     }
   };
 
-  const handleRegenerateCompanySearchBlurb = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'SEND',
-      text: buildGtmRegenerateSearchBlurbSendPrompt({
-        kind: 'company',
-        workspaceCompany,
-        icpBlurb: projectSettings.icpBlurb,
-        icpSpecSummary: projectSettings.icpSpec,
-        currentBlurb: projectSettings.companySearchBlurb,
-      }),
-    });
-  };
-
-  const handleRegeneratePeopleSearchBlurb = () => {
-    openAskAiPageWithPreprompt({
-      mode: 'SEND',
-      text: buildGtmRegenerateSearchBlurbSendPrompt({
-        kind: 'people',
-        workspaceCompany,
-        icpBlurb: projectSettings.icpBlurb,
-        icpSpecSummary: projectSettings.icpSpec,
-        currentBlurb: projectSettings.peopleSearchBlurb,
-      }),
-    });
-  };
-
-  const handleSaveIcp = async (input: {
-    icpSpec: string;
-    icpBlurb: string;
-  }) => {
-    const trimmedIcpSpec = input.icpSpec.trim();
-    const trimmedIcpBlurb = input.icpBlurb.trim();
-    const normalizedIcpSpec =
-      stripBlurbFromIcpSpec(trimmedIcpSpec) ?? trimmedIcpSpec;
+  const handleSaveIcp = async (input: { icpSpec: string }) => {
+    const parsedIcp = parseGtmIcpSpec(input.icpSpec.trim());
+    const normalizedIcpSpec = parsedIcp
+      ? stringifyGtmIcpSpec(parsedIcp)
+      : input.icpSpec.trim();
 
     if (!isNonEmptyString(normalizedIcpSpec)) {
       enqueueErrorSnackBar({ message: 'ICP JSON cannot be empty.' });
       return;
     }
 
-    const parsedIcp = parseGtmIcpSpec(normalizedIcpSpec);
-
     if (parsedIcp === null) {
       enqueueErrorSnackBar({ message: 'ICP must be valid JSON.' });
       return;
     }
 
-    const icpSegment = isNonEmptyString(parsedIcp.name)
-      ? parsedIcp.name
-      : (projectSettings.icpSegment ?? 'ICP');
-
     setIsSavingIcp(true);
 
     try {
       await persistSetupField({
-        isRunOverride:
-          projectSettings.isIcpRunOverride ||
-          projectSettings.isIcpBlurbRunOverride,
+        isRunOverride: projectSettings.isIcpRunOverride,
         updateOneRecordInput: {
           icpSpec: normalizedIcpSpec,
-          icpSegment,
-          icpBlurb: trimmedIcpBlurb,
         },
         successMessage: 'ICP saved',
       });
@@ -427,59 +383,11 @@ const GtmHomePageContent = () => {
     }
   };
 
-  const handleSaveCompanySearchBlurb = async (value: string) => {
-    setIsSavingCompanySearchBlurb(true);
-
-    try {
-      await persistSetupField({
-        isRunOverride: projectSettings.isCompanySearchBlurbRunOverride,
-        updateOneRecordInput: {
-          companySearchBlurb: value.trim(),
-        },
-        successMessage: 'Company search blurb saved',
-      });
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to save company search blurb.',
-      });
-    } finally {
-      setIsSavingCompanySearchBlurb(false);
-    }
-  };
-
-  const handleSavePeopleSearchBlurb = async (value: string) => {
-    setIsSavingPeopleSearchBlurb(true);
-
-    try {
-      await persistSetupField({
-        isRunOverride: projectSettings.isPeopleSearchBlurbRunOverride,
-        updateOneRecordInput: {
-          peopleSearchBlurb: value.trim(),
-        },
-        successMessage: 'People search blurb saved',
-      });
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to save people search blurb.',
-      });
-    } finally {
-      setIsSavingPeopleSearchBlurb(false);
-    }
-  };
-
   const handleFindCompanies = () => {
     openAskAiPageWithPreprompt({
       mode: 'SEND',
       text: buildGtmFindCompaniesSendPrompt({
         projectId: projectSettings.projectId,
-        companySearchBlurb: projectSettings.companySearchBlurb,
-        icpBlurb: projectSettings.icpBlurb,
         icpSpecSummary: projectSettings.icpSpec,
       }),
     });
@@ -491,8 +399,6 @@ const GtmHomePageContent = () => {
       mode: 'SEND',
       text: buildGtmFindPeopleSendPrompt({
         projectId: projectSettings.projectId,
-        peopleSearchBlurb: projectSettings.peopleSearchBlurb,
-        icpBlurb: projectSettings.icpBlurb,
         icpSpecSummary: projectSettings.icpSpec,
       }),
     });
@@ -602,28 +508,15 @@ const GtmHomePageContent = () => {
                   <GtmSetupPanel
                     workspaceCompany={workspaceCompany}
                     icpSpec={projectSettings.icpSpec}
-                    icpBlurb={projectSettings.icpBlurb}
-                    companySearchBlurb={projectSettings.companySearchBlurb}
-                    peopleSearchBlurb={projectSettings.peopleSearchBlurb}
                     isIcpRunOverride={isIcpRunOverride}
                     hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
                     hasProject={isDefined(activeProjectId)}
                     isSavingIcp={isSavingIcp}
-                    isSavingCompanySearchBlurb={isSavingCompanySearchBlurb}
-                    isSavingPeopleSearchBlurb={isSavingPeopleSearchBlurb}
                     onRegenerateIcp={() => {
                       void handleRegenerateIcp();
                     }}
                     isRegeneratingIcp={isRegeneratingIcp}
-                    onRegenerateCompanySearchBlurb={
-                      handleRegenerateCompanySearchBlurb
-                    }
-                    onRegeneratePeopleSearchBlurb={
-                      handleRegeneratePeopleSearchBlurb
-                    }
                     onSaveIcp={handleSaveIcp}
-                    onSaveCompanySearchBlurb={handleSaveCompanySearchBlurb}
-                    onSavePeopleSearchBlurb={handleSavePeopleSearchBlurb}
                     onFindCompanies={handleFindCompanies}
                     onFindPeople={handleFindPeople}
                   />

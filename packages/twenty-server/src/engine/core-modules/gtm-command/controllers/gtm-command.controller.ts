@@ -14,6 +14,7 @@ import {
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
+import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import {
   type GtmEphemeralCompany,
@@ -41,6 +42,7 @@ export class GtmCommandController {
     private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
     private readonly gtmWorkspaceProfileProvisioningService: GtmWorkspaceProfileProvisioningService,
+    private readonly gtmFakeProfileDetectorService: GtmFakeProfileDetectorService,
   ) {}
 
   @Get('cache/companies')
@@ -399,6 +401,32 @@ export class GtmCommandController {
     });
 
     return { ok: true, candidateId: body.candidateId };
+  }
+
+  @Post('detect-fake-profiles')
+  async detectFakeProfiles(
+    @Body()
+    body: {
+      profile?: unknown;
+      snapshot?: unknown;
+      profiles?: unknown;
+      modelId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.gtmFakeProfileDetectorService.execute({
+      workspaceId,
+      input: body,
+    });
   }
 
   @Post('workspace-profile/regenerate')

@@ -49,11 +49,7 @@ type GtmProjectRecord = ObjectRecord & {
   sendTimezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
-  icpSegment?: string | null;
   icpSpec?: string | null;
-  icpBlurb?: string | null;
-  companySearchBlurb?: string | null;
-  peopleSearchBlurb?: string | null;
   updatedAt?: string;
 };
 
@@ -74,7 +70,6 @@ type GtmCandidateRecord = ObjectRecord & {
 
 const isGtmProject = (project: GtmProjectRecord): boolean =>
   isNonEmptyString(project.outreachWorkflowId) ||
-  isNonEmptyString(project.icpSegment) ||
   isNonEmptyString(project.icpSpec) ||
   (project.name ?? '').startsWith(GTM_PROJECT_NAME_PREFIX);
 
@@ -211,11 +206,7 @@ export const useGtmLiveWorkingSet = () => {
         sendTimezone: true,
         sendWindowStart: true,
         sendWindowEnd: true,
-        icpSegment: true,
         icpSpec: true,
-        icpBlurb: true,
-        companySearchBlurb: true,
-        peopleSearchBlurb: true,
         updatedAt: true,
       },
     });
@@ -234,11 +225,7 @@ export const useGtmLiveWorkingSet = () => {
         summary: true,
         employeeRange: true,
         hq: true,
-        icpSegment: true,
         icpSpec: true,
-        icpBlurb: true,
-        companySearchBlurb: true,
-        peopleSearchBlurb: true,
       },
     });
 
@@ -607,7 +594,7 @@ export const useGtmLiveWorkingSet = () => {
         return {
           id: gtmProject.id,
           name: gtmProject.name ?? 'Untitled GTM run',
-          icpSegment: resolved.icpSegment,
+          icpSegment: resolved.parsedIcp?.buyerTitles[0] ?? null,
         };
       }),
     [gtmProjects, workspaceProfile],
@@ -626,17 +613,8 @@ export const useGtmLiveWorkingSet = () => {
     sendWindowStart: project?.sendWindowStart ?? '09:00',
     sendWindowEnd: project?.sendWindowEnd ?? '17:00',
     whatsappConnected,
-    icpSegment: effectiveIcp.icpSegment,
     icpSpec: effectiveIcp.icpSpec,
-    icpBlurb: effectiveIcp.icpBlurb,
-    companySearchBlurb: effectiveIcp.companySearchBlurb,
-    peopleSearchBlurb: effectiveIcp.peopleSearchBlurb,
     isIcpRunOverride: effectiveIcp.isIcpRunOverride,
-    isIcpBlurbRunOverride: effectiveIcp.isIcpBlurbRunOverride,
-    isCompanySearchBlurbRunOverride:
-      effectiveIcp.isCompanySearchBlurbRunOverride,
-    isPeopleSearchBlurbRunOverride:
-      effectiveIcp.isPeopleSearchBlurbRunOverride,
   };
 
   const parsedIcp = effectiveIcp.parsedIcp;
@@ -647,15 +625,14 @@ export const useGtmLiveWorkingSet = () => {
       currentWorkspace?.displayName ??
       'Workspace',
     domain: workspaceProfile?.companyDomain ?? '',
-    industry: workspaceProfile?.industry ?? parsedIcp?.industries?.[0] ?? '',
+    industry: workspaceProfile?.industry ?? '',
     summary:
       workspaceProfile?.summary ??
-      (isDefined(parsedIcp?.name)
-        ? `ICP: ${parsedIcp.name}`
-        : 'Use Setup → Refine ICP to define workspace GTM preferences.'),
-    employeeRange:
-      workspaceProfile?.employeeRange ?? parsedIcp?.employeeRange ?? '',
-    hq: workspaceProfile?.hq ?? parsedIcp?.geos?.[0] ?? '',
+      (parsedIcp && parsedIcp.buyerTitles.length > 0
+        ? `ICP buyers: ${parsedIcp.buyerTitles.join(', ')}`
+        : 'Use Setup to define workspace GTM buyer titles and locations.'),
+    employeeRange: workspaceProfile?.employeeRange ?? '',
+    hq: workspaceProfile?.hq ?? '',
   };
 
   return {

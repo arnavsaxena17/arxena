@@ -10,6 +10,7 @@ import {
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
+import { parseGtmIcpSpec } from 'src/engine/core-modules/gtm-command/utils/gtm-icp-spec.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -32,14 +33,12 @@ type ProjectRecord = ObjectLiteral & {
   name?: string | null;
   gtmRunKey?: string | null;
   icpSpec?: string | null;
-  peopleSearchBlurb?: string | null;
   maxPersonasPerCompany?: number | null;
 };
 
 type WorkspaceProfileRecord = ObjectLiteral & {
   id: string;
   icpSpec?: string | null;
-  peopleSearchBlurb?: string | null;
 };
 
 export type SearchPeopleForCompanyInput = {
@@ -93,28 +92,6 @@ const parseStringList = (value: unknown): string[] => {
   return value.filter(
     (item): item is string => typeof item === 'string' && item.trim().length > 0,
   );
-};
-
-const parseIcpSpec = (
-  raw: string | null | undefined,
-): {
-  buyerTitles: string[];
-} => {
-  if (!isNonEmptyString(raw)) {
-    return { buyerTitles: [] };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as {
-      buyerTitles?: unknown;
-    };
-
-    return {
-      buyerTitles: parseStringList(parsed.buyerTitles),
-    };
-  } catch {
-    return { buyerTitles: [] };
-  }
 };
 
 const readTaxonomyResolved = (
@@ -256,14 +233,11 @@ export class SearchPeopleForCompanyService {
       };
     }
 
-    const icp = parseIcpSpec(
+    const icp = parseGtmIcpSpec(
       context.project.icpSpec || context.workspaceProfile?.icpSpec,
     );
-    const peopleSearchBlurb =
-      context.project.peopleSearchBlurb ||
-      context.workspaceProfile?.peopleSearchBlurb ||
-      '';
     const buyerTitle = icp.buyerTitles[0];
+    const locations = icp.locations;
     const website = companyWebsite(context.company);
     const linkedinCompanyUrl = companyLinkedinUrl(context.company);
 
@@ -288,9 +262,10 @@ export class SearchPeopleForCompanyService {
           website,
           linkedinCompanyUrl,
           jobTitle: buyerTitle,
+          locations,
           naturalLanguage: buyerTitle
             ? `${buyerTitle} at ${context.company.name ?? 'the company'}`
-            : peopleSearchBlurb || undefined,
+            : undefined,
           limit,
           dataSource: 'auto',
           accountId: defaultAccount?.accountId,

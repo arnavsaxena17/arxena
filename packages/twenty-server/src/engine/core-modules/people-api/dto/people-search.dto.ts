@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsArray,
   IsIn,
   IsNumber,
   IsOptional,
@@ -63,8 +64,9 @@ export class PeopleSearchDto {
   stdGrade?: PeopleTaxonomyGrade;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  @IsArray()
+  @IsString({ each: true })
+  locations?: string[];
 
   @IsOptional()
   @IsString()

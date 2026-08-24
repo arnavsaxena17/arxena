@@ -13,6 +13,8 @@ import {
 } from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job-constants';
 import { GtmCompanyEnrichmentCollectorService } from 'src/engine/core-modules/gtm-command/services/gtm-company-enrichment-collector.service';
 import { GtmCompanyProfileSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-company-profile-summarizer.service';
+import { GtmIcpBootstrapSummarizerService } from 'src/engine/core-modules/gtm-command/services/gtm-icp-bootstrap-summarizer.service';
+import { stringifyGtmIcpSpec } from 'src/engine/core-modules/gtm-command/utils/gtm-icp-spec.util';
 import { buildGtmWorkspaceProfileDraftFromDomain } from 'src/engine/core-modules/gtm-command/utils/gtm-workspace-profile-draft.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type {
@@ -75,6 +77,7 @@ export class GtmWorkspaceProfileProvisioningService {
     private readonly messageQueueService: MessageQueueService,
     private readonly companyEnrichmentCollector: GtmCompanyEnrichmentCollectorService,
     private readonly companyProfileSummarizer: GtmCompanyProfileSummarizerService,
+    private readonly icpBootstrapSummarizer: GtmIcpBootstrapSummarizerService,
     @Optional()
     private readonly linkedInSearchService?: LinkedInSearchService,
     @Optional()
@@ -208,18 +211,31 @@ export class GtmWorkspaceProfileProvisioningService {
             llmCompanyProfile,
           });
 
+          const llmIcp = await this.icpBootstrapSummarizer.draftFromSellerCompany(
+            {
+              domain,
+              companyName: draft.companyName,
+              industry: draft.industry,
+              summary: draft.summary,
+              employeeRange: draft.employeeRange,
+              hq: draft.hq,
+              workspaceId,
+            },
+          );
+
+          if (llmIcp) {
+            draft.icpSpec = {
+              buyerTitles: llmIcp.buyerTitles,
+              locations: llmIcp.locations,
+            };
+          }
+
           draft.enrichmentJson = {
             ...draft.enrichmentJson,
             sourceIds: enrichmentSources.sourceIds,
           };
 
           const systemActor = buildCreatedByFromSystem();
-          const keepCompanySearchBlurb =
-            preserveSearchBlurbs &&
-            isNonEmptyString(existingProfile?.companySearchBlurb);
-          const keepPeopleSearchBlurb =
-            preserveSearchBlurbs &&
-            isNonEmptyString(existingProfile?.peopleSearchBlurb);
           const profileFields = {
             name: 'Workspace GTM Profile',
             companyName: draft.companyName,
@@ -229,15 +245,7 @@ export class GtmWorkspaceProfileProvisioningService {
             employeeRange: draft.employeeRange,
             hq: draft.hq,
             enrichmentJson: draft.enrichmentJson,
-            icpSegment: draft.icpSegment,
-            icpSpec: JSON.stringify(draft.icpSpec),
-            icpBlurb: draft.icpBlurb,
-            companySearchBlurb: keepCompanySearchBlurb
-              ? (existingProfile?.companySearchBlurb ?? draft.companySearchBlurb)
-              : draft.companySearchBlurb,
-            peopleSearchBlurb: keepPeopleSearchBlurb
-              ? (existingProfile?.peopleSearchBlurb ?? draft.peopleSearchBlurb)
-              : draft.peopleSearchBlurb,
+            icpSpec: stringifyGtmIcpSpec(draft.icpSpec),
             updatedBy: systemActor,
           };
 

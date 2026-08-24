@@ -27,18 +27,10 @@ export type GtmWorkspaceCompany = {
   hq: string;
 };
 
-/** Complete structured ICP stored in `icpSpec` JSON (workspaceProfile / Project). */
+/** Structured ICP stored in `icpSpec` JSON (workspaceProfile / Project). */
 export type GtmIcpSpec = {
-  name: string;
-  industries: string[];
-  employeeRange: string;
-  geos: string[];
-  // buyerTitles: string[];
-  // painSignals: string[];
-  // stdFunctions?: string[];
-  // stdGrades?: string[];
-  // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
-  blurb?: string;
+  buyerTitles: string[];
+  locations: string[];
 };
 
 export type WorkspaceProfileRecord = {
@@ -50,11 +42,7 @@ export type WorkspaceProfileRecord = {
   summary?: string | null;
   employeeRange?: string | null;
   hq?: string | null;
-  icpSegment?: string | null;
   icpSpec?: string | null;
-  icpBlurb?: string | null;
-  companySearchBlurb?: string | null;
-  peopleSearchBlurb?: string | null;
 };
 
 export type GtmCompanyRow = {
@@ -94,7 +82,6 @@ export type GtmProjectOption = {
 export type GtmProjectSettings = {
   projectId: string | null;
   projectName: string | null;
-  // Mirrors Project.id for new runs; may be a legacy slug on older seeds.
   gtmRunKey: string | null;
   outreachWorkflowId: string | null;
   outreachSendMode: GtmOutreachSendMode;
@@ -104,15 +91,8 @@ export type GtmProjectSettings = {
   sendWindowStart: string;
   sendWindowEnd: string;
   whatsappConnected: boolean;
-  icpSegment: string | null;
   icpSpec: string | null;
-  icpBlurb: string | null;
-  companySearchBlurb: string | null;
-  peopleSearchBlurb: string | null;
   isIcpRunOverride: boolean;
-  isIcpBlurbRunOverride: boolean;
-  isCompanySearchBlurbRunOverride: boolean;
-  isPeopleSearchBlurbRunOverride: boolean;
 };
 
 export type GtmCommandContext = {
@@ -191,44 +171,27 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
   const draftLines = proposedIcp
     ? [
         '',
-        `I already have a rough ICP draft called "${proposedIcp.name}" — feel free to challenge or refine it:`,
-        proposedIcp.industries.length > 0
-          ? `- Industries: ${proposedIcp.industries.join(', ')}`
+        'Current ICP draft:',
+        proposedIcp.buyerTitles.length > 0
+          ? `- Buyer titles: ${proposedIcp.buyerTitles.join(', ')}`
           : null,
-        proposedIcp.employeeRange
-          ? `- Company size: ${proposedIcp.employeeRange}`
+        proposedIcp.locations.length > 0
+          ? `- Locations: ${proposedIcp.locations.join(', ')}`
           : null,
-        proposedIcp.geos.length > 0
-          ? `- Geos: ${proposedIcp.geos.join(', ')}`
-          : null,
-        // proposedIcp.buyerTitles.length > 0
-        //   ? `- Buyer titles: ${proposedIcp.buyerTitles.join(', ')}`
-        //   : null,
-        // proposedIcp.painSignals.length > 0
-        //   ? `- Pain signals: ${proposedIcp.painSignals.join('; ')}`
-        //   : null,
-        // (proposedIcp.stdFunctions?.length ?? 0) > 0
-        //   ? `- Functions: ${(proposedIcp.stdFunctions ?? []).join(', ')}`
-        //   : null,
-        // (proposedIcp.stdGrades?.length ?? 0) > 0
-        //   ? `- Grades: ${(proposedIcp.stdGrades ?? []).join(', ')}`
-        //   : null,
       ].filter(Boolean)
     : [];
 
   return [
     `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
-      '. Walk me through who we should sell to, buyer personas, send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP (icpSpec + icpBlurb) + company/people search blurbs on workspaceProfile (not only this Project). Only write Project.icpSpec if I ask for a run-specific override.',
+      '. Walk me through who we should sell to (buyer titles and locations), send mode (approval vs auto), and caps — ask questions as we go.',
+    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (buyerTitles + locations only). Only write Project.icpSpec if I ask for a run-specific override.',
     ...draftLines,
   ].join('\n');
 };
 
 export type GtmFindCompaniesSendPromptInput = {
   projectId: string | null;
-  companySearchBlurb: string | null;
-  icpBlurb: string | null;
   icpSpecSummary: string | null;
 };
 
@@ -237,12 +200,9 @@ export const buildGtmFindCompaniesSendPrompt = (
 ): string => {
   return [
     `Find target companies for this GTM run (projectId=${input.projectId ?? 'none'}).`,
-    input.companySearchBlurb ??
-      'Use the effective ICP for this workspace / run to find high-fit accounts.',
-    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
-      : null,
+      : 'Use the workspace ICP buyer titles and locations if present.',
     'load_skills(["search-companies"]), search, then upsert_gtm_target_companies({ projectId, mode: "merge", companies }) before ending.',
     'Do not create CRM Company records for the Companies tab.',
   ]
@@ -252,8 +212,6 @@ export const buildGtmFindCompaniesSendPrompt = (
 
 export type GtmFindPeopleSendPromptInput = {
   projectId: string | null;
-  peopleSearchBlurb: string | null;
-  icpBlurb: string | null;
   icpSpecSummary: string | null;
 };
 
@@ -262,12 +220,9 @@ export const buildGtmFindPeopleSendPrompt = (
 ): string => {
   return [
     `Find target people for this GTM run (projectId=${input.projectId ?? 'none'}) at the companies already on the Companies tab.`,
-    input.peopleSearchBlurb ??
-      'Use the effective ICP buyer titles / functions for this workspace / run.',
-    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
-      : null,
+      : 'Use workspace ICP buyer titles and locations.',
     'load_skills(["search-people","linkedin-search"]) as needed, search, then upsert_gtm_target_people({ projectId, mode: "merge", people }) before ending.',
     'Do not create CRM Candidates until I confirm Add to CRM / Enroll.',
   ]
@@ -278,7 +233,6 @@ export const buildGtmFindPeopleSendPrompt = (
 export type GtmRegenerateIcpSendPromptInput = {
   workspaceCompany: GtmWorkspaceCompany;
   currentIcpSpec: string | null;
-  currentIcpBlurb: string | null;
 };
 
 export const buildGtmRegenerateIcpSendPrompt = (
@@ -292,41 +246,8 @@ export const buildGtmRegenerateIcpSendPrompt = (
     }.`,
     company.industry ? `Industry: ${company.industry}.` : null,
     company.summary ? `Company summary: ${company.summary}` : null,
-    'load_skills(["gtm-icp-onboarding"]), then save icpSpec + icpBlurb + icpSegment on workspaceProfile (workspace default).',
-    'Do NOT change companySearchBlurb or peopleSearchBlurb — those have their own Regenerate actions.',
+    'load_skills(["gtm-icp-onboarding"]), then save icpSpec on workspaceProfile with buyerTitles and locations only.',
     'Do not write Project.icpSpec unless I ask for a run-specific override.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-};
-
-export type GtmRegenerateSearchBlurbSendPromptInput = {
-  kind: 'company' | 'people';
-  workspaceCompany: GtmWorkspaceCompany;
-  icpBlurb: string | null;
-  icpSpecSummary: string | null;
-  currentBlurb: string | null;
-};
-
-export const buildGtmRegenerateSearchBlurbSendPrompt = (
-  input: GtmRegenerateSearchBlurbSendPromptInput,
-): string => {
-  const fieldName =
-    input.kind === 'company' ? 'companySearchBlurb' : 'peopleSearchBlurb';
-  const label =
-    input.kind === 'company' ? 'company search blurb' : 'people search blurb';
-
-  return [
-    `Regenerate only the ${label} on workspaceProfile for ${input.workspaceCompany.name}.`,
-    input.icpBlurb ? `ICP blurb: ${input.icpBlurb}` : null,
-    input.icpSpecSummary
-      ? `Effective ICP JSON: ${input.icpSpecSummary}`
-      : 'Use the workspace ICP if present; if missing, draft a minimal ICP + icpBlurb first.',
-    input.currentBlurb ? `Current ${fieldName}: ${input.currentBlurb}` : null,
-    `Write an improved short NL brief to ${fieldName} on workspaceProfile. Do not change icpSpec / icpBlurb unless they are empty.`,
-    input.kind === 'company'
-      ? 'The blurb should be ready to SEND for Find companies (industries, size, geos, ~15–25 accounts).'
-      : 'The blurb should be ready to SEND for Find people (buyer titles / functions at companies already on this run).',
   ]
     .filter(Boolean)
     .join('\n');

@@ -7,6 +7,7 @@ export type UnipileSalesNavSearchRequest = {
   company?: { include: string[] };
   function?: { include: string[] };
   seniority?: { include: LinkedInSeniorityType[] };
+  location?: { include: string[] };
 };
 
 export const shouldOmitSalesNavKeywords = (args: {
@@ -21,6 +22,7 @@ export const buildUnipileSalesNavSearchRequest = (input: {
   companyParameterIds: string[];
   primaryCompanyName: string;
   country?: string;
+  locationIds?: string[];
   functionIds: string[];
   seniorities: LinkedInSeniorityType[];
   includeManualLinkedInQuery?: boolean;
@@ -50,6 +52,7 @@ export const buildUnipileSalesNavSearchRequest = (input: {
   if (
     !omitGeneratedText &&
     !input.includeManualLinkedInQuery &&
+    !(input.locationIds && input.locationIds.length > 0) &&
     input.country?.trim() &&
     input.country.trim().toLowerCase() !== 'global'
   ) {
@@ -79,6 +82,9 @@ export const buildUnipileSalesNavSearchRequest = (input: {
       : {}),
     ...(!omitFunctionAndSeniorityFacets && input.seniorities.length > 0
       ? { seniority: { include: input.seniorities } }
+      : {}),
+    ...(input.locationIds && input.locationIds.length > 0
+      ? { location: { include: input.locationIds } }
       : {}),
   };
 };

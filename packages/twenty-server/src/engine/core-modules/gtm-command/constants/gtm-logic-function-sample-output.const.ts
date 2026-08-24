@@ -11,6 +11,7 @@ import {
   GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+  GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
@@ -221,6 +222,56 @@ export const GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT = {
   ],
 };
 
+export const GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT = {
+  success: true,
+  total: 1,
+  fakeCount: 1,
+  genuineCount: 0,
+  uncertainCount: 0,
+  error: '',
+  fakeProfiles: [
+    {
+      index: 0,
+      isLikelyFake: true,
+      verdict: 'fake',
+      confidence: 0.92,
+      riskScore: 88,
+      name: 'TS Dadapeer',
+      publicIdentifier: 'syed-dadapeer5410',
+      headline: 'Change',
+      summary:
+        'Education ends in 2023 but elite search-firm tenure starts in 2013; roles are self-employed at firms that do not hire that way.',
+      redFlags: [
+        'Education 2019-2023 vs Egon Zehnder from 2013',
+        'Self-employed at Egon Zehnder and Odgers Berndtson',
+      ],
+      supportingSignals: [],
+      profile: {},
+    },
+  ],
+  genuineProfiles: [],
+  assessments: [
+    {
+      index: 0,
+      isLikelyFake: true,
+      verdict: 'fake',
+      confidence: 0.92,
+      riskScore: 88,
+      name: 'TS Dadapeer',
+      publicIdentifier: 'syed-dadapeer5410',
+      headline: 'Change',
+      summary:
+        'Education ends in 2023 but elite search-firm tenure starts in 2013; roles are self-employed at firms that do not hire that way.',
+      redFlags: [
+        'Education 2019-2023 vs Egon Zehnder from 2013',
+        'Self-employed at Egon Zehnder and Odgers Berndtson',
+      ],
+      supportingSignals: [],
+      profile: {},
+    },
+  ],
+};
+
 export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   string,
   Record<string, unknown>
@@ -242,4 +293,6 @@ export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   [GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
   [GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
     GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+  [GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
+    GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
 };

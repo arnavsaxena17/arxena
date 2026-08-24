@@ -13,6 +13,7 @@ export type PeopleLocationScopeResolvedVia =
 export type PeopleLocationScope = {
   raw?: string;
   linkedinLocationId?: string;
+  linkedinLocationIds?: string[];
   linkedinLocationName?: string;
   resolvedVia: PeopleLocationScopeResolvedVia;
 };

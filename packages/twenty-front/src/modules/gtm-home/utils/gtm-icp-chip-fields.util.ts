@@ -1,10 +1,6 @@
 export const GTM_ICP_CHIP_FIELDS = [
-  { key: 'industries', label: 'Industries' },
-  { key: 'geos', label: 'Locations' },
   { key: 'buyerTitles', label: 'Buyer titles' },
-  { key: 'painSignals', label: 'Pain signals' },
-  { key: 'stdFunctions', label: 'Functions' },
-  { key: 'stdGrades', label: 'Grades' },
+  { key: 'locations', label: 'Locations' },
 ] as const;
 
 export type GtmIcpChipFieldKey = (typeof GTM_ICP_CHIP_FIELDS)[number]['key'];
@@ -40,6 +36,20 @@ export const parseIcpSpecObject = (
   }
 };
 
+const slimIcpRecord = (
+  parsed: Record<string, unknown>,
+): Record<string, unknown> => {
+  const locations = [
+    ...toStringList(parsed.locations),
+    ...toStringList(parsed.geos),
+  ];
+
+  return {
+    buyerTitles: toStringList(parsed.buyerTitles),
+    locations: [...new Set(locations)],
+  };
+};
+
 export const readIcpChipValues = (
   icpSpec: string,
   key: GtmIcpChipFieldKey,
@@ -50,7 +60,7 @@ export const readIcpChipValues = (
     return [];
   }
 
-  return toStringList(parsed[key]);
+  return toStringList(slimIcpRecord(parsed)[key]);
 };
 
 export const writeIcpChipValues = (
@@ -58,28 +68,10 @@ export const writeIcpChipValues = (
   key: GtmIcpChipFieldKey,
   values: string[],
 ): string => {
-  const parsed = parseIcpSpecObject(icpSpec) ?? {};
+  const parsed = slimIcpRecord(parseIcpSpecObject(icpSpec) ?? {});
 
   parsed[key] = values;
 
   return JSON.stringify(parsed, null, 2);
 };
 
-export const readIcpStringField = (icpSpec: string, key: string): string => {
-  const parsed = parseIcpSpecObject(icpSpec);
-  const value = parsed?.[key];
-
-  return typeof value === 'string' ? value : '';
-};
-
-export const writeIcpStringField = (
-  icpSpec: string,
-  key: string,
-  value: string,
-): string => {
-  const parsed = parseIcpSpecObject(icpSpec) ?? {};
-
-  parsed[key] = value;
-
-  return JSON.stringify(parsed, null, 2);
-};

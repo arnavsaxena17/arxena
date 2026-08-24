@@ -1,17 +1,12 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
-export type GtmIcpSpec = {
-  name: string;
-  industries: string[];
-  employeeRange: string;
-  geos: string[];
-  buyerTitles?: string[];
-  painSignals?: string[];
-  stdFunctions?: string[];
-  stdGrades?: string[];
-  // Legacy NL embed when icpBlurb column was missing; prefer dedicated field
-  blurb?: string;
-};
+import {
+  EMPTY_GTM_ICP_SPEC,
+  normalizeGtmIcpSpec,
+  type GtmIcpSpec,
+} from 'src/engine/core-modules/gtm-command/utils/gtm-icp-spec.util';
+
+export type { GtmIcpSpec };
 
 export type GtmSellerCompanyDraft = {
   companyName: string;
@@ -23,11 +18,7 @@ export type GtmSellerCompanyDraft = {
 };
 
 export type GtmWorkspaceProfileDraft = GtmSellerCompanyDraft & {
-  icpSegment: string;
   icpSpec: GtmIcpSpec;
-  icpBlurb: string;
-  companySearchBlurb: string;
-  peopleSearchBlurb: string;
   enrichmentJson: Record<string, unknown>;
 };
 
@@ -351,6 +342,7 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
     hq?: string;
     notes?: string;
   } | null;
+  llmIcp?: GtmIcpSpec | null;
 }): GtmWorkspaceProfileDraft => {
   const domain = input.domain.trim().toLowerCase();
   const apollo = input.apolloOrganization ?? null;
@@ -419,50 +411,9 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
           linkedInSearchHit,
         });
 
-  const industries = isNonEmptyString(industry) ? [industry] : [];
-  const geos = isNonEmptyString(hq)
-    ? [hq.split(',').map((part) => part.trim()).filter(Boolean).at(-1) ?? hq]
-    : [];
-
-  const icpSpec: GtmIcpSpec = {
-    name: isNonEmptyString(industry)
-      ? `${industry} buyers`
-      : `Buyers for ${companyName}`,
-    industries,
-    employeeRange,
-    geos,
-  };
-
-  const icpBlurb = [
-    `Ideal customers for ${companyName}: ${icpSpec.name}.`,
-    industries.length > 0 ? `Industries: ${industries.join(', ')}.` : null,
-    isNonEmptyString(employeeRange)
-      ? `Company size around ${employeeRange}.`
-      : null,
-    geos.length > 0 ? `Geos: ${geos.join(', ')}.` : null,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const companySearchBlurb = [
-    `Find target companies matching our ICP "${icpSpec.name}".`,
-    industries.length > 0 ? `Industries: ${industries.join(', ')}.` : null,
-    isNonEmptyString(employeeRange)
-      ? `Company size around ${employeeRange}.`
-      : null,
-    geos.length > 0 ? `Geos: ${geos.join(', ')}.` : null,
-    'Return ~15–25 high-fit companies with name, domain, industry, employees.',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const peopleSearchBlurb = [
-    `Find buyers at the target companies already on this GTM run.`,
-    isNonEmptyString(industry) ? `Prefer roles relevant to ${industry}.` : null,
-    'Prefer decision-makers with LinkedIn URLs; keep to a few personas per company.',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const icpSpec = normalizeGtmIcpSpec(
+    input.llmIcp ?? EMPTY_GTM_ICP_SPEC,
+  );
 
   const enrichmentSource = resolveEnrichmentSource({
     linkedInProfile,
@@ -481,11 +432,7 @@ export const buildGtmWorkspaceProfileDraftFromDomain = (input: {
     summary,
     employeeRange,
     hq,
-    icpSegment: icpSpec.name,
     icpSpec,
-    icpBlurb,
-    companySearchBlurb,
-    peopleSearchBlurb,
     enrichmentJson: {
       source: enrichmentSource,
       domain,

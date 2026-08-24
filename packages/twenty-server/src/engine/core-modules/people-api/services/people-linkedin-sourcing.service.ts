@@ -57,6 +57,7 @@ export type PeopleLinkedInSourcingInput = {
   stdFunctionRoot?: string;
   stdGrade?: string;
   country?: string;
+  locationIds?: string[];
   dataSource?: PeopleLinkedInCandidateSource;
   accountId?: string;
   limit?: number;
@@ -293,6 +294,7 @@ export class PeopleLinkedInSourcingService {
         .map((company) => company.linkedinUrl)
         .filter((url): url is string => !!url?.trim()),
       country: input.country,
+      locationIds: input.locationIds,
       keywords: unipileKeywords,
       jobTitle: unipileJobTitle,
       functionIds: appliedFilters.functionIds,
@@ -418,6 +420,7 @@ export class PeopleLinkedInSourcingService {
     primaryCompanyName: string;
     companyLinkedinUrls: string[];
     country?: string;
+    locationIds?: string[];
     keywords?: string;
     jobTitle?: string;
     functionIds: string[];
@@ -471,6 +474,7 @@ export class PeopleLinkedInSourcingService {
           companyParameterIds,
           primaryCompanyName: input.primaryCompanyName,
           country: input.country,
+          locationIds: input.locationIds,
           functionIds: input.functionIds,
           seniorities: input.seniorities,
           includeManualLinkedInQuery: input.includeManualLinkedInQuery,

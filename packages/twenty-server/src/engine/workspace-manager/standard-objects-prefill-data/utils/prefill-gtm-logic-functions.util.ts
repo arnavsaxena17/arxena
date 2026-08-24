@@ -16,6 +16,7 @@ import {
   GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+  GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -30,6 +31,7 @@ import {
   GTM_UPSERT_COMPANIES_SAMPLE_OUTPUT,
   GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
   GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+  GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -99,6 +101,10 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   getCalendarAvailabilityId: uuidv5(
     `${workspaceId}:get-calendar-availability`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  detectFakeProfilesId: uuidv5(
+    `${workspaceId}:detect-fake-profiles`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -269,7 +275,11 @@ export const getGtmOutreachLogicFunctionDefinitions = (
               website: { type: 'string', label: 'Website' },
               companyId: GTM_COMPANY_RECORD_INPUT,
               jobTitle: { type: 'string', label: 'Job title' },
-              location: { type: 'string', label: 'Location' },
+              locations: {
+                type: 'array',
+                label: 'Locations',
+                items: { type: 'string', label: 'Location' },
+              },
               country: { type: 'string', label: 'Country' },
               dataSource: { type: 'string', label: 'Data source' },
               accountId: { type: 'string', label: 'Account ID' },
@@ -820,6 +830,47 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.detectFakeProfilesId,
+      name: GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+      description:
+        'Investigative LLM screen of LinkedIn profile snapshots or full profiles. Pass profile, snapshot, or profiles[]. Returns assessments plus fakeProfiles (likely fabricated) and genuineProfiles. Uses Nous HY3 (hy3:free) by default.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Detect fake profiles',
+        icon: 'IconUserSearch',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              profile: { type: 'object', label: 'Profile' },
+              snapshot: { type: 'object', label: 'Snapshot' },
+              profiles: { type: 'array', label: 'Profiles' },
+              modelId: { type: 'string', label: 'Model ID' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              total: { type: 'number', label: 'Total' },
+              fakeCount: { type: 'number', label: 'Fake count' },
+              genuineCount: { type: 'number', label: 'Genuine count' },
+              uncertainCount: { type: 'number', label: 'Uncertain count' },
+              error: { type: 'string', label: 'Error' },
+              fakeProfiles: { type: 'array', label: 'Fake profiles' },
+              genuineProfiles: { type: 'array', label: 'Genuine profiles' },
+              assessments: { type: 'array', label: 'Assessments' },
+            },
+          },
+        ],
+        sampleOutput: GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
       },
     },
   ];

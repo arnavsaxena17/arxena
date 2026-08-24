@@ -11,6 +11,7 @@ import {
   GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
+  GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -173,6 +174,18 @@ export const main = async (params: {
 };
 `;
 
+const DETECT_FAKE_PROFILES_HANDLER = `// Native GTM action: GtmFakeProfileDetectorService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  profile?: Record<string, unknown>;
+  snapshot?: Record<string, unknown>;
+  profiles?: Array<Record<string, unknown>>;
+  modelId?: string;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -191,6 +204,7 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: ENRICH_CONTACT_HANDLER,
   [GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
     GET_CALENDAR_AVAILABILITY_HANDLER,
+  [GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]: DETECT_FAKE_PROFILES_HANDLER,
 };
 
 export const getGtmNativeLogicFunctionHandler = (name: string): string => {
