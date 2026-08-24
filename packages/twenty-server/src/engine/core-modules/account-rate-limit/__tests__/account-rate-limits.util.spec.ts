@@ -30,6 +30,9 @@ describe('account rate limit sanitization', () => {
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerHour).toBe(
       5,
     );
+    expect(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPer5Minutes,
+    ).toBe(1);
   });
 
   it('parses a per-account LinkedIn map', () => {

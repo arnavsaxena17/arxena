@@ -16,6 +16,7 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
 
     const result = await redisService.tryAcquireMultiWindowSlots(
       [
+        { key: 'linkedin:a:connection_request:5m', windowMs: 300_000, limit: 1 },
         { key: 'linkedin:a:connection_request:hour', windowMs: 3_600_000, limit: 5 },
         { key: 'linkedin:a:connection_request:day', windowMs: 86_400_000, limit: 20 },
       ],
@@ -145,7 +146,7 @@ describe('AccountRateLimiterService', () => {
     );
   });
 
-  it('applies LinkedIn connection request hour, day, and week windows', async () => {
+  it('applies LinkedIn connection request 5-minute, hour, day, and week windows', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -164,6 +165,7 @@ describe('AccountRateLimiterService', () => {
 
     expect(keys).toEqual(
       expect.arrayContaining([
+        'linkedin:acc-1:connection_request:5m',
         'linkedin:acc-1:connection_request:hour',
         'linkedin:acc-1:connection_request:day',
         'linkedin:acc-1:connection_request:week',
@@ -174,6 +176,11 @@ describe('AccountRateLimiterService', () => {
     expect(keys).not.toContain('linkedin:acc-1:connection_request:30s');
     expect(windows).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:5m',
+          windowMs: 300_000,
+          limit: 1,
+        }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:hour',
           windowMs: 3_600_000,

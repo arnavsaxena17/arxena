@@ -4,6 +4,7 @@ import {
   DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS,
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
   MS_PER_DAY,
+  MS_PER_FIVE_MINUTES,
   MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_THIRTY_SECONDS,
@@ -230,6 +231,14 @@ export class AccountRateLimiterService implements OnModuleInit {
 
     if (method === 'connection_request') {
       windows.push(
+        this.window(
+          accountId,
+          'linkedin',
+          'connection_request',
+          '5m',
+          limits.connectionRequestPer5Minutes,
+          MS_PER_FIVE_MINUTES,
+        ),
         this.window(
           accountId,
           'linkedin',

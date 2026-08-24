@@ -3,6 +3,7 @@ export const WHATSAPP_ACCOUNT_RATE_LIMITS_KEY = 'whatsapp_account_rate_limits';
 
 export const MS_PER_SECOND = 1_000;
 export const MS_PER_MINUTE = 60_000;
+export const MS_PER_FIVE_MINUTES = 5 * MS_PER_MINUTE;
 export const MS_PER_HOUR = 3_600_000;
 export const MS_PER_DAY = 86_400_000;
 export const MS_PER_WEEK = 7 * MS_PER_DAY;
@@ -14,6 +15,7 @@ export type LinkedinAccountRateLimits = {
   endpointPerDay: number;
   companyProfilePer2Seconds: number;
   profilePer2Seconds: number;
+  connectionRequestPer5Minutes: number;
   connectionRequestPerHour: number;
   connectionRequestPerDay: number;
   connectionRequestPerWeek: number;
@@ -49,6 +51,7 @@ export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
   endpointPerDay: 40,
   companyProfilePer2Seconds: 1,
   profilePer2Seconds: 1,
+  connectionRequestPer5Minutes: 1,
   connectionRequestPerHour: 5,
   connectionRequestPerDay: 20,
   connectionRequestPerWeek: 80,
@@ -77,6 +80,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   endpointPerDay: { min: 5, max: 100 },
   companyProfilePer2Seconds: { min: 1, max: 3 },
   profilePer2Seconds: { min: 1, max: 3 },
+  connectionRequestPer5Minutes: { min: 1, max: 5 },
   connectionRequestPerHour: { min: 1, max: 20 },
   connectionRequestPerDay: { min: 1, max: 50 },
   connectionRequestPerWeek: { min: 5, max: 200 },
