@@ -31,7 +31,8 @@ export const isLinkedInSearchCursorRequest = (
 
 /**
  * LinkedIn searchPerMinute / searchPerDay apply to a logical search
- * (org chart or people search), not to each Unipile page.
+ * (org chart or people search), not to each Unipile page and not to
+ * location / company / industry parameter lookups.
  */
 export const shouldCountLinkedInSearchQuota = (
   input: LinkedInSearchQuotaInput,

@@ -295,10 +295,13 @@ export class LinkedInSearchService {
     } = {}
   ): Promise<LinkedInSearchParametersList> {
     try {
+      // Location / company / industry / other facet lookups are not a people
+      // search. Keep them on the general endpoint cap so they do not consume
+      // searchPerMinute / searchPerDay.
       await acquireAccountRateLimitOrDefer({
         provider: 'linkedin',
         accountId,
-        method: 'search',
+        method: 'endpoint',
       });
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
       const queryParams = new URLSearchParams({
