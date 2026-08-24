@@ -110,7 +110,7 @@ export const graphqlQueryToFindVideoInterviewTemplatesByProjectId = `query FindM
           position
           updatedAt
         }
-        job {
+        project {
           recruiterId
           updatedAt
           arxenaSiteId
@@ -210,22 +210,6 @@ const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFi
         }
         jobCode
         jobLocation
-        assistantThreads {
-          edges{
-            node{
-              id
-              name
-              messages
-              assistantParameters
-              enrichmentConfigs
-              columnFilters
-              assistantSearchStrategy
-              isActive
-              projectId
-              recruiterId
-            }
-          }
-        }
         attachments{
             edges{
                 node{
@@ -374,22 +358,6 @@ const graphqlToFindManyProjectsWithPromptsFull = `query FindManyProjects($filter
           __typename
         }
         prompts
-        assistantThreads {
-          edges{
-            node{
-              id
-              name
-              messages
-              assistantParameters
-              enrichmentConfigs
-              columnFilters
-              assistantSearchStrategy
-              isActive
-              projectId
-              recruiterId
-            }
-          }
-        }
         name
         jobCode
         jobLocation
@@ -2978,32 +2946,9 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     }
     emails{
         primaryEmail
-    }    id
-    phoneCall {
-          edges{
-              node{
-                  name
-                  id
-                  transcript
-                  attachments{
-                      edges{
-                          node{
-                              name
-                              id
-                              fullPath
-                              file {
-                                fileId
-                                label
-                                extension
-                                url
-                              }
-                          }
-                      }
-                  }
-              }
-          }
-      }
-      avatarUrl
+    }
+    id
+    avatarUrl
     }
     startVideoInterviewChatCompleted
     engagementStatus
@@ -3190,7 +3135,7 @@ export const findManyAssistantThreads = `query FindManyAssistantThreads($filter:
         id
         name
         projectId
-        job {
+        project {
           id
           name
           jobLocation
@@ -3226,7 +3171,7 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: UUID!) 
     messages
     lastTableData
     projectId
-    job {
+    project {
       id
       name
       jobLocation

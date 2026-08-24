@@ -110,8 +110,10 @@ export const ChatQuestionsSection: React.FC<FormComponentProps> = ({
           headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` },
         });
 
-        const questions = Array.isArray(response.data?.data?.job?.chatQuestions)
-          ? response.data.data.job.chatQuestions
+        const questions = Array.isArray(
+          response.data?.data?.project?.chatQuestions,
+        )
+          ? response.data.data.project.chatQuestions
           : [];
 
         fetchedProjectIdRef.current = projectId;

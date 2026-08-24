@@ -15,6 +15,26 @@ import {
     AssistantThreadTableReference,
 } from './assistant.types';
 
+type AssistantThreadProject = {
+  id: string;
+  name?: string;
+  jobLocation?: string;
+  company?: { id: string; name?: string };
+};
+
+type AssistantThreadGraphQLNode = {
+  id: string;
+  name: string;
+  projectId?: string;
+  project?: AssistantThreadProject;
+  job?: AssistantThreadProject;
+  assistantMode?: 'fully_autonomous' | 'permissioned';
+};
+
+const projectFromAssistantThreadNode = (
+  node: { project?: AssistantThreadProject; job?: AssistantThreadProject },
+): AssistantThreadProject | undefined => node.project ?? node.job ?? undefined;
+
 type AssistantThreadMessage = {
   role: 'user' | 'assistant';
   content: string;
@@ -65,23 +85,13 @@ export class AssistantThreadService {
       apiToken,
     );
     const edges = result?.data?.data?.assistantThreads?.edges ?? [];
-    return edges.map(
-      (e: {
-        node: {
-          id: string;
-          name: string;
-          projectId?: string;
-          job?: { id: string; name?: string; jobLocation?: string; company?: { id: string; name?: string } };
-          assistantMode?: 'fully_autonomous' | 'permissioned';
-        };
-      }) => ({
+    return edges.map((e: { node: AssistantThreadGraphQLNode }) => ({
         id: e.node.id,
         name: e.node.name,
         projectId: e.node.projectId ?? undefined,
-        job: e.node.job ?? undefined,
+        job: projectFromAssistantThreadNode(e.node),
         assistantMode: e.node.assistantMode ?? 'permissioned',
-      }),
-    );
+      }));
   }
 
   async createThread(
@@ -225,7 +235,7 @@ export class AssistantThreadService {
       createdAt: node.createdAt ? new Date(node.createdAt) : new Date(),
       updatedAt: node.updatedAt ? new Date(node.updatedAt) : new Date(),
       projectId: node.projectId ?? undefined,
-      job: node.job ?? undefined,
+      job: projectFromAssistantThreadNode(node),
       agentNotes: agentNotes?.length ? agentNotes : undefined,
       agentEvents,
       assistantMode: node.assistantMode ?? 'permissioned',

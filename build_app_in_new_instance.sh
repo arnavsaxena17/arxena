@@ -262,6 +262,12 @@ cleanup() {
       exit "$exit_code"
     fi
     CLEANUP_DONE=1
+    # Drop BuildLock before slow teardown. A second Ctrl+C during nx-cache
+    # mirroring used to skip this and leave the next run waiting 20 minutes.
+    if [ -n "$TEMP_INSTANCE_ID" ]; then
+      aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 delete-tags --resources "$TEMP_INSTANCE_ID" \
+        --tags Key=BuildLock >/dev/null 2>&1 || true
+    fi
     fetch_remote_build_log 1
     push_nx_cache_to_s3 || true
     rm -f "${BUILD_LOG_SSH_FALLBACK:-}"
@@ -270,10 +276,6 @@ cleanup() {
     fi
     if [ -n "${BUILD_STATUS_LOCAL_FILE:-}" ] && [ -f "$BUILD_STATUS_LOCAL_FILE" ]; then
         rm -f "$BUILD_STATUS_LOCAL_FILE"
-    fi
-    if [ -n "$TEMP_INSTANCE_ID" ]; then
-      aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 delete-tags --resources "$TEMP_INSTANCE_ID" \
-        --tags Key=BuildLock >/dev/null 2>&1 || true
     fi
     if [ "$SKIP_WARM_BUILDER" != "1" ] && [ "${WARM_BUILDER_USED:-0}" = "1" ] && [ -n "$TEMP_INSTANCE_ID" ]; then
         echo "Stopping warm builder $TEMP_INSTANCE_ID (data volume stays attached)..."
@@ -805,7 +807,7 @@ acquire_builder_instance() {
     return 0
   fi
 
-  local id state lock pick_stopped="" pick_running="" pick_stopping=""
+  local id state lock pick_stopped="" pick_running="" pick_stopping="" pick_busy_lock=""
   while IFS=$'\t' read -r id state lock; do
     [ -z "$id" ] && continue
     case "$state" in
@@ -822,6 +824,7 @@ acquire_builder_instance() {
           echo "Warm builder $id is running with BuildLock=$lock"
           if [ -z "$pick_running" ]; then
             pick_running="BUSY:$id"
+            pick_busy_lock="$lock"
           fi
         fi
         ;;
@@ -849,37 +852,13 @@ acquire_builder_instance() {
     start_existing_builder "$pick_stopping"
   elif [ -n "$pick_running" ]; then
     local busy_id="${pick_running#BUSY:}"
-    echo "Waiting up to 20 minutes for BuildLock to clear on $busy_id..."
-    local waited=0
-    lock="busy"
-    while [ "$waited" -lt 40 ]; do
-      lock="$(
-        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$busy_id" \
-          --query 'Reservations[0].Instances[0].Tags[?Key==`BuildLock`].Value|[0]' --output text 2>/dev/null || echo None
-      )"
-      state="$(
-        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 describe-instances --instance-ids "$busy_id" \
-          --query 'Reservations[0].Instances[0].State.Name' --output text 2>/dev/null || echo none
-      )"
-      if [ "$state" = "stopped" ]; then
-        start_existing_builder "$busy_id"
-        lock=""
-        break
-      fi
-      if [ -z "$lock" ] || [ "$lock" = "None" ] || [ "$lock" = "none" ]; then
-        TEMP_INSTANCE_ID="$busy_id"
-        WARM_BUILDER_USED=1
-        aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$TEMP_INSTANCE_ID" || true
-        log_timing "Warm builder reuse (lock cleared)" "$INSTANCE_START"
-        break
-      fi
-      sleep 30
-      waited=$((waited + 1))
-    done
-    if [ -z "$TEMP_INSTANCE_ID" ]; then
-      echo "ERROR: Warm builder $busy_id is still locked after 20 minutes. Set SKIP_WARM_BUILDER=1 to launch a throwaway instance."
-      exit 1
-    fi
+    echo "Clearing leftover BuildLock=${pick_busy_lock:-unknown} on $busy_id and continuing"
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 delete-tags --resources "$busy_id" \
+      --tags Key=BuildLock >/dev/null 2>&1 || true
+    TEMP_INSTANCE_ID="$busy_id"
+    WARM_BUILDER_USED=1
+    aws "${AWS_CLI_PROFILE_ARGS[@]}" ec2 wait instance-status-ok --instance-ids "$TEMP_INSTANCE_ID" || true
+    log_timing "Warm builder reuse (stale lock cleared)" "$INSTANCE_START"
   else
     echo "No warm builder tagged $WARM_BUILDER_TAG_NAME; launching a new one"
     launch_fresh_builder

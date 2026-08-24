@@ -8,7 +8,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useRef, useState } from 'react';
-import { graphqlToFindManyProjects } from 'twenty-shared/graphql';
+import { findManyAssistantThreads, graphqlToFindManyProjects } from 'twenty-shared/graphql';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 
 import { useSetParsedJDInternalState } from '../hooks/useParsedJDState';
@@ -78,6 +78,12 @@ export const ArxJDUploadModal = ({
     `,
     { client: apolloCoreClient },
   );
+  const [executeAssistantThreadsQuery] = useLazyQuery(
+    gql`
+      ${findManyAssistantThreads}
+    `,
+    { client: apolloCoreClient },
+  );
 
   // Function to fetch attachments for a job
   const fetchJobAttachments = async (projectId: string) => {
@@ -134,11 +140,6 @@ export const ArxJDUploadModal = ({
           (edge: any) => edge.node.name
         ) || [];
 
-        // Get video interview questions
-        const videoQuestions = jobData.videoInterviewTemplate?.edges?.[0]?.node?.videoInterviewQuestions?.edges?.map(
-          (edge: any) => edge.node.questionValue
-        ) || [];
-
         // Get meeting schedule info
         const meetingType = 'online';
         const availableDates: unknown[] = [];
@@ -172,21 +173,47 @@ export const ArxJDUploadModal = ({
           console.log('Using existing job data for parsedJobDescription (edit mode):', parsedJobDescription);
         }
 
-        // Get assistantThreadId for reference
-        let assistantThreadId: string | undefined = undefined;
+        // Fetch assistant threads for this project (app-owned relation, not on Project)
+        let assistantThreads: Array<{
+          id: string;
+          name: string;
+          assistantParameters?: unknown;
+          enrichmentConfigs?: unknown;
+          columnFilters?: unknown;
+        }> = [];
         try {
-          console.log('Raw jobData.assistantThread:', jobData?.assistantThread);
-          const assistantThreadEdges = jobData?.assistantThread?.edges || [];
-          console.log('AssistantThread edges:', assistantThreadEdges);
-
-          if (assistantThreadEdges.length > 0) {
-            // Get the first assistant thread ID for reference
-            assistantThreadId = assistantThreadEdges[0]?.node?.id;
-            console.log('Found assistantThreadId:', assistantThreadId);
-          }
+          const { data: assistantThreadQueryData } =
+            await executeAssistantThreadsQuery({
+              variables: {
+                filter: { projectId: { eq: jobData.id } },
+                limit: 50,
+              },
+            });
+          const threadEdges =
+            (
+              assistantThreadQueryData as
+                | {
+                    assistantThreads?: {
+                      edges?: Array<{ node?: Record<string, any> }>;
+                    };
+                  }
+                | undefined
+            )?.assistantThreads?.edges ?? [];
+          assistantThreads = threadEdges
+            .map((edge) => edge?.node)
+            .filter((node): node is Record<string, any> => Boolean(node?.id))
+            .map((node) => ({
+              id: node.id,
+              name: node.name,
+              assistantParameters: node.assistantParameters,
+              enrichmentConfigs: node.enrichmentConfigs,
+              columnFilters: node.columnFilters,
+            }));
         } catch (e) {
-          console.warn('Failed to get assistantThreadId:', e);
+          console.warn('Failed to get assistant threads for project:', e);
         }
+
+        const assistantThreadId = assistantThreads[0]?.id;
 
         // Create a parsed JD from the job data
         console.log('Creating parsedData with assistantThreadId:', assistantThreadId);
@@ -202,13 +229,7 @@ export const ArxJDUploadModal = ({
           companyName: jobData.company?.name,
           filePath: attachmentDownloadUrl,
           parsedJobDescription: parsedJobDescription, // Use the fetched ParsedJobDescription
-          assistantThreads: jobData.assistantThread?.edges?.map((edge: any) => ({
-            id: edge.node.id,
-            name: edge.node.name,
-            assistantParameters: edge.node.assistantParameters,
-            enrichmentConfigs: edge.node.enrichmentConfigs,
-            columnFilters: edge.node.columnFilters,
-          })),
+          assistantThreads,
           chatFlow: {
             order: {
               initialChat: true,
@@ -218,7 +239,7 @@ export const ArxJDUploadModal = ({
             questions: chatQuestions.length > 0 ? chatQuestions : undefined,
           },
           videoInterview: {
-            questions: videoQuestions.length > 0 ? videoQuestions : undefined,
+            questions: undefined,
           },
           meetingScheduling: {
             meetingType,
