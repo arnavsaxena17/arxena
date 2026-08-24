@@ -9,6 +9,9 @@ export interface TransformationContext {
   dataSource: string;
   crawlId?: string;
   timestamp: string;
+  targetCompanyName?: string;
+  targetCompanyId?: string;
+  targetCompanySlug?: string;
 }
 
 @Injectable()

@@ -6,6 +6,7 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/inte
 
 import {
   isAccountRateLimitDeferredError,
+  parseMethodFromAccountRateLimitMessage,
   parseWaitMsFromAccountRateLimitMessage,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -128,6 +129,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
                 currentStepId,
                 workspaceId,
                 workflowRunId: runInfo.workflowRunId,
+                method: parseMethodFromAccountRateLimitMessage(nativeErrorMessage),
               });
             }
           }
@@ -143,6 +145,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
             currentStepId,
             workspaceId,
             workflowRunId: runInfo.workflowRunId,
+            method: error.method,
           });
         }
 
@@ -171,6 +174,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
             currentStepId,
             workspaceId,
             workflowRunId: runInfo.workflowRunId,
+            method: parseMethodFromAccountRateLimitMessage(errorMessage),
           });
         }
 
@@ -185,6 +189,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
           currentStepId,
           workspaceId,
           workflowRunId: runInfo.workflowRunId,
+          method: error.method,
         });
       }
 
@@ -197,11 +202,13 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
     currentStepId,
     workspaceId,
     workflowRunId,
+    method,
   }: {
     waitMs: number;
     currentStepId: string;
     workspaceId: string;
     workflowRunId: string;
+    method?: string;
   }): Promise<WorkflowActionOutput> {
     return deferWorkflowForAccountRateLimit({
       delayedQueue: this.delayedQueue,
@@ -209,6 +216,7 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
       currentStepId,
       workspaceId,
       workflowRunId,
+      method,
     });
   }
 }

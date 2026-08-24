@@ -9,6 +9,7 @@ export const LINKEDIN_RATE_LIMIT_PENDING_REASON = 'linkedin_rate_limit';
 export type AccountRateLimitQueuedEvent = {
   waitMs: number;
   scheduledAt?: string;
+  method?: string;
 };
 
 export const isAccountRateLimitErrorMessage = (message: string): boolean =>
@@ -75,6 +76,7 @@ const readQueuedEventFromUnknown = (
     pendingReason?: unknown;
     waitMs?: unknown;
     scheduledAt?: unknown;
+    method?: unknown;
     result?: unknown;
   };
 
@@ -84,6 +86,7 @@ const readQueuedEventFromUnknown = (
           pendingReason?: unknown;
           waitMs?: unknown;
           scheduledAt?: unknown;
+          method?: unknown;
         })
       : undefined;
 
@@ -120,7 +123,14 @@ const readQueuedEventFromUnknown = (
         ? nestedResult.scheduledAt
         : undefined;
 
-  return { waitMs, scheduledAt };
+  const method =
+    typeof record.method === 'string'
+      ? record.method
+      : typeof nestedResult?.method === 'string'
+        ? nestedResult.method
+        : undefined;
+
+  return { waitMs, scheduledAt, ...(method ? { method } : {}) };
 };
 
 export const collectAccountRateLimitQueuedEvents = (
@@ -225,6 +235,21 @@ export type LinkedinRateLimitPendingDisplay = {
   retryAt?: string;
 };
 
+const LINKEDIN_RATE_LIMIT_ACTION_LABELS: Record<string, string> = {
+  search: 'LinkedIn search',
+  connection_request: 'LinkedIn connection request',
+  message: 'LinkedIn message',
+  inmail: 'LinkedIn InMail',
+  comment: 'LinkedIn comment',
+  profile: 'LinkedIn profile lookup',
+  company_profile: 'LinkedIn company profile lookup',
+  endpoint: 'LinkedIn request',
+};
+
+export const formatLinkedinRateLimitActionLabel = (
+  method?: string,
+): string => LINKEDIN_RATE_LIMIT_ACTION_LABELS[method ?? ''] ?? 'LinkedIn search';
+
 export const formatLinkedinRateLimitPendingDisplay = (
   event: AccountRateLimitQueuedEvent,
   nowMs: number = Date.now(),
@@ -242,12 +267,13 @@ export const formatLinkedinRateLimitPendingDisplay = (
     typeof event.scheduledAt === 'string' && Number.isFinite(scheduledAtMs)
       ? formatScheduledAtLabel(event.scheduledAt)
       : undefined;
+  const actionLabel = formatLinkedinRateLimitActionLabel(event.method);
 
   return {
     message:
       remainingMs <= 0
-        ? 'LinkedIn search is rate limited. Retrying soon.'
-        : `LinkedIn search is rate limited. This step will retry automatically in ${retryIn}.`,
+        ? `${actionLabel} is rate limited. Retrying soon.`
+        : `${actionLabel} is rate limited. This step will retry automatically in ${retryIn}.`,
     reason: 'LinkedIn rate limit',
     retryIn,
     ...(retryAt ? { retryAt } : {}),

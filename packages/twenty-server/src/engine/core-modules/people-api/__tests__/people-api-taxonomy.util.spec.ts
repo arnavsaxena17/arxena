@@ -110,6 +110,67 @@ describe('extractCandidateJobTitle', () => {
       }),
     ).toBe('Head of Talent at Korn Ferry');
   });
+
+  it('uses the company_id-matching current_position instead of [0]', () => {
+    expect(
+      extractCandidateJobTitle(
+        {
+          jobTitles: ['Co-Founder'],
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+            {
+              role: 'Operation Manager',
+              company: 'Mazaya international',
+              company_id: '68533040',
+            },
+          ],
+        },
+        { companyName: 'Mazaya', companyId: '68533040' },
+      ),
+    ).toBe('Operation Manager');
+  });
+
+  it('uses a later current_position when only the company name matches', () => {
+    expect(
+      extractCandidateJobTitle(
+        {
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+            },
+            {
+              role: 'Operation Manager',
+              company: 'Mazaya international',
+            },
+          ],
+        },
+        { companyName: 'Mazaya' },
+      ),
+    ).toBe('Operation Manager');
+  });
+
+  it('does not classify current_positions[0] when it belongs to another company', () => {
+    expect(
+      extractCandidateJobTitle(
+        {
+          jobTitles: ['Co-Founder'],
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+          ],
+        },
+        { companyName: 'Mazaya', companyId: '68533040' },
+      ),
+    ).toBeNull();
+  });
 });
 
 describe('extractCandidateExperience', () => {

@@ -216,12 +216,20 @@ export class LinkedInSearchService {
             const jobTitles = (item.current_positions ?? [])
               .map((position) => position.role)
               .filter(Boolean);
+            const currentPositions = (item.current_positions ?? []).map(
+              (position) => ({
+                role: position.role,
+                company: position.company,
+                company_id: position.company_id,
+              }),
+            );
 
             return {
               id: item.id ?? '',
               name: item.name,
               headline: item.headline,
               jobTitles,
+              current_positions: currentPositions,
             };
           }),
           null,

@@ -115,6 +115,7 @@ describe('LogicFunctionWorkflowAction', () => {
     expect(output.pendingEvent).toBe(true);
     expect(output.waitMs).toBe(81_711_000);
     expect(output.pendingReason).toBe('linkedin_rate_limit');
+    expect(output.method).toBe('search');
     expect(output.scheduledAt).toEqual(expect.any(String));
     expect(output.error).toBeUndefined();
   });

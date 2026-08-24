@@ -11,6 +11,7 @@ export type {
   WhatsappAccountRateLimits,
   LinkedinAccountRateLimitsMap,
   WhatsappAccountRateLimitsMap,
+  AccountRateLimitUsageWindow,
 } from './accountRateLimits';
 export {
   LINKEDIN_ACCOUNT_RATE_LIMITS_KEY,
@@ -27,6 +28,10 @@ export {
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
   LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS,
   WHATSAPP_ACCOUNT_RATE_LIMIT_BOUNDS,
+  LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
+  WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
+  getLinkedinAccountRateLimitUsageWindow,
+  getWhatsappAccountRateLimitUsageWindow,
   sanitizeLinkedinAccountRateLimits,
   sanitizeWhatsappAccountRateLimits,
   parseLinkedinAccountRateLimitsMap,

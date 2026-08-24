@@ -78,6 +78,7 @@ export type PeopleLinkedInSourcingResult = {
     name: string | null;
     slug: string | null;
     linkedinUrl: string | null;
+    id?: string | null;
   };
   items: Array<Record<string, unknown>>;
 };
@@ -271,6 +272,7 @@ export class PeopleLinkedInSourcingService {
           name: primaryCompanyName,
           slug: primaryCompany?.slug ?? null,
           linkedinUrl: primaryCompany?.linkedinUrl ?? null,
+          id: null,
         },
         items: items.map((item) =>
           this.normalizePersonItem(item, 'harvest'),
@@ -294,7 +296,7 @@ export class PeopleLinkedInSourcingService {
     const unipileKeywords =
       manualLinkedInQuery?.keywords ?? keywordPlan.linkedinSearchKeywords;
 
-    const items = await this.searchUnipileSalesNavWithFacets({
+    const unipileSearch = await this.searchUnipileSalesNavWithFacets({
       apiToken: input.apiToken,
       accountId,
       primaryCompanyName,
@@ -321,8 +323,9 @@ export class PeopleLinkedInSourcingService {
         name: primaryCompanyName,
         slug: primaryCompany?.slug ?? null,
         linkedinUrl: primaryCompany?.linkedinUrl ?? null,
+        id: unipileSearch.companyParameterIds[0] ?? null,
       },
-      items: items.map((item) =>
+      items: unipileSearch.items.map((item) =>
         this.normalizePersonItem(item, account.candidateSource),
       ),
     };
@@ -349,6 +352,7 @@ export class PeopleLinkedInSourcingService {
       name: input.companyName?.trim() || null,
       slug: input.companyId?.trim() || null,
       linkedinUrl: null,
+      id: null,
     };
 
     if (account.candidateSource === 'harvest') {
@@ -435,7 +439,10 @@ export class PeopleLinkedInSourcingService {
     seniorities: LinkedInSeniorityType[];
     limit: number;
     includeManualLinkedInQuery?: boolean;
-  }): Promise<Array<Record<string, unknown>>> {
+  }): Promise<{
+    items: Array<Record<string, unknown>>;
+    companyParameterIds: string[];
+  }> {
     return this.linkedinUnipileSessionService.withLinkedinSession(
       input.apiToken,
       input.accountId,
@@ -499,7 +506,10 @@ export class PeopleLinkedInSourcingService {
             { limit: input.limit },
           );
 
-        return (response.items ?? []) as Array<Record<string, unknown>>;
+        return {
+          items: (response.items ?? []) as Array<Record<string, unknown>>,
+          companyParameterIds,
+        };
       },
     );
   }

@@ -125,4 +125,18 @@ describe('accountRateLimitError', () => {
 
     toLocaleStringSpy.mockRestore();
   });
+
+  it('names connection-request pending steps instead of calling them search', () => {
+    const display = formatLinkedinRateLimitPendingDisplay(
+      {
+        waitMs: 240_000,
+        method: 'connection_request',
+      },
+      Date.parse('2026-08-25T00:00:00.000Z'),
+    );
+
+    expect(display.message).toBe(
+      'LinkedIn connection request is rate limited. This step will retry automatically in 4 minutes.',
+    );
+  });
 });

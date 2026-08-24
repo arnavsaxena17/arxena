@@ -278,6 +278,11 @@ export class SearchPeopleForCompanyService {
         ensured.projectId,
         context.project.name || 'GTM Outreach',
         companyId,
+        {
+          companyName: context.company.name ?? search.query?.company?.name,
+          companyId: search.query?.company?.id,
+          companySlug: search.query?.company?.slug,
+        },
       );
 
       this.logger.log(
@@ -319,6 +324,11 @@ export class SearchPeopleForCompanyService {
     projectId: string,
     projectName: string,
     companyId: string,
+    targetCompany?: {
+      companyName?: string | null;
+      companyId?: string | null;
+      companySlug?: string | null;
+    },
   ): SearchPeopleForCompanyPerson[] {
     if (items.length === 0) {
       return [];
@@ -333,6 +343,11 @@ export class SearchPeopleForCompanyService {
             items as LinkedInSearchResult[],
             projectId,
             projectName,
+            {
+              targetCompanyName: targetCompany?.companyName ?? undefined,
+              targetCompanyId: targetCompany?.companyId ?? undefined,
+              targetCompanySlug: targetCompany?.companySlug ?? undefined,
+            },
           ),
           {
             searchType: 'sales_navigator',

@@ -72,6 +72,22 @@ describe('RedisService.deleteByPattern', () => {
       'linkedin:acc-1:endpoint:minute',
     );
   });
+
+  it('deletes exact keys', async () => {
+    const redisClient = {
+      del: jest.fn().mockResolvedValue(1),
+    };
+    const redisService = new RedisService({ get: jest.fn() } as never);
+    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
+      redisClient;
+
+    await expect(
+      redisService.deleteKeys('linkedin:acc-1:connection_request:5m'),
+    ).resolves.toBe(1);
+    expect(redisClient.del).toHaveBeenCalledWith(
+      'linkedin:acc-1:connection_request:5m',
+    );
+  });
 });
 
 describe('AccountRateLimiterService', () => {
@@ -82,6 +98,7 @@ describe('AccountRateLimiterService', () => {
       tryAcquireMultiWindowSlots: acquire,
       getString: jest.fn().mockResolvedValue(null),
       setString: jest.fn(),
+      deleteKeys: jest.fn().mockResolvedValue(0),
       deleteByPattern: jest.fn().mockResolvedValue(0),
     };
     const configService = {
@@ -169,10 +186,10 @@ describe('AccountRateLimiterService', () => {
         'linkedin:acc-1:connection_request:hour',
         'linkedin:acc-1:connection_request:day',
         'linkedin:acc-1:connection_request:week',
-        'linkedin:acc-1:endpoint:minute',
-        'linkedin:acc-1:endpoint:day',
       ]),
     );
+    expect(keys).not.toContain('linkedin:acc-1:endpoint:minute');
+    expect(keys).not.toContain('linkedin:acc-1:endpoint:day');
     expect(keys).not.toContain('linkedin:acc-1:connection_request:30s');
     expect(windows).toEqual(
       expect.arrayContaining([
@@ -218,10 +235,9 @@ describe('AccountRateLimiterService', () => {
       expect.arrayContaining([
         'linkedin:acc-1:message:30s',
         'linkedin:acc-1:message:day',
-        'linkedin:acc-1:endpoint:minute',
-        'linkedin:acc-1:endpoint:day',
       ]),
     );
+    expect(keys).not.toContain('linkedin:acc-1:endpoint:day');
   });
 
   it('applies LinkedIn InMail 30s and day windows', async () => {
@@ -242,10 +258,9 @@ describe('AccountRateLimiterService', () => {
       expect.arrayContaining([
         'linkedin:acc-1:inmail:30s',
         'linkedin:acc-1:inmail:day',
-        'linkedin:acc-1:endpoint:minute',
-        'linkedin:acc-1:endpoint:day',
       ]),
     );
+    expect(keys).not.toContain('linkedin:acc-1:endpoint:day');
   });
 
   it('applies LinkedIn comment 30s and day windows', async () => {
@@ -266,8 +281,50 @@ describe('AccountRateLimiterService', () => {
       expect.arrayContaining([
         'linkedin:acc-1:comment:30s',
         'linkedin:acc-1:comment:day',
+      ]),
+    );
+    expect(keys).not.toContain('linkedin:acc-1:endpoint:day');
+  });
+
+  it('applies LinkedIn search minute and day windows without the shared endpoint cap', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'search',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual([
+      'linkedin:acc-1:search:minute',
+      'linkedin:acc-1:search:day',
+    ]);
+  });
+
+  it('keeps shared endpoint windows for profile lookups', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'profile',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual(
+      expect.arrayContaining([
         'linkedin:acc-1:endpoint:minute',
         'linkedin:acc-1:endpoint:day',
+        'linkedin:acc-1:profile:2s',
       ]),
     );
   });
@@ -291,11 +348,13 @@ describe('AccountRateLimiterService', () => {
 
   it('flushes only this account usage keys and skips empty account ids', async () => {
     const deleteByPattern = jest.fn().mockResolvedValue(7);
+    const deleteKeys = jest.fn().mockResolvedValue(1);
     const limiter = new AccountRateLimiterService(
       {
         tryAcquireMultiWindowSlots: jest.fn(),
         getString: jest.fn(),
         setString: jest.fn(),
+        deleteKeys,
         deleteByPattern,
       } as never,
       {
@@ -308,6 +367,7 @@ describe('AccountRateLimiterService', () => {
       limiter.flushUsage({ provider: 'linkedin', accountId: '   ' }),
     ).resolves.toEqual({ deletedKeys: 0 });
     expect(deleteByPattern).not.toHaveBeenCalled();
+    expect(deleteKeys).not.toHaveBeenCalled();
 
     await expect(
       limiter.flushUsage({ provider: 'linkedin', accountId: 'acc-1' }),
@@ -316,11 +376,27 @@ describe('AccountRateLimiterService', () => {
     expect(deleteByPattern.mock.calls[0][0]).not.toContain(
       'account-rate-limits-config',
     );
+
+    await expect(
+      limiter.flushUsage({
+        provider: 'linkedin',
+        accountId: 'acc-1',
+        method: 'connection_request',
+        windowName: '5m',
+      }),
+    ).resolves.toEqual({ deletedKeys: 1 });
+    expect(deleteKeys).toHaveBeenCalledWith(
+      'linkedin:acc-1:connection_request:5m',
+    );
+    expect(deleteByPattern).toHaveBeenCalledTimes(1);
   });
 
   it('escapes redis glob characters in account ids', () => {
     expect(buildAccountRateLimitUsageScanPattern('linkedin', 'acc-*x')).toBe(
       'linkedin:acc-\\*x:*',
     );
+    expect(
+      buildAccountRateLimitUsageScanPattern('linkedin', 'acc-1', 'search'),
+    ).toBe('linkedin:acc-1:search:*');
   });
 });

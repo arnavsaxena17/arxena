@@ -19,6 +19,7 @@ export type PeopleSearchLinkedInCompany = {
   slug: string | null;
   linkedinUrl: string | null;
   website?: string | null;
+  id?: string | null;
   resolvedVia?: PeopleCompanyScopeResolvedVia;
 };
 

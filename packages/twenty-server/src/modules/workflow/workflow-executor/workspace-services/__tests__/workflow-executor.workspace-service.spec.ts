@@ -368,6 +368,7 @@ describe('WorkflowExecutorWorkspaceService', () => {
         waitMs: 81_711_000,
         scheduledAt: '2026-08-23T12:04:00.000Z',
         pendingReason: 'linkedin_rate_limit',
+        method: 'connection_request',
       });
 
       await service.executeFromSteps({
@@ -385,10 +386,12 @@ describe('WorkflowExecutorWorkspaceService', () => {
           waitMs: 81_711_000,
           scheduledAt: '2026-08-23T12:04:00.000Z',
           pendingReason: 'linkedin_rate_limit',
+          method: 'connection_request',
           result: {
             waitMs: 81_711_000,
             scheduledAt: '2026-08-23T12:04:00.000Z',
             pendingReason: 'linkedin_rate_limit',
+            method: 'connection_request',
           },
         },
         workflowRunId: mockWorkflowRunId,

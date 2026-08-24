@@ -157,6 +157,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
           currentStepId,
           workspaceId: runInfo.workspaceId,
           workflowRunId: runInfo.workflowRunId,
+          method: error.method,
         });
       }
 

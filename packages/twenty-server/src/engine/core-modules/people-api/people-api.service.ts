@@ -536,6 +536,7 @@ export class PeopleApiService {
           slug,
           linkedinUrl,
           website,
+          id: existingCompany?.id,
           resolvedVia: companyScope.resolvedVia,
         },
       },
@@ -796,7 +797,7 @@ export class PeopleApiService {
         stdFunction,
         stdFunctionRoot,
         stdGrade,
-      });
+      }, { name: companyName || null, slug: null, id: null });
 
       return {
         status: 'ok',
@@ -913,6 +914,7 @@ export class PeopleApiService {
           stdFunctionRoot,
           stdGrade,
         },
+        sourcingResult.company,
       );
 
       return {
@@ -1040,6 +1042,11 @@ export class PeopleApiService {
       stdFunctionRoot?: string;
       stdGrade?: string;
     },
+    company?: {
+      name?: string | null;
+      slug?: string | null;
+      id?: string | null;
+    },
   ): Promise<
     Array<
       Record<string, unknown> & {
@@ -1052,8 +1059,13 @@ export class PeopleApiService {
       }
     >
   > {
+    const titleOptions = {
+      companyName: company?.name,
+      companyId: company?.id,
+      companySlug: company?.slug,
+    };
     const profiles = items.map((item) => ({
-      jobTitle: extractCandidateJobTitle(item) ?? '',
+      jobTitle: extractCandidateJobTitle(item, titleOptions) ?? '',
       experience: extractCandidateExperience(item),
     }));
     const classifications =
@@ -1087,7 +1099,7 @@ export class PeopleApiService {
       const resolved = classificationToResolvedFields(classifications[index]);
       if (!matchesTaxonomyFilter(resolved, criteria)) {
         dropped.push({
-          jobTitle: extractCandidateJobTitle(item) ?? '',
+          jobTitle: extractCandidateJobTitle(item, titleOptions) ?? '',
           stdFunction: resolved.stdFunction,
           stdFunctionRoot: resolved.stdFunctionRoot,
           stdGrade: resolved.stdGrade,

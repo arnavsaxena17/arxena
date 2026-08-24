@@ -200,12 +200,13 @@ export class WhatsappUnipileBackendService {
 
   async flushAccountRateLimitUsage(
     accountId: string,
+    fieldKey: string,
     accessToken?: string,
   ): Promise<{ deletedKeys: number }> {
     return this.makeRequest<{ deletedKeys: number }>(
       `/accounts/${accountId}/rate-limits/flush`,
       'POST',
-      undefined,
+      { fieldKey },
       accessToken,
     );
   }

@@ -818,6 +818,72 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     ]);
   });
 
+  it('classifies the current_position whose company_id matches, not current_positions[0]', async () => {
+    (
+      peopleLinkedInSourcingService.search as jest.Mock
+    ).mockResolvedValueOnce({
+      dataSource: 'unipile',
+      keywords: null,
+      appliedFilters: { functionIds: [], seniorities: [] },
+      company: {
+        name: 'Mazaya',
+        slug: 'mazaya-arabia',
+        linkedinUrl: 'https://www.linkedin.com/company/mazaya-arabia/',
+        id: '68533040',
+      },
+      items: [
+        {
+          name: 'Hani Abdelrahman',
+          headline: 'Project management',
+          jobTitles: ['Co-Founder'],
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+            {
+              role: 'Operation Manager',
+              company: 'Mazaya international',
+              company_id: '68533040',
+            },
+          ],
+        },
+      ],
+    });
+    (
+      titleTaxonomyRemoteService.classifyProfiles as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        title: 'Operation Manager',
+        stdFunction: 'operations',
+        stdFunctionRoot: 'operations',
+        stdGrade: 'mid',
+      },
+    ]);
+
+    const result = await service.searchPeopleByTaxonomy(
+      {
+        companyName: 'Mazaya',
+        stdFunction: 'ceo',
+        dataSource: 'unipile',
+      },
+      'token',
+    );
+
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          name: 'Hani Abdelrahman',
+          title: 'Operation Manager',
+        }),
+      ],
+      expect.any(String),
+    );
+    expect(result.total).toBe(0);
+    expect(result.totalBeforeFilter).toBe(1);
+  });
+
   it('throws when taxonomy batch classify is unavailable', async () => {
     (
       titleTaxonomyRemoteService.classifyProfiles as jest.Mock

@@ -8,6 +8,7 @@ export const workflowRunStateStepInfoSchema = z.object({
   waitMs: z.number().optional(),
   scheduledAt: z.string().optional(),
   pendingReason: z.string().optional(),
+  method: z.string().optional(),
   get history() {
     return z
       .array(

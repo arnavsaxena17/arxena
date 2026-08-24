@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'twenty-shared';
 import { LinkedInPeopleSearchResult, LinkedInSearchResult } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
+import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
 /**
@@ -126,7 +127,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // Process LinkedIn-specific data
     this.processLinkedInProfileData(peopleData, userProfile);
     this.processLinkedInContactData(peopleData, userProfile);
-    this.processLinkedInExperienceData(peopleData, userProfile);
+    this.processLinkedInExperienceData(peopleData, userProfile, context);
     this.processLinkedInEducationData(peopleData, userProfile);
     this.processLinkedInSkillsData(peopleData, userProfile);
     
@@ -229,31 +230,61 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
   }
 
-  private processLinkedInExperienceData(candidateData: LinkedInSearchOrMappedHit, userProfile: UserProfile): void {
+  private pickCurrentPosition(
+    peopleResult: LinkedInPeopleSearchResult,
+    target?: {
+      companyName?: string;
+      companyId?: string;
+      companySlug?: string;
+    },
+  ) {
+    const positions = peopleResult.current_positions ?? [];
+    if (positions.length === 0) {
+      return undefined;
+    }
+
+    return (
+      pickEmploymentPositionMatchingCompany(positions, {
+        companyName: target?.companyName,
+        companyId: target?.companyId,
+        companySlug: target?.companySlug,
+      }) ?? positions[0]
+    );
+  }
+
+  private processLinkedInExperienceData(
+    candidateData: LinkedInSearchOrMappedHit,
+    userProfile: UserProfile,
+    context: TransformationContext,
+  ): void {
     if (candidateData.current_positions && candidateData.current_positions.length > 0) {
-      const currentPosition = candidateData.current_positions[0];
-
-      userProfile.jobCompanyName = currentPosition.company;
-      userProfile.jobTitle = currentPosition.role;
-      userProfile.locationName = currentPosition.location || userProfile.locationName;
-
-      // Store additional experience data in linkedinSpecificData
-      userProfile.linkedinSpecificData = {
-        ...userProfile.linkedinSpecificData,
-        currentJobDescription: currentPosition.description,
-        currentJobStartDate: currentPosition.start
-          ? `${currentPosition.start.year}-${String(currentPosition.start.month).padStart(2, '0')}-01`
-          : null,
-        tenureAtCompany: currentPosition.tenure_at_company?.years,
-        tenureAtRole: currentPosition.tenure_at_role?.years,
-      };
-
-      // Add job process event
-      this.addProjectProcessEvent(userProfile, 'current_position_processed', {
-        company: currentPosition.company,
-        role: currentPosition.role,
-        tenure: currentPosition.tenure_at_company?.years,
+      const currentPosition = this.pickCurrentPosition(candidateData, {
+        companyName: context.targetCompanyName,
+        companyId: context.targetCompanyId,
+        companySlug: context.targetCompanySlug,
       });
+
+      if (currentPosition) {
+        userProfile.jobCompanyName = currentPosition.company;
+        userProfile.jobTitle = currentPosition.role;
+        userProfile.locationName = currentPosition.location || userProfile.locationName;
+
+        userProfile.linkedinSpecificData = {
+          ...userProfile.linkedinSpecificData,
+          currentJobDescription: currentPosition.description,
+          currentJobStartDate: currentPosition.start
+            ? `${currentPosition.start.year}-${String(currentPosition.start.month).padStart(2, '0')}-01`
+            : null,
+          tenureAtCompany: currentPosition.tenure_at_company?.years,
+          tenureAtRole: currentPosition.tenure_at_role?.years,
+        };
+
+        this.addProjectProcessEvent(userProfile, 'current_position_processed', {
+          company: currentPosition.company,
+          role: currentPosition.role,
+          tenure: currentPosition.tenure_at_company?.years,
+        });
+      }
     } else {
       if (typeof candidateData.jobTitle === 'string' && candidateData.jobTitle.trim()) {
         userProfile.jobTitle = candidateData.jobTitle.trim();
@@ -405,7 +436,12 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   transformSearchResultsToTableFormat(
     searchResults: LinkedInSearchResult[],
     projectId: string,
-    jobName: string = 'LinkedIn Search Results'
+    jobName: string = 'LinkedIn Search Results',
+    options?: {
+      targetCompanyName?: string;
+      targetCompanyId?: string;
+      targetCompanySlug?: string;
+    },
   ): TransformedCandidateForTable[] {
     return searchResults.map((result, index) => {
       const peopleResult = result as LinkedInPeopleSearchResult;
@@ -423,14 +459,19 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         userId: 'linkedin_search_user',
         dataSource: 'linkedin_search',
         timestamp,
+        targetCompanyName: options?.targetCompanyName,
+        targetCompanyId: options?.targetCompanyId,
+        targetCompanySlug: options?.targetCompanySlug,
       };
       
       const userProfile = this.transformToUserProfile(result, context);
       
       // Extend with DataTable UI-specific fields
-      const currentPosition = peopleResult.current_positions && peopleResult.current_positions.length > 0
-        ? peopleResult.current_positions[0]
-        : undefined;
+      const currentPosition = this.pickCurrentPosition(peopleResult, {
+        companyName: options?.targetCompanyName,
+        companyId: options?.targetCompanyId,
+        companySlug: options?.targetCompanySlug,
+      });
 
       const jobTitleFromCurrentPosition = currentPosition?.role?.trim() || '';
       const companyFromCurrentPosition = currentPosition?.company?.trim() || '';

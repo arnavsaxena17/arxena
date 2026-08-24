@@ -1,3 +1,5 @@
+import { pickEmploymentPositionMatchingCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
+
 const asNonEmptyString = (value: unknown): string | null => {
   if (typeof value !== 'string') {
     return null;
@@ -47,6 +49,36 @@ export const extractTitleFromPositionLike = (
   return asNonEmptyString(entry.position);
 };
 
+export const extractCompanyFromPositionLike = (
+  entry: Record<string, unknown>,
+): string | null => {
+  const direct =
+    asNonEmptyString(entry.company) ??
+    asNonEmptyString(entry.companyName) ??
+    asNonEmptyString(entry.company_name) ??
+    asNonEmptyString(entry.jobCompanyName);
+  if (direct) {
+    return direct;
+  }
+
+  const nestedCompany = entry.company;
+  if (nestedCompany && typeof nestedCompany === 'object') {
+    return asNonEmptyString((nestedCompany as { name?: unknown }).name);
+  }
+
+  return null;
+};
+
+export const extractCompanyIdFromPositionLike = (
+  entry: Record<string, unknown>,
+): string | null => {
+  const raw = entry.company_id ?? entry.companyId;
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return String(raw);
+  }
+  return asNonEmptyString(raw);
+};
+
 const firstTitleFromPositionArray = (value: unknown): string | null => {
   if (!Array.isArray(value)) {
     return null;
@@ -63,9 +95,92 @@ const firstTitleFromPositionArray = (value: unknown): string | null => {
   return null;
 };
 
+const asPositionRecords = (value: unknown): Record<string, unknown>[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter(
+    (entry): entry is Record<string, unknown> =>
+      !!entry && typeof entry === 'object',
+  );
+};
+
+const positionHasCompanyIdentity = (entry: Record<string, unknown>): boolean =>
+  !!extractCompanyFromPositionLike(entry) ||
+  !!extractCompanyIdFromPositionLike(entry);
+
+const toMatchInput = (entry: Record<string, unknown>) => ({
+  company: extractCompanyFromPositionLike(entry),
+  company_id: extractCompanyIdFromPositionLike(entry),
+  role: extractTitleFromPositionLike(entry),
+  entry,
+});
+
+export type ExtractCandidateJobTitleOptions = {
+  companyName?: string | null;
+  companyId?: string | number | null;
+  companySlug?: string | null;
+};
+
+const hasCompanyScope = (
+  options?: ExtractCandidateJobTitleOptions,
+): boolean =>
+  !!options?.companyName?.trim() ||
+  !!options?.companySlug?.trim() ||
+  (typeof options?.companyId === 'string' &&
+    options.companyId.trim().length > 0) ||
+  (typeof options?.companyId === 'number' && Number.isFinite(options.companyId));
+
+const isCurrentExperienceEntry = (entry: Record<string, unknown>): boolean => {
+  const end = entry.end ?? entry.endDate ?? entry.end_date;
+  return end === null || end === undefined || end === '';
+};
+
 export const extractCandidateJobTitle = (
   candidate: Record<string, unknown>,
+  options?: ExtractCandidateJobTitleOptions,
 ): string | null => {
+  if (hasCompanyScope(options)) {
+    const currentPositions = [
+      ...asPositionRecords(candidate.current_positions),
+      ...asPositionRecords(candidate.currentPositions),
+    ];
+    const experiencePool = [
+      ...asPositionRecords(candidate.work_experience),
+      ...asPositionRecords(candidate.workExperience),
+      ...asPositionRecords(candidate.experience),
+    ];
+    const currentExperience = experiencePool.filter(isCurrentExperienceEntry);
+    const target = {
+      companyName: options?.companyName,
+      companyId: options?.companyId,
+      companySlug: options?.companySlug,
+    };
+
+    const matchedCurrent = pickEmploymentPositionMatchingCompany(
+      currentPositions.map(toMatchInput),
+      target,
+    );
+    if (matchedCurrent) {
+      return extractTitleFromPositionLike(matchedCurrent.entry);
+    }
+
+    const matchedExperience = pickEmploymentPositionMatchingCompany(
+      currentExperience.map(toMatchInput),
+      target,
+    );
+    if (matchedExperience) {
+      return extractTitleFromPositionLike(matchedExperience.entry);
+    }
+
+    const anyIdentity = [...currentPositions, ...currentExperience].some(
+      positionHasCompanyIdentity,
+    );
+    if (anyIdentity) {
+      return null;
+    }
+  }
+
   const explicit =
     asNonEmptyString(candidate.jobTitle) ??
     asNonEmptyString(candidate.job_title) ??

@@ -104,6 +104,80 @@ export const WHATSAPP_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   startChatPerDay: { min: 1, max: 30 },
 };
 
+export type AccountRateLimitUsageWindow = {
+  method: string;
+  windowName: string;
+};
+
+export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
+  keyof LinkedinAccountRateLimits,
+  AccountRateLimitUsageWindow
+> = {
+  endpointPerMinute: { method: 'endpoint', windowName: 'minute' },
+  endpointPerDay: { method: 'endpoint', windowName: 'day' },
+  companyProfilePer2Seconds: { method: 'company_profile', windowName: '2s' },
+  profilePer2Seconds: { method: 'profile', windowName: '2s' },
+  connectionRequestPer5Minutes: {
+    method: 'connection_request',
+    windowName: '5m',
+  },
+  connectionRequestPerHour: { method: 'connection_request', windowName: 'hour' },
+  connectionRequestPerDay: { method: 'connection_request', windowName: 'day' },
+  connectionRequestPerWeek: { method: 'connection_request', windowName: 'week' },
+  commentPer30Seconds: { method: 'comment', windowName: '30s' },
+  commentPerDay: { method: 'comment', windowName: 'day' },
+  messagePer30Seconds: { method: 'message', windowName: '30s' },
+  messagePerDay: { method: 'message', windowName: 'day' },
+  inmailPer30Seconds: { method: 'inmail', windowName: '30s' },
+  inmailPerDay: { method: 'inmail', windowName: 'day' },
+  searchPerMinute: { method: 'search', windowName: 'minute' },
+  searchPerDay: { method: 'search', windowName: 'day' },
+};
+
+export const WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
+  keyof WhatsappAccountRateLimits,
+  AccountRateLimitUsageWindow
+> = {
+  endpointPerMinute: { method: 'endpoint', windowName: 'minute' },
+  endpointPerDay: { method: 'endpoint', windowName: 'day' },
+  startChatPerMinute: { method: 'start_chat', windowName: 'minute' },
+  startChatPerDay: { method: 'start_chat', windowName: 'day' },
+};
+
+export const getLinkedinAccountRateLimitUsageWindow = (
+  fieldKey: string,
+): AccountRateLimitUsageWindow | undefined => {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
+      fieldKey,
+    )
+  ) {
+    return undefined;
+  }
+
+  return LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS[
+    fieldKey as keyof LinkedinAccountRateLimits
+  ];
+};
+
+export const getWhatsappAccountRateLimitUsageWindow = (
+  fieldKey: string,
+): AccountRateLimitUsageWindow | undefined => {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
+      fieldKey,
+    )
+  ) {
+    return undefined;
+  }
+
+  return WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS[
+    fieldKey as keyof WhatsappAccountRateLimits
+  ];
+};
+
 const clampInt = (value: unknown, min: number, max: number, fallback: number) => {
   const parsed =
     typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);

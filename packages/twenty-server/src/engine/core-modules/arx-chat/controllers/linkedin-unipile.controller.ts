@@ -25,6 +25,7 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import {
   findLinkedinUnipileAccountSameIdentityForProfile,
+  getLinkedinAccountRateLimitUsageWindow,
   isUnipileConnectedStatus,
   linkedinBrowserUrlMatchesMemberProfile,
   normalizeUnipileStatus,
@@ -1813,15 +1814,30 @@ export class LinkedinUnipileController {
   @Post('accounts/:accountId/rate-limits/flush')
   async flushAccountRateLimitUsage(
     @Param('accountId') accountId: string,
+    @Body() body?: { fieldKey?: string },
   ) {
     const trimmedAccountId = accountId.trim();
     if (!trimmedAccountId) {
       throw new HttpException('accountId is required', HttpStatus.BAD_REQUEST);
     }
 
+    const fieldKey =
+      typeof body?.fieldKey === 'string' ? body.fieldKey.trim() : '';
+    const usageWindow = fieldKey
+      ? getLinkedinAccountRateLimitUsageWindow(fieldKey)
+      : undefined;
+
+    if (fieldKey && !usageWindow) {
+      throw new HttpException(
+        'Unknown rate limit field',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const result = await this.accountRateLimiterService.flushUsage({
       provider: 'linkedin',
       accountId: trimmedAccountId,
+      ...(usageWindow ?? {}),
     });
     return { success: true, ...result };
   }

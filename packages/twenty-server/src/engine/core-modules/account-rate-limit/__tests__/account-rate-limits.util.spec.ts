@@ -1,6 +1,8 @@
 import {
   DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS,
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
+  getLinkedinAccountRateLimitUsageWindow,
+  getWhatsappAccountRateLimitUsageWindow,
   parseLinkedinAccountRateLimitsMap,
   sanitizeLinkedinAccountRateLimits,
   sanitizeWhatsappAccountRateLimits,
@@ -61,5 +63,26 @@ describe('account rate limit sanitization', () => {
     );
     expect(DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS.startChatPerMinute).toBe(2);
     expect(DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS.startChatPerDay).toBe(15);
+  });
+
+  it('maps LinkedIn and WhatsApp field keys to Redis usage windows', () => {
+    expect(
+      getLinkedinAccountRateLimitUsageWindow('connectionRequestPer5Minutes'),
+    ).toEqual({
+      method: 'connection_request',
+      windowName: '5m',
+    });
+    expect(getLinkedinAccountRateLimitUsageWindow('searchPerDay')).toEqual({
+      method: 'search',
+      windowName: 'day',
+    });
+    expect(getLinkedinAccountRateLimitUsageWindow('toString')).toBeUndefined();
+    expect(
+      getWhatsappAccountRateLimitUsageWindow('startChatPerMinute'),
+    ).toEqual({
+      method: 'start_chat',
+      windowName: 'minute',
+    });
+    expect(getWhatsappAccountRateLimitUsageWindow('unknown')).toBeUndefined();
   });
 });

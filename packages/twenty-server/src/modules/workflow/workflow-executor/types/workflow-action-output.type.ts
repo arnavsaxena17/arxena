@@ -5,6 +5,7 @@ export type WorkflowActionOutput = {
   waitMs?: number;
   scheduledAt?: string;
   pendingReason?: string;
+  method?: string;
   shouldEndWorkflowRun?: boolean;
   shouldRemainRunning?: boolean;
   shouldSkipStepExecution?: boolean;

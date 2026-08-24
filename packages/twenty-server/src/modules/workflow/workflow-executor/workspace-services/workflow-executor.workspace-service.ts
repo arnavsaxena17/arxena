@@ -394,10 +394,16 @@ export class WorkflowExecutorWorkspaceService {
               waitMs: actionOutput.waitMs,
               scheduledAt: actionOutput.scheduledAt,
               pendingReason: actionOutput.pendingReason,
+              ...(actionOutput.method
+                ? { method: actionOutput.method }
+                : {}),
               result: {
                 waitMs: actionOutput.waitMs,
                 scheduledAt: actionOutput.scheduledAt,
                 pendingReason: actionOutput.pendingReason,
+                ...(actionOutput.method
+                  ? { method: actionOutput.method }
+                  : {}),
               },
             }
           : {}),

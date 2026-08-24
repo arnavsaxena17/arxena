@@ -300,6 +300,14 @@ export class RedisService implements OnModuleInit {
     await this.redisClient.set(key, value);
   }
 
+  async deleteKeys(...keys: string[]): Promise<number> {
+    if (keys.length === 0) {
+      return 0;
+    }
+
+    return this.redisClient.del(...keys);
+  }
+
   async deleteByPattern(pattern: string): Promise<number> {
     let cursor = '0';
     let deleted = 0;

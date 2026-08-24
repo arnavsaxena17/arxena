@@ -44,10 +44,26 @@ export const MAX_IN_PROCESS_WAIT_MS = 120_000;
 const escapeRedisGlob = (value: string): string =>
   value.replace(/[\\*?[\]]/g, '\\$&');
 
+export const buildAccountRateLimitUsageKey = (
+  provider: AccountRateLimitProvider,
+  accountId: string,
+  method: string,
+  windowName: string,
+): string => `${provider}:${accountId}:${method}:${windowName}`;
+
 export const buildAccountRateLimitUsageScanPattern = (
   provider: AccountRateLimitProvider,
   accountId: string,
-): string => `${provider}:${escapeRedisGlob(accountId)}:*`;
+  method?: string,
+): string => {
+  const escapedAccountId = escapeRedisGlob(accountId);
+
+  if (method) {
+    return `${provider}:${escapedAccountId}:${escapeRedisGlob(method)}:*`;
+  }
+
+  return `${provider}:${escapedAccountId}:*`;
+};
 
 type RateLimitWindow = {
   key: string;
@@ -99,18 +115,38 @@ export class AccountRateLimiterService implements OnModuleInit {
   async flushUsage(params: {
     provider: AccountRateLimitProvider;
     accountId: string;
+    method?: string;
+    windowName?: string;
   }): Promise<{ deletedKeys: number }> {
     const accountId = params.accountId.trim();
     if (!accountId) {
       return { deletedKeys: 0 };
     }
 
-    const deletedKeys = await this.redisService.deleteByPattern(
-      buildAccountRateLimitUsageScanPattern(params.provider, accountId),
-    );
+    const method = params.method?.trim();
+    const windowName = params.windowName?.trim();
+    const deletedKeys =
+      method && windowName
+        ? await this.redisService.deleteKeys(
+            buildAccountRateLimitUsageKey(
+              params.provider,
+              accountId,
+              method,
+              windowName,
+            ),
+          )
+        : await this.redisService.deleteByPattern(
+            buildAccountRateLimitUsageScanPattern(
+              params.provider,
+              accountId,
+              method,
+            ),
+          );
 
     this.logger.log(
-      `Flushed ${deletedKeys} ${params.provider} rate-limit usage keys for account ${accountId}`,
+      `Flushed ${deletedKeys} ${params.provider} rate-limit usage keys for account ${accountId}${
+        method ? ` ${method}` : ''
+      }${windowName ? `:${windowName}` : ''}`,
     );
 
     return { deletedKeys };
@@ -198,10 +234,36 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: LinkedinRateLimitMethod,
     limits: LinkedinAccountRateLimits,
   ): RateLimitWindow[] {
-    const windows: RateLimitWindow[] = [
-      this.window(accountId, 'linkedin', 'endpoint', 'minute', limits.endpointPerMinute, MS_PER_MINUTE),
-      this.window(accountId, 'linkedin', 'endpoint', 'day', limits.endpointPerDay, MS_PER_DAY),
-    ];
+    // Method-specific actions use only their own windows so a full
+    // endpoint:day counter (shared by profile lookups, facet searches, etc.)
+    // cannot defer a connection request until tomorrow. Retry wait is then
+    // the next free slot in this method's windows (e.g. 5 min / hour / day
+    // / week for connection requests).
+    const usesSharedEndpointWindows =
+      method === 'endpoint' ||
+      method === 'company_profile' ||
+      method === 'profile';
+
+    const windows: RateLimitWindow[] = usesSharedEndpointWindows
+      ? [
+          this.window(
+            accountId,
+            'linkedin',
+            'endpoint',
+            'minute',
+            limits.endpointPerMinute,
+            MS_PER_MINUTE,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'endpoint',
+            'day',
+            limits.endpointPerDay,
+            MS_PER_DAY,
+          ),
+        ]
+      : [];
 
     if (method === 'company_profile') {
       windows.push(
@@ -396,7 +458,12 @@ export class AccountRateLimiterService implements OnModuleInit {
     windowMs: number,
   ): RateLimitWindow {
     return {
-      key: `${provider}:${accountId}:${method}:${windowName}`,
+      key: buildAccountRateLimitUsageKey(
+        provider,
+        accountId,
+        method,
+        windowName,
+      ),
       limit: Math.max(1, limit),
       windowMs,
     };

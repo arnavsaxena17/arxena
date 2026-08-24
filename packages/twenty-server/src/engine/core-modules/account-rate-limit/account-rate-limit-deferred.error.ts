@@ -18,6 +18,17 @@ export const parseWaitMsFromAccountRateLimitMessage = (
   return seconds * 1000;
 };
 
+const METHOD_FROM_MESSAGE_PATTERN = /rate limit reached for this ([a-z_]+) on account/i;
+
+export const parseMethodFromAccountRateLimitMessage = (
+  message: string,
+): string | undefined => {
+  const match = message.match(METHOD_FROM_MESSAGE_PATTERN);
+  const method = match?.[1]?.trim();
+
+  return method && method.length > 0 ? method : undefined;
+};
+
 export class AccountRateLimitDeferredError extends Error {
   readonly waitMs: number;
   readonly accountId: string;

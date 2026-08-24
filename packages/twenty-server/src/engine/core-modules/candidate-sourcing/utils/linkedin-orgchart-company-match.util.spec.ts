@@ -4,6 +4,7 @@ import {
     companyNamesLooselyMatch,
     linkedInPeopleSearchResultMatchesTargetCompany,
     normalizeCompanyNameForMatch,
+    pickEmploymentPositionMatchingCompany,
 } from './linkedin-orgchart-company-match.util';
 
 describe('linkedin-orgchart-company-match.util', () => {
@@ -41,5 +42,46 @@ describe('linkedin-orgchart-company-match.util', () => {
     expect(linkedInPeopleSearchResultMatchesTargetCompany(candidate, 'OtherCo')).toBe(
       false,
     );
+  });
+});
+
+describe('pickEmploymentPositionMatchingCompany', () => {
+  const positions = [
+    {
+      role: 'Co-Founder',
+      company: 'Intelligent Brain project management',
+      company_id: '111',
+    },
+    {
+      role: 'Operation Manager',
+      company: 'Mazaya international',
+      company_id: '68533040',
+    },
+  ];
+
+  it('prefers company_id over name and over the first current position', () => {
+    const matched = pickEmploymentPositionMatchingCompany(positions, {
+      companyName: 'Intelligent Brain project management',
+      companyId: '68533040',
+    });
+    expect(matched?.role).toBe('Operation Manager');
+    expect(matched?.company).toBe('Mazaya international');
+  });
+
+  it('falls back to company name when the id does not match', () => {
+    const matched = pickEmploymentPositionMatchingCompany(positions, {
+      companyName: 'Mazaya',
+      companyId: '999',
+    });
+    expect(matched?.role).toBe('Operation Manager');
+  });
+
+  it('does not assume current_positions[0] when nothing matches', () => {
+    expect(
+      pickEmploymentPositionMatchingCompany(positions, {
+        companyName: 'Other Co',
+        companyId: '000',
+      }),
+    ).toBeUndefined();
   });
 });

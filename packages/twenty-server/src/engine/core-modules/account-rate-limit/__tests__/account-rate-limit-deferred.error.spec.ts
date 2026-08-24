@@ -1,6 +1,7 @@
 import {
   AccountRateLimitDeferredError,
   isAccountRateLimitDeferredError,
+  parseMethodFromAccountRateLimitMessage,
   parseWaitMsFromAccountRateLimitMessage,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 
@@ -22,5 +23,13 @@ describe('workflow rate-limit delay', () => {
         'Rate limit reached for this search on account ABC. Retry in 81711s.',
       ),
     ).toBe(81_711_000);
+  });
+
+  it('parses the rate-limited method from limiter messages', () => {
+    expect(
+      parseMethodFromAccountRateLimitMessage(
+        'Rate limit reached for this connection_request on account ABC. Retry in 300s.',
+      ),
+    ).toBe('connection_request');
   });
 });

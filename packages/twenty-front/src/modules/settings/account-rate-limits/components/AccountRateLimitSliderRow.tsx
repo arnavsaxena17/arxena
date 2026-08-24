@@ -1,8 +1,9 @@
 import { type ChangeEvent } from 'react';
 import { styled } from '@linaria/react';
 import { Pill } from 'twenty-ui/data-display';
-import { IconReload } from 'twenty-ui/icon';
+import { IconEraser, IconInfoCircle } from 'twenty-ui/icon';
 import { LightIconButton, Slider } from 'twenty-ui/input';
+import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
@@ -22,6 +23,13 @@ const LabelBlock = styled.div`
   min-width: 0;
 `;
 
+const LabelRow = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+  min-width: 0;
+`;
+
 const Label = styled.span`
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
@@ -31,6 +39,13 @@ const Label = styled.span`
 const WindowLabel = styled.span`
   color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
+`;
+
+const InfoAnchor = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  display: inline-flex;
+  flex-shrink: 0;
+  outline: none;
 `;
 
 const RecommendedSlot = styled.div`
@@ -47,6 +62,9 @@ export type AccountRateLimitSliderRowProps = {
   max: number;
   recommended: number;
   onChange: (value: number) => void;
+  onClearUsage?: () => void;
+  clearing?: boolean;
+  disabled?: boolean;
 };
 
 export const AccountRateLimitSliderRow = ({
@@ -58,15 +76,32 @@ export const AccountRateLimitSliderRow = ({
   max,
   recommended,
   onChange,
+  onClearUsage,
+  clearing = false,
+  disabled = false,
 }: AccountRateLimitSliderRowProps) => {
   const handleSliderChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(Number(event.target.value));
   };
+  const tooltipId = `rate-limit-recommended-${instanceId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   return (
     <Row>
       <LabelBlock>
-        <Label>{label}</Label>
+        <LabelRow>
+          <Label>{label}</Label>
+          <InfoAnchor id={tooltipId} tabIndex={0} aria-label="Recommended limit">
+            <IconInfoCircle size={14} />
+          </InfoAnchor>
+          <AppTooltip
+            anchorSelect={`#${tooltipId}`}
+            content={`Recommended: ${recommended} ${windowLabel}`}
+            noArrow
+            place="top"
+            positionStrategy="fixed"
+            delay={TooltipDelay.shortDelay}
+          />
+        </LabelRow>
         <WindowLabel>{windowLabel}</WindowLabel>
       </LabelBlock>
       <Slider
@@ -96,11 +131,15 @@ export const AccountRateLimitSliderRow = ({
       >
         <Pill label="Recommended" />
       </RecommendedSlot>
-      <LightIconButton
-        Icon={IconReload}
-        aria-label="Reset to recommended"
-        onClick={() => onChange(recommended)}
-      />
+      {onClearUsage && (
+        <LightIconButton
+          Icon={IconEraser}
+          aria-label={`Clear used requests for ${label} ${windowLabel}`}
+          title={`Clear used requests for ${label} ${windowLabel}`}
+          disabled={disabled || clearing}
+          onClick={onClearUsage}
+        />
+      )}
     </Row>
   );
 };

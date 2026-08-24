@@ -12,6 +12,7 @@ export const deferWorkflowForAccountRateLimit = async ({
   workspaceId,
   workflowRunId,
   pendingReason = LINKEDIN_RATE_LIMIT_PENDING_REASON,
+  method,
 }: {
   delayedQueue: MessageQueueService;
   waitMs: number;
@@ -19,6 +20,7 @@ export const deferWorkflowForAccountRateLimit = async ({
   workspaceId: string;
   workflowRunId: string;
   pendingReason?: string;
+  method?: string;
 }): Promise<WorkflowActionOutput> => {
   await delayedQueue.add<ResumeDelayedWorkflowJobData>(
     RESUME_DELAYED_WORKFLOW_JOB_NAME,
@@ -39,5 +41,6 @@ export const deferWorkflowForAccountRateLimit = async ({
     waitMs,
     scheduledAt: new Date(Date.now() + waitMs).toISOString(),
     pendingReason,
+    ...(method ? { method } : {}),
   };
 };

@@ -40,7 +40,9 @@ type AccountRateLimitsPanelProps<TLimits extends Record<string, number>> = {
   fields: Array<AccountRateLimitFieldConfig<Extract<keyof TLimits, string>>>;
   loadLimits: () => Promise<TLimits>;
   saveLimits: (limits: TLimits) => Promise<TLimits>;
-  flushUsage?: () => Promise<{ deletedKeys: number }>;
+  flushUsage?: (
+    fieldKey: Extract<keyof TLimits, string>,
+  ) => Promise<{ deletedKeys: number }>;
 };
 
 export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
@@ -58,6 +60,9 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
   const [limits, setLimits] = useState<TLimits | null>(null);
   const [saving, setSaving] = useState(false);
   const [flushing, setFlushing] = useState(false);
+  const [pendingFlushField, setPendingFlushField] = useState<
+    AccountRateLimitFieldConfig<Extract<keyof TLimits, string>> | null
+  >(null);
   const flushModalId = `flush-account-rate-limit-usage-${accountId}`;
 
   useEffect(() => {
@@ -80,20 +85,33 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
     try {
       const saved = await saveLimits(limits);
       setLimits(saved);
+      enqueueSuccessSnackBar({
+        message: t`Rate limits saved.`,
+      });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : t`Failed to save rate limits.`,
+      });
     } finally {
       setSaving(false);
     }
-  }, [limits, saveLimits]);
+  }, [enqueueErrorSnackBar, enqueueSuccessSnackBar, limits, saveLimits, t]);
 
   const handleFlushUsage = useCallback(async () => {
-    if (!flushUsage) {
+    if (!flushUsage || !pendingFlushField) {
       return;
     }
+    const field = pendingFlushField;
+    const fieldLabel = field.label;
+    const fieldWindowLabel = field.windowLabel;
     setFlushing(true);
     try {
-      const result = await flushUsage();
+      await flushUsage(field.key);
       enqueueSuccessSnackBar({
-        message: t`Cleared ${result.deletedKeys} used request counters. New requests can run immediately.`,
+        message: t`Cleared used requests for ${fieldLabel} (${fieldWindowLabel}). New requests can run immediately.`,
       });
     } catch (error) {
       enqueueErrorSnackBar({
@@ -104,8 +122,18 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
       });
     } finally {
       setFlushing(false);
+      setPendingFlushField(null);
     }
-  }, [enqueueErrorSnackBar, enqueueSuccessSnackBar, flushUsage, t]);
+  }, [
+    enqueueErrorSnackBar,
+    enqueueSuccessSnackBar,
+    flushUsage,
+    pendingFlushField,
+    t,
+  ]);
+
+  const pendingFlushLabel = pendingFlushField?.label;
+  const pendingFlushWindowLabel = pendingFlushField?.windowLabel;
 
   if (!limits) {
     return null;
@@ -127,6 +155,16 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
                 min={field.min}
                 max={field.max}
                 recommended={field.recommended}
+                disabled={saving || flushing}
+                clearing={flushing && pendingFlushField?.key === field.key}
+                onClearUsage={
+                  flushUsage
+                    ? () => {
+                        setPendingFlushField(field);
+                        openModal(flushModalId);
+                      }
+                    : undefined
+                }
                 onChange={(value) =>
                   setLimits((current) =>
                     current
@@ -139,15 +177,6 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
           </CardContent>
         </Card>
         <Footer>
-          {flushUsage && (
-            <Button
-              title={t`Clear used requests`}
-              variant="secondary"
-              accent="danger"
-              disabled={saving || flushing}
-              onClick={() => openModal(flushModalId)}
-            />
-          )}
           <Button
             title={t`Save settings`}
             variant="primary"
@@ -163,7 +192,11 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
         <ConfirmationModal
           modalInstanceId={flushModalId}
           title={t`Clear used requests?`}
-          subtitle={t`This resets this account's Redis request counters so searches and sends are no longer blocked by existing rate-limit usage. Saved limit values are kept. Queued workflow retries still resume on their schedule, but will no longer wait on these counters.`}
+          subtitle={
+            pendingFlushLabel && pendingFlushWindowLabel
+              ? t`This resets used request counters for ${pendingFlushLabel} (${pendingFlushWindowLabel}) so this action is no longer blocked by existing usage. Saved limit values are kept. Queued workflow retries still resume on their schedule, but will no longer wait on this counter.`
+              : t`This resets used request counters for this limit so the action is no longer blocked by existing usage. Saved limit values are kept.`
+          }
           confirmButtonText={t`Clear used requests`}
           confirmButtonAccent="danger"
           loading={flushing}

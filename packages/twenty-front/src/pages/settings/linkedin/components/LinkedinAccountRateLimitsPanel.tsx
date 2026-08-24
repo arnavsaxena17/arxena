@@ -30,15 +30,22 @@ export const LinkedinAccountRateLimitsPanel = ({
     [accountId, accessToken],
   );
 
-  const flushUsage = useCallback(async () => {
-    const service = getLinkedinService();
-    return service.flushAccountRateLimitUsage(accountId, accessToken);
-  }, [accountId, accessToken]);
+  const flushUsage = useCallback(
+    async (fieldKey: keyof LinkedinAccountRateLimits) => {
+      const service = getLinkedinService();
+      return service.flushAccountRateLimitUsage(
+        accountId,
+        fieldKey,
+        accessToken,
+      );
+    },
+    [accountId, accessToken],
+  );
 
   return (
     <AccountRateLimitsPanel<LinkedinAccountRateLimits>
       title="Rate limits for this LinkedIn account"
-      description="The maximum number of requests in a window of time for this LinkedIn account. People / org chart search counts once per search, not once per paginated Unipile page. Location, company, and industry lookups use the per-endpoint limits instead. Clear used requests to reset Redis counters without changing these limits."
+      description="The maximum number of requests in a window of time for this LinkedIn account. Connection requests, people / org chart search, messages, comments, and InMail each use their own windows — a full search or per-endpoint day cap does not delay the next connection-request slot. People / org chart search counts once per search, not once per paginated Unipile page. Location, company, and industry lookups use the per-endpoint limits instead. Clear used requests on a row to reset that window's counters without changing these limits."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}
