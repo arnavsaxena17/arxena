@@ -80,6 +80,8 @@ WARM_BUILDER_USED=0
 BUILDER_VOLUME_TAG_NAME="${BUILDER_VOLUME_TAG_NAME:-arxena-builder-workspace}"
 BUILDER_DATA_VOLUME_SIZE="${BUILDER_DATA_VOLUME_SIZE:-100}"
 BUILDER_NX_CACHE_S3="${BUILDER_NX_CACHE_S3:-s3://arxmukti-builder-nx-cache/linux-arm64}"
+# Force an S3 upload even when .nx/cache already lives on the persistent data volume.
+NX_CACHE_PUSH="${NX_CACHE_PUSH:-0}"
 BUILD_META_FILE="${BUILD_META_FILE:-$REPO_DIR/build-meta.json}"
 REMOTE_WORKSPACE="/home/ubuntu/twenty"
 PROD_YARN_DONE=0
@@ -136,6 +138,41 @@ rsync_ssh() {
   rsync -az --delete -e "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15" "$@"
 }
 
+# Nx cache is already compressed hashed outputs; gzip (-z) pegs CPU at ~1 MB/s.
+rsync_ssh_plain() {
+  rsync -a --delete -e "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15" "$@"
+}
+
+nx_cache_on_persistent_volume() {
+  [ "${SKIP_EBS:-0}" != "1" ] && [ "${REMOTE_WORKSPACE}" = "/mnt/builder/twenty" ]
+}
+
+# Run `aws s3 sync` on the builder (in-region) using short-lived creds from the orchestrator profile.
+builder_aws_s3_sync() {
+  local src="$1" dest="$2"
+  local local_creds remote_creds
+  if [ -z "${TEMP_DNS:-}" ]; then
+    return 1
+  fi
+  if ! ssh_builder "command -v aws >/dev/null 2>&1"; then
+    return 1
+  fi
+  local_creds="$(mktemp /tmp/aws-nx-creds.XXXXXX)"
+  chmod 600 "$local_creds"
+  if ! aws "${AWS_CLI_PROFILE_ARGS[@]}" configure export-credentials --format env >"$local_creds" 2>/dev/null; then
+    rm -f "$local_creds"
+    return 1
+  fi
+  printf 'export AWS_DEFAULT_REGION=%q\n' "$AWS_REGION" >>"$local_creds"
+  remote_creds="/tmp/aws-nx-creds.$$"
+  if ! scp -q -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" "$local_creds" "ubuntu@${TEMP_DNS}:${remote_creds}"; then
+    rm -f "$local_creds"
+    return 1
+  fi
+  rm -f "$local_creds"
+  ssh_builder "set -a; . '$remote_creds'; set +a; rm -f '$remote_creds'; aws s3 sync '$src' '$dest' --size-only --only-show-errors"
+}
+
 fetch_remote_build_log() {
   local allow_ssh_fallback="${1:-0}"
 
@@ -188,17 +225,27 @@ push_nx_cache_to_s3() {
     return 0
   fi
   if [ -z "${TEMP_DNS:-}" ]; then
-        return 0
-      fi
+    return 0
+  fi
   local remote_cache="${REMOTE_WORKSPACE}/.nx/cache"
+  if [ "${NX_CACHE_PUSH}" != "1" ] && nx_cache_on_persistent_volume; then
+    echo "Skipping Nx cache S3 mirror; ${remote_cache} lives on data volume ${BUILDER_VOLUME_ID:-EBS}. Set NX_CACHE_PUSH=1 to upload."
+    NX_CACHE_PUSHED=1
+    return 0
+  fi
   if ! ssh_builder "test -d '$remote_cache'" 2>/dev/null; then
     return 0
   fi
   echo "Mirroring Nx task cache to $BUILDER_NX_CACHE_S3"
+  if builder_aws_s3_sync "$remote_cache" "$BUILDER_NX_CACHE_S3"; then
+    NX_CACHE_PUSHED=1
+    return 0
+  fi
+  echo "Direct builder-to-S3 sync unavailable; copying without compression via orchestrator"
   local tmp
   tmp="$(mktemp -d /tmp/nx-cache-push.XXXXXX)"
-  rsync_ssh "ubuntu@${TEMP_DNS}:${remote_cache}/" "$tmp/" || true
-  aws "${AWS_CLI_PROFILE_ARGS[@]}" s3 sync "$tmp" "$BUILDER_NX_CACHE_S3" --only-show-errors || \
+  rsync_ssh_plain "ubuntu@${TEMP_DNS}:${remote_cache}/" "$tmp/" || true
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" s3 sync "$tmp" "$BUILDER_NX_CACHE_S3" --size-only --only-show-errors || \
     echo "WARNING: Nx cache S3 push failed"
   rm -rf "$tmp"
   NX_CACHE_PUSHED=1
@@ -582,12 +629,16 @@ pull_nx_cache_from_s3() {
     return 0
   fi
   echo "Seeding Nx task cache from $BUILDER_NX_CACHE_S3"
+  ssh_builder "mkdir -p '$remote_cache'" || true
+  if builder_aws_s3_sync "$BUILDER_NX_CACHE_S3" "$remote_cache"; then
+    return 0
+  fi
+  echo "Direct S3-to-builder sync unavailable; copying without compression via orchestrator"
   local tmp
   tmp="$(mktemp -d /tmp/nx-cache-pull.XXXXXX)"
-  aws "${AWS_CLI_PROFILE_ARGS[@]}" s3 sync "$BUILDER_NX_CACHE_S3" "$tmp" --only-show-errors || true
+  aws "${AWS_CLI_PROFILE_ARGS[@]}" s3 sync "$BUILDER_NX_CACHE_S3" "$tmp" --size-only --only-show-errors || true
   if [ -n "$(ls -A "$tmp" 2>/dev/null)" ]; then
-    ssh_builder "mkdir -p '$remote_cache'"
-    rsync_ssh "$tmp/" "ubuntu@${TEMP_DNS}:${remote_cache}/" || true
+    rsync_ssh_plain "$tmp/" "ubuntu@${TEMP_DNS}:${remote_cache}/" || true
   fi
   rm -rf "$tmp"
 }
@@ -1416,7 +1467,9 @@ echo "Final artifact recopy and process cutover"
 STREAM_PHASE=final
 stream_ready_packages || true
 fetch_remote_build_log 0
+NX_CACHE_PUSH_START="$(date +%s)"
 push_nx_cache_to_s3 || true
+log_timing "Nx cache S3 push" "$NX_CACHE_PUSH_START"
 
 if [ "$DEPLOYMENTS_APPLIED" -eq 0 ] && [ "$SELECTED_BUILDS" != "ALL" ]; then
   echo "No application artifacts were streamed (all skipped or failed)."
