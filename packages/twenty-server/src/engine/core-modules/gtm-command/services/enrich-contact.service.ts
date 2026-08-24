@@ -196,7 +196,6 @@ export class EnrichContactService {
 
     await repository.update(candidateId, {
       enrichStatus,
-      enrichedAt: new Date().toISOString(),
       ...(outreachSequenceStage ? { outreachSequenceStage } : {}),
     });
   }

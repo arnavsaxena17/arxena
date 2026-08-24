@@ -29,7 +29,7 @@ Search LFs return hits only. People persist with `upload-profiles`. Company pers
 
 FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` then `workspaceMemberProfile` and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{profile.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
 
-Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED` / `connectionStatus=ACCEPTED`.
+Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED`.
 
 | Workflow | Trigger | Role |
 | --- | --- | --- |

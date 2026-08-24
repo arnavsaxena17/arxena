@@ -60,8 +60,6 @@ type GtmCandidateRecord = ObjectRecord & {
   campaign?: string | null;
   projectsId?: string | null;
   outreachSequenceStage?: string | null;
-  connectionDegree?: number | null;
-  personaPriorityScore?: number | null;
   pendingChannel?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
   email?: { primaryEmail?: string } | null;
@@ -403,8 +401,6 @@ export const useGtmLiveWorkingSet = () => {
         campaign: true,
         projectsId: true,
         outreachSequenceStage: true,
-        connectionDegree: true,
-        personaPriorityScore: true,
         pendingChannel: true,
         linkedinUrl: true,
         email: true,
@@ -432,8 +428,6 @@ export const useGtmLiveWorkingSet = () => {
       sendTimezone: 'America/Los_Angeles',
       sendWindowStart: '09:00',
       sendWindowEnd: '17:00',
-      complianceCopy:
-        'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
       ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),
     });
 
@@ -565,8 +559,6 @@ export const useGtmLiveWorkingSet = () => {
           warmPath: '—',
           stage: mapCrmStageToGtmOutreachStage(candidate.outreachSequenceStage),
           email: candidate.email?.primaryEmail ?? '',
-          connectionDegree: candidate.connectionDegree ?? undefined,
-          personaPriorityScore: candidate.personaPriorityScore ?? undefined,
           pendingChannel: candidate.pendingChannel ?? undefined,
         };
       }),

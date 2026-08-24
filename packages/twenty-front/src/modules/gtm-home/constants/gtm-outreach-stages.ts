@@ -21,6 +21,11 @@ export const GTM_OUTREACH_STAGES: Array<{
     description: 'LinkedIn connection request',
   },
   {
+    id: 'connection_ignored',
+    label: 'Connection ignored',
+    description: 'Connection request ignored — fallback to email / InMail',
+  },
+  {
     id: 'profile_checked',
     label: 'Profile checked',
     description: 'Active profile / recent posts scored',
@@ -58,7 +63,7 @@ export const GTM_OUTREACH_STAGES: Array<{
   {
     id: 'stopped',
     label: 'Stopped',
-    description: 'Do-not-contact / unsubscribe / bounce / not interested',
+    description: 'Do-not-contact',
   },
   {
     id: 'replied',
@@ -87,6 +92,8 @@ export const mapCrmStageToGtmOutreachStage = (
       return 'needs_connection';
     case 'CONNECTION_SENT':
       return 'connection_sent';
+    case 'CONNECTION_IGNORED':
+      return 'connection_ignored';
     case 'PROFILE_CHECKED':
       return 'profile_checked';
     case 'WARM_PATH':

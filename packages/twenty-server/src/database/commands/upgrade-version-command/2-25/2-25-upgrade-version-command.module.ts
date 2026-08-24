@@ -42,6 +42,7 @@ import { SyncGtmProjectIdRecordPickerCommand } from 'src/database/commands/upgra
 import { DropGtmProjectRateLimitFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000047-drop-gtm-project-rate-limit-fields.command';
 import { EnsureGtmDetectFakeProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000048-ensure-gtm-detect-fake-profiles-logic-function.command';
 import { DropGtmIcpBlurbFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000049-drop-gtm-icp-blurb-fields.command';
+import { DropGtmVanityFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000050-drop-gtm-vanity-fields.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
@@ -106,6 +107,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     DropGtmProjectRateLimitFieldsCommand,
     EnsureGtmDetectFakeProfilesLogicFunctionCommand,
     DropGtmIcpBlurbFieldsCommand,
+    DropGtmVanityFieldsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

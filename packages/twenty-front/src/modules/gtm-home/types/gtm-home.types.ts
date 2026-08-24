@@ -2,6 +2,7 @@ export type GtmOutreachStage =
   | 'queued'
   | 'needs_connection'
   | 'connection_sent'
+  | 'connection_ignored'
   | 'profile_checked'
   | 'warm_path'
   | 'commented'

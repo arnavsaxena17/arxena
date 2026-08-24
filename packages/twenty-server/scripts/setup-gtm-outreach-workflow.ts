@@ -702,9 +702,8 @@ const deployWorkflowB = async (workflowVersionId: string) => {
           objectRecordId: `{{${findCandidate.id}.first.id}}`,
           objectRecord: {
             outreachSequenceStage: 'CONNECTION_SENT',
-            connectionStatus: 'SENT',
           },
-          fieldsToUpdate: ['outreachSequenceStage', 'connectionStatus'],
+          fieldsToUpdate: ['outreachSequenceStage'],
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,
@@ -1972,8 +1971,8 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
           // std_grade: ['leadership', 'mid'],
           // buyerTitles: ['Head of Talent', 'VP People'],
         // }),
-        complianceCopy:
-          'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
+        // complianceCopy:
+        //   'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
       },
     },
   );

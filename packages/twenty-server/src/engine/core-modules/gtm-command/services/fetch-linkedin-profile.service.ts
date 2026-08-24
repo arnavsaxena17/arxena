@@ -167,7 +167,6 @@ export class FetchLinkedinProfileService {
 
           await candidateRepository.update(input.candidateId as string, {
             linkedinProfileId: mapped.linkedinProfileId,
-            linkedinProfileSnapshot: mapped.snapshot,
           });
         },
         authContext,

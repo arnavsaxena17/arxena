@@ -65,7 +65,6 @@ describe('gtm-command-materialize.util', () => {
       }),
     ).toMatchObject({
       outreachSequenceStage: 'CONNECTION_SENT',
-      connectionStatus: 'SENT',
       firstOutboundAt: '2026-01-01T00:00:00.000Z',
     });
 
@@ -96,7 +95,7 @@ describe('gtm-command-materialize.util', () => {
   it('computes attention reasons', () => {
     expect(
       computeAttentionReason({
-        connectionStatus: 'IGNORED',
+        outreachSequenceStage: 'CONNECTION_IGNORED',
       }),
     ).toBe('CONNECT_IGNORE');
     expect(

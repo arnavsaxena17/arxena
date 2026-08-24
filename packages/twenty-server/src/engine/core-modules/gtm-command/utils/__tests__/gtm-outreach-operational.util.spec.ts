@@ -6,50 +6,9 @@ import {
   decidePersonaEnrollment,
   scorePersonaPriority,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-persona-priority.util';
-import {
-  isCandidatePastQueued,
-  isPersonGloballyStopped,
-  shouldBlockOutboundForCandidate,
-} from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
+import { isCandidatePastQueued } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
 
 describe('gtm outreach operational utils', () => {
-  it('detects person global stops', () => {
-    expect(isPersonGloballyStopped({ doNotContact: true })).toBe(true);
-    expect(
-      isPersonGloballyStopped({
-        unsubscribedAt: '2026-01-01T00:00:00.000Z',
-      }),
-    ).toBe(true);
-    expect(isPersonGloballyStopped({ bounceCount: 2 })).toBe(true);
-    expect(isPersonGloballyStopped({ bounceCount: 1 })).toBe(false);
-  });
-
-  it('blocks outbound on reply / ooo / person stop', () => {
-    expect(
-      shouldBlockOutboundForCandidate({
-        outreachSequenceStage: 'REPLIED',
-      }).reason,
-    ).toBe('stop_on_reply');
-    expect(
-      shouldBlockOutboundForCandidate({
-        outreachSequenceStage: 'QUEUED',
-        oooUntil: '2099-01-01T00:00:00.000Z',
-        nowIso: '2026-01-01T00:00:00.000Z',
-      }).reason,
-    ).toBe('ooo');
-    expect(
-      shouldBlockOutboundForCandidate({
-        outreachSequenceStage: 'QUEUED',
-        doNotContact: true,
-      }).blocked,
-    ).toBe(true);
-    expect(
-      shouldBlockOutboundForCandidate({
-        outreachSequenceStage: 'QUEUED',
-      }).blocked,
-    ).toBe(false);
-  });
-
   it('marks stages past queued for idempotency', () => {
     expect(isCandidatePastQueued('QUEUED')).toBe(false);
     expect(isCandidatePastQueued(null)).toBe(false);

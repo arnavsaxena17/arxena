@@ -32,121 +32,105 @@ const mapIcpFit = (icpFit: string): 'HIGH' | 'MEDIUM' | 'LOW' => {
   return 'MEDIUM';
 };
 
-const mapCompanyStatusToGtm = (
-  status: string,
-): { gtmStatus: string; gtmFunnelStage: string } => {
+const mapCompanyStatusToGtm = (status: string): string => {
   const normalized = status.trim().toLowerCase();
 
   if (normalized.includes('meeting')) {
-    return { gtmStatus: 'MEETING_BOOKED', gtmFunnelStage: 'MEETING_BOOKED' };
+    return 'MEETING_BOOKED';
   }
 
   if (normalized.includes('repl')) {
-    return { gtmStatus: 'REPLIED', gtmFunnelStage: 'REPLIED' };
+    return 'REPLIED';
   }
 
   if (normalized.includes('cover') || normalized.includes('reach')) {
-    return { gtmStatus: 'COVERED', gtmFunnelStage: 'COVERED' };
+    return 'COVERED';
   }
 
-  if (normalized.includes('research') || normalized.includes('watch')) {
-    return { gtmStatus: 'RESEARCHING', gtmFunnelStage: 'ADDED' };
-  }
-
-  return { gtmStatus: 'TARGET', gtmFunnelStage: 'ADDED' };
+  return 'ADDED';
 };
 
 const mapPersonStageToCandidate = (
   stage: GtmOutreachStage,
 ): {
   outreachSequenceStage: string;
-  connectionStatus: string;
   enrichStatus: string;
 } => {
   switch (stage) {
     case 'needs_connection':
       return {
         outreachSequenceStage: 'NEEDS_CONNECTION',
-        connectionStatus: 'NONE',
         enrichStatus: 'NOT_STARTED',
       };
     case 'deferred':
       return {
         outreachSequenceStage: 'DEFERRED',
-        connectionStatus: 'NONE',
         enrichStatus: 'NOT_STARTED',
       };
     case 'stopped':
       return {
         outreachSequenceStage: 'STOPPED',
-        connectionStatus: 'NONE',
+        enrichStatus: 'NOT_STARTED',
+      };
+    case 'connection_ignored':
+      return {
+        outreachSequenceStage: 'CONNECTION_IGNORED',
         enrichStatus: 'NOT_STARTED',
       };
     case 'inmail_sent':
       return {
         outreachSequenceStage: 'INMAIL_SENT',
-        connectionStatus: 'IGNORED',
         enrichStatus: 'NOT_STARTED',
       };
     case 'connection_sent':
       return {
         outreachSequenceStage: 'CONNECTION_SENT',
-        connectionStatus: 'SENT',
         enrichStatus: 'NOT_STARTED',
       };
     case 'profile_checked':
       return {
         outreachSequenceStage: 'PROFILE_CHECKED',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'NOT_STARTED',
       };
     case 'warm_path':
       return {
         outreachSequenceStage: 'WARM_PATH',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'NOT_STARTED',
       };
     case 'commented':
       return {
         outreachSequenceStage: 'COMMENTED',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'NOT_STARTED',
       };
     case 'email_enriching':
       return {
         outreachSequenceStage: 'EMAIL_ENRICHING',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'RUNNING',
       };
     case 'email_sent':
       return {
         outreachSequenceStage: 'EMAIL_SENT',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'FOUND',
       };
     case 'replied':
       return {
         outreachSequenceStage: 'REPLIED',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'FOUND',
       };
     case 'negotiating':
       return {
         outreachSequenceStage: 'NEGOTIATING',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'FOUND',
       };
     case 'meeting_booked':
       return {
         outreachSequenceStage: 'MEETING_BOOKED',
-        connectionStatus: 'ACCEPTED',
         enrichStatus: 'FOUND',
       };
     case 'queued':
     default:
       return {
         outreachSequenceStage: 'QUEUED',
-        connectionStatus: 'NONE',
         enrichStatus: 'NOT_STARTED',
       };
   }
@@ -236,9 +220,7 @@ export const useAddGtmRecordsToCrm = () => {
         return existingId;
       }
 
-      const { gtmStatus, gtmFunnelStage } = mapCompanyStatusToGtm(
-        company.status,
-      );
+      const gtmFunnelStage = mapCompanyStatusToGtm(company.status);
 
       const created = await createCompany({
         name: company.name,
@@ -249,13 +231,11 @@ export const useAddGtmRecordsToCrm = () => {
         employees: parseEmployeeCount(company.employees),
         icpSegment: company.segment,
         icpFit: mapIcpFit(company.icpFit),
-        gtmStatus,
         gtmFunnelStage,
         peopleTargeted: 0,
         peopleReached: 0,
         coverageBucket: 'ZERO',
         attentionReason: 'NONE',
-        daysSinceLastTouch: 0,
         coverageScore: 0,
         gtmRunKey: gtmCommandContext.projectId
           ? [gtmCommandContext.projectId]
@@ -355,7 +335,6 @@ export const useAddGtmRecordsToCrm = () => {
               primaryLinkLabel: person.linkedinUrl.replace(/^https?:\/\//, ''),
             },
             doNotContact: person.doNotContact === true,
-            linkedinConnectionDegree: person.connectionDegree ?? null,
           });
 
           if (isDefined(createdPerson?.id)) {
@@ -376,10 +355,7 @@ export const useAddGtmRecordsToCrm = () => {
               projectsId: projectId,
               peopleId: createdPerson.id,
               outreachSequenceStage: sequenceFields.outreachSequenceStage,
-              connectionStatus: sequenceFields.connectionStatus,
               enrichStatus: sequenceFields.enrichStatus,
-              connectionDegree: person.connectionDegree ?? null,
-              personaPriorityScore: person.personaPriorityScore ?? null,
               pendingChannel: person.pendingChannel ?? null,
               messagingChannel: 'LINKEDIN',
               campaign: projectId,

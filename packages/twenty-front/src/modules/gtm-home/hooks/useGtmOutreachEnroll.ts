@@ -179,7 +179,6 @@ export const useGtmOutreachEnroll = () => {
         idToUpdate: candidateId,
         updateOneRecordInput: {
           outreachSequenceStage: 'QUEUED',
-          stoppedReason: null,
         },
       });
 

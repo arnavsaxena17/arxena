@@ -236,13 +236,11 @@ export class FreeTrialLeadCrmService {
     });
 
     try {
-      await companyRepository.update(company.id, {
-        gtmFunnelStage: 'OPPORTUNITY',
-        gtmStatus: 'OPPORTUNITY',
-      } as Partial<CompanyWorkspaceEntity> & {
-        gtmFunnelStage: string;
-        gtmStatus: string;
-      });
+        await companyRepository.update(company.id, {
+          gtmFunnelStage: 'OPPORTUNITY',
+        } as Partial<CompanyWorkspaceEntity> & {
+          gtmFunnelStage: string;
+        });
     } catch (error) {
       this.logger.warn(
         `Could not bump company GTM funnel for free-trial lead: ${

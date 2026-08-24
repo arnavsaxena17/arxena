@@ -364,11 +364,10 @@ export class GtmCommandMaterializeService {
       const daysSinceLastTouch =
         latestTouchMs > 0
           ? Math.round((Date.now() - latestTouchMs) / (24 * 60 * 60 * 1000))
-          : (company.daysSinceLastTouch ?? 0);
+          : 0;
 
       const worstCandidate = candidates[0];
       const attentionReason = computeAttentionReason({
-        connectionStatus: worstCandidate?.connectionStatus,
         enrichStatus: worstCandidate?.enrichStatus,
         outreachSequenceStage: worstCandidate?.outreachSequenceStage,
         daysSinceLastTouch,
@@ -416,8 +415,6 @@ export class GtmCommandMaterializeService {
             firstContactChannel:
               company.firstContactChannel ?? firstContactChannel ?? null,
             gtmFunnelStage: coveredStage,
-            gtmStatus: coveredStage,
-            daysSinceLastTouch,
             attentionReason:
               event === 'inbound_reply' || event === 'meeting_booked'
                 ? 'NONE'
@@ -509,7 +506,6 @@ export class GtmCommandMaterializeService {
     gtmFunnelStage?: string | null;
     attentionReason?: string | null;
     firstContactChannel?: string | null;
-    daysSinceLastTouch?: number | null;
   } | null> {
     const response = (await this.staticGraphQLService.executeGraphQL(
       `query Company($filter: CompanyFilterInput) {
@@ -528,7 +524,6 @@ export class GtmCommandMaterializeService {
               gtmFunnelStage
               attentionReason
               firstContactChannel
-              daysSinceLastTouch
             }
           }
         }
@@ -556,7 +551,6 @@ export class GtmCommandMaterializeService {
       gtmFunnelStage?: string | null;
       attentionReason?: string | null;
       firstContactChannel?: string | null;
-      daysSinceLastTouch?: number | null;
     } | null;
   }
 
@@ -570,7 +564,6 @@ export class GtmCommandMaterializeService {
       lastOutboundAt?: string | null;
       lastInboundAt?: string | null;
       messagingChannel?: string | null;
-      connectionStatus?: string | null;
       enrichStatus?: string | null;
       outreachSequenceStage?: string | null;
     }>
@@ -585,7 +578,6 @@ export class GtmCommandMaterializeService {
               lastOutboundAt
               lastInboundAt
               messagingChannel
-              connectionStatus
               enrichStatus
               outreachSequenceStage
             }
@@ -614,7 +606,6 @@ export class GtmCommandMaterializeService {
         lastOutboundAt?: string | null;
         lastInboundAt?: string | null;
         messagingChannel?: string | null;
-        connectionStatus?: string | null;
         enrichStatus?: string | null;
         outreachSequenceStage?: string | null;
       }) ?? []

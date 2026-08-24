@@ -70,32 +70,6 @@ export const GTM_ACTIVE_OUTREACH_STAGES: GtmOutreachSequenceStage[] = [
   'NEGOTIATING',
 ];
 
-export const isPersonGloballyStopped = ({
-  doNotContact,
-  unsubscribedAt,
-  notInterestedAt,
-  bounceCount,
-}: {
-  doNotContact?: boolean | null;
-  unsubscribedAt?: string | null;
-  notInterestedAt?: string | null;
-  bounceCount?: number | null;
-}): boolean => {
-  if (doNotContact === true) {
-    return true;
-  }
-
-  if (unsubscribedAt) {
-    return true;
-  }
-
-  if (notInterestedAt) {
-    return true;
-  }
-
-  return (bounceCount ?? 0) >= 2;
-};
-
 export const isCandidatePastQueued = (
   stage: string | null | undefined,
 ): boolean => {
@@ -104,49 +78,6 @@ export const isCandidatePastQueued = (
   }
 
   return true;
-};
-
-export const shouldBlockOutboundForCandidate = ({
-  outreachSequenceStage,
-  doNotContact,
-  unsubscribedAt,
-  notInterestedAt,
-  bounceCount,
-  oooUntil,
-  nowIso = new Date().toISOString(),
-}: {
-  outreachSequenceStage?: string | null;
-  doNotContact?: boolean | null;
-  unsubscribedAt?: string | null;
-  notInterestedAt?: string | null;
-  bounceCount?: number | null;
-  oooUntil?: string | null;
-  nowIso?: string;
-}): { blocked: boolean; reason: string | null } => {
-  if (outreachSequenceStage === 'STOPPED') {
-    return { blocked: true, reason: 'candidate_stopped' };
-  }
-
-  if (outreachSequenceStage === 'REPLIED' || outreachSequenceStage === 'MEETING_BOOKED') {
-    return { blocked: true, reason: 'stop_on_reply' };
-  }
-
-  if (
-    isPersonGloballyStopped({
-      doNotContact,
-      unsubscribedAt,
-      notInterestedAt,
-      bounceCount,
-    })
-  ) {
-    return { blocked: true, reason: 'person_do_not_contact' };
-  }
-
-  if (oooUntil && Date.parse(oooUntil) > Date.parse(nowIso)) {
-    return { blocked: true, reason: 'ooo' };
-  }
-
-  return { blocked: false, reason: null };
 };
 
 // High-level events that auto-updaters emit
@@ -358,18 +289,16 @@ export const buildCandidateEventUpdate = ({
     case 'connection_sent':
       return {
         outreachSequenceStage: 'CONNECTION_SENT',
-        connectionStatus: 'SENT',
         lastOutboundAt: nowIso,
         ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
       };
     case 'connection_accepted':
       return {
         outreachSequenceStage: 'CONNECTION_ACCEPTED',
-        connectionStatus: 'ACCEPTED',
       };
     case 'connection_ignored':
       return {
-        connectionStatus: 'IGNORED',
+        outreachSequenceStage: 'CONNECTION_IGNORED',
       };
     case 'profile_checked':
       return {
@@ -393,13 +322,11 @@ export const buildCandidateEventUpdate = ({
     case 'enrich_found':
       return {
         enrichStatus: 'FOUND',
-        enrichedAt: nowIso,
       };
     case 'enrich_failed':
       return {
         outreachSequenceStage: 'FAILED_ENRICH',
         enrichStatus: 'FAILED',
-        enrichedAt: nowIso,
       };
     case 'outbound_message': {
       const outboundStage = mapOutboundStageForChannel(messagingChannel);
@@ -476,13 +403,11 @@ export const resolveCompanyIdFromCandidate = (candidate: {
   null;
 
 export const computeAttentionReason = ({
-  connectionStatus,
   enrichStatus,
   outreachSequenceStage,
   daysSinceLastTouch,
   hasReply,
 }: {
-  connectionStatus?: string | null;
   enrichStatus?: string | null;
   outreachSequenceStage?: string | null;
   daysSinceLastTouch?: number | null;
@@ -492,7 +417,7 @@ export const computeAttentionReason = ({
     return 'NEEDS_CONNECTION';
   }
 
-  if (connectionStatus === 'IGNORED') {
+  if (outreachSequenceStage === 'CONNECTION_IGNORED') {
     return 'CONNECT_IGNORE';
   }
 

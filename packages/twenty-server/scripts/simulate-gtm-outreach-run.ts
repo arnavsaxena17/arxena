@@ -43,18 +43,15 @@ const MOCKS = {
     // stdGrades: ['director', 'vp'],
   },
   connectionSent: {
-    connectionStatus: 'SENT',
     outreachSequenceStage: 'CONNECTION_SENT',
   },
   connectionAccepted: {
     event: 'connection_accepted',
-    connectionStatus: 'ACCEPTED',
     outreachSequenceStage: 'CONNECTION_ACCEPTED',
   },
   connectionIgnored: {
     event: 'connection_ignored',
-    connectionStatus: 'IGNORED',
-    outreachSequenceStage: 'EMAIL_ENRICHING',
+    outreachSequenceStage: 'CONNECTION_IGNORED',
   },
   inboundReply: {
     event: 'inbound_reply',
@@ -157,8 +154,6 @@ const findCandidates = async (projectId: string) => {
           id: string;
           name?: string;
           outreachSequenceStage?: string;
-          connectionStatus?: string;
-          connectionDegree?: number;
         };
       }>;
     };
@@ -170,8 +165,6 @@ const findCandidates = async (projectId: string) => {
             id
             name
             outreachSequenceStage
-            connectionStatus
-            connectionDegree
           }
         }
       }
@@ -269,15 +262,14 @@ const simulateConnectionSent = async (
 
 const simulateAccept = async (
   projectId: string,
-  candidates: Array<{ id: string; connectionDegree?: number }>,
+  candidates: Array<{ id: string; outreachSequenceStage?: string }>,
 ) => {
-  const secondDegree = candidates.filter(
-    (candidate) => (candidate.connectionDegree ?? 2) >= 2,
+  const sent = candidates.filter(
+    (candidate) => candidate.outreachSequenceStage === 'CONNECTION_SENT',
   );
 
-  for (const candidate of secondDegree.slice(0, 3)) {
+  for (const candidate of sent.slice(0, 3)) {
     await updateCandidate(candidate.id, projectId, {
-      connectionStatus: MOCKS.connectionAccepted.connectionStatus,
       outreachSequenceStage: MOCKS.connectionAccepted.outreachSequenceStage,
       lastOutboundAt: new Date().toISOString(),
     });
@@ -287,15 +279,14 @@ const simulateAccept = async (
 
 const simulateIgnore = async (
   projectId: string,
-  candidates: Array<{ id: string; connectionDegree?: number }>,
+  candidates: Array<{ id: string; outreachSequenceStage?: string }>,
 ) => {
-  const targets = candidates.filter(
-    (candidate) => (candidate.connectionDegree ?? 2) >= 2,
+  const sent = candidates.filter(
+    (candidate) => candidate.outreachSequenceStage === 'CONNECTION_SENT',
   );
 
-  for (const candidate of targets.slice(0, 2)) {
+  for (const candidate of sent.slice(0, 2)) {
     await updateCandidate(candidate.id, projectId, {
-      connectionStatus: MOCKS.connectionIgnored.connectionStatus,
       outreachSequenceStage: MOCKS.connectionIgnored.outreachSequenceStage,
       enrichStatus: 'RUNNING',
       pendingChannel: null,
@@ -303,7 +294,6 @@ const simulateIgnore = async (
     await updateCandidate(candidate.id, projectId, {
       ...MOCKS.enrichEmailFound,
       enrichStatus: 'FOUND',
-      enrichedAt: new Date().toISOString(),
     });
     console.log(`  ignore→email → ${candidate.id}`);
   }
@@ -328,7 +318,6 @@ const simulateReply = async (
 
   await updateCandidate(target.id, projectId, {
     outreachSequenceStage: 'NEGOTIATING',
-    pendingMessageBody: 'Negotiating meeting time (mock)',
   });
 
   await updateCandidate(target.id, projectId, {

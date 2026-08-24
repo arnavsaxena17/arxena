@@ -37,7 +37,6 @@ type CompanySeed = {
   employees: number;
   segment: string;
   icpFit: 'HIGH' | 'MEDIUM' | 'LOW';
-  gtmStatus: string;
   gtmFunnelStage: string;
   peopleTargeted: number;
   peopleReached: number;
@@ -49,7 +48,6 @@ type CompanySeed = {
   timeToFirstContactBucket?: string;
   timeToMeetingBucket?: string;
   attentionReason: string;
-  daysSinceLastTouch: number;
   coverageScore: number;
   firstContactDaysAgo?: number;
   firstReplyDaysAgo?: number;
@@ -66,7 +64,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 120,
     segment: 'Series B SaaS',
     icpFit: 'HIGH',
-    gtmStatus: 'REPLIED',
     gtmFunnelStage: 'REPLIED',
     peopleTargeted: 4,
     peopleReached: 2,
@@ -77,7 +74,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     daysToMeetingBooked: undefined,
     timeToFirstContactBucket: 'D1_3',
     attentionReason: 'NO_REPLY',
-    daysSinceLastTouch: 9,
     coverageScore: 55,
     firstContactDaysAgo: 14,
     firstReplyDaysAgo: 10,
@@ -90,7 +86,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 85,
     segment: 'Fintech 50-200',
     icpFit: 'HIGH',
-    gtmStatus: 'REACHED',
     gtmFunnelStage: 'REACHED',
     peopleTargeted: 3,
     peopleReached: 1,
@@ -100,7 +95,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     daysToFirstContact: 1,
     timeToFirstContactBucket: 'UNDER_1D',
     attentionReason: 'CONNECT_IGNORE',
-    daysSinceLastTouch: 12,
     coverageScore: 40,
     firstContactDaysAgo: 12,
   },
@@ -112,7 +106,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 210,
     segment: 'HR Tech',
     icpFit: 'MEDIUM',
-    gtmStatus: 'COVERED',
     gtmFunnelStage: 'COVERED',
     peopleTargeted: 5,
     peopleReached: 3,
@@ -122,7 +115,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     daysToFirstContact: 4,
     timeToFirstContactBucket: 'D3_7',
     attentionReason: 'NONE',
-    daysSinceLastTouch: 2,
     coverageScore: 72,
     firstContactDaysAgo: 8,
   },
@@ -134,7 +126,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 160,
     segment: 'Series B SaaS',
     icpFit: 'HIGH',
-    gtmStatus: 'MEETING_BOOKED',
     gtmFunnelStage: 'MEETING_BOOKED',
     peopleTargeted: 4,
     peopleReached: 3,
@@ -146,7 +137,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     timeToFirstContactBucket: 'UNDER_1D',
     timeToMeetingBucket: 'D7_14',
     attentionReason: 'NONE',
-    daysSinceLastTouch: 1,
     coverageScore: 88,
     firstContactDaysAgo: 18,
     firstReplyDaysAgo: 12,
@@ -160,14 +150,12 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 95,
     segment: 'Fintech 50-200',
     icpFit: 'MEDIUM',
-    gtmStatus: 'RESEARCHING',
     gtmFunnelStage: 'ADDED',
     peopleTargeted: 3,
     peopleReached: 0,
     coverageBucket: 'ZERO',
     channelsUsed: [],
     attentionReason: 'NONE',
-    daysSinceLastTouch: 0,
     coverageScore: 10,
   },
   {
@@ -178,7 +166,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 70,
     segment: 'HR Tech',
     icpFit: 'HIGH',
-    gtmStatus: 'REACHED',
     gtmFunnelStage: 'REACHED',
     peopleTargeted: 3,
     peopleReached: 1,
@@ -188,7 +175,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     daysToFirstContact: 5,
     timeToFirstContactBucket: 'D3_7',
     attentionReason: 'ENRICH_MISS',
-    daysSinceLastTouch: 3,
     coverageScore: 35,
     firstContactDaysAgo: 5,
   },
@@ -200,7 +186,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 140,
     segment: 'Series B SaaS',
     icpFit: 'HIGH',
-    gtmStatus: 'OPPORTUNITY',
     gtmFunnelStage: 'OPPORTUNITY',
     peopleTargeted: 4,
     peopleReached: 3,
@@ -212,7 +197,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     timeToFirstContactBucket: 'D1_3',
     timeToMeetingBucket: 'D7_14',
     attentionReason: 'NONE',
-    daysSinceLastTouch: 0,
     coverageScore: 95,
     firstContactDaysAgo: 25,
     firstReplyDaysAgo: 20,
@@ -227,14 +211,12 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 110,
     segment: 'Fintech 50-200',
     icpFit: 'MEDIUM',
-    gtmStatus: 'RESEARCHING',
     gtmFunnelStage: 'ADDED',
     peopleTargeted: 2,
     peopleReached: 0,
     coverageBucket: 'ZERO',
     channelsUsed: [],
     attentionReason: 'NONE',
-    daysSinceLastTouch: 0,
     coverageScore: 8,
   },
   {
@@ -245,7 +227,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 55,
     segment: 'HR Tech',
     icpFit: 'HIGH',
-    gtmStatus: 'COVERED',
     gtmFunnelStage: 'COVERED',
     peopleTargeted: 3,
     peopleReached: 2,
@@ -255,7 +236,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     daysToFirstContact: 3,
     timeToFirstContactBucket: 'D1_3',
     attentionReason: 'STUCK_STAGE',
-    daysSinceLastTouch: 5,
     coverageScore: 60,
     firstContactDaysAgo: 10,
   },
@@ -267,14 +247,12 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 190,
     segment: 'Series B SaaS',
     icpFit: 'HIGH',
-    gtmStatus: 'TARGET',
     gtmFunnelStage: 'ADDED',
     peopleTargeted: 4,
     peopleReached: 0,
     coverageBucket: 'ZERO',
     channelsUsed: [],
     attentionReason: 'STUCK_STAGE',
-    daysSinceLastTouch: 5,
     coverageScore: 15,
   },
   {
@@ -285,14 +263,12 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 130,
     segment: 'Fintech 50-200',
     icpFit: 'LOW',
-    gtmStatus: 'WATCH',
     gtmFunnelStage: 'ADDED',
     peopleTargeted: 2,
     peopleReached: 0,
     coverageBucket: 'ZERO',
     channelsUsed: [],
     attentionReason: 'NONE',
-    daysSinceLastTouch: 0,
     coverageScore: 5,
   },
   {
@@ -303,7 +279,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     employees: 75,
     segment: 'Series B SaaS',
     icpFit: 'HIGH',
-    gtmStatus: 'MEETING_HELD',
     gtmFunnelStage: 'MEETING_HELD',
     peopleTargeted: 3,
     peopleReached: 2,
@@ -315,7 +290,6 @@ const GTM_COMPANIES: CompanySeed[] = [
     timeToFirstContactBucket: 'D1_3',
     timeToMeetingBucket: 'D7_14',
     attentionReason: 'NONE',
-    daysSinceLastTouch: 1,
     coverageScore: 90,
     firstContactDaysAgo: 20,
     firstReplyDaysAgo: 15,
@@ -332,7 +306,6 @@ type PersonSeed = {
   linkedin: string;
   email: string;
   outreachSequenceStage: string;
-  connectionStatus: string;
   enrichStatus: string;
   messagingChannel: string;
   firstOutboundDaysAgo?: number;
@@ -349,7 +322,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/mayachen',
     email: 'maya.chen@northwindlabs.com',
     outreachSequenceStage: 'EMAIL_SENT',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 14,
@@ -364,7 +336,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/jordanhale',
     email: 'jordan.hale@northwindlabs.com',
     outreachSequenceStage: 'CONNECTION_SENT',
-    connectionStatus: 'SENT',
     enrichStatus: 'NOT_STARTED',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 12,
@@ -377,8 +348,7 @@ const GTM_PEOPLE: PersonSeed[] = [
     companyKey: 'co-2',
     linkedin: 'https://linkedin.com/in/aisharahman',
     email: 'aisha.rahman@ledgerly.io',
-    outreachSequenceStage: 'CONNECTION_SENT',
-    connectionStatus: 'IGNORED',
+    outreachSequenceStage: 'CONNECTION_IGNORED',
     enrichStatus: 'NOT_STARTED',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 12,
@@ -392,7 +362,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/chrisokonkwo',
     email: 'chris.okonkwo@ledgerly.io',
     outreachSequenceStage: 'QUEUED',
-    connectionStatus: 'NONE',
     enrichStatus: 'NOT_STARTED',
     messagingChannel: 'LINKEDIN',
   },
@@ -404,7 +373,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/elenavoss',
     email: 'elena.voss@parcelops.com',
     outreachSequenceStage: 'MEETING_BOOKED',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN_INMAIL',
     firstOutboundDaysAgo: 18,
@@ -419,7 +387,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/devpatel',
     email: 'dev.patel@parcelops.com',
     outreachSequenceStage: 'EMAIL_SENT',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 15,
@@ -433,7 +400,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/sofiamendes',
     email: 'sofia.mendes@orbitats.com',
     outreachSequenceStage: 'FAILED_ENRICH',
-    connectionStatus: 'NONE',
     enrichStatus: 'FAILED',
     messagingChannel: 'WHATSAPP_UNIPILE',
     firstOutboundDaysAgo: 5,
@@ -447,7 +413,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/noahkim',
     email: 'noah.kim@signalboard.ai',
     outreachSequenceStage: 'MEETING_BOOKED',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 25,
@@ -462,7 +427,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/larasingh',
     email: 'lara.singh@signalboard.ai',
     outreachSequenceStage: 'REPLIED',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 22,
@@ -477,7 +441,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/tombradley',
     email: 'tom.bradley@peoplegrid.io',
     outreachSequenceStage: 'WARM_PATH',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'RUNNING',
     messagingChannel: 'WHATSAPP_UNIPILE',
     firstOutboundDaysAgo: 10,
@@ -491,7 +454,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/hannahwu',
     email: 'hannah.wu@canvasflow.com',
     outreachSequenceStage: 'QUEUED',
-    connectionStatus: 'NONE',
     enrichStatus: 'NOT_STARTED',
     messagingChannel: 'LINKEDIN',
   },
@@ -503,7 +465,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/omarfarouk',
     email: 'omar.farouk@canvasflow.com',
     outreachSequenceStage: 'QUEUED',
-    connectionStatus: 'NONE',
     enrichStatus: 'NOT_STARTED',
     messagingChannel: 'LINKEDIN',
   },
@@ -515,7 +476,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/juliapark',
     email: 'julia.park@relayhire.com',
     outreachSequenceStage: 'MEETING_BOOKED',
-    connectionStatus: 'ACCEPTED',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 20,
@@ -530,7 +490,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/bentorres',
     email: 'ben.torres@relayhire.com',
     outreachSequenceStage: 'EMAIL_SENT',
-    connectionStatus: 'SENT',
     enrichStatus: 'FOUND',
     messagingChannel: 'LINKEDIN',
     firstOutboundDaysAgo: 18,
@@ -544,7 +503,6 @@ const GTM_PEOPLE: PersonSeed[] = [
     linkedin: 'https://linkedin.com/in/ninaalvarez',
     email: 'nina.alvarez@hirestack.com',
     outreachSequenceStage: 'WHATSAPP_SENT',
-    connectionStatus: 'NONE',
     enrichStatus: 'FOUND',
     messagingChannel: 'WHATSAPP_UNIPILE',
     firstOutboundDaysAgo: 8,
@@ -592,7 +550,6 @@ const OPPORTUNITY_SEEDS = [
 ] as const;
 
 const REQUIRED_COMPANY_FIELDS = [
-  'gtmStatus',
   'gtmFunnelStage',
   'icpSegment',
   'icpFit',
@@ -609,7 +566,6 @@ const REQUIRED_COMPANY_FIELDS = [
 
 const REQUIRED_CANDIDATE_FIELDS = [
   'outreachSequenceStage',
-  'connectionStatus',
   'enrichStatus',
   'messagingChannel',
   'firstOutboundAt',
@@ -725,44 +681,6 @@ type FieldToCreate = {
 };
 
 const COMPANY_FIELDS_TO_ENSURE: FieldToCreate[] = [
-  {
-    name: 'gtmStatus',
-    label: 'GTM Status',
-    type: 'SELECT',
-    icon: 'IconTargetArrow',
-    options: [
-      { value: 'WATCH', label: 'Watch', color: 'gray', position: 0 },
-      { value: 'RESEARCHING', label: 'Researching', color: 'sky', position: 1 },
-      { value: 'TARGET', label: 'Target', color: 'blue', position: 2 },
-      { value: 'REACHED', label: 'Reached', color: 'turquoise', position: 3 },
-      { value: 'COVERED', label: 'Covered', color: 'green', position: 4 },
-      { value: 'REPLIED', label: 'Replied', color: 'purple', position: 5 },
-      {
-        value: 'MEETING_BOOKED',
-        label: 'Meeting booked',
-        color: 'orange',
-        position: 6,
-      },
-      {
-        value: 'MEETING_HELD',
-        label: 'Meeting held',
-        color: 'yellow',
-        position: 7,
-      },
-      {
-        value: 'OPPORTUNITY',
-        label: 'Opportunity',
-        color: 'red',
-        position: 8,
-      },
-      {
-        value: 'DISQUALIFIED',
-        label: 'Disqualified',
-        color: 'gray',
-        position: 9,
-      },
-    ],
-  },
   {
     name: 'gtmFunnelStage',
     label: 'GTM Funnel Stage',
@@ -968,12 +886,6 @@ const COMPANY_FIELDS_TO_ENSURE: FieldToCreate[] = [
       },
     ],
   },
-  {
-    name: 'daysSinceLastTouch',
-    label: 'Days Since Last Touch',
-    type: 'NUMBER',
-    icon: 'IconCalendarDue',
-  },
 ];
 
 const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
@@ -1001,6 +913,12 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
         label: 'Connection accepted',
         color: 'blue',
         position: 3,
+      },
+      {
+        value: 'CONNECTION_IGNORED',
+        label: 'Connection ignored',
+        color: 'red',
+        position: 18,
       },
       {
         value: 'PROFILE_CHECKED',
@@ -1059,18 +977,6 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
     ],
   },
   {
-    name: 'connectionStatus',
-    label: 'Connection Status',
-    type: 'SELECT',
-    icon: 'IconUserPlus',
-    options: [
-      { value: 'NONE', label: 'None', color: 'gray', position: 0 },
-      { value: 'SENT', label: 'Sent', color: 'sky', position: 1 },
-      { value: 'ACCEPTED', label: 'Accepted', color: 'green', position: 2 },
-      { value: 'IGNORED', label: 'Ignored', color: 'red', position: 3 },
-    ],
-  },
-  {
     name: 'enrichStatus',
     label: 'Enrich Status',
     type: 'SELECT',
@@ -1086,12 +992,6 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
       { value: 'FOUND', label: 'Found', color: 'green', position: 2 },
       { value: 'FAILED', label: 'Failed', color: 'red', position: 3 },
     ],
-  },
-  {
-    name: 'enrichedAt',
-    label: 'Enriched At',
-    type: 'DATE_TIME',
-    icon: 'IconClock',
   },
   {
     name: 'lastOutboundAt',
@@ -1110,12 +1010,6 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
     label: 'First Outbound At',
     type: 'DATE_TIME',
     icon: 'IconPlayerPlay',
-  },
-  {
-    name: 'pendingMessageBody',
-    label: 'Pending Message Body',
-    type: 'TEXT',
-    icon: 'IconMessage',
   },
   {
     name: 'pendingChannel',
@@ -1137,28 +1031,10 @@ const CANDIDATE_FIELDS_TO_ENSURE: FieldToCreate[] = [
     ],
   },
   {
-    name: 'stoppedReason',
-    label: 'Stopped Reason',
-    type: 'TEXT',
-    icon: 'IconHandStop',
-  },
-  {
     name: 'linkedinFollowUpCount',
     label: 'LinkedIn Follow-up Count',
     type: 'NUMBER',
     icon: 'IconRepeat',
-  },
-  {
-    name: 'personaPriorityScore',
-    label: 'Persona Priority Score',
-    type: 'NUMBER',
-    icon: 'IconSortDescending',
-  },
-  {
-    name: 'connectionDegree',
-    label: 'Connection Degree',
-    type: 'NUMBER',
-    icon: 'IconTopologyStar',
   },
 ];
 
@@ -1218,12 +1094,7 @@ const PROJECT_FIELDS_TO_ENSURE: FieldToCreate[] = [
     icon: 'IconClockHour9',
   },
   { name: 'icpSpec', label: 'ICP Spec', type: 'TEXT', icon: 'IconJson' },
-  {
-    name: 'complianceCopy',
-    label: 'Compliance Copy',
-    type: 'TEXT',
-    icon: 'IconScale',
-  },
+
 ];
 
 const PERSON_FIELDS_TO_ENSURE: FieldToCreate[] = [
@@ -1234,47 +1105,17 @@ const PERSON_FIELDS_TO_ENSURE: FieldToCreate[] = [
     icon: 'IconBan',
     defaultValue: false,
   },
-  {
-    name: 'unsubscribedAt',
-    label: 'Unsubscribed At',
-    type: 'DATE_TIME',
-    icon: 'IconMailOff',
-  },
-  {
-    name: 'notInterestedAt',
-    label: 'Not Interested At',
-    type: 'DATE_TIME',
-    icon: 'IconThumbDown',
-  },
-  {
-    name: 'bounceCount',
-    label: 'Bounce Count',
-    type: 'NUMBER',
-    icon: 'IconMailX',
-  },
-  {
-    name: 'oooUntil',
-    label: 'OOO Until',
-    type: 'DATE_TIME',
-    icon: 'IconBeach',
-  },
-  {
-    name: 'linkedinConnectionDegree',
-    label: 'LinkedIn Connection Degree',
-    type: 'NUMBER',
-    icon: 'IconTopologyStar',
-  },
 ];
 
 const OPPORTUNITY_FIELDS_TO_ENSURE: FieldToCreate[] = [
-  {
-    name: 'sourcedFromGtm',
-    label: 'Sourced From GTM',
-    type: 'BOOLEAN',
-    icon: 'IconTargetArrow',
-    defaultValue: false,
-  },
-  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
+  // {
+  //   name: 'sourcedFromGtm',
+  //   label: 'Sourced From GTM',
+  //   type: 'BOOLEAN',
+  //   icon: 'IconTargetArrow',
+  //   defaultValue: false,
+  // },
+  // { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
 ];
 
 const createOneField = async (
@@ -1426,7 +1267,6 @@ const buildCompanyPayload = (
       primaryLinkUrl: `https://${company.domain}`,
       primaryLinkLabel: company.domain,
     },
-    gtmStatus: company.gtmStatus,
     gtmFunnelStage: company.gtmFunnelStage,
     icpSegment: company.segment,
     icpFit: company.icpFit,
@@ -1440,7 +1280,6 @@ const buildCompanyPayload = (
     timeToFirstContactBucket: company.timeToFirstContactBucket ?? null,
     timeToMeetingBucket: company.timeToMeetingBucket ?? null,
     attentionReason: company.attentionReason,
-    daysSinceLastTouch: company.daysSinceLastTouch,
     coverageScore: company.coverageScore,
     firstContactAt:
       company.firstContactDaysAgo !== undefined
@@ -1656,7 +1495,6 @@ const seedCandidates = async ({
       projectsId: projectId,
       ...(personId ? { peopleId: personId } : {}),
       outreachSequenceStage: person.outreachSequenceStage,
-      connectionStatus: person.connectionStatus,
       enrichStatus: person.enrichStatus,
       messagingChannel: person.messagingChannel,
       engagementStatus: person.lastInboundDaysAgo !== undefined,
@@ -1675,10 +1513,6 @@ const seedCandidates = async ({
       lastInboundAt:
         person.lastInboundDaysAgo !== undefined
           ? daysAgoIso(person.lastInboundDaysAgo)
-          : null,
-      enrichedAt:
-        person.enrichStatus === 'FOUND' || person.enrichStatus === 'FAILED'
-          ? daysAgoIso(person.lastOutboundDaysAgo ?? 7)
           : null,
       campaign: projectId,
       source: 'gtm-command-seed',
@@ -2375,18 +2209,9 @@ const buildDashboardLayout = async ({
           objectMetadataId: candidateObjectId,
           aggregateFieldId: candidateFields.id,
           groupByFieldId: candidateFields.outreachSequenceStage,
-          gridPosition: grid(0, 0, 7, 7),
+          gridPosition: grid(0, 0, 7, 12),
           layout: 'HORIZONTAL',
           color: 'purple',
-        }),
-        pieWidget({
-          tabId: stagesTabId,
-          title: 'Connection status',
-          objectMetadataId: candidateObjectId,
-          aggregateFieldId: candidateFields.id,
-          groupByFieldId: candidateFields.connectionStatus,
-          gridPosition: grid(0, 7, 7, 5),
-          color: 'orange',
         }),
         pieWidget({
           tabId: stagesTabId,
@@ -2749,7 +2574,6 @@ const main = async () => {
       companyFields.name,
       companyFields.gtmFunnelStage,
       companyFields.attentionReason,
-      companyFields.daysSinceLastTouch,
       companyFields.icpFit,
       companyFields.peopleReached,
     ].filter(Boolean),
@@ -2770,7 +2594,7 @@ const main = async () => {
       companyFields.icpFit,
       companyFields.coverageBucket,
       companyFields.peopleTargeted,
-      companyFields.gtmStatus,
+      companyFields.gtmFunnelStage,
     ].filter(Boolean),
   });
 
@@ -2780,7 +2604,6 @@ const main = async () => {
     fieldIds: [
       candidateFields.name,
       candidateFields.outreachSequenceStage,
-      candidateFields.connectionStatus,
       candidateFields.enrichStatus,
       candidateFields.messagingChannel,
       candidateFields.lastOutboundAt,

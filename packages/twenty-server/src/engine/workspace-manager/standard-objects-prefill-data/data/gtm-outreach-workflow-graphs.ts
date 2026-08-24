@@ -777,7 +777,6 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         name: 'Mark CONNECTION_SENT',
         objectRecordId: gtmWfFindId(IDS.queuedFind),
         objectRecord: {
-          connectionStatus: 'SENT',
           outreachSequenceStage: 'CONNECTION_SENT',
         },
         nextStepIds: [IDS.waitAccept],

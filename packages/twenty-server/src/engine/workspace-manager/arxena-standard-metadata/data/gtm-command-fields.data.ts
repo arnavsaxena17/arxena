@@ -12,19 +12,6 @@ const selectOption = (
   position,
 });
 
-export const GTM_STATUS_OPTIONS = [
-  selectOption('WATCH', 'Watch', 'gray', 0),
-  selectOption('RESEARCHING', 'Researching', 'sky', 1),
-  selectOption('TARGET', 'Target', 'blue', 2),
-  selectOption('REACHED', 'Reached', 'turquoise', 3),
-  selectOption('COVERED', 'Covered', 'green', 4),
-  selectOption('REPLIED', 'Replied', 'purple', 5),
-  selectOption('MEETING_BOOKED', 'Meeting booked', 'orange', 6),
-  selectOption('MEETING_HELD', 'Meeting held', 'yellow', 7),
-  selectOption('OPPORTUNITY', 'Opportunity', 'red', 8),
-  selectOption('DISQUALIFIED', 'Disqualified', 'gray', 9),
-];
-
 export const GTM_FUNNEL_STAGE_OPTIONS = [
   selectOption('ADDED', 'Added', 'gray', 0),
   selectOption('REACHED', 'Reached', 'sky', 1),
@@ -89,6 +76,7 @@ export const GTM_OUTREACH_SEQUENCE_STAGE_OPTIONS = [
   selectOption('NEEDS_CONNECTION', 'Needs connection', 'red', 1),
   selectOption('CONNECTION_SENT', 'Connection sent', 'sky', 2),
   selectOption('CONNECTION_ACCEPTED', 'Connection accepted', 'blue', 3),
+  selectOption('CONNECTION_IGNORED', 'Connection ignored', 'red', 18),
   selectOption('PROFILE_CHECKED', 'Profile checked', 'turquoise', 4),
   selectOption('WARM_PATH', 'Warm path', 'purple', 5),
   selectOption('COMMENTED', 'Commented', 'orange', 6),
@@ -103,13 +91,6 @@ export const GTM_OUTREACH_SEQUENCE_STAGE_OPTIONS = [
   selectOption('STOPPED', 'Stopped', 'red', 15),
   selectOption('FAILED_ENRICH', 'Failed enrich', 'red', 16),
   selectOption('FAILED_NO_REPLY', 'Failed no reply', 'red', 17),
-];
-
-export const GTM_CONNECTION_STATUS_OPTIONS = [
-  selectOption('NONE', 'None', 'gray', 0),
-  selectOption('SENT', 'Sent', 'sky', 1),
-  selectOption('ACCEPTED', 'Accepted', 'green', 2),
-  selectOption('IGNORED', 'Ignored', 'red', 3),
 ];
 
 export const GTM_ENRICH_STATUS_OPTIONS = [
@@ -144,18 +125,6 @@ export const getGtmCommandFieldsData = (
   objectsNameIdMap: Record<string, string>,
 ): ArxenaFieldWithObject[] => [
   // Company — account spine rollups
-  {
-    objectName: 'company',
-    field: {
-      description: 'GTM account status for command dashboard',
-      icon: 'IconTargetArrow',
-      label: 'GTM Status',
-      name: 'gtmStatus',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'SELECT',
-      options: GTM_STATUS_OPTIONS,
-    },
-  },
   {
     objectName: 'company',
     field: {
@@ -387,18 +356,6 @@ export const getGtmCommandFieldsData = (
       options: GTM_ATTENTION_REASON_OPTIONS,
     },
   },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Days since last outbound or inbound touch',
-      icon: 'IconCalendarDue',
-      label: 'Days Since Last Touch',
-      name: 'daysSinceLastTouch',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
-    },
-  },
-
   // Candidate — execution spine
   {
     objectName: 'candidate',
@@ -427,29 +384,6 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Cached Unipile LinkedIn profile JSON for AI draft',
-      icon: 'IconBrandLinkedin',
-      label: 'LinkedIn Profile Snapshot',
-      name: 'linkedinProfileSnapshot',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'LinkedIn connection request status',
-      icon: 'IconUserPlus',
-      label: 'Connection Status',
-      name: 'connectionStatus',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: GTM_CONNECTION_STATUS_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
       description: 'Email/phone enrichment status',
       icon: 'IconDatabaseSearch',
       label: 'Enrich Status',
@@ -457,17 +391,6 @@ export const getGtmCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'SELECT',
       options: GTM_ENRICH_STATUS_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'When enrichment completed or last attempted',
-      icon: 'IconClock',
-      label: 'Enriched At',
-      name: 'enrichedAt',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'DATE_TIME',
     },
   },
   {
@@ -506,17 +429,6 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Draft body waiting for approval or auto-send',
-      icon: 'IconMessage',
-      label: 'Pending Message Body',
-      name: 'pendingMessageBody',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
       description: 'Channel for pending outbound draft',
       icon: 'IconSend',
       label: 'Pending Channel',
@@ -524,17 +436,6 @@ export const getGtmCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'SELECT',
       options: GTM_CHANNEL_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Why outreach stopped for this candidate run',
-      icon: 'IconHandStop',
-      label: 'Stopped Reason',
-      name: 'stoppedReason',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'TEXT',
     },
   },
   {
@@ -549,28 +450,6 @@ export const getGtmCommandFieldsData = (
       defaultValue: 0,
     },
   },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Priority score vs other ICP personas at the same company',
-      icon: 'IconSortDescending',
-      label: 'Persona Priority Score',
-      name: 'personaPriorityScore',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'LinkedIn connection degree copied from Person at enroll',
-      icon: 'IconTopologyStar',
-      label: 'Connection Degree',
-      name: 'connectionDegree',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
   // Person — cross-project memory / compliance
   {
     objectName: 'person',
@@ -582,61 +461,6 @@ export const getGtmCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.person,
       type: 'BOOLEAN',
       defaultValue: false,
-    },
-  },
-  {
-    objectName: 'person',
-    field: {
-      description: 'When the person unsubscribed from outreach',
-      icon: 'IconMailOff',
-      label: 'Unsubscribed At',
-      name: 'unsubscribedAt',
-      objectMetadataId: objectsNameIdMap.person,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'person',
-    field: {
-      description: 'When the person said not interested',
-      icon: 'IconThumbDown',
-      label: 'Not Interested At',
-      name: 'notInterestedAt',
-      objectMetadataId: objectsNameIdMap.person,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'person',
-    field: {
-      description: 'Email bounce count across runs',
-      icon: 'IconMailX',
-      label: 'Bounce Count',
-      name: 'bounceCount',
-      objectMetadataId: objectsNameIdMap.person,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'person',
-    field: {
-      description: 'Out-of-office until this timestamp',
-      icon: 'IconBeach',
-      label: 'OOO Until',
-      name: 'oooUntil',
-      objectMetadataId: objectsNameIdMap.person,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'person',
-    field: {
-      description: 'Cached LinkedIn connection degree (1 / 2 / 3)',
-      icon: 'IconTopologyStar',
-      label: 'LinkedIn Connection Degree',
-      name: 'linkedinConnectionDegree',
-      objectMetadataId: objectsNameIdMap.person,
-      type: 'NUMBER',
     },
   },
 
@@ -687,16 +511,16 @@ export const getGtmCommandFieldsData = (
       type: 'TEXT',
     },
   },
-  {
-    objectName: 'project',
-    field: {
-      description: 'Compliance copy injected into LLM outreach prompts',
-      icon: 'IconScale',
-      label: 'Compliance Copy',
-      name: 'complianceCopy',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
+  // {
+  //   objectName: 'project',
+  //   field: {
+  //     description: 'Compliance copy injected into LLM outreach prompts',
+  //     icon: 'IconScale',
+  //     label: 'Compliance Copy',
+  //     name: 'complianceCopy',
+  //     objectMetadataId: objectsNameIdMap.project,
+  //     type: 'TEXT',
+  //   },
   },
 
   // Opportunity — GTM attribution
