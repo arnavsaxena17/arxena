@@ -40,6 +40,7 @@ import {
 } from '../utils/build-unipile-sales-nav-search-request.util';
 import { pickManualLinkedInBooleanQuery } from '../utils/pick-manual-linkedin-boolean-query.util';
 import type { ManualLinkedInQuery } from '../utils/pick-manual-linkedin-boolean-query.util';
+import { usablePeopleTaxonomyLabel } from '../utils/extract-taxonomy-item-value.util';
 import {
   PeopleSalesNavAccountResolver,
   type PeopleSalesNavAccountSource,
@@ -126,16 +127,21 @@ export class PeopleLinkedInSourcingService {
       accountId: input.accountId,
     });
 
+    const stdFunction = usablePeopleTaxonomyLabel(input.stdFunction);
+    const stdFunctionRoot = usablePeopleTaxonomyLabel(input.stdFunctionRoot);
+    const stdGrade = input.stdGrade?.trim() || undefined;
+    const fallbackJobTitle = input.linkedinSearchKeywords?.trim() || undefined;
+
     const salesNavFilters = resolveSalesNavFilters({
-      functionRoot: input.stdFunctionRoot,
-      stdFunction: input.stdFunction,
-      stdGrade: input.stdGrade,
+      functionRoot: stdFunctionRoot,
+      stdFunction,
+      stdGrade,
     });
 
     const manualLinkedInQuery = await this.resolveManualBooleanQuery({
-      stdFunction: input.stdFunction,
-      stdFunctionRoot: input.stdFunctionRoot,
-      stdGrade: input.stdGrade,
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
     });
     const hasManualLinkedInQuery = !!manualLinkedInQuery;
 
@@ -190,16 +196,16 @@ export class PeopleLinkedInSourcingService {
       : salesNavFilters;
 
     const keywordPlan = await this.buildKeywordPlan({
-      stdFunction: input.stdFunction,
-      stdFunctionRoot: input.stdFunctionRoot,
-      stdGrade: input.stdGrade,
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
       primaryCompanyName,
       linkedinSearchKeywords: hasManualLinkedInQuery
         ? (manualLinkedInQuery?.keywords ??
           manualLinkedInQuery?.jobTitle)
         : omitGeneratedKeywords
           ? undefined
-          : input.linkedinSearchKeywords,
+          : fallbackJobTitle,
       skipGeneratedKeywords: hasManualLinkedInQuery,
     });
 
@@ -221,7 +227,7 @@ export class PeopleLinkedInSourcingService {
           manualLinkedInQuery,
         ) ??
           andMergeBooleanSearchClauses([
-            keywordPlan.jobTitle,
+            keywordPlan.jobTitle ?? fallbackJobTitle,
             keywordPlan.linkedinSearchKeywords,
           ]),
         candidateSource: 'harvest',
@@ -259,7 +265,7 @@ export class PeopleLinkedInSourcingService {
           plan.mergedSearchClause ??
           keywordPlan.linkedinSearchKeywords ??
           null,
-        jobTitle: manualLinkedInQuery?.jobTitle ?? null,
+        jobTitle: manualLinkedInQuery?.jobTitle ?? fallbackJobTitle ?? null,
         appliedFilters,
         company: {
           name: primaryCompanyName,
@@ -282,7 +288,9 @@ export class PeopleLinkedInSourcingService {
     }
 
     const unipileJobTitle =
-      manualLinkedInQuery?.jobTitle ?? keywordPlan.jobTitle;
+      manualLinkedInQuery?.jobTitle ??
+      keywordPlan.jobTitle ??
+      fallbackJobTitle;
     const unipileKeywords =
       manualLinkedInQuery?.keywords ?? keywordPlan.linkedinSearchKeywords;
 

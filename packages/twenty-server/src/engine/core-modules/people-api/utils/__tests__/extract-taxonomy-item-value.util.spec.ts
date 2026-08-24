@@ -1,4 +1,7 @@
-import { extractTaxonomyItemValue } from '../extract-taxonomy-item-value.util';
+import {
+  extractTaxonomyItemValue,
+  usablePeopleTaxonomyLabel,
+} from '../extract-taxonomy-item-value.util';
 
 describe('extractTaxonomyItemValue', () => {
   it('returns name when present', () => {
@@ -16,5 +19,13 @@ describe('extractTaxonomyItemValue', () => {
   it('returns null for empty item', () => {
     expect(extractTaxonomyItemValue(null)).toBeNull();
     console.log('[extractTaxonomyItemValue] null item');
+  });
+});
+
+describe('usablePeopleTaxonomyLabel', () => {
+  it('drops unclassified and blank labels', () => {
+    expect(usablePeopleTaxonomyLabel('unclassified')).toBeUndefined();
+    expect(usablePeopleTaxonomyLabel('  ')).toBeUndefined();
+    expect(usablePeopleTaxonomyLabel('engineering')).toBe('engineering');
   });
 });

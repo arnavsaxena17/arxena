@@ -1,3 +1,4 @@
+import { useIsAssistantAppInstalled } from '@/applications/hooks/useIsAssistantAppInstalled';
 import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -40,6 +41,7 @@ const StyledCopy = styled.p`
 
 export const AssistantPage = () => {
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
+  const isAssistantAppInstalled = useIsAssistantAppInstalled();
 
   return (
     <StyledPageContainer>
@@ -51,6 +53,13 @@ export const AssistantPage = () => {
           panel for CRM tools, Arxena GTM skills, and workspace MCP servers
           (Settings → AI → MCP servers).
         </StyledCopy>
+        {!isAssistantAppInstalled && (
+          <StyledCopy>
+            The Assistant app is not installed in this workspace. Install it
+            from Settings → Applications to enable assistant threads used by
+            candidate search and JD upload.
+          </StyledCopy>
+        )}
         <div>
           <Button
             title="Open Ask AI"

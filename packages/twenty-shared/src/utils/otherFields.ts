@@ -3,20 +3,8 @@ export type OtherFieldsRecord = Record<
   string | number | boolean | object | null
 >;
 
-export type LegacyCandidateFieldValueEdge = {
-  node?: {
-    name?: string | null;
-    candidateFields?: {
-      name?: string | null;
-    } | null;
-  } | null;
-};
-
 export type CandidateWithCustomFields = {
   otherFields?: OtherFieldsRecord | null;
-  candidateFieldValues?: {
-    edges?: LegacyCandidateFieldValueEdge[];
-  } | null;
 };
 
 export const UPLOAD_OTHER_FIELDS_EXCLUDED_KEYS = [
@@ -167,52 +155,12 @@ export const otherFieldsToFlatRow = (
   return flatRow;
 };
 
-export const candidateFieldValuesToOtherFields = (
-  edges: LegacyCandidateFieldValueEdge[] | undefined,
-): OtherFieldsRecord => {
-  const otherFields: OtherFieldsRecord = {};
-
-  for (const edge of edges ?? []) {
-    const fieldName = edge.node?.candidateFields?.name;
-    const fieldValue = edge.node?.name;
-
-    if (!fieldName || fieldValue === null || fieldValue === undefined) {
-      continue;
-    }
-
-    otherFields[toSnakeCaseKey(fieldName)] = parseOtherFieldValue(fieldValue);
-  }
-
-  return otherFields;
-};
-
-export const hasLegacyFieldValues = (
-  candidate: CandidateWithCustomFields,
-): boolean => {
-  const edges = candidate.candidateFieldValues?.edges ?? [];
-
-  return edges.some(
-    (edge) =>
-      edge.node?.candidateFields?.name &&
-      edge.node?.name !== null &&
-      edge.node?.name !== undefined,
-  );
-};
-
 export const isOtherFieldsEmpty = (otherFields: unknown): boolean =>
   Object.keys(normalizeOtherFields(otherFields)).length === 0;
 
 export const getResolvedOtherFields = (
   candidate: CandidateWithCustomFields,
-): OtherFieldsRecord => {
-  const fromOtherFields = normalizeOtherFields(candidate.otherFields);
-
-  if (!isOtherFieldsEmpty(fromOtherFields)) {
-    return fromOtherFields;
-  }
-
-  return candidateFieldValuesToOtherFields(candidate.candidateFieldValues?.edges);
-};
+): OtherFieldsRecord => normalizeOtherFields(candidate.otherFields);
 
 export const getCandidateCustomField = (
   candidate: CandidateWithCustomFields,

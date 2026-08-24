@@ -5,7 +5,6 @@ import {
   getResolvedOtherFields,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQltoUpdateOneCandidate,
-  isOtherFieldsEmpty,
   mergeOtherFields,
   OtherFieldsRecord,
   questionsRequireAnswerRemap,
@@ -72,65 +71,6 @@ export class OtherFieldsService {
     );
 
     return merged;
-  }
-
-  async lazyMigrateCandidateOtherFields(
-    candidate: CandidateNodeResponse,
-    apiToken: string,
-  ): Promise<OtherFieldsRecord> {
-    const resolved = this.resolveOtherFields(candidate);
-
-    if (!candidate?.id || !isOtherFieldsEmpty(candidate.otherFields)) {
-      return resolved;
-    }
-
-    if (isOtherFieldsEmpty(resolved)) {
-      return {};
-    }
-
-    await this.staticGraphQLService.executeGraphQL(
-      graphQltoUpdateOneCandidate,
-      {
-        idToUpdate: candidate.id,
-        input: { otherFields: resolved },
-      },
-      apiToken,
-    );
-
-    return resolved;
-  }
-
-  async lazyMigrateCandidates(
-    candidates: CandidateNodeResponse[],
-    apiToken: string,
-  ): Promise<CandidateNodeResponse[]> {
-    const migratedCandidates: CandidateNodeResponse[] = [];
-
-    for (const candidate of candidates) {
-      try {
-        const otherFields = await this.lazyMigrateCandidateOtherFields(
-          candidate,
-          apiToken,
-        );
-
-        migratedCandidates.push({
-          ...candidate,
-          otherFields,
-        });
-      } catch (error) {
-        console.error(
-          `Failed to lazy-migrate otherFields for candidate ${candidate?.id}:`,
-          error,
-        );
-
-        migratedCandidates.push({
-          ...candidate,
-          otherFields: this.resolveOtherFields(candidate),
-        });
-      }
-    }
-
-    return migratedCandidates;
   }
 
   async fetchJobChatQuestions(
@@ -278,10 +218,6 @@ export class OtherFieldsService {
             result.candidateId,
             apiToken,
           );
-
-          if (candidate) {
-            await this.lazyMigrateCandidateOtherFields(candidate, apiToken);
-          }
 
           await this.patchCandidateOtherFields(
             result.candidateId,

@@ -12,16 +12,6 @@ export interface ChatTableProps {
   onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-export interface CandidateFieldEdge {
-  node: CandidateFieldNode;
-}
-
-export interface CandidateFieldNode {
-  id: string;
-  name: string;
-}
-
-
 export interface CandidateEnrichmentEdge {
   node: CandidateEnrichmentNode;
 }
@@ -1843,36 +1833,10 @@ export interface CandidateNode {
 //   chatMessages: ChatMessages;
 //   emailMessages: EmailMessages;
 //   projects: Projects;
-//   candidateFieldValues: CandidateFieldValues;
 //   candidateReminders: Reminders;
 //   clientInterview?: ClientInterviews;
 //   people: PersonNode;
 // }
-
-export interface CandidateFieldValues {
-  edges: CandidateFieldValueEdge[];
-}
-
-export interface CandidateFieldValueEdge {
-  node: CandidateFieldValueNode;
-}
-
-export interface CandidateFieldValueNode {
-  id: string;
-  name: string;
-  candidateFields: CandidateField;
-  // fieldValueJSON: any;
-}
-
-export interface CandidateField {
-  name: string;
-  id: string;
-}
-
-
-
-
-
 
 // export interface ArxJobs {
 //   name: string;
@@ -1940,6 +1904,8 @@ export const DEFAULT_ENGAGEMENT_PROCESSING_DELAY_MINUTES = 2;
 export interface Project {
   chatFlowOrder?: chatControlType[]; // Array defining the order for this job
   chatQuestions?: string[];
+  /** Named LLM prompts for candidate chat, interviews, and classification. */
+  prompts?: Record<string, string>;
   /** Delay in minutes after last message before processing from queue. Recruiter-configurable per job. */
   engagementProcessingDelayMinutes?: number;
   /** Target spacing when batching start-chats: total window uses n × this value (minutes), capped by startChatMaxSpreadMinutes. Default 1. */

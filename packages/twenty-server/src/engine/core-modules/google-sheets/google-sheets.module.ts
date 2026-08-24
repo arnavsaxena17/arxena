@@ -28,7 +28,6 @@ import { DataSourceModule } from 'src/engine/metadata-modules/data-source/data-s
 import { AppTokenEntity } from '../app-token/app-token.entity';
 import { AuthModule } from '../auth/auth.module';
 import { CandidateSourcingModule } from '../candidate-sourcing/candidate-sourcing.module';
-import { DeleteFieldValuesService } from '../candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from '../candidate-sourcing/jobs/process-ai-filters.service';
 import { ProcessCandidatesService } from '../candidate-sourcing/jobs/process-candidates.service';
 import { AiFilteringProcessorService } from '../candidate-sourcing/services/ai-filtering-processor.service';
@@ -87,7 +86,6 @@ import { GoogleSheetsController } from './google-sheets.controller';
     ApnaDatabaseTransformerService,
     NaukriProfileDataTransformerService,
     ProcessAiFiltersService,
-    DeleteFieldValuesService,
     UploadedProfilesTransformerService,
     LinkedinRecruiterJobsTransformerService,
     LinkedinPremiumJobsTransformerService,

@@ -37,8 +37,6 @@ import { isBulkMessageModalOpenState } from '@/ui/layout/modal/states/bulkMessag
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { TopBar } from '@/ui/layout/top-bar/components/TopBar';
-import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
-import { isVideoInterviewModalOpenState } from '@/video-interview/interview-creation/states/videoInterviewModalState';
 import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { AnimatedPlaceholder, AnimatedPlaceholderEmptyContainer, AnimatedPlaceholderEmptySubTitle, AnimatedPlaceholderEmptyTextContainer, AnimatedPlaceholderEmptyTitle } from 'twenty-ui/feedback';
 import { WORKSPACE_CREDITS } from '~/modules/billing/graphql/workspaceCredits';
@@ -228,8 +226,6 @@ export const Projects = () => {
   const isArxEnrichModalOpen = useAtomStateValue(isArxEnrichModalOpenState);
   const [, setIsArxEnrichModalOpen] = useAtomState(isArxEnrichModalOpenState);
   const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
-  const isVideoInterviewModalOpen = useAtomStateValue(isVideoInterviewModalOpenState);
-  const [, setIsVideoInterviewModalOpen] = useAtomState(isVideoInterviewModalOpenState);
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
   const { openAddJobModal } = useOpenAddProjectModal();
@@ -494,14 +490,6 @@ export const Projects = () => {
     setIsArxEnrichModalOpen(true);
   };
 
-  const handleVideoInterviewEdit = () => {
-    if (!candidateId) {
-      alert('Please select a chat to create video interview');
-      return;
-    }
-    setIsVideoInterviewModalOpen(true);
-  };
-
   const handleImportCandidates = () => {
     if (!updatedMetadataStructureLoaded) {
       alert('System is still loading. Please try again in a moment.');
@@ -674,12 +662,10 @@ export const Projects = () => {
                 <ViewComponentInstanceContext.Provider value={{ instanceId: recordIndexId }} >
                   {/* <StyledTopBar
                     leftComponent={ <StyledTabListContainer> </StyledTabListContainer> }
-                    handleVideoInterviewEdit={handleVideoInterviewEdit}
                     handleEnrichment={handleEnrichment}
                     handleAddJob={openAddJobModal}
                     handleImportCandidates={handleImportCandidates}
                     showEnrichment={true}
-                    showVideoInterviewEdit={true}
                     showAddJob={true}
                     showSearch={showSearch}
                     showSorting={showSearch}
@@ -783,14 +769,6 @@ export const Projects = () => {
                 <></>
               )}
 
-              {isVideoInterviewModalOpen ? (
-                <InterviewCreationModal
-                  objectNameSingular="project"
-                  objectRecordId={candidateId}
-                />
-              ) : (
-                <></>
-              )}
 
               <ArxDownloadModal
                 isOpen={isDownloadModalOpen}

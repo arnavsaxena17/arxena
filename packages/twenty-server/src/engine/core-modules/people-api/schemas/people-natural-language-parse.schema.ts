@@ -17,11 +17,10 @@ export const PeopleNaturalLanguageParseSchema = z
       .describe(
         'Company website or domain if mentioned (e.g. stayvista.com), or null.',
       ),
-    location: z
-      .string()
-      .nullable()
+    locations: z
+      .array(z.string())
       .describe(
-        'Geographic location for the people search (city, region, or country), or null. Do not treat a department after "in" as location.',
+        'Geographic locations for the people search (city, region, or country). Empty if none. Split "UAE and Saudi Arabia" into two entries. Do not treat a department after "in" as a location.',
       ),
   })
   .strict();

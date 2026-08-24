@@ -12,6 +12,7 @@ import {
   PeopleNaturalLanguageParseSchema,
   type PeopleNaturalLanguageParse,
 } from '../schemas/people-natural-language-parse.schema';
+import { collectPeopleSearchLocations } from '../utils/collect-people-search-locations.util';
 
 export const PEOPLE_SEARCH_COMPANY_REQUIRED_MESSAGE =
   'Please provide company name as well';
@@ -20,7 +21,7 @@ export type ParsedNaturalLanguagePeopleSearch = {
   jobTitle: string;
   companyName?: string;
   website?: string;
-  location?: string;
+  locations: string[];
 };
 
 const toOptionalString = (
@@ -80,13 +81,15 @@ export class PeopleNaturalLanguageParserService {
 
     const companyName = toOptionalString(parsed.companyName);
     const website = toOptionalWebsite(parsed.website);
-    const location = toOptionalString(parsed.location);
+    const locations = collectPeopleSearchLocations({
+      locations: parsed.locations,
+    });
 
     return {
       jobTitle,
+      locations,
       ...(companyName ? { companyName } : {}),
       ...(website ? { website } : {}),
-      ...(location ? { location } : {}),
     };
   }
 

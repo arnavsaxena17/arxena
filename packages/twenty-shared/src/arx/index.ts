@@ -32,8 +32,6 @@ export {
 } from './accountRateLimits';
 export type {
   ChatTableProps,
-  CandidateFieldEdge,
-  CandidateFieldNode,
   CandidateEnrichmentEdge,
   CandidateEnrichmentNode,
   CandidateEnrichments,
@@ -135,10 +133,6 @@ export type {
   videoInterviewNode,
   InterviewLink,
   CandidateNode,
-  CandidateFieldValues,
-  CandidateFieldValueEdge,
-  CandidateFieldValueNode,
-  CandidateField,
   EmailMessages,
   EmailMessagesEdge,
   EmailMessageNode,

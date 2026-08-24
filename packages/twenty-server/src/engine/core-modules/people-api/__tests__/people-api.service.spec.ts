@@ -75,16 +75,24 @@ const createNaturalLanguageParser = (): PeopleNaturalLanguageParserService =>
         return {
           jobTitle: 'CEO',
           companyName: 'StayVista',
+          locations: [],
         };
       }
       if (trimmed === 'CEO at StayVista in India') {
         return {
           jobTitle: 'CEO',
           companyName: 'StayVista',
-          location: 'India',
+          locations: ['India'],
         };
       }
-      return { jobTitle: trimmed };
+      if (trimmed === 'CEO at Acme in UAE and Saudi Arabia') {
+        return {
+          jobTitle: 'CEO',
+          companyName: 'Acme',
+          locations: ['UAE', 'Saudi Arabia'],
+        };
+      }
+      return { jobTitle: trimmed, locations: [] };
     }),
   }) as unknown as PeopleNaturalLanguageParserService;
 
@@ -183,7 +191,7 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
       stdFunctionRoot: 'engineering',
       stdGrade: 'leadership',
       confidence: 0.75,
-      location: null,
+      locations: [],
     });
     expect(result.items).toHaveLength(1);
   });
@@ -335,6 +343,8 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
     isConfigured: jest.fn().mockReturnValue(true),
   } as unknown as HarvestLinkedinService;
 
+  const peopleNaturalLanguageParser = createNaturalLanguageParser();
+
   const service = new PeopleApiService(
     peopleEsService,
     titleTaxonomyRemoteService,
@@ -345,7 +355,7 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
     peopleLinkedInSourcingService,
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
-    createNaturalLanguageParser(),
+    peopleNaturalLanguageParser,
     createIndexDataSourceResolver(),
   );
 
@@ -378,7 +388,7 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
       stdFunctionRoot: 'corporate',
       stdGrade: 'leadership',
       confidence: 0.9,
-      location: null,
+      locations: [],
     });
   });
 
@@ -405,7 +415,104 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
       stdFunctionRoot: 'corporate',
       stdGrade: 'leadership',
       confidence: 0.9,
-      location: 'India',
+      locations: ['India'],
+    });
+  });
+
+  it('should classify jobTitle without parsing natural language', async () => {
+    const result = await service.searchPeople({
+      jobTitle: 'CEO',
+      companyName: 'StayVista',
+      locations: ['united Arab Emirates', 'Saudi Arabia'],
+      limit: 10,
+    });
+
+    expect(peopleNaturalLanguageParser.parse).not.toHaveBeenCalled();
+    expect(titleTaxonomyRemoteService.classifyTitle).toHaveBeenCalledWith(
+      'CEO',
+    );
+    expect(peopleEsService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'CEO',
+        companyName: 'StayVista',
+        stdFunction: 'corporate',
+        stdGrade: 'leadership',
+        limit: 10,
+      }),
+    );
+    expect(result.resolved).toEqual({
+      jobTitle: 'CEO',
+      normalizedTitle: 'ceo',
+      stdFunction: 'corporate',
+      stdFunctionRoot: 'corporate',
+      stdGrade: 'leadership',
+      confidence: 0.9,
+      locations: ['united Arab Emirates', 'Saudi Arabia'],
+    });
+  });
+
+  it('should skip natural-language parse when jobTitle is already provided', async () => {
+    await service.searchPeople({
+      naturalLanguage: 'CEO at StayVista in India',
+      jobTitle: 'CEO',
+      companyName: 'StayVista',
+      locations: ['united Arab Emirates', 'Saudi Arabia'],
+      limit: 10,
+    });
+
+    expect(peopleNaturalLanguageParser.parse).not.toHaveBeenCalled();
+    expect(titleTaxonomyRemoteService.classifyTitle).toHaveBeenCalledWith(
+      'CEO',
+    );
+    expect(peopleEsService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'CEO',
+        companyName: 'StayVista',
+        stdFunction: 'corporate',
+        stdGrade: 'leadership',
+      }),
+    );
+  });
+
+  it('should omit unclassified function from search while keeping it on resolved', async () => {
+    (
+      titleTaxonomyRemoteService.classifyTitle as jest.Mock
+    ).mockResolvedValueOnce({
+      title: 'CEO',
+      normalized_title: 'ceo',
+      function_root: null,
+      function: {
+        id: 'unclassified',
+        label: 'unclassified',
+        name: 'unclassified',
+      },
+      grade: {
+        id: 'leadership',
+        label: 'leadership',
+        name: 'leadership',
+      },
+      confidence: 0.4,
+    });
+
+    const result = await service.searchPeople({
+      jobTitle: 'CEO',
+      companyName: 'StayVista',
+    });
+
+    expect(peopleEsService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'CEO',
+        companyName: 'StayVista',
+        stdGrade: 'leadership',
+      }),
+    );
+    expect(peopleEsService.searchPeople.mock.calls[0][0].stdFunction).toBeUndefined();
+    expect(peopleEsService.searchPeople.mock.calls[0][0].stdFunctionRoot).toBeUndefined();
+    expect(result.resolved).toMatchObject({
+      jobTitle: 'CEO',
+      stdFunction: 'unclassified',
+      stdFunctionRoot: null,
+      stdGrade: 'leadership',
     });
   });
 

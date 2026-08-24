@@ -1,6 +1,9 @@
 import { OBJECT_DATABASE_CRUD_TOOL_ACCESS } from 'twenty-shared/ai';
 
 import { type ArxenaObjectDefinition } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
+import { isAssistantObjectName } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
+import { isShortlistPresentationObjectName } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
+import { isVideoInterviewObjectName } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
 // Default mirrors workflows `isOrgChartEnabledEnv = false` — include all objects.
 const IS_ORG_CHART_ENABLED_DEFAULT = false;
@@ -29,42 +32,11 @@ const allObjects: ArxenaObjectDefinition[] = [
   {
     object: {
       description: '',
-      icon: 'IconPrompt',
-      labelPlural: 'Prompts',
-      labelSingular: 'Prompt',
-      nameSingular: 'prompt',
-      namePlural: 'prompts',
-    },
-  },
-
-  {
-    object: {
-      description: '',
-      icon: 'IconPencilDown',
-      labelPlural: 'Candidate Fields',
-      labelSingular: 'Candidate Field',
-      nameSingular: 'candidateField',
-      namePlural: 'candidateFields',
-    },
-  },
-  {
-    object: {
-      description: '',
       icon: 'IconMessage',
       labelPlural: 'Messages',
       labelSingular: 'Message',
       nameSingular: 'chatMessage',
       namePlural: 'chatMessages',
-    },
-  },
-  {
-    object: {
-      description: '',
-      icon: 'IconBrandAnsible',
-      labelPlural: 'Candidate Field Values',
-      labelSingular: 'Candidate Field Value',
-      nameSingular: 'candidateFieldValue',
-      namePlural: 'candidateFieldValues',
     },
   },
   {
@@ -306,18 +278,10 @@ const allObjects: ArxenaObjectDefinition[] = [
   },
 ];
 
-const OBJECTS_TO_EXCLUDE = [
-  'videoInterview',
-  'videoInterviewTemplate',
-  'videoInterviewModel',
-  'videoInterviewQuestion',
-  'videoInterviewResponse',
-  'cvSent',
-  'candidateEnrichment',
-  'phoneCall',
-  'shortlist',
-  'screening',
-];
+// Org-chart mode historically excluded shortlist-domain objects; those now
+ // live in the optional Shortlist Presentation app and are always filtered
+ // from Arxena Standard via isShortlistPresentationObjectName.
+const OBJECTS_TO_EXCLUDE: string[] = [];
 
 export const getObjectsToExclude = (isOrgChartEnabled?: boolean): string[] => {
   const enabled = isOrgChartEnabled ?? IS_ORG_CHART_ENABLED_DEFAULT;
@@ -341,8 +305,31 @@ export const getObjectCreationArr = (
   const objectsToExclude = getObjectsToExclude(isOrgChartEnabled);
 
   return allObjects.filter((objectDefinition) => {
-    return !objectsToExclude.includes(objectDefinition.object.nameSingular);
+    const nameSingular = objectDefinition.object.nameSingular;
+
+    return (
+      !objectsToExclude.includes(nameSingular) &&
+      !isVideoInterviewObjectName(nameSingular) &&
+      !isShortlistPresentationObjectName(nameSingular) &&
+      !isAssistantObjectName(nameSingular)
+    );
   });
 };
+
+export const getVideoInterviewObjectCreationArr = (): ArxenaObjectDefinition[] =>
+  allObjects.filter((objectDefinition) =>
+    isVideoInterviewObjectName(objectDefinition.object.nameSingular),
+  );
+
+export const getShortlistPresentationObjectCreationArr =
+  (): ArxenaObjectDefinition[] =>
+    allObjects.filter((objectDefinition) =>
+      isShortlistPresentationObjectName(objectDefinition.object.nameSingular),
+    );
+
+export const getAssistantObjectCreationArr = (): ArxenaObjectDefinition[] =>
+  allObjects.filter((objectDefinition) =>
+    isAssistantObjectName(objectDefinition.object.nameSingular),
+  );
 
 export const objectCreationArr = getObjectCreationArr();

@@ -334,7 +334,6 @@ export {
 } from './orgchart/orgChartSignupFromWebsite';
 export type {
   OtherFieldsRecord,
-  LegacyCandidateFieldValueEdge,
   CandidateWithCustomFields,
   LegacyFieldValueRow,
 } from './otherFields';
@@ -348,8 +347,6 @@ export {
   buildOtherFieldsFromUnmapped,
   mergeOtherFields,
   otherFieldsToFlatRow,
-  candidateFieldValuesToOtherFields,
-  hasLegacyFieldValues,
   isOtherFieldsEmpty,
   getResolvedOtherFields,
   getCandidateCustomField,

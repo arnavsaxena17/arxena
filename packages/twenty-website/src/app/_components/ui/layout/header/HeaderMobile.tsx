@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import { useFreeTrialCta } from '@/app/_components/free-trial/useFreeTrialCta';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
+import { GlowCtaLabel } from '@/app/_components/ui/layout/GlowCtaLabel';
 import { HeaderMobileNavDropdown } from '@/app/_components/ui/layout/header/HeaderNavDropdown';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
@@ -99,15 +100,13 @@ const mobileSignUpStyles = `
   height: 40px;
   padding: 0 16px;
   background-color: #000;
-  color: #fff;
   border-radius: 8px;
   font-weight: 500;
   font-size: 15px;
-  transition: color 0.15s ease;
   cursor: pointer;
 
-  &:hover {
-    color: #9e9e9e;
+  &:hover span {
+    opacity: 0.7;
   }
 `;
 
@@ -294,11 +293,11 @@ export const HeaderMobile = ({
           </StyledSignIn>
           {isFreeTrialFlow ? (
             <StyledSignUpButton type="button" onClick={onCtaClick}>
-              {FREE_TRIAL_CTA_LABEL}
+              <GlowCtaLabel>{FREE_TRIAL_CTA_LABEL}</GlowCtaLabel>
             </StyledSignUpButton>
           ) : (
             <StyledSignUp href={signUpUrl} onClick={onCtaClick}>
-              Sign up
+              <GlowCtaLabel>Sign up</GlowCtaLabel>
             </StyledSignUp>
           )}
         </StyledMobileLinkList>

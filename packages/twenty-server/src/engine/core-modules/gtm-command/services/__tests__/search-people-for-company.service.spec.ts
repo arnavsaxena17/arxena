@@ -115,6 +115,9 @@ describe('SearchPeopleForCompanyService', () => {
       'tok',
       { workspaceId: 'ws-1' },
     );
+    expect(peopleApiService.searchPeople.mock.calls[0][0]).not.toHaveProperty(
+      'naturalLanguage',
+    );
   });
 
   it('uses a 50-person limit for Sales Navigator accounts', async () => {

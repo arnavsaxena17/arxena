@@ -1,13 +1,37 @@
 import { FieldInput } from 'twenty-shared';
 
 import {
+  ASSISTANT_OBJECT_NAMES,
   getObjectsToExclude,
+  VIDEO_INTERVIEW_OBJECT_NAMES,
 } from './objectsData';
 
 type FieldWithObject = {
   objectName: string;
   field: NonNullable<FieldInput>['field'];
 };
+
+const VIDEO_INTERVIEW_HOST_EXTENSION_FIELD_NAMES = new Set([
+  'startVideoInterviewChat',
+  'startVideoInterviewChatCompleted',
+  'videoInterview',
+  'videoInterviewResponse',
+  'videoInterviewTemplate',
+]);
+
+const isVideoInterviewField = (fieldWithObject: FieldWithObject): boolean =>
+  (VIDEO_INTERVIEW_OBJECT_NAMES as readonly string[]).includes(
+    fieldWithObject.objectName,
+  ) ||
+  ((fieldWithObject.objectName === 'candidate' ||
+    fieldWithObject.objectName === 'project' ||
+    fieldWithObject.objectName === 'person') &&
+    VIDEO_INTERVIEW_HOST_EXTENSION_FIELD_NAMES.has(fieldWithObject.field.name));
+
+const isAssistantField = (fieldWithObject: FieldWithObject): boolean =>
+  (ASSISTANT_OBJECT_NAMES as readonly string[]).includes(
+    fieldWithObject.objectName,
+  );
 
 export function getFieldsData(
   objectsNameIdMap: Record<string, string>,
@@ -818,57 +842,6 @@ export function getFieldsData(
       },
     },
     {
-      objectName: 'candidateField',
-      field: {
-        description: '',
-        icon: 'IconText',
-        label: 'candidateFieldType',
-        name: 'candidateFieldType',
-        objectMetadataId: objectsNameIdMap.candidateField,
-        type: 'TEXT',
-      },
-    },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconText',
-    //     label: 'fieldValueString',
-    //     name: 'fieldValueString',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'TEXT',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconNumber',
-    //     label: 'fieldValueNumber',
-    //     name: 'fieldValueNumber',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'NUMBER',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconToggleLeft',
-    //     label: 'fieldValueBoolean',
-    //     name: 'fieldValueBoolean',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'BOOLEAN',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconJson',
-    //     label: 'fieldValueJSON',
-    //     name: 'fieldValueJSON',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'RAW_JSON',
-    //   },
-    //     },
-    {
       objectName: 'candidate',
       field: {
         description: '',
@@ -1087,6 +1060,18 @@ export function getFieldsData(
     {
       objectName: 'project',
       field: {
+        description:
+          'Named LLM prompts for candidate chat, interviews, and classification',
+        icon: 'IconPrompt',
+        label: 'Prompts',
+        name: 'prompts',
+        objectMetadataId: objectsNameIdMap.job,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'project',
+      field: {
         description: 'Delay in minutes after last message before processing engagement from the queue. Default 2.',
         label: 'Engagement processing delay (minutes)',
         name: 'engagementProcessingDelayMinutes',
@@ -1200,16 +1185,6 @@ export function getFieldsData(
         name: 'sampleJson',
         objectMetadataId: objectsNameIdMap.candidateEnrichment,
         type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'prompt',
-      field: {
-        description: '',
-        label: 'Prompt',
-        name: 'prompt',
-        objectMetadataId: objectsNameIdMap.prompt,
-        type: 'TEXT',
       },
     },
     {
@@ -2321,6 +2296,11 @@ export function getFieldsData(
   ];
 
   return allFields
-    .filter((f) => !objectsToExclude.includes(f.objectName))
+    .filter(
+      (f) =>
+        !objectsToExclude.includes(f.objectName) &&
+        !isVideoInterviewField(f) &&
+        !isAssistantField(f),
+    )
     .map((f) => ({ field: f.field }));
 }

@@ -332,3 +332,32 @@ export const prompts = [
     name: 'PROMPT_FOR_CHAT_CLASSIFICATION',
   },
 ];
+
+export type ProjectPrompts = Record<string, string>;
+
+export const DEFAULT_PROJECT_PROMPTS: ProjectPrompts = Object.fromEntries(
+  prompts.map((prompt) => [prompt.name, prompt.prompt]),
+);
+
+export const resolveProjectPrompt = (
+  projectPrompts: unknown,
+  promptName: string,
+): string | undefined => {
+  if (
+    projectPrompts &&
+    typeof projectPrompts === 'object' &&
+    !Array.isArray(projectPrompts)
+  ) {
+    const value = (projectPrompts as Record<string, unknown>)[promptName];
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  const fallback = DEFAULT_PROJECT_PROMPTS[promptName];
+
+  return typeof fallback === 'string' && fallback.trim().length > 0
+    ? fallback
+    : undefined;
+};

@@ -77,15 +77,12 @@ export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: S
 
 
 
-export const graphqlQueryToFetchPrompts = `
-  query FindManyPrompts($filter: PromptFilterInput, $orderBy: [PromptOrderByInput], $limit: Int) {
-  prompts(filter: $filter, orderBy: $orderBy, first: $limit) {
-    edges {
-    node {
-      prompt
+export const graphqlQueryToFetchProjectPrompts = `
+  query FindProjectPrompts($objectRecordId: UUID!) {
+    project(filter: {id: {eq: $objectRecordId}}) {
+      id
+      prompts
     }
-    }
-  }
   }
 `;
 
@@ -376,15 +373,7 @@ const graphqlToFindManyProjectsWithPromptsFull = `query FindManyProjects($filter
           context
           __typename
         }
-        prompt{
-            edges{
-                node{
-                    id
-                    name
-                    prompt
-                }
-            }
-        }
+        prompts
         assistantThreads {
           edges{
             node{
@@ -544,15 +533,6 @@ const graphqlToFindManyProjectsWithCandidateValuesFull = `query FindManyProjects
           context
           __typename
         }
-        prompt{
-            edges{
-                node{
-                    id
-                    name
-                    prompt
-                }
-            }
-        }
         name
         company{
             id
@@ -650,15 +630,6 @@ const graphqlToFindManyProjectsWithCandidateValuesOrgChart = `query FindManyProj
           name
           context
           __typename
-        }
-        prompt{
-            edges{
-                node{
-                    id
-                    name
-                    prompt
-                }
-            }
         }
         name
         company{
@@ -768,15 +739,6 @@ const graphqlToFindManyProjectsWithCandidatesFull = `query FindManyProjects($fil
           name
           context
           __typename
-        }
-        prompt{
-            edges{
-                node{
-                    id
-                    name
-                    prompt
-                }
-            }
         }
         name
         company{
@@ -1536,13 +1498,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
       edges {
         node {
           __typename
-          prompt {
-            edges {
-              node {
-                prompt
-              }
-            }
-          }
           name {
             firstName
             lastName
@@ -1890,6 +1845,7 @@ export const FindOneProject = `
         id
         chatFlowOrder
         chatQuestions
+        prompts
     }
   }
   `;

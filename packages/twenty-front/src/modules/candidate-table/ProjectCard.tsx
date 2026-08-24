@@ -684,7 +684,7 @@ export const ProjectCard = ({
       <ConfirmationModal
         modalInstanceId={deleteProjectModalId}
         title="Delete project"
-        subtitle={`Delete "${name}" and its project dependencies (prompts, attachments, templates, etc.)? Candidates in this project will not be deleted.`}
+        subtitle={`Delete "${name}" and its project dependencies (attachments, templates, etc.)? Candidates in this project will not be deleted.`}
         onConfirmClick={handleConfirmDeleteProject}
         confirmButtonText="Delete Project"
         confirmButtonAccent="danger"

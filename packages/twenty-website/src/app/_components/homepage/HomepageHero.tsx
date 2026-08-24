@@ -14,6 +14,7 @@ import { TrustBadgesSection } from '@/app/_components/homepage/TrustBadgesSectio
 import { UseCasesSection } from '@/app/_components/homepage/UseCasesSection';
 import { OrgChartNarrative } from '@/app/_components/narrative/OrgChartNarrative';
 import { OrgChartSearch } from '@/app/_components/orgchart/OrgChartSearch';
+import { GlowCtaLabel } from '@/app/_components/ui/layout/GlowCtaLabel';
 import { Logo } from '@/app/_components/ui/layout/Logo';
 import { trackGA4Event } from '@/lib/analytics';
 import { HOMEPAGE_HERO } from '@/lib/brand-content';
@@ -156,15 +157,13 @@ const primaryCtaStyles = `
   height: 44px;
   padding: 0 24px;
   background-color: #000;
-  color: #fff;
   border-radius: 8px;
   font-weight: 500;
   font-size: 15px;
-  transition: color 0.15s ease;
   cursor: pointer;
 
-  &:hover {
-    color: #b3b3b3;
+  &:hover span {
+    opacity: 0.7;
   }
 `;
 
@@ -392,11 +391,11 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
         <StyledAuthLinks>
           {isFreeTrialFlow ? (
             <StyledPrimaryCtaButton type="button" onClick={onCtaClick}>
-              {FREE_TRIAL_CTA_LABEL}
+              <GlowCtaLabel>{FREE_TRIAL_CTA_LABEL}</GlowCtaLabel>
             </StyledPrimaryCtaButton>
           ) : (
             <StyledPrimaryCta href={signUpUrl} onClick={onCtaClick}>
-              Try it free
+              <GlowCtaLabel>Try it free</GlowCtaLabel>
             </StyledPrimaryCta>
           )}
           <StyledLink

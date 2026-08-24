@@ -35,8 +35,6 @@ import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/compone
 import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
-import { InterviewCreationModal } from '@/video-interview/interview-creation/InterviewCreationModal';
-import { isVideoInterviewModalOpenState } from "@/video-interview/interview-creation/states/videoInterviewModalState";
 import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
@@ -168,9 +166,6 @@ export const ProjectPage: React.FC = () => {
   const { fetchOtherFieldKeys } = useFetchOtherFieldKeys();
   const { initializeEnrichments } = useInitializeEnrichments();
 
-  const isVideoInterviewModalOpen = useAtomStateValue(isVideoInterviewModalOpenState);
-  const [, setIsVideoInterviewModalOpen] = useAtomState(isVideoInterviewModalOpenState);
-
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const [, setIsArxUploadJDModalOpen] = useAtomState(isArxUploadJDModalOpenState);
   const [, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
@@ -270,14 +265,6 @@ export const ProjectPage: React.FC = () => {
     setCurrentProjectId(projectId);
     setIsArxEnrichModalOpen(true);
   }, [selectedRecordId, projectId, setCurrentProjectId, setIsArxEnrichModalOpen]);
-
-  const handleVideoInterviewEdit = useCallback(() => {
-    if (!selectedRecordId) {
-      alert('Please select a candidate to create video interview');
-      return;
-    }
-    setIsVideoInterviewModalOpen(true);
-  }, [selectedRecordId, setIsVideoInterviewModalOpen]);
 
   const handleEngagement = useCallback(() => {
     debugLog('Modifying job from ProjectPage handleEngagement');
@@ -799,14 +786,6 @@ export const ProjectPage: React.FC = () => {
               <></>
             )}
 
-            {isVideoInterviewModalOpen ? (
-              <InterviewCreationModal
-                objectNameSingular="project"
-                objectRecordId={selectedRecordId || '0'}
-              />
-            ) : (
-              <></>
-            )}
 
                <ArxDownloadModal
                 isOpen={isDownloadModalOpen}

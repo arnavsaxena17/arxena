@@ -49,7 +49,10 @@ import { buildTaxonomyTreeFromFlatLists } from './utils/build-taxonomy-tree.util
 import { collectPeopleSearchLocations } from './utils/collect-people-search-locations.util';
 import { extractCandidateExperience } from './utils/extract-candidate-experience.util';
 import { extractCandidateJobTitle } from './utils/extract-candidate-job-title.util';
-import { extractTaxonomyItemValue } from './utils/extract-taxonomy-item-value.util';
+import {
+  extractTaxonomyItemValue,
+  usablePeopleTaxonomyLabel,
+} from './utils/extract-taxonomy-item-value.util';
 import {
   classificationToResolvedFields,
   matchesTaxonomyFilter,
@@ -192,7 +195,18 @@ export class PeopleApiService {
     await this.assertTaxonomyFilters(body);
 
     const naturalLanguage = body.naturalLanguage?.trim();
-    if (naturalLanguage && !body.searchUrl?.trim()) {
+    const jobTitle = body.jobTitle?.trim();
+    const hasTaxonomy =
+      !!body.stdFunction?.trim() ||
+      !!body.stdFunctionRoot?.trim() ||
+      !!body.stdGrade?.trim();
+
+    if (
+      naturalLanguage &&
+      !body.searchUrl?.trim() &&
+      !jobTitle &&
+      !hasTaxonomy
+    ) {
       return this.searchPeopleFromNaturalLanguage(
         body,
         naturalLanguage,
@@ -201,35 +215,25 @@ export class PeopleApiService {
       );
     }
 
-    return this.executePeopleSearch(body, apiToken, options);
-  }
-
-  private async searchPeopleFromNaturalLanguage(
-    body: PeopleSearchDto,
-    naturalLanguage: string,
-    apiToken?: string,
-    options?: { workspaceId?: string },
-  ): Promise<PeopleSearchResponse> {
-    const parsed =
-      await this.peopleNaturalLanguageParserService.parse(naturalLanguage);
-    const jobTitle = parsed.jobTitle;
-
-    const companyId = body.companyId?.trim() || undefined;
-    const companyName = body.companyName?.trim() || parsed.companyName;
-    const website = body.website?.trim() || parsed.website;
-    const linkedinCompanyUrl = body.linkedinCompanyUrl?.trim() || undefined;
-    const locations = collectPeopleSearchLocations({
-      locations: [...(body.locations ?? []), parsed.location],
-      country: body.country,
-    });
-
-    if (!companyId && !companyName && !website && !linkedinCompanyUrl) {
-      throw new HttpException(
-        PEOPLE_SEARCH_COMPANY_REQUIRED_MESSAGE,
-        HttpStatus.BAD_REQUEST,
+    if (jobTitle && !hasTaxonomy && !body.searchUrl?.trim()) {
+      return this.searchPeopleFromClassifiedJobTitle(
+        body,
+        jobTitle,
+        apiToken,
+        options,
       );
     }
 
+    return this.executePeopleSearch(body, apiToken, options);
+  }
+
+  private async classifyJobTitle(jobTitle: string): Promise<{
+    stdFunction: string | null;
+    stdFunctionRoot: string | null;
+    stdGrade: string | null;
+    normalizedTitle: string | null;
+    confidence: number;
+  }> {
     const classification =
       await this.titleTaxonomyRemoteService.classifyTitle(jobTitle);
 
@@ -253,8 +257,88 @@ export class PeopleApiService {
       );
     }
 
+    return {
+      stdFunction,
+      stdFunctionRoot,
+      stdGrade,
+      normalizedTitle: classification.normalized_title?.trim() || null,
+      confidence: classification.confidence ?? 0,
+    };
+  }
+
+  private async searchPeopleFromClassifiedJobTitle(
+    body: PeopleSearchDto,
+    jobTitle: string,
+    apiToken?: string,
+    options?: { workspaceId?: string },
+  ): Promise<PeopleSearchResponse> {
+    const taxonomy = await this.classifyJobTitle(jobTitle);
+    const locations = collectPeopleSearchLocations({
+      locations: body.locations,
+      country: body.country,
+    });
+
     this.logger.log(
-      `Title resolve jobTitle="${jobTitle}" stdFunction=${stdFunction ?? ''} stdGrade=${stdGrade ?? ''} stdFunctionRoot=${stdFunctionRoot ?? ''} locations=${locations.join('|')}`,
+      `Title resolve jobTitle="${jobTitle}" stdFunction=${taxonomy.stdFunction ?? ''} stdGrade=${taxonomy.stdGrade ?? ''} stdFunctionRoot=${taxonomy.stdFunctionRoot ?? ''} locations=${locations.join('|')}`,
+    );
+
+    const searchResult = await this.executePeopleSearch(
+      {
+        ...body,
+        jobTitle,
+        locations,
+        stdFunction: usablePeopleTaxonomyLabel(taxonomy.stdFunction),
+        stdFunctionRoot: usablePeopleTaxonomyLabel(taxonomy.stdFunctionRoot),
+        stdGrade: taxonomy.stdGrade ?? undefined,
+      },
+      apiToken,
+      options,
+    );
+
+    return {
+      ...searchResult,
+      resolved: {
+        jobTitle,
+        normalizedTitle: taxonomy.normalizedTitle,
+        stdFunction: taxonomy.stdFunction,
+        stdFunctionRoot: taxonomy.stdFunctionRoot,
+        stdGrade: taxonomy.stdGrade,
+        confidence: taxonomy.confidence,
+        locations,
+      },
+    };
+  }
+
+  private async searchPeopleFromNaturalLanguage(
+    body: PeopleSearchDto,
+    naturalLanguage: string,
+    apiToken?: string,
+    options?: { workspaceId?: string },
+  ): Promise<PeopleSearchResponse> {
+    const parsed =
+      await this.peopleNaturalLanguageParserService.parse(naturalLanguage);
+    const jobTitle = parsed.jobTitle;
+
+    const companyId = body.companyId?.trim() || undefined;
+    const companyName = body.companyName?.trim() || parsed.companyName;
+    const website = body.website?.trim() || parsed.website;
+    const linkedinCompanyUrl = body.linkedinCompanyUrl?.trim() || undefined;
+    const locations = collectPeopleSearchLocations({
+      locations: [...(body.locations ?? []), ...parsed.locations],
+      country: body.country,
+    });
+
+    if (!companyId && !companyName && !website && !linkedinCompanyUrl) {
+      throw new HttpException(
+        PEOPLE_SEARCH_COMPANY_REQUIRED_MESSAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const taxonomy = await this.classifyJobTitle(jobTitle);
+
+    this.logger.log(
+      `Title resolve jobTitle="${jobTitle}" stdFunction=${taxonomy.stdFunction ?? ''} stdGrade=${taxonomy.stdGrade ?? ''} stdFunctionRoot=${taxonomy.stdFunctionRoot ?? ''} locations=${locations.join('|')}`,
     );
 
     const searchResult = await this.executePeopleSearch(
@@ -267,9 +351,9 @@ export class PeopleApiService {
         linkedinCompanyUrl,
         locations,
         country: body.country,
-        stdFunction: stdFunction ?? undefined,
-        stdFunctionRoot: stdFunctionRoot ?? undefined,
-        stdGrade: stdGrade ?? undefined,
+        stdFunction: usablePeopleTaxonomyLabel(taxonomy.stdFunction),
+        stdFunctionRoot: usablePeopleTaxonomyLabel(taxonomy.stdFunctionRoot),
+        stdGrade: taxonomy.stdGrade ?? undefined,
         jobTitle,
         limit: body.limit,
         offset: body.offset,
@@ -282,12 +366,12 @@ export class PeopleApiService {
       ...searchResult,
       resolved: {
         jobTitle,
-        normalizedTitle: classification.normalized_title?.trim() || null,
-        stdFunction,
-        stdFunctionRoot,
-        stdGrade,
-        confidence: classification.confidence ?? 0,
-        location: parsed.location ?? locations[0] ?? null,
+        normalizedTitle: taxonomy.normalizedTitle,
+        stdFunction: taxonomy.stdFunction,
+        stdFunctionRoot: taxonomy.stdFunctionRoot,
+        stdGrade: taxonomy.stdGrade,
+        confidence: taxonomy.confidence,
+        locations,
       },
     };
   }
@@ -516,7 +600,7 @@ export class PeopleApiService {
         stdFunction,
         stdFunctionRoot,
         stdGrade,
-        location: body.location,
+        locations: body.locations,
         country: body.country,
         limit: body.limit,
       },

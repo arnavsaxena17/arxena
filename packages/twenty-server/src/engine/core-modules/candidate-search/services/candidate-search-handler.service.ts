@@ -34,8 +34,8 @@ import { createMinimalParsedJobDescription } from '../utils/parsed-job-descripti
 import { constructSearchParamKey } from '../utils/search-parameter.utils';
 import { buildTitleTaxonomyResolvedIntent } from '../utils/title-taxonomy-resolved-intent.util';
 import { TokenUsage } from '../utils/token-tracking.util';
-import type { AssistantThreadContext } from './assistant-thread.service';
-import { AssistantThreadService } from './assistant-thread.service';
+import type { AssistantThreadContext } from './candidate-search-assistant-thread.adapter';
+import { CandidateSearchAssistantThreadAdapter } from './candidate-search-assistant-thread.adapter';
 import { CandidateSearchBaseService } from './candidate-search-base.service';
 import { ClassifyMessageService } from './classify-message.service';
 import { CleanupService } from './cleanup.service';
@@ -100,7 +100,7 @@ export class CandidateSearchHandlerService {
   private readonly logger = new Logger(CandidateSearchHandlerService.name);
 
   constructor(
-    private readonly assistantThreadService: AssistantThreadService,
+    private readonly assistantThreadService: CandidateSearchAssistantThreadAdapter,
     private readonly candidateSearchBaseService: CandidateSearchBaseService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceQueryService: WorkspaceQueryService,

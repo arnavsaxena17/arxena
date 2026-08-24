@@ -38,13 +38,13 @@ describe('PeopleNaturalLanguageParserService', () => {
     process.env.OPENAI_KEY = originalOpenAiKey;
   });
 
-  it('should extract job title, company, website, and location', async () => {
+  it('should extract job title, company, website, and locations', async () => {
     mockCompletionCreate.mockResolvedValueOnce(
       buildCompletionResponse({
         jobTitle: 'CEO',
         companyName: 'StayVista',
         website: null,
-        location: 'India',
+        locations: ['India'],
       }),
     );
 
@@ -54,7 +54,28 @@ describe('PeopleNaturalLanguageParserService', () => {
     expect(result).toEqual({
       jobTitle: 'CEO',
       companyName: 'StayVista',
-      location: 'India',
+      locations: ['India'],
+    });
+  });
+
+  it('should split multiple locations and drop blanks', async () => {
+    mockCompletionCreate.mockResolvedValueOnce(
+      buildCompletionResponse({
+        jobTitle: 'CEO',
+        companyName: 'Acme',
+        website: null,
+        locations: ['UAE', ' Saudi Arabia ', 'uae', ''],
+      }),
+    );
+
+    const result = await service.parse(
+      'CEO at Acme in UAE and Saudi Arabia',
+    );
+
+    expect(result).toEqual({
+      jobTitle: 'CEO',
+      companyName: 'Acme',
+      locations: ['UAE', 'Saudi Arabia'],
     });
   });
 
@@ -64,7 +85,7 @@ describe('PeopleNaturalLanguageParserService', () => {
         jobTitle: 'Head of Engineering',
         companyName: null,
         website: 'stripe.com/',
-        location: null,
+        locations: [],
       }),
     );
 
@@ -73,6 +94,7 @@ describe('PeopleNaturalLanguageParserService', () => {
     expect(result).toEqual({
       jobTitle: 'Head of Engineering',
       website: 'stripe.com',
+      locations: [],
     });
   });
 
@@ -82,7 +104,7 @@ describe('PeopleNaturalLanguageParserService', () => {
         jobTitle: '',
         companyName: 'Apple',
         website: null,
-        location: null,
+        locations: [],
       }),
     );
 

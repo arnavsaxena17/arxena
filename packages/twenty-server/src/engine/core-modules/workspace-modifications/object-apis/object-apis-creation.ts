@@ -5,7 +5,6 @@ import {
     FindManyWorkspaceMembers,
     findWorkspaceMemberProfiles,
     graphqlQueryToGetCurrentUser,
-    graphqlToCreateOnePrompt,
     graphQLToCreateOneWorkspaceMemberProfile,
     graphQLToUpdateOneWorkspaceMemberProfile,
     isOrgChartEnabledEnv,
@@ -28,7 +27,6 @@ import { FieldMetadataInterface } from 'src/engine/metadata-modules/field-metada
 import { WorkspaceSetupCompleteEmail } from 'twenty-emails';
 import { getFieldsData } from './data/fieldsData';
 import { getObjectCreationArr } from './data/objectsData';
-import { prompts } from './data/prompts';
 import { getRelationsData } from './data/relationsData';
 import { ApiKeyService } from './services/apiKeyCreation';
 import { createArxAiFilters } from './services/arxAiFiltersService';
@@ -271,20 +269,6 @@ export class CreateMetaDataStructure {
     return currentWorkspaceMemberId;
   }
 
-  async createPrompts(apiToken: string) {
-    for (const prompt of prompts) {
-
-      const createResponse = await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
-        input: {
-          name: prompt.name,
-          prompt: prompt.prompt,
-          position: 'first',
-        },
-      }, apiToken);
-      console.log(`${prompt.name} created successfully`);
-    }
-  }
-
   async addAPIKeys(apiToken: string) {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -445,36 +429,6 @@ export class CreateMetaDataStructure {
           requiredColumns: ['deletedAt']
         },
         {
-          name: 'idx_candidate_field_value_comprehensive',
-          table: '_candidateFieldValue',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_comprehensive ON "${dataSourceSchema}"."_candidateFieldValue" ( "candidateId", "candidateFieldsId", "position", "id", "name" )`,
-          requiredColumns: ['candidateId', 'candidateFieldsId', 'position', 'id', 'name']
-        },
-        {
-          name: 'idx_candidate_field_value_candidate_id',
-          table: '_candidateFieldValue',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_candidate_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateId")`,
-          requiredColumns: ['candidateId']
-        },
-        {
-          name: 'idx_candidate_field_value_field_id',
-          table: '_candidateFieldValue',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_value_field_id ON "${dataSourceSchema}"."_candidateFieldValue" ("candidateFieldsId")`,
-          requiredColumns: ['candidateFieldsId']
-        },
-        {
-          name: 'idx_candidate_field_comprehensive',
-          table: '_candidateField',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_comprehensive ON "${dataSourceSchema}"."_candidateField" ( "projectsId", "position", "id", "name" )`,
-          requiredColumns: ['projectsId', 'position', 'id', 'name']
-        },
-        {
-          name: 'idx_candidate_field_id',
-          table: '_candidateField',
-          query: `CREATE INDEX IF NOT EXISTS idx_candidate_field_id ON "${dataSourceSchema}"."_candidateField" ("id")`,
-          requiredColumns: ['id']
-        },
-        {
           name: 'idx_phone_call_candidate_updated',
           table: '_phoneCall',
           query: `CREATE INDEX IF NOT EXISTS idx_phone_call_candidate_updated ON "${dataSourceSchema}"."_phoneCall" ( "candidateId", "updatedAt" DESC )`,
@@ -571,7 +525,6 @@ export class CreateMetaDataStructure {
       const shouldCreateVideoInterviews = false;
       const shouldCreateArxEnrichments = true;
       const shouldCreateApiKeys = true;
-      const shouldCreatePrompts = true;
       const shoudUpdateCandidateViewField = true;
       const shouldCreateDatabaseIndices = true;
 
@@ -666,17 +619,6 @@ export class CreateMetaDataStructure {
         }
       }
 
-      console.log('Creating prompts...');
-      if (shouldCreatePrompts) {
-        try {
-          console.log('Creating prompts...');
-          await this.createPrompts(apiToken);
-          console.log('Prompts created successfully');
-        } catch (error) {
-          console.log('Error creating prompts:', error);
-        }
-      }
-
       console.log('Creating API keys...');
       if (shouldCreateApiKeys) {
         try {
@@ -690,7 +632,7 @@ export class CreateMetaDataStructure {
           await this.addAPIKeys(apiToken);
 
           // Send websocket notification after API keys are added
-          this.emitProgress(userId, 'api-keys-added', 'API keys and prompts configured successfully');
+          this.emitProgress(userId, 'api-keys-added', 'API keys configured successfully');
         } catch (error) {
           console.log(
             'Error during API key creation or workspace member update:',

@@ -10,8 +10,31 @@ import { getWorkspaceProfileFieldsData } from 'src/engine/workspace-manager/arxe
 import { getWebsiteDomainFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-domain-fields.data';
 import { getWebsiteVisitorFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-visitor-fields.data';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
+import {
+  isAssistantHostExtensionField,
+  isAssistantObjectName,
+} from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
+import {
+  isShortlistPresentationHostExtensionField,
+  isShortlistPresentationObjectName,
+} from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
+import {
+  isVideoInterviewHostExtensionField,
+  isVideoInterviewObjectName,
+} from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
 export const getFieldsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaFieldWithObject[] =>
+  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (fieldWithObject) =>
+      !isVideoInterviewField(fieldWithObject) &&
+      !isShortlistPresentationField(fieldWithObject) &&
+      !isAssistantField(fieldWithObject),
+  );
+
+const getAllFieldsData = (
   objectsNameIdMap: Record<string, string>,
   isOrgChartEnabled?: boolean,
 ): ArxenaFieldWithObject[] => {
@@ -819,57 +842,6 @@ export const getFieldsData = (
       },
     },
     {
-      objectName: 'candidateField',
-      field: {
-        description: '',
-        icon: 'IconText',
-        label: 'candidateFieldType',
-        name: 'candidateFieldType',
-        objectMetadataId: objectsNameIdMap.candidateField,
-        type: 'TEXT',
-      },
-    },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconText',
-    //     label: 'fieldValueString',
-    //     name: 'fieldValueString',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'TEXT',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconNumber',
-    //     label: 'fieldValueNumber',
-    //     name: 'fieldValueNumber',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'NUMBER',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconToggleLeft',
-    //     label: 'fieldValueBoolean',
-    //     name: 'fieldValueBoolean',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'BOOLEAN',
-    //   },
-    // },
-    // {
-    //   field: {
-    //     description: '',
-    //     icon: 'IconJson',
-    //     label: 'fieldValueJSON',
-    //     name: 'fieldValueJSON',
-    //     objectMetadataId: objectsNameIdMap.candidateFieldValue,
-    //     type: 'RAW_JSON',
-    //   },
-    //     },
-    {
       objectName: 'candidate',
       field: {
         description: '',
@@ -1091,6 +1063,18 @@ export const getFieldsData = (
       objectName: 'project',
       field: {
         description:
+          'Named LLM prompts for candidate chat, interviews, and classification',
+        icon: 'IconPrompt',
+        label: 'Prompts',
+        name: 'prompts',
+        objectMetadataId: objectsNameIdMap.project,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'project',
+      field: {
+        description:
           'Delay in minutes after last message before processing engagement from the queue. Default 2.',
         label: 'Engagement processing delay (minutes)',
         name: 'engagementProcessingDelayMinutes',
@@ -1204,16 +1188,6 @@ export const getFieldsData = (
         name: 'sampleJson',
         objectMetadataId: objectsNameIdMap.candidateEnrichment,
         type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'prompt',
-      field: {
-        description: '',
-        label: 'Prompt',
-        name: 'prompt',
-        objectMetadataId: objectsNameIdMap.prompt,
-        type: 'TEXT',
       },
     },
     {
@@ -2332,11 +2306,63 @@ export const getFieldsData = (
   ];
 
   return allFields
-    .filter((fieldWithObject) =>
-      !objectsToExclude.includes(fieldWithObject.objectName),
+    .filter(
+      (fieldWithObject) =>
+        !objectsToExclude.includes(fieldWithObject.objectName),
     )
     .map((fieldWithObject) => ({
       objectName: fieldWithObject.objectName,
       field: fieldWithObject.field,
     }));
 };
+
+const isVideoInterviewField = (
+  fieldWithObject: ArxenaFieldWithObject,
+): boolean =>
+  isVideoInterviewObjectName(fieldWithObject.objectName) ||
+  isVideoInterviewHostExtensionField({
+    objectName: fieldWithObject.objectName,
+    fieldName: fieldWithObject.field.name,
+  });
+
+const isShortlistPresentationField = (
+  fieldWithObject: ArxenaFieldWithObject,
+): boolean =>
+  isShortlistPresentationObjectName(fieldWithObject.objectName) ||
+  isShortlistPresentationHostExtensionField({
+    objectName: fieldWithObject.objectName,
+    fieldName: fieldWithObject.field.name,
+  });
+
+const isAssistantField = (
+  fieldWithObject: ArxenaFieldWithObject,
+): boolean =>
+  isAssistantObjectName(fieldWithObject.objectName) ||
+  isAssistantHostExtensionField({
+    objectName: fieldWithObject.objectName,
+    fieldName: fieldWithObject.field.name,
+  });
+
+export const getVideoInterviewFieldsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaFieldWithObject[] =>
+  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter((fieldWithObject) =>
+    isVideoInterviewField(fieldWithObject),
+  );
+
+export const getShortlistPresentationFieldsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaFieldWithObject[] =>
+  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (fieldWithObject) => isShortlistPresentationField(fieldWithObject),
+  );
+
+export const getAssistantFieldsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaFieldWithObject[] =>
+  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (fieldWithObject) => isAssistantField(fieldWithObject),
+  );

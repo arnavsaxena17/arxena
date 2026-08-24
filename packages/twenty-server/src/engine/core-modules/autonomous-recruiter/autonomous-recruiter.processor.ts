@@ -81,7 +81,10 @@ export class AutonomousRecruiterProcessor {
         threadId = created.id;
       }
     } catch (err) {
-      this.logger.error(`Failed to get/create autonomous thread: ${(err as Error).message}`);
+      // Assistant app may be uninstalled (no assistantThread object metadata).
+      this.logger.warn(
+        `Skipping autonomous heartbeat for workspace ${workspaceId}: assistant threads unavailable (${(err as Error).message}). Install the Assistant app if this workspace needs heartbeats.`,
+      );
       return;
     }
 

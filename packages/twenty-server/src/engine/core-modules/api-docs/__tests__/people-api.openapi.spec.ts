@@ -100,21 +100,22 @@ describe('buildPeopleApiOpenApiDocument', () => {
     console.log('[people-api.openapi] paths', paths);
   });
 
-  it('documents natural-language resolved fields including location', () => {
+  it('documents natural-language resolved fields including locations', () => {
     const doc = buildPeopleApiOpenApiDocument('http://localhost:3000');
     const searchResponse = doc.components?.schemas?.PeopleSearchResponse as {
       properties?: {
         resolved?: {
           properties?: {
-            location?: unknown;
+            locations?: unknown;
             stdFunction?: unknown;
           };
         };
       };
     };
 
-    expect(searchResponse.properties?.resolved?.properties?.location).toEqual({
-      type: ['string', 'null'],
+    expect(searchResponse.properties?.resolved?.properties?.locations).toEqual({
+      type: 'array',
+      items: { type: 'string' },
     });
     expect(
       searchResponse.properties?.resolved?.properties?.stdFunction,

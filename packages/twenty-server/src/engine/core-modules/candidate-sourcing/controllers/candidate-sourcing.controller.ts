@@ -22,15 +22,12 @@ import {
   getGraphqlToFindManyProjects,
   graphqlMutationToDeleteManyAttachments,
   graphqlMutationToDeleteManyAssistantThreads,
-  graphqlMutationToDeleteManyCandidateFields,
   graphqlMutationToDeleteManyCandidates,
   graphqlMutationToDeleteManyPeople,
-  graphqlMutationToDeleteManyPrompts,
   graphqlMutationToDeleteManyVideoInterviewTemplates,
   graphqlMutationToDeleteOneProject,
   graphqlQueryToFindManyPeople,
   graphqlToAddNewProject,
-  graphqlToCreateOnePrompt,
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlTofindManyCandidateEnrichments,
@@ -58,7 +55,6 @@ import {
   JobDescriptionParseRequest,
   ParsedJobDescription,
 } from 'src/engine/core-modules/candidate-search/types/candidate-search-request.type';
-import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
@@ -73,7 +69,7 @@ import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/e
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
+import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
@@ -130,7 +126,6 @@ export class CandidateSourcingController {
     private readonly aiFilteringService: AiFilteringService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
-    private readonly deleteFieldValuesService: DeleteFieldValuesService,
     private readonly jdParserService: JDParserService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly otherFieldsService: OtherFieldsService,
@@ -3262,9 +3257,6 @@ export class CandidateSourcingController {
     const BATCH_SIZE = 100;
     const results: { succeeded: string[]; failed: string[] } = { succeeded: [], failed: [] };
 
-    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-
     const processBatch = async <T>(items: T[], batchSize: number, processor: (batch: T[]) => Promise<void>): Promise<void> => {
       for (let i = 0; i < items.length; i += batchSize) {
         await processor(items.slice(i, i + batchSize));
@@ -3281,7 +3273,6 @@ export class CandidateSourcingController {
           const candidateNodes = candidates?.edges || [];
           const personIdsFromCandidates = candidateNodes.map((edge: any) => edge.node?.people?.id).filter((id: any) => id);
 
-          await this.deleteFieldValuesService.queueDeleteFieldValues(batchCandidateIds, dataSourceSchema, workspaceId);
           await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
             filter: { id: { in: batchCandidateIds } },
           }, apiToken);
@@ -3308,7 +3299,6 @@ export class CandidateSourcingController {
           const candidateIdsFromPeople = peopleNodes.flatMap((edge: any) => edge.node?.candidates?.edges || []).map((edge: any) => edge?.node?.id).filter((id: any) => id);
 
           if (candidateIdsFromPeople.length > 0) {
-            await this.deleteFieldValuesService.queueDeleteFieldValues(candidateIdsFromPeople, dataSourceSchema, workspaceId);
             await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
               filter: { id: { in: candidateIdsFromPeople } },
             }, apiToken);
@@ -3378,19 +3368,9 @@ export class CandidateSourcingController {
 
     // Soft-delete project-scoped records created with / for a project
     await softDeleteByFilter(
-      graphqlMutationToDeleteManyPrompts,
-      { projectId: { eq: actualProjectId } },
-      'prompts',
-    );
-    await softDeleteByFilter(
       graphqlMutationToDeleteManyAttachments,
       { targetProjectId: { eq: actualProjectId } },
       'attachments',
-    );
-    await softDeleteByFilter(
-      graphqlMutationToDeleteManyCandidateFields,
-      { projectsId: { eq: actualProjectId } },
-      'candidateFields',
     );
     await softDeleteByFilter(
       graphqlMutationToDeleteManyVideoInterviewTemplates,
@@ -3405,10 +3385,6 @@ export class CandidateSourcingController {
 
     if (deleteCandidates) {
       const BATCH_SIZE = 100;
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const dataSourceSchema =
-        this.workspaceQueryService.getDataSourceSchema(workspaceId);
       const candidateIds: string[] = [];
       let hasNextPage = true;
       let lastCursor: string | undefined;
@@ -3463,11 +3439,6 @@ export class CandidateSourcingController {
             .map((edge) => edge.node?.people?.id)
             .filter((id): id is string => Boolean(id));
 
-          await this.deleteFieldValuesService.queueDeleteFieldValues(
-            batchCandidateIds,
-            dataSourceSchema,
-            workspaceId,
-          );
           await this.staticGraphQLService.executeGraphQL(
             graphqlMutationToDeleteManyCandidates,
             { filter: { id: { in: batchCandidateIds } } },
@@ -3610,16 +3581,14 @@ export class CandidateSourcingController {
         return createProjectIdErrorResponse(projectIdValidation.error!);
       }
       const actualProjectId = projectIdValidation.projectId!;
-      for (const prompt of prompts) {
-        await this.staticGraphQLService.executeGraphQL(graphqlToCreateOnePrompt, {
-          input: {
-            name: prompt.name,
-            prompt: prompt.prompt,
-            position: 'first',
-            projectId: actualProjectId,
-          },
-        }, apiToken);
-      }
+      await this.staticGraphQLService.executeGraphQL(
+        UpdateOneProject,
+        {
+          idToUpdate: actualProjectId,
+          input: { prompts: DEFAULT_PROJECT_PROMPTS },
+        },
+        apiToken,
+      );
       return { status: 'Success' };
     } catch (error) {
       throw new HttpException(

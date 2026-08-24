@@ -43,12 +43,24 @@ import { DropGtmProjectRateLimitFieldsCommand } from 'src/database/commands/upgr
 import { EnsureGtmDetectFakeProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000048-ensure-gtm-detect-fake-profiles-logic-function.command';
 import { DropGtmIcpBlurbFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000049-drop-gtm-icp-blurb-fields.command';
 import { DropGtmVanityFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000050-drop-gtm-vanity-fields.command';
+import { DropCandidateFieldObjectsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000051-drop-candidate-field-objects.command';
+import { TransferVideoInterviewApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000052-transfer-video-interview-application.command';
+import { UninstallVideoInterviewApplicationByDefaultCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000053-uninstall-video-interview-application-by-default.command';
+import { TransferShortlistPresentationApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000054-transfer-shortlist-presentation-application.command';
+import { FoldPromptsIntoProjectCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000055-fold-prompts-into-project.command';
+import { TransferAssistantApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000056-transfer-assistant-application.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
+import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
+import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
+import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { ArxenaStandardMetadataModule } from 'src/engine/workspace-manager/arxena-standard-metadata/arxena-standard-metadata.module';
+import { AssistantApplicationModule } from 'src/engine/workspace-manager/assistant-application/assistant-application.module';
+import { ShortlistPresentationApplicationModule } from 'src/engine/workspace-manager/shortlist-presentation-application/shortlist-presentation-application.module';
+import { VideoInterviewApplicationModule } from 'src/engine/workspace-manager/video-interview-application/video-interview-application.module';
 import { StandardObjectsPrefillModule } from 'src/engine/workspace-manager/standard-objects-prefill-data/standard-objects-prefill.module';
 import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration.module';
 import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-runner/workspace-migration-runner.module';
@@ -63,8 +75,13 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     WorkspaceMigrationModule,
     WorkspaceMigrationRunnerModule,
     ArxenaStandardMetadataModule,
+    VideoInterviewApplicationModule,
+    ShortlistPresentationApplicationModule,
+    AssistantApplicationModule,
     StandardObjectsPrefillModule,
     FieldMetadataModule,
+    WorkspaceModificationsModule,
+    WorkspaceDataSourceModule,
   ],
   providers: [
     BackfillMessageListMembersJunctionTargetCommand,
@@ -108,6 +125,13 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     EnsureGtmDetectFakeProfilesLogicFunctionCommand,
     DropGtmIcpBlurbFieldsCommand,
     DropGtmVanityFieldsCommand,
+    TransferVideoInterviewApplicationCommand,
+    UninstallVideoInterviewApplicationByDefaultCommand,
+    TransferShortlistPresentationApplicationCommand,
+    FoldPromptsIntoProjectCommand,
+    TransferAssistantApplicationCommand,
+    MigrateOtherFieldsService,
+    DropCandidateFieldObjectsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

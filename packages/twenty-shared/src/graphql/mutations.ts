@@ -698,15 +698,6 @@ mutation DeleteManyAttachments($filter: AttachmentFilterInput!) {
 }
 `;
 
-export const graphqlMutationToDeleteManyCandidateFields = `
-mutation DeleteManyCandidateFields($filter: CandidateFieldFilterInput!) {
-  deleteCandidateFields(filter: $filter) {
-    id
-    __typename
-  }
-}
-`;
-
 export const graphqlMutationToDeleteManyVideoInterviewTemplates = `
 mutation DeleteManyVideoInterviewTemplates($filter: VideoInterviewTemplateFilterInput!) {
   deleteVideoInterviewTemplates(filter: $filter) {

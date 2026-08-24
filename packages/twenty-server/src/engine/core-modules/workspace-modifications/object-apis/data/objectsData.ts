@@ -25,42 +25,11 @@ const allObjects = [
     {
         "object": {
             "description": "",
-            "icon": "IconPrompt",
-            "labelPlural": "Prompts",
-            "labelSingular": "Prompt",
-            "nameSingular": "prompt",
-            "namePlural": "prompts"
-        }
-    },    
-
-    {
-        "object": {
-            "description": "",
-            "icon": "IconPencilDown",
-            "labelPlural": "Candidate Fields",
-            "labelSingular": "Candidate Field",
-            "nameSingular": "candidateField",
-            "namePlural": "candidateFields"
-        }
-    },
-        {
-        "object": {
-            "description": "",
             "icon": "IconMessage",
             "labelPlural": "Messages",
             "labelSingular": "Message",
             "nameSingular": "chatMessage",
             "namePlural": "chatMessages"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconBrandAnsible",
-            "labelPlural": "Candidate Field Values",
-            "labelSingular": "Candidate Field Value",
-            "nameSingular": "candidateFieldValue",
-            "namePlural": "candidateFieldValues"
         }
     },
     {
@@ -129,57 +98,6 @@ const allObjects = [
 
     // },
     {
-
-        "object": {
-            "description": "",
-            "icon": "IconActivity",
-            "labelPlural": "Video Interviews",
-            "labelSingular": "Video Interview",
-            "nameSingular": "videoInterview",
-            "namePlural": "videoInterviews"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconPencilDown",
-            "labelPlural": "Video Interview Responses",
-            "labelSingular": "Video Interview Response",
-            "nameSingular": "videoInterviewResponse",
-            "namePlural": "videoInterviewResponses"
-        }
-    },
-        {
-        "object": {
-            "description": "",
-            "icon": "IconQuestionMark",
-            "labelPlural": "Video Interview Questions",
-            "labelSingular": "Video Interview Question",
-            "nameSingular": "videoInterviewQuestion",
-            "namePlural": "videoInterviewQuestions"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconScan",
-            "labelPlural": "Video Interview Templates",
-            "labelSingular": "Video Interview Template",
-            "nameSingular": "videoInterviewTemplate",
-            "namePlural": "videoInterviewTemplates"
-        }
-    },
-    {
-        "object": {
-            "description": "",
-            "icon": "IconCode",
-            "labelPlural": "Video Interview Models",
-            "labelSingular": "Video Interview Model",
-            "nameSingular": "videoInterviewModel",
-            "namePlural": "videoInterviewModels"
-        }
-    },
-        {
         "object": {
             "description": "",
             "icon": "IconPhone",
@@ -263,12 +181,17 @@ const allObjects = [
     },
 ];
 
-const OBJECTS_TO_EXCLUDE = [
+export const VIDEO_INTERVIEW_OBJECT_NAMES = [
   'videoInterview',
   'videoInterviewTemplate',
   'videoInterviewModel',
   'videoInterviewQuestion',
   'videoInterviewResponse',
+] as const;
+
+export const ASSISTANT_OBJECT_NAMES = ['assistantThread'] as const;
+
+const OBJECTS_TO_EXCLUDE = [
   'cvSent',
   'candidateEnrichment',
   'phoneCall',
@@ -293,7 +216,11 @@ export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
   console.log('Is org cahrt enabled:', isOrgChartEnabled);
   return allObjects.filter((object) => {
     const name = object.object.nameSingular;
-    if (objectsToExclude.includes(name)) {
+    if (
+      objectsToExclude.includes(name) ||
+      (VIDEO_INTERVIEW_OBJECT_NAMES as readonly string[]).includes(name) ||
+      (ASSISTANT_OBJECT_NAMES as readonly string[]).includes(name)
+    ) {
       return false;
     }
     return true;
@@ -302,7 +229,11 @@ export function getObjectCreationArr(isOrgChartEnabled?: boolean) {
 
 export const objectCreationArr = allObjects.filter((object) => {
   const name = object.object.nameSingular;
-  if (getObjectsToExclude().includes(name)) {
+  if (
+    getObjectsToExclude().includes(name) ||
+    (VIDEO_INTERVIEW_OBJECT_NAMES as readonly string[]).includes(name) ||
+    (ASSISTANT_OBJECT_NAMES as readonly string[]).includes(name)
+  ) {
     return false;
   }
   return true;

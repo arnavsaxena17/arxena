@@ -33,8 +33,8 @@ import { OrgchartUnipileBuildProcessor } from './jobs/orgchart-unipile-build.pro
 import { SearchParametersPrompts } from './prompts/search-parameters-prompts';
 import { ApolloIoRestService } from './services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from './services/apollo-people-search-transformer.service';
-import { AssistantThreadService } from './services/assistant-thread.service';
 import { BooltreeHintService } from './services/booltree-hint.service';
+import { CandidateSearchAssistantThreadAdapter } from './services/candidate-search-assistant-thread.adapter';
 import { CandidateSearchHandlerService } from './services/candidate-search-handler.service';
 import { ClassifyMessageService } from './services/classify-message.service';
 import { CleanupService } from './services/cleanup.service';
@@ -99,7 +99,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     RequirementAnalyzerService,
     SearchIntentRouterService,
     JobTitleExpanderService,
-    AssistantThreadService,
+    CandidateSearchAssistantThreadAdapter,
     PythonQueryGenerationService,
     CompanyExpanderService,
     BooltreeHintService,

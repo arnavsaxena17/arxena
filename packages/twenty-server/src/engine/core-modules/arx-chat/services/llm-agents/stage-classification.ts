@@ -2,7 +2,6 @@ import { ChatCompletionMessageParam } from 'openai/resources';
 import {
   allStatusesArray,
   ChatHistoryItem,
-  FindManyWorkspaceMembers,
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -23,27 +22,12 @@ export class StageWiseClassification {
   ) {}
 
   async getChatPromptFromWorksPageMember(
-    currentWorkspaceMemberId: any,
-    apiToken: string,
+    _currentWorkspaceMemberId: any,
+    _apiToken: string,
   ) {
-    try {
-      const response = await this.staticGraphQLService.executeGraphQL(
-        FindManyWorkspaceMembers,
-        { filter: { id: { eq: currentWorkspaceMemberId } } },
-        apiToken,
-      );
-      const prompts =
-        response.data.data.workspaceMembers.edges[0].node.prompts.edges;
-
-      if (prompts.length > 0) {
-        return prompts[0].node.prompt;
-      } else {
-        throw new Error('No prompts found for the given workspace member.');
-      }
-    } catch (error) {
-      console.error('Error fetching prompt:', error);
-      throw error;
-    }
+    throw new Error(
+      'Workspace-member prompts were folded into project.prompts; look up the prompt on the project instead.',
+    );
   }
 
   async getChatStageFromChatHistory(

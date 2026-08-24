@@ -264,17 +264,33 @@ export class MigrateOtherFieldsService {
       };
     }
 
-    const jobsUpdated = await this.migrateJobChatQuestions(
-      schema,
-      workspaceId,
-      options.dryRun ?? false,
-    );
-    const candidatesUpdated = await this.migrateCandidateOtherFields(
-      schema,
-      workspaceId,
-      batchSize,
-      options.dryRun ?? false,
-    );
+    const hasLegacyFieldTable =
+      await this.workspaceQueryService.checkIfTableExists(
+        schema,
+        '_candidateField',
+      );
+    const hasLegacyFieldValueTable =
+      await this.workspaceQueryService.checkIfTableExists(
+        schema,
+        '_candidateFieldValue',
+      );
+
+    const jobsUpdated = hasLegacyFieldTable
+      ? await this.migrateJobChatQuestions(
+          schema,
+          workspaceId,
+          options.dryRun ?? false,
+        )
+      : 0;
+    const candidatesUpdated =
+      hasLegacyFieldTable && hasLegacyFieldValueTable
+        ? await this.migrateCandidateOtherFields(
+            schema,
+            workspaceId,
+            batchSize,
+            options.dryRun ?? false,
+          )
+        : 0;
 
     let legacyFieldValuesDeleted = 0;
     let legacyFieldsDeleted = 0;
@@ -491,28 +507,52 @@ export class MigrateOtherFieldsService {
     dryRun: boolean,
     batchSize = 2000,
   ): Promise<{ fieldValuesDeleted: number; fieldsDeleted: number }> {
-    const fieldValueCount = (await this.workspaceQueryService.executeWorkspaceRawQuery(
-      `
-        SELECT COUNT(*)::text as count
-        FROM ${schema}."_candidateFieldValue"
-        WHERE "deletedAt" IS NULL
-      `,
-      [],
-      workspaceId,
-    )) as { count: string }[];
+    const hasLegacyFieldTable =
+      await this.workspaceQueryService.checkIfTableExists(
+        schema,
+        '_candidateField',
+      );
+    const hasLegacyFieldValueTable =
+      await this.workspaceQueryService.checkIfTableExists(
+        schema,
+        '_candidateFieldValue',
+      );
 
-    const fieldCount = (await this.workspaceQueryService.executeWorkspaceRawQuery(
-      `
-        SELECT COUNT(*)::text as count
-        FROM ${schema}."_candidateField"
-        WHERE "deletedAt" IS NULL
-      `,
-      [],
-      workspaceId,
-    )) as { count: string }[];
+    if (!hasLegacyFieldTable && !hasLegacyFieldValueTable) {
+      return { fieldValuesDeleted: 0, fieldsDeleted: 0 };
+    }
 
-    const fieldValuesToDelete = Number(fieldValueCount?.[0]?.count ?? 0);
-    const fieldsToDelete = Number(fieldCount?.[0]?.count ?? 0);
+    const fieldValuesToDelete = hasLegacyFieldValueTable
+      ? Number(
+          (
+            (await this.workspaceQueryService.executeWorkspaceRawQuery(
+              `
+                SELECT COUNT(*)::text as count
+                FROM ${schema}."_candidateFieldValue"
+                WHERE "deletedAt" IS NULL
+              `,
+              [],
+              workspaceId,
+            )) as { count: string }[]
+          )?.[0]?.count ?? 0,
+        )
+      : 0;
+
+    const fieldsToDelete = hasLegacyFieldTable
+      ? Number(
+          (
+            (await this.workspaceQueryService.executeWorkspaceRawQuery(
+              `
+                SELECT COUNT(*)::text as count
+                FROM ${schema}."_candidateField"
+                WHERE "deletedAt" IS NULL
+              `,
+              [],
+              workspaceId,
+            )) as { count: string }[]
+          )?.[0]?.count ?? 0,
+        )
+      : 0;
 
     this.logger.log(
       `Workspace ${workspaceId}: legacy rows to delete — fieldValues=${fieldValuesToDelete}, fields=${fieldsToDelete}${dryRun ? ' (dry run)' : ''}`,
@@ -529,17 +569,18 @@ export class MigrateOtherFieldsService {
       return { fieldValuesDeleted: 0, fieldsDeleted: 0 };
     }
 
-    const fieldValuesDeleted = await this.deleteLegacyFieldValuesByCandidate(
-      schema,
-      workspaceId,
-    );
+    const fieldValuesDeleted = hasLegacyFieldValueTable
+      ? await this.deleteLegacyFieldValuesByCandidate(schema, workspaceId)
+      : 0;
 
-    const fieldsDeleted = await this.deleteLegacyTableInBatches(
-      schema,
-      workspaceId,
-      '_candidateField',
-      Math.min(batchSize, 100),
-    );
+    const fieldsDeleted = hasLegacyFieldTable
+      ? await this.deleteLegacyTableInBatches(
+          schema,
+          workspaceId,
+          '_candidateField',
+          Math.min(batchSize, 100),
+        )
+      : 0;
 
     return { fieldValuesDeleted, fieldsDeleted };
   }

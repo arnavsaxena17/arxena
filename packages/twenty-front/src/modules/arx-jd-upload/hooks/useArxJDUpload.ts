@@ -17,6 +17,7 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 
 import { useParsedJDState } from '@/arx-jd-upload/hooks/useParsedJDState';
+import { useIsAssistantAppInstalled } from '@/applications/hooks/useIsAssistantAppInstalled';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
@@ -104,6 +105,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     objectNameSingular: 'assistantThread',
   });
   const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord();
+  const isAssistantAppInstalled = useIsAssistantAppInstalled();
 
   const apolloCoreClient = useApolloCoreClient();
   const [updateWorkspaceMemberProfile] = useMutation(gql`
@@ -213,6 +215,34 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     updateWorkspaceMemberProfile,
     updateSpecificApiKey,
   ]);
+
+  const seedProjectPrompts = useCallback(
+    async (projectId: string) => {
+      const token =
+        tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+      if (!token) {
+        return;
+      }
+
+      try {
+        const createPromptsResponse = await axios({
+          method: 'post',
+          url: `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/create-prompts`,
+          data: { projectId },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (createPromptsResponse?.data?.status !== 'Success') {
+          console.error('Failed to seed project prompts');
+        }
+      } catch (error) {
+        console.error('Failed to seed project prompts', error);
+      }
+    },
+    [tokenPair?.accessOrWorkspaceAgnosticToken?.token],
+  );
 
   const findBestCompanyMatch = useCallback(
     (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
@@ -497,22 +527,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             updateOneRecordInput: updateOneRecordInput,
           });
 
-          // Generate search plan using the new AI-driven endpoint
-
-          const createPromptsResponse = await axios({
-            method: 'post',
-            url: `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/create-prompts`,
-            data: {
-              projectId: createdJob.id,
-            },
-            headers: {
-              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
-            },
-          });
-
-          if (createPromptsResponse?.data?.status !== 'Success') {
-            console.error('Failed to create prompts');
-          }
+          await seedProjectPrompts(createdJob.id);
         } else {
           throw new Error(uploadJDResponse?.data?.message || 'Failed to process JD');
         }
@@ -553,6 +568,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       recruiterDetails?.workspaceMemberId,
       currentWorkspaceMember?.id,
       triggerJobsRefetch,
+      seedProjectPrompts,
     ],
   );
 
@@ -743,6 +759,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
       // After successful job creation (not update), navigate to job details
       if (isDefined(createdJob?.id) && !parsedJD.id) {
+        await seedProjectPrompts(createdJob.id);
         // Trigger global job refetch to update Projects component
         triggerJobsRefetch();
 
@@ -783,6 +800,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     updateOneRecord,
     triggerJobsRefetch,
     tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    seedProjectPrompts,
   ]);
 
   // Reset all upload-related state
@@ -816,6 +834,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     generatedParameters: unknown,
     resolvedParameters: unknown,
   ) => {
+    if (!isAssistantAppInstalled) {
+      enqueueErrorSnackBar({
+        message:
+          'Assistant app is not installed. Install it from Settings → Applications to save search threads.',
+      });
+      return;
+    }
+
     const assistantParameters = {
       generatedSearchParameters: toRecord(generatedParameters),
       resolvedSearchParameters: toRecord(resolvedParameters),
@@ -882,6 +908,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       enqueueErrorSnackBar({ message: `Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
   }, [
+    isAssistantAppInstalled,
     createOneAssistantThreadRecord,
     updateOneAssistantThreadRecord,
     enqueueErrorSnackBar,
@@ -918,6 +945,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         throw new Error('Failed to create job');
       }
 
+      await seedProjectPrompts(createdJob.id);
+
       // Trigger job refetch
       triggerJobsRefetch();
 
@@ -944,6 +973,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     navigate,
     enqueueSuccessSnackBar,
     enqueueErrorSnackBar,
+    seedProjectPrompts,
   ]);
 
   return {

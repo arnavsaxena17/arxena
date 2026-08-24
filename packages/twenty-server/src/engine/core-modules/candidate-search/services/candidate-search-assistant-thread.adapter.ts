@@ -22,9 +22,16 @@ export type AssistantThreadContext = {
   }>;
 };
 
+/**
+ * Host leftover adapter: thin GraphQL read/write of Assistant-app `assistantThread`
+ * records for candidate-search. Named distinctly from
+ * `assistant/assistant-thread.service.ts` to avoid Nest DI confusion.
+ */
 @Injectable()
-export class AssistantThreadService {
-  private readonly logger = new Logger(AssistantThreadService.name);
+export class CandidateSearchAssistantThreadAdapter {
+  private readonly logger = new Logger(
+    CandidateSearchAssistantThreadAdapter.name,
+  );
 
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
 

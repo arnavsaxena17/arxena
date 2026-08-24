@@ -1,7 +1,9 @@
 import { RelationInput } from "twenty-shared";
 
 import {
-  getObjectsToExclude
+  ASSISTANT_OBJECT_NAMES,
+  getObjectsToExclude,
+  VIDEO_INTERVIEW_OBJECT_NAMES,
 } from './objectsData';
 
 type RelationWithObjects = {
@@ -48,40 +50,6 @@ export function getRelationsData(
         toIcon: 'IconBuilding',
         toLabel: 'Company',
         toName: 'company',
-      },
-    },
-    {
-      fromObjectName: "workspaceMember",
-      toObjectName: "prompt",
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Prompt',
-        fromName: 'prompt',
-        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.prompt,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Recruiter',
-        toName: 'recruiter',
-      },
-    },
-    {
-      fromObjectName: "project",
-      toObjectName: "prompt",
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Prompt',
-        fromName: 'prompt',
-        fromObjectMetadataId: objectsNameIdMap.project,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.prompt,
-        toDescription: '',
-        toIcon: 'IconTie',
-        toLabel: 'Project',
-        toName: 'project',
       },
     },
     {
@@ -150,57 +118,6 @@ export function getRelationsData(
         toIcon: 'IconUser',
         toLabel: 'Recruiter',
         toName: 'recruiter',
-      },
-    },
-    {
-      fromObjectName: "project",
-      toObjectName: "candidateField",
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconQuestionMark',
-        fromLabel: 'Candidate Fields',
-        fromName: 'candidateFields',
-        fromObjectMetadataId: objectsNameIdMap.project,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateField,
-        toDescription: '',
-        toIcon: 'IconTie',
-        toLabel: 'Projects',
-        toName: 'projects',
-      },
-    },
-    {
-      fromObjectName: "candidateField",
-      toObjectName: "candidateFieldValue",
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessageCheck',
-        fromLabel: 'Candidate Field Values',
-        fromName: 'candidateFieldValues',
-        fromObjectMetadataId: objectsNameIdMap.candidateField,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateFieldValue,
-        toDescription: '',
-        toIcon: 'IconPencilDown',
-        toLabel: 'Candidate Fields',
-        toName: 'candidateFields',
-      },
-    },
-    {
-      fromObjectName: "candidate",
-      toObjectName: "candidateFieldValue",
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessageCheck',
-        fromLabel: 'Candidate Field Values',
-        fromName: 'candidateFieldValues',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateFieldValue,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Candidate',
-        toName: 'candidate',
       },
     },
     {
@@ -727,7 +644,17 @@ export function getRelationsData(
     .filter(
       (r) =>
         !objectsToExclude.includes(r.fromObjectName) &&
-        !objectsToExclude.includes(r.toObjectName),
+        !objectsToExclude.includes(r.toObjectName) &&
+        !(VIDEO_INTERVIEW_OBJECT_NAMES as readonly string[]).includes(
+          r.fromObjectName,
+        ) &&
+        !(VIDEO_INTERVIEW_OBJECT_NAMES as readonly string[]).includes(
+          r.toObjectName,
+        ) &&
+        !(ASSISTANT_OBJECT_NAMES as readonly string[]).includes(
+          r.fromObjectName,
+        ) &&
+        !(ASSISTANT_OBJECT_NAMES as readonly string[]).includes(r.toObjectName),
     )
     .map((r) => ({ relationMetadata: r.relationMetadata }));
 }

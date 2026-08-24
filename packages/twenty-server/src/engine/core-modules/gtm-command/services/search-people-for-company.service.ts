@@ -263,9 +263,6 @@ export class SearchPeopleForCompanyService {
           linkedinCompanyUrl,
           jobTitle: buyerTitle,
           locations,
-          naturalLanguage: buyerTitle
-            ? `${buyerTitle} at ${context.company.name ?? 'the company'}`
-            : undefined,
           limit,
           dataSource: 'auto',
           accountId: defaultAccount?.accountId,

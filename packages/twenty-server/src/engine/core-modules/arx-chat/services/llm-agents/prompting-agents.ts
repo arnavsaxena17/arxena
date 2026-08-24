@@ -1,7 +1,7 @@
 import {
     allStatusesArray,
     CandidateNode,
-    graphqlQueryToFetchPrompts,
+    graphqlQueryToFetchProjectPrompts,
     Project,
     statusesArray
 } from 'twenty-shared';
@@ -11,7 +11,7 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { NameProcessor } from 'src/engine/core-modules/workspace-modifications/object-apis/data/nameProcessor';
-import { prompts } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
+import { resolveProjectPrompt } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 const commaSeparatedStatuses = statusesArray.join(', ');
@@ -136,27 +136,31 @@ export class PromptingAgents {
     console.log('promptName to fetch for projectId::', projectId, promptName);
 
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFetchPrompts, {
-        filter: { projectId: { eq: projectId }, name: { ilike: `%${promptName}%` } },
-        limit: 1,
-        orderBy: [{ position: 'AscNullsFirst' }],
-      }, apiToken);
-      const promptsFromDB = response.data.data.prompts.edges;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFetchProjectPrompts,
+        { objectRecordId: projectId },
+        apiToken,
+      );
+      const project =
+        response?.data?.data?.project ??
+        response?.data?.project ??
+        response?.project;
+      const resolved = resolveProjectPrompt(project?.prompts, promptName);
 
-      if (promptsFromDB.length > 0) {
-        return promptsFromDB[0].node.prompt;
-      } else {
-        const prompt = prompts.find(prompt => prompt.name === promptName);
-        if (prompt) {
-          return prompt.prompt;
-        } else {
-          throw new Error('No prompt found for the given projectId and name.');
-        }
+      if (resolved) {
+        return resolved;
       }
     } catch (error) {
-      console.error('Error fetching prompt:', error);
-      throw error;
+      console.error('Error fetching project prompts, using defaults:', error);
     }
+
+    const fallback = resolveProjectPrompt(undefined, promptName);
+
+    if (fallback) {
+      return fallback;
+    }
+
+    throw new Error('No prompt found for the given projectId and name.');
   }
 
   replaceTemplateVariables(

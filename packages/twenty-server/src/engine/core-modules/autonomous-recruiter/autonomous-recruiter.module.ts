@@ -13,6 +13,11 @@ import { AutonomousRecruiterController } from './autonomous-recruiter.controller
 import { AutonomousRecruiterProcessor } from './autonomous-recruiter.processor';
 import { ProjectContextService } from './project-context.service';
 
+/**
+ * Host leftover: autonomous recruiter orchestration (cron/queue/demo SSE) over
+ * Assistant + MCP. No CRM objects of its own — requires the Assistant app for
+ * `assistantThread` persistence. Skips heartbeats when threads are unavailable.
+ */
 @Module({
   imports: [
     MessageQueueModule,

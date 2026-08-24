@@ -63,7 +63,7 @@ export type ResolvedTitleTaxonomy = {
   stdFunctionRoot: string | null;
   stdGrade: string | null;
   confidence: number;
-  location?: string | null;
+  locations: string[];
 };
 
 export type PeopleSearchResponse = {

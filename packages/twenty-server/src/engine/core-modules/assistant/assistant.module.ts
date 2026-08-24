@@ -18,6 +18,12 @@ import { McpInProcessToolRunnerService } from './mcp-in-process-tool-runner.serv
 import { McpToolCallCacheService } from './mcp-tool-call-cache.service';
 import { AutonomousRecruitmentAgentRulesService } from './recruitment-agent-rules.service';
 
+/**
+ * Host leftover for the optional Assistant Twenty app (`assistantThread` CRM
+ * object). Nest REST/MCP/chat stay here; object ownership lives in
+ * `workspace-manager/assistant-application` + `twenty-apps/internal/assistant`.
+ * Circular Nest link with CandidateSearchModule is known debt (MCP in-process tools).
+ */
 @Module({
   imports: [
     AuthModule,

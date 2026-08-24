@@ -1,7 +1,30 @@
 import { type ArxenaRelationWithObjects } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
+import { isAssistantRelation } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
+import { isShortlistPresentationRelation } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
+import { isVideoInterviewRelation } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
 
 export const getRelationsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaRelationWithObjects[] =>
+  getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (relationWithObjects) =>
+      !isVideoInterviewRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }) &&
+      !isShortlistPresentationRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }) &&
+      !isAssistantRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }),
+  );
+
+const getAllRelationsData = (
   objectsNameIdMap: Record<string, string>,
   isOrgChartEnabled?: boolean,
 ): ArxenaRelationWithObjects[] => {
@@ -39,40 +62,6 @@ export const getRelationsData = (
         toIcon: 'IconBuilding',
         toLabel: 'Company',
         toName: 'company',
-      },
-    },
-    {
-      fromObjectName: 'workspaceMember',
-      toObjectName: 'prompt',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Prompt',
-        fromName: 'prompt',
-        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.prompt,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Recruiter',
-        toName: 'recruiter',
-      },
-    },
-    {
-      fromObjectName: 'project',
-      toObjectName: 'prompt',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessage',
-        fromLabel: 'Prompt',
-        fromName: 'prompt',
-        fromObjectMetadataId: objectsNameIdMap.project,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.prompt,
-        toDescription: '',
-        toIcon: 'IconTie',
-        toLabel: 'Project',
-        toName: 'project',
       },
     },
     {
@@ -141,57 +130,6 @@ export const getRelationsData = (
         toIcon: 'IconUser',
         toLabel: 'Recruiter',
         toName: 'recruiter',
-      },
-    },
-    {
-      fromObjectName: 'project',
-      toObjectName: 'candidateField',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconQuestionMark',
-        fromLabel: 'Candidate Fields',
-        fromName: 'candidateFields',
-        fromObjectMetadataId: objectsNameIdMap.project,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateField,
-        toDescription: '',
-        toIcon: 'IconTie',
-        toLabel: 'Projects',
-        toName: 'projects',
-      },
-    },
-    {
-      fromObjectName: 'candidateField',
-      toObjectName: 'candidateFieldValue',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessageCheck',
-        fromLabel: 'Candidate Field Values',
-        fromName: 'candidateFieldValues',
-        fromObjectMetadataId: objectsNameIdMap.candidateField,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateFieldValue,
-        toDescription: '',
-        toIcon: 'IconPencilDown',
-        toLabel: 'Candidate Fields',
-        toName: 'candidateFields',
-      },
-    },
-    {
-      fromObjectName: 'candidate',
-      toObjectName: 'candidateFieldValue',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconMessageCheck',
-        fromLabel: 'Candidate Field Values',
-        fromName: 'candidateFieldValues',
-        fromObjectMetadataId: objectsNameIdMap.candidate,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.candidateFieldValue,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Candidate',
-        toName: 'candidate',
       },
     },
     {
@@ -760,3 +698,39 @@ export const getRelationsData = (
       relationMetadata: relationWithObjects.relationMetadata,
     }));
 };
+
+export const getVideoInterviewRelationsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaRelationWithObjects[] =>
+  getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (relationWithObjects) =>
+      isVideoInterviewRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }),
+  );
+
+export const getShortlistPresentationRelationsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaRelationWithObjects[] =>
+  getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (relationWithObjects) =>
+      isShortlistPresentationRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }),
+  );
+
+export const getAssistantRelationsData = (
+  objectsNameIdMap: Record<string, string>,
+  isOrgChartEnabled?: boolean,
+): ArxenaRelationWithObjects[] =>
+  getAllRelationsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (relationWithObjects) =>
+      isAssistantRelation({
+        fromObjectName: relationWithObjects.fromObjectName,
+        toObjectName: relationWithObjects.toObjectName,
+      }),
+  );

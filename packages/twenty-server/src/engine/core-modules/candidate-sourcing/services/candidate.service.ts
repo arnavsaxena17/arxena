@@ -1567,13 +1567,6 @@ export class CandidateService {
         apiToken,
       );
 
-      if (candidate) {
-        await this.otherFieldsService.lazyMigrateCandidateOtherFields(
-          candidate,
-          apiToken,
-        );
-      }
-
       const merged = await this.otherFieldsService.patchCandidateOtherFields(
         candidateId,
         { [toSnakeCaseKey(fieldName)]: value },

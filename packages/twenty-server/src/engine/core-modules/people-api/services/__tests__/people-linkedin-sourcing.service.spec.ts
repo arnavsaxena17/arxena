@@ -113,6 +113,79 @@ describe('PeopleLinkedInSourcingService company resolution', () => {
     );
   });
 
+  it('uses CSV boolean_query as Sales Nav role when taxonomy matches', async () => {
+    titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+      items: [
+        {
+          kind: 'std_function',
+          label: 'technology',
+          std_grade: 'leadership',
+          boolean_query: '("CTO" OR "chief technology officer")',
+          keywords: 'technology OR software',
+        },
+      ],
+    });
+
+    await service.search({
+      apiToken: 'token',
+      companyName: 'Egon Zehnder',
+      website: 'www.egonzehnder.com',
+      dataSource: 'unipile',
+      accountId: 'acct-1',
+      stdFunction: 'technology',
+      stdFunctionRoot: 'technology',
+      stdGrade: 'leadership',
+      linkedinSearchKeywords: 'CTO',
+      limit: 2,
+    });
+
+    expect(titleTaxonomyRemoteService.getManualBooleanQueries).toHaveBeenCalledWith(
+      {
+        stdFunction: 'technology',
+        stdFunctionRoot: 'technology',
+        stdGrade: 'leadership',
+      },
+    );
+    expect(
+      pythonQueryGenerationService.generateSearchParameters,
+    ).not.toHaveBeenCalled();
+    expect(linkedInSearchService.searchPeopleSalesNavigator).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: { include: ['("CTO" OR "chief technology officer")'] },
+        keywords: 'technology OR software',
+        company: { include: ['1642'] },
+      }),
+      'acct-1',
+      { limit: 2 },
+    );
+  });
+
+  it('falls back to the original job title when taxonomy is unclassified', async () => {
+    await service.search({
+      apiToken: 'token',
+      companyName: 'Egon Zehnder',
+      website: 'www.egonzehnder.com',
+      dataSource: 'unipile',
+      accountId: 'acct-1',
+      stdFunction: 'unclassified',
+      stdGrade: 'leadership',
+      linkedinSearchKeywords: 'CEO',
+      limit: 2,
+    });
+
+    expect(
+      titleTaxonomyRemoteService.getManualBooleanQueries,
+    ).not.toHaveBeenCalled();
+    expect(linkedInSearchService.searchPeopleSalesNavigator).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role: { include: ['CEO'] },
+        company: { include: ['1642'] },
+      }),
+      'acct-1',
+      { limit: 2 },
+    );
+  });
+
   it('resolves a saved company LinkedIn URL before website domain lookup', async () => {
     await service.search({
       apiToken: 'token',

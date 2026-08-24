@@ -148,11 +148,12 @@ export const buildPeopleApiOpenApiDocument = (
           stdFunctionRoot: stdFunctionRootSchema,
           stdGrade: stdGradeSchema,
           country: { type: 'string', example: 'United States' },
-          location: {
-            type: 'string',
+          locations: {
+            type: 'array',
+            items: { type: 'string' },
             description:
-              'Geographic location. Optional when naturalLanguage already includes a place.',
-            example: 'India',
+              'Geographic locations. Merged with places extracted from naturalLanguage when that path runs.',
+            example: ['India'],
           },
           query: {
             type: 'string',
@@ -214,7 +215,10 @@ export const buildPeopleApiOpenApiDocument = (
               stdFunctionRoot: { type: ['string', 'null'] },
               stdGrade: { type: ['string', 'null'] },
               confidence: { type: 'number' },
-              location: { type: ['string', 'null'] },
+              locations: {
+                type: 'array',
+                items: { type: 'string' },
+              },
             },
           },
           query: {
@@ -503,6 +507,11 @@ export const buildPeopleApiOpenApiDocument = (
               'Required when dataSource is unipile — Unipile LinkedIn account id.',
           },
           country: { type: 'string', example: 'United States' },
+          locations: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['United States'],
+          },
           limit: {
             type: 'integer',
             minimum: 1,

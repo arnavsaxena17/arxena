@@ -15,7 +15,7 @@ import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconUser, IconVideo } from 'twenty-ui/icon';
+import { IconArrowsSplit2, IconFileText, IconMessage, IconUser } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
@@ -23,7 +23,6 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { CandidateInfoHeader } from './CandidateInfoHeader';
 import { CandidateProfileTab } from './CandidateProfileTab';
 import { CandidateWarmPathTab } from './CandidateWarmPathTab';
-import VideoInterviewTab from './VideoInterviewTab';
 import { useTemplates } from './hooks/useTemplates';
 
 const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
@@ -423,11 +422,6 @@ export const CandidateChatDrawer = React.memo(() => {
       title: 'CV',
       Icon: IconFileText,
     },
-    {
-      id: 'video-interview',
-      title: 'Video Interview',
-      Icon: IconVideo,
-    },
   ], []);
 
   // Get personId from candidateData instead of processedData to avoid dependency on frequently changing selector
@@ -658,7 +652,7 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv' || defaultTab === 'video-interview')) {
+      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv')) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -980,12 +974,6 @@ export const CandidateChatDrawer = React.memo(() => {
     />
   );
 
-  const renderVideoInterviewTab = () => (
-    <VideoInterviewTab
-      candidateData={candidateData}
-      isLoading={isLoading}
-    />
-  );
 
   const renderMessageInput = () => (
     <MessageInputContainer>
@@ -1079,7 +1067,6 @@ export const CandidateChatDrawer = React.memo(() => {
             {activeTabId === 'profile' && renderProfileTab()}
             {activeTabId === 'warm-path' && renderWarmPathTab()}
             {activeTabId === 'cv' && renderCVTab()}
-            {activeTabId === 'video-interview' && renderVideoInterviewTab()}
           </>
         )}
       </TabContent>

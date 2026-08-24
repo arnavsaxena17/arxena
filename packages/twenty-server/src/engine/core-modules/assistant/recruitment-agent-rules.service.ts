@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { graphqlQueryToFetchPrompts } from 'twenty-shared';
 
 /**
  * Config object to optionally override sections of the default autonomous recruiter system prompt.
@@ -152,43 +150,21 @@ function buildAutonomousRecruiterSystemPrompt(
   return lines.join('\n');
 }
 
-/** Default system prompt when no workspace override (Prompt with name AUTONOMOUS_RECRUITER_RULES) exists. */
+/** Default system prompt for the autonomous recruiter. */
 export const DEFAULT_AUTONOMOUS_RECRUITER_SYSTEM_PROMPT =
   buildAutonomousRecruiterSystemPrompt();
 
 /**
- * Resolves the system prompt for the autonomous recruiter (and optional chat):
- * if a Prompt with name AUTONOMOUS_RECRUITER_RULES exists in the workspace, use its prompt text;
- * otherwise use the default built from the sections above (optionally overridden via config).
+ * Resolves the system prompt for the autonomous recruiter (and optional chat).
+ * Workspace-level Prompt records were folded into project.prompts; recruiter
+ * rules stay as the built-in default (optionally overridden via config).
  */
 @Injectable()
 export class AutonomousRecruitmentAgentRulesService {
-  constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
-
   async getSystemPrompt(
-    apiToken: string,
+    _apiToken: string,
     config?: AutonomousRecruiterPromptSectionsConfig,
   ): Promise<string> {
-    try {
-      const result = await this.staticGraphQLService.executeGraphQL(
-        graphqlQueryToFetchPrompts,
-        {
-          filter: { name: { eq: AUTONOMOUS_RECRUITER_RULES_PROMPT_NAME } },
-          limit: 1,
-        },
-        apiToken,
-      );
-      const edges = result?.prompts?.edges ?? [];
-      const promptText =
-        edges.length > 0 && typeof edges[0].node?.prompt === 'string'
-          ? (edges[0].node.prompt as string).trim()
-          : '';
-      if (promptText) {
-        return promptText;
-      }
-    } catch {
-      // Fall through to default system prompt
-    }
     if (config) {
       return buildAutonomousRecruiterSystemPrompt(config);
     }

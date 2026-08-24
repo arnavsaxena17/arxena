@@ -1,5 +1,13 @@
 import { Transform } from 'class-transformer';
-import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 import {
   PEOPLE_LINKEDIN_DATA_SOURCES,
@@ -59,8 +67,9 @@ export class PeopleSearchByTaxonomyDto {
   accountId?: string;
 
   @IsOptional()
-  @IsString()
-  location?: string;
+  @IsArray()
+  @IsString({ each: true })
+  locations?: string[];
 
   @IsOptional()
   @IsString()

@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { useId } from 'react';
-import { IconFileText, IconSparkles, IconVideo } from 'twenty-ui/icon';
+import { IconFileText, IconSparkles } from 'twenty-ui/icon';
 import { MenuItem } from 'twenty-ui/navigation';
 
 import { useArxEnrichCreationModal } from '@/arx-ai-filtering/hooks/useArxEnrichCreationModal';
@@ -13,7 +13,6 @@ import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/Gene
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { isDropdownOpenComponentState } from '@/ui/layout/dropdown/states/isDropdownOpenComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
-import { useInterviewCreationModal } from '@/video-interview/interview-creation/hooks/useInterviewCreationModal';
 
 type ChatOptionsDropdownButtonProps = {
   onUploadCV?: () => void;
@@ -30,8 +29,6 @@ export const ChatOptionsDropdownButton = ({
   const { closeDropdown } = useCloseDropdown();
   const { openUploadJDModal } = useArxUploadJDModal();
   const { openModal: openEnrichmentModal } = useArxEnrichCreationModal();
-  const { openModal: openVideoInterviewModal } = useInterviewCreationModal();
-
   const closeOptionsDropdown = () => {
     closeDropdown(dropdownId);
   };
@@ -48,11 +45,6 @@ export const ChatOptionsDropdownButton = ({
 
   const handleUploadCV = () => {
     onUploadCV?.();
-    closeOptionsDropdown();
-  };
-
-  const handleCreateVideoInterview = () => {
-    openVideoInterviewModal();
     closeOptionsDropdown();
   };
 
@@ -82,11 +74,6 @@ export const ChatOptionsDropdownButton = ({
             onClick={handleUploadCV}
             text={<Trans>Upload CV</Trans>}
             LeftIcon={IconFileText}
-          />
-          <MenuItem
-            onClick={handleCreateVideoInterview}
-            text={<Trans>Create Video Interview</Trans>}
-            LeftIcon={IconVideo}
           />
         </DropdownContent>
       }

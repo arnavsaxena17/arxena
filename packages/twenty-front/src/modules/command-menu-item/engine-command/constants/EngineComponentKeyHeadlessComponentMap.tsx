@@ -9,8 +9,6 @@ import {
   ArxCheckContactAvailabilityCommand,
   ArxCheckDataIntegrityOfProjectCommand,
   ArxCloneMultipleRecordsCommand,
-  ArxCreateInterviewVideosCommand,
-  ArxCreateMultipleVideoInterviewLinksCommand,
   ArxDeleteCandidatesAndPeopleCommand,
   ArxDownloadAsExcelCommand,
   ArxDownloadCandidateCVsCommand,
@@ -25,7 +23,6 @@ import {
   ArxSendToWhatsappCommand,
   ArxShareChatAndVideoInterviewBasedShortlistCommand,
   ArxShareChatBasedShortlistCommand,
-  ArxShareMultipleVideoInterviewLinksCommand,
   ArxStartChatWithCandidatesCommand,
   ArxStopChatWithCandidatesCommand,
   ArxSyncChatsWithWhatsappCommand,
@@ -287,12 +284,6 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.ARX_CLONE_MULTIPLE_RECORDS]: (
     <ArxCloneMultipleRecordsCommand />
   ),
-  [EngineComponentKey.ARX_CREATE_VINT_LINK]: (
-    <ArxCreateMultipleVideoInterviewLinksCommand />
-  ),
-  [EngineComponentKey.ARX_SHARE_VINT_LINK]: (
-    <ArxShareMultipleVideoInterviewLinksCommand />
-  ),
   [EngineComponentKey.ARX_START_CHAT_WITH_CANDIDATES]: (
     <ArxStartChatWithCandidatesCommand />
   ),
@@ -343,9 +334,6 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   ),
   [EngineComponentKey.ARX_FETCH_CONTACT_DETAILS]: (
     <ArxFetchContactDetailsCommand />
-  ),
-  [EngineComponentKey.ARX_CREATE_INTERVIEWER_AVATAR_VIDEOS]: (
-    <ArxCreateInterviewVideosCommand />
   ),
   [EngineComponentKey.ARX_CHECK_DATA_INTEGRITY_OF_PROJECT]: (
     <ArxCheckDataIntegrityOfProjectCommand />

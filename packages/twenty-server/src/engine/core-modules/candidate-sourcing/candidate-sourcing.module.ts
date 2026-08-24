@@ -23,8 +23,6 @@ import { AiFilteringProgressController } from 'src/engine/core-modules/candidate
 import { CandidateSourcingController } from 'src/engine/core-modules/candidate-sourcing/controllers/candidate-sourcing.controller';
 import { FileUploadController } from 'src/engine/core-modules/candidate-sourcing/controllers/file-upload.controller';
 import { UploadProgressController } from 'src/engine/core-modules/candidate-sourcing/controllers/upload-progress.controller';
-import { DeleteFieldValuesQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.job';
-import { DeleteFieldValuesService } from 'src/engine/core-modules/candidate-sourcing/jobs/delete-field-values.service';
 import { AiFiltersQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.job';
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
@@ -114,7 +112,6 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     RedisService,
     ProcessCandidatesService,
     ProcessAiFiltersService,
-    DeleteFieldValuesService,
     CandidateService,
     ChatService,
     FilterDescriptionProcessorService,
@@ -131,7 +128,6 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateWorkspaceGraphQLService,
     CandidateQueueProcessor,
     AiFiltersQueueProcessor,
-    DeleteFieldValuesQueueProcessor,
     CandidateEngagementProcessor,
     ResumeUploadQueueProcessor,
     // Data transformation services
@@ -168,7 +164,6 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateDataService,
     ProcessCandidatesService,
     ProcessAiFiltersService,
-    DeleteFieldValuesService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDParserService,

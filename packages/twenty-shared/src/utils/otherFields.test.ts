@@ -1,7 +1,6 @@
 import {
     buildOtherFieldsFromLegacyRows,
     buildOtherFieldsFromUnmapped,
-    candidateFieldValuesToOtherFields,
     getCandidateCustomField,
     getResolvedOtherFields,
     getValueFromCandidateRecord,
@@ -53,50 +52,18 @@ describe('otherFields utils', () => {
     });
   });
 
-  it('candidateFieldValuesToOtherFields migrates legacy edges', () => {
-    expect(
-      candidateFieldValuesToOtherFields([
-        {
-          node: {
-            name: '15L',
-            candidateFields: { name: 'inferred_salary' },
-          },
-        },
-      ]),
-    ).toEqual({ inferred_salary: '15L' });
-  });
-
-  it('getResolvedOtherFields falls back to legacy candidateFieldValues', () => {
+  it('getResolvedOtherFields reads candidate.otherFields', () => {
     expect(
       getResolvedOtherFields({
-        candidateFieldValues: {
-          edges: [
-            {
-              node: {
-                name: '15L',
-                candidateFields: { name: 'inferred_salary' },
-              },
-            },
-          ],
-        },
+        otherFields: { inferred_salary: '15L' },
       }),
     ).toEqual({ inferred_salary: '15L' });
   });
 
-  it('getCandidateCustomField prefers otherFields over legacy values', () => {
+  it('getCandidateCustomField reads otherFields', () => {
     const value = getCandidateCustomField(
       {
         otherFields: { inferred_salary: '20L' },
-        candidateFieldValues: {
-          edges: [
-            {
-              node: {
-                name: '10L',
-                candidateFields: { name: 'inferred_salary' },
-              },
-            },
-          ],
-        },
       },
       'inferredSalary',
     );
