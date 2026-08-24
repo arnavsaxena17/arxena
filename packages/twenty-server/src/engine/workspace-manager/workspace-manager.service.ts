@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
+import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -35,6 +36,7 @@ export class WorkspaceManagerService {
     private readonly roleRepository: WorkspaceScopedRepository<RoleEntity>,
     private readonly applicationService: ApplicationService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
+    private readonly apiKeyService: ApiKeyService,
   ) {}
 
   public async init({
@@ -97,6 +99,15 @@ export class WorkspaceManagerService {
       userId,
       workspaceCustomFlatApplication,
     });
+
+    try {
+      await this.apiKeyService.ensureWorkspaceApiKey(workspaceId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to seed workspace API key for ${workspaceId}`,
+        error instanceof Error ? error.stack : error,
+      );
+    }
   }
 
   private async setupDefaultRoles({

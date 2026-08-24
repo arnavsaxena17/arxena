@@ -12,16 +12,23 @@ import {
 import { type ApiKeyToken } from 'src/engine/core-modules/auth/dto/api-key-token.dto';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/jwt-token-type.enum';
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
+import { RoleEntity } from 'src/engine/metadata-modules/role/role.entity';
 import { RoleTargetService } from 'src/engine/metadata-modules/role-target/services/role-target.service';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
+
+const WORKSPACE_API_KEY_NAME = 'Workspace API key';
+const WORKSPACE_API_KEY_TTL_MS = 1000 * 60 * 60 * 24 * 365 * 100;
 
 @Injectable()
 export class ApiKeyService {
   constructor(
     @InjectWorkspaceScopedRepository(ApiKeyEntity)
     private readonly apiKeyRepository: WorkspaceScopedRepository<ApiKeyEntity>,
+    @InjectWorkspaceScopedRepository(RoleEntity)
+    private readonly roleRepository: WorkspaceScopedRepository<RoleEntity>,
     private readonly jwtWrapperService: JwtWrapperService,
     private readonly roleTargetService: RoleTargetService,
     private readonly workspaceCacheService: WorkspaceCacheService,
@@ -71,6 +78,46 @@ export class ApiKeyService {
   async findActiveByWorkspaceId(workspaceId: string): Promise<ApiKeyEntity[]> {
     return this.apiKeyRepository.find(workspaceId, {
       where: { revokedAt: IsNull() },
+    });
+  }
+
+  async findUsableByWorkspaceId(workspaceId: string): Promise<ApiKeyEntity[]> {
+    const apiKeys = await this.findActiveByWorkspaceId(workspaceId);
+
+    return apiKeys.filter((apiKey) => this.isActive(apiKey));
+  }
+
+  async ensureWorkspaceApiKey(
+    workspaceId: string,
+    name = WORKSPACE_API_KEY_NAME,
+  ): Promise<ApiKeyEntity> {
+    const existing = await this.findUsableByWorkspaceId(workspaceId);
+
+    if (existing[0]) {
+      return existing[0];
+    }
+
+    const adminRole = await this.roleRepository.findOne(workspaceId, {
+      where: {
+        universalIdentifier: STANDARD_ROLE.admin.universalIdentifier,
+      },
+    });
+
+    if (!adminRole) {
+      throw new ApiKeyException(
+        `Admin role not found for workspace ${workspaceId}`,
+        ApiKeyExceptionCode.API_KEY_NO_ROLE_ASSIGNED,
+        {
+          userFriendlyMessage: msg`Could not create a workspace API key because the Admin role is missing.`,
+        },
+      );
+    }
+
+    return this.create({
+      name,
+      expiresAt: new Date(Date.now() + WORKSPACE_API_KEY_TTL_MS),
+      workspaceId,
+      roleId: adminRole.id,
     });
   }
 

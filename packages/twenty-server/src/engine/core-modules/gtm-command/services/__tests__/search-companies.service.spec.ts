@@ -4,11 +4,8 @@ describe('SearchCompaniesService', () => {
   const companyApiService = {
     searchCompanies: jest.fn(),
   };
-  const workspaceQueryService = {
-    getApiKeys: jest.fn(),
-  };
-  const apiKeyService = {
-    generateApiKeyToken: jest.fn(),
+  const gtmWorkspaceAuthTokenService = {
+    resolveOrMint: jest.fn(),
   };
   const unipileSearchAccountResolver = {
     resolveDefaultWorkspaceAccount: jest.fn(),
@@ -22,8 +19,7 @@ describe('SearchCompaniesService', () => {
 
   const service = new SearchCompaniesService(
     companyApiService as never,
-    workspaceQueryService as never,
-    apiKeyService as never,
+    gtmWorkspaceAuthTokenService as never,
     unipileSearchAccountResolver as never,
     globalWorkspaceOrmManager as never,
   );
@@ -33,7 +29,7 @@ describe('SearchCompaniesService', () => {
   });
 
   it('returns an error when the workspace has no API token', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([]);
+    gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('');
 
     await expect(
       service.execute({
@@ -47,8 +43,7 @@ describe('SearchCompaniesService', () => {
   });
 
   it('maps Company API hits', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acc_member', product: 'sales_navigator' },
     );
@@ -90,8 +85,7 @@ describe('SearchCompaniesService', () => {
   });
 
   it('stops v2 account-list paging once a previously harvested company is reached', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acc_member', product: 'sales_navigator' },
     );
@@ -134,8 +128,7 @@ describe('SearchCompaniesService', () => {
   });
 
   it('passes Sales Navigator account list URLs through Unipile v2 browse', async () => {
-    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'tcUOzQ5hT9ycSvHIHQx0JA', product: 'sales_navigator' },
     );
@@ -169,8 +162,7 @@ describe('SearchCompaniesService', () => {
       'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
     );
 
-    workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
+    gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acc-1', product: 'classic', via: 'member' },
     );

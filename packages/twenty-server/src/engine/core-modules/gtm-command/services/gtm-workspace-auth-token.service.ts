@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
@@ -9,6 +9,8 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 @Injectable()
 export class GtmWorkspaceAuthTokenService {
+  private readonly logger = new Logger(GtmWorkspaceAuthTokenService.name);
+
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly apiKeyService: ApiKeyService,
@@ -17,7 +19,8 @@ export class GtmWorkspaceAuthTokenService {
 
   async resolveApiKeyToken(workspaceId: string): Promise<string | null> {
     const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId);
-    const apiKeyId = apiKeys?.[0]?.id;
+    const usable = apiKeys.find((apiKey) => this.apiKeyService.isActive(apiKey));
+    const apiKeyId = usable?.id;
 
     if (!isNonEmptyString(apiKeyId)) {
       return null;
@@ -36,6 +39,25 @@ export class GtmWorkspaceAuthTokenService {
 
     if (isNonEmptyString(apiKeyToken)) {
       return apiKeyToken;
+    }
+
+    try {
+      const apiKey =
+        await this.apiKeyService.ensureWorkspaceApiKey(workspaceId);
+      const createdToken = await this.apiKeyService.generateApiKeyToken(
+        workspaceId,
+        apiKey.id,
+      );
+
+      if (isNonEmptyString(createdToken?.token)) {
+        return createdToken.token;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not ensure workspace API key for ${workspaceId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
 
     return this.jwtWrapperService.signAsyncOrThrow(

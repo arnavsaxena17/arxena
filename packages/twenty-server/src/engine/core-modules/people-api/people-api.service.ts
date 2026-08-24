@@ -287,7 +287,7 @@ export class PeopleApiService {
         stdFunctionRoot,
         stdGrade,
         confidence: classification.confidence ?? 0,
-        location: location ?? null,
+        location: parsed.location ?? locations[0] ?? null,
       },
     };
   }

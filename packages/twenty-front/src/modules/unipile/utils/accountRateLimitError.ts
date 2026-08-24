@@ -152,29 +152,121 @@ export const collectAccountRateLimitQueuedEvents = (
   return collected;
 };
 
+export const getLinkedinRateLimitQueuedEvent = (
+  value: unknown,
+): AccountRateLimitQueuedEvent | null => readQueuedEventFromUnknown(value);
+
 export const isLinkedinRateLimitPendingStep = (value: unknown): boolean =>
-  readQueuedEventFromUnknown(value) !== null;
+  getLinkedinRateLimitQueuedEvent(value) !== null;
+
+const unitLabel = (count: number, singular: string, plural: string): string =>
+  count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 
 export const formatRetryWaitLabel = (seconds: number): string => {
   if (seconds < 60) {
-    return seconds === 1 ? '1 second' : `${seconds} seconds`;
+    return unitLabel(seconds, 'second', 'seconds');
   }
 
   if (seconds < 3600) {
-    const minutes = Math.ceil(seconds / 60);
-
-    return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+    return unitLabel(Math.ceil(seconds / 60), 'minute', 'minutes');
   }
 
   if (seconds < 86400) {
-    const hours = Math.ceil(seconds / 3600);
-
-    return hours === 1 ? '1 hour' : `${hours} hours`;
+    return unitLabel(Math.ceil(seconds / 3600), 'hour', 'hours');
   }
 
-  const days = Math.ceil(seconds / 86400);
+  return unitLabel(Math.ceil(seconds / 86400), 'day', 'days');
+};
 
-  return days === 1 ? '1 day' : `${days} days`;
+export const formatRetryWaitLabelFromMs = (waitMs: number): string => {
+  const totalSeconds = Math.max(0, Math.round(waitMs / 1000));
+
+  if (totalSeconds < 60) {
+    return formatRetryWaitLabel(totalSeconds);
+  }
+
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const parts: string[] = [];
+
+  if (days > 0) {
+    parts.push(unitLabel(days, 'day', 'days'));
+  }
+
+  if (hours > 0) {
+    parts.push(unitLabel(hours, 'hour', 'hours'));
+  }
+
+  if (minutes > 0 && days === 0) {
+    parts.push(unitLabel(minutes, 'minute', 'minutes'));
+  }
+
+  return parts.join(' ') || formatRetryWaitLabel(totalSeconds);
+};
+
+export const formatScheduledAtLabel = (scheduledAt: string): string => {
+  const date = new Date(scheduledAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return scheduledAt;
+  }
+
+  return date.toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+};
+
+export type LinkedinRateLimitPendingDisplay = {
+  message: string;
+  reason: string;
+  retryIn: string;
+  retryAt?: string;
+};
+
+export const formatLinkedinRateLimitPendingDisplay = (
+  event: AccountRateLimitQueuedEvent,
+  nowMs: number = Date.now(),
+): LinkedinRateLimitPendingDisplay => {
+  const scheduledAtMs =
+    typeof event.scheduledAt === 'string'
+      ? new Date(event.scheduledAt).getTime()
+      : Number.NaN;
+  const remainingMs = Number.isFinite(scheduledAtMs)
+    ? Math.max(0, scheduledAtMs - nowMs)
+    : event.waitMs;
+  const retryIn =
+    remainingMs <= 0 ? 'soon' : formatRetryWaitLabelFromMs(remainingMs);
+  const retryAt =
+    typeof event.scheduledAt === 'string' && Number.isFinite(scheduledAtMs)
+      ? formatScheduledAtLabel(event.scheduledAt)
+      : undefined;
+
+  return {
+    message:
+      remainingMs <= 0
+        ? 'LinkedIn search is rate limited. Retrying soon.'
+        : `LinkedIn search is rate limited. This step will retry automatically in ${retryIn}.`,
+    reason: 'LinkedIn rate limit',
+    retryIn,
+    ...(retryAt ? { retryAt } : {}),
+  };
+};
+
+export const formatLinkedinRateLimitPendingSubtitle = (
+  event: AccountRateLimitQueuedEvent,
+  nowMs: number = Date.now(),
+): string => {
+  const display = formatLinkedinRateLimitPendingDisplay(event, nowMs);
+
+  if (display.retryIn === 'soon') {
+    return 'Retrying soon';
+  }
+
+  return display.retryAt
+    ? `Retrying in ${display.retryIn} · ${display.retryAt}`
+    : `Retrying in ${display.retryIn}`;
 };
 
 export const formatAccountRateLimitSnackBarMessage = (

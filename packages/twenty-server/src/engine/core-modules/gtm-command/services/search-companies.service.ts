@@ -4,8 +4,8 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { type ObjectLiteral } from 'typeorm';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { CompanyApiService } from 'src/engine/core-modules/company-api/company-api.service';
+import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import type { CompanySearchHit } from 'src/engine/core-modules/company-api/company-api.types';
 import {
   collectIdentityKeySet,
@@ -14,7 +14,6 @@ import {
 import { gtmRunKeyHasProject } from 'src/engine/core-modules/gtm-command/utils/gtm-run-key.util';
 import { extractSalesNavigatorAccountListId } from 'src/engine/core-modules/linkedin-search/utils/classify-linkedin-search-url.util';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -49,8 +48,7 @@ export class SearchCompaniesService {
 
   constructor(
     private readonly companyApiService: CompanyApiService,
-    private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly apiKeyService: ApiKeyService,
+    private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
     private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
@@ -63,7 +61,8 @@ export class SearchCompaniesService {
     input: SearchCompaniesInput;
   }): Promise<object> {
     try {
-      const apiToken = await this.resolveApiToken(workspaceId);
+      const apiToken =
+        await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
       if (!isNonEmptyString(apiToken)) {
         return {
           success: false,
@@ -189,21 +188,5 @@ export class SearchCompaniesService {
 
       return new Set<string>();
     }
-  }
-
-  private async resolveApiToken(workspaceId: string): Promise<string | null> {
-    const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId);
-    const apiKeyId = apiKeys?.[0]?.id;
-
-    if (!isNonEmptyString(apiKeyId)) {
-      return null;
-    }
-
-    const token = await this.apiKeyService.generateApiKeyToken(
-      workspaceId,
-      apiKeyId,
-    );
-
-    return token?.token ?? null;
   }
 }

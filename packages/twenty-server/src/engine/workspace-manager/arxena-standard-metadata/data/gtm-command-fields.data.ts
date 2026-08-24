@@ -521,7 +521,7 @@ export const getGtmCommandFieldsData = (
   //     objectMetadataId: objectsNameIdMap.project,
   //     type: 'TEXT',
   //   },
-  },
+  // },
 
   // Opportunity — GTM attribution
   {

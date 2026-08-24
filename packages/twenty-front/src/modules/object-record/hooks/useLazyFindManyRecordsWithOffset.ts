@@ -67,6 +67,9 @@ export const useLazyFindManyRecordsWithOffset = ({
             limit,
             offset,
           },
+          // Refresh re-queries the same offset; default cache-first would
+          // keep stale row fields (e.g. workflow run status).
+          fetchPolicy: 'network-only',
         });
 
       if (result?.error) {

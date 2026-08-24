@@ -8,6 +8,8 @@ describe('GtmWorkspaceAuthTokenService', () => {
   };
   const apiKeyService = {
     generateApiKeyToken: jest.fn(),
+    ensureWorkspaceApiKey: jest.fn(),
+    isActive: jest.fn(),
   };
   const jwtWrapperService = {
     signAsyncOrThrow: jest.fn(),
@@ -21,6 +23,7 @@ describe('GtmWorkspaceAuthTokenService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    apiKeyService.isActive.mockReturnValue(true);
   });
 
   it('returns an existing API key token when present', async () => {
@@ -28,11 +31,25 @@ describe('GtmWorkspaceAuthTokenService', () => {
     apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
 
     await expect(service.resolveOrMint('ws-1')).resolves.toBe('tok');
+    expect(apiKeyService.ensureWorkspaceApiKey).not.toHaveBeenCalled();
     expect(jwtWrapperService.signAsyncOrThrow).not.toHaveBeenCalled();
   });
 
-  it('mints a workspace token when no API key exists', async () => {
+  it('creates a workspace API key when none exists', async () => {
     workspaceQueryService.getApiKeys.mockResolvedValue([]);
+    apiKeyService.ensureWorkspaceApiKey.mockResolvedValue({ id: 'key-2' });
+    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'created-tok' });
+
+    await expect(service.resolveOrMint('ws-1')).resolves.toBe('created-tok');
+    expect(apiKeyService.ensureWorkspaceApiKey).toHaveBeenCalledWith('ws-1');
+    expect(jwtWrapperService.signAsyncOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('mints a workspace token when API key creation fails', async () => {
+    workspaceQueryService.getApiKeys.mockResolvedValue([]);
+    apiKeyService.ensureWorkspaceApiKey.mockRejectedValue(
+      new Error('Admin role missing'),
+    );
     jwtWrapperService.signAsyncOrThrow.mockResolvedValue('system-tok');
 
     await expect(service.resolveOrMint('ws-1')).resolves.toBe('system-tok');

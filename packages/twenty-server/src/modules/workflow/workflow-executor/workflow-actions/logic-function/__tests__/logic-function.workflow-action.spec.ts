@@ -118,4 +118,25 @@ describe('LogicFunctionWorkflowAction', () => {
     expect(output.scheduledAt).toEqual(expect.any(String));
     expect(output.error).toBeUndefined();
   });
+
+  it('marks the step as failed when a native handler returns success:false', async () => {
+    nativeExecute.mockResolvedValue({
+      success: false,
+      total: 0,
+      people: [],
+      error: 'location is not defined',
+      projectId: 'project-1',
+      dataSource: '',
+    });
+
+    const output = await action.execute({
+      currentStepId: 'step-1',
+      steps: [buildLogicFunctionStep()],
+      context: {},
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(output).toEqual({ error: 'location is not defined' });
+    expect(output.result).toBeUndefined();
+  });
 });
