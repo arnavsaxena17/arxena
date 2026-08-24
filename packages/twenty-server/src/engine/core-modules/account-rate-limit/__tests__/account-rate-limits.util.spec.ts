@@ -21,6 +21,17 @@ describe('account rate limit sanitization', () => {
     ).toBe(200);
   });
 
+  it('clamps LinkedIn connection hourly cap to the allowed range', () => {
+    expect(
+      sanitizeLinkedinAccountRateLimits({
+        connectionRequestPerHour: 999,
+      }).connectionRequestPerHour,
+    ).toBe(20);
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerHour).toBe(
+      5,
+    );
+  });
+
   it('parses a per-account LinkedIn map', () => {
     const map = parseLinkedinAccountRateLimitsMap({
       acc_1: { connectionRequestPerDay: 10 },

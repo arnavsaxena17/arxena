@@ -16,7 +16,7 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
 
     const result = await redisService.tryAcquireMultiWindowSlots(
       [
-        { key: 'linkedin:a:connection_request:30s', windowMs: 30_000, limit: 1 },
+        { key: 'linkedin:a:connection_request:hour', windowMs: 3_600_000, limit: 5 },
         { key: 'linkedin:a:connection_request:day', windowMs: 86_400_000, limit: 20 },
       ],
       'member-1',
@@ -141,6 +141,54 @@ describe('AccountRateLimiterService', () => {
         'whatsapp:wa-1:start_chat:day',
         'whatsapp:wa-1:endpoint:minute',
         'whatsapp:wa-1:endpoint:day',
+      ]),
+    );
+  });
+
+  it('applies LinkedIn connection request hour, day, and week windows', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'connection_request',
+    });
+
+    const windows = acquire.mock.calls[0][0] as Array<{
+      key: string;
+      windowMs: number;
+      limit: number;
+    }>;
+    const keys = windows.map((window) => window.key);
+
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        'linkedin:acc-1:connection_request:hour',
+        'linkedin:acc-1:connection_request:day',
+        'linkedin:acc-1:connection_request:week',
+        'linkedin:acc-1:endpoint:minute',
+        'linkedin:acc-1:endpoint:day',
+      ]),
+    );
+    expect(keys).not.toContain('linkedin:acc-1:connection_request:30s');
+    expect(windows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:hour',
+          windowMs: 3_600_000,
+          limit: 5,
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:day',
+          windowMs: 86_400_000,
+          limit: 20,
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:week',
+          windowMs: 604_800_000,
+          limit: 80,
+        }),
       ]),
     );
   });
