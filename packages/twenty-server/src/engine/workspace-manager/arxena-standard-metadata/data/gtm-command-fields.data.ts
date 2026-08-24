@@ -644,17 +644,6 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'project',
     field: {
-      description: 'ICP segment for this GTM/recruiting run',
-      icon: 'IconTags',
-      label: 'ICP Segment',
-      name: 'icpSegment',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
       description: 'Pinned outreach Workflow B id for GTM Command',
       icon: 'IconGitBranch',
       label: 'Outreach Workflow Id',
@@ -690,7 +679,7 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'project',
     field: {
-      description: 'Approved ICP JSON (std_function / std_grade targets)',
+      description: 'Optional run override ICP JSON (buyerTitles and locations)',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',

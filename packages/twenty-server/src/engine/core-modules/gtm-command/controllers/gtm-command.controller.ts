@@ -458,7 +458,6 @@ export class GtmCommandController {
           userFirstName: body?.userFirstName,
           userLastName: body?.userLastName,
           force: true,
-          preserveSearchBlurbs: true,
         },
       );
 

@@ -84,96 +84,12 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Default ICP segment label shared across GTM runs',
-      icon: 'IconTags',
-      label: 'ICP Segment',
-      name: 'icpSegment',
-      objectMetadataId: objectsNameIdMap.workspaceProfile,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'workspaceProfile',
-    field: {
       description:
-        'Default ICP JSON (std_function / std_grade targets) shared across GTM runs',
+        'Default ICP JSON (buyerTitles and locations) shared across GTM runs',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',
       objectMetadataId: objectsNameIdMap.workspaceProfile,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'workspaceProfile',
-    field: {
-      description:
-        'Natural-language definition of the default ICP (who we sell to / why)',
-      icon: 'IconNotes',
-      label: 'ICP Blurb',
-      name: 'icpBlurb',
-      objectMetadataId: objectsNameIdMap.workspaceProfile,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'workspaceProfile',
-    field: {
-      description:
-        'Natural-language brief used to find target companies for this ICP',
-      icon: 'IconSearch',
-      label: 'Company Search Blurb',
-      name: 'companySearchBlurb',
-      objectMetadataId: objectsNameIdMap.workspaceProfile,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'workspaceProfile',
-    field: {
-      description:
-        'Natural-language brief used to find buyers/personas at target companies',
-      icon: 'IconUserSearch',
-      label: 'People Search Blurb',
-      name: 'peopleSearchBlurb',
-      objectMetadataId: objectsNameIdMap.workspaceProfile,
-      type: 'TEXT',
-    },
-  },
-  // Project — optional run overrides for ICP blurb + search blurbs
-  {
-    objectName: 'project',
-    field: {
-      description:
-        'Optional run override for ICP blurb (inherit workspace profile when empty)',
-      icon: 'IconNotes',
-      label: 'ICP Blurb',
-      name: 'icpBlurb',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description:
-        'Optional run override for company search blurb (inherit workspace profile when empty)',
-      icon: 'IconSearch',
-      label: 'Company Search Blurb',
-      name: 'companySearchBlurb',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description:
-        'Optional run override for people search blurb (inherit workspace profile when empty)',
-      icon: 'IconUserSearch',
-      label: 'People Search Blurb',
-      name: 'peopleSearchBlurb',
-      objectMetadataId: objectsNameIdMap.project,
       type: 'TEXT',
     },
   },

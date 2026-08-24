@@ -39,11 +39,7 @@ type GtmWorkspaceProfileRecord = ObjectLiteral & {
   employeeRange?: string | null;
   hq?: string | null;
   enrichmentJson?: Record<string, unknown> | null;
-  icpSegment?: string | null;
   icpSpec?: string | null;
-  icpBlurb?: string | null;
-  companySearchBlurb?: string | null;
-  peopleSearchBlurb?: string | null;
   createdBy?: ActorMetadata;
   updatedBy?: ActorMetadata;
 };
@@ -100,7 +96,6 @@ export class GtmWorkspaceProfileProvisioningService {
     await this.bootstrapWorkspaceProfile({
       ...data,
       force: true,
-      preserveSearchBlurbs: data.preserveSearchBlurbs ?? true,
     });
   }
 
@@ -135,7 +130,6 @@ export class GtmWorkspaceProfileProvisioningService {
           });
           const existingProfile = existingProfiles[0];
           const force = data.force === true;
-          const preserveSearchBlurbs = data.preserveSearchBlurbs === true;
 
           if (
             !force &&
