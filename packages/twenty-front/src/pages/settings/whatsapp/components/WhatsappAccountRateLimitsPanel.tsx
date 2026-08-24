@@ -30,13 +30,19 @@ export const WhatsappAccountRateLimitsPanel = ({
     [accountId, accessToken],
   );
 
+  const flushUsage = useCallback(async () => {
+    const service = getWhatsappUnipileService();
+    return service.flushAccountRateLimitUsage(accountId, accessToken);
+  }, [accountId, accessToken]);
+
   return (
     <AccountRateLimitsPanel<WhatsappAccountRateLimits>
       title="Rate limits for this WhatsApp account"
-      description="The maximum number of requests in a window of time for this WhatsApp account."
+      description="The maximum number of requests in a window of time for this WhatsApp account. Clear used requests to reset Redis counters without changing these limits."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}
+      flushUsage={flushUsage}
       fields={[
         {
           key: 'endpointPerMinute',

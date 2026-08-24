@@ -15,6 +15,7 @@ import {
 import { Request } from 'express';
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
+import { AccountRateLimiterService } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
@@ -214,6 +215,7 @@ export class LinkedinUnipileController {
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
     private readonly linkedinStoredCookieValidationService: LinkedinStoredCookieValidationService,
     private readonly accountRateLimitConfigService: AccountRateLimitConfigService,
+    private readonly accountRateLimiterService: AccountRateLimiterService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -1806,6 +1808,22 @@ export class LinkedinUnipileController {
       body.limits ?? {},
     );
     return { success: true, limits };
+  }
+
+  @Post('accounts/:accountId/rate-limits/flush')
+  async flushAccountRateLimitUsage(
+    @Param('accountId') accountId: string,
+  ) {
+    const trimmedAccountId = accountId.trim();
+    if (!trimmedAccountId) {
+      throw new HttpException('accountId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.accountRateLimiterService.flushUsage({
+      provider: 'linkedin',
+      accountId: trimmedAccountId,
+    });
+    return { success: true, ...result };
   }
 
   @Post('accounts/:accountId/resync')

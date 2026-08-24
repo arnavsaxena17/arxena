@@ -1,5 +1,8 @@
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
-import { AccountRateLimiterService } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.service';
+import {
+  AccountRateLimiterService,
+  buildAccountRateLimitUsageScanPattern,
+} from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.service';
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 
 describe('RedisService.tryAcquireMultiWindowSlots', () => {
@@ -42,6 +45,34 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
   });
 });
 
+describe('RedisService.deleteByPattern', () => {
+  it('scans and deletes matching keys', async () => {
+    const redisClient = {
+      scan: jest
+        .fn()
+        .mockResolvedValueOnce(['1', ['linkedin:acc-1:search:day']])
+        .mockResolvedValueOnce(['0', ['linkedin:acc-1:endpoint:minute']]),
+      del: jest.fn().mockResolvedValue(1),
+    };
+    const redisService = new RedisService({ get: jest.fn() } as never);
+    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
+      redisClient;
+
+    const deleted = await redisService.deleteByPattern('linkedin:acc-1:*');
+
+    expect(deleted).toBe(2);
+    expect(redisClient.scan).toHaveBeenCalledTimes(2);
+    expect(redisClient.del).toHaveBeenNthCalledWith(
+      1,
+      'linkedin:acc-1:search:day',
+    );
+    expect(redisClient.del).toHaveBeenNthCalledWith(
+      2,
+      'linkedin:acc-1:endpoint:minute',
+    );
+  });
+});
+
 describe('AccountRateLimiterService', () => {
   const createLimiter = (
     acquire: jest.Mock,
@@ -50,6 +81,7 @@ describe('AccountRateLimiterService', () => {
       tryAcquireMultiWindowSlots: acquire,
       getString: jest.fn().mockResolvedValue(null),
       setString: jest.fn(),
+      deleteByPattern: jest.fn().mockResolvedValue(0),
     };
     const configService = {
       readCachedLinkedinLimits: jest.fn().mockResolvedValue(null),
@@ -200,5 +232,40 @@ describe('AccountRateLimiterService', () => {
         maxInProcessWaitMs: 1_000,
       }),
     ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
+  it('flushes only this account usage keys and skips empty account ids', async () => {
+    const deleteByPattern = jest.fn().mockResolvedValue(7);
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest.fn(),
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteByPattern,
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    await expect(
+      limiter.flushUsage({ provider: 'linkedin', accountId: '   ' }),
+    ).resolves.toEqual({ deletedKeys: 0 });
+    expect(deleteByPattern).not.toHaveBeenCalled();
+
+    await expect(
+      limiter.flushUsage({ provider: 'linkedin', accountId: 'acc-1' }),
+    ).resolves.toEqual({ deletedKeys: 7 });
+    expect(deleteByPattern).toHaveBeenCalledWith('linkedin:acc-1:*');
+    expect(deleteByPattern.mock.calls[0][0]).not.toContain(
+      'account-rate-limits-config',
+    );
+  });
+
+  it('escapes redis glob characters in account ids', () => {
+    expect(buildAccountRateLimitUsageScanPattern('linkedin', 'acc-*x')).toBe(
+      'linkedin:acc-\\*x:*',
+    );
   });
 });

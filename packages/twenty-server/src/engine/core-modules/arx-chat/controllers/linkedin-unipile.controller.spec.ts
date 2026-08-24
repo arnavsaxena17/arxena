@@ -55,6 +55,8 @@ describe('LinkedinUnipileController', () => {
       memberLinkedinUnipileConnectionService as never,
       linkedinUnipileMemberAccountResolverService as never,
       linkedinStoredCookieValidationService as never,
+      {} as never,
+      {} as never,
     );
 
     return {

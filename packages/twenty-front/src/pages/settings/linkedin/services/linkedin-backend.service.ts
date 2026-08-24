@@ -351,6 +351,18 @@ export class LinkedinBackendService {
     return response.limits;
   }
 
+  async flushAccountRateLimitUsage(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<{ deletedKeys: number }> {
+    return this.makeRequest<{ deletedKeys: number }>(
+      `/accounts/${accountId}/rate-limits/flush`,
+      'POST',
+      undefined,
+      accessToken,
+    );
+  }
+
   /**
    * Check service health
    */

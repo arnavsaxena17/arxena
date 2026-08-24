@@ -30,13 +30,19 @@ export const LinkedinAccountRateLimitsPanel = ({
     [accountId, accessToken],
   );
 
+  const flushUsage = useCallback(async () => {
+    const service = getLinkedinService();
+    return service.flushAccountRateLimitUsage(accountId, accessToken);
+  }, [accountId, accessToken]);
+
   return (
     <AccountRateLimitsPanel<LinkedinAccountRateLimits>
       title="Rate limits for this LinkedIn account"
-      description="The maximum number of requests in a window of time for this LinkedIn account. People / org chart search counts once per search, not once per paginated Unipile page. Location, company, and industry lookups use the per-endpoint limits instead."
+      description="The maximum number of requests in a window of time for this LinkedIn account. People / org chart search counts once per search, not once per paginated Unipile page. Location, company, and industry lookups use the per-endpoint limits instead. Clear used requests to reset Redis counters without changing these limits."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}
+      flushUsage={flushUsage}
       fields={[
         {
           key: 'endpointPerMinute',

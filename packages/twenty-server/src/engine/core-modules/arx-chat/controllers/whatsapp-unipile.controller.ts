@@ -13,6 +13,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
+import { AccountRateLimiterService } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -45,6 +46,7 @@ export class WhatsappUnipileController {
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly whatsappUnipileSyncService: WhatsappUnipileSyncService,
     private readonly accountRateLimitConfigService: AccountRateLimitConfigService,
+    private readonly accountRateLimiterService: AccountRateLimiterService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(`Unipile Access Token configured: ${!!this.unipileAccessToken}`);
@@ -335,6 +337,22 @@ export class WhatsappUnipileController {
       body.limits ?? {},
     );
     return { success: true, limits };
+  }
+
+  @Post('accounts/:accountId/rate-limits/flush')
+  async flushAccountRateLimitUsage(
+    @Param('accountId') accountId: string,
+  ) {
+    const trimmedAccountId = accountId.trim();
+    if (!trimmedAccountId) {
+      throw new HttpException('accountId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.accountRateLimiterService.flushUsage({
+      provider: 'whatsapp',
+      accountId: trimmedAccountId,
+    });
+    return { success: true, ...result };
   }
 
   /**

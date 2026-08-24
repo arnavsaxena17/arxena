@@ -86,7 +86,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   inmailPer30Seconds: { min: 1, max: 5 },
   inmailPerDay: { min: 1, max: 50 },
   searchPerMinute: { min: 1, max: 10 },
-  searchPerDay: { min: 1, max: 20 },
+  searchPerDay: { min: 1, max: 40 },
 };
 
 export const WHATSAPP_ACCOUNT_RATE_LIMIT_BOUNDS: Record<

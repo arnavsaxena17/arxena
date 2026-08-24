@@ -39,6 +39,14 @@ export type AccountRateLimitMethod =
 
 export const MAX_IN_PROCESS_WAIT_MS = 120_000;
 
+const escapeRedisGlob = (value: string): string =>
+  value.replace(/[\\*?[\]]/g, '\\$&');
+
+export const buildAccountRateLimitUsageScanPattern = (
+  provider: AccountRateLimitProvider,
+  accountId: string,
+): string => `${provider}:${escapeRedisGlob(accountId)}:*`;
+
 type RateLimitWindow = {
   key: string;
   windowMs: number;
@@ -84,6 +92,26 @@ export class AccountRateLimiterService implements OnModuleInit {
     const now = Date.now();
     const member = `${now}:${Math.random().toString(36).slice(2)}`;
     return this.redisService.tryAcquireMultiWindowSlots(windows, member, now);
+  }
+
+  async flushUsage(params: {
+    provider: AccountRateLimitProvider;
+    accountId: string;
+  }): Promise<{ deletedKeys: number }> {
+    const accountId = params.accountId.trim();
+    if (!accountId) {
+      return { deletedKeys: 0 };
+    }
+
+    const deletedKeys = await this.redisService.deleteByPattern(
+      buildAccountRateLimitUsageScanPattern(params.provider, accountId),
+    );
+
+    this.logger.log(
+      `Flushed ${deletedKeys} ${params.provider} rate-limit usage keys for account ${accountId}`,
+    );
+
+    return { deletedKeys };
   }
 
   async acquireOrDefer(params: {
