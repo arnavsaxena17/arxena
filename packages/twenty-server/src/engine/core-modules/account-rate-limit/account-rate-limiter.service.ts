@@ -8,8 +8,8 @@ import {
   MS_PER_FIVE_MINUTES,
   MS_PER_HOUR,
   MS_PER_MINUTE,
+  MS_PER_TEN_SECONDS,
   MS_PER_THIRTY_SECONDS,
-  MS_PER_TWO_SECONDS,
   MS_PER_WEEK,
   WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
   getAccountRateLimitWindowMs,
@@ -322,9 +322,9 @@ export class AccountRateLimiterService implements OnModuleInit {
           accountId,
           'linkedin',
           'company_profile',
-          '2s',
-          limits.companyProfilePer2Seconds,
-          MS_PER_TWO_SECONDS,
+          '10s',
+          limits.companyProfilePer10Seconds,
+          MS_PER_TEN_SECONDS,
         ),
       );
     }
@@ -335,9 +335,9 @@ export class AccountRateLimiterService implements OnModuleInit {
           accountId,
           'linkedin',
           'profile',
-          '2s',
-          limits.profilePer2Seconds,
-          MS_PER_TWO_SECONDS,
+          '10s',
+          limits.profilePer10Seconds,
+          MS_PER_TEN_SECONDS,
         ),
       );
     }

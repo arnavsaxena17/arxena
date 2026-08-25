@@ -66,19 +66,19 @@ export const LinkedinAccountRateLimitsPanel = ({
           recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay,
         },
         {
-          key: 'companyProfilePer2Seconds',
+          key: 'companyProfilePer10Seconds',
           label: 'Get company profile',
-          windowLabel: 'per 2 sec',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.companyProfilePer2Seconds,
+          windowLabel: 'per 10 sec',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.companyProfilePer10Seconds,
           recommended:
-            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer2Seconds,
+            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds,
         },
         {
-          key: 'profilePer2Seconds',
+          key: 'profilePer10Seconds',
           label: 'Get profile',
-          windowLabel: 'per 2 sec',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.profilePer2Seconds,
-          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer2Seconds,
+          windowLabel: 'per 10 sec',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.profilePer10Seconds,
+          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer10Seconds,
         },
         {
           key: 'connectionRequestPer5Minutes',

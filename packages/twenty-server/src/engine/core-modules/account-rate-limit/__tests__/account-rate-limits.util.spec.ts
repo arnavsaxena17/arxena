@@ -38,6 +38,20 @@ describe('account rate limit sanitization', () => {
     ).toBe(1);
   });
 
+  it('migrates saved Get profile and company profile 2s limits onto the 10s window', () => {
+    const migrated = sanitizeLinkedinAccountRateLimits({
+      profilePer2Seconds: 2,
+      companyProfilePer2Seconds: 2,
+    });
+
+    expect(migrated.profilePer10Seconds).toBe(2);
+    expect(migrated.companyProfilePer10Seconds).toBe(2);
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer10Seconds).toBe(1);
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds).toBe(
+      1,
+    );
+  });
+
   it('parses a per-account LinkedIn map', () => {
     const map = parseLinkedinAccountRateLimitsMap({
       acc_1: { connectionRequestPerDay: 10 },
@@ -77,6 +91,18 @@ describe('account rate limit sanitization', () => {
       method: 'search',
       windowName: 'day',
     });
+    expect(
+      getLinkedinAccountRateLimitUsageWindow('profilePer10Seconds'),
+    ).toEqual({
+      method: 'profile',
+      windowName: '10s',
+    });
+    expect(
+      getLinkedinAccountRateLimitUsageWindow('companyProfilePer10Seconds'),
+    ).toEqual({
+      method: 'company_profile',
+      windowName: '10s',
+    });
     expect(getLinkedinAccountRateLimitUsageWindow('toString')).toBeUndefined();
     expect(
       getWhatsappAccountRateLimitUsageWindow('startChatPerMinute'),
@@ -89,6 +115,7 @@ describe('account rate limit sanitization', () => {
 
   it('maps window names to sliding-window durations', () => {
     expect(getAccountRateLimitWindowMs('5m')).toBe(300_000);
+    expect(getAccountRateLimitWindowMs('10s')).toBe(10_000);
     expect(getAccountRateLimitWindowMs('hour')).toBe(3_600_000);
     expect(getAccountRateLimitWindowMs('week')).toBe(604_800_000);
     expect(getAccountRateLimitWindowMs('unknown')).toBeUndefined();

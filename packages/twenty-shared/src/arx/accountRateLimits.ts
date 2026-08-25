@@ -8,13 +8,14 @@ export const MS_PER_HOUR = 3_600_000;
 export const MS_PER_DAY = 86_400_000;
 export const MS_PER_WEEK = 7 * MS_PER_DAY;
 export const MS_PER_TWO_SECONDS = 2_000;
+export const MS_PER_TEN_SECONDS = 10_000;
 export const MS_PER_THIRTY_SECONDS = 30_000;
 
 export type LinkedinAccountRateLimits = {
   endpointPerMinute: number;
   endpointPerDay: number;
-  companyProfilePer2Seconds: number;
-  profilePer2Seconds: number;
+  companyProfilePer10Seconds: number;
+  profilePer10Seconds: number;
   connectionRequestPer5Minutes: number;
   connectionRequestPerHour: number;
   connectionRequestPerDay: number;
@@ -49,8 +50,8 @@ export type WhatsappAccountRateLimitsMap = Record<
 export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
   endpointPerMinute: 5,
   endpointPerDay: 40,
-  companyProfilePer2Seconds: 1,
-  profilePer2Seconds: 1,
+  companyProfilePer10Seconds: 1,
+  profilePer10Seconds: 1,
   connectionRequestPer5Minutes: 1,
   connectionRequestPerHour: 5,
   connectionRequestPerDay: 20,
@@ -78,8 +79,8 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
 > = {
   endpointPerMinute: { min: 1, max: 10 },
   endpointPerDay: { min: 5, max: 100 },
-  companyProfilePer2Seconds: { min: 1, max: 3 },
-  profilePer2Seconds: { min: 1, max: 3 },
+  companyProfilePer10Seconds: { min: 1, max: 3 },
+  profilePer10Seconds: { min: 1, max: 3 },
   connectionRequestPer5Minutes: { min: 1, max: 5 },
   connectionRequestPerHour: { min: 1, max: 20 },
   connectionRequestPerDay: { min: 1, max: 50 },
@@ -111,6 +112,7 @@ export type AccountRateLimitUsageWindow = {
 
 export const ACCOUNT_RATE_LIMIT_WINDOW_MS: Record<string, number> = {
   '2s': MS_PER_TWO_SECONDS,
+  '10s': MS_PER_TEN_SECONDS,
   '30s': MS_PER_THIRTY_SECONDS,
   '5m': MS_PER_FIVE_MINUTES,
   minute: MS_PER_MINUTE,
@@ -140,8 +142,8 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
 > = {
   endpointPerMinute: { method: 'endpoint', windowName: 'minute' },
   endpointPerDay: { method: 'endpoint', windowName: 'day' },
-  companyProfilePer2Seconds: { method: 'company_profile', windowName: '2s' },
-  profilePer2Seconds: { method: 'profile', windowName: '2s' },
+  companyProfilePer10Seconds: { method: 'company_profile', windowName: '10s' },
+  profilePer10Seconds: { method: 'profile', windowName: '10s' },
   connectionRequestPer5Minutes: {
     method: 'connection_request',
     windowName: '5m',
@@ -215,8 +217,29 @@ const clampInt = (value: unknown, min: number, max: number, fallback: number) =>
 };
 
 export const sanitizeLinkedinAccountRateLimits = (
-  value?: Partial<LinkedinAccountRateLimits> | null,
+  value?:
+    | (Partial<LinkedinAccountRateLimits> & {
+        profilePer2Seconds?: number;
+        companyProfilePer2Seconds?: number;
+      })
+    | null,
 ): LinkedinAccountRateLimits => {
+  const migrated: Partial<LinkedinAccountRateLimits> = { ...value };
+
+  if (
+    migrated.profilePer10Seconds == null &&
+    value?.profilePer2Seconds != null
+  ) {
+    migrated.profilePer10Seconds = value.profilePer2Seconds;
+  }
+
+  if (
+    migrated.companyProfilePer10Seconds == null &&
+    value?.companyProfilePer2Seconds != null
+  ) {
+    migrated.companyProfilePer10Seconds = value.companyProfilePer2Seconds;
+  }
+
   const result = { ...DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS };
 
   (Object.keys(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS) as Array<
@@ -224,7 +247,7 @@ export const sanitizeLinkedinAccountRateLimits = (
   >).forEach((key) => {
     const bounds = LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS[key];
     result[key] = clampInt(
-      value?.[key],
+      migrated[key],
       bounds.min,
       bounds.max,
       DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS[key],

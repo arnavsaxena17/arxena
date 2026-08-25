@@ -364,7 +364,7 @@ describe('AccountRateLimiterService', () => {
       expect.arrayContaining([
         'linkedin:acc-1:endpoint:minute',
         'linkedin:acc-1:endpoint:day',
-        'linkedin:acc-1:profile:2s',
+        'linkedin:acc-1:profile:10s',
       ]),
     );
   });

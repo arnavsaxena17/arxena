@@ -1554,7 +1554,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         // Apply row state border color (only on first column)
         if (column === 0 && mergedData[row]) {
           const candidate = mergedData[row];
-          const borderColor = getRowBorderColor(candidate, getCandidateState);
+          const borderColor = getRowBorderColor(candidate, candidateState);
 
           // Add left border to indicate persistence state
           Object.assign(renderedTd.style, {
