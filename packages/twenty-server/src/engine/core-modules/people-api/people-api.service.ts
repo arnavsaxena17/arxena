@@ -48,7 +48,10 @@ import {
 import { buildTaxonomyTreeFromFlatLists } from './utils/build-taxonomy-tree.util';
 import { collectPeopleSearchLocations } from './utils/collect-people-search-locations.util';
 import { extractCandidateExperience } from './utils/extract-candidate-experience.util';
-import { extractCandidateJobTitle } from './utils/extract-candidate-job-title.util';
+import {
+  candidateCurrentlyWorksAtTargetCompany,
+  extractCandidateJobTitle,
+} from './utils/extract-candidate-job-title.util';
 import {
   extractTaxonomyItemValue,
   usablePeopleTaxonomyLabel,
@@ -905,10 +908,14 @@ export class PeopleApiService {
     };
 
     const responseDataSource = sourcingResult.dataSource;
+    const companyMatched = this.filterCandidatesByTargetCompany(
+      sourcingResult.items,
+      sourcingResult.company,
+    );
 
     if (stdFunction || stdFunctionRoot) {
       const filtered = await this.filterCandidatesByTaxonomy(
-        sourcingResult.items,
+        companyMatched,
         {
           stdFunction,
           stdFunctionRoot,
@@ -930,10 +937,10 @@ export class PeopleApiService {
     return {
       status: 'ok',
       dataSource: responseDataSource,
-      total: sourcingResult.items.length,
+      total: companyMatched.length,
       totalBeforeFilter: sourcingResult.items.length,
       query: queryMeta,
-      items: sourcingResult.items,
+      items: companyMatched,
     };
   }
 
@@ -1035,6 +1042,67 @@ export class PeopleApiService {
     }
   }
 
+  private filterCandidatesByTargetCompany(
+    items: Array<Record<string, unknown>>,
+    company?: {
+      name?: string | null;
+      slug?: string | null;
+      id?: string | null;
+    },
+  ): Array<Record<string, unknown>> {
+    const options = {
+      companyName: company?.name,
+      companyId: company?.id,
+      companySlug: company?.slug,
+    };
+
+    if (
+      !options.companyName?.trim() &&
+      !options.companySlug?.trim() &&
+      !(
+        (typeof options.companyId === 'string' &&
+          options.companyId.trim().length > 0) ||
+        (typeof options.companyId === 'number' &&
+          Number.isFinite(options.companyId))
+      )
+    ) {
+      return items;
+    }
+
+    const kept: Array<Record<string, unknown>> = [];
+    const dropped: Array<{
+      name: string;
+      jobTitle: string;
+      company: string;
+    }> = [];
+
+    for (const item of items) {
+      if (candidateCurrentlyWorksAtTargetCompany(item, options)) {
+        kept.push(item);
+        continue;
+      }
+
+      dropped.push({
+        name:
+          (typeof item.name === 'string' && item.name.trim()) ||
+          (typeof item.full_name === 'string' && item.full_name.trim()) ||
+          '',
+        jobTitle: extractCandidateJobTitle(item, options) ?? '',
+        company:
+          (typeof item.company === 'string' && item.company.trim()) ||
+          (typeof item.jobCompanyName === 'string' &&
+            item.jobCompanyName.trim()) ||
+          '',
+      });
+    }
+
+    this.logger.log(
+      `People API company filter received=${items.length} kept=${kept.length} dropped=${dropped.length} company=${options.companyName ?? ''} id=${options.companyId ?? ''} slug=${options.companySlug ?? ''} dropped=${JSON.stringify(dropped)}`,
+    );
+
+    return kept;
+  }
+
   private async filterCandidatesByTaxonomy(
     items: Array<Record<string, unknown>>,
     criteria: {
@@ -1059,6 +1127,10 @@ export class PeopleApiService {
       }
     >
   > {
+    if (items.length === 0) {
+      return [];
+    }
+
     const titleOptions = {
       companyName: company?.name,
       companyId: company?.id,

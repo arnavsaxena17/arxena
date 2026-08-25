@@ -6,7 +6,7 @@ import {
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 
 describe('RedisService.tryAcquireMultiWindowSlots', () => {
-  it('does not consume slots when lua returns a wait', async () => {
+  it('reserves a future slot when lua returns a wait', async () => {
     const redisClient = {
       eval: jest.fn().mockResolvedValue(5_000),
     };
@@ -16,9 +16,24 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
 
     const result = await redisService.tryAcquireMultiWindowSlots(
       [
-        { key: 'linkedin:a:connection_request:5m', windowMs: 300_000, limit: 1 },
-        { key: 'linkedin:a:connection_request:hour', windowMs: 3_600_000, limit: 5 },
-        { key: 'linkedin:a:connection_request:day', windowMs: 86_400_000, limit: 20 },
+        {
+          key: 'linkedin:a:connection_request:5m',
+          windowMs: 300_000,
+          limit: 1,
+          pace: true,
+        },
+        {
+          key: 'linkedin:a:connection_request:hour',
+          windowMs: 3_600_000,
+          limit: 5,
+          pace: false,
+        },
+        {
+          key: 'linkedin:a:connection_request:day',
+          windowMs: 86_400_000,
+          limit: 20,
+          pace: false,
+        },
       ],
       'member-1',
       1_000,
@@ -26,6 +41,17 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
 
     expect(result).toEqual({ acquired: false, waitMs: 5_000 });
     expect(redisClient.eval).toHaveBeenCalledTimes(1);
+    expect(redisClient.eval.mock.calls[0].slice(5, 14)).toEqual([
+      '1000',
+      'member-1',
+      '3',
+      '300000',
+      '1',
+      '1',
+      '3600000',
+      '5',
+      '0',
+    ]);
   });
 
   it('returns acquired when lua returns 0', async () => {
@@ -237,21 +263,25 @@ describe('AccountRateLimiterService', () => {
           key: 'linkedin:acc-1:connection_request:5m',
           windowMs: 300_000,
           limit: 1,
+          pace: true,
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:hour',
           windowMs: 3_600_000,
           limit: 5,
+          pace: false,
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:day',
           windowMs: 86_400_000,
           limit: 20,
+          pace: false,
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:week',
           windowMs: 604_800_000,
           limit: 80,
+          pace: false,
         }),
       ]),
     );
@@ -344,6 +374,18 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:search:minute',
       'linkedin:acc-1:search:day',
     ]);
+    expect(acquire.mock.calls[0][0]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'linkedin:acc-1:search:minute',
+          pace: true,
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:search:day',
+          pace: false,
+        }),
+      ]),
+    );
   });
 
   it('keeps shared endpoint windows for profile lookups', async () => {
@@ -367,6 +409,34 @@ describe('AccountRateLimiterService', () => {
         'linkedin:acc-1:profile:10s',
       ]),
     );
+  });
+
+  it('forwards an explicit reservation member to Redis', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'search',
+      member: 'run-1:step-1:0',
+    });
+
+    expect(acquire.mock.calls[0][1]).toBe('run-1:step-1:0');
+  });
+
+  it('passes a reservation member into Redis acquire', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.acquireOrDefer({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'search',
+    });
+
+    expect(typeof acquire.mock.calls[0][1]).toBe('string');
+    expect(acquire.mock.calls[0][1].length).toBeGreaterThan(0);
   });
 
   it('defers instead of waiting in-process when the wait exceeds the cap', async () => {

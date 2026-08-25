@@ -884,6 +884,77 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     expect(result.totalBeforeFilter).toBe(1);
   });
 
+  it('drops people whose current roles are at another company before taxonomy classify', async () => {
+    (
+      peopleLinkedInSourcingService.search as jest.Mock
+    ).mockResolvedValueOnce({
+      dataSource: 'unipile',
+      keywords: null,
+      appliedFilters: { functionIds: [], seniorities: [] },
+      company: {
+        name: 'Mazaya',
+        slug: 'mazaya-arabia',
+        linkedinUrl: 'https://www.linkedin.com/company/mazaya-arabia/',
+        id: '68533040',
+      },
+      items: [
+        {
+          name: 'Hani Abdelrahman',
+          headline: 'Project management',
+          jobTitles: ['Co-Founder'],
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+          ],
+        },
+        {
+          name: 'Sara Ali',
+          current_positions: [
+            {
+              role: 'Operation Manager',
+              company: 'Mazaya international',
+              company_id: '68533040',
+            },
+          ],
+        },
+      ],
+    });
+    (
+      titleTaxonomyRemoteService.classifyProfiles as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        title: 'Operation Manager',
+        normalized_title: 'operation manager',
+        function_root: { id: 'operations', name: 'operations' },
+        function: { id: 'operations', name: 'operations' },
+        grade: { id: 'mid', name: 'mid' },
+        confidence: 0.8,
+      },
+    ]);
+
+    const result = await service.searchPeopleByTaxonomy(
+      {
+        companyName: 'Mazaya',
+        stdFunction: 'operations',
+        dataSource: 'unipile',
+      },
+      'token',
+    );
+
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      { jobTitle: 'Operation Manager', experience: [] },
+    ]);
+    expect(result.totalBeforeFilter).toBe(2);
+    expect(result.total).toBe(1);
+    expect(result.items[0]).toMatchObject({
+      name: 'Sara Ali',
+      resolved: { stdFunction: 'operations' },
+    });
+  });
+
   it('throws when taxonomy batch classify is unavailable', async () => {
     (
       titleTaxonomyRemoteService.classifyProfiles as jest.Mock

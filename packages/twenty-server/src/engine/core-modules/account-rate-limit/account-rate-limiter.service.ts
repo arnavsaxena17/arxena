@@ -22,6 +22,8 @@ import {
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { takeAccountRateLimitReservationMember } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
+import { shouldPaceAccountRateLimitWindow } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-slot.util';
 import { registerAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 
 export type AccountRateLimitProvider = 'linkedin' | 'whatsapp';
@@ -72,6 +74,7 @@ type RateLimitWindow = {
   key: string;
   windowMs: number;
   limit: number;
+  pace: boolean;
 };
 
 const sleep = (ms: number): Promise<void> =>
@@ -95,6 +98,7 @@ export class AccountRateLimiterService implements OnModuleInit {
     accountId: string;
     method: AccountRateLimitMethod;
     startChatPerMinuteOverride?: number;
+    member?: string;
   }): Promise<{ acquired: boolean; waitMs: number }> {
     const accountId = params.accountId.trim();
     if (!accountId) {
@@ -111,7 +115,10 @@ export class AccountRateLimiterService implements OnModuleInit {
     }
 
     const now = Date.now();
-    const member = `${now}:${Math.random().toString(36).slice(2)}`;
+    const member =
+      params.member ??
+      takeAccountRateLimitReservationMember() ??
+      `${now}:${Math.random().toString(36).slice(2)}`;
     return this.redisService.tryAcquireMultiWindowSlots(windows, member, now);
   }
 
@@ -211,9 +218,15 @@ export class AccountRateLimiterService implements OnModuleInit {
     maxInProcessWaitMs?: number;
   }): Promise<void> {
     const maxInProcessWaitMs = params.maxInProcessWaitMs ?? MAX_IN_PROCESS_WAIT_MS;
+    const member =
+      takeAccountRateLimitReservationMember() ??
+      `${Date.now()}:${Math.random().toString(36).slice(2)}`;
 
     while (true) {
-      const { acquired, waitMs } = await this.tryAcquire(params);
+      const { acquired, waitMs } = await this.tryAcquire({
+        ...params,
+        member,
+      });
       if (acquired) {
         return;
       }
@@ -517,6 +530,7 @@ export class AccountRateLimiterService implements OnModuleInit {
       ),
       limit: Math.max(1, limit),
       windowMs,
+      pace: shouldPaceAccountRateLimitWindow(windowMs),
     };
   }
 }

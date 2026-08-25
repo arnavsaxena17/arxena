@@ -9,6 +9,7 @@ import {
   parseMethodFromAccountRateLimitMessage,
   parseWaitMsFromAccountRateLimitMessage,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { runWithAccountRateLimitReservation } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -94,107 +95,113 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
       logicFunction.name,
     );
 
-    if (nativeHandler) {
-      try {
-        const nativeResult = await nativeHandler.execute({
-          name: logicFunction.name,
-          workspaceId,
-          payload: workflowActionInput.logicFunctionInput ?? {},
-        });
+    return runWithAccountRateLimitReservation(
+      `${runInfo.workflowRunId}:${currentStepId}`,
+      async () => {
+        if (nativeHandler) {
+          try {
+            const nativeResult = await nativeHandler.execute({
+              name: logicFunction.name,
+              workspaceId,
+              payload: workflowActionInput.logicFunctionInput ?? {},
+            });
 
-        const isNativeFailure =
-          nativeResult &&
-          typeof nativeResult === 'object' &&
-          'success' in nativeResult &&
-          (nativeResult as { success?: unknown }).success === false;
-        const nativeError =
-          isNativeFailure && 'error' in nativeResult
-            ? (nativeResult as { error?: unknown }).error
-            : undefined;
-        const nativeErrorMessage =
-          typeof nativeError === 'string'
-            ? nativeError
-            : isNativeFailure
-              ? `Native logic function ${logicFunction.name} failed`
-              : undefined;
+            const isNativeFailure =
+              nativeResult &&
+              typeof nativeResult === 'object' &&
+              'success' in nativeResult &&
+              (nativeResult as { success?: unknown }).success === false;
+            const nativeError =
+              isNativeFailure && 'error' in nativeResult
+                ? (nativeResult as { error?: unknown }).error
+                : undefined;
+            const nativeErrorMessage =
+              typeof nativeError === 'string'
+                ? nativeError
+                : isNativeFailure
+                  ? `Native logic function ${logicFunction.name} failed`
+                  : undefined;
 
-        if (nativeErrorMessage) {
-          if (/rate limit reached/i.test(nativeErrorMessage)) {
-            const waitMs =
-              parseWaitMsFromAccountRateLimitMessage(nativeErrorMessage);
+            if (nativeErrorMessage) {
+              if (/rate limit reached/i.test(nativeErrorMessage)) {
+                const waitMs =
+                  parseWaitMsFromAccountRateLimitMessage(nativeErrorMessage);
 
-            if (isDefined(waitMs) && waitMs > 0) {
+                if (isDefined(waitMs) && waitMs > 0) {
+                  return this.deferForLinkedinRateLimit({
+                    waitMs,
+                    currentStepId,
+                    workspaceId,
+                    workflowRunId: runInfo.workflowRunId,
+                    method:
+                      parseMethodFromAccountRateLimitMessage(nativeErrorMessage),
+                  });
+                }
+              }
+
+              return { error: nativeErrorMessage };
+            }
+
+            return { result: nativeResult };
+          } catch (error) {
+            if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
+              return this.deferForLinkedinRateLimit({
+                waitMs: error.waitMs,
+                currentStepId,
+                workspaceId,
+                workflowRunId: runInfo.workflowRunId,
+                method: error.method,
+              });
+            }
+
+            throw error;
+          }
+        }
+
+        try {
+          const result = await this.logicFunctionExecutorService.execute({
+            logicFunctionId: workflowActionInput.logicFunctionId,
+            workspaceId,
+            payload: workflowActionInput.logicFunctionInput,
+          });
+
+          if (result.error) {
+            const errorMessage = result.error.errorMessage;
+            const waitMs = parseWaitMsFromAccountRateLimitMessage(errorMessage);
+
+            if (
+              /rate limit reached/i.test(errorMessage) &&
+              isDefined(waitMs) &&
+              waitMs > 0
+            ) {
               return this.deferForLinkedinRateLimit({
                 waitMs,
                 currentStepId,
                 workspaceId,
                 workflowRunId: runInfo.workflowRunId,
-                method: parseMethodFromAccountRateLimitMessage(nativeErrorMessage),
+                method: parseMethodFromAccountRateLimitMessage(errorMessage),
               });
             }
+
+            return { error: errorMessage };
           }
 
-          return { error: nativeErrorMessage };
+          return { result: result.data || {} };
+        } catch (error) {
+          if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
+            return this.deferForLinkedinRateLimit({
+              waitMs: error.waitMs,
+              currentStepId,
+              workspaceId,
+              workflowRunId: runInfo.workflowRunId,
+              method: error.method,
+            });
+          }
+
+          throw error;
         }
-
-        return { result: nativeResult };
-      } catch (error) {
-        if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
-          return this.deferForLinkedinRateLimit({
-            waitMs: error.waitMs,
-            currentStepId,
-            workspaceId,
-            workflowRunId: runInfo.workflowRunId,
-            method: error.method,
-          });
-        }
-
-        throw error;
-      }
-    }
-
-    try {
-      const result = await this.logicFunctionExecutorService.execute({
-        logicFunctionId: workflowActionInput.logicFunctionId,
-        workspaceId,
-        payload: workflowActionInput.logicFunctionInput,
-      });
-
-      if (result.error) {
-        const errorMessage = result.error.errorMessage;
-        const waitMs = parseWaitMsFromAccountRateLimitMessage(errorMessage);
-
-        if (
-          /rate limit reached/i.test(errorMessage) &&
-          isDefined(waitMs) &&
-          waitMs > 0
-        ) {
-          return this.deferForLinkedinRateLimit({
-            waitMs,
-            currentStepId,
-            workspaceId,
-            workflowRunId: runInfo.workflowRunId,
-            method: parseMethodFromAccountRateLimitMessage(errorMessage),
-          });
-        }
-
-        return { error: errorMessage };
-      }
-
-      return { result: result.data || {} };
-    } catch (error) {
-      if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
-        return this.deferForLinkedinRateLimit({
-          waitMs: error.waitMs,
-          currentStepId,
-          workspaceId,
-          workflowRunId: runInfo.workflowRunId,
-          method: error.method,
-        });
-      }
-
-      throw error;
-    }
+      },
+    );
   }
 
   private async deferForLinkedinRateLimit({

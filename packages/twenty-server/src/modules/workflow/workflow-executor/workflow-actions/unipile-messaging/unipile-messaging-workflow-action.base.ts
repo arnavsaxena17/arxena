@@ -2,6 +2,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { runWithAccountRateLimitReservation } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
 import {
@@ -159,9 +160,13 @@ export abstract class UnipileMessagingWorkflowActionBase<
     const startedAt = Date.now();
     let toolOutput;
     try {
-      toolOutput = await this.getTool().execute(resolvedInput, {
-        workspaceId: runInfo.workspaceId,
-      });
+      toolOutput = await runWithAccountRateLimitReservation(
+        `${runInfo.workflowRunId}:${currentStepId}`,
+        () =>
+          this.getTool().execute(resolvedInput, {
+            workspaceId: runInfo.workspaceId,
+          }),
+      );
     } catch (error) {
       if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
         return deferWorkflowForAccountRateLimit({

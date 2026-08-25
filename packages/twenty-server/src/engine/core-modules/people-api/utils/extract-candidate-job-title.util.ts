@@ -136,26 +136,89 @@ const isCurrentExperienceEntry = (entry: Record<string, unknown>): boolean => {
   return end === null || end === undefined || end === '';
 };
 
+const collectCurrentPositionRecords = (candidate: Record<string, unknown>) => {
+  const currentPositions = [
+    ...asPositionRecords(candidate.current_positions),
+    ...asPositionRecords(candidate.currentPositions),
+  ];
+  const experiencePool = [
+    ...asPositionRecords(candidate.work_experience),
+    ...asPositionRecords(candidate.workExperience),
+    ...asPositionRecords(candidate.experience),
+  ];
+
+  return {
+    currentPositions,
+    currentExperience: experiencePool.filter(isCurrentExperienceEntry),
+  };
+};
+
+const toTargetCompany = (options?: ExtractCandidateJobTitleOptions) => ({
+  companyName: options?.companyName,
+  companyId: options?.companyId,
+  companySlug: options?.companySlug,
+});
+
+/**
+ * True when the person currently works at the searched company.
+ * Uses the same company_id / name matcher as title extraction.
+ * People with no employer identity on the hit are kept (LinkedIn often omits it).
+ */
+export const candidateCurrentlyWorksAtTargetCompany = (
+  candidate: Record<string, unknown>,
+  options?: ExtractCandidateJobTitleOptions,
+): boolean => {
+  if (!hasCompanyScope(options)) {
+    return true;
+  }
+
+  const target = toTargetCompany(options);
+  const { currentPositions, currentExperience } =
+    collectCurrentPositionRecords(candidate);
+
+  if (
+    pickEmploymentPositionMatchingCompany(
+      currentPositions.map(toMatchInput),
+      target,
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    pickEmploymentPositionMatchingCompany(
+      currentExperience.map(toMatchInput),
+      target,
+    )
+  ) {
+    return true;
+  }
+
+  const anyIdentity = [...currentPositions, ...currentExperience].some(
+    positionHasCompanyIdentity,
+  );
+  if (anyIdentity) {
+    return false;
+  }
+
+  if (positionHasCompanyIdentity(candidate)) {
+    return !!pickEmploymentPositionMatchingCompany(
+      [toMatchInput(candidate)],
+      target,
+    );
+  }
+
+  return true;
+};
+
 export const extractCandidateJobTitle = (
   candidate: Record<string, unknown>,
   options?: ExtractCandidateJobTitleOptions,
 ): string | null => {
   if (hasCompanyScope(options)) {
-    const currentPositions = [
-      ...asPositionRecords(candidate.current_positions),
-      ...asPositionRecords(candidate.currentPositions),
-    ];
-    const experiencePool = [
-      ...asPositionRecords(candidate.work_experience),
-      ...asPositionRecords(candidate.workExperience),
-      ...asPositionRecords(candidate.experience),
-    ];
-    const currentExperience = experiencePool.filter(isCurrentExperienceEntry);
-    const target = {
-      companyName: options?.companyName,
-      companyId: options?.companyId,
-      companySlug: options?.companySlug,
-    };
+    const { currentPositions, currentExperience } =
+      collectCurrentPositionRecords(candidate);
+    const target = toTargetCompany(options);
 
     const matchedCurrent = pickEmploymentPositionMatchingCompany(
       currentPositions.map(toMatchInput),

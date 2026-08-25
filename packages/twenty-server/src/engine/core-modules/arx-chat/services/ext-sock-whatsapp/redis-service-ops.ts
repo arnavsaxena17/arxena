@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 
 import { Redis } from 'ioredis';
 
+import { RESERVE_MULTI_WINDOW_SLOT_LUA } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-slot.util';
+
 @Injectable()
 export class RedisService implements OnModuleInit {
   private redisClient: Redis;
@@ -226,47 +228,18 @@ export class RedisService implements OnModuleInit {
   }
 
   async tryAcquireMultiWindowSlots(
-    windows: Array<{ key: string; windowMs: number; limit: number }>,
+    windows: Array<{
+      key: string;
+      windowMs: number;
+      limit: number;
+      pace?: boolean;
+    }>,
     member: string,
     now: number,
   ): Promise<{ acquired: boolean; waitMs: number }> {
     if (windows.length === 0) {
       return { acquired: true, waitMs: 0 };
     }
-
-    const script = `
-      local now = tonumber(ARGV[1])
-      local member = ARGV[2]
-      local n = tonumber(ARGV[3])
-      local maxWait = 0
-      for i = 1, n do
-        local key = KEYS[i]
-        local window = tonumber(ARGV[3 + (i - 1) * 2 + 1])
-        local limit = tonumber(ARGV[3 + (i - 1) * 2 + 2])
-        redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
-        local count = redis.call('ZCARD', key)
-        if count >= limit then
-          local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
-          local wait = window
-          if #oldest >= 2 then
-            wait = tonumber(oldest[2]) + window - now
-          end
-          if wait > maxWait then
-            maxWait = wait
-          end
-        end
-      end
-      if maxWait > 0 then
-        return maxWait
-      end
-      for i = 1, n do
-        local key = KEYS[i]
-        local window = tonumber(ARGV[3 + (i - 1) * 2 + 1])
-        redis.call('ZADD', key, now, member .. ':' .. i)
-        redis.call('EXPIRE', key, math.ceil(window / 1000) * 2)
-      end
-      return 0
-    `;
 
     const args: string[] = [
       String(now),
@@ -275,11 +248,12 @@ export class RedisService implements OnModuleInit {
       ...windows.flatMap((window) => [
         String(window.windowMs),
         String(window.limit),
+        window.pace === true ? '1' : '0',
       ]),
     ];
 
     const result = (await this.redisClient.eval(
-      script,
+      RESERVE_MULTI_WINDOW_SLOT_LUA,
       windows.length,
       ...windows.map((window) => window.key),
       ...args,

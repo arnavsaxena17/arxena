@@ -1,6 +1,9 @@
 import { buildTaxonomyTreeFromFlatLists } from '../utils/build-taxonomy-tree.util';
 import { extractCandidateExperience } from '../utils/extract-candidate-experience.util';
-import { extractCandidateJobTitle } from '../utils/extract-candidate-job-title.util';
+import {
+  candidateCurrentlyWorksAtTargetCompany,
+  extractCandidateJobTitle,
+} from '../utils/extract-candidate-job-title.util';
 import {
   classificationToResolvedFields,
   matchesTaxonomyFilter,
@@ -170,6 +173,68 @@ describe('extractCandidateJobTitle', () => {
         { companyName: 'Mazaya', companyId: '68533040' },
       ),
     ).toBeNull();
+  });
+});
+
+describe('candidateCurrentlyWorksAtTargetCompany', () => {
+  const mazayaTarget = { companyName: 'Mazaya', companyId: '68533040' };
+
+  it('keeps a person whose current_position company_id matches', () => {
+    expect(
+      candidateCurrentlyWorksAtTargetCompany(
+        {
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+            {
+              role: 'Operation Manager',
+              company: 'Mazaya international',
+              company_id: '68533040',
+            },
+          ],
+        },
+        mazayaTarget,
+      ),
+    ).toBe(true);
+  });
+
+  it('drops a person whose current roles are only at another company', () => {
+    expect(
+      candidateCurrentlyWorksAtTargetCompany(
+        {
+          jobTitles: ['Co-Founder'],
+          current_positions: [
+            {
+              role: 'Co-Founder',
+              company: 'Intelligent Brain project management',
+              company_id: '111',
+            },
+          ],
+        },
+        mazayaTarget,
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps a person with no employer identity on the hit', () => {
+    expect(
+      candidateCurrentlyWorksAtTargetCompany(
+        { jobTitle: 'Head of Talent', name: 'Alex' },
+        mazayaTarget,
+      ),
+    ).toBe(true);
+  });
+
+  it('drops a top-level company field that does not match', () => {
+    expect(
+      candidateCurrentlyWorksAtTargetCompany(
+        { jobTitle: 'Head of Talent', company: 'Other Co' },
+        mazayaTarget,
+      ),
+    ).toBe(false);
   });
 });
 
