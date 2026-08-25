@@ -15,11 +15,16 @@ describe('FetchLinkedinMessagesService', () => {
   const gtmOutreachMessagePersistService = {
     mergeFetchedLinkedinMessages: jest.fn().mockResolvedValue(null),
   };
+  const linkedinProviderIdStore = {
+    saveProviderId: jest.fn().mockResolvedValue(undefined),
+    readStoredProviderId: jest.fn().mockResolvedValue(''),
+  };
 
   const service = new FetchLinkedinMessagesService(
     globalWorkspaceOrmManager as never,
     linkedinUnipileRequestService as never,
     gtmOutreachMessagePersistService as never,
+    linkedinProviderIdStore as never,
   );
 
   beforeEach(() => {
@@ -88,6 +93,12 @@ describe('FetchLinkedinMessagesService', () => {
       attendeeId: VALID_PROVIDER_ID,
       total: 1,
       messages: [{ id: 'msg-1', text: 'Hello', isSender: false }],
+    });
+    expect(linkedinProviderIdStore.saveProviderId).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      candidateId: undefined,
+      identifier: VALID_PROVIDER_ID,
+      providerId: VALID_PROVIDER_ID,
     });
   });
 

@@ -26,7 +26,7 @@ Workflow topology:
 | Surface | Path | Role |
 | --- | --- | --- |
 | Working set | `/gtm-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
-| CRM dashboard | `/object/dashboard/:id` (**GTM Command**) | Funnel / coverage / stage / channel / speed / outcomes |
+| CRM dashboard | `/object/dashboard/:id` (**GTM Command**) | Funnel / coverage / stage / channel / speed / outcomes. Prefilled on workspace create; existing workspaces: `upgrade:2-25:prefill-gtm-command-dashboard`. |
 
 On entry, Ask AI prefills an ICP onboarding kickoff (user hits Enter to send). Chrome is two rows: **PageHeader** (`GTM Command` + run picker / New run / CRM / Menu) and **main tabs** (Companies / People / Workflow; workflow mode + outreach picker trail on the same row). Switch runs via the header Project picker (**New run** creates a Project). Workflow tab prefers / auto-creates **`GTM Outreach — Per Candidate`** and binds `Project.outreachWorkflowId` when the Project has none. The Stage B dropdown lists ACTIVE workflows only; selecting one rebinds the Project pin and prefills Ask AI with that `outreachWorkflowId` context.
 
@@ -44,7 +44,8 @@ npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-company-skill-content 
 npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-people-skill-content -w <workspaceId>
 npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-outreach-workflow-skill-content -w <workspaceId>
 
-# 3) Seed dashboard + sample CRM rows (optional charts)
+# 3) Optional: sample CRM rows so the GTM Command dashboard charts have demo data
+#    (layout + dashboard record are prefilled on workspace create / the upgrade command)
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
   npx tsx packages/twenty-server/scripts/setup-gtm-command-dashboard.ts
 

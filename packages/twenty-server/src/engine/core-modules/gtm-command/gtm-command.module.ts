@@ -9,6 +9,7 @@ import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourc
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { GtmCommandController } from 'src/engine/core-modules/gtm-command/controllers/gtm-command.controller';
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
 import { GtmWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job';
 import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/services/ensure-gtm-project.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
@@ -125,6 +126,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     SearchCompaniesService,
     SearchJobsService,
     SearchPostsService,
+    LinkedinProviderIdStoreService,
     FetchLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
@@ -147,6 +149,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     GtmWorkspaceProfileProvisioningService,
     EnsureGtmProjectService,
     SearchPeopleForCompanyService,
+    LinkedinProviderIdStoreService,
     FetchLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,

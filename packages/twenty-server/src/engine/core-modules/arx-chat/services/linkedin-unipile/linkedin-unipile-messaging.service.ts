@@ -18,6 +18,7 @@ import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
 import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
+import { isValidLinkedInProviderId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-attendee-id.util';
 
 /**
  * Truncates LinkedIn invitation message to under 300 characters
@@ -227,14 +228,6 @@ export class LinkedinUnipileMessagingService {
   }
 
   /**
-   * Check if provider_id matches the LinkedIn format (ACoAA[A-Za-z0-9_-]{20,40})
-   */
-  private isValidLinkedInProviderId(providerId: string): boolean {
-    const linkedinProviderIdRegex = /^ACoAA[A-Za-z0-9_-]{20,40}$/;
-    return linkedinProviderIdRegex.test(providerId);
-  }
-
-  /**
    * Convert LinkedIn URL to provider_id using Unipile API
    */
   private async convertLinkedInUrlToProviderId(
@@ -282,12 +275,12 @@ export class LinkedinUnipileMessagingService {
   /**
    * Get proper provider_id - either use directly if valid format, or convert from URL
    */
-  private async getProviderId(
+  async resolveProviderId(
     accountId: string,
     providerIdOrUrl: string,
   ): Promise<string> {
     // If it's already a valid LinkedIn provider_id format, use it directly
-    if (this.isValidLinkedInProviderId(providerIdOrUrl)) {
+    if (isValidLinkedInProviderId(providerIdOrUrl)) {
       console.log('Using existing provider_id to which we are getting the provider id!!!', providerIdOrUrl);
       return providerIdOrUrl;
     }
@@ -326,6 +319,13 @@ export class LinkedinUnipileMessagingService {
       console.error('Error getting provider_id from public identifier:', error);
       throw error;
     }
+  }
+
+  private async getProviderId(
+    accountId: string,
+    providerIdOrUrl: string,
+  ): Promise<string> {
+    return this.resolveProviderId(accountId, providerIdOrUrl);
   }
 
   private async acquireLinkedinChatSendLimit(

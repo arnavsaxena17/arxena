@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
 import {
   SendLinkedinMessageToolInputZodSchema,
   type SendLinkedinMessageToolInput,
@@ -23,7 +24,10 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 export class SendLinkedinMessageTool implements Tool {
   private readonly logger = new Logger(SendLinkedinMessageTool.name);
 
-  constructor(private readonly fileService: FileService) {}
+  constructor(
+    private readonly fileService: FileService,
+    private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+  ) {}
 
   description =
     'Send a LinkedIn direct message via Unipile. Requires a Unipile LinkedIn account ID and recipient profile. Supports PDF, image, or video attachments up to 15MB.';
@@ -63,9 +67,16 @@ export class SendLinkedinMessageTool implements Tool {
         fileService: this.fileService,
       });
       const messagingService = createLinkedinUnipileMessagingServiceForTools();
+      const providerId = await this.linkedinProviderIdStore.resolveForSend({
+        workspaceId: context.workspaceId,
+        candidateId: input.candidateId,
+        identifier: linkedinProfileId,
+        fetchProviderId: () =>
+          messagingService.resolveProviderId(unipileAccountId, linkedinProfileId),
+      });
       const result = await messagingService.sendMessage(
         unipileAccountId,
-        [linkedinProfileId],
+        [providerId],
         body,
         attachments,
       );
@@ -79,7 +90,7 @@ export class SendLinkedinMessageTool implements Tool {
         message: 'LinkedIn message sent successfully',
         result: {
           unipileAccountId,
-          linkedinProfileId,
+          linkedinProfileId: providerId,
           body,
           attachmentCount: attachments.length,
           response: result,

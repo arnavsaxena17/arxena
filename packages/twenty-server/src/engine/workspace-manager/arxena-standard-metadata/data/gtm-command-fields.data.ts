@@ -373,7 +373,8 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Unipile LinkedIn provider / public identifier for SEND_*',
+      description:
+        'Unipile LinkedIn provider id (ACoAA…) for SEND_*. Distinct from linkedinUrl.',
       icon: 'IconId',
       label: 'LinkedIn Profile Id',
       name: 'linkedinProfileId',
@@ -451,6 +452,18 @@ export const getGtmCommandFieldsData = (
     },
   },
   // Person — cross-project memory / compliance
+  {
+    objectName: 'person',
+    field: {
+      description:
+        'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',
+      icon: 'IconId',
+      label: 'LinkedIn Profile Id',
+      name: 'linkedinProfileId',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'TEXT',
+    },
+  },
   {
     objectName: 'person',
     field: {

@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
 import {
   SendLinkedinConnectionRequestToolInputZodSchema,
   type SendLinkedinConnectionRequestToolInput,
@@ -22,13 +23,17 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 export class SendLinkedinConnectionRequestTool implements Tool {
   private readonly logger = new Logger(SendLinkedinConnectionRequestTool.name);
 
+  constructor(
+    private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+  ) {}
+
   description =
     'Send a LinkedIn connection request via Unipile. Requires a Unipile LinkedIn account ID and recipient profile.';
   inputSchema = SendLinkedinConnectionRequestToolInputZodSchema;
 
   async execute(
     parameters: ToolInput,
-    _context: ToolExecutionContext,
+    context: ToolExecutionContext,
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinConnectionRequestToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
@@ -57,10 +62,18 @@ export class SendLinkedinConnectionRequestTool implements Tool {
 
     try {
       const messagingService = createLinkedinUnipileMessagingServiceForTools();
+      const providerId = await this.linkedinProviderIdStore.resolveForSend({
+        workspaceId: context.workspaceId,
+        candidateId: input.candidateId,
+        identifier: linkedinProfileId,
+        fetchProviderId: () =>
+          messagingService.resolveProviderId(unipileAccountId, linkedinProfileId),
+      });
       const result = await messagingService.sendInvitation(
         unipileAccountId,
         linkedinProfileId,
         message,
+        providerId,
       );
 
       this.logger.log(
@@ -72,7 +85,7 @@ export class SendLinkedinConnectionRequestTool implements Tool {
         message: 'LinkedIn connection request sent successfully',
         result: {
           unipileAccountId,
-          linkedinProfileId,
+          linkedinProfileId: providerId,
           message,
           response: result,
         },

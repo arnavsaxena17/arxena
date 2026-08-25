@@ -7,6 +7,7 @@ export const workflowSendLinkedinConnectionRequestActionSettingsSchema =
       workspaceMemberId: z.string(),
       linkedinProfileId: z.string(),
       linkedinUrl: z.string().optional().default(''),
+      candidateId: z.string().optional(),
       message: z.string().optional().default(''),
     }),
   });

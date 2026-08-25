@@ -24,6 +24,10 @@ export const SendLinkedinConnectionRequestToolInputZodSchema = z.object({
     .optional()
     .default('')
     .describe('Optional connection request note (max 300 characters)'),
+  candidateId: z
+    .string()
+    .optional()
+    .describe('CRM Candidate id used to persist the Unipile ACoAA provider id'),
 });
 
 export type SendLinkedinConnectionRequestToolInput = z.infer<

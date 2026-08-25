@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { isDefined, escapeForIlike } from 'twenty-shared/utils';
+import { ILike, type ObjectLiteral } from 'typeorm';
 
 import {
   GtmOutreachThrottleService,
@@ -173,7 +173,28 @@ export class GtmUnipilePacingService {
             where: { linkedinProfileId },
             take: 1,
           });
-          const projectsId = candidates[0]?.projectsId;
+          let match = candidates[0];
+
+          if (!isDefined(match)) {
+            const slug = extractLinkedinProfileId(linkedinProfileId);
+
+            if (isNonEmptyString(slug)) {
+              try {
+                match =
+                  (await candidateRepository.findOne({
+                    where: {
+                      linkedinUrlPrimaryLinkUrl: ILike(
+                        `%/in/${escapeForIlike(slug)}%`,
+                      ),
+                    },
+                  })) ?? undefined;
+              } catch {
+                match = undefined;
+              }
+            }
+          }
+
+          const projectsId = match?.projectsId;
 
           if (isNonEmptyString(projectsId)) {
             project = await projectRepository.findOne({

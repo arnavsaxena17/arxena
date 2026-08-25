@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { randomUUID } from 'crypto';
 
-// Seeds the native "GTM Command" CRM dashboard (6 tabs + charts + RECORD_TABLEs).
-// Discovery / pre-CRM search tables live on /gtm-home — not here.
-// Requires ARX standard sync so GTM fields exist on company/candidate/project/opportunity.
+// Seeds sample CRM rows for the native "GTM Command" dashboard charts.
+// The dashboard layout + record are prefilled on workspace create (and via
+// upgrade:2-25:prefill-gtm-command-dashboard). This script is optional demo data.
 
 const SERVER_URL = process.env.SERVER_URL || 'http://127.0.0.1:3000';
 const SERVER_HOST = process.env.SERVER_HOST || 'apple.localhost';

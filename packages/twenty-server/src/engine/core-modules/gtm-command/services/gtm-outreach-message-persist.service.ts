@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { isDefined, escapeForIlike } from 'twenty-shared/utils';
+import { ILike, type ObjectLiteral } from 'typeorm';
 
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
@@ -257,6 +257,22 @@ export class GtmOutreachMessagePersistService {
 
           if (isDefined(byProfileId)) {
             return byProfileId.id;
+          }
+
+          try {
+            const byUrl = await candidateRepository.findOne({
+              where: {
+                linkedinUrlPrimaryLinkUrl: ILike(
+                  `%/in/${escapeForIlike(slug)}%`,
+                ),
+              },
+            });
+
+            if (isDefined(byUrl)) {
+              return byUrl.id;
+            }
+          } catch {
+            // Composite URL column may be unavailable on older workspaces.
           }
         }
 

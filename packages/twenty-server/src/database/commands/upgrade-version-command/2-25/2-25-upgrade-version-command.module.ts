@@ -49,6 +49,7 @@ import { UninstallVideoInterviewApplicationByDefaultCommand } from 'src/database
 import { TransferShortlistPresentationApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000054-transfer-shortlist-presentation-application.command';
 import { FoldPromptsIntoProjectCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000055-fold-prompts-into-project.command';
 import { TransferAssistantApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000056-transfer-assistant-application.command';
+import { PrefillGtmCommandDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000057-prefill-gtm-command-dashboard.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -130,6 +131,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     TransferShortlistPresentationApplicationCommand,
     FoldPromptsIntoProjectCommand,
     TransferAssistantApplicationCommand,
+    PrefillGtmCommandDashboardCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

@@ -7,6 +7,7 @@ import { type ObjectLiteral } from 'typeorm';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
 import {
   isValidLinkedInProviderId,
   pickLinkedinAttendeeIdFromUnipileProfile,
@@ -83,6 +84,7 @@ export class FetchLinkedinMessagesService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly gtmOutreachMessagePersistService: GtmOutreachMessagePersistService,
+    private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
   ) {}
 
   async execute({
@@ -187,9 +189,18 @@ export class FetchLinkedinMessagesService {
     }
 
     try {
+      const storedProviderId =
+        await this.linkedinProviderIdStore.readStoredProviderId({
+          workspaceId,
+          candidateId: input.candidateId,
+          identifier: resolved.identifier,
+        });
+      const identifier = isValidLinkedInProviderId(storedProviderId)
+        ? storedProviderId
+        : resolved.identifier;
       const attendeeId = await this.resolveAttendeeId(
         resolved.accountId,
-        resolved.identifier,
+        identifier,
       );
 
       if (!isNonEmptyString(attendeeId)) {
@@ -197,6 +208,15 @@ export class FetchLinkedinMessagesService {
           ...empty,
           error: 'Could not resolve LinkedIn attendee id',
         };
+      }
+
+      if (isValidLinkedInProviderId(attendeeId)) {
+        await this.linkedinProviderIdStore.saveProviderId({
+          workspaceId,
+          candidateId: input.candidateId,
+          identifier: resolved.identifier,
+          providerId: attendeeId,
+        });
       }
 
       const chatId = await this.resolveChatId(resolved.accountId, attendeeId);

@@ -53,6 +53,7 @@ import {
   ARXENA_STANDARD_APPLICATION,
   ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
+import { buildGtmCommandDashboardPageLayout } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-gtm-command-dashboard-page-layout.util';
 import { ASSISTANT_APPLICATION } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { SHORTLIST_PRESENTATION_APPLICATION } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { VIDEO_INTERVIEW_APPLICATION } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
@@ -732,6 +733,10 @@ const buildArxenaFamilyManifest = ({
         targetFieldName: relationMetadata.fromName,
       }),
     );
+  }
+
+  if (owner === 'arxena-standard') {
+    pageLayouts.push(buildGtmCommandDashboardPageLayout());
   }
 
   const application =

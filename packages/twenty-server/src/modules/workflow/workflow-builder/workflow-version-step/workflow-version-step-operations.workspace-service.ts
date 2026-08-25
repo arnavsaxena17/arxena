@@ -556,6 +556,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
                 workspaceMemberId: '',
                 linkedinProfileId: '',
                 linkedinUrl: '',
+                candidateId: '',
                 message: '',
               },
             },

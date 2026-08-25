@@ -765,6 +765,7 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
               IDS.queuedFind,
               'linkedinProfileId',
             ),
+            candidateId: gtmWfFindId(IDS.queuedFind),
             workspaceMemberId: gtmWfMemberId(),
           },
           outputSchema: {},
