@@ -5,16 +5,15 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-  advanceFunnelStage,
   buildCandidateEventUpdate,
   computeAttentionReason,
   computeCoverageBucket,
   computeDaysBetween,
   computeTimeBucket,
-  funnelStageForEvent,
   mapMessagingChannelToGtmChannel,
   normalizeLinkedinUrl,
   resolveCompanyIdFromCandidate,
+  rollupGtmFunnelStage,
   type GtmCandidateEventKind,
   type GtmChannel,
   type GtmOutreachTouchKind,
@@ -376,16 +375,11 @@ export class GtmCommandMaterializeService {
         ),
       });
 
-      const gtmFunnelStage = advanceFunnelStage(
-        company.gtmFunnelStage,
-        funnelStageForEvent(event),
-      );
-
-      // Covered = at least one person reached; bump when peopleReached >= 1
-      const coveredStage =
-        peopleReached >= 1
-          ? advanceFunnelStage(gtmFunnelStage, 'COVERED')
-          : gtmFunnelStage;
+      const gtmFunnelStage = rollupGtmFunnelStage({
+        current: company.gtmFunnelStage,
+        event,
+        peopleReached,
+      });
 
       await this.staticGraphQLService.executeGraphQL(
         `mutation UpdateCompany($id: ID!, $data: CompanyUpdateInput!) {
@@ -414,7 +408,7 @@ export class GtmCommandMaterializeService {
             timeToMeetingBucket: computeTimeBucket(daysToMeetingBooked),
             firstContactChannel:
               company.firstContactChannel ?? firstContactChannel ?? null,
-            gtmFunnelStage: coveredStage,
+            gtmFunnelStage,
             attentionReason:
               event === 'inbound_reply' || event === 'meeting_booked'
                 ? 'NONE'

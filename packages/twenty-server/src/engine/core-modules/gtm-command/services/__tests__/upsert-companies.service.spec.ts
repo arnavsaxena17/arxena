@@ -15,6 +15,7 @@ describe('UpsertCompaniesService', () => {
         { propertyName: 'linkedinLinkPrimaryLinkUrl' },
         { propertyName: 'linkedinId' },
         { propertyName: 'gtmRunKey' },
+        { propertyName: 'gtmFunnelStage' },
         { propertyName: 'createdBySource' },
       ],
     },
@@ -101,6 +102,7 @@ describe('UpsertCompaniesService', () => {
       },
       linkedinId: '1035',
       gtmRunKey: ['84a08312-0e86-59ed-8103-f575c3f17812'],
+      gtmFunnelStage: 'ADDED',
     });
     expect(createdRecords[0].domainName).toBeUndefined();
   });
@@ -189,6 +191,7 @@ describe('UpsertCompaniesService', () => {
         },
         linkedinId: '162479',
         gtmRunKey: ['project-1'],
+        gtmFunnelStage: 'ADDED',
       }),
     );
   });

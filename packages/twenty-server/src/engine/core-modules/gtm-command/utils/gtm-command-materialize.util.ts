@@ -14,6 +14,7 @@ export type GtmOutreachSequenceStage =
   | 'NEEDS_CONNECTION'
   | 'CONNECTION_SENT'
   | 'CONNECTION_ACCEPTED'
+  | 'CONNECTION_IGNORED'
   | 'PROFILE_CHECKED'
   | 'WARM_PATH'
   | 'COMMENTED'
@@ -79,6 +80,35 @@ export const isCandidatePastQueued = (
 
   return true;
 };
+
+export const GTM_STAGES_THAT_IMPLY_OUTBOUND: readonly GtmOutreachSequenceStage[] =
+  [
+    'CONNECTION_SENT',
+    'CONNECTION_ACCEPTED',
+    'CONNECTION_IGNORED',
+    'COMMENTED',
+    'EMAIL_ENRICHING',
+    'EMAIL_SENT',
+    'INMAIL_SENT',
+    'WHATSAPP_SENT',
+    'REPLIED',
+    'NEGOTIATING',
+    'MEETING_BOOKED',
+    'FAILED_ENRICH',
+    'FAILED_NO_REPLY',
+  ];
+
+export const candidateStageImpliesOutbound = (
+  stage: string | null | undefined,
+): boolean =>
+  Boolean(
+    stage &&
+      GTM_STAGES_THAT_IMPLY_OUTBOUND.includes(
+        stage as GtmOutreachSequenceStage,
+      ),
+  );
+
+export const COVERED_PEOPLE_REACHED_THRESHOLD = 3;
 
 // High-level events that auto-updaters emit
 export type GtmCandidateEventKind =
@@ -270,6 +300,28 @@ export const funnelStageForEvent = (
     default:
       return 'ADDED';
   }
+};
+
+export const rollupGtmFunnelStage = ({
+  current,
+  event,
+  peopleReached,
+}: {
+  current: GtmFunnelStage | string | null | undefined;
+  event: GtmCandidateEventKind;
+  peopleReached: number;
+}): GtmFunnelStage => {
+  const stage = advanceFunnelStage(current, funnelStageForEvent(event));
+
+  if (peopleReached >= COVERED_PEOPLE_REACHED_THRESHOLD) {
+    return advanceFunnelStage(stage, 'COVERED');
+  }
+
+  if (peopleReached >= 1) {
+    return advanceFunnelStage(stage, 'REACHED');
+  }
+
+  return stage;
 };
 
 export const buildCandidateEventUpdate = ({

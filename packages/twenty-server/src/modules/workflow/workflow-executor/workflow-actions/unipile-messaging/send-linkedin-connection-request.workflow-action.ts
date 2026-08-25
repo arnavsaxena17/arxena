@@ -48,6 +48,14 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
     return 'connect' as const;
   }
 
+  protected override getMaterializeEvent() {
+    return 'connection_sent' as const;
+  }
+
+  protected override getMaterializeMessagingChannel() {
+    return 'LINKEDIN_CONNECT';
+  }
+
   protected getTool(): Tool {
     return this.sendLinkedinConnectionRequestTool;
   }

@@ -1,6 +1,7 @@
 import {
   advanceFunnelStage,
   buildCandidateEventUpdate,
+  candidateStageImpliesOutbound,
   computeAttentionReason,
   computeCoverageBucket,
   computeDaysBetween,
@@ -8,6 +9,7 @@ import {
   funnelStageForEvent,
   mapMessagingChannelToGtmChannel,
   mapOutboundStageForChannel,
+  rollupGtmFunnelStage,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
 
 describe('gtm-command-materialize.util', () => {
@@ -27,6 +29,37 @@ describe('gtm-command-materialize.util', () => {
     );
     expect(funnelStageForEvent('outbound_message')).toBe('REACHED');
     expect(funnelStageForEvent('inbound_reply')).toBe('REPLIED');
+  });
+
+  it('keeps Reached until 3 people are touched, then Covered', () => {
+    expect(
+      rollupGtmFunnelStage({
+        current: 'ADDED',
+        event: 'connection_sent',
+        peopleReached: 1,
+      }),
+    ).toBe('REACHED');
+    expect(
+      rollupGtmFunnelStage({
+        current: 'REACHED',
+        event: 'connection_sent',
+        peopleReached: 2,
+      }),
+    ).toBe('REACHED');
+    expect(
+      rollupGtmFunnelStage({
+        current: 'REACHED',
+        event: 'connection_sent',
+        peopleReached: 3,
+      }),
+    ).toBe('COVERED');
+    expect(
+      rollupGtmFunnelStage({
+        current: 'REPLIED',
+        event: 'connection_sent',
+        peopleReached: 3,
+      }),
+    ).toBe('REPLIED');
   });
 
   it('maps messaging channels to outbound stages', () => {
@@ -120,5 +153,13 @@ describe('gtm-command-materialize.util', () => {
         '2026-01-11T00:00:00.000Z',
       ),
     ).toBe(10);
+  });
+
+  it('treats connection and later send stages as outbound', () => {
+    expect(candidateStageImpliesOutbound('QUEUED')).toBe(false);
+    expect(candidateStageImpliesOutbound('NEEDS_CONNECTION')).toBe(false);
+    expect(candidateStageImpliesOutbound('CONNECTION_SENT')).toBe(true);
+    expect(candidateStageImpliesOutbound('CONNECTION_IGNORED')).toBe(true);
+    expect(candidateStageImpliesOutbound('EMAIL_SENT')).toBe(true);
   });
 });

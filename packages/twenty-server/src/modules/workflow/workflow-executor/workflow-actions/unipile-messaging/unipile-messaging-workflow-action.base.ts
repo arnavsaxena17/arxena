@@ -8,6 +8,7 @@ import {
   GtmOutreachMessagePersistService,
   type GtmOutreachTranscriptChannel,
 } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
+import { type GtmCandidateEventKind } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
 import { type GtmThrottleChannel } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -96,6 +97,14 @@ export abstract class UnipileMessagingWorkflowActionBase<
     return null;
   }
 
+  protected getMaterializeEvent(): GtmCandidateEventKind | null {
+    return null;
+  }
+
+  protected getMaterializeMessagingChannel(): string | null {
+    return null;
+  }
+
   async execute({
     currentStepId,
     steps,
@@ -171,6 +180,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
 
     if (toolOutput.success) {
       const transcriptChannel = this.getTranscriptChannel();
+      const materializeEvent = this.getMaterializeEvent();
 
       if (isDefined(transcriptChannel) && isDefined(this.gtmOutreachMessagePersistService)) {
         try {
@@ -186,6 +196,27 @@ export abstract class UnipileMessagingWorkflowActionBase<
         } catch (error) {
           this.logger.warn(
             `Failed to persist outreach transcript: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+      }
+
+      if (
+        isDefined(materializeEvent) &&
+        isDefined(this.gtmOutreachMessagePersistService)
+      ) {
+        try {
+          await this.gtmOutreachMessagePersistService.materializeCandidateEvent({
+            workspaceId: runInfo.workspaceId,
+            event: materializeEvent,
+            candidateId: resolvedInput.candidateId,
+            linkedinProfileId: resolvedLinkedinProfileId,
+            messagingChannel: this.getMaterializeMessagingChannel(),
+          });
+        } catch (error) {
+          this.logger.warn(
+            `Failed to materialize GTM ${materializeEvent}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );

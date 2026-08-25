@@ -33,8 +33,35 @@ describe('buildGtmCommandDashboardPageLayout', () => {
         'Meetings booked',
         'Funnel: Added → Opportunity',
         'Candidates by outreach sequence stage',
+        'Companies added (weekly)',
+        'First contacts (weekly)',
       ]),
     );
+
+    const connectionRequests = overview?.widgets?.find(
+      (widget) => widget.title === 'Connection requests sent',
+    );
+    const companiesAdded = overview?.widgets?.find(
+      (widget) => widget.title === 'Companies added (weekly)',
+    );
+    const firstContacts = overview?.widgets?.find(
+      (widget) => widget.title === 'First contacts (weekly)',
+    );
+
+    expect(connectionRequests?.configuration).toMatchObject({
+      configurationType: 'AGGREGATE_CHART',
+      aggregateOperation: 'COUNT_NOT_EMPTY',
+    });
+    expect(companiesAdded?.configuration).toMatchObject({
+      configurationType: 'LINE_CHART',
+      aggregateOperation: 'COUNT_NOT_EMPTY',
+      displayDataLabel: true,
+    });
+    expect(firstContacts?.configuration).toMatchObject({
+      configurationType: 'LINE_CHART',
+      aggregateOperation: 'COUNT_NOT_EMPTY',
+      displayDataLabel: true,
+    });
   });
 
   it('keeps widget titles unique within each tab', () => {

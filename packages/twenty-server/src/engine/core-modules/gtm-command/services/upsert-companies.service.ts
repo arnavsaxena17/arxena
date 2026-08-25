@@ -29,6 +29,7 @@ type CompanyRecord = ObjectLiteral & {
   linkedinLinkPrimaryLinkUrl?: string | null;
   linkedinId?: string | null;
   gtmRunKey?: string | string[] | null;
+  gtmFunnelStage?: string | null;
 };
 
 type ProjectRecord = ObjectLiteral & {
@@ -249,6 +250,9 @@ export class UpsertCompaniesService {
               ...(!gtmRunKeyHasProject(match?.gtmRunKey, projectId)
                 ? { gtmRunKey: nextGtmRunKey }
                 : {}),
+              ...(!isNonEmptyString(match?.gtmFunnelStage)
+                ? { gtmFunnelStage: 'ADDED' }
+                : {}),
             },
             columns,
           );
@@ -284,6 +288,7 @@ export class UpsertCompaniesService {
               ...(linkedinLink ? { linkedinLink } : {}),
               ...(isNonEmptyString(linkedinId) ? { linkedinId } : {}),
               gtmRunKey: appendGtmRunKey(null, projectId),
+              gtmFunnelStage: 'ADDED',
               createdBy: buildCreatedByFromSystem(),
             },
             columns,

@@ -150,6 +150,32 @@ const booleanIsTrueFilter = ({
   };
 };
 
+const isNotEmptyFilter = ({
+  widgetTitle,
+  fieldMetadataUniversalIdentifier,
+}: {
+  widgetTitle: string;
+  fieldMetadataUniversalIdentifier: string;
+}): UniversalChartFilter => {
+  const groupId = computeDeterministicUuid({
+    entityNamespace: 'pageLayoutWidget',
+    value: `gtmCommandDashboard:filterGroup:${widgetTitle}`,
+    applicationUniversalIdentifier: APP,
+  });
+
+  return {
+    recordFilterGroups: [{ id: groupId, logicalOperator: 'AND' }],
+    recordFilters: [
+      {
+        fieldMetadataUniversalIdentifier,
+        operand: 'IS_NOT_EMPTY',
+        value: '',
+        recordFilterGroupId: groupId,
+      },
+    ],
+  };
+};
+
 const widget = ({
   tabUniversalIdentifier,
   title,
@@ -291,6 +317,8 @@ const line = ({
   primaryAxisGroupByFieldMetadataUniversalIdentifier,
   gridPosition,
   color = 'blue',
+  aggregateOperation = AggregateOperations.COUNT,
+  filter,
 }: {
   tabUniversalIdentifier: string;
   title: string;
@@ -299,6 +327,8 @@ const line = ({
   primaryAxisGroupByFieldMetadataUniversalIdentifier: string;
   gridPosition: GridPosition;
   color?: string;
+  aggregateOperation?: AggregateOperations;
+  filter?: UniversalChartFilter;
 }) =>
   widget({
     tabUniversalIdentifier,
@@ -308,14 +338,16 @@ const line = ({
     configuration: {
       configurationType: 'LINE_CHART',
       aggregateFieldMetadataUniversalIdentifier,
-      aggregateOperation: AggregateOperations.COUNT,
+      aggregateOperation,
       primaryAxisGroupByFieldMetadataUniversalIdentifier,
       primaryAxisDateGranularity: ObjectRecordGroupByDateGranularity.WEEK,
       primaryAxisOrderBy: 'FIELD_ASC',
-      axisNameDisplay: 'NONE',
+      axisNameDisplay: 'BOTH',
       displayLegend: false,
       color,
       ...chartBase,
+      displayDataLabel: true,
+      ...(filter ? { filter } : {}),
     },
   });
 
@@ -431,21 +463,31 @@ export const buildGtmCommandDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Companies added (weekly)',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.companyId,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.gtmRunKey,
+            aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
               FIELDS.companyCreatedAt,
             gridPosition: grid(9, 0, 5, 6),
             color: 'turquoise',
+            filter: isNotEmptyFilter({
+              widgetTitle: 'Companies added (weekly)',
+              fieldMetadataUniversalIdentifier: FIELDS.gtmRunKey,
+            }),
           }),
           line({
             tabUniversalIdentifier: tabId,
             title: 'First contacts (weekly)',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.companyId,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.firstContactAt,
+            aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
               FIELDS.firstContactAt,
             gridPosition: grid(9, 6, 5, 6),
             color: 'purple',
+            filter: isNotEmptyFilter({
+              widgetTitle: 'First contacts (weekly)',
+              fieldMetadataUniversalIdentifier: FIELDS.gtmRunKey,
+            }),
           }),
         ],
       }),

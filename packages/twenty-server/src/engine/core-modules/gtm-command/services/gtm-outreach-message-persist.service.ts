@@ -8,6 +8,7 @@ import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-comman
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { concatenatedUserBurst } from 'src/engine/core-modules/gtm-command/utils/inbound-reply-window.util';
+import { type GtmCandidateEventKind } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -43,6 +44,7 @@ type CandidateRecord = ObjectLiteral & {
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string } | null;
   phoneNumber?: { primaryPhoneNumber?: string } | null;
+  firstOutboundAt?: string | null;
 };
 
 @Injectable()
@@ -118,24 +120,64 @@ export class GtmOutreachMessagePersistService {
       return;
     }
 
+    await this.materializeCandidateEvent({
+      workspaceId,
+      event: 'outbound_message',
+      candidateId: resolvedCandidateId,
+      messagingChannel:
+        channel === 'WHATSAPP'
+          ? 'WHATSAPP_UNIPILE'
+          : channel === 'EMAIL'
+            ? 'EMAIL'
+            : 'LINKEDIN',
+    });
+  }
+
+  async materializeCandidateEvent({
+    workspaceId,
+    event,
+    candidateId,
+    linkedinProfileId,
+    messagingChannel,
+  }: {
+    workspaceId: string;
+    event: GtmCandidateEventKind;
+    candidateId?: string | null;
+    linkedinProfileId?: string | null;
+    messagingChannel?: string | null;
+  }): Promise<void> {
     try {
+      const resolvedCandidateId = await this.resolveCandidateId({
+        workspaceId,
+        candidateId,
+        linkedinProfileId,
+      });
+
+      if (!isNonEmptyString(resolvedCandidateId)) {
+        this.logger.warn(
+          `Skip GTM materialize ${event}: no candidate`,
+        );
+
+        return;
+      }
+
+      const candidate = await this.loadCandidate(
+        workspaceId,
+        resolvedCandidateId,
+      );
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
 
       await this.gtmCommandMaterializeService.applyCandidateEvent({
         candidateId: resolvedCandidateId,
-        event: 'outbound_message',
+        event,
         apiToken,
-        messagingChannel:
-          channel === 'WHATSAPP'
-            ? 'WHATSAPP_UNIPILE'
-            : channel === 'EMAIL'
-              ? 'EMAIL'
-              : 'LINKEDIN',
+        messagingChannel,
+        existingFirstOutboundAt: candidate?.firstOutboundAt,
       });
     } catch (error) {
       this.logger.warn(
-        `Outbound materialize failed for ${resolvedCandidateId}: ${
+        `GTM materialize ${event} failed: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -291,6 +333,29 @@ export class GtmOutreachMessagePersistService {
         }
 
         return null;
+      },
+      authContext,
+    );
+  }
+
+  private async loadCandidate(
+    workspaceId: string,
+    candidateId: string,
+  ): Promise<CandidateRecord | null> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        return candidateRepository.findOne({
+          where: { id: candidateId },
+        });
       },
       authContext,
     );
