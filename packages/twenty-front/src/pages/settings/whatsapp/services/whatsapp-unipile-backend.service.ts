@@ -174,14 +174,23 @@ export class WhatsappUnipileBackendService {
   async getAccountRateLimits(
     accountId: string,
     accessToken?: string,
-  ): Promise<WhatsappAccountRateLimits> {
-    const response = await this.makeRequest<{ limits: WhatsappAccountRateLimits }>(
+  ): Promise<{
+    limits: WhatsappAccountRateLimits;
+    usage: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
+  }> {
+    const response = await this.makeRequest<{
+      limits: WhatsappAccountRateLimits;
+      usage?: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
+    }>(
       `/accounts/${accountId}/rate-limits`,
       'GET',
       undefined,
       accessToken,
     );
-    return response.limits;
+    return {
+      limits: response.limits,
+      usage: response.usage ?? {},
+    };
   }
 
   async saveAccountRateLimits(

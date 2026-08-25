@@ -555,6 +555,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               input: {
                 workspaceMemberId: '',
                 linkedinProfileId: '',
+                linkedinUrl: '',
                 message: '',
               },
             },
@@ -572,6 +573,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               input: {
                 workspaceMemberId: '',
                 linkedinProfileId: '',
+                linkedinUrl: '',
                 subject: '',
                 body: '',
               },
@@ -590,6 +592,7 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               input: {
                 workspaceMemberId: '',
                 linkedinProfileId: '',
+                linkedinUrl: '',
                 body: '',
                 files: [],
               },

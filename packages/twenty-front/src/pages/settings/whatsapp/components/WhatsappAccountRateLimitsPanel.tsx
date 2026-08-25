@@ -45,7 +45,7 @@ export const WhatsappAccountRateLimitsPanel = ({
   return (
     <AccountRateLimitsPanel<WhatsappAccountRateLimits>
       title="Rate limits for this WhatsApp account"
-      description="The maximum number of requests in a window of time for this WhatsApp account. Clear used requests on a row to reset that window's counters without changing these limits."
+      description="For each request type, the maximum number of requests in the next interval, and how many have been used so far."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}

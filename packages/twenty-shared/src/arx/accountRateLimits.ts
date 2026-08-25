@@ -109,6 +109,31 @@ export type AccountRateLimitUsageWindow = {
   windowName: string;
 };
 
+export const ACCOUNT_RATE_LIMIT_WINDOW_MS: Record<string, number> = {
+  '2s': MS_PER_TWO_SECONDS,
+  '30s': MS_PER_THIRTY_SECONDS,
+  '5m': MS_PER_FIVE_MINUTES,
+  minute: MS_PER_MINUTE,
+  hour: MS_PER_HOUR,
+  day: MS_PER_DAY,
+  week: MS_PER_WEEK,
+};
+
+export const getAccountRateLimitWindowMs = (
+  windowName: string,
+): number | undefined => {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      ACCOUNT_RATE_LIMIT_WINDOW_MS,
+      windowName,
+    )
+  ) {
+    return undefined;
+  }
+
+  return ACCOUNT_RATE_LIMIT_WINDOW_MS[windowName];
+};
+
 export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
   keyof LinkedinAccountRateLimits,
   AccountRateLimitUsageWindow

@@ -31,9 +31,9 @@ export class SendLinkedinInmailTool implements Tool {
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinInmailToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
-    const linkedinProfileId = extractLinkedinProfileId(
-      input.linkedinProfileId,
-    );
+    const linkedinProfileId =
+      extractLinkedinProfileId(input.linkedinProfileId) ||
+      extractLinkedinProfileId(input.linkedinUrl);
     const subject = input.subject ?? '';
     const body = input.body ?? '';
 

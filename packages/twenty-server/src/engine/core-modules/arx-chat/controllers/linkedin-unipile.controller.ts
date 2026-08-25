@@ -1794,7 +1794,11 @@ export class LinkedinUnipileController {
       workspace.id,
       accountId,
     );
-    return { success: true, limits };
+    const usage = await this.accountRateLimiterService.getUsage({
+      provider: 'linkedin',
+      accountId,
+    });
+    return { success: true, limits, usage };
   }
 
   @Post('accounts/:accountId/rate-limits')

@@ -45,7 +45,7 @@ export const LinkedinAccountRateLimitsPanel = ({
   return (
     <AccountRateLimitsPanel<LinkedinAccountRateLimits>
       title="Rate limits for this LinkedIn account"
-      description="The maximum number of requests in a window of time for this LinkedIn account. Connection requests, people / org chart search, messages, comments, and InMail each use their own windows — a full search or per-endpoint day cap does not delay the next connection-request slot. People / org chart search counts once per search, not once per paginated Unipile page. Location, company, and industry lookups use the per-endpoint limits instead. Clear used requests on a row to reset that window's counters without changing these limits."
+      description="For each request type, the maximum number of requests in the next interval, and how many have been used so far."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}

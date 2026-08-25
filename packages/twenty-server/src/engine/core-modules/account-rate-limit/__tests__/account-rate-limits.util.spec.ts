@@ -1,6 +1,7 @@
 import {
   DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS,
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
+  getAccountRateLimitWindowMs,
   getLinkedinAccountRateLimitUsageWindow,
   getWhatsappAccountRateLimitUsageWindow,
   parseLinkedinAccountRateLimitsMap,
@@ -84,5 +85,12 @@ describe('account rate limit sanitization', () => {
       windowName: 'minute',
     });
     expect(getWhatsappAccountRateLimitUsageWindow('unknown')).toBeUndefined();
+  });
+
+  it('maps window names to sliding-window durations', () => {
+    expect(getAccountRateLimitWindowMs('5m')).toBe(300_000);
+    expect(getAccountRateLimitWindowMs('hour')).toBe(3_600_000);
+    expect(getAccountRateLimitWindowMs('week')).toBe(604_800_000);
+    expect(getAccountRateLimitWindowMs('unknown')).toBeUndefined();
   });
 });

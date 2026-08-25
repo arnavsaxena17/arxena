@@ -33,12 +33,17 @@ export type AccountRateLimitFieldConfig<TKey extends string> = {
   recommended: number;
 };
 
+export type AccountRateLimitSnapshot<TLimits extends Record<string, number>> = {
+  limits: TLimits;
+  usage?: Partial<Record<Extract<keyof TLimits, string>, number>>;
+};
+
 type AccountRateLimitsPanelProps<TLimits extends Record<string, number>> = {
   title: string;
   description: string;
   accountId: string;
   fields: Array<AccountRateLimitFieldConfig<Extract<keyof TLimits, string>>>;
-  loadLimits: () => Promise<TLimits>;
+  loadLimits: () => Promise<AccountRateLimitSnapshot<TLimits>>;
   saveLimits: (limits: TLimits) => Promise<TLimits>;
   flushUsage?: (
     fieldKey: Extract<keyof TLimits, string>,
@@ -58,6 +63,9 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
   const { openModal } = useModal();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const [limits, setLimits] = useState<TLimits | null>(null);
+  const [usage, setUsage] = useState<
+    Partial<Record<Extract<keyof TLimits, string>, number>>
+  >({});
   const [saving, setSaving] = useState(false);
   const [flushing, setFlushing] = useState(false);
   const [pendingFlushField, setPendingFlushField] = useState<
@@ -65,17 +73,25 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
   >(null);
   const flushModalId = `flush-account-rate-limit-usage-${accountId}`;
 
+  const applySnapshot = useCallback(
+    (snapshot: AccountRateLimitSnapshot<TLimits>) => {
+      setLimits(snapshot.limits);
+      setUsage(snapshot.usage ?? {});
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
     void loadLimits().then((next) => {
       if (!cancelled) {
-        setLimits(next);
+        applySnapshot(next);
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [accountId, loadLimits]);
+  }, [accountId, applySnapshot, loadLimits]);
 
   const handleSave = useCallback(async () => {
     if (!limits) {
@@ -110,6 +126,13 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
     setFlushing(true);
     try {
       await flushUsage(field.key);
+      setUsage((current) => ({ ...current, [field.key]: 0 }));
+      try {
+        const snapshot = await loadLimits();
+        applySnapshot(snapshot);
+      } catch {
+        // Keep the local zero if the refresh fails.
+      }
       enqueueSuccessSnackBar({
         message: t`Cleared used requests for ${fieldLabel} (${fieldWindowLabel}). New requests can run immediately.`,
       });
@@ -125,9 +148,11 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
       setPendingFlushField(null);
     }
   }, [
+    applySnapshot,
     enqueueErrorSnackBar,
     enqueueSuccessSnackBar,
     flushUsage,
+    loadLimits,
     pendingFlushField,
     t,
   ]);
@@ -152,6 +177,7 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
                 label={field.label}
                 windowLabel={field.windowLabel}
                 value={limits[field.key]}
+                used={usage[field.key] ?? 0}
                 min={field.min}
                 max={field.max}
                 recommended={field.recommended}

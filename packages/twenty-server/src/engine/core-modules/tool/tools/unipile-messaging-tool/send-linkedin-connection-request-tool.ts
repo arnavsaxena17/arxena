@@ -32,9 +32,9 @@ export class SendLinkedinConnectionRequestTool implements Tool {
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinConnectionRequestToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
-    const linkedinProfileId = extractLinkedinProfileId(
-      input.linkedinProfileId,
-    );
+    const linkedinProfileId =
+      extractLinkedinProfileId(input.linkedinProfileId) ||
+      extractLinkedinProfileId(input.linkedinUrl);
     const message = truncateLinkedinConnectionRequestMessage(
       input.message ?? '',
     );

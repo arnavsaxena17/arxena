@@ -12,7 +12,7 @@ const Row = styled.div`
   align-items: center;
   display: grid;
   gap: ${themeCssVariables.spacing[3]};
-  grid-template-columns: minmax(140px, 1.2fr) minmax(120px, 1.4fr) 72px max-content auto;
+  grid-template-columns: minmax(140px, 1.2fr) 92px minmax(120px, 1.4fr) 72px max-content auto;
   padding: ${themeCssVariables.spacing[2]} 0;
 `;
 
@@ -48,6 +48,26 @@ const InfoAnchor = styled.span`
   outline: none;
 `;
 
+const UsageBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+  min-width: 0;
+`;
+
+const UsageCounts = styled.span`
+  font-size: ${themeCssVariables.font.size.sm};
+  font-variant-numeric: tabular-nums;
+  font-weight: ${themeCssVariables.font.weight.medium};
+  white-space: nowrap;
+`;
+
+const UsageCaption = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  white-space: nowrap;
+`;
+
 const RecommendedSlot = styled.div`
   justify-self: start;
   min-height: ${themeCssVariables.spacing[4]};
@@ -58,6 +78,7 @@ export type AccountRateLimitSliderRowProps = {
   label: string;
   windowLabel: string;
   value: number;
+  used: number;
   min: number;
   max: number;
   recommended: number;
@@ -72,6 +93,7 @@ export const AccountRateLimitSliderRow = ({
   label,
   windowLabel,
   value,
+  used,
   min,
   max,
   recommended,
@@ -84,6 +106,7 @@ export const AccountRateLimitSliderRow = ({
     onChange(Number(event.target.value));
   };
   const tooltipId = `rate-limit-recommended-${instanceId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const atCap = used >= value;
 
   return (
     <Row>
@@ -104,6 +127,21 @@ export const AccountRateLimitSliderRow = ({
         </LabelRow>
         <WindowLabel>{windowLabel}</WindowLabel>
       </LabelBlock>
+      <UsageBlock
+        aria-label={`${used} used of ${value} maximum ${windowLabel}`}
+        title={`${used} used of ${value} maximum ${windowLabel}`}
+      >
+        <UsageCounts
+          style={{
+            color: atCap
+              ? themeCssVariables.font.color.danger
+              : themeCssVariables.font.color.primary,
+          }}
+        >
+          {used} / {value}
+        </UsageCounts>
+        <UsageCaption>used / max</UsageCaption>
+      </UsageBlock>
       <Slider
         aria-label={label}
         min={min}

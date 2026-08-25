@@ -90,6 +90,46 @@ describe('RedisService.deleteByPattern', () => {
   });
 });
 
+describe('RedisService.countSlidingWindowMembers', () => {
+  it('counts members still inside each window without mutating keys', async () => {
+    const pipeline = {
+      zcount: jest.fn(),
+      exec: jest.fn().mockResolvedValue([
+        [null, 2],
+        [null, 0],
+      ]),
+    };
+    const redisClient = {
+      pipeline: jest.fn().mockReturnValue(pipeline),
+    };
+    const redisService = new RedisService({ get: jest.fn() } as never);
+    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
+      redisClient;
+
+    const counts = await redisService.countSlidingWindowMembers(
+      [
+        { key: 'linkedin:a:connection_request:5m', windowMs: 300_000 },
+        { key: 'linkedin:a:connection_request:hour', windowMs: 3_600_000 },
+      ],
+      1_000_000,
+    );
+
+    expect(counts).toEqual([2, 0]);
+    expect(pipeline.zcount).toHaveBeenNthCalledWith(
+      1,
+      'linkedin:a:connection_request:5m',
+      '(700000',
+      '+inf',
+    );
+    expect(pipeline.zcount).toHaveBeenNthCalledWith(
+      2,
+      'linkedin:a:connection_request:hour',
+      '(-2600000',
+      '+inf',
+    );
+  });
+});
+
 describe('AccountRateLimiterService', () => {
   const createLimiter = (
     acquire: jest.Mock,
@@ -389,6 +429,73 @@ describe('AccountRateLimiterService', () => {
       'linkedin:acc-1:connection_request:5m',
     );
     expect(deleteByPattern).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns used request counts for each LinkedIn field', async () => {
+    const countSlidingWindowMembers = jest.fn(
+      async (windows: Array<{ key: string; windowMs: number }>) =>
+        windows.map((window) =>
+          window.key === 'linkedin:acc-1:connection_request:5m' ? 3 : 0,
+        ),
+    );
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest.fn(),
+        countSlidingWindowMembers,
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    const usage = await limiter.getUsage({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+    });
+
+    expect(usage.connectionRequestPer5Minutes).toBe(3);
+    expect(usage.searchPerDay).toBe(0);
+    expect(countSlidingWindowMembers).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:5m',
+          windowMs: 300_000,
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:search:day',
+          windowMs: 86_400_000,
+        }),
+      ]),
+      expect.any(Number),
+    );
+  });
+
+  it('returns no usage for an empty account id', async () => {
+    const countSlidingWindowMembers = jest.fn();
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest.fn(),
+        countSlidingWindowMembers,
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    await expect(
+      limiter.getUsage({ provider: 'linkedin', accountId: '  ' }),
+    ).resolves.toEqual({});
+    expect(countSlidingWindowMembers).not.toHaveBeenCalled();
   });
 
   it('escapes redis glob characters in account ids', () => {

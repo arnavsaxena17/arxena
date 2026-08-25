@@ -292,6 +292,35 @@ export class RedisService implements OnModuleInit {
     return { acquired: false, waitMs: Math.max(100, Math.ceil(result)) };
   }
 
+  async countSlidingWindowMembers(
+    windows: Array<{ key: string; windowMs: number }>,
+    now: number,
+  ): Promise<number[]> {
+    if (windows.length === 0) {
+      return [];
+    }
+
+    const pipeline = this.redisClient.pipeline();
+    for (const window of windows) {
+      pipeline.zcount(window.key, `(${now - window.windowMs}`, '+inf');
+    }
+
+    const results = await pipeline.exec();
+    return windows.map((_, index) => {
+      const result = results?.[index];
+      if (!result) {
+        return 0;
+      }
+
+      const [error, count] = result;
+      if (error || typeof count !== 'number' || !Number.isFinite(count)) {
+        return 0;
+      }
+
+      return Math.max(0, Math.floor(count));
+    });
+  }
+
   async getString(key: string): Promise<string | null> {
     return this.redisClient.get(key);
   }

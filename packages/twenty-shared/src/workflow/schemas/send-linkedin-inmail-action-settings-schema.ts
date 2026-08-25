@@ -6,6 +6,7 @@ export const workflowSendLinkedinInmailActionSettingsSchema =
     input: z.object({
       workspaceMemberId: z.string(),
       linkedinProfileId: z.string(),
+      linkedinUrl: z.string().optional().default(''),
       candidateId: z.string().optional(),
       subject: z.string().optional().default(''),
       body: z.string().optional().default(''),

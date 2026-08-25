@@ -35,9 +35,9 @@ export class SendLinkedinMessageTool implements Tool {
   ): Promise<ToolOutput> {
     const input = parameters as SendLinkedinMessageToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
-    const linkedinProfileId = extractLinkedinProfileId(
-      input.linkedinProfileId,
-    );
+    const linkedinProfileId =
+      extractLinkedinProfileId(input.linkedinProfileId) ||
+      extractLinkedinProfileId(input.linkedinUrl);
     const body = input.body ?? '';
 
     if (!isNonEmptyString(unipileAccountId)) {

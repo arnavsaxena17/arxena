@@ -14,6 +14,7 @@ import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
 type FormData = {
   workspaceMemberId: string;
   linkedinProfileId: string;
+  linkedinUrl: string;
   body: string;
   files: WorkflowEmailFiles;
 };
@@ -38,6 +39,7 @@ export const WorkflowEditActionSendLinkedinMessage = ({
     initialFormData: {
       workspaceMemberId: action.settings.input.workspaceMemberId,
       linkedinProfileId: action.settings.input.linkedinProfileId,
+      linkedinUrl: action.settings.input.linkedinUrl ?? '',
       body: action.settings.input.body ?? '',
       files: action.settings.input.files ?? [],
     },
@@ -80,11 +82,19 @@ export const WorkflowEditActionSendLinkedinMessage = ({
           VariablePicker={WorkflowVariablePicker}
         />
         <FormTextFieldInput
-          label={t`LinkedIn profile`}
-          placeholder={t`Profile ID, public identifier, or LinkedIn URL`}
+          label={t`LinkedIn profile ID`}
+          placeholder={t`muizesmail, ACoAA…, or https://linkedin.com/in/muizesmail`}
           readonly={actionOptions.readonly}
           defaultValue={formData.linkedinProfileId}
           onChange={(value) => handleFieldChange('linkedinProfileId', value)}
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <FormTextFieldInput
+          label={t`LinkedIn URL`}
+          placeholder={t`Optional. Person/Candidate LinkedIn URL if profile ID is empty`}
+          readonly={actionOptions.readonly}
+          defaultValue={formData.linkedinUrl}
+          onChange={(value) => handleFieldChange('linkedinUrl', value)}
           VariablePicker={WorkflowVariablePicker}
         />
         <FormTextFieldInput

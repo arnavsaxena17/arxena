@@ -323,7 +323,11 @@ export class WhatsappUnipileController {
       workspace.id,
       accountId,
     );
-    return { success: true, limits };
+    const usage = await this.accountRateLimiterService.getUsage({
+      provider: 'whatsapp',
+      accountId,
+    });
+    return { success: true, limits, usage };
   }
 
   @Post('accounts/:accountId/rate-limits')

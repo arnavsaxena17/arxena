@@ -43,13 +43,12 @@ export class GtmUnipilePacingService {
   ) {}
 
   async resolveLinkedinProfileId({
-    workspaceId,
     linkedinProfileId,
     linkedinUrl,
   }: {
     workspaceId: string;
-    linkedinProfileId?: string | null;
-    linkedinUrl?: string | null;
+    linkedinProfileId?: unknown;
+    linkedinUrl?: unknown;
   }): Promise<string> {
     const fromFields =
       extractLinkedinProfileId(linkedinProfileId) ||

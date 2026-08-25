@@ -3,6 +3,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS,
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
+  LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
   MS_PER_DAY,
   MS_PER_FIVE_MINUTES,
   MS_PER_HOUR,
@@ -10,6 +11,8 @@ import {
   MS_PER_THIRTY_SECONDS,
   MS_PER_TWO_SECONDS,
   MS_PER_WEEK,
+  WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
+  getAccountRateLimitWindowMs,
   sanitizeLinkedinAccountRateLimits,
   sanitizeWhatsappAccountRateLimits,
   type LinkedinAccountRateLimits,
@@ -150,6 +153,54 @@ export class AccountRateLimiterService implements OnModuleInit {
     );
 
     return { deletedKeys };
+  }
+
+  async getUsage(params: {
+    provider: AccountRateLimitProvider;
+    accountId: string;
+  }): Promise<Record<string, number>> {
+    const accountId = params.accountId.trim();
+    if (!accountId) {
+      return {};
+    }
+
+    const usageWindows =
+      params.provider === 'linkedin'
+        ? LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS
+        : WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS;
+
+    const fields = (
+      Object.entries(usageWindows) as Array<
+        [string, { method: string; windowName: string }]
+      >
+    ).flatMap(([fieldKey, window]) => {
+      const windowMs = getAccountRateLimitWindowMs(window.windowName);
+      if (windowMs == null) {
+        return [];
+      }
+
+      return [
+        {
+          fieldKey,
+          key: buildAccountRateLimitUsageKey(
+            params.provider,
+            accountId,
+            window.method,
+            window.windowName,
+          ),
+          windowMs,
+        },
+      ];
+    });
+
+    const counts = await this.redisService.countSlidingWindowMembers(
+      fields.map(({ key, windowMs }) => ({ key, windowMs })),
+      Date.now(),
+    );
+
+    return Object.fromEntries(
+      fields.map((field, index) => [field.fieldKey, counts[index] ?? 0]),
+    );
   }
 
   async acquireOrDefer(params: {

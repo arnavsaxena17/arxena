@@ -12,6 +12,7 @@ import { CoreObjectNameSingular } from 'twenty-shared/types';
 type FormData = {
   workspaceMemberId: string;
   linkedinProfileId: string;
+  linkedinUrl: string;
   subject: string;
   body: string;
 };
@@ -36,6 +37,7 @@ export const WorkflowEditActionSendLinkedinInmail = ({
     initialFormData: {
       workspaceMemberId: action.settings.input.workspaceMemberId,
       linkedinProfileId: action.settings.input.linkedinProfileId,
+      linkedinUrl: action.settings.input.linkedinUrl ?? '',
       subject: action.settings.input.subject ?? '',
       body: action.settings.input.body ?? '',
     },
@@ -49,7 +51,10 @@ export const WorkflowEditActionSendLinkedinInmail = ({
         ...action,
         settings: {
           ...action.settings,
-          input: nextFormData,
+          input: {
+            ...action.settings.input,
+            ...nextFormData,
+          },
         },
       });
     },
@@ -75,11 +80,19 @@ export const WorkflowEditActionSendLinkedinInmail = ({
           VariablePicker={WorkflowVariablePicker}
         />
         <FormTextFieldInput
-          label={t`LinkedIn profile`}
-          placeholder={t`Profile ID, public identifier, or LinkedIn URL`}
+          label={t`LinkedIn profile ID`}
+          placeholder={t`muizesmail, ACoAA…, or https://linkedin.com/in/muizesmail`}
           readonly={actionOptions.readonly}
           defaultValue={formData.linkedinProfileId}
           onChange={(value) => handleFieldChange('linkedinProfileId', value)}
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <FormTextFieldInput
+          label={t`LinkedIn URL`}
+          placeholder={t`Optional. Person/Candidate LinkedIn URL if profile ID is empty`}
+          readonly={actionOptions.readonly}
+          defaultValue={formData.linkedinUrl}
+          onChange={(value) => handleFieldChange('linkedinUrl', value)}
           VariablePicker={WorkflowVariablePicker}
         />
         <FormTextFieldInput

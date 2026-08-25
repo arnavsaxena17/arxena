@@ -62,8 +62,8 @@ type WorkspaceMemberProfileUnipileFields = {
 
 type UnipileMessagingActionInputWithMember = ToolInput & {
   workspaceMemberId?: string;
-  linkedinProfileId?: string;
-  linkedinUrl?: string;
+  linkedinProfileId?: unknown;
+  linkedinUrl?: unknown;
   skipPacing?: boolean;
   unipileAccountId?: string;
   candidateId?: string;
@@ -115,6 +115,10 @@ export abstract class UnipileMessagingWorkflowActionBase<
 
     const skipPacing = resolvedInput.skipPacing === true;
     const pacingChannel = this.getPacingChannel();
+    const resolvedLinkedinProfileId =
+      typeof resolvedInput.linkedinProfileId === 'string'
+        ? resolvedInput.linkedinProfileId
+        : undefined;
     let pacingProjectId: string | null = null;
     let pacingPatch: Parameters<
       GtmUnipilePacingService['stampSuccess']
@@ -125,7 +129,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
         workspaceId: runInfo.workspaceId,
         workspaceMemberId: resolvedInput.workspaceMemberId ?? '',
         channel: pacingChannel,
-        linkedinProfileId: resolvedInput.linkedinProfileId,
+        linkedinProfileId: resolvedLinkedinProfileId,
       });
 
       pacingProjectId = check.projectId;
@@ -175,7 +179,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             channel: transcriptChannel,
             body: resolvedInput.body ?? resolvedInput.message ?? '',
             candidateId: resolvedInput.candidateId,
-            linkedinProfileId: resolvedInput.linkedinProfileId,
+            linkedinProfileId: resolvedLinkedinProfileId,
             phone: resolvedInput.phone,
             externalMessageId: extractProviderMessageId(toolOutput.result),
           });
@@ -250,19 +254,18 @@ export abstract class UnipileMessagingWorkflowActionBase<
       accountType: this.getAccountType(),
     });
 
-    const linkedinProfileId = await this.gtmUnipilePacingService.resolveLinkedinProfileId(
-      {
+    const linkedinProfileId =
+      await this.gtmUnipilePacingService.resolveLinkedinProfileId({
         workspaceId,
         linkedinProfileId: resolvedInput.linkedinProfileId,
         linkedinUrl: resolvedInput.linkedinUrl,
-      },
-    );
+      });
 
     return {
       ...resolvedInput,
       workspaceMemberId,
       unipileAccountId,
-      ...(isNonEmptyString(linkedinProfileId) ? { linkedinProfileId } : {}),
+      linkedinProfileId,
     };
   }
 

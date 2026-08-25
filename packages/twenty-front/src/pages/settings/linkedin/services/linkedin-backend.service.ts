@@ -327,14 +327,23 @@ export class LinkedinBackendService {
   async getAccountRateLimits(
     accountId: string,
     accessToken?: string,
-  ): Promise<LinkedinAccountRateLimits> {
-    const response = await this.makeRequest<{ limits: LinkedinAccountRateLimits }>(
+  ): Promise<{
+    limits: LinkedinAccountRateLimits;
+    usage: Partial<Record<keyof LinkedinAccountRateLimits, number>>;
+  }> {
+    const response = await this.makeRequest<{
+      limits: LinkedinAccountRateLimits;
+      usage?: Partial<Record<keyof LinkedinAccountRateLimits, number>>;
+    }>(
       `/accounts/${accountId}/rate-limits`,
       'GET',
       undefined,
       accessToken,
     );
-    return response.limits;
+    return {
+      limits: response.limits,
+      usage: response.usage ?? {},
+    };
   }
 
   async saveAccountRateLimits(
