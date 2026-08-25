@@ -9,6 +9,7 @@ import {
   type SendLinkedinConnectionRequestToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-connection-request-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { candidateStageImpliesConnectionRequestSent } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,
@@ -61,6 +62,20 @@ export class SendLinkedinConnectionRequestTool implements Tool {
     }
 
     try {
+      const alreadySentError = await this.getAlreadySentError({
+        workspaceId: context.workspaceId,
+        candidateId: input.candidateId,
+        linkedinProfileId,
+      });
+
+      if (isNonEmptyString(alreadySentError)) {
+        return {
+          success: false,
+          message: 'Failed to send LinkedIn connection request',
+          error: alreadySentError,
+        };
+      }
+
       const messagingService = createLinkedinUnipileMessagingServiceForTools();
       const providerId = await this.linkedinProviderIdStore.resolveForSend({
         workspaceId: context.workspaceId,
@@ -103,6 +118,49 @@ export class SendLinkedinConnectionRequestTool implements Tool {
         message: 'Failed to send LinkedIn connection request',
         error: getUnipileToolErrorMessage(error),
       };
+    }
+  }
+
+  private async getAlreadySentError({
+    workspaceId,
+    candidateId,
+    linkedinProfileId,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    linkedinProfileId: string;
+  }): Promise<string | undefined> {
+    try {
+      const candidate = await this.linkedinProviderIdStore.findCandidate({
+        workspaceId,
+        candidateId,
+        identifier: linkedinProfileId,
+      });
+
+      if (
+        !candidateStageImpliesConnectionRequestSent(
+          candidate?.outreachSequenceStage,
+        )
+      ) {
+        return undefined;
+      }
+
+      const error =
+        'A connection request has already been sent to this recipient.';
+
+      this.logger.warn(
+        `Skipping LinkedIn connection request for candidate ${candidate?.id}: ${error}`,
+      );
+
+      return error;
+    } catch (error) {
+      this.logger.warn(
+        `Could not check prior LinkedIn connection request: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return undefined;
     }
   }
 }

@@ -153,7 +153,7 @@ const conditionalImports = isWorker
     WhatsappMediaModule,
     UnipileAttachmentModule,
     CandidateSearchModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     ContactEnrichmentModule,
     JwtModule,
     UnipilePoolModule,

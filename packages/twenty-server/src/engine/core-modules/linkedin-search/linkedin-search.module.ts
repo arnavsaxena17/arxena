@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -46,7 +46,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
     GraphQLExecutionModule,
     AuthModule,
     JwtModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     CoreGraphQLApiModule,
     TypeORMModule,
     TypeOrmModule.forFeature([

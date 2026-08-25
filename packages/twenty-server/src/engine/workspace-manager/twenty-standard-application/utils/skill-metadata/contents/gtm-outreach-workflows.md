@@ -48,7 +48,7 @@ AI drafts (before FORM): opener = short hook + one question, meeting as a light 
 
 ## Workflow 1 — company created → ICP people → enroll
 
-Do **not** FIND_RECORDS Project or pass `icpSpec`. `search-people-for-company` loads the Project and parses std function/grade itself. Company trigger payload has **no** `projectId` field. Search returns hits only; `upload-profiles` persists Person + Candidate.
+Do **not** FIND_RECORDS Project or pass `icpSpec`. `search-people-for-company` loads the Project and parses std function/grade itself. Optional `jobTitle` takes precedence over Project `icpSpec` buyerTitles[0] and is classified the same way as `search-people`. Company trigger payload has **no** `projectId` field. Search returns hits only; `upload-profiles` persists Person + Candidate.
 
 Use `create_complete_workflow` with:
 

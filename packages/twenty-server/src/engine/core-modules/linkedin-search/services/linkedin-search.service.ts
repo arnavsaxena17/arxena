@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
@@ -139,6 +139,7 @@ export class LinkedInSearchService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly htmlParser: LinkedInHtmlParserService,
     private readonly apifyService: ApifyService,
+    @Inject(forwardRef(() => ApifyLinkedInCompanyProfileTransformerService))
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
     private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
   ) {

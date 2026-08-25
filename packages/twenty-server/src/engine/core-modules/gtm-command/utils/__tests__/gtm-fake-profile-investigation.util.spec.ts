@@ -54,4 +54,23 @@ describe('gtm-fake-profile-investigation.util', () => {
 
     expect(profiles).toHaveLength(2);
   });
+
+  it('parses a Fetch LinkedIn profile snapshot JSON string', () => {
+    const profiles = extractProfilesFromPayload({
+      snapshot: JSON.stringify({
+        firstName: 'Arapa',
+        lastName: 'Hara',
+        headline: 'Head of Sales',
+      }),
+    });
+
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0]).toMatchObject({ firstName: 'Arapa' });
+  });
+
+  it('ignores empty profile objects', () => {
+    expect(extractProfilesFromPayload({ profile: {}, snapshot: {} })).toEqual(
+      [],
+    );
+  });
 });

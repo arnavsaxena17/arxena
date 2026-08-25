@@ -2,6 +2,7 @@ import { UserProfile } from 'twenty-shared';
 
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 
 export type CandidateUploadLookup = {
   byUniqueStringKey: Map<string, unknown>;
@@ -11,6 +12,8 @@ export type CandidateUploadLookup = {
   byHiringNaukriUrl: Map<string, unknown>;
   byResdexNaukriUrl: Map<string, unknown>;
 };
+
+const LINKEDIN_IDENTITY_MIN_LENGTH = 3;
 
 export const normalizeUrlForDedup = (raw: string): string => {
   if (!raw || typeof raw !== 'string') {
@@ -30,6 +33,132 @@ export const normalizeUrlForDedup = (raw: string): string => {
 };
 
 type LooseProfile = UserProfile | Record<string, unknown>;
+
+export const extractLinkedinIdentityKey = (value: unknown): string => {
+  return extractLinkedinProfileId(value).trim().toLowerCase();
+};
+
+export const collectLinkedinIdentityKeysFromProfile = (
+  profile: LooseProfile,
+): string[] => {
+  const keys = new Set<string>();
+  const add = (value: unknown) => {
+    const key = extractLinkedinIdentityKey(value);
+    if (key.length >= LINKEDIN_IDENTITY_MIN_LENGTH) {
+      keys.add(key);
+    }
+  };
+
+  add(profile);
+  const p = profile as Record<string, unknown>;
+  add(p.linkedinUrl);
+  add(p.linkedinProfileId);
+  add(p.public_identifier);
+  add(p.linkedinLink);
+  add(p.profileUrl);
+  add(p.person);
+
+  return [...keys];
+};
+
+export const linkedinUrlVariantsForIdentity = (identity: string): string[] => {
+  const id = identity.trim();
+  if (!id) {
+    return [];
+  }
+
+  if (id.toLowerCase().includes('linkedin.com')) {
+    const norm = normalizeLinkedInUrl(id);
+    const withoutSlash = norm.replace(/\/$/, '');
+    return [...new Set([norm, withoutSlash, `${withoutSlash}/`].filter(Boolean))];
+  }
+
+  const slug = id.replace(/^@/, '');
+  return [
+    `https://linkedin.com/in/${slug}`,
+    `https://www.linkedin.com/in/${slug}`,
+    `https://linkedin.com/in/${slug}/`,
+    `https://www.linkedin.com/in/${slug}/`,
+  ];
+};
+
+export const collectLinkedinIdentityLookupKeys = (
+  profile: LooseProfile,
+): string[] => {
+  const keys = new Set<string>();
+
+  for (const identity of collectLinkedinIdentityKeysFromProfile(profile)) {
+    keys.add(identity);
+    for (const variant of linkedinUrlVariantsForIdentity(identity)) {
+      keys.add(variant);
+      keys.add(variant.toLowerCase());
+      const normalized = normalizeLinkedInUrl(variant);
+      if (normalized) {
+        keys.add(normalized);
+        keys.add(normalized.toLowerCase());
+      }
+    }
+  }
+
+  const p = profile as Record<string, unknown>;
+  const rawUrls = [p.linkedinUrl, p.linkedinLink, p.profileUrl];
+  for (const raw of rawUrls) {
+    const url =
+      typeof raw === 'string'
+        ? raw
+        : raw && typeof raw === 'object' && 'primaryLinkUrl' in raw
+          ? String((raw as { primaryLinkUrl?: unknown }).primaryLinkUrl ?? '')
+          : '';
+    if (url.trim()) {
+      keys.add(normalizeLinkedInUrl(url));
+      keys.add(url.trim().toLowerCase());
+    }
+  }
+
+  return [...keys].filter(Boolean);
+};
+
+export const indexLinkedinIdentitiesIntoMap = (
+  map: Map<string, unknown>,
+  node: unknown,
+  linkedinValue?: unknown,
+): void => {
+  const sources: unknown[] =
+    linkedinValue === undefined ? [node] : [node, linkedinValue];
+
+  for (const source of sources) {
+    for (const key of collectLinkedinIdentityLookupKeys(
+      (source && typeof source === 'object'
+        ? source
+        : { linkedinProfileId: source }) as LooseProfile,
+    )) {
+      if (!map.has(key)) {
+        map.set(key, node);
+      }
+    }
+  }
+};
+
+export const findExistingPersonByLinkedinIdentity = <T extends { id?: string }>(
+  profile: LooseProfile,
+  byLinkedin: Map<string, T>,
+): T | undefined => {
+  for (const key of collectLinkedinIdentityLookupKeys(profile)) {
+    const person = byLinkedin.get(key);
+    if (person?.id) {
+      return person;
+    }
+  }
+  return undefined;
+};
+
+export const linkedinIlikePattern = (identity: string): string => {
+  const safe = identity.replace(/[%_\\]/g, '').trim();
+  if (safe.length < LINKEDIN_IDENTITY_MIN_LENGTH) {
+    return '';
+  }
+  return `%${safe}%`;
+};
 
 /**
  * Resolves phone input for dedup / lookup: GraphQL-style `phones` / `phone`
@@ -139,6 +268,7 @@ export const extractUploadUrlBucket = (
   resdexNorm: string;
   hiringNorm: string;
   linkedinNorm: string;
+  linkedinIdentity: string;
   primaryUrlDedupKey: string;
 } => {
   const p = profile as Record<string, unknown>;
@@ -185,16 +315,28 @@ export const extractUploadUrlBucket = (
     }
   }
 
+  const linkedinIdentity =
+    extractLinkedinIdentityKey(linkedinNorm) ||
+    collectLinkedinIdentityKeysFromProfile(profile)[0];
+
   let primaryUrlDedupKey = '';
   if (resdexNorm) {
     primaryUrlDedupKey = `url:resdex:${resdexNorm}`;
   } else if (hiringNorm) {
     primaryUrlDedupKey = `url:hiring:${hiringNorm}`;
+  } else if (linkedinIdentity) {
+    primaryUrlDedupKey = `url:linkedin:${linkedinIdentity}`;
   } else if (linkedinNorm) {
     primaryUrlDedupKey = `url:linkedin:${linkedinNorm}`;
   }
 
-  return { resdexNorm, hiringNorm, linkedinNorm, primaryUrlDedupKey };
+  return {
+    resdexNorm,
+    hiringNorm,
+    linkedinNorm,
+    linkedinIdentity,
+    primaryUrlDedupKey,
+  };
 };
 
 export const getUploadProfileDedupMapKey = (
@@ -293,6 +435,12 @@ export const findExistingCandidateForUpload = (
   }
   if (hiringNorm) {
     const c = lookup.byHiringNaukriUrl.get(hiringNorm);
+    if (c) {
+      return c;
+    }
+  }
+  for (const key of collectLinkedinIdentityLookupKeys(profile)) {
+    const c = lookup.byLinkedinUrl.get(key);
     if (c) {
       return c;
     }

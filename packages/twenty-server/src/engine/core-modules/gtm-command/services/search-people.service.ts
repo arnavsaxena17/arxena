@@ -15,8 +15,6 @@ export type SearchPeopleInput = {
   jobTitle?: string;
   locations?: string[];
   country?: string;
-  dataSource?: string;
-  accountId?: string;
   limit?: number;
 };
 
@@ -67,6 +65,8 @@ export class SearchPeopleService {
     workspaceId: string;
     input: SearchPeopleInput;
   }): Promise<object> {
+    let dataSource: 'unipile' | 'harvest' = 'harvest';
+
     try {
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
@@ -75,6 +75,8 @@ export class SearchPeopleService {
           workspaceId,
         );
 
+      const accountId = defaultAccount?.accountId;
+      dataSource = accountId ? 'unipile' : 'harvest';
       const limit = Math.min(Math.max(1, input.limit ?? 10), 25);
       const search = await this.peopleApiService.searchPeople(
         {
@@ -85,8 +87,8 @@ export class SearchPeopleService {
           jobTitle: input.jobTitle,
           locations: input.locations,
           country: input.country,
-          dataSource: (input.dataSource as never) ?? 'auto',
-          accountId: input.accountId ?? defaultAccount?.accountId,
+          dataSource,
+          accountId,
           limit,
         },
         apiToken ?? undefined,
@@ -159,7 +161,7 @@ export class SearchPeopleService {
       return {
         success: false,
         total: 0,
-        dataSource: input.dataSource ?? 'auto',
+        dataSource,
         error: error instanceof Error ? error.message : String(error),
         people: [],
       };

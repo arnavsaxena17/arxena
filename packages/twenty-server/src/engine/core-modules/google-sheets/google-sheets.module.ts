@@ -3,7 +3,7 @@ import { GoogleSheetsService } from './google-sheets.service';
 import { EmailModule } from 'src/engine/core-modules/email/email.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
@@ -51,7 +51,7 @@ import { GoogleSheetsController } from './google-sheets.controller';
     EnvironmentModule,
     WorkspaceDataSourceModule,
     ApiKeyModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     CoreGraphQLApiModule,
     DataSourceModule,
     AuthModule,

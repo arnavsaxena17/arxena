@@ -27,6 +27,7 @@ import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/serv
 import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
 import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
+import { GtmFilterProfilesService } from 'src/engine/core-modules/gtm-command/services/gtm-filter-profiles.service';
 import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
@@ -65,13 +66,13 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     AccountRateLimitModule,
     LogicFunctionExecutorModule,
     WorkspaceModificationsModule,
-    CandidateSearchModule,
-    LinkedInSearchModule,
+    forwardRef(() => CandidateSearchModule),
+    forwardRef(() => LinkedInSearchModule),
     UnipilePoolModule,
     EnvironmentModule,
     WikidataModule,
     ApiKeyModule,
-    PeopleApiModule,
+    forwardRef(() => PeopleApiModule),
     CompanyApiModule,
     JobsApiModule,
     PostsApiModule,
@@ -135,6 +136,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     EnrichContactService,
     GetCalendarAvailabilityService,
     GtmFakeProfileDetectorService,
+    GtmFilterProfilesService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
@@ -158,6 +160,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     EnrichContactService,
     GetCalendarAvailabilityService,
     GtmFakeProfileDetectorService,
+    GtmFilterProfilesService,
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,

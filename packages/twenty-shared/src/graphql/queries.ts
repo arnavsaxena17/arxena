@@ -1743,6 +1743,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
         }
         salary
         jobTitle
+        avatarUrl
         id
         uniqueStringKey
         position
@@ -2541,6 +2542,11 @@ export const graphqlToFetchAllCandidateData = `
             primaryLinkUrl
             primaryLinkLabel
           }
+          displayPicture {
+            primaryLinkUrl
+            primaryLinkLabel
+          }
+          avatarUrl
           otherFields
           people {
             id
@@ -2560,6 +2566,7 @@ export const graphqlToFetchAllCandidateData = `
                 primaryEmail
             }
             jobTitle
+            avatarUrl
             uniqueStringKey
           }
           startChat

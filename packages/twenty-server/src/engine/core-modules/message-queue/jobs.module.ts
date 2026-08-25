@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -77,7 +77,7 @@ import { WorkflowModule } from 'src/modules/workflow/workflow.module';
     BillingModule,
     TheOrgModule,
     CandidateSearchModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     AutonomousRecruiterModule,
     ArxChatAgentModule,
     LinkedinXrayModule,

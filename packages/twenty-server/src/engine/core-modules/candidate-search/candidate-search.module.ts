@@ -63,7 +63,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     LinkedInSearchModule,
     UnipilePoolModule,
     WorkspaceModificationsModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     GraphQLExecutionModule,
     forwardRef(() => OrgChartModule),
     forwardRef(() => {

@@ -48,6 +48,14 @@ describe('FetchLinkedinProfileService', () => {
       success: true,
       linkedinProfileId: VALID_PROVIDER_ID,
       linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
+      people: [
+        expect.objectContaining({
+          firstName: 'Jane',
+          lastName: 'Doe',
+          linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
+          linkedinProfileId: VALID_PROVIDER_ID,
+        }),
+      ],
     });
     expect(linkedinProviderIdStore.saveProviderId).toHaveBeenCalledWith({
       workspaceId: 'ws-1',

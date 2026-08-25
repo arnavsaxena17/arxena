@@ -98,6 +98,19 @@ export const GTM_STAGES_THAT_IMPLY_OUTBOUND: readonly GtmOutreachSequenceStage[]
     'FAILED_NO_REPLY',
   ];
 
+export const GTM_STAGES_THAT_IMPLY_CONNECTION_REQUEST_SENT: readonly GtmOutreachSequenceStage[] =
+  ['CONNECTION_SENT', 'CONNECTION_ACCEPTED'];
+
+export const candidateStageImpliesConnectionRequestSent = (
+  stage: string | null | undefined,
+): boolean =>
+  Boolean(
+    stage &&
+      GTM_STAGES_THAT_IMPLY_CONNECTION_REQUEST_SENT.includes(
+        stage as GtmOutreachSequenceStage,
+      ),
+  );
+
 export const candidateStageImpliesOutbound = (
   stage: string | null | undefined,
 ): boolean =>

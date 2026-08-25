@@ -5,7 +5,7 @@ import { EnvironmentModule } from 'src/engine/core-modules/environment/environme
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 // import { CandidateSourcingController } from './controllers/candidate-sourcing.controller';
 // import { JobService } from './services/job.service';
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeORMModule } from 'src/database/typeorm/typeorm.module';
 import { CoreGraphQLApiModule } from 'src/engine/api/graphql/core-graphql-api.module';
@@ -74,6 +74,7 @@ import { SpreadsheetImportTwentyTransformerService } from './services/data-sourc
 import { UploadedProfilesTransformerService } from './services/data-sources/uploaded-profiles-transformer.service';
 import { JDParserService } from './services/jd-parser.service';
 import { ResumeReadParseUploadService } from './services/resume-read-parse-upload.service';
+import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
 import { DataProcessingUtils } from './utils/data-processing.utils';
 
 @Module({
@@ -101,6 +102,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     TypeOrmModule.forFeature([UserWorkspaceEntity]),
     DataSourceModule,
     JwtModule,
+    forwardRef(() => GtmCommandModule),
   ],
   controllers: [CandidateSourcingController, AiFilteringProgressController, FileUploadController, UploadProgressController, ResumeUploadController],
   providers: [

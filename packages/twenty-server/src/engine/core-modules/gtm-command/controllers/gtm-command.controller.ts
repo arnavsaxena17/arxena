@@ -15,6 +15,7 @@ import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-comman
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
+import { GtmFilterProfilesService } from 'src/engine/core-modules/gtm-command/services/gtm-filter-profiles.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import {
   type GtmEphemeralCompany,
@@ -43,6 +44,7 @@ export class GtmCommandController {
     private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
     private readonly gtmWorkspaceProfileProvisioningService: GtmWorkspaceProfileProvisioningService,
     private readonly gtmFakeProfileDetectorService: GtmFakeProfileDetectorService,
+    private readonly gtmFilterProfilesService: GtmFilterProfilesService,
   ) {}
 
   @Get('cache/companies')
@@ -290,7 +292,12 @@ export class GtmCommandController {
   @Post('search-people-for-company')
   async searchPeopleForCompany(
     @Body()
-    body: { companyId?: string; projectId?: string; limit?: number },
+    body: {
+      companyId?: string;
+      projectId?: string;
+      jobTitle?: string;
+      limit?: number;
+    },
     @Req() request: { headers?: { authorization?: string } },
   ) {
     const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
@@ -307,6 +314,7 @@ export class GtmCommandController {
       input: {
         companyId: body.companyId ?? '',
         projectId: body.projectId,
+        jobTitle: body.jobTitle,
         limit: body.limit,
       },
     });
@@ -424,6 +432,33 @@ export class GtmCommandController {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
     return this.gtmFakeProfileDetectorService.execute({
+      workspaceId,
+      input: body,
+    });
+  }
+
+  @Post('filter-profiles')
+  async filterProfiles(
+    @Body()
+    body: {
+      profiles?: unknown;
+      profile?: unknown;
+      snapshot?: unknown;
+      prompt?: string;
+      modelId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.gtmFilterProfilesService.execute({
       workspaceId,
       input: body,
     });

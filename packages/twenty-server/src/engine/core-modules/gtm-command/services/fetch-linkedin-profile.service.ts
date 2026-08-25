@@ -9,6 +9,7 @@ import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-comm
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { isValidLinkedInProviderId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-attendee-id.util';
 import { mapUnipileLinkedinProfile } from 'src/engine/core-modules/gtm-command/utils/map-unipile-linkedin-profile.util';
+import { toUploadProfilesPerson } from 'src/engine/core-modules/gtm-command/utils/normalize-upload-people.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -67,6 +68,7 @@ export class FetchLinkedinProfileService {
     }>;
     skills: string[];
     snapshot: string;
+    people: Array<Record<string, unknown>>;
     error: string;
   }> {
     const authContext = buildSystemAuthContext(workspaceId);
@@ -170,7 +172,12 @@ export class FetchLinkedinProfileService {
 
     this.logger.log(`Fetched LinkedIn profile ${mapped.linkedinProfileId}`);
 
-    return mapped;
+    const person = toUploadProfilesPerson(mapped);
+
+    return {
+      ...mapped,
+      people: person ? [person] : [],
+    };
   }
 }
 
@@ -192,7 +199,8 @@ const emptyProfile = (linkedinProfileId: string) => ({
     start: string;
     end: string;
   }>,
-  skills: [] as string[],
-  snapshot: '',
-  error: '',
-});
+    skills: [] as string[],
+    snapshot: '',
+    people: [] as Array<Record<string, unknown>>,
+    error: '',
+  });

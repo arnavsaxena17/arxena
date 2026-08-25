@@ -8,6 +8,10 @@ import { type ObjectLiteral } from 'typeorm';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { mapUploadProfileToLinkedinSearchRow } from 'src/engine/core-modules/gtm-command/utils/map-upload-profile-to-linkedin-search-row.util';
+import {
+  normalizeUploadPeople,
+  type UploadProfilesPerson,
+} from 'src/engine/core-modules/gtm-command/utils/normalize-upload-people.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -19,28 +23,14 @@ type ProjectRecord = ObjectLiteral & {
   createdByWorkspaceMemberId?: string | null;
 };
 
-export type UploadProfilesPerson = {
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  title?: string;
-  headline?: string;
-  company?: string;
-  companyName?: string;
-  companyId?: string;
-  jobCompanyId?: string;
-  location?: string;
-  linkedinUrl?: string;
-  linkedinProfileId?: string;
-  peopleId?: string;
-  profilePictureUrl?: string;
-};
+export type { UploadProfilesPerson };
 
 export type UploadProfilesInput = {
   projectId?: string;
   companyId?: string;
-  people?: UploadProfilesPerson[];
-  candidates?: unknown[];
+  people?: unknown;
+  candidates?: unknown;
+  linkedinUrl?: string;
   limit?: number;
 };
 
@@ -67,10 +57,17 @@ export class UploadProfilesService {
     error?: string;
   }> {
     const projectId = input.projectId?.trim() ?? '';
-    const people = Array.isArray(input.people) ? input.people : [];
-    const legacyCandidates = Array.isArray(input.candidates)
-      ? input.candidates
-      : [];
+    const people = normalizeUploadPeople(input.people);
+    const legacyCandidates = normalizeUploadPeople(input.candidates);
+    const fromLinkedinUrl = normalizeUploadPeople(input.linkedinUrl);
+    const fromPayload =
+      people.length > 0
+        ? people
+        : legacyCandidates.length > 0
+          ? legacyCandidates
+          : fromLinkedinUrl.length > 0
+            ? fromLinkedinUrl
+            : normalizeUploadPeople(input);
     const limit = Math.min(Math.max(1, input.limit ?? 25), 50);
 
     if (!isNonEmptyString(projectId)) {
@@ -82,10 +79,7 @@ export class UploadProfilesService {
       };
     }
 
-    const rows = (people.length > 0 ? people : legacyCandidates).slice(
-      0,
-      limit,
-    );
+    const rows = fromPayload.slice(0, limit);
 
     if (rows.length === 0) {
       return {

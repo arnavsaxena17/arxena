@@ -58,7 +58,8 @@ export const WorkflowEditActionCodeFields = ({
         const isNestedObject =
           isPlainObject(inputValue) &&
           leafKind !== 'record' &&
-          leafKind !== 'record-array';
+          leafKind !== 'record-array' &&
+          leafKind !== 'json';
 
         if (isNestedObject) {
           return (

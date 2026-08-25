@@ -1,6 +1,7 @@
 import {
   advanceFunnelStage,
   buildCandidateEventUpdate,
+  candidateStageImpliesConnectionRequestSent,
   candidateStageImpliesOutbound,
   computeAttentionReason,
   computeCoverageBucket,
@@ -161,5 +162,19 @@ describe('gtm-command-materialize.util', () => {
     expect(candidateStageImpliesOutbound('CONNECTION_SENT')).toBe(true);
     expect(candidateStageImpliesOutbound('CONNECTION_IGNORED')).toBe(true);
     expect(candidateStageImpliesOutbound('EMAIL_SENT')).toBe(true);
+  });
+
+  it('treats CONNECTION_SENT and CONNECTION_ACCEPTED as already invited', () => {
+    expect(candidateStageImpliesConnectionRequestSent('QUEUED')).toBe(false);
+    expect(candidateStageImpliesConnectionRequestSent(null)).toBe(false);
+    expect(candidateStageImpliesConnectionRequestSent('CONNECTION_SENT')).toBe(
+      true,
+    );
+    expect(
+      candidateStageImpliesConnectionRequestSent('CONNECTION_ACCEPTED'),
+    ).toBe(true);
+    expect(
+      candidateStageImpliesConnectionRequestSent('CONNECTION_IGNORED'),
+    ).toBe(false);
   });
 });

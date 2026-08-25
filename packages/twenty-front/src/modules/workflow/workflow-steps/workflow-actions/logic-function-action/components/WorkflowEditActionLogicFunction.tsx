@@ -21,7 +21,12 @@ import {
   getGtmNativeLogicFunctionSampleOutput,
   isNativeGtmLogicFunction,
 } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
-import { applyGtmNativeLogicFunctionInputSchema } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/applyGtmNativeLogicFunctionInputSchema';
+import { WorkflowLogicFunctionAiModelSelect } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/components/WorkflowLogicFunctionAiModelSelect';
+import {
+  applyGtmNativeLogicFunctionInputSchema,
+  getGtmNativeLogicFunctionFormFields,
+  normalizeGtmNativeLogicFunctionInput,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/applyGtmNativeLogicFunctionInputSchema';
 import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variables/hooks/useAvailableVariablesInWorkflowStep';
@@ -113,23 +118,39 @@ export const WorkflowEditActionLogicFunction = ({
 
   const functionInput = useMemo(() => {
     if (!isDefined(inputSchema)) {
-      return action.settings.input.logicFunctionInput ?? {};
+      return normalizeGtmNativeLogicFunctionInput(
+        logicFunction?.name,
+        action.settings.input.logicFunctionInput ?? {},
+      );
     }
 
     const defaultInput = getFunctionInputFromInputSchema(inputSchema)[0];
 
     if (!isObject(defaultInput)) {
-      return action.settings.input.logicFunctionInput ?? {};
+      return normalizeGtmNativeLogicFunctionInput(
+        logicFunction?.name,
+        action.settings.input.logicFunctionInput ?? {},
+      );
     }
 
-    return mergeDefaultFunctionInputAndFunctionInput({
-      newInput: defaultInput,
-      oldInput: action.settings.input.logicFunctionInput ?? {},
-    });
+    return normalizeGtmNativeLogicFunctionInput(
+      logicFunction?.name,
+      mergeDefaultFunctionInputAndFunctionInput({
+        newInput: defaultInput,
+        oldInput: action.settings.input.logicFunctionInput ?? {},
+      }),
+    );
   }, [
     inputSchema,
     action.settings.input.logicFunctionInput,
+    logicFunction?.name,
   ]);
+
+  const formFields = getGtmNativeLogicFunctionFormFields({
+    logicFunctionName: logicFunction?.name,
+    inputSchema,
+    functionInput,
+  });
 
   const updateAction = useDebouncedCallback(
     (actionUpdate: Partial<WorkflowLogicFunctionAction>) => {
@@ -222,9 +243,18 @@ export const WorkflowEditActionLogicFunction = ({
     callback: updateOutputSchemaFromTestResult,
   });
 
-  const testInput = mergeDefaultFunctionInputAndFunctionInput({
-    newInput: functionInput,
-    oldInput: logicFunctionTestData.input,
+  const testInput = normalizeGtmNativeLogicFunctionInput(
+    logicFunction?.name,
+    mergeDefaultFunctionInputAndFunctionInput({
+      newInput: functionInput,
+      oldInput: logicFunctionTestData.input,
+    }),
+  );
+
+  const testFormFields = getGtmNativeLogicFunctionFormFields({
+    logicFunctionName: logicFunction?.name,
+    inputSchema,
+    functionInput: testInput,
   });
 
   const handleInputChange = (value: unknown, path: string[]) => {
@@ -279,7 +309,9 @@ export const WorkflowEditActionLogicFunction = ({
     return null;
   }
 
-  const hasInputFields = Object.keys(functionInput).length > 0;
+  const hasInputFields =
+    Object.keys(formFields.functionInput).length > 0 ||
+    formFields.showAiModelSelect;
 
   const isTestTabActive = !isThirdPartyApp && activeTabId === TEST_TAB_ID;
 
@@ -313,9 +345,19 @@ export const WorkflowEditActionLogicFunction = ({
       <WorkflowStepBody>
         {isTestTabActive ? (
           <>
+            {testFormFields.showAiModelSelect && (
+              <WorkflowLogicFunctionAiModelSelect
+                dropdownId="workflow-detect-fake-profiles-model-test"
+                value={testFormFields.modelId}
+                readonly={actionOptions.readonly}
+                onChange={(modelId) =>
+                  handleTestInputChange(modelId, ['modelId'])
+                }
+              />
+            )}
             <WorkflowEditActionCodeFields
-              functionInput={testInput}
-              inputSchema={inputSchema}
+              functionInput={testFormFields.functionInput}
+              inputSchema={testFormFields.inputSchema}
               onInputChange={handleTestInputChange}
               readonly={actionOptions.readonly}
             />
@@ -338,14 +380,26 @@ export const WorkflowEditActionLogicFunction = ({
         ) : (
           <StyledContainer>
             {hasInputFields ? (
-              <WorkflowEditActionCodeFields
-                functionInput={functionInput}
-                inputSchema={inputSchema}
-                readonly={actionOptions.readonly}
-                onInputChange={handleInputChange}
-                VariablePicker={actionVariablePicker}
-                fullWidth
-              />
+              <>
+                {formFields.showAiModelSelect && (
+                  <WorkflowLogicFunctionAiModelSelect
+                    dropdownId="workflow-detect-fake-profiles-model-input"
+                    value={formFields.modelId}
+                    readonly={actionOptions.readonly}
+                    onChange={(modelId) =>
+                      handleInputChange(modelId, ['modelId'])
+                    }
+                  />
+                )}
+                <WorkflowEditActionCodeFields
+                  functionInput={formFields.functionInput}
+                  inputSchema={formFields.inputSchema}
+                  readonly={actionOptions.readonly}
+                  onInputChange={handleInputChange}
+                  VariablePicker={actionVariablePicker}
+                  fullWidth
+                />
+              </>
             ) : (
               <Callout
                 variant={'neutral'}

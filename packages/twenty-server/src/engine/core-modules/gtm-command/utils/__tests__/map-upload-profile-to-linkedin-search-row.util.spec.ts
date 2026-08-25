@@ -55,4 +55,35 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
     expect(mapped.companyId).toBe('person-company');
     expect(mapped.jobCompanyId).toBe('person-company');
   });
+
+  it('fills title and company from fetch-linkedin-profile experience', () => {
+    const mapped = mapUploadProfileToLinkedinSearchRow({
+      firstName: 'Prenisha',
+      lastName: 'Harry',
+      headline: 'Senior People Director, International - e.l.f Beauty',
+      linkedinUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',
+      experience: [
+        {
+          company: 'E.L.F. BEAUTY',
+          position: 'Senior People Director, International',
+        },
+      ],
+    });
+
+    expect(mapped).toEqual(
+      expect.objectContaining({
+        first_name: 'Prenisha',
+        last_name: 'Harry',
+        jobTitle: 'Senior People Director, International',
+        jobCompanyName: 'E.L.F. BEAUTY',
+        current_positions: [
+          {
+            company: 'E.L.F. BEAUTY',
+            role: 'Senior People Director, International',
+            location: '',
+          },
+        ],
+      }),
+    );
+  });
 });

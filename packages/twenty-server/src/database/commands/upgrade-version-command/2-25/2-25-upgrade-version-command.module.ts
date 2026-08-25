@@ -51,6 +51,10 @@ import { FoldPromptsIntoProjectCommand } from 'src/database/commands/upgrade-ver
 import { TransferAssistantApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000056-transfer-assistant-application.command';
 import { PrefillGtmCommandDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000057-prefill-gtm-command-dashboard.command';
 import { BackfillGtmCommandRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000058-backfill-gtm-command-rollups.command';
+import { SyncGtmFetchLinkedinProfilePeopleOutputCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000059-sync-gtm-fetch-linkedin-profile-people-output.command';
+import { SyncGtmSearchPeopleHideDataSourceAccountIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000060-sync-gtm-search-people-hide-data-source-account-id.command';
+import { SyncGtmSearchPeopleForCompanyJobTitleCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000061-sync-gtm-search-people-for-company-job-title.command';
+import { EnsureGtmFilterProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000062-ensure-gtm-filter-profiles-logic-function.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -134,6 +138,10 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     TransferAssistantApplicationCommand,
     PrefillGtmCommandDashboardCommand,
     BackfillGtmCommandRollupsCommand,
+    SyncGtmFetchLinkedinProfilePeopleOutputCommand,
+    SyncGtmSearchPeopleHideDataSourceAccountIdCommand,
+    SyncGtmSearchPeopleForCompanyJobTitleCommand,
+    EnsureGtmFilterProfilesLogicFunctionCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

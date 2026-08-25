@@ -336,22 +336,61 @@ export const compactProfileJson = (profile: unknown): string => {
     : `${compact.slice(0, MAX_PROFILE_JSON_CHARS)}\n…`;
 };
 
+const parseJsonIfString = (value: unknown): unknown => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+
+  if (
+    trimmed.length < 2 ||
+    (trimmed[0] !== '{' && trimmed[0] !== '[')
+  ) {
+    return value;
+  }
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+};
+
+const isEmptyProfileValue = (value: unknown): boolean => {
+  if (value == null || value === '') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+
+  const record = asRecord(value);
+
+  return record != null && Object.keys(record).length === 0;
+};
+
 export const extractProfilesFromPayload = (input: {
   profile?: unknown;
   snapshot?: unknown;
   profiles?: unknown;
 }): unknown[] => {
-  if (Array.isArray(input.profiles)) {
-    return input.profiles;
+  const profiles = parseJsonIfString(input.profiles);
+  const profile = parseJsonIfString(input.profile);
+  const snapshot = parseJsonIfString(input.snapshot);
+
+  if (Array.isArray(profiles)) {
+    return profiles;
   }
 
-  const nestedProfiles = asRecord(input.profiles)?.items;
+  const nestedProfiles = asRecord(profiles)?.items;
   if (Array.isArray(nestedProfiles)) {
     return nestedProfiles;
   }
 
-  const single = input.profile ?? input.snapshot;
-  if (single == null) {
+  const single = profile ?? snapshot;
+  if (isEmptyProfileValue(single)) {
     return [];
   }
 

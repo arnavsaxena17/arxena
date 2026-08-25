@@ -70,7 +70,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     AuthModule,
     BillingModule,
     BrightDataModule,
-    CandidateSourcingModule,
+    forwardRef(() => CandidateSourcingModule),
     ContactEnrichmentModule,
     EnvironmentModule,
     RedisClientModule,

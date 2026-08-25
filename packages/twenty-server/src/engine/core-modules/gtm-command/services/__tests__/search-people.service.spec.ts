@@ -47,7 +47,7 @@ describe('SearchPeopleService', () => {
       expect.objectContaining({
         naturalLanguage: 'CEO at Acme',
         accountId: 'member-unipile',
-        dataSource: 'auto',
+        dataSource: 'unipile',
       }),
       undefined,
       { workspaceId: 'ws-1' },
@@ -120,5 +120,37 @@ describe('SearchPeopleService', () => {
         input: { naturalLanguage: 'CEO at Acme' },
       }),
     ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+  });
+
+  it('falls back to harvest when no LinkedIn Unipile account is on the workspace', async () => {
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      null,
+    );
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'harvest',
+      total: 0,
+      items: [],
+    });
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { naturalLanguage: 'CEO at Acme' },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      dataSource: 'harvest',
+    });
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        naturalLanguage: 'CEO at Acme',
+        dataSource: 'harvest',
+        accountId: undefined,
+      }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
   });
 });

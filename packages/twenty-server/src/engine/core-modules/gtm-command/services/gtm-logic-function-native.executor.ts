@@ -15,6 +15,7 @@ import {
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/gtm-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-messages.service';
@@ -29,6 +30,7 @@ import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/serv
 import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
 import { GtmFakeProfileDetectorService } from 'src/engine/core-modules/gtm-command/services/gtm-fake-profile-detector.service';
+import { GtmFilterProfilesService } from 'src/engine/core-modules/gtm-command/services/gtm-filter-profiles.service';
 import { NativeLogicFunctionHandler } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function-handler.interface';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 
@@ -50,6 +52,7 @@ export class GtmLogicFunctionNativeExecutor
     private readonly enrichContactService: EnrichContactService,
     private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
     private readonly gtmFakeProfileDetectorService: GtmFakeProfileDetectorService,
+    private readonly gtmFilterProfilesService: GtmFilterProfilesService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -73,7 +76,12 @@ export class GtmLogicFunctionNativeExecutor
     if (name === GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME) {
       return this.searchPeopleForCompanyService.execute({
         workspaceId,
-        input: payload as { companyId: string; projectId?: string; limit?: number },
+        input: payload as {
+          companyId: string;
+          projectId?: string;
+          jobTitle?: string;
+          limit?: number;
+        },
       });
     }
 
@@ -149,8 +157,9 @@ export class GtmLogicFunctionNativeExecutor
         input: payload as {
           projectId?: string;
           companyId?: string;
-      people?: Array<Record<string, unknown>>;
-          candidates?: unknown[];
+          people?: unknown;
+          candidates?: unknown;
+          linkedinUrl?: string;
           limit?: number;
         },
       });
@@ -197,6 +206,19 @@ export class GtmLogicFunctionNativeExecutor
           profile?: unknown;
           snapshot?: unknown;
           profiles?: unknown;
+          modelId?: string;
+        },
+      });
+    }
+
+    if (name === GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME) {
+      return this.gtmFilterProfilesService.execute({
+        workspaceId,
+        input: payload as {
+          profiles?: unknown;
+          profile?: unknown;
+          snapshot?: unknown;
+          prompt?: string;
           modelId?: string;
         },
       });

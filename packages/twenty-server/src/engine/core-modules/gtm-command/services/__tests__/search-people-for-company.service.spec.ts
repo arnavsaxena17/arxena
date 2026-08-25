@@ -120,6 +120,37 @@ describe('SearchPeopleForCompanyService', () => {
     );
   });
 
+  it('uses the provided job title instead of the Project icpSpec buyer title', async () => {
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId, jobTitle: 'VP Engineering' },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'VP Engineering',
+        locations: ['United States', 'United Kingdom'],
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('falls back to the Project icpSpec buyer title when job title is blank', async () => {
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId, jobTitle: '   ' },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'Head of Talent',
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
   it('uses a 50-person limit for Sales Navigator accounts', async () => {
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acct-sn', product: 'sales_navigator' },

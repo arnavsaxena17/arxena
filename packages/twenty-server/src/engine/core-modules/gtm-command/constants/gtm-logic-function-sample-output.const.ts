@@ -12,6 +12,7 @@ import {
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 
 export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
@@ -65,13 +66,29 @@ export const GTM_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
   ],
   skills: ['Sales', 'GTM'],
   snapshot: '{}',
+  people: [
+    {
+      name: 'Arapa Hara',
+      firstName: 'Arapa',
+      lastName: 'Hara',
+      title: 'Head of Sales',
+      headline: 'Head of Sales',
+      company: 'Acme',
+      companyName: 'Acme',
+      location: 'San Francisco',
+      linkedinUrl: 'https://www.linkedin.com/in/example',
+      linkedinProfileId: 'example',
+      peopleId: 'example',
+      profilePictureUrl: 'https://media.licdn.com/example.jpg',
+    },
+  ],
   error: '',
 };
 
 export const GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   success: true,
   total: 1,
-  dataSource: 'auto',
+  dataSource: 'unipile',
   error: '',
   people: [
     {
@@ -272,6 +289,45 @@ export const GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT = {
   ],
 };
 
+export const GTM_FILTER_PROFILES_SAMPLE_OUTPUT = {
+  success: true,
+  total: 1,
+  matchedCount: 1,
+  rejectedCount: 0,
+  error: '',
+  people: [
+    {
+      name: 'Arapa Hara',
+      firstName: 'Arapa',
+      lastName: 'Hara',
+      title: 'Head of Sales',
+      headline: 'Head of Sales at Acme',
+      company: 'Acme',
+      location: 'San Francisco',
+      linkedinUrl: 'https://www.linkedin.com/in/example',
+      linkedinProfileId: 'example',
+      peopleId: 'ACwAAAExample',
+      profilePictureUrl: '',
+      companyId: 'company-id',
+      source: 'linkedin_sales_navigator',
+      stdFunction: 'sales',
+      stdFunctionRoot: 'go-to-market',
+      stdGrade: 'leadership',
+    },
+  ],
+  rejected: [],
+  assessments: [
+    {
+      index: 0,
+      matches: true,
+      reason:
+        'Head of Sales at Acme with leadership grade matches senior GTM criteria.',
+      name: 'Arapa Hara',
+      profile: {},
+    },
+  ],
+};
+
 export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   string,
   Record<string, unknown>
@@ -295,4 +351,5 @@ export const GTM_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
     GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   [GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
     GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
+  [GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME]: GTM_FILTER_PROFILES_SAMPLE_OUTPUT,
 };

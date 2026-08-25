@@ -4,11 +4,13 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Inject,
   Post,
   Req,
   UploadedFile,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
+  forwardRef,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -67,6 +69,8 @@ import { PersonService } from 'src/engine/core-modules/candidate-sourcing/servic
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
 import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import { hydrateLinkedinPremiumCandidates } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
@@ -130,6 +134,8 @@ export class CandidateSourcingController {
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly otherFieldsService: OtherFieldsService,
     private readonly fileStorageService: FileStorageService,
+    @Inject(forwardRef(() => FetchLinkedinProfileService))
+    private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
   ) {}
 
   @Post('update-candidate')
@@ -739,9 +745,16 @@ export class CandidateSourcingController {
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
-      } else if (data.linkedin_premium_profile_data) {
-        // Handle LinkedIn Premium profile data
-        candidates = [data.linkedin_premium_profile_data];
+      } else if (data.linkedin_premium_profile_data || data.linkedinUrl || data.linkedin_url) {
+        const premiumPayload =
+          data.linkedin_premium_profile_data ??
+          {
+            linkedin_url: data.linkedinUrl || data.linkedin_url,
+            linkedinUrl: data.linkedinUrl || data.linkedin_url,
+          };
+        candidates = Array.isArray(premiumPayload)
+          ? premiumPayload
+          : [premiumPayload];
         dataSource = 'linkedin_premium';
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
@@ -862,10 +875,31 @@ export class CandidateSourcingController {
         console.warn('No recruiterId available, skipping upload started notification');
       }
 
+      if (dataSource === 'linkedin_premium') {
+        try {
+          const workspaceId =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+          candidates = await hydrateLinkedinPremiumCandidates(
+            candidates,
+            (linkedinUrl) =>
+              this.fetchLinkedinProfileService.execute({
+                workspaceId,
+                input: { linkedinUrl },
+              }),
+          );
+        } catch (hydrateError) {
+          console.warn(
+            'fetch-linkedin-profile hydration failed; using CRX parse payload',
+            hydrateError instanceof Error ? hydrateError.message : hydrateError,
+          );
+        }
+      }
+
       // Check if we support this data source with new transformation pipeline
       if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
         console.log(`Using new transformation pipeline for data source: ${dataSource}`);
-        const queueStartChatAfter = data.queue_start_chat_after === true;
+        const queueStartChatAfter =
+          data.queue_start_chat_after === true || data.start_chat === true;
         const options =
           dataSource === 'linkedin_premium' && queueStartChatAfter
             ? { queueStartChatAfter: true }

@@ -44,6 +44,7 @@ type WorkspaceProfileRecord = ObjectLiteral & {
 export type SearchPeopleForCompanyInput = {
   companyId: string;
   projectId?: string;
+  jobTitle?: string;
   limit?: number;
 };
 
@@ -236,7 +237,7 @@ export class SearchPeopleForCompanyService {
     const icp = parseGtmIcpSpec(
       context.project.icpSpec || context.workspaceProfile?.icpSpec,
     );
-    const buyerTitle = icp.buyerTitles[0];
+    const buyerTitle = input.jobTitle?.trim() || icp.buyerTitles[0];
     const locations = icp.locations;
     const website = companyWebsite(context.company);
     const linkedinCompanyUrl = companyLinkedinUrl(context.company);

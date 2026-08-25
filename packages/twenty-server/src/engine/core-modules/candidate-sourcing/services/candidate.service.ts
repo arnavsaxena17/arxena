@@ -33,15 +33,23 @@ import {
   isGtmSourcingEnrollment,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-queued-enrollment.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
-import { resolveAvatarUrlFromDisplayPictureUrl } from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
 import {
   CandidateUploadLookup,
+  collectLinkedinIdentityKeysFromProfile,
   deduplicateProfilesForUpload,
   extractUploadUrlBucket,
   findExistingCandidateForUpload,
+  findExistingPersonByLinkedinIdentity,
   getUploadProfileDedupMapKey,
+  indexLinkedinIdentitiesIntoMap,
+  linkedinIlikePattern,
+  linkedinUrlVariantsForIdentity,
   normalizeUrlForDedup,
 } from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
+import {
+  buildMissingCandidatePatch,
+  buildMissingPersonPatch,
+} from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-fill-missing.utils';
 import { v4 } from 'uuid';
 
 import axios from 'axios';
@@ -70,8 +78,25 @@ type CvAttachmentReplicateMeta = {
 type UploadExistingCandidateNode = {
   id: string;
   peopleId?: string;
+  name?: string;
+  jobTitle?: string;
+  jobCompanyName?: string;
+  avatarUrl?: string;
+  linkedinProfileId?: string;
   phoneNumber?: { primaryPhoneNumber?: string } | string;
   email?: { primaryEmail?: string } | string;
+  linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
+  hiringNaukriUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
+  resdexNaukriUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
+  displayPicture?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
+  people?: PersonNode;
+};
+
+type UploadPersonLinkContext = {
+  keyToEmail: Map<string, string>;
+  emailToKeys: Map<string, string[]>;
+  keyToLinkedin: Map<string, string>;
+  linkedinToKeys: Map<string, string[]>;
 };
 
 // import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
@@ -167,8 +192,23 @@ export class CandidateService {
       }
     }
     const li = (node.linkedinUrl as { primaryLinkUrl?: string } | undefined)?.primaryLinkUrl;
-    if (typeof li === 'string' && li.trim() !== '') {
-      lookup.byLinkedinUrl.set(normalizeLinkedInUrl(li), node);
+    indexLinkedinIdentitiesIntoMap(lookup.byLinkedinUrl, node, li);
+    const nestedPerson = node.people as
+      | { linkedinLink?: { primaryLinkUrl?: string } }
+      | undefined;
+    if (nestedPerson?.linkedinLink) {
+      indexLinkedinIdentitiesIntoMap(
+        lookup.byLinkedinUrl,
+        node,
+        nestedPerson.linkedinLink,
+      );
+    }
+    if (typeof node.linkedinProfileId === 'string' && node.linkedinProfileId.trim()) {
+      indexLinkedinIdentitiesIntoMap(
+        lookup.byLinkedinUrl,
+        node,
+        node.linkedinProfileId,
+      );
     }
     const hir = (node.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)?.primaryLinkUrl;
     if (typeof hir === 'string' && hir.trim() !== '') {
@@ -244,6 +284,7 @@ export class CandidateService {
     const emails = new Set<string>();
     const phones = new Set<string>();
     const linkedins = new Set<string>();
+    const linkedinIdentities = new Set<string>();
     const hirings = new Set<string>();
     const resdexs = new Set<string>();
 
@@ -266,6 +307,12 @@ export class CandidateService {
       const urls = extractUploadUrlBucket(p);
       if (urls.linkedinNorm) {
         linkedins.add(urls.linkedinNorm);
+      }
+      for (const identity of collectLinkedinIdentityKeysFromProfile(p)) {
+        linkedinIdentities.add(identity);
+        for (const variant of linkedinUrlVariantsForIdentity(identity)) {
+          linkedins.add(variant);
+        }
       }
       if (urls.hiringNorm) {
         hirings.add(urls.hiringNorm);
@@ -306,6 +353,28 @@ export class CandidateService {
         and: [
           { projectsId: { eq: projectId } },
           { linkedinUrl: { primaryLinkUrl: { in: part } } },
+        ],
+      });
+      ingestNodes(nodes);
+    }
+
+    for (const part of this.chunkArray([...linkedinIdentities], 8)) {
+      if (part.length === 0) {
+        continue;
+      }
+      const orFilters = part
+        .map((identity) => linkedinIlikePattern(identity))
+        .filter(Boolean)
+        .map((pattern) => ({
+          linkedinUrl: { primaryLinkUrl: { ilike: pattern } },
+        }));
+      if (orFilters.length === 0) {
+        continue;
+      }
+      const nodes = await runCandidatesQuery({
+        and: [
+          { projectsId: { eq: projectId } },
+          orFilters.length === 1 ? orFilters[0] : { or: orFilters },
         ],
       });
       ingestNodes(nodes);
@@ -627,6 +696,7 @@ export class CandidateService {
       const tracking = {
         personIdMap: new Map<string, string>(),
         candidateIdMap: new Map<string, string>(),
+        patchedPersonIds: new Set<string>(),
       };
       console.log(
         'This is tracking of uniqueStringKey in process Profiles WithRateLimiting:',
@@ -718,8 +788,28 @@ export class CandidateService {
           apiToken,
         );
 
+      const linkedinIdentities = [
+        ...new Set(batch.flatMap((profile) => collectLinkedinIdentityKeysFromProfile(profile))),
+      ];
+      let personByLinkedin = new Map<string, PersonNode>();
+      if (linkedinIdentities.length > 0) {
+        try {
+          personByLinkedin =
+            await this.personService.batchGetPersonDetailsByLinkedinIdentities(
+              linkedinIdentities,
+              apiToken,
+            );
+        } catch (error) {
+          console.log(
+            'Error during LinkedIn person pre-check:',
+            (error as any)?.message || error,
+          );
+        }
+      }
+
       console.log('Person Details Map size:', personDetailsMap.size);
       console.log('Person Details Map keys:', Array.from(personDetailsMap.keys()));
+      console.log('Person LinkedIn Map size:', personByLinkedin.size);
       const peopleToCreate: ArxenaPersonNode[] = [];
       const peopleKeys: string[] = [];
       let peopleToSkip = 0;
@@ -734,23 +824,60 @@ export class CandidateService {
           profile,
           this.dataProcessingUtils,
         ) as UploadExistingCandidateNode | undefined;
+        const personByKey = personDetailsMap?.get(key);
+        const personByLi = findExistingPersonByLinkedinIdentity(
+          profile,
+          personByLinkedin,
+        );
         if (existingCandForPerson?.peopleId) {
           tracking.personIdMap.set(key, existingCandForPerson.peopleId);
+          const existingPerson =
+            (personByKey?.id === existingCandForPerson.peopleId
+              ? personByKey
+              : null) ||
+            (personByLi?.id === existingCandForPerson.peopleId
+              ? personByLi
+              : null) ||
+            existingCandForPerson.people;
+          await this.fillMissingPersonFields(
+            existingPerson,
+            profile,
+            tracking,
+            apiToken,
+          );
           peopleToSkip++;
           continue;
         }
 
-        const personObj = personDetailsMap?.get(key);
-        if (!personObj || !personObj?.name?.firstName) {
+        const reusablePerson =
+          personByKey?.id && personByKey?.name?.firstName
+            ? personByKey
+            : personByLi?.id
+              ? personByLi
+              : null;
+
+        if (!reusablePerson) {
           console.log('Person object not found or incomplete, creating new person for key:', profile?.uniqueStringKey);
           const personNode = mapArxCandidateToPersonNode(profile);
           peopleToCreate.push(personNode);
           peopleKeys.push(key);
           results.manyPersonObjects.push(personNode);
         } else {
-          console.log('Using existing person for key:', profile?.uniqueStringKey, 'personId:', personObj?.id);
-          results.allPersonObjects.push(personObj);
-          tracking.personIdMap.set(key, personObj?.id);
+          console.log(
+            'Using existing person for key:',
+            profile?.uniqueStringKey,
+            'personId:',
+            reusablePerson.id,
+            personByLi?.id === reusablePerson.id ? '(linkedin match)' : '(uniqueStringKey match)',
+          );
+          results.allPersonObjects.push(reusablePerson);
+          tracking.personIdMap.set(key, reusablePerson.id);
+          await this.fillMissingPersonFields(
+            reusablePerson,
+            profile,
+            tracking,
+            apiToken,
+          );
           peopleToSkip++;
         }
       }
@@ -780,21 +907,122 @@ export class CandidateService {
     }
   }
 
+  private async fillMissingPersonFields(
+    existingPerson: PersonNode | ArxenaPersonNode | Record<string, unknown> | null | undefined,
+    incomingProfileOrPerson: UserProfile | ArxenaPersonNode,
+    tracking: { patchedPersonIds?: Set<string> },
+    apiToken: string,
+  ): Promise<void> {
+    const personId = (existingPerson as { id?: string } | null | undefined)?.id;
+    if (!personId) {
+      return;
+    }
+    if (!tracking.patchedPersonIds) {
+      tracking.patchedPersonIds = new Set<string>();
+    }
+    if (tracking.patchedPersonIds.has(personId)) {
+      return;
+    }
+
+    const incomingPerson =
+      incomingProfileOrPerson &&
+      typeof incomingProfileOrPerson === 'object' &&
+      ('linkedinLink' in incomingProfileOrPerson ||
+        'emails' in incomingProfileOrPerson)
+        ? incomingProfileOrPerson
+        : mapArxCandidateToPersonNode(incomingProfileOrPerson);
+    const patch = buildMissingPersonPatch(
+      existingPerson as Record<string, unknown>,
+      incomingPerson as Record<string, unknown>,
+    );
+    if (Object.keys(patch).length === 0) {
+      return;
+    }
+
+    try {
+      await this.staticGraphQLService.executeGraphQL(
+        mutationToUpdateOnePerson,
+        { idToUpdate: personId, input: patch },
+        apiToken,
+      );
+      tracking.patchedPersonIds.add(personId);
+      console.log(
+        `Filled missing person fields for ${personId}:`,
+        Object.keys(patch),
+      );
+    } catch (error) {
+      console.log(
+        `Error filling missing person fields for ${personId}:`,
+        (error as any)?.message || error,
+      );
+    }
+  }
+
+  private async fillMissingCandidateFields(
+    existingCandidate: UploadExistingCandidateNode,
+    incomingCandidate: Record<string, unknown>,
+    personId: string | undefined,
+    tracking: { patchedPersonIds?: Set<string> },
+    incomingProfile: UserProfile,
+    apiToken: string,
+  ): Promise<void> {
+    const candidatePatch = buildMissingCandidatePatch(
+      existingCandidate as unknown as Record<string, unknown>,
+      {
+        ...incomingCandidate,
+        ...(personId && !existingCandidate.peopleId ? { peopleId: personId } : {}),
+      },
+    );
+
+    if (Object.keys(candidatePatch).length > 0) {
+      try {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          { idToUpdate: existingCandidate.id, input: candidatePatch },
+          apiToken,
+        );
+        console.log(
+          `Filled missing candidate fields for ${existingCandidate.id}:`,
+          Object.keys(candidatePatch),
+        );
+      } catch (error) {
+        console.log(
+          `Error filling missing candidate fields for ${existingCandidate.id}:`,
+          (error as any)?.message || error,
+        );
+      }
+    }
+
+    const resolvedPersonId = existingCandidate.peopleId || personId;
+    if (!resolvedPersonId) {
+      return;
+    }
+    await this.fillMissingPersonFields(
+      existingCandidate.people,
+      incomingProfile,
+      tracking,
+      apiToken,
+    );
+  }
+
   /**
-   * Creates people while tolerating email-uniqueness collisions.
+   * Creates people while tolerating email and LinkedIn identity collisions.
    *
    * The person table enforces uniqueness on primaryEmail, but callers only
    * skip creation based on uniqueStringKey. A person that already exists under
-   * a different key (or a duplicate email inside the same batch) would
-   * otherwise make the atomic bulk insert roll back the ENTIRE batch, leaving
-   * every unrelated new person (and their candidates) with no linked person.
+   * a different key (or a duplicate email / LinkedIn identity inside the same
+   * batch) would otherwise make the atomic bulk insert roll back the ENTIRE
+   * batch, leaving every unrelated new person (and their candidates) with no
+   * linked person.
    *
    * Strategy:
-   *   1. Reuse people that already exist in the DB by email.
-   *   2. Drop duplicate emails within the batch (linked after creation).
+   *   1. Reuse people that already exist in the DB by email or LinkedIn.
+   *   2. Drop duplicate emails / LinkedIn identities within the batch
+   *      (linked after creation).
    *   3. Attempt a single bulk insert (fast path).
    *   4. If the bulk insert fails, insert row-by-row so a single duplicate
-   *      cannot sink the rest of the batch, recovering existing ids by email.
+   *      cannot sink the rest of the batch, recovering existing ids by email
+   *      or LinkedIn.
    */
   private async createPeopleWithDuplicateHandling(
     peopleToCreate: ArxenaPersonNode[],
@@ -805,6 +1033,13 @@ export class CandidateService {
     const emails = peopleToCreate
       .map((person) => (person.emails?.primaryEmail || '').toLowerCase().trim())
       .filter(Boolean);
+    const linkedinIdentities = [
+      ...new Set(
+        peopleToCreate.flatMap((person) =>
+          collectLinkedinIdentityKeysFromProfile(person as unknown as Record<string, unknown>),
+        ),
+      ),
+    ];
 
     let existingByEmail = new Map<string, any>();
     if (emails.length > 0) {
@@ -822,29 +1057,78 @@ export class CandidateService {
       }
     }
 
+    let existingByLinkedin = new Map<string, PersonNode>();
+    if (linkedinIdentities.length > 0) {
+      try {
+        existingByLinkedin =
+          await this.personService.batchGetPersonDetailsByLinkedinIdentities(
+            linkedinIdentities,
+            apiToken,
+          );
+      } catch (error) {
+        console.log(
+          'Error during LinkedIn pre-check before createPeople:',
+          (error as any)?.message || error,
+        );
+      }
+    }
+
     const toInsertPeople: ArxenaPersonNode[] = [];
     const toInsertKeys: string[] = [];
-    const keyToEmail = new Map<string, string>();
-    const emailToKeys = new Map<string, string[]>();
+    const linkContext: UploadPersonLinkContext = {
+      keyToEmail: new Map<string, string>(),
+      emailToKeys: new Map<string, string[]>(),
+      keyToLinkedin: new Map<string, string>(),
+      linkedinToKeys: new Map<string, string[]>(),
+    };
     const emailsQueuedForInsert = new Set<string>();
+    const linkedinsQueuedForInsert = new Set<string>();
 
     for (let i = 0; i < peopleToCreate.length; i++) {
       const person = peopleToCreate[i];
       const key = peopleKeys[i];
       const email = (person.emails?.primaryEmail || '').toLowerCase().trim();
+      const identityKeys = collectLinkedinIdentityKeysFromProfile(
+        person as unknown as Record<string, unknown>,
+      );
+      const canonicalLinkedin = identityKeys[0] || '';
 
       if (email) {
-        keyToEmail.set(key, email);
-        const keysForEmail = emailToKeys.get(email) || [];
+        linkContext.keyToEmail.set(key, email);
+        const keysForEmail = linkContext.emailToKeys.get(email) || [];
         keysForEmail.push(key);
-        emailToKeys.set(email, keysForEmail);
+        linkContext.emailToKeys.set(email, keysForEmail);
+      }
+      if (canonicalLinkedin) {
+        linkContext.keyToLinkedin.set(key, canonicalLinkedin);
+      }
+      for (const identityKey of identityKeys) {
+        const keysForLinkedin = linkContext.linkedinToKeys.get(identityKey) || [];
+        keysForLinkedin.push(key);
+        linkContext.linkedinToKeys.set(identityKey, keysForLinkedin);
       }
 
-      const existingPerson = email ? existingByEmail.get(email) : null;
+      const existingPerson =
+        (email ? existingByEmail.get(email) : null) ||
+        findExistingPersonByLinkedinIdentity(
+          person as unknown as Record<string, unknown>,
+          existingByLinkedin,
+        );
       if (existingPerson?.id) {
-        tracking.personIdMap.set(key, existingPerson.id);
+        this.linkPersonIdToRelatedKeys(
+          key,
+          existingPerson.id,
+          linkContext,
+          tracking,
+        );
+        await this.fillMissingPersonFields(
+          existingPerson,
+          person,
+          tracking,
+          apiToken,
+        );
         console.log(
-          `Email pre-check: reusing existing person for key ${key}: ${existingPerson.id}`,
+          `Identity pre-check: reusing existing person for key ${key}: ${existingPerson.id}`,
         );
         if (this.processingStats) {
           this.processingStats.peopleToCreate = Math.max(
@@ -856,7 +1140,6 @@ export class CandidateService {
         continue;
       }
 
-      // Duplicate email within the same batch: insert once, link the rest later.
       if (email && emailsQueuedForInsert.has(email)) {
         console.log(
           `Email pre-check: duplicate email within batch for key ${key} (${email}), will link after creation`,
@@ -870,23 +1153,38 @@ export class CandidateService {
         continue;
       }
 
+      if (canonicalLinkedin && linkedinsQueuedForInsert.has(canonicalLinkedin)) {
+        console.log(
+          `LinkedIn pre-check: duplicate LinkedIn within batch for key ${key} (${canonicalLinkedin}), will link after creation`,
+        );
+        if (this.processingStats) {
+          this.processingStats.peopleToCreate = Math.max(
+            0,
+            this.processingStats.peopleToCreate - 1,
+          );
+        }
+        continue;
+      }
+
       if (email) {
         emailsQueuedForInsert.add(email);
+      }
+      if (canonicalLinkedin) {
+        linkedinsQueuedForInsert.add(canonicalLinkedin);
       }
       toInsertPeople.push(person);
       toInsertKeys.push(key);
     }
 
     if (toInsertPeople.length === 0) {
-      console.log('No new people to insert after email pre-check');
+      console.log('No new people to insert after email/LinkedIn pre-check');
       return;
     }
 
     const bulkSucceeded = await this.bulkCreateAndLinkPeople(
       toInsertPeople,
       toInsertKeys,
-      keyToEmail,
-      emailToKeys,
+      linkContext,
       tracking,
       apiToken,
     );
@@ -901,8 +1199,7 @@ export class CandidateService {
     await this.createPeopleIndividually(
       toInsertPeople,
       toInsertKeys,
-      keyToEmail,
-      emailToKeys,
+      linkContext,
       tracking,
       apiToken,
     );
@@ -911,8 +1208,7 @@ export class CandidateService {
   private async bulkCreateAndLinkPeople(
     people: ArxenaPersonNode[],
     keys: string[],
-    keyToEmail: Map<string, string>,
-    emailToKeys: Map<string, string[]>,
+    linkContext: UploadPersonLinkContext,
     tracking: any,
     apiToken: string,
   ): Promise<boolean> {
@@ -931,16 +1227,10 @@ export class CandidateService {
           }
 
           const returnedKey = person?.uniqueStringKey || keys[idx];
-          const returnedEmail =
-            (person?.emails?.primaryEmail || keyToEmail.get(returnedKey) || '')
-              .toLowerCase()
-              .trim();
-
           this.linkPersonIdToRelatedKeys(
             returnedKey,
             person.id,
-            returnedEmail,
-            emailToKeys,
+            linkContext,
             tracking,
           );
         });
@@ -973,8 +1263,7 @@ export class CandidateService {
   private async createPeopleIndividually(
     people: ArxenaPersonNode[],
     keys: string[],
-    keyToEmail: Map<string, string>,
-    emailToKeys: Map<string, string[]>,
+    linkContext: UploadPersonLinkContext,
     tracking: any,
     apiToken: string,
   ): Promise<void> {
@@ -994,13 +1283,10 @@ export class CandidateService {
         const createdPerson = response?.data?.data?.createPeople?.[0];
 
         if (createdPerson?.id) {
-          const createdEmail =
-            createdPerson?.emails?.primaryEmail || keyToEmail.get(key) || '';
           this.linkPersonIdToRelatedKeys(
             key,
             createdPerson.id,
-            createdEmail,
-            emailToKeys,
+            linkContext,
             tracking,
           );
           console.log(
@@ -1014,8 +1300,8 @@ export class CandidateService {
         );
         await this.recoverExistingPersonId(
           key,
-          keyToEmail.get(key) || '',
-          emailToKeys,
+          person,
+          linkContext,
           tracking,
           apiToken,
         );
@@ -1026,8 +1312,8 @@ export class CandidateService {
         );
         await this.recoverExistingPersonId(
           key,
-          keyToEmail.get(key) || '',
-          emailToKeys,
+          person,
+          linkContext,
           tracking,
           apiToken,
         );
@@ -1037,13 +1323,15 @@ export class CandidateService {
 
   private async recoverExistingPersonId(
     key: string,
-    email: string,
-    emailToKeys: Map<string, string[]>,
+    person: ArxenaPersonNode,
+    linkContext: UploadPersonLinkContext,
     tracking: any,
     apiToken: string,
   ): Promise<void> {
+    const email = (linkContext.keyToEmail.get(key) || '').toLowerCase().trim();
+    const linkedinIdentity = linkContext.keyToLinkedin.get(key) || '';
     console.log(
-      `Attempting to find existing person for key: ${key}, email: ${email}`,
+      `Attempting to find existing person for key: ${key}, email: ${email}, linkedin: ${linkedinIdentity}`,
     );
     try {
       let existingPerson: PersonNode | null = null;
@@ -1055,6 +1343,21 @@ export class CandidateService {
             apiToken,
           );
         existingPerson = existingByEmail.get(email.toLowerCase().trim()) || null;
+      }
+
+      if (!existingPerson && linkedinIdentity) {
+        const existingByLinkedin =
+          await this.personService.batchGetPersonDetailsByLinkedinIdentities(
+            collectLinkedinIdentityKeysFromProfile(
+              person as unknown as Record<string, unknown>,
+            ),
+            apiToken,
+          );
+        existingPerson =
+          findExistingPersonByLinkedinIdentity(
+            person as unknown as Record<string, unknown>,
+            existingByLinkedin,
+          ) || null;
       }
 
       if (!existingPerson) {
@@ -1071,8 +1374,7 @@ export class CandidateService {
         this.linkPersonIdToRelatedKeys(
           key,
           personId,
-          email,
-          emailToKeys,
+          linkContext,
           tracking,
         );
         console.log(`Found existing person for ${key}: ${personId}`);
@@ -1091,30 +1393,46 @@ export class CandidateService {
 
   /**
    * Links a resolved personId to a key and to any other keys in the same batch
-   * that shared the same email (intra-batch duplicates that were not inserted).
+   * that shared the same email or LinkedIn identity (intra-batch duplicates
+   * that were not inserted).
    */
   private linkPersonIdToRelatedKeys(
     key: string,
     personId: string,
-    email: string,
-    emailToKeys: Map<string, string[]>,
+    linkContext: UploadPersonLinkContext,
     tracking: any,
   ): void {
     if (key) {
       tracking.personIdMap.set(key, personId);
     }
 
-    const normalizedEmail = (email || '').toLowerCase().trim();
-    if (!normalizedEmail) {
-      return;
+    const relatedKeys = new Set<string>();
+    const normalizedEmail = (linkContext.keyToEmail.get(key) || '').toLowerCase().trim();
+    if (normalizedEmail) {
+      for (const relatedKey of linkContext.emailToKeys.get(normalizedEmail) || []) {
+        relatedKeys.add(relatedKey);
+      }
     }
 
-    const relatedKeys = emailToKeys.get(normalizedEmail) || [];
+    const linkedinIdentity = linkContext.keyToLinkedin.get(key) || '';
+    if (linkedinIdentity) {
+      for (const relatedKey of linkContext.linkedinToKeys.get(linkedinIdentity) || []) {
+        relatedKeys.add(relatedKey);
+      }
+    }
+    for (const [identity, keys] of linkContext.linkedinToKeys.entries()) {
+      if (keys.includes(key) || identity === linkedinIdentity) {
+        for (const relatedKey of keys) {
+          relatedKeys.add(relatedKey);
+        }
+      }
+    }
+
     for (const relatedKey of relatedKeys) {
       if (!tracking.personIdMap.has(relatedKey)) {
         tracking.personIdMap.set(relatedKey, personId);
         console.log(
-          `Linked personId ${personId} to related key ${relatedKey} (shared email ${normalizedEmail})`,
+          `Linked personId ${personId} to related key ${relatedKey}`,
         );
       }
     }
@@ -1161,18 +1479,6 @@ export class CandidateService {
       const candidatesToCreate: ArxenaCandidateNode[] = [];
       const candidateKeys: string[] = [];
 
-      const candidatesToUpdate: Array<{
-        candidateId: string;
-        hiringNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
-        resdexNaukriUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
-        displayPicture: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
-        avatarUrl: string;
-        linkedinUrl: { "primaryLinkLabel": string; "primaryLinkUrl": string; };
-        personId: string;
-        profile: UserProfile;
-        missingFields: string[];
-      }> = [];
-
       for (const profile of batch) {
         const key = profile?.uniqueStringKey;
 
@@ -1189,11 +1495,13 @@ export class CandidateService {
         console.log(`- personId: ${personId}`);
         console.log(`- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`);
 
-        // If personId is not found in tracking, try to find existing person by email
-        if (!personId && profile?.emailAddress) {
-          console.log(`PersonId not found for ${key}, attempting to find existing person by email: ${profile.emailAddress}`);
+        // If personId is not found in tracking, try to find existing person by
+        // email, LinkedIn identity, or uniqueStringKey.
+        if (!personId) {
+          console.log(`PersonId not found for ${key}, attempting to find existing person`);
           try {
-            const email = profile.emailAddress.toLowerCase().trim();
+            const email = (profile.emailAddress || '').toLowerCase().trim();
+            const linkedinIdentities = collectLinkedinIdentityKeysFromProfile(profile);
             let existingPerson: PersonNode | null = null;
 
             if (email) {
@@ -1203,6 +1511,17 @@ export class CandidateService {
                   apiToken,
                 );
               existingPerson = existingByEmail.get(email) || null;
+            }
+
+            if (!existingPerson && linkedinIdentities.length > 0) {
+              const existingByLinkedin =
+                await this.personService.batchGetPersonDetailsByLinkedinIdentities(
+                  linkedinIdentities,
+                  apiToken,
+                );
+              existingPerson =
+                findExistingPersonByLinkedinIdentity(profile, existingByLinkedin) ||
+                null;
             }
 
             if (!existingPerson) {
@@ -1322,118 +1641,24 @@ export class CandidateService {
 
 
         } else if (existingCandidate) {
-          const missingFields: string[] = [];
-
-          const isFieldEmpty = (field: any): boolean => {
-            if (!field) return true;
-            if (typeof field === 'string') return field.trim() === '';
-            if (typeof field === 'object') {
-              if ('primaryPhoneNumber' in field) return !field.primaryPhoneNumber || field.primaryPhoneNumber.trim() === '';
-              if ('primaryEmail' in field) return !field.primaryEmail || field.primaryEmail.trim() === '';
-              return Object.keys(field).length === 0;
-            }
-            return false;
-          };
-
-          const rawCandPhone = existingCandidate?.phoneNumber;
-          const candidatePhone =
-            typeof rawCandPhone === 'string'
-              ? rawCandPhone
-              : rawCandPhone?.primaryPhoneNumber || '';
-          console.log('Current candidate phone:', candidatePhone);
-          const profilePhone = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0];
-          console.log('Profile phone:', profilePhone);
-
-          // Parse phone numbers to handle comma-separated values
-          const candidatePhoneData = this.dataProcessingUtils.parsePhoneNumbers(candidatePhone);
-          const profilePhoneData = this.dataProcessingUtils.parsePhoneNumbers(profilePhone);
-
-          // Clean the profile phone number for comparison
-          const cleanedProfilePhone = profilePhoneData.primaryPhoneNumber;
-          const cleanedCandidatePhone = candidatePhoneData.primaryPhoneNumber;
-
-          if (isFieldEmpty(candidatePhone) && cleanedProfilePhone && cleanedProfilePhone.trim() !== '') {
-            console.log('Adding phoneNumber to missing fields');
-            missingFields.push('phoneNumber');
-          } else if (cleanedCandidatePhone && cleanedProfilePhone && cleanedCandidatePhone !== cleanedProfilePhone) {
-            console.log('Phone numbers differ, adding to missing fields');
-            missingFields.push('phoneNumber');
-          } else {
-            console.log('No phone number to update');
-          }
-
-          const profileUrl = profile?.profileUrl;
-          const rawCandEmail = existingCandidate?.email;
-          const candidateEmail =
-            typeof rawCandEmail === 'string'
-              ? rawCandEmail
-              : rawCandEmail?.primaryEmail || '';
-          console.log('Current candidate email:', candidateEmail);
-          const profileEmail = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0];
-          console.log('Profile email:', profileEmail);
-
-          // Parse emails to handle comma-separated values
-          const candidateEmailData = this.dataProcessingUtils.parseEmails(candidateEmail);
-          const profileEmailData = this.dataProcessingUtils.parseEmails(profileEmail);
-
-          // Clean the profile email for comparison
-          const cleanedProfileEmail = profileEmailData.primaryEmail;
-          const cleanedCandidateEmail = candidateEmailData.primaryEmail;
-
-          console.log('profileUrl to be checked for duplication:', profileUrl);
-          if (profileUrl && profileUrl.includes('naukri')) {
-            missingFields.push('profileUrl');
-          } else {
-            console.log('No profile url to update for naukri');
-          }
-
-          if (isFieldEmpty(candidateEmail) && cleanedProfileEmail && cleanedProfileEmail.trim() !== '') {
-            console.log('Adding email to missing fields');
-            missingFields.push('email');
-          } else if (cleanedCandidateEmail && cleanedProfileEmail && cleanedCandidateEmail !== cleanedProfileEmail) {
-            console.log('Emails differ, adding to missing fields');
-            missingFields.push('email');
-          } else {
-            console.log('No email to update');
-          }
-
-          console.log('Missing fields:', missingFields);
-
-          if (missingFields.length > 0) {
-            console.log('Missing fields:', missingFields);
-            const displayPictureUrl =
-              typeof profile?.displayPicture === 'string'
-                ? profile.displayPicture
-                : (profile?.displayPicture as { primaryLinkUrl?: string } | undefined)
-                    ?.primaryLinkUrl || profile?.avatarUrl || '';
-            const avatarUrl =
-              profile?.avatarUrl ||
-              resolveAvatarUrlFromDisplayPictureUrl(displayPictureUrl);
-            const candidateToUpdate =
-            {
-              candidateId: existingCandidate.id,
-              personId: existingCandidate.peopleId || '',
-              hiringNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('hiring') ? profile?.profileUrl : '' },
-              resdexNaukriUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('resdex') ? profile?.profileUrl : '' },
-              displayPicture: { "primaryLinkLabel": "Display Picture", "primaryLinkUrl": displayPictureUrl },
-              avatarUrl,
-              linkedinUrl: { "primaryLinkLabel": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '', "primaryLinkUrl": profile?.profileUrl && profile?.profileUrl.includes('linkedin') ? normalizeLinkedInUrl(profile?.profileUrl) : '' },
-              profile: profile,
-              missingFields
-            }
-            if ('uniqueStringKey' in candidateToUpdate) {
-              delete candidateToUpdate.uniqueStringKey;
-            }
-
-            candidatesToUpdate.push(candidateToUpdate);
-          }
-          // console.log("Candidate to update:", candidatesToUpdate.map((c) => c.profile.uniqueStringKey));
+          const { candidateNode } = await processArxCandidate(
+            profile,
+            jobObject,
+            whatsapp_key,
+          );
+          await this.fillMissingCandidateFields(
+            existingCandidate,
+            candidateNode as unknown as Record<string, unknown>,
+            personId,
+            tracking,
+            profile,
+            apiToken,
+          );
           tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
 
       console.log('Candidates to create:', candidatesToCreate.length);
-      console.log('Candidates to update:', candidatesToUpdate.length);
       console.log('Candidates candidateKeys:', candidateKeys);
       console.log('Candidates with personId:', candidatesToCreate.filter(c => c.peopleId).length);
       console.log('Candidates without personId:', candidatesToCreate.filter(c => !c.peopleId).length);
@@ -1457,70 +1682,6 @@ export class CandidateService {
         }
       } else {
         console.log('No candidates to create - candidatesToCreate array is empty');
-      }
-
-      if (candidatesToUpdate.length > 0) {
-        for (const updateCandidate of candidatesToUpdate) {
-          const { candidateId, personId, profile, missingFields, displayPicture, avatarUrl } = updateCandidate;
-          try {
-            for (const fieldName of missingFields) {
-              if (fieldName === 'phoneNumber') {
-                const phoneValue = profile?.phoneNumbers?.[0] || profile?.phoneNumber || profile?.phoneNumbers?.[0] || '';
-                if (phoneValue && phoneValue.trim() !== '') {
-                  const phoneData = this.dataProcessingUtils.parsePhoneNumbers(phoneValue);
-                  await this.handlePhoneNumberUpdateWithStructure(candidateId, phoneData, apiToken);
-                }
-              } else if (fieldName === 'email') {
-                const emailValue = profile?.emailAddress?.[0] || profile?.emailAddresses?.[0] || '';
-                if (emailValue && emailValue.trim() !== '') {
-                  const emailData = this.dataProcessingUtils.parseEmails(emailValue);
-                  await this.handleEmailUpdateWithStructure(candidateId, personId, emailData, apiToken);
-                }
-              }
-              if (fieldName === 'profileUrl') {
-                const profileUrl = profile?.profileUrl;
-                if (profileUrl && profileUrl.includes('naukri')) {
-                  const updateData = {"hiringNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}, "resdexNaukriUrl": {primaryLinkLabel: profileUrl, primaryLinkUrl: profileUrl}};
-                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-                } else if (profileUrl && profileUrl.includes('linkedin')) {
-                  const normalizedUrl = normalizeLinkedInUrl(profileUrl);
-                  const updateData = {"linkedinUrl": {primaryLinkLabel: normalizedUrl, primaryLinkUrl: normalizedUrl}};
-                  const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidateId, input: updateData }, apiToken);
-                }
-              }
-            }
-
-            if (displayPicture.primaryLinkUrl) {
-              await this.staticGraphQLService.executeGraphQL(
-                graphQltoUpdateOneCandidate,
-                {
-                  idToUpdate: candidateId,
-                  input: {
-                    displayPicture,
-                    ...(avatarUrl ? { avatarUrl } : {}),
-                  },
-                },
-                apiToken,
-              );
-
-              if (personId && avatarUrl) {
-                await this.staticGraphQLService.executeGraphQL(
-                  mutationToUpdateOnePerson,
-                  {
-                    idToUpdate: personId,
-                    input: {
-                      avatarUrl,
-                      displayPicture,
-                    },
-                  },
-                  apiToken,
-                );
-              }
-            }
-          } catch (error) {
-            console.log(`Error updating candidate ${candidateId}:`, error);
-          }
-        }
       }
 
 

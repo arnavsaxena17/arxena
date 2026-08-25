@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 import axios from 'axios';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import {
+  collectLinkedinIdentityKeysFromProfile,
+  collectLinkedinIdentityLookupKeys,
+  linkedinIlikePattern,
+  linkedinUrlVariantsForIdentity,
+} from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
 import { ArxenaPersonNode, CreateManyPeople, graphqlQueryToFindManyPeople, PersonNode } from 'twenty-shared';
 
 @Injectable()
@@ -110,5 +116,130 @@ export class PersonService {
       console.error('Error in batchGetPersonDetailsByEmails:', error);
       throw error;
     }
+  }
+
+  async batchGetPersonDetailsByLinkedinIdentities(
+    identities: string[],
+    apiToken: string,
+  ): Promise<Map<string, PersonNode>> {
+    const cleanedIdentities = [
+      ...new Set(
+        identities
+          .map((identity) => identity.trim().toLowerCase())
+          .filter((identity) => identity.length >= 3),
+      ),
+    ];
+
+    if (cleanedIdentities.length === 0) {
+      return new Map<string, PersonNode>();
+    }
+
+    const personMap = new Map<string, PersonNode>();
+    const incomingIdentities = new Set(cleanedIdentities);
+
+    const indexMatchingPeople = (edges: Array<{ node?: PersonNode }>) => {
+      for (const edge of edges) {
+        const node = edge?.node;
+        if (!node?.id) {
+          continue;
+        }
+
+        const nodeIdentities = collectLinkedinIdentityKeysFromProfile(
+          node as unknown as Record<string, unknown>,
+        );
+        const matchesIncoming = nodeIdentities.some((identity) =>
+          incomingIdentities.has(identity),
+        );
+
+        if (!matchesIncoming) {
+          continue;
+        }
+
+        for (const key of collectLinkedinIdentityLookupKeys(
+          node as unknown as Record<string, unknown>,
+        )) {
+          if (!personMap.has(key)) {
+            personMap.set(key, node);
+          }
+        }
+      }
+    };
+
+    const chunkSize = 8;
+    for (let i = 0; i < cleanedIdentities.length; i += chunkSize) {
+      const chunk = cleanedIdentities.slice(i, i + chunkSize);
+      const urlVariants = [
+        ...new Set(chunk.flatMap((identity) => linkedinUrlVariantsForIdentity(identity))),
+      ];
+      const orFilters: Record<string, unknown>[] = [];
+
+      if (urlVariants.length > 0) {
+        orFilters.push({
+          linkedinLink: {
+            primaryLinkUrl: {
+              in: urlVariants,
+            },
+          },
+        });
+      }
+
+      for (const identity of chunk) {
+        const pattern = linkedinIlikePattern(identity);
+        if (!pattern) {
+          continue;
+        }
+        orFilters.push({
+          linkedinLink: {
+            primaryLinkUrl: {
+              ilike: pattern,
+            },
+          },
+        });
+      }
+
+      if (orFilters.length === 0) {
+        continue;
+      }
+
+      const runPeopleQuery = async (filter: Record<string, unknown>) => {
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphqlQueryToFindManyPeople,
+          { filter, limit: 30 },
+          apiToken,
+        );
+        return response.data?.data?.people?.edges || [];
+      };
+
+      try {
+        const people = await runPeopleQuery(
+          orFilters.length === 1 ? orFilters[0] : { or: orFilters },
+        );
+        indexMatchingPeople(people);
+      } catch (combinedError) {
+        const ilikeOnly = orFilters.filter(
+          (filter) =>
+            (filter.linkedinLink as { primaryLinkUrl?: { ilike?: string } } | undefined)
+              ?.primaryLinkUrl?.ilike,
+        );
+        if (ilikeOnly.length === 0) {
+          console.error(
+            'Error in batchGetPersonDetailsByLinkedinIdentities:',
+            combinedError,
+          );
+          throw combinedError;
+        }
+        try {
+          const people = await runPeopleQuery(
+            ilikeOnly.length === 1 ? ilikeOnly[0] : { or: ilikeOnly },
+          );
+          indexMatchingPeople(people);
+        } catch (error) {
+          console.error('Error in batchGetPersonDetailsByLinkedinIdentities:', error);
+          throw error;
+        }
+      }
+    }
+
+    return personMap;
   }
 }

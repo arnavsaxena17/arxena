@@ -16,6 +16,7 @@ type CandidateLinkedinRecord = ObjectLiteral & {
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string | null } | null;
   linkedinUrlPrimaryLinkUrl?: string | null;
+  outreachSequenceStage?: string | null;
 };
 
 type PersonLinkedinRecord = ObjectLiteral & {

@@ -40,13 +40,27 @@ export const mapUploadProfileToLinkedinSearchRow = (
   const name =
     readString(person, ['name', 'fullName']) ||
     [firstName, lastName].filter(Boolean).join(' ');
-  const jobTitle = readString(person, ['title', 'jobTitle', 'headline']);
+  const experience = Array.isArray(person.experience)
+    ? person.experience[0]
+    : Array.isArray(person.work_experience)
+      ? person.work_experience[0]
+      : null;
+  const experienceRecord =
+    experience && typeof experience === 'object'
+      ? (experience as Record<string, unknown>)
+      : null;
+  const jobTitle =
+    readString(person, ['title', 'jobTitle']) ||
+    (experienceRecord
+      ? readString(experienceRecord, ['position', 'title', 'jobTitle'])
+      : '') ||
+    readString(person, ['headline']);
   const headline = readString(person, ['headline', 'title', 'jobTitle']);
-  const companyName = readString(person, [
-    'company',
-    'companyName',
-    'jobCompanyName',
-  ]);
+  const companyName =
+    readString(person, ['company', 'companyName', 'jobCompanyName']) ||
+    (experienceRecord
+      ? readString(experienceRecord, ['company', 'companyName', 'company_name'])
+      : '');
   const location = readString(person, ['location', 'locationName']);
   const resolvedCompanyId =
     readString(person, ['companyId', 'jobCompanyId']) || companyId.trim();

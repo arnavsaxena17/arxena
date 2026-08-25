@@ -17,6 +17,7 @@ import {
   GTM_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   GTM_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
 import {
   GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -32,6 +33,7 @@ import {
   GTM_ENRICH_CONTACT_SAMPLE_OUTPUT,
   GTM_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
+  GTM_FILTER_PROFILES_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -107,6 +109,10 @@ export const getGtmOutreachLogicFunctionIds = (workspaceId: string) => ({
     `${workspaceId}:detect-fake-profiles`,
     GTM_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
+  filterProfilesId: uuidv5(
+    `${workspaceId}:filter-profiles`,
+    GTM_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
 });
 
 export const getGtmOutreachLogicFunctionDefinitions = (
@@ -119,7 +125,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleForCompanyId,
       name: GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       description:
-        'Search ICP people for a company via People API and return transformer-standardized hits (no CRM enroll). Pass companyId (required) and optional projectId/limit. Loads Project icpSpec itself — do not pass icpSpec.',
+        'Search ICP people for a company via People API and return transformer-standardized hits (no CRM enroll). Pass companyId (required) and optional projectId/jobTitle/limit. Loads Project icpSpec itself — do not pass icpSpec. Optional jobTitle takes precedence over Project icpSpec buyerTitles[0] and is classified into std function/grade for the LinkedIn role query.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       ),
@@ -132,6 +138,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
             properties: {
               companyId: GTM_COMPANY_RECORD_INPUT,
               projectId: GTM_PROJECT_RECORD_INPUT,
+              jobTitle: { type: 'string', label: 'Job title' },
               limit: { type: 'number', label: 'Limit' },
             },
           },
@@ -248,6 +255,32 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                 items: { type: 'string', label: 'Skill' },
               },
               snapshot: { type: 'string', label: 'Snapshot' },
+              people: {
+                type: 'array',
+                label: 'People',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', label: 'Name' },
+                    firstName: { type: 'string', label: 'First name' },
+                    lastName: { type: 'string', label: 'Last name' },
+                    title: { type: 'string', label: 'Title' },
+                    headline: { type: 'string', label: 'Headline' },
+                    company: { type: 'string', label: 'Company' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    linkedinProfileId: {
+                      type: 'string',
+                      label: 'LinkedIn profile ID',
+                    },
+                    peopleId: { type: 'string', label: 'People ID' },
+                    profilePictureUrl: {
+                      type: 'string',
+                      label: 'Profile picture URL',
+                    },
+                    location: { type: 'string', label: 'Location' },
+                  },
+                },
+              },
               error: { type: 'string', label: 'Error' },
             },
           },
@@ -259,7 +292,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleId,
       name: GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       description:
-        'Search people via People API (search only, does not enroll). Pass naturalLanguage and optional company/location/dataSource/limit. Default dataSource is auto.',
+        'Search people via People API (search only, does not enroll). Pass naturalLanguage and optional company/location/limit. Uses Unipile when the workspace member profile has a LinkedIn Unipile account, otherwise Harvest.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       ),
@@ -281,8 +314,6 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                 items: { type: 'string', label: 'Location' },
               },
               country: { type: 'string', label: 'Country' },
-              dataSource: { type: 'string', label: 'Data source' },
-              accountId: { type: 'string', label: 'Account ID' },
               limit: { type: 'number', label: 'Limit' },
             },
           },
@@ -836,7 +867,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.detectFakeProfilesId,
       name: GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
       description:
-        'Investigative LLM screen of LinkedIn profile snapshots or full profiles. Pass profile, snapshot, or profiles[]. Returns assessments plus fakeProfiles (likely fabricated) and genuineProfiles. Uses Nous HY3 (hy3:free) by default.',
+        'Investigative LLM screen of LinkedIn people. Pass Profiles (search hits), Full profile (Fetch LinkedIn profile), or Snapshot (snapshot JSON / search payload). Returns assessments plus fakeProfiles and genuineProfiles. Uses Nous HY3 (hy3:free) by default.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
       ),
@@ -847,10 +878,10 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              profile: { type: 'object', label: 'Profile' },
-              snapshot: { type: 'object', label: 'Snapshot' },
               profiles: { type: 'array', label: 'Profiles' },
-              modelId: { type: 'string', label: 'Model ID' },
+              profile: { type: 'array', label: 'Full profile' },
+              snapshot: { type: 'string', label: 'Snapshot' },
+              modelId: { type: 'string', label: 'Model' },
             },
           },
         ],
@@ -871,6 +902,45 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: GTM_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.filterProfilesId,
+      name: GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+      description:
+        'LLM filter of LinkedIn people against a prompt. Pass profiles and a criteria prompt. Each profile is assessed independently against the full profile JSON. Returns matching people. Uses Nous HY3 (hy3:free) by default.',
+      sourceHandlerCode: getGtmNativeLogicFunctionHandler(
+        GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Filter profiles',
+        icon: 'IconFilter',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              profiles: { type: 'array', label: 'Profiles' },
+              prompt: { type: 'string', label: 'Prompt' },
+              modelId: { type: 'string', label: 'Model' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              total: { type: 'number', label: 'Total' },
+              matchedCount: { type: 'number', label: 'Matched count' },
+              rejectedCount: { type: 'number', label: 'Rejected count' },
+              error: { type: 'string', label: 'Error' },
+              people: { type: 'array', label: 'People' },
+              rejected: { type: 'array', label: 'Rejected' },
+              assessments: { type: 'array', label: 'Assessments' },
+            },
+          },
+        ],
+        sampleOutput: GTM_FILTER_PROFILES_SAMPLE_OUTPUT,
       },
     },
   ];
