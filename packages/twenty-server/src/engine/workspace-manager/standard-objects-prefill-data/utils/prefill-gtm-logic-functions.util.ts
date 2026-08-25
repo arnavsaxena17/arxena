@@ -919,8 +919,8 @@ export const getGtmOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              profiles: { type: 'array', label: 'Profiles' },
-              prompt: { type: 'string', label: 'Prompt' },
+              profiles: { type: 'array', label: 'Profiles', multiline: false },
+              prompt: { type: 'string', label: 'Prompt', multiline: true },
               modelId: { type: 'string', label: 'Model' },
             },
           },

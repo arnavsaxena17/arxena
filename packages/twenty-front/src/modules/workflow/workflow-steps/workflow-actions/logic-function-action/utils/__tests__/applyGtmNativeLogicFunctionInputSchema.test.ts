@@ -236,6 +236,12 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
     expect(result?.[0].properties?.prompt).toEqual({
       type: 'string',
       label: 'Prompt',
+      multiline: true,
+    });
+    expect(result?.[0].properties?.profiles).toEqual({
+      type: 'array',
+      label: 'Profiles',
+      multiline: false,
     });
   });
 

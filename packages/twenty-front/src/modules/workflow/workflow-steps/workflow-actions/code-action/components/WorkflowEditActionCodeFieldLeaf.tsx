@@ -148,7 +148,7 @@ export const WorkflowEditActionCodeFieldLeaf = ({
           }
         }}
         VariablePicker={VariablePicker}
-        multiline
+        multiline={schemaProperty?.multiline !== false}
       />
     );
   }

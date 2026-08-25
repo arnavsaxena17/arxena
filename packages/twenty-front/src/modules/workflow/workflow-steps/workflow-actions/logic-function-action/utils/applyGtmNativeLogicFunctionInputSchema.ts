@@ -60,8 +60,8 @@ const DETECT_FAKE_PROFILES_INPUT_PROPERTIES: Record<
 };
 
 const FILTER_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
-  profiles: { type: 'array', label: 'Profiles' },
-  prompt: { type: 'string', label: 'Prompt' },
+  profiles: { type: 'array', label: 'Profiles', multiline: false },
+  prompt: { type: 'string', label: 'Prompt', multiline: true },
   modelId: { type: 'string', label: 'Model' },
 };
 
