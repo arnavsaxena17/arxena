@@ -16,23 +16,16 @@ describe('account rate limit sanitization', () => {
     );
   });
 
-  it('clamps LinkedIn connection weekly cap to the allowed range', () => {
-    expect(
-      sanitizeLinkedinAccountRateLimits({
-        connectionRequestPerWeek: 999,
-      }).connectionRequestPerWeek,
-    ).toBe(200);
-  });
+  it('ignores legacy LinkedIn connection hour and week caps', () => {
+    const sanitized = sanitizeLinkedinAccountRateLimits({
+      connectionRequestPerDay: 12,
+      connectionRequestPerHour: 999,
+      connectionRequestPerWeek: 999,
+    });
 
-  it('clamps LinkedIn connection hourly cap to the allowed range', () => {
-    expect(
-      sanitizeLinkedinAccountRateLimits({
-        connectionRequestPerHour: 999,
-      }).connectionRequestPerHour,
-    ).toBe(20);
-    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerHour).toBe(
-      5,
-    );
+    expect(sanitized.connectionRequestPerDay).toBe(12);
+    expect(sanitized).not.toHaveProperty('connectionRequestPerHour');
+    expect(sanitized).not.toHaveProperty('connectionRequestPerWeek');
     expect(
       DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPer5Minutes,
     ).toBe(1);

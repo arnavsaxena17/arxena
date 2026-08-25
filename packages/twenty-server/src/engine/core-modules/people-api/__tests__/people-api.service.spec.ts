@@ -856,30 +856,42 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     ).mockResolvedValueOnce([
       {
         title: 'Operation Manager',
-        stdFunction: 'operations',
-        stdFunctionRoot: 'operations',
-        stdGrade: 'mid',
+        normalized_title: 'operation manager',
+        function_root: { id: 'operations', name: 'operations' },
+        function: { id: 'operations', name: 'operations' },
+        grade: { id: 'mid', name: 'mid' },
+        confidence: 0.8,
       },
     ]);
 
     const result = await service.searchPeopleByTaxonomy(
       {
         companyName: 'Mazaya',
-        stdFunction: 'ceo',
+        stdFunction: 'sales',
         dataSource: 'unipile',
       },
       'token',
     );
 
-    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith(
-      [
-        expect.objectContaining({
-          name: 'Hani Abdelrahman',
-          title: 'Operation Manager',
-        }),
-      ],
-      expect.any(String),
-    );
+    expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      {
+        jobTitle: 'Operation Manager',
+        experience: [
+          {
+            title: 'Co-Founder',
+            startDate: null,
+            endDate: null,
+            isCurrent: true,
+          },
+          {
+            title: 'Operation Manager',
+            startDate: null,
+            endDate: null,
+            isCurrent: true,
+          },
+        ],
+      },
+    ]);
     expect(result.total).toBe(0);
     expect(result.totalBeforeFilter).toBe(1);
   });
@@ -928,8 +940,8 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
       {
         title: 'Operation Manager',
         normalized_title: 'operation manager',
-        function_root: { id: 'operations', name: 'operations' },
-        function: { id: 'operations', name: 'operations' },
+        function_root: { id: 'sales', name: 'sales' },
+        function: { id: 'sales', name: 'sales' },
         grade: { id: 'mid', name: 'mid' },
         confidence: 0.8,
       },
@@ -938,20 +950,30 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     const result = await service.searchPeopleByTaxonomy(
       {
         companyName: 'Mazaya',
-        stdFunction: 'operations',
+        stdFunction: 'sales',
         dataSource: 'unipile',
       },
       'token',
     );
 
     expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
-      { jobTitle: 'Operation Manager', experience: [] },
+      {
+        jobTitle: 'Operation Manager',
+        experience: [
+          {
+            title: 'Operation Manager',
+            startDate: null,
+            endDate: null,
+            isCurrent: true,
+          },
+        ],
+      },
     ]);
     expect(result.totalBeforeFilter).toBe(2);
     expect(result.total).toBe(1);
     expect(result.items[0]).toMatchObject({
       name: 'Sara Ali',
-      resolved: { stdFunction: 'operations' },
+      resolved: { stdFunction: 'sales' },
     });
   });
 

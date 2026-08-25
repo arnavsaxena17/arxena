@@ -17,9 +17,7 @@ export type LinkedinAccountRateLimits = {
   companyProfilePer10Seconds: number;
   profilePer10Seconds: number;
   connectionRequestPer5Minutes: number;
-  connectionRequestPerHour: number;
   connectionRequestPerDay: number;
-  connectionRequestPerWeek: number;
   commentPer30Seconds: number;
   commentPerDay: number;
   messagePer30Seconds: number;
@@ -53,9 +51,7 @@ export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
   companyProfilePer10Seconds: 1,
   profilePer10Seconds: 1,
   connectionRequestPer5Minutes: 1,
-  connectionRequestPerHour: 5,
   connectionRequestPerDay: 20,
-  connectionRequestPerWeek: 80,
   commentPer30Seconds: 1,
   commentPerDay: 20,
   messagePer30Seconds: 1,
@@ -82,9 +78,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   companyProfilePer10Seconds: { min: 1, max: 3 },
   profilePer10Seconds: { min: 1, max: 3 },
   connectionRequestPer5Minutes: { min: 1, max: 5 },
-  connectionRequestPerHour: { min: 1, max: 20 },
   connectionRequestPerDay: { min: 1, max: 50 },
-  connectionRequestPerWeek: { min: 5, max: 200 },
   commentPer30Seconds: { min: 1, max: 5 },
   commentPerDay: { min: 1, max: 50 },
   messagePer30Seconds: { min: 1, max: 5 },
@@ -148,9 +142,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
     method: 'connection_request',
     windowName: '5m',
   },
-  connectionRequestPerHour: { method: 'connection_request', windowName: 'hour' },
   connectionRequestPerDay: { method: 'connection_request', windowName: 'day' },
-  connectionRequestPerWeek: { method: 'connection_request', windowName: 'week' },
   commentPer30Seconds: { method: 'comment', windowName: '30s' },
   commentPerDay: { method: 'comment', windowName: 'day' },
   messagePer30Seconds: { method: 'message', windowName: '30s' },
@@ -221,6 +213,8 @@ export const sanitizeLinkedinAccountRateLimits = (
     | (Partial<LinkedinAccountRateLimits> & {
         profilePer2Seconds?: number;
         companyProfilePer2Seconds?: number;
+        connectionRequestPerHour?: number;
+        connectionRequestPerWeek?: number;
       })
     | null,
 ): LinkedinAccountRateLimits => {

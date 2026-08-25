@@ -6,11 +6,9 @@ import {
   LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
   MS_PER_DAY,
   MS_PER_FIVE_MINUTES,
-  MS_PER_HOUR,
   MS_PER_MINUTE,
   MS_PER_TEN_SECONDS,
   MS_PER_THIRTY_SECONDS,
-  MS_PER_WEEK,
   WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
   getAccountRateLimitWindowMs,
   sanitizeLinkedinAccountRateLimits,
@@ -298,18 +296,21 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: LinkedinRateLimitMethod,
     limits: LinkedinAccountRateLimits,
   ): RateLimitWindow[] {
-    // Method-specific actions use only their own windows so a full
-    // endpoint:day counter (shared by profile lookups, facet searches, etc.)
-    // cannot defer a connection request until tomorrow. Retry wait is then
-    // the next free slot in this method's windows (e.g. 5 min / hour / day
-    // / week for connection requests).
-    const usesSharedEndpointWindows =
-      method === 'endpoint' ||
-      method === 'company_profile' ||
-      method === 'profile';
+    // Each action is pace + daily quota. Lookups share endpoint:day so
+    // profile/company fetches cannot spend a separate daily budget on top of
+    // generic endpoint traffic. Outreach and search never share that counter.
+    const endpointDay = this.window(
+      accountId,
+      'linkedin',
+      'endpoint',
+      'day',
+      limits.endpointPerDay,
+      MS_PER_DAY,
+    );
 
-    const windows: RateLimitWindow[] = usesSharedEndpointWindows
-      ? [
+    switch (method) {
+      case 'endpoint':
+        return [
           this.window(
             accountId,
             'linkedin',
@@ -318,165 +319,130 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.endpointPerMinute,
             MS_PER_MINUTE,
           ),
+          endpointDay,
+        ];
+      case 'company_profile':
+        return [
           this.window(
             accountId,
             'linkedin',
-            'endpoint',
+            'company_profile',
+            '10s',
+            limits.companyProfilePer10Seconds,
+            MS_PER_TEN_SECONDS,
+          ),
+          endpointDay,
+        ];
+      case 'profile':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'profile',
+            '10s',
+            limits.profilePer10Seconds,
+            MS_PER_TEN_SECONDS,
+          ),
+          endpointDay,
+        ];
+      case 'connection_request':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'connection_request',
+            '5m',
+            limits.connectionRequestPer5Minutes,
+            MS_PER_FIVE_MINUTES,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'connection_request',
             'day',
-            limits.endpointPerDay,
+            limits.connectionRequestPerDay,
             MS_PER_DAY,
           ),
-        ]
-      : [];
-
-    if (method === 'company_profile') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'company_profile',
-          '10s',
-          limits.companyProfilePer10Seconds,
-          MS_PER_TEN_SECONDS,
-        ),
-      );
+        ];
+      case 'comment':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'comment',
+            '30s',
+            limits.commentPer30Seconds,
+            MS_PER_THIRTY_SECONDS,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'comment',
+            'day',
+            limits.commentPerDay,
+            MS_PER_DAY,
+          ),
+        ];
+      case 'message':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'message',
+            '30s',
+            limits.messagePer30Seconds,
+            MS_PER_THIRTY_SECONDS,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'message',
+            'day',
+            limits.messagePerDay,
+            MS_PER_DAY,
+          ),
+        ];
+      case 'inmail':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'inmail',
+            '30s',
+            limits.inmailPer30Seconds,
+            MS_PER_THIRTY_SECONDS,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'inmail',
+            'day',
+            limits.inmailPerDay,
+            MS_PER_DAY,
+          ),
+        ];
+      case 'search':
+        return [
+          this.window(
+            accountId,
+            'linkedin',
+            'search',
+            'minute',
+            limits.searchPerMinute,
+            MS_PER_MINUTE,
+          ),
+          this.window(
+            accountId,
+            'linkedin',
+            'search',
+            'day',
+            limits.searchPerDay,
+            MS_PER_DAY,
+          ),
+        ];
+      default:
+        return [];
     }
-
-    if (method === 'profile') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'profile',
-          '10s',
-          limits.profilePer10Seconds,
-          MS_PER_TEN_SECONDS,
-        ),
-      );
-    }
-
-    if (method === 'connection_request') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'connection_request',
-          '5m',
-          limits.connectionRequestPer5Minutes,
-          MS_PER_FIVE_MINUTES,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'connection_request',
-          'hour',
-          limits.connectionRequestPerHour,
-          MS_PER_HOUR,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'connection_request',
-          'day',
-          limits.connectionRequestPerDay,
-          MS_PER_DAY,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'connection_request',
-          'week',
-          limits.connectionRequestPerWeek,
-          MS_PER_WEEK,
-        ),
-      );
-    }
-
-    if (method === 'comment') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'comment',
-          '30s',
-          limits.commentPer30Seconds,
-          MS_PER_THIRTY_SECONDS,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'comment',
-          'day',
-          limits.commentPerDay,
-          MS_PER_DAY,
-        ),
-      );
-    }
-
-    if (method === 'message') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'message',
-          '30s',
-          limits.messagePer30Seconds,
-          MS_PER_THIRTY_SECONDS,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'message',
-          'day',
-          limits.messagePerDay,
-          MS_PER_DAY,
-        ),
-      );
-    }
-
-    if (method === 'inmail') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'inmail',
-          '30s',
-          limits.inmailPer30Seconds,
-          MS_PER_THIRTY_SECONDS,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'inmail',
-          'day',
-          limits.inmailPerDay,
-          MS_PER_DAY,
-        ),
-      );
-    }
-
-    if (method === 'search') {
-      windows.push(
-        this.window(
-          accountId,
-          'linkedin',
-          'search',
-          'minute',
-          limits.searchPerMinute,
-          MS_PER_MINUTE,
-        ),
-        this.window(
-          accountId,
-          'linkedin',
-          'search',
-          'day',
-          limits.searchPerDay,
-          MS_PER_DAY,
-        ),
-      );
-    }
-
-    return windows;
   }
 
   private buildWhatsappWindows(
@@ -484,13 +450,8 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: WhatsappRateLimitMethod,
     limits: WhatsappAccountRateLimits,
   ): RateLimitWindow[] {
-    const windows: RateLimitWindow[] = [
-      this.window(accountId, 'whatsapp', 'endpoint', 'minute', limits.endpointPerMinute, MS_PER_MINUTE),
-      this.window(accountId, 'whatsapp', 'endpoint', 'day', limits.endpointPerDay, MS_PER_DAY),
-    ];
-
     if (method === 'start_chat') {
-      windows.push(
+      return [
         this.window(
           accountId,
           'whatsapp',
@@ -507,11 +468,28 @@ export class AccountRateLimiterService implements OnModuleInit {
           limits.startChatPerDay,
           MS_PER_DAY,
         ),
-      );
+      ];
     }
 
-    return windows;
-  }
+    return [
+      this.window(
+        accountId,
+        'whatsapp',
+        'endpoint',
+        'minute',
+        limits.endpointPerMinute,
+        MS_PER_MINUTE,
+      ),
+      this.window(
+        accountId,
+        'whatsapp',
+        'endpoint',
+        'day',
+        limits.endpointPerDay,
+        MS_PER_DAY,
+      ),
+    ];
+     }
 
   private window(
     accountId: string,

@@ -89,28 +89,12 @@ export const LinkedinAccountRateLimitsPanel = ({
             DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPer5Minutes,
         },
         {
-          key: 'connectionRequestPerHour',
-          label: 'Send connection request',
-          windowLabel: 'per 1 hour',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.connectionRequestPerHour,
-          recommended:
-            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerHour,
-        },
-        {
           key: 'connectionRequestPerDay',
           label: 'Send connection request',
           windowLabel: 'per 1 day',
           ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.connectionRequestPerDay,
           recommended:
             DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerDay,
-        },
-        {
-          key: 'connectionRequestPerWeek',
-          label: 'Send connection request',
-          windowLabel: 'per 1 week',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.connectionRequestPerWeek,
-          recommended:
-            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.connectionRequestPerWeek,
         },
         {
           key: 'commentPer30Seconds',
