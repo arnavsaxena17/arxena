@@ -11,13 +11,17 @@ const StyledWorkflowStepBody = styled.div<{
   paddingBlock?: string;
   paddingInline?: string;
   gridTemplateRows?: string;
+  gridTemplateColumns?: string;
 }>`
   background: ${themeCssVariables.background.primary};
   display: ${({ display }) => display ?? 'flex'};
   flex: 1 1 auto;
   flex-direction: column;
+  grid-template-columns: ${({ gridTemplateColumns }) =>
+    gridTemplateColumns ?? 'none'};
   grid-template-rows: ${({ gridTemplateRows }) => gridTemplateRows ?? 'none'};
   height: 100%;
+  min-width: 0;
   overflow: ${({ overflow }) => overflow ?? 'hidden scroll'};
   padding-block: ${({ paddingBlock }) =>
     paddingBlock ?? themeCssVariables.spacing[4]};
@@ -34,6 +38,7 @@ export const WorkflowStepBody = ({
   paddingBlock,
   paddingInline,
   gridTemplateRows,
+  gridTemplateColumns,
 }: {
   children: React.ReactNode;
   rowGap?: string;
@@ -42,6 +47,7 @@ export const WorkflowStepBody = ({
   paddingBlock?: string;
   paddingInline?: string;
   gridTemplateRows?: string;
+  gridTemplateColumns?: string;
 }) => {
   return (
     <StyledWorkflowStepBody
@@ -51,6 +57,7 @@ export const WorkflowStepBody = ({
       paddingBlock={paddingBlock}
       paddingInline={paddingInline}
       gridTemplateRows={gridTemplateRows}
+      gridTemplateColumns={gridTemplateColumns}
     >
       <AppErrorBoundary
         resetOnLocationChange={true}

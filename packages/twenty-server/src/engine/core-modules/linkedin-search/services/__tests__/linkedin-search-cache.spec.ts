@@ -7,41 +7,21 @@ import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/s
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
+import type { LinkedInSearchResponse } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
-describe('LinkedInSearchService.getRelations', () => {
-  it('calls Unipile relations and returns the last n connections newest first', async () => {
-    const fetchLinkedinRelations = jest.fn().mockResolvedValue({
-      object: 'UserRelationsList',
-      items: [
-        {
-          object: 'UserRelation',
-          first_name: 'Old',
-          last_name: 'One',
-          created_at: 100,
-          public_identifier: 'old-one',
-          public_profile_url: 'https://www.linkedin.com/in/old-one',
-        },
-        {
-          object: 'UserRelation',
-          first_name: 'New',
-          last_name: 'Two',
-          created_at: 300,
-          public_identifier: 'new-two',
-          public_profile_url: 'https://www.linkedin.com/in/new-two',
-        },
-        {
-          object: 'UserRelation',
-          first_name: 'Mid',
-          last_name: 'Three',
-          created_at: 200,
-          public_identifier: 'mid-three',
-          public_profile_url: 'https://www.linkedin.com/in/mid-three',
-        },
-      ],
-      cursor: 'next',
-    });
+const cachedResponse: LinkedInSearchResponse = {
+  object: 'LinkedinSearch',
+  items: [],
+  config: { params: {} },
+  paging: { start: 0, page_count: 0, total_count: 0 },
+  cursor: null,
+};
 
+describe('LinkedInSearchService Unipile search cache', () => {
+  const getOrFetch = jest.fn();
+
+  const createService = async () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         LinkedInSearchService,
@@ -54,31 +34,42 @@ describe('LinkedInSearchService.getRelations', () => {
           useValue: {},
         },
         { provide: UnipileV2AccountResolver, useValue: {} },
+        { provide: LinkedinUnipileRequestService, useValue: {} },
         {
           provide: UnipileSearchResultsCacheService,
-          useValue: {
-            getOrFetch: (
-              _input: unknown,
-              fetcher: () => Promise<unknown>,
-            ) => fetcher(),
-          },
-        },
-        {
-          provide: LinkedinUnipileRequestService,
-          useValue: { fetchLinkedinRelations },
+          useValue: { getOrFetch },
         },
       ],
     }).compile();
 
-    const service = moduleRef.get(LinkedInSearchService);
-    const result = await service.getRelations('acc-1', { limit: 2 });
+    return moduleRef.get(LinkedInSearchService);
+  };
 
-    expect(fetchLinkedinRelations).toHaveBeenCalledWith('acc-1', {
-      limit: 2,
-      cursor: undefined,
-      filter: undefined,
-    });
-    expect(result.items.map((item) => item.first_name)).toEqual(['New', 'Mid']);
-    expect(result.cursor).toBe('next');
+  beforeEach(() => {
+    getOrFetch.mockReset();
+    getOrFetch.mockResolvedValue(cachedResponse);
+  });
+
+  it('looks up cached Unipile results before calling Unipile', async () => {
+    const service = await createService();
+    const searchRequest = {
+      api: 'sales_navigator' as const,
+      category: 'people' as const,
+      keywords: 'CEO',
+    };
+
+    const result = await service.search(searchRequest, 'acct-1', { limit: 10 });
+
+    expect(result).toBe(cachedResponse);
+    expect(getOrFetch).toHaveBeenCalledTimes(1);
+    expect(getOrFetch).toHaveBeenCalledWith(
+      {
+        accountId: 'acct-1',
+        searchRequest,
+        cursor: undefined,
+        limit: 10,
+      },
+      expect.any(Function),
+    );
   });
 });

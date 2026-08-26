@@ -1423,6 +1423,16 @@
         "maxOutputTokens": 65536,
         "modalities": ["image", "audio", "video", "pdf"],
         "supportsReasoning": true
+      },
+      {
+        "name": "stealth/ox-alpha",
+        "label": "Ox Alpha",
+        "inputCostPerMillionTokens": 0,
+        "outputCostPerMillionTokens": 0,
+        "contextWindowTokens": 1048576,
+        "maxOutputTokens": 131072,
+        "modalities": ["image", "video"],
+        "supportsReasoning": true
       }
     ]
   },

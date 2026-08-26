@@ -23,7 +23,74 @@ import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models
 const hasText = (value: string | null | undefined): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
-const ASSESS_CONCURRENCY = 3;
+const FILTER_PROFILES_MAX_OUTPUT_TOKENS = 2_048;
+const FILTER_PROFILES_CONCURRENCY = 2;
+
+type LlmErrorRecord = Error & {
+  statusCode?: number;
+  data?: { error?: { metadata?: { raw?: string } } };
+  text?: string;
+};
+
+export const concurrencyForFilterProfilesModel = (modelId: string): number =>
+  modelId.includes('ox-alpha') ? 1 : FILTER_PROFILES_CONCURRENCY;
+
+export const reasoningProviderOptionsForFilterProfiles = (
+  modelId: string,
+): {
+  openrouter: { reasoning: { effort: 'low' | 'medium' } };
+  nous: { reasoning: { effort: 'low' | 'medium' } };
+} => {
+  const effort = modelId.includes('ox-alpha') ? 'low' : 'medium';
+
+  return {
+    openrouter: { reasoning: { effort } },
+    nous: { reasoning: { effort } },
+  };
+};
+
+export const repairGeneratedJsonObjectText = ({
+  text,
+}: {
+  text: string;
+}): string | null => {
+  const trimmed = text.trim();
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/i.exec(trimmed);
+  const candidate = (fenced?.[1] ?? trimmed).trim();
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+
+  if (start < 0 || end <= start) {
+    return null;
+  }
+
+  const sliced = candidate.slice(start, end + 1);
+
+  return sliced === text ? null : sliced;
+};
+
+export const formatFilterProfilesLlmError = (error: unknown): string => {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const record = error as LlmErrorRecord;
+  const parts = [error.message];
+
+  if (typeof record.statusCode === 'number') {
+    parts.push(`status=${record.statusCode}`);
+  }
+
+  const raw = record.data?.error?.metadata?.raw;
+
+  if (hasText(raw)) {
+    parts.push(raw);
+  } else if (hasText(record.text)) {
+    parts.push(`text=${record.text.slice(0, 240)}`);
+  }
+
+  return parts.join(' — ');
+};
 
 export type GtmFilterProfilesInput = {
   profiles?: unknown;
@@ -96,7 +163,7 @@ export class GtmFilterProfilesService {
 
     const assessments = await this.mapInBatches(
       profiles,
-      ASSESS_CONCURRENCY,
+      concurrencyForFilterProfilesModel(registeredModel.modelId),
       (profile, index) =>
         this.assessOne({
           profile,
@@ -148,6 +215,11 @@ export class GtmFilterProfilesService {
           criteria: input.prompt,
           profileJson: compactProfileJson(input.profile),
         }),
+        maxOutputTokens: FILTER_PROFILES_MAX_OUTPUT_TOKENS,
+        providerOptions: reasoningProviderOptionsForFilterProfiles(
+          input.modelId,
+        ),
+        experimental_repairText: repairGeneratedJsonObjectText,
         experimental_telemetry: AI_TELEMETRY_CONFIG,
       });
 
@@ -158,7 +230,7 @@ export class GtmFilterProfilesService {
         llm: object,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatFilterProfilesLlmError(error);
 
       this.logger.warn(
         `Filter-profiles assessment failed index=${input.index} model=${input.modelId}: ${message}`,
@@ -190,19 +262,6 @@ export class GtmFilterProfilesService {
     };
   }
 
-  private emptyResult(error: string): GtmFilterProfilesResult {
-    return {
-      success: false,
-      total: 0,
-      matchedCount: 0,
-      rejectedCount: 0,
-      error,
-      people: [],
-      rejected: [],
-      assessments: [],
-    };
-  }
-
   private async mapInBatches<T, R>(
     items: T[],
     batchSize: number,
@@ -220,6 +279,19 @@ export class GtmFilterProfilesService {
     }
 
     return results;
+  }
+
+  private emptyResult(error: string): GtmFilterProfilesResult {
+    return {
+      success: false,
+      total: 0,
+      matchedCount: 0,
+      rejectedCount: 0,
+      error,
+      people: [],
+      rejected: [],
+      assessments: [],
+    };
   }
 
   private async resolveModel(input: {

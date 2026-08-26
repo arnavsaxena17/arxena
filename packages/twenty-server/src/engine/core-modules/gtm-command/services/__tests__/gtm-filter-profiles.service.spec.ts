@@ -1,7 +1,12 @@
 import { generateObject } from 'ai';
 
 import { GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/gtm-command/constants/gtm-company-enrichment-model.const';
-import { GtmFilterProfilesService } from 'src/engine/core-modules/gtm-command/services/gtm-filter-profiles.service';
+import {
+  concurrencyForFilterProfilesModel,
+  formatFilterProfilesLlmError,
+  GtmFilterProfilesService,
+  repairGeneratedJsonObjectText,
+} from 'src/engine/core-modules/gtm-command/services/gtm-filter-profiles.service';
 import type { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 jest.mock('ai', () => ({
@@ -30,6 +35,18 @@ const ENGINEER_PROFILE = {
   headline: 'Staff Software Engineer at FinBank',
   company: 'FinBank',
   location: 'New York',
+};
+
+const waitUntil = async (predicate: () => boolean): Promise<void> => {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (predicate()) {
+      return;
+    }
+
+    await Promise.resolve();
+  }
+
+  throw new Error('Timed out waiting for parallel LLM calls to start');
 };
 
 const mockAiModelRegistry = (): AiModelRegistryService => {
@@ -110,6 +127,11 @@ describe('GtmFilterProfilesService', () => {
         model: { provider: 'mock' },
         system: expect.stringContaining('filter criteria'),
         prompt: expect.stringContaining('senior engineers in fintech'),
+        maxOutputTokens: 2048,
+        providerOptions: {
+          openrouter: { reasoning: { effort: 'medium' } },
+          nous: { reasoning: { effort: 'medium' } },
+        },
       }),
     );
     expect(generateObjectMock.mock.calls[0][0].prompt).toContain(
@@ -125,6 +147,109 @@ describe('GtmFilterProfilesService', () => {
     expect(result.assessments[0]?.matches).toBe(false);
     expect(result.assessments[1]?.matches).toBe(true);
     expect(result.assessments[1]?.name).toBe('Jordan Lee');
+  });
+
+  it('starts a batch of profile LLM calls before waiting for the first to finish', async () => {
+    const started: number[] = [];
+    const resolvers: Array<(value: Awaited<ReturnType<typeof generateObject>>) => void> =
+      [];
+
+    generateObjectMock.mockImplementation(() => {
+      started.push(generateObjectMock.mock.calls.length);
+
+      return new Promise((resolve) => {
+        resolvers.push(resolve);
+      });
+    });
+
+    const service = new GtmFilterProfilesService(mockAiModelRegistry());
+    const executePromise = service.execute({
+      input: {
+        prompt: 'senior engineers in fintech',
+        profiles: [SALES_PROFILE, ENGINEER_PROFILE, SALES_PROFILE],
+      },
+    });
+
+    await waitUntil(() => started.length === 2);
+
+    expect(started).toEqual([1, 2]);
+    expect(resolvers).toHaveLength(2);
+
+    resolvers[0]?.({
+      object: { matches: false, reason: 'sales' },
+    } as Awaited<ReturnType<typeof generateObject>>);
+    resolvers[1]?.({
+      object: { matches: true, reason: 'engineer' },
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    await waitUntil(() => started.length === 3);
+
+    resolvers[2]?.({
+      object: { matches: false, reason: 'sales' },
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    const result = await executePromise;
+
+    expect(result.total).toBe(3);
+    expect(result.matchedCount).toBe(1);
+    expect(result.people).toEqual([ENGINEER_PROFILE]);
+  });
+
+  it('assesses ox-alpha profiles one at a time to avoid the shared-pool 429', async () => {
+    const started: number[] = [];
+    const resolvers: Array<(value: Awaited<ReturnType<typeof generateObject>>) => void> =
+      [];
+    const oxAlphaModel = {
+      modelId: 'openrouter/stealth/ox-alpha',
+      model: { provider: 'openrouter' },
+    };
+    const registry = {
+      getDefaultSpeedModel: jest.fn().mockReturnValue(oxAlphaModel),
+      getModel: jest.fn().mockReturnValue(oxAlphaModel),
+      resolveModelForAgentInWorkspace: jest.fn(),
+    } as unknown as AiModelRegistryService;
+
+    generateObjectMock.mockImplementation(() => {
+      started.push(generateObjectMock.mock.calls.length);
+
+      return new Promise((resolve) => {
+        resolvers.push(resolve);
+      });
+    });
+
+    const service = new GtmFilterProfilesService(registry);
+    const executePromise = service.execute({
+      input: {
+        modelId: 'openrouter/stealth/ox-alpha',
+        prompt: 'senior engineers in fintech',
+        profiles: [SALES_PROFILE, ENGINEER_PROFILE],
+      },
+    });
+
+    await waitUntil(() => started.length === 1);
+
+    expect(started).toEqual([1]);
+    expect(resolvers).toHaveLength(1);
+    expect(generateObjectMock.mock.calls[0][0].providerOptions).toEqual({
+      openrouter: { reasoning: { effort: 'low' } },
+      nous: { reasoning: { effort: 'low' } },
+    });
+
+    resolvers[0]?.({
+      object: { matches: false, reason: 'sales' },
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    await waitUntil(() => started.length === 2);
+
+    resolvers[1]?.({
+      object: { matches: true, reason: 'engineer' },
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    const result = await executePromise;
+
+    expect(result.total).toBe(2);
+    expect(result.matchedCount).toBe(1);
+    expect(result.people).toEqual([ENGINEER_PROFILE]);
   });
 
   it('fail-closes LLM errors so they do not enter people', async () => {
@@ -144,5 +269,33 @@ describe('GtmFilterProfilesService', () => {
     expect(result.rejected).toEqual([ENGINEER_PROFILE]);
     expect(result.assessments[0]?.matches).toBe(false);
     expect(result.assessments[0]?.error).toContain('model timeout');
+  });
+
+  it('surfaces OpenRouter 429 metadata instead of only Provider returned error', () => {
+    const error = Object.assign(new Error('Provider returned error'), {
+      statusCode: 429,
+      data: {
+        error: {
+          metadata: {
+            raw: 'stealth/ox-alpha is temporarily rate-limited upstream. Please retry shortly.',
+          },
+        },
+      },
+    });
+
+    expect(formatFilterProfilesLlmError(error)).toContain(
+      'temporarily rate-limited upstream',
+    );
+    expect(concurrencyForFilterProfilesModel('openrouter/stealth/ox-alpha')).toBe(
+      1,
+    );
+    expect(
+      concurrencyForFilterProfilesModel(GTM_COMPANY_ENRICHMENT_LLM_MODEL_ID),
+    ).toBe(2);
+    expect(
+      repairGeneratedJsonObjectText({
+        text: 'Sure.\n```json\n{"matches":true,"reason":"staff engineer"}\n```',
+      }),
+    ).toBe('{"matches":true,"reason":"staff engineer"}');
   });
 });

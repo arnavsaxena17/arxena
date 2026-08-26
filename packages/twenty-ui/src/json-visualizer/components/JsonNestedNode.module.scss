@@ -1,6 +1,7 @@
 .container {
   display: grid;
   list-style-type: none;
+  min-width: 0;
 }
 
 .labelContainer {
@@ -22,6 +23,7 @@
 // nodes can still resize their ancestors.
 .panel {
   height: var(--collapsible-panel-height);
+  min-width: 0;
   overflow: clip;
   transition:
     height 0.3s ease,
@@ -38,7 +40,9 @@
   margin: 0;
   padding: 0;
   display: grid;
+  min-width: 0;
   row-gap: var(--t-spacing-2);
+  width: 100%;
 }
 
 .nested {

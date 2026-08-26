@@ -527,6 +527,13 @@ export const ReallyDeepNestedObject: Story = {
 
 export const LongText: Story = {
   parameters: { a11y: A11Y_DEFER_COLOR_CONTRAST },
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: 360 }}>
+        <Story />
+      </div>
+    ),
+  ],
   args: {
     value: {
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum iaculis est tincidunt, sagittis neque vitae, sodales purus.':

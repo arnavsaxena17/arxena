@@ -1,7 +1,10 @@
 .listItem {
-  align-items: center;
+  align-items: start;
   column-gap: var(--t-spacing-2);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   list-style-type: none;
-  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
 }

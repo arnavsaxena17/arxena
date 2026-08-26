@@ -107,4 +107,14 @@ describe('ai-providers.json integrity', () => {
     expect(PROVIDERS.openrouter?.supportsStructuredOutputs).toBe(true);
     expect(PROVIDERS.nous?.supportsStructuredOutputs).toBe(true);
   });
+
+  it('should include OpenRouter Ox Alpha', () => {
+    const oxAlpha = PROVIDERS.openrouter?.models?.find(
+      (model) => model.name === 'stealth/ox-alpha',
+    );
+
+    expect(oxAlpha).toBeDefined();
+    expect(oxAlpha?.label).toBe('Ox Alpha');
+    expect(oxAlpha?.supportsReasoning).toBe(true);
+  });
 });

@@ -1,21 +1,17 @@
 import { useWorkflowRun } from '@/workflow/hooks/useWorkflowRun';
 import { useWorkflowRunIdOrThrow } from '@/workflow/hooks/useWorkflowRunIdOrThrow';
 import { getStepDefinitionOrThrow } from '@/workflow/utils/getStepDefinitionOrThrow';
+import { WorkflowJsonViewSwitcher } from '@/workflow/workflow-steps/components/WorkflowJsonViewSwitcher';
 import { WorkflowRunStepJsonContainer } from '@/workflow/workflow-steps/components/WorkflowRunStepJsonContainer';
 import { useWorkflowRunStepInfo } from '@/workflow/workflow-steps/hooks/useWorkflowRunStepInfo';
 import { getWorkflowRunStepInfoToDisplayAsOutput } from '@/workflow/workflow-steps/utils/getWorkflowRunStepInfoToDisplayAsOutput';
 import { useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared/utils';
-import {
-  type GetJsonNodeHighlighting,
-  isTwoFirstDepths,
-  JsonTree,
-} from 'twenty-ui/json-visualizer';
-import { useCopyToClipboard } from '~/hooks/useCopyToClipboard';
+import { type GetJsonNodeHighlighting } from 'twenty-ui/json-visualizer';
+import { type JsonValue } from 'type-fest';
 
 export const WorkflowRunStepOutputDetail = ({ stepId }: { stepId: string }) => {
   const { t } = useLingui();
-  const { copyToClipboard } = useCopyToClipboard();
 
   const workflowRunId = useWorkflowRunIdOrThrow();
   const workflowRun = useWorkflowRun({ workflowRunId });
@@ -48,24 +44,15 @@ export const WorkflowRunStepOutputDetail = ({ stepId }: { stepId: string }) => {
   };
 
   return (
-    <>
-      <WorkflowRunStepJsonContainer>
-        <JsonTree
-          value={stepInfoToDisplay ?? t`No output available`}
-          shouldExpandNodeInitially={isTwoFirstDepths}
-          emptyArrayLabel={t`Empty Array`}
-          emptyObjectLabel={t`Empty Object`}
-          emptyStringLabel={t`[empty string]`}
-          arrowButtonCollapsedLabel={t`Expand`}
-          arrowButtonExpandedLabel={t`Collapse`}
-          getNodeHighlighting={
-            isDefined(stepInfo?.error)
-              ? setRedHighlightingForEveryNode
-              : undefined
-          }
-          onNodeValueClick={copyToClipboard}
-        />
-      </WorkflowRunStepJsonContainer>
-    </>
+    <WorkflowRunStepJsonContainer>
+      <WorkflowJsonViewSwitcher
+        value={(stepInfoToDisplay as JsonValue) ?? t`No output available`}
+        getNodeHighlighting={
+          isDefined(stepInfo?.error)
+            ? setRedHighlightingForEveryNode
+            : undefined
+        }
+      />
+    </WorkflowRunStepJsonContainer>
   );
 };

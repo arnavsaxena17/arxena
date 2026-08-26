@@ -7,6 +7,7 @@ const WorkflowRunStepJsonContainerInner = ({
 }) => (
   <WorkflowStepBody
     display="grid"
+    gridTemplateColumns="minmax(0, 1fr)"
     gridTemplateRows="max-content"
     rowGap="0"
     overflow="auto"

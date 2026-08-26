@@ -22,6 +22,7 @@ import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-sear
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
+import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
@@ -60,6 +61,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
   controllers: [LinkedInSearchController],
   providers: [
     LinkedInSearchService,
+    UnipileSearchResultsCacheService,
     UnipileV2AccountResolver,
     UnipileSearchAccountResolver,
     LinkedInSessionTrackerService,
@@ -76,6 +78,7 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
   ],
   exports: [
     LinkedInSearchService,
+    UnipileSearchResultsCacheService,
     UnipileSearchAccountResolver,
     LinkedInSessionTrackerService,
     LinkedinParameterResolver,

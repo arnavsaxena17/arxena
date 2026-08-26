@@ -48,6 +48,7 @@ import {
 } from '../utils/unipile-user-relations.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
+import { UnipileSearchResultsCacheService } from './unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
 
 /** Default Apify actor: LinkedIn company profile / employee scraper (console id). Override via APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID. */
@@ -149,6 +150,7 @@ export class LinkedInSearchService {
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
     private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    private readonly unipileSearchResultsCache: UnipileSearchResultsCacheService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -177,78 +179,101 @@ export class LinkedInSearchService {
     } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
-      await this.acquireSearchQuotaIfNeeded(accountId, {
-        cursor: options.cursor,
-        start: options.start,
-        offset: options.offset,
-        countSearchQuota: options.countSearchQuota,
-      }, searchRequest);
-
-      // Track request if workspaceId is provided
-      if (options.workspaceId) {
-        const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
-
-        if (!trackingResult.allowed) {
-          throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
-        }
-
-        if (trackingResult.warning) {
-          this.logger.warn(trackingResult.warning);
-        }
-      }
-
-      const url = `${this.baseUrl}/api/v1/linkedin/search`;
-      this.logger.debug(
-        `LinkedIn search request:
-          URL: ${url}
-          Account ID: ${accountId}
-          Options: ${JSON.stringify(options, null, 2)}
-          Search Request: ${JSON.stringify(searchRequest, null, 2)}`
+      return await this.unipileSearchResultsCache.getOrFetch(
+        {
+          accountId,
+          searchRequest,
+          cursor: options.cursor,
+          limit: options.limit,
+        },
+        () => this.executeUnipileSearch(searchRequest, accountId, options),
       );
-      const queryParams = new URLSearchParams({
-        account_id: accountId,
-        ...(options.cursor && { cursor: options.cursor }),
-        ...(options.limit != null && { limit: options.limit.toString() }),
-      });
-
-      this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
-      this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
-      const response = await this.searchWithRetry(url, queryParams, searchRequest);
-      this.logger.log(
-        `LinkedIn search response: ${JSON.stringify(
-          response.items.map((item) => {
-            if (item.type !== 'PEOPLE') {
-              return { id: item.id ?? '', type: item.type };
-            }
-
-            const jobTitles = (item.current_positions ?? [])
-              .map((position) => position.role)
-              .filter(Boolean);
-            const currentPositions = (item.current_positions ?? []).map(
-              (position) => ({
-                role: position.role,
-                company: position.company,
-                company_id: position.company_id,
-              }),
-            );
-
-            return {
-              id: item.id ?? '',
-              name: item.name,
-              headline: item.headline,
-              jobTitles,
-              current_positions: currentPositions,
-            };
-          }),
-          null,
-          2,
-        )}`,
-      );
-      return response;
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);
       throw error;
     }
+  }
+
+  private async executeUnipileSearch(
+    searchRequest: LinkedInSearchRequest,
+    accountId: string,
+    options: {
+      cursor?: string;
+      limit?: number;
+      workspaceId?: string;
+      start?: number;
+      offset?: number;
+      countSearchQuota?: boolean;
+    },
+  ): Promise<LinkedInSearchResponse> {
+    await this.acquireSearchQuotaIfNeeded(accountId, {
+      cursor: options.cursor,
+      start: options.start,
+      offset: options.offset,
+      countSearchQuota: options.countSearchQuota,
+    }, searchRequest);
+
+    // Track request if workspaceId is provided
+    if (options.workspaceId) {
+      const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
+
+      if (!trackingResult.allowed) {
+        throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
+      }
+
+      if (trackingResult.warning) {
+        this.logger.warn(trackingResult.warning);
+      }
+    }
+
+    const url = `${this.baseUrl}/api/v1/linkedin/search`;
+    this.logger.debug(
+      `LinkedIn search request:
+          URL: ${url}
+          Account ID: ${accountId}
+          Options: ${JSON.stringify(options, null, 2)}
+          Search Request: ${JSON.stringify(searchRequest, null, 2)}`
+    );
+    const queryParams = new URLSearchParams({
+      account_id: accountId,
+      ...(options.cursor && { cursor: options.cursor }),
+      ...(options.limit != null && { limit: options.limit.toString() }),
+    });
+
+    this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
+    this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
+    const response = await this.searchWithRetry(url, queryParams, searchRequest);
+    this.logger.log(
+      `LinkedIn search response: ${JSON.stringify(
+        response.items.map((item) => {
+          if (item.type !== 'PEOPLE') {
+            return { id: item.id ?? '', type: item.type };
+          }
+
+          const jobTitles = (item.current_positions ?? [])
+            .map((position) => position.role)
+            .filter(Boolean);
+          const currentPositions = (item.current_positions ?? []).map(
+            (position) => ({
+              role: position.role,
+              company: position.company,
+              company_id: position.company_id,
+            }),
+          );
+
+          return {
+            id: item.id ?? '',
+            name: item.name,
+            headline: item.headline,
+            jobTitles,
+            current_positions: currentPositions,
+          };
+        }),
+        null,
+        2,
+      )}`,
+    );
+    return response;
   }
 
   /**

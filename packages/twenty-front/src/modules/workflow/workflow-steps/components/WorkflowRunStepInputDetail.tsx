@@ -3,6 +3,7 @@ import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/use
 import { useWorkflowRun } from '@/workflow/hooks/useWorkflowRun';
 import { useWorkflowRunIdOrThrow } from '@/workflow/hooks/useWorkflowRunIdOrThrow';
 import { getStepDefinitionOrThrow } from '@/workflow/utils/getStepDefinitionOrThrow';
+import { WorkflowJsonViewSwitcher } from '@/workflow/workflow-steps/components/WorkflowJsonViewSwitcher';
 import { WorkflowRunStepJsonContainer } from '@/workflow/workflow-steps/components/WorkflowRunStepJsonContainer';
 import { getIsDescendantOfIterator } from '@/workflow/workflow-steps/utils/getIsDescendantOfIterator';
 import { getWorkflowRunStepContext } from '@/workflow/workflow-steps/utils/getWorkflowRunStepContext';
@@ -98,34 +99,41 @@ export const WorkflowRunStepInputDetail = ({ stepId }: { stepId: string }) => {
   }: ShouldExpandNodeInitiallyProps) =>
     keyPath.startsWith(previousStepId) && depth < 2;
 
+  const inputJson = Object.fromEntries(
+    stepContext.map(({ name, context }) => [name, context]),
+  ) as JsonValue;
+
   return (
-    <>
-      <WorkflowRunStepJsonContainer>
-        <JsonTreeContextProvider
-          value={{
-            emptyArrayLabel: t`Empty Array`,
-            emptyObjectLabel: t`Empty Object`,
-            emptyStringLabel: t`[empty string]`,
-            arrowButtonCollapsedLabel: t`Expand`,
-            arrowButtonExpandedLabel: t`Collapse`,
-            getNodeHighlighting,
-            shouldExpandNodeInitially: isFirstNodeDepthOfPreviousStep,
-            onNodeValueClick: copyToClipboard,
-          }}
-        >
-          <JsonNestedNode
-            elements={stepContext.map(({ id, name, context }) => ({
-              id,
-              label: name,
-              value: context as JsonValue,
-            }))}
-            Icon={IconBrackets}
-            depth={0}
-            keyPath=""
-            emptyElementsText=""
-          />
-        </JsonTreeContextProvider>
-      </WorkflowRunStepJsonContainer>
-    </>
+    <WorkflowRunStepJsonContainer>
+      <WorkflowJsonViewSwitcher
+        value={inputJson}
+        tree={
+          <JsonTreeContextProvider
+            value={{
+              emptyArrayLabel: t`Empty Array`,
+              emptyObjectLabel: t`Empty Object`,
+              emptyStringLabel: t`[empty string]`,
+              arrowButtonCollapsedLabel: t`Expand`,
+              arrowButtonExpandedLabel: t`Collapse`,
+              getNodeHighlighting,
+              shouldExpandNodeInitially: isFirstNodeDepthOfPreviousStep,
+              onNodeValueClick: copyToClipboard,
+            }}
+          >
+            <JsonNestedNode
+              elements={stepContext.map(({ id, name, context }) => ({
+                id,
+                label: name,
+                value: context as JsonValue,
+              }))}
+              Icon={IconBrackets}
+              depth={0}
+              keyPath=""
+              emptyElementsText=""
+            />
+          </JsonTreeContextProvider>
+        }
+      />
+    </WorkflowRunStepJsonContainer>
   );
 };

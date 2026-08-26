@@ -9,6 +9,7 @@ import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
+import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -197,6 +198,15 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
         { provide: ApifyService, useValue: apifyMock },
         { provide: UnipileV2AccountResolver, useValue: {} },
         { provide: LinkedinUnipileRequestService, useValue: {} },
+        {
+          provide: UnipileSearchResultsCacheService,
+          useValue: {
+            getOrFetch: (
+              _input: unknown,
+              fetcher: () => Promise<unknown>,
+            ) => fetcher(),
+          },
+        },
       ],
     }).compile();
 

@@ -1,8 +1,8 @@
-export const GTM_FILTER_PROFILES_SYSTEM_PROMPT = `You are screening one professional profile against a recruiter's filter criteria.
+export const GTM_FILTER_PROFILES_SYSTEM_PROMPT = `You are screening one professional profile against a filter criteria.
 
 Decide whether this single candidate matches the criteria. Use the full profile JSON (title, experience, education, skills, location, company, etc.). Do not invent facts that are not in the profile. If the profile is too thin to judge, matches is false.
 
-matches is true only when the profile clearly satisfies the criteria.
+matches is true only when the profile satisfies the criteria.
 reason is a short explanation citing concrete evidence from the profile.
 
 Return JSON matching the schema.`;

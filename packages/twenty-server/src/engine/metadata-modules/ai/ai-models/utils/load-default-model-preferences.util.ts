@@ -21,10 +21,12 @@ export const DEFAULT_SMART_MODELS = [
 export const DEFAULT_RECOMMENDED_MODELS = [
   'openai/gpt-5.2',
   'openai/gpt-4.1',
+  'openai/gpt-4o-mini',
   'anthropic/claude-opus-4-6',
   'anthropic/claude-sonnet-4-6',
   'google/gemini-3.1-pro-preview',
   'xai/grok-4',
+  'openrouter/stealth/ox-alpha',
 ];
 
 export const DEFAULT_DISABLED_MODELS: string[] = [];

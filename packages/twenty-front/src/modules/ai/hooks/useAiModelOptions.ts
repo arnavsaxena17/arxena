@@ -3,6 +3,7 @@ import { isAutoSelectModelId } from 'twenty-shared/utils';
 import { type SelectOption } from 'twenty-ui/input';
 
 import { useWorkspaceAiModelAvailability } from '@/ai/hooks/useWorkspaceAiModelAvailability';
+import { mergeExtraEnabledAiModels } from '@/ai/utils/mergeExtraEnabledAiModels';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { aiModelsState } from '@/client-config/states/aiModelsState';
 import { getModelIcon } from '@/settings/ai/utils/getModelIcon';
@@ -12,29 +13,36 @@ type UseAiModelOptionsVariant = 'all' | 'pinned-default';
 
 type UseAiModelOptionsOptions = {
   variant?: UseAiModelOptionsVariant;
+  extraModelIds?: readonly string[];
 };
 
 export const useAiModelOptions = ({
   variant = 'all',
+  extraModelIds = [],
 }: UseAiModelOptionsOptions = {}): {
   options: SelectOption<string>[];
   pinnedOption?: SelectOption<string>;
 } => {
   const aiModels = useAtomStateValue(aiModelsState);
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
-  const { enabledModels } = useWorkspaceAiModelAvailability();
+  const { enabledModels, realModels } = useWorkspaceAiModelAvailability();
+  const selectableModels = mergeExtraEnabledAiModels(
+    enabledModels,
+    realModels,
+    extraModelIds,
+  );
 
   const workspaceSmartModel = aiModels.find(
     (model) => model.modelId === currentWorkspace?.smartModel,
   );
 
-  const resolvedDefaultModelId = enabledModels.find(
+  const resolvedDefaultModelId = selectableModels.find(
     (model) =>
       model.label === workspaceSmartModel?.label &&
       model.providerName === workspaceSmartModel?.providerName,
   )?.modelId;
 
-  const allOptions = enabledModels
+  const allOptions = selectableModels
     .map((model) => ({
       value: model.modelId,
       label: model.label,

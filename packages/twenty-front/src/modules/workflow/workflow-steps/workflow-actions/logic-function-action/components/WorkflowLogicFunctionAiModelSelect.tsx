@@ -1,5 +1,6 @@
 import { useAiModelOptions } from '@/ai/hooks/useAiModelOptions';
 import { Select } from '@/ui/input/components/Select';
+import { GTM_LOGIC_FUNCTION_EXTRA_AI_MODEL_IDS } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmLogicFunctionExtraAiModelIds';
 import { t } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 
@@ -18,6 +19,7 @@ export const WorkflowLogicFunctionAiModelSelect = ({
 }: WorkflowLogicFunctionAiModelSelectProps) => {
   const { options: aiModelOptions, pinnedOption } = useAiModelOptions({
     variant: 'pinned-default',
+    extraModelIds: GTM_LOGIC_FUNCTION_EXTRA_AI_MODEL_IDS,
   });
 
   const selectedValue = isNonEmptyString(value)
