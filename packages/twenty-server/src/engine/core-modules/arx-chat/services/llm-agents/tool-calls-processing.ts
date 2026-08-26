@@ -99,7 +99,7 @@ export class ToolCallsProcessing {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
@@ -116,7 +116,7 @@ export class ToolCallsProcessing {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';
@@ -189,7 +189,7 @@ export class ToolCallsProcessing {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
@@ -206,7 +206,7 @@ export class ToolCallsProcessing {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberTo = recruiterProfile.linkedinUrl || '';

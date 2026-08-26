@@ -348,8 +348,9 @@ export class MessagingControls {
           apiToken,
         );
         return { status: 'success' };
-      } else if (whatsapp_key === 'linkedin') {
-
+      } else if (
+        messagingChannelEquals(whatsapp_key, MessagingChannel.LINKEDIN_CONNECT)
+      ) {
         const response = await new LinkedinUnipileMessagingService(
           this.workspaceQueryService,
           this.staticGraphQLService,
@@ -375,32 +376,6 @@ export class MessagingControls {
           );
         }
 
-        return { status: 'success' };
-      } else if (whatsapp_key === 'linkedin-premium') {
-        const response = await new LinkedinUnipileMessagingService(
-          this.workspaceQueryService,
-          this.staticGraphQLService,
-          undefined,
-          undefined,
-          this.workspaceMemberProfileUnipileService,
-        ).sendLinkedinMessageVIAUnipileAPI(
-          whatappUpdateMessageObj,
-          candidate,
-          candidateJob,
-          mostRecentMessageArr,
-          chatControl,
-          apiToken,
-        );
-
-        if (response?.status === 'failed') {
-          return this.failSendAndPersist(
-            candidate,
-            whatappUpdateMessageObj,
-            apiToken,
-            response.message,
-            'Failed to send message via LinkedIn Unipile',
-          );
-        }
         return { status: 'success' };
       } else if (whatsapp_key === 'linkedin-inmail') {
         const response = await new LinkedinUnipileMessagingService(
@@ -508,7 +483,7 @@ export class MessagingControls {
       candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
         ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
         : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
-    if (messagingChannelEquals(candidateNode?.messagingChannel, MessagingChannel.LINKEDIN)) {
+    if (messagingChannelEquals(candidateNode?.messagingChannel, MessagingChannel.LINKEDIN_CONNECT)) {
       messageTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
     } else {
       messageTo =
@@ -594,7 +569,9 @@ export class MessagingControls {
         candidateJob,
         apiToken,
       );
-    } else if (whatsapp_key === 'linkedin' || whatsapp_key === 'linkedin-premium') {
+    } else if (
+      messagingChannelEquals(whatsapp_key, MessagingChannel.LINKEDIN_CONNECT)
+    ) {
       await new LinkedinUnipileMessagingService(
         this.workspaceQueryService,
         this.staticGraphQLService,
@@ -707,8 +684,7 @@ export class MessagingControls {
     if (
       messagingChannelEquals(
         candidate.messagingChannel,
-        MessagingChannel.LINKEDIN,
-        MessagingChannel.LINKEDIN_PREMIUM,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';

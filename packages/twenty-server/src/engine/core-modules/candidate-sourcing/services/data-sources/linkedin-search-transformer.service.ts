@@ -518,7 +518,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         startMeetingSchedulingChat: false,
         startMeetingSchedulingChatCompleted: false,
         engagementStatus: false,
-        messagingChannel: MessagingChannel.LINKEDIN,
+        messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         chatCount: 0,
         lastEngagementChatControl: 'startChat',
         

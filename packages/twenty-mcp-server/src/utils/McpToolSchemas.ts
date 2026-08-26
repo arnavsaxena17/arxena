@@ -366,7 +366,6 @@ export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
   { key: 'stdFunction', type: 'string', description: 'Standardized function child label (e.g. software engineering). Must match GET /people-api/taxonomy/tree.', required: false },
   { key: 'stdGrade', type: 'string', description: 'Standardized grade: entry, mid, or leadership', required: false },
   { key: 'country', type: 'string', description: 'Location country filter', required: false },
-  { key: 'linkedinUrl', type: 'string', description: 'LinkedIn profile URL filter (index). Not a search-results URL.', required: false },
   { key: 'searchUrl', type: 'string', description: 'Optional LinkedIn people search URL: classic /search/results/people, Sales Nav /sales/search/people (incl. savedSearchId), Recruiter /talent/search. Harvest accepts Sales Nav people URLs only; Unipile/pool accept classic, Sales Nav, and Recruiter.', required: false },
   { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
   { key: 'offset', type: 'number', description: 'Pagination offset', required: false },

@@ -164,7 +164,7 @@ export class EngagedCandidateProcessor {
       if (
         messagingChannelEquals(
           candidate?.messagingChannel,
-          MessagingChannel.LINKEDIN,
+          MessagingChannel.LINKEDIN_CONNECT,
           MessagingChannel.LINKEDIN_SOCK,
         )
       ) {

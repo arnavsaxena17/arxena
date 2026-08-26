@@ -292,7 +292,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleId,
       name: GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       description:
-        'Search people via People API (search only, does not enroll). Pass naturalLanguage and optional company/location/limit. Uses Unipile when the workspace member profile has a LinkedIn Unipile account, otherwise Harvest.',
+        'Search people via People API (search only, does not enroll). Pass naturalLanguage, a pasted LinkedIn search URL (searchUrl), and optional company/location/limit. Uses Unipile when the workspace member profile has a LinkedIn Unipile account, otherwise Harvest.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       ),
@@ -304,6 +304,10 @@ export const getGtmOutreachLogicFunctionDefinitions = (
             type: 'object',
             properties: {
               naturalLanguage: { type: 'string', label: 'Natural language' },
+              searchUrl: {
+                type: 'string',
+                label: 'LinkedIn search URL',
+              },
               companyName: { type: 'string', label: 'Company name' },
               website: { type: 'string', label: 'Website' },
               companyId: GTM_COMPANY_RECORD_INPUT,

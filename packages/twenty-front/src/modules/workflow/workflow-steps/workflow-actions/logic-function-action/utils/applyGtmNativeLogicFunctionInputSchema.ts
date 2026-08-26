@@ -1,6 +1,8 @@
 import {
   GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
@@ -67,6 +69,10 @@ const FILTER_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
 
 const SEARCH_PEOPLE_HIDDEN_INPUT_KEYS = new Set(['dataSource', 'accountId']);
 const AI_MODEL_DISPLAY_HIDDEN_KEYS = new Set(['modelId']);
+const SEARCH_ACTIONS_WITH_LIMIT_LAST = new Set([
+  GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
+]);
 
 const omitInputSchemaProperties = (
   inputSchema: InputSchema,
@@ -91,6 +97,28 @@ const omitInputSchemaProperties = (
   ];
 };
 
+const moveLimitPropertyToEnd = (inputSchema: InputSchema): InputSchema => {
+  const root = inputSchema[0];
+  const properties = root?.properties;
+
+  if (!isDefined(properties) || !isDefined(properties.limit)) {
+    return inputSchema;
+  }
+
+  const { limit, ...rest } = properties;
+
+  return [
+    {
+      ...root,
+      type: 'object',
+      properties: {
+        ...rest,
+        limit,
+      },
+    },
+  ];
+};
+
 const overlayRecordPicker = (
   existing: InputSchemaProperty | undefined,
   fallback: InputSchemaProperty,
@@ -111,10 +139,13 @@ export const applyGtmNativeLogicFunctionInputSchema = (
   }
 
   if (logicFunctionName === GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME) {
-    return omitInputSchemaProperties(
-      inputSchema,
-      SEARCH_PEOPLE_HIDDEN_INPUT_KEYS,
+    return moveLimitPropertyToEnd(
+      omitInputSchemaProperties(inputSchema, SEARCH_PEOPLE_HIDDEN_INPUT_KEYS),
     );
+  }
+
+  if (SEARCH_ACTIONS_WITH_LIMIT_LAST.has(logicFunctionName ?? '')) {
+    return moveLimitPropertyToEnd(inputSchema);
   }
 
   const root = inputSchema[0];

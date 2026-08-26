@@ -90,10 +90,6 @@ export class PeopleSearchDto {
 
   @IsOptional()
   @IsString()
-  linkedinUrl?: string;
-
-  @IsOptional()
-  @IsString()
   searchUrl?: string;
 
   @IsOptional()

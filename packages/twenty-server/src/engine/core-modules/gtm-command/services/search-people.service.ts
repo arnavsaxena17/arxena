@@ -9,6 +9,7 @@ import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.
 
 export type SearchPeopleInput = {
   naturalLanguage?: string;
+  searchUrl?: string;
   companyName?: string;
   website?: string;
   companyId?: string;
@@ -81,6 +82,7 @@ export class SearchPeopleService {
       const search = await this.peopleApiService.searchPeople(
         {
           naturalLanguage: input.naturalLanguage,
+          searchUrl: input.searchUrl,
           companyName: input.companyName,
           website: input.website,
           companyId: input.companyId,

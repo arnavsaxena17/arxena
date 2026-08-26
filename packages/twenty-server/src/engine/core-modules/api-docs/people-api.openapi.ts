@@ -162,11 +162,6 @@ export const buildPeopleApiOpenApiDocument = (
           },
           personName: { type: 'string' },
           jobTitle: { type: 'string', example: 'Head of Engineering' },
-          linkedinUrl: {
-            type: 'string',
-            description:
-              'LinkedIn profile URL filter for the people index. Not a search-results URL.',
-          },
           searchUrl: {
             type: 'string',
             description:

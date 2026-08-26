@@ -318,7 +318,7 @@ Sales Navigator people search URL:
 }
 ```
 
-Prefer `search_people_api` with `naturalLanguage` for role strings so you do not invent taxonomy codes. Use explicit `stdFunction` / `stdGrade` / `linkedinUrl` only when those filters are already known. Use `searchUrl` when the user pastes a LinkedIn search URL.
+Prefer `search_people_api` with `naturalLanguage` for role strings so you do not invent taxonomy codes. Use explicit `stdFunction` / `stdGrade` only when those filters are already known. Use `searchUrl` when the user pastes a LinkedIn search URL.
 
 ## Facet match quality
 

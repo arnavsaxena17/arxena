@@ -671,9 +671,7 @@ export class LinkedinUnipileMessagingService {
           whatappUpdateMessageObj,
           apiToken,
           {
-            messagingChannelOverride: isInvitation
-              ? MessagingChannel.LINKEDIN_CONNECT
-              : MessagingChannel.LINKEDIN,
+            messagingChannelOverride: MessagingChannel.LINKEDIN_CONNECT,
             skipGtmMaterialize: isInvitation,
           },
         );

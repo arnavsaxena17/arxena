@@ -111,8 +111,6 @@ const MESSAGING_CHANNEL_OPTION_COLORS: Record<MessagingChannel, string> = {
   [MessagingChannel.WHATSAPP_UNIPILE]: 'green',
   [MessagingChannel.WHATSAPP_WEB]: 'turquoise',
   [MessagingChannel.WHATSAPP_OFFICIAL]: 'blue',
-  [MessagingChannel.LINKEDIN]: 'sky',
-  [MessagingChannel.LINKEDIN_PREMIUM]: 'blue',
   [MessagingChannel.LINKEDIN_INMAIL]: 'purple',
   [MessagingChannel.LINKEDIN_SOCK]: 'orange',
   [MessagingChannel.LINKEDIN_CONNECT]: 'blue',

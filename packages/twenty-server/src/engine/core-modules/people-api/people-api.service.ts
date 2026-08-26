@@ -672,8 +672,7 @@ export class PeopleApiService {
       !!body.stdGrade?.trim() ||
       !!body.country?.trim() ||
       !!body.locations?.some((value) => value.trim().length > 0) ||
-      !!locationScope?.raw ||
-      !!body.linkedinUrl?.trim();
+      !!locationScope?.raw;
 
     if (!hasFilter) {
       throw new HttpException(
@@ -695,7 +694,6 @@ export class PeopleApiService {
         locationScope?.linkedinLocationName ??
         locationScope?.raw ??
         body.country,
-      linkedinUrl: body.linkedinUrl,
       limit: body.limit,
       offset: body.offset,
     });

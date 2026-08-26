@@ -27,7 +27,7 @@ describe('messaging-channel.util', () => {
     expect(
       messagingChannelEquals('linkedin-sock', MessagingChannel.LINKEDIN_SOCK),
     ).toBe(true);
-    expect(messagingChannelEquals('LINKEDIN', 'linkedin')).toBe(true);
+    expect(messagingChannelEquals('LINKEDIN', MessagingChannel.LINKEDIN_CONNECT)).toBe(true);
     expect(messagingChannelEquals('email', MessagingChannel.WHATSAPP_UNIPILE)).toBe(
       false,
     );

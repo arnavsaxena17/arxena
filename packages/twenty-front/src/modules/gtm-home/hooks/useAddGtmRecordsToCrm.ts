@@ -358,7 +358,7 @@ export const useAddGtmRecordsToCrm = () => {
               outreachSequenceStage: sequenceFields.outreachSequenceStage,
               enrichStatus: sequenceFields.enrichStatus,
               pendingChannel: person.pendingChannel ?? null,
-              messagingChannel: MessagingChannel.LINKEDIN,
+              messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
               campaign: projectId,
               source: 'gtm-home',
               candConversationStatus: 'ONLY_ADDED_NO_CONVERSATION',

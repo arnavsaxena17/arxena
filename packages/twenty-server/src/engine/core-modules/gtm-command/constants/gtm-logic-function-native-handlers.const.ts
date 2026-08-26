@@ -43,6 +43,7 @@ const SEARCH_PEOPLE_HANDLER = `// Native GTM action: SearchPeopleService (People
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
   naturalLanguage?: string;
+  searchUrl?: string;
   companyName?: string;
   website?: string;
   companyId?: string;

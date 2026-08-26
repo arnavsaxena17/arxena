@@ -172,7 +172,7 @@ export class CandidateEngagementArx {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
         MessagingChannel.LINKEDIN_SOCK,
       )
     ) {
@@ -192,7 +192,7 @@ export class CandidateEngagementArx {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
         MessagingChannel.LINKEDIN_SOCK,
       )
     ) {
@@ -243,8 +243,7 @@ export class CandidateEngagementArx {
       !candidate?.phoneNumber?.primaryPhoneNumber &&
       !messagingChannelEquals(
         candidate.messagingChannel,
-        MessagingChannel.LINKEDIN,
-        MessagingChannel.LINKEDIN_PREMIUM,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       console.log('Phone number from is empty, returning empty candidate profile object');

@@ -122,6 +122,42 @@ describe('SearchPeopleService', () => {
     ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
   });
 
+  it('forwards a pasted LinkedIn search URL', async () => {
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'classic', via: 'member' },
+    );
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'unipile',
+      total: 0,
+      items: [],
+    });
+
+    const searchUrl =
+      'https://www.linkedin.com/sales/search/people?savedSearchId=1936431145';
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { searchUrl, limit: 10 },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      dataSource: 'unipile',
+    });
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        searchUrl,
+        dataSource: 'unipile',
+        accountId: 'member-unipile',
+        limit: 10,
+      }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
+  });
+
   it('falls back to harvest when no LinkedIn Unipile account is on the workspace', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(

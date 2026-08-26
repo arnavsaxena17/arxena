@@ -613,7 +613,7 @@ export class ArxChatEndpoint {
     if (
       messagingChannelEquals(
         personObj?.candidates?.edges[0]?.node?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       messageTo = personObj?.linkedinLink?.primaryLinkUrl || '';

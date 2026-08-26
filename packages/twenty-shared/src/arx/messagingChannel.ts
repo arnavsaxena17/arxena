@@ -3,8 +3,6 @@ export enum MessagingChannel {
   WHATSAPP_UNIPILE = 'WHATSAPP_UNIPILE',
   WHATSAPP_WEB = 'WHATSAPP_WEB',
   WHATSAPP_OFFICIAL = 'WHATSAPP_OFFICIAL',
-  LINKEDIN = 'LINKEDIN',
-  LINKEDIN_PREMIUM = 'LINKEDIN_PREMIUM',
   LINKEDIN_INMAIL = 'LINKEDIN_INMAIL',
   LINKEDIN_SOCK = 'LINKEDIN_SOCK',
   LINKEDIN_CONNECT = 'LINKEDIN_CONNECT',
@@ -19,8 +17,6 @@ export const MESSAGING_CHANNEL_SELECT_VALUES = [
   MessagingChannel.WHATSAPP_UNIPILE,
   MessagingChannel.WHATSAPP_WEB,
   MessagingChannel.WHATSAPP_OFFICIAL,
-  MessagingChannel.LINKEDIN,
-  MessagingChannel.LINKEDIN_PREMIUM,
   MessagingChannel.LINKEDIN_INMAIL,
   MessagingChannel.LINKEDIN_SOCK,
   MessagingChannel.LINKEDIN_CONNECT,
@@ -33,8 +29,6 @@ export const MESSAGING_CHANNEL_LABELS: Record<MessagingChannel, string> = {
   [MessagingChannel.WHATSAPP_UNIPILE]: 'WhatsApp Unipile',
   [MessagingChannel.WHATSAPP_WEB]: 'WhatsApp Web',
   [MessagingChannel.WHATSAPP_OFFICIAL]: 'WhatsApp Official',
-  [MessagingChannel.LINKEDIN]: 'LinkedIn',
-  [MessagingChannel.LINKEDIN_PREMIUM]: 'LinkedIn Premium',
   [MessagingChannel.LINKEDIN_INMAIL]: 'LinkedIn InMail',
   [MessagingChannel.LINKEDIN_SOCK]: 'LinkedIn Sock',
   [MessagingChannel.LINKEDIN_CONNECT]: 'LinkedIn Connect',
@@ -50,11 +44,28 @@ export const WHATSAPP_MESSAGING_CHANNELS = [
 ] as const;
 
 export const LINKEDIN_DIRECT_MESSAGING_CHANNELS = [
-  MessagingChannel.LINKEDIN,
-  MessagingChannel.LINKEDIN_PREMIUM,
+  MessagingChannel.LINKEDIN_CONNECT,
   MessagingChannel.LINKEDIN_INMAIL,
   MessagingChannel.LINKEDIN_SOCK,
 ] as const;
+
+const MESSAGING_CHANNEL_ALIASES: Record<string, MessagingChannel> = {
+  // Legacy CRM / transport values for the same LinkedIn connect+DM channel
+  LINKEDIN: MessagingChannel.LINKEDIN_CONNECT,
+  LINKEDIN_PREMIUM: MessagingChannel.LINKEDIN_CONNECT,
+};
+
+const MESSAGING_CHANNEL_TRANSPORT_KEYS: Record<MessagingChannel, string> = {
+  [MessagingChannel.BAILEYS]: 'baileys',
+  [MessagingChannel.WHATSAPP_UNIPILE]: 'whatsapp-unipile',
+  [MessagingChannel.WHATSAPP_WEB]: 'whatsapp-web',
+  [MessagingChannel.WHATSAPP_OFFICIAL]: 'whatsapp-official',
+  [MessagingChannel.LINKEDIN_INMAIL]: 'linkedin-inmail',
+  [MessagingChannel.LINKEDIN_SOCK]: 'linkedin-sock',
+  [MessagingChannel.LINKEDIN_CONNECT]: 'linkedin',
+  [MessagingChannel.COMMENT]: 'comment',
+  [MessagingChannel.EMAIL]: 'email',
+};
 
 const isDefinedNonEmptyString = (
   value: string | null | undefined,
@@ -67,7 +78,9 @@ export const normalizeMessagingChannel = (
     return null;
   }
 
-  return value.replace(/-/g, '_').toUpperCase();
+  const formatted = value.replace(/-/g, '_').toUpperCase();
+
+  return MESSAGING_CHANNEL_ALIASES[formatted] ?? formatted;
 };
 
 export const parseMessagingChannel = (
@@ -89,6 +102,12 @@ export const parseMessagingChannel = (
 export const toMessagingChannelTransportKey = (
   value: string | null | undefined,
 ): string | null => {
+  const parsed = parseMessagingChannel(value);
+
+  if (parsed) {
+    return MESSAGING_CHANNEL_TRANSPORT_KEYS[parsed];
+  }
+
   const normalized = normalizeMessagingChannel(value);
 
   if (!normalized) {

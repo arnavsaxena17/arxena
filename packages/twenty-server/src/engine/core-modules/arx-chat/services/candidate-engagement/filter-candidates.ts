@@ -66,7 +66,7 @@ export class FilterCandidates {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
@@ -82,7 +82,7 @@ export class FilterCandidates {
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
-        MessagingChannel.LINKEDIN,
+        MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
       phoneNumberFrom = recruiterProfile.linkedinUrl || '';

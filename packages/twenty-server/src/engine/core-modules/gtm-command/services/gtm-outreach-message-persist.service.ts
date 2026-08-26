@@ -130,7 +130,7 @@ export class GtmOutreachMessagePersistService {
           ? MessagingChannel.WHATSAPP_UNIPILE
           : channel === 'EMAIL'
             ? MessagingChannel.EMAIL
-            : MessagingChannel.LINKEDIN,
+            : MessagingChannel.LINKEDIN_CONNECT,
     });
   }
 

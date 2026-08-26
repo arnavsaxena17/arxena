@@ -72,8 +72,12 @@ describe('gtm-command-materialize.util', () => {
     );
     expect(mapMessagingChannelToGtmChannel('linkedin-inmail')).toBe('INMAIL');
     expect(mapMessagingChannelToGtmChannel('LINKEDIN_INMAIL')).toBe('INMAIL');
-    expect(mapMessagingChannelToGtmChannel('linkedin')).toBe('OTHER');
-    expect(mapMessagingChannelToGtmChannel('LINKEDIN')).toBe('OTHER');
+    expect(mapMessagingChannelToGtmChannel('linkedin')).toBe(
+      'LINKEDIN_CONNECT',
+    );
+    expect(mapMessagingChannelToGtmChannel('LINKEDIN')).toBe(
+      'LINKEDIN_CONNECT',
+    );
     expect(mapMessagingChannelToGtmChannel('linkedin-connect')).toBe(
       'LINKEDIN_CONNECT',
     );
@@ -88,7 +92,7 @@ describe('gtm-command-materialize.util', () => {
     );
     expect(mapOutboundStageForChannel('linkedin-inmail')).toBe('INMAIL_SENT');
     expect(mapOutboundStageForChannel('email')).toBe('EMAIL_SENT');
-    expect(mapOutboundStageForChannel('linkedin')).toBeNull();
+    expect(mapOutboundStageForChannel('linkedin')).toBe('CONNECTION_SENT');
   });
 
   it('builds candidate event updates', () => {

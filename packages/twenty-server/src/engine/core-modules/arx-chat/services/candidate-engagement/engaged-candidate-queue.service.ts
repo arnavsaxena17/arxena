@@ -278,7 +278,7 @@ export class EngagedCandidateQueueService {
           candidateProfileDataNodeObj.people?.candidates?.edges.filter(
             (candidate) => candidate?.node?.projects?.id === candidateJob.id,
           )[0]?.node?.messagingChannel,
-          MessagingChannel.LINKEDIN,
+          MessagingChannel.LINKEDIN_CONNECT,
         )
       ) {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
@@ -291,7 +291,7 @@ export class EngagedCandidateQueueService {
           candidateProfileDataNodeObj.people?.candidates?.edges.filter(
             (candidate) => candidate?.node?.projects?.id === candidateJob.id,
           )[0]?.node?.messagingChannel,
-          MessagingChannel.LINKEDIN,
+          MessagingChannel.LINKEDIN_CONNECT,
         )
       ) {
         phoneNumberTo = recruiterProfile?.linkedinUrl || '';

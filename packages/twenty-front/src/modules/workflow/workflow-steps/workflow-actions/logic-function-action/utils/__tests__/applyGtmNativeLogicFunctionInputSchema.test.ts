@@ -84,22 +84,23 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
   it('leaves unrelated logic functions unchanged', () => {
     expect(
       applyGtmNativeLogicFunctionInputSchema(
-        'search-companies',
+        'fetch-linkedin-profile',
         leftoverUploadProfilesSchema,
       ),
     ).toBe(leftoverUploadProfilesSchema);
   });
 
-  it('hides data source and account ID for search-people', () => {
+  it('hides data source and account ID and keeps limit last for search-people', () => {
     const leftoverSearchPeopleSchema: InputSchema = [
       {
         type: 'object',
         properties: {
+          limit: { type: 'number', label: 'Limit' },
           naturalLanguage: { type: 'string', label: 'Natural language' },
+          searchUrl: { type: 'string', label: 'LinkedIn search URL' },
           companyName: { type: 'string', label: 'Company name' },
           dataSource: { type: 'string', label: 'Data source' },
           accountId: { type: 'string', label: 'Account ID' },
-          limit: { type: 'number', label: 'Limit' },
         },
       },
     ];
@@ -111,10 +112,38 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
 
     expect(Object.keys(result?.[0].properties ?? {})).toEqual([
       'naturalLanguage',
+      'searchUrl',
       'companyName',
       'limit',
     ]);
   });
+
+  it.each(['search-companies', 'search-jobs'] as const)(
+    'keeps limit last for %s',
+    (logicFunctionName) => {
+      const leftoverSearchSchema: InputSchema = [
+        {
+          type: 'object',
+          properties: {
+            limit: { type: 'number', label: 'Limit' },
+            keywords: { type: 'string', label: 'Keywords' },
+            location: { type: 'string', label: 'Location' },
+          },
+        },
+      ];
+
+      const result = applyGtmNativeLogicFunctionInputSchema(
+        logicFunctionName,
+        leftoverSearchSchema,
+      );
+
+      expect(Object.keys(result?.[0].properties ?? {})).toEqual([
+        'keywords',
+        'location',
+        'limit',
+      ]);
+    },
+  );
 
   it('overlays detect-fake-profiles inputs with profiles first and model last', () => {
     const leftoverDetectFakeProfilesSchema: InputSchema = [

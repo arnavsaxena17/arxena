@@ -46,6 +46,10 @@ describe('buildPeopleApiOpenApiDocument', () => {
       (searchRequest.properties as { searchUrl?: unknown } | undefined)
         ?.searchUrl,
     ).toBeDefined();
+    expect(
+      (searchRequest.properties as { linkedinUrl?: unknown } | undefined)
+        ?.linkedinUrl,
+    ).toBeUndefined();
     expect(searchRequest.properties?.linkedInAccountId).toBeUndefined();
     expect(searchRequest.properties?.stdFunctionRoot?.enum).toEqual(
       expect.arrayContaining(['engineering', 'human resources', 'corporate']),

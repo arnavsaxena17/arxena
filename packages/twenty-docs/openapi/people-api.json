@@ -187,10 +187,15 @@
             "type": "string",
             "example": "United States"
           },
-          "location": {
-            "type": "string",
-            "description": "Geographic location. Optional when naturalLanguage already includes a place.",
-            "example": "India"
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Geographic locations. Merged with places extracted from naturalLanguage when that path runs.",
+            "example": [
+              "India"
+            ]
           },
           "query": {
             "type": "string",
@@ -202,10 +207,6 @@
           "jobTitle": {
             "type": "string",
             "example": "Head of Engineering"
-          },
-          "linkedinUrl": {
-            "type": "string",
-            "description": "LinkedIn profile URL filter for the people index. Not a search-results URL."
           },
           "searchUrl": {
             "type": "string",
@@ -298,11 +299,11 @@
               "confidence": {
                 "type": "number"
               },
-              "location": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+              "locations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -778,6 +779,15 @@
           "country": {
             "type": "string",
             "example": "United States"
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "United States"
+            ]
           },
           "limit": {
             "type": "integer",

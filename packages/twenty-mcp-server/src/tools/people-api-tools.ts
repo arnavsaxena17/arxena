@@ -33,7 +33,6 @@ export const peopleApiTools: McpTool[] = [
         'stdFunction',
         'stdGrade',
         'country',
-        'linkedinUrl',
         'searchUrl',
       ];
 
@@ -41,7 +40,7 @@ export const peopleApiTools: McpTool[] = [
 
       if (!hasFilter) {
         throw new Error(
-          'At least one search filter is required (naturalLanguage, query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, linkedinUrl, or searchUrl).',
+          'At least one search filter is required (naturalLanguage, query, personName, jobTitle, companyId, companyName, website, stdFunction, stdGrade, country, or searchUrl).',
         );
       }
 
@@ -63,7 +62,6 @@ export const peopleApiTools: McpTool[] = [
           stdFunction: args.stdFunction,
           stdGrade: args.stdGrade,
           country: args.country,
-          linkedinUrl: args.linkedinUrl,
           searchUrl: args.searchUrl,
           limit: args.limit,
           offset: args.offset,
