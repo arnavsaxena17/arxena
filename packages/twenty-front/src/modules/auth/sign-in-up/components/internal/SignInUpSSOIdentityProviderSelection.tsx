@@ -1,6 +1,7 @@
 /* @license Enterprise */
 
 import { StyledOnboardingContentContainer } from '@/auth/components/StyledOnboardingContentContainer';
+import { SignInToAnotherWorkspaceLink } from '@/auth/sign-in-up/components/SignInToAnotherWorkspaceLink';
 import { useSSO } from '@/auth/sign-in-up/hooks/useSSO';
 import { guessSSOIdentityProviderIconByUrl } from '@/settings/security/utils/guessSSOIdentityProviderIconByUrl';
 
@@ -32,6 +33,7 @@ export const SignInUpSSOIdentityProviderSelection = () => {
             </React.Fragment>
           ))}
       </StyledOnboardingContentContainer>
+      <SignInToAnotherWorkspaceLink />
     </>
   );
 };

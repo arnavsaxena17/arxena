@@ -1,4 +1,5 @@
 import { StyledOnboardingContentContainer } from '@/auth/components/StyledOnboardingContentContainer';
+import { SignInToAnotherWorkspaceLink } from '@/auth/sign-in-up/components/SignInToAnotherWorkspaceLink';
 import { SignInUpWithCredentials } from '@/auth/sign-in-up/components/internal/SignInUpWithCredentials';
 import { SignInUpWithGoogle } from '@/auth/sign-in-up/components/internal/SignInUpWithGoogle';
 import { SignInUpWithMicrosoft } from '@/auth/sign-in-up/components/internal/SignInUpWithMicrosoft';
@@ -72,6 +73,7 @@ export const SignInUpWorkspaceScopeForm = () => {
           <Trans>Forgot your password?</Trans>
         </ClickToActionLink>
       )}
+      <SignInToAnotherWorkspaceLink />
     </>
   );
 };
