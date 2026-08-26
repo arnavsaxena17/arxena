@@ -34,10 +34,17 @@ type UnipileChatHistorySyncStatus =
   | 'CHAT_DELETED'
   | 'SYNC_RUNNING'
   | 'SYNC_DONE'
-  | 'SYNC_ERROR';
+  | 'SYNC_ERROR'
+  | 'CHUNK_DONE';
+
+type UnipileChatListItem = {
+  id: string;
+  attendee_public_identifier?: string;
+  attendee_provider_id?: string;
+};
 
 type UnipileChatListResponse = {
-  items?: Array<{ id: string; attendee_public_identifier?: string }>;
+  items?: UnipileChatListItem[];
 };
 
 type UnipileChatHistorySyncResponse = {
@@ -219,20 +226,15 @@ export class FetchLinkedinMessagesService {
         });
       }
 
-      const chatId = await this.resolveChatId(resolved.accountId, attendeeId);
-
-      if (isNonEmptyString(chatId)) {
-        await this.triggerChatHistorySyncBestEffort(
-          resolved.accountId,
-          chatId,
-        );
-      }
-
-      const rawMessages = await this.fetchMessagesForAttendee(
+      await this.triggerAttendeeHistorySyncBestEffort(
         resolved.accountId,
         attendeeId,
-        limit,
       );
+
+      const chatId = await this.resolveChatId(resolved.accountId, attendeeId);
+      const rawMessages = isNonEmptyString(chatId)
+        ? await this.fetchMessagesFromChat(resolved.accountId, chatId, limit)
+        : [];
       const messages = rawMessages.map((item) => this.mapMessage(item));
 
       try {
@@ -315,31 +317,38 @@ export class FetchLinkedinMessagesService {
     const encodedAttendee = encodeURIComponent(attendeeId);
     const response = (await this.makeInboxUnipileRequest(
       accountId,
-      `/api/v1/chat_attendees/${encodedAttendee}/chats?account_id=${encodeURIComponent(accountId)}&limit=10`,
+      `/api/v1/chat_attendees/${encodedAttendee}/chats?account_id=${encodeURIComponent(accountId)}&limit=250`,
     )) as UnipileChatListResponse;
 
-    const chat =
-      response.items?.find(
-        (item) => item.attendee_public_identifier === attendeeId,
-      ) ?? response.items?.[0];
+    const items = response.items ?? [];
+    const matching =
+      items.find(
+        (item) =>
+          item.attendee_provider_id === attendeeId ||
+          item.attendee_public_identifier === attendeeId,
+      ) ?? items[0];
 
-    return chat?.id;
+    return matching?.id;
   }
 
-  private async triggerChatHistorySyncBestEffort(
+  private async triggerAttendeeHistorySyncBestEffort(
     accountId: string,
-    chatId: string,
+    attendeeId: string,
   ): Promise<void> {
+    const encodedAttendee = encodeURIComponent(attendeeId);
+    const syncPath = `/api/v1/chat_attendees/${encodedAttendee}/sync?account_id=${encodeURIComponent(accountId)}`;
+
     try {
       let response = (await this.makeInboxUnipileRequest(
         accountId,
-        `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
+        syncPath,
       )) as UnipileChatHistorySyncResponse;
 
       const terminalStatuses: UnipileChatHistorySyncStatus[] = [
         'SYNC_DONE',
         'SYNC_ERROR',
         'CHAT_DELETED',
+        'CHUNK_DONE',
       ];
 
       let attempts = 0;
@@ -351,7 +360,7 @@ export class FetchLinkedinMessagesService {
         await this.sleep(1500);
         response = (await this.makeInboxUnipileRequest(
           accountId,
-          `/api/v1/chats/${encodeURIComponent(chatId)}/sync`,
+          syncPath,
         )) as UnipileChatHistorySyncResponse;
         attempts += 1;
       }
@@ -361,26 +370,25 @@ export class FetchLinkedinMessagesService {
       }
 
       this.logger.warn(
-        `Chat history sync best-effort failed for ${chatId}: ${
+        `Attendee history sync best-effort failed for ${attendeeId}: ${
           error instanceof Error ? error.message : error
         }`,
       );
     }
   }
 
-  private async fetchMessagesForAttendee(
+  private async fetchMessagesFromChat(
     accountId: string,
-    attendeeId: string,
+    chatId: string,
     limit: number,
   ): Promise<UnipileMessageItem[]> {
-    const encodedAttendee = encodeURIComponent(attendeeId);
+    const encodedChatId = encodeURIComponent(chatId);
     const collected: UnipileMessageItem[] = [];
     let cursor: string | undefined;
 
     while (collected.length < limit) {
       const pageLimit = Math.min(250, limit - collected.length);
       const query = new URLSearchParams({
-        account_id: accountId,
         limit: String(pageLimit),
       });
       if (cursor) {
@@ -389,7 +397,7 @@ export class FetchLinkedinMessagesService {
 
       const response = (await this.makeInboxUnipileRequest(
         accountId,
-        `/api/v1/chat_attendees/${encodedAttendee}/messages?${query.toString()}`,
+        `/api/v1/chats/${encodedChatId}/messages?${query.toString()}`,
       )) as UnipileMessageListResponse;
 
       const items = response.items ?? [];
@@ -401,7 +409,11 @@ export class FetchLinkedinMessagesService {
       cursor = response.cursor;
     }
 
-    return collected.slice(0, limit);
+    return collected
+      .slice(0, limit)
+      .sort((left, right) =>
+        (left.timestamp ?? '').localeCompare(right.timestamp ?? ''),
+      );
   }
 
   private mapMessage(item: UnipileMessageItem): FetchLinkedinMessageItem {

@@ -5,6 +5,7 @@ import { MessagingChannel } from 'twenty-shared/arx';
 import { isDefined, escapeForIlike } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
+import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
@@ -446,22 +447,28 @@ export class GtmOutreachMessagePersistService {
           return;
         }
 
+        // Direct ORM insert skips GraphQL actor side-effects. Pass the nested
+        // actor on a plain object (do not repository.create() first — TypeORM
+        // create() only copies real columns and drops composite createdBy).
+        const systemActor = buildCreatedByFromSystem();
+        const createPayload = {
+          name: `${channel} ${candidateId.slice(0, 8)}`,
+          createdBy: systemActor,
+          updatedBy: systemActor,
+          ...patch,
+        };
+
         try {
-          await messageRepository.save(
-            messageRepository.create({
-              name: `${channel} ${candidateId.slice(0, 8)}`,
-              ...patch,
-            }),
-          );
+          await messageRepository.save(createPayload);
         } catch {
           const { channel: _channel, externalChatId: _chat, ...rest } = patch;
 
-          await messageRepository.save(
-            messageRepository.create({
-              name: `${channel} ${candidateId.slice(0, 8)}`,
-              ...rest,
-            }),
-          );
+          await messageRepository.save({
+            name: `${channel} ${candidateId.slice(0, 8)}`,
+            createdBy: systemActor,
+            updatedBy: systemActor,
+            ...rest,
+          });
         }
       },
       authContext,

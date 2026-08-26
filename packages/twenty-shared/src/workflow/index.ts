@@ -31,7 +31,11 @@ export { workflowAiAgentActionSchema } from './schemas/ai-agent-action-schema';
 export { workflowAiAgentActionSettingsSchema } from './schemas/ai-agent-action-settings-schema';
 export { baseTriggerSchema } from './schemas/base-trigger-schema';
 export { baseWorkflowActionSchema } from './schemas/base-workflow-action-schema';
-export { baseWorkflowActionSettingsSchema } from './schemas/base-workflow-action-settings-schema';
+export {
+  DEFAULT_WORKFLOW_ACTION_ERROR_HANDLING_OPTIONS,
+  workflowActionErrorHandlingOptionsSchema,
+  baseWorkflowActionSettingsSchema,
+} from './schemas/base-workflow-action-settings-schema';
 export { workflowCodeActionSchema } from './schemas/code-action-schema';
 export { workflowCodeActionSettingsSchema } from './schemas/code-action-settings-schema';
 export { workflowCreateCalendarEventActionSchema } from './schemas/create-calendar-event-action-schema';

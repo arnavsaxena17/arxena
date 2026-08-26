@@ -884,14 +884,18 @@ export class LinkedinUnipileRequestService {
       )) as Record<string, unknown>;
 
       if (profile && this.linkedinProfileCacheService) {
-        const cacheKey =
-          typeof profile.public_identifier === 'string' &&
-          profile.public_identifier.trim()
-            ? profile.public_identifier.trim()
-            : trimmedIdentifier;
-        await this.linkedinProfileCacheService.saveLinkedinUserProfile(
-          cacheKey,
+        const cacheKeys = this.collectLinkedinUserProfileCacheKeys(
+          trimmedIdentifier,
           profile,
+        );
+
+        await Promise.all(
+          cacheKeys.map((cacheKey) =>
+            this.linkedinProfileCacheService?.saveLinkedinUserProfile(
+              cacheKey,
+              profile,
+            ),
+          ),
         );
       }
 
@@ -919,6 +923,24 @@ export class LinkedinUnipileRequestService {
       );
       return null;
     }
+  }
+
+  private collectLinkedinUserProfileCacheKeys(
+    identifier: string,
+    profile: Record<string, unknown>,
+  ): string[] {
+    const keys = new Set<string>();
+    const add = (value: unknown) => {
+      if (typeof value === 'string' && value.trim()) {
+        keys.add(value.trim());
+      }
+    };
+
+    add(identifier);
+    add(profile.public_identifier);
+    add(profile.provider_id);
+
+    return [...keys];
   }
 
   async fetchLinkedinUserPosts(
