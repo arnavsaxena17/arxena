@@ -278,3 +278,54 @@ export const extractCandidateJobTitle = (
 
   return asNonEmptyString(candidate.headline);
 };
+
+const firstCompanyFromPositionArray = (
+  entries: Record<string, unknown>[],
+): string | null => {
+  for (const entry of entries) {
+    const company = extractCompanyFromPositionLike(entry);
+    if (company) {
+      return company;
+    }
+  }
+
+  return null;
+};
+
+export const extractCandidateCompanyName = (
+  candidate: Record<string, unknown>,
+  options?: ExtractCandidateJobTitleOptions,
+): string | null => {
+  const { currentPositions, currentExperience } =
+    collectCurrentPositionRecords(candidate);
+
+  if (hasCompanyScope(options)) {
+    const target = toTargetCompany(options);
+    const matchedCurrent = pickEmploymentPositionMatchingCompany(
+      currentPositions.map(toMatchInput),
+      target,
+    );
+    if (matchedCurrent) {
+      return extractCompanyFromPositionLike(matchedCurrent.entry);
+    }
+
+    const matchedExperience = pickEmploymentPositionMatchingCompany(
+      currentExperience.map(toMatchInput),
+      target,
+    );
+    if (matchedExperience) {
+      return extractCompanyFromPositionLike(matchedExperience.entry);
+    }
+  }
+
+  return (
+    firstCompanyFromPositionArray(currentPositions) ??
+    firstCompanyFromPositionArray(currentExperience) ??
+    firstCompanyFromPositionArray([
+      ...asPositionRecords(candidate.work_experience),
+      ...asPositionRecords(candidate.workExperience),
+      ...asPositionRecords(candidate.experience),
+    ]) ??
+    extractCompanyFromPositionLike(candidate)
+  );
+};

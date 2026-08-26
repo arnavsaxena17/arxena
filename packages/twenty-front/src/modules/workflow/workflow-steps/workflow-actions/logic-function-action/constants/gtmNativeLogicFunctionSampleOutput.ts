@@ -40,6 +40,35 @@ export const GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
       stdFunction: 'sales',
       stdFunctionRoot: 'go-to-market',
       stdGrade: 'leadership',
+      companyName: 'Acme',
+      experience: [
+        {
+          company: 'Acme',
+          position: 'Head of Sales',
+          location: 'San Francisco',
+          description: '',
+          start: '2022-01',
+          end: '',
+          isCurrent: true,
+          companyId: '1441',
+        },
+      ],
+      education: [
+        {
+          school: 'Stanford University',
+          degree: 'MBA',
+          fieldOfStudy: 'Business',
+          start: '2016',
+          end: '2018',
+        },
+      ],
+      current_positions: [
+        {
+          role: 'Head of Sales',
+          company: 'Acme',
+          company_id: '1441',
+        },
+      ],
     },
   ],
 };
@@ -98,6 +127,7 @@ export const GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
       title: 'Head of Sales',
       headline: 'Head of Sales at Acme',
       companyName: 'Acme',
+      company: 'Acme',
       location: 'San Francisco',
       linkedinUrl: 'https://www.linkedin.com/in/example',
       linkedinProfileId: 'example',
@@ -107,6 +137,34 @@ export const GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
       stdFunction: 'sales',
       stdFunctionRoot: 'go-to-market',
       stdGrade: 'leadership',
+      experience: [
+        {
+          company: 'Acme',
+          position: 'Head of Sales',
+          location: 'San Francisco',
+          description: '',
+          start: '2022-01',
+          end: '',
+          isCurrent: true,
+          companyId: '1441',
+        },
+      ],
+      education: [
+        {
+          school: 'Stanford University',
+          degree: 'MBA',
+          fieldOfStudy: 'Business',
+          start: '2016',
+          end: '2018',
+        },
+      ],
+      current_positions: [
+        {
+          role: 'Head of Sales',
+          company: 'Acme',
+          company_id: '1441',
+        },
+      ],
     },
   ],
 };

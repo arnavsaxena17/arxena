@@ -1,5 +1,8 @@
 import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
-import { GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+import {
+  GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
+  GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
 
 describe('shouldDefaultLogicFunctionSampleOutput', () => {
   it('defaults when no sample is set', () => {
@@ -24,32 +27,7 @@ describe('shouldDefaultLogicFunctionSampleOutput', () => {
     expect(
       shouldDefaultLogicFunctionSampleOutput({
         logicFunctionName: 'search-people-for-company',
-        expectedOutputSchema: {
-          success: true,
-          total: 1,
-          dataSource: 'unipile',
-          projectId: 'project-id',
-          error: '',
-          people: [
-            {
-              name: 'Arapa Hara',
-              firstName: 'Arapa',
-              lastName: 'Hara',
-              title: 'Head of Sales',
-              headline: 'Head of Sales at Acme',
-              company: 'Acme',
-              location: 'San Francisco',
-              linkedinUrl: 'https://www.linkedin.com/in/example',
-              linkedinProfileId: 'example',
-              peopleId: 'ACwAAAExample',
-              profilePictureUrl: '',
-              source: 'linkedin_sales_navigator',
-              stdFunction: 'sales',
-              stdFunctionRoot: 'go-to-market',
-              stdGrade: 'leadership',
-            },
-          ],
-        },
+        expectedOutputSchema: GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
       }),
     ).toBe(false);
   });

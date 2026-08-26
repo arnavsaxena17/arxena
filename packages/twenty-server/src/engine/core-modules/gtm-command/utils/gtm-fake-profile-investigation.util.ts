@@ -167,6 +167,9 @@ const collectExperience = (record: Record<string, unknown>): TimelineRow[] =>
     'positions',
     'positionGroups',
     'currentPositions',
+    'current_positions',
+    'work_experience',
+    'workExperience',
   ]).flatMap((item) => {
     const row = asRecord(item);
     if (!row) {

@@ -2,6 +2,7 @@ import { buildTaxonomyTreeFromFlatLists } from '../utils/build-taxonomy-tree.uti
 import { extractCandidateExperience } from '../utils/extract-candidate-experience.util';
 import {
   candidateCurrentlyWorksAtTargetCompany,
+  extractCandidateCompanyName,
   extractCandidateJobTitle,
 } from '../utils/extract-candidate-job-title.util';
 import {
@@ -173,6 +174,38 @@ describe('extractCandidateJobTitle', () => {
         { companyName: 'Mazaya', companyId: '68533040' },
       ),
     ).toBeNull();
+  });
+});
+
+describe('extractCandidateCompanyName', () => {
+  it('reads Unipile current_positions.company', () => {
+    expect(
+      extractCandidateCompanyName({
+        headline:
+          'Leading sustainable electric transportation initiatives with global collaboration.',
+        current_positions: [
+          {
+            role: 'Senior Director , Government of Saudi Arabia',
+            company: 'Industrial Clusters | التجمعات الصناعية',
+            company_id: '324236',
+          },
+        ],
+      }),
+    ).toBe('Industrial Clusters | التجمعات الصناعية');
+  });
+
+  it('prefers the company_id-matching current_position', () => {
+    expect(
+      extractCandidateCompanyName(
+        {
+          current_positions: [
+            { company: 'Other Co', company_id: '1', role: 'Advisor' },
+            { company: 'Mazaya', company_id: '68533040', role: 'PM' },
+          ],
+        },
+        { companyName: 'Mazaya', companyId: '68533040' },
+      ),
+    ).toBe('Mazaya');
   });
 });
 

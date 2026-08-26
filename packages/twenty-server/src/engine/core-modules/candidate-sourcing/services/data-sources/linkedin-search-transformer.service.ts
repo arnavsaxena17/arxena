@@ -392,12 +392,33 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   }
 
   private processLinkedInEducationData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
-    // LinkedIn search results typically don't include detailed education
-    // This would be enriched through profile scraping or other means
-    // For now, we'll add a placeholder
-    this.addProjectProcessEvent(userProfile, 'education_data_placeholder', {
-      note: 'Education data not available in LinkedIn search results - requires profile enrichment',
-    });
+    const education = candidateData.education;
+    if (!Array.isArray(education) || education.length === 0) {
+      return;
+    }
+
+    const formatYearMonth = (date?: { year: number; month?: number }): string => {
+      if (!date?.year) {
+        return '';
+      }
+      const month =
+        typeof date.month === 'number' && date.month >= 1 && date.month <= 12
+          ? date.month
+          : 1;
+      return `${date.year}-${String(month).padStart(2, '0')}-01`;
+    };
+
+    this.processEducationData(
+      {
+        education: education.map((edu) => ({
+          school: edu.school || edu.school_details?.name || '',
+          degree: [edu.degree, edu.field_of_study].filter(Boolean).join(', '),
+          startYear: formatYearMonth(edu.start),
+          endYear: formatYearMonth(edu.end),
+        })),
+      },
+      userProfile,
+    );
   }
 
   private processLinkedInSkillsData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {

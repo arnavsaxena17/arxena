@@ -56,6 +56,7 @@ import { SyncGtmSearchPeopleHideDataSourceAccountIdCommand } from 'src/database/
 import { SyncGtmSearchPeopleForCompanyJobTitleCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000061-sync-gtm-search-people-for-company-job-title.command';
 import { EnsureGtmFilterProfilesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000062-ensure-gtm-filter-profiles-logic-function.command';
 import { SyncGtmSearchPeopleSearchUrlCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000063-sync-gtm-search-people-search-url.command';
+import { SyncGtmSearchPeopleProfileFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000064-sync-gtm-search-people-profile-fields.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -144,6 +145,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncGtmSearchPeopleForCompanyJobTitleCommand,
     EnsureGtmFilterProfilesLogicFunctionCommand,
     SyncGtmSearchPeopleSearchUrlCommand,
+    SyncGtmSearchPeopleProfileFieldsCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

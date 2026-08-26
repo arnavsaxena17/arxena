@@ -12,6 +12,11 @@ import { EnsureGtmProjectService } from 'src/engine/core-modules/gtm-command/ser
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { parseGtmIcpSpec } from 'src/engine/core-modules/gtm-command/utils/gtm-icp-spec.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import {
+  mapSearchPeopleProfile,
+  type SearchPeopleEducation,
+  type SearchPeopleExperience,
+} from 'src/engine/core-modules/gtm-command/utils/map-search-people-profile.util';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
@@ -55,6 +60,7 @@ export type SearchPeopleForCompanyPerson = {
   title: string;
   headline: string;
   company: string;
+  companyName: string;
   location: string;
   linkedinUrl: string;
   linkedinProfileId: string;
@@ -65,6 +71,9 @@ export type SearchPeopleForCompanyPerson = {
   stdFunction: string | null;
   stdFunctionRoot: string | null;
   stdGrade: string | null;
+  experience: SearchPeopleExperience[];
+  education: SearchPeopleEducation[];
+  current_positions: unknown[];
 };
 
 const companyWebsite = (company: CompanyRecord): string | undefined => {
@@ -363,23 +372,47 @@ export class SearchPeopleForCompanyService {
       const linkedinUrl =
         typeof row.linkedinUrl === 'string' ? row.linkedinUrl.trim() : '';
       const taxonomy = readTaxonomyResolved(items[index]);
+      const mapped = mapSearchPeopleProfile(items[index] ?? {}, {
+        source: dataSource,
+        companyId,
+        companyName: targetCompany?.companyName,
+        companySlug: targetCompany?.companySlug,
+      });
+      const transformerCompany = row.company?.trim() || row.jobCompanyName?.trim() || '';
+      const company =
+        (transformerCompany && transformerCompany !== 'Not specified'
+          ? transformerCompany
+          : '') || mapped.companyName;
+      const transformerTitle =
+        row.jobTitle?.trim() && row.jobTitle.trim() !== 'Not specified'
+          ? row.jobTitle.trim()
+          : '';
 
       return {
-        name: row.name?.trim() || row.fullName?.trim() || '',
-        firstName: row.firstName?.trim() || '',
-        lastName: row.lastName?.trim() || '',
-        title: row.jobTitle?.trim() || '',
-        headline: row.headline?.trim() || row.linkedinHeadline?.trim() || '',
-        company: row.company?.trim() || row.jobCompanyName?.trim() || '',
-        location: row.location?.trim() || row.locationName?.trim() || '',
-        linkedinUrl,
-        linkedinProfileId: extractLinkedinProfileId(linkedinUrl),
-        peopleId: row.peopleId ?? null,
+        name: row.name?.trim() || row.fullName?.trim() || mapped.name,
+        firstName: row.firstName?.trim() || mapped.firstName,
+        lastName: row.lastName?.trim() || mapped.lastName,
+        title: transformerTitle || mapped.title,
+        headline: row.headline?.trim() || row.linkedinHeadline?.trim() || mapped.headline,
+        company,
+        companyName: company,
+        location: row.location?.trim() || row.locationName?.trim() || mapped.location,
+        linkedinUrl: linkedinUrl || mapped.linkedinUrl,
+        linkedinProfileId:
+          extractLinkedinProfileId(linkedinUrl) || mapped.linkedinProfileId,
+        peopleId: row.peopleId ?? (mapped.peopleId || null),
         profilePictureUrl:
-          row.profilePictureUrl?.trim() || row.displayPicture?.trim() || '',
+          row.profilePictureUrl?.trim() ||
+          row.displayPicture?.trim() ||
+          mapped.profilePictureUrl,
         companyId,
-        source: row.source || dataSource || '',
-        ...taxonomy,
+        source: row.source || mapped.source || dataSource || '',
+        stdFunction: taxonomy.stdFunction || mapped.stdFunction || null,
+        stdFunctionRoot: taxonomy.stdFunctionRoot || mapped.stdFunctionRoot || null,
+        stdGrade: taxonomy.stdGrade || mapped.stdGrade || null,
+        experience: mapped.experience,
+        education: mapped.education,
+        current_positions: mapped.current_positions,
       };
     });
   }

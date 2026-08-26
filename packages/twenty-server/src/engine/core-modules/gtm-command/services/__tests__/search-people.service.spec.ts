@@ -158,6 +158,80 @@ describe('SearchPeopleService', () => {
     );
   });
 
+  it('maps Unipile current_positions into title, company, experience, and education', async () => {
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'sales_navigator', via: 'member' },
+    );
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'unipile',
+      total: 1,
+      items: [
+        {
+          id: 'ACwAABwmmrIBDUQbQR9lxcfdk22Zhg1JkGMQX7E',
+          name: 'Nabin .',
+          first_name: 'Nabin',
+          last_name: '.',
+          headline:
+            'Leading sustainable electric transportation initiatives with global collaboration.',
+          location: 'Delhi, India',
+          public_identifier: 'nprasadnabin',
+          public_profile_url:
+            'https://www.linkedin.com/sales/lead/ACwAABwmmrIBDUQbQR9lxcfdk22Zhg1JkGMQX7E,NAME_SEARCH,xYO7',
+          current_positions: [
+            {
+              role: 'Senior Director , Government of Saudi Arabia',
+              company: 'Industrial Clusters | التجمعات الصناعية',
+              company_id: '324236',
+            },
+          ],
+          education: [
+            {
+              school: 'Delhi University',
+              degree: 'MBA',
+              field_of_study: 'Business',
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { searchUrl: 'https://www.linkedin.com/sales/search/people' },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      people: [
+        {
+          name: 'Nabin .',
+          title: 'Senior Director , Government of Saudi Arabia',
+          headline:
+            'Leading sustainable electric transportation initiatives with global collaboration.',
+          companyName: 'Industrial Clusters | التجمعات الصناعية',
+          company: 'Industrial Clusters | التجمعات الصناعية',
+          peopleId: 'ACwAABwmmrIBDUQbQR9lxcfdk22Zhg1JkGMQX7E',
+          experience: [
+            expect.objectContaining({
+              position: 'Senior Director , Government of Saudi Arabia',
+              company: 'Industrial Clusters | التجمعات الصناعية',
+              isCurrent: true,
+            }),
+          ],
+          education: [
+            expect.objectContaining({
+              school: 'Delhi University',
+              degree: 'MBA',
+              fieldOfStudy: 'Business',
+            }),
+          ],
+        },
+      ],
+    });
+  });
+
   it('falls back to harvest when no LinkedIn Unipile account is on the workspace', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(

@@ -51,6 +51,52 @@ const GTM_COMPANY_RECORD_INPUT = {
   objectNameSingular: 'company',
 };
 
+const GTM_PERSON_EXPERIENCE_OUTPUT = {
+  type: 'array' as const,
+  label: 'Employment history',
+  items: {
+    type: 'object' as const,
+    properties: {
+      company: { type: 'string' as const, label: 'Company' },
+      position: { type: 'string' as const, label: 'Position' },
+      location: { type: 'string' as const, label: 'Location' },
+      description: { type: 'string' as const, label: 'Description' },
+      start: { type: 'string' as const, label: 'Start' },
+      end: { type: 'string' as const, label: 'End' },
+      isCurrent: { type: 'boolean' as const, label: 'Is current' },
+      companyId: { type: 'string' as const, label: 'Company ID' },
+    },
+  },
+};
+
+const GTM_PERSON_EDUCATION_OUTPUT = {
+  type: 'array' as const,
+  label: 'Education',
+  items: {
+    type: 'object' as const,
+    properties: {
+      school: { type: 'string' as const, label: 'School' },
+      degree: { type: 'string' as const, label: 'Degree' },
+      fieldOfStudy: { type: 'string' as const, label: 'Field of study' },
+      start: { type: 'string' as const, label: 'Start' },
+      end: { type: 'string' as const, label: 'End' },
+    },
+  },
+};
+
+const GTM_PERSON_CURRENT_POSITIONS_OUTPUT = {
+  type: 'array' as const,
+  label: 'Current positions',
+  items: {
+    type: 'object' as const,
+    properties: {
+      role: { type: 'string' as const, label: 'Role' },
+      company: { type: 'string' as const, label: 'Company' },
+      company_id: { type: 'string' as const, label: 'Company ID' },
+    },
+  },
+};
+
 export type PrefilledGtmLogicFunctionDefinition =
   PrefilledWorkflowCodeStepLogicFunctionDefinition & {
     workflowActionTriggerSettings: WorkflowActionTriggerSettings;
@@ -165,6 +211,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                     title: { type: 'string', label: 'Title' },
                     headline: { type: 'string', label: 'Headline' },
                     company: { type: 'string', label: 'Company' },
+                    companyName: { type: 'string', label: 'Company name' },
                     companyId: { type: 'string', label: 'Company ID' },
                     location: { type: 'string', label: 'Location' },
                     linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
@@ -184,6 +231,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                       label: 'Std function root',
                     },
                     stdGrade: { type: 'string', label: 'Std grade' },
+                    experience: GTM_PERSON_EXPERIENCE_OUTPUT,
+                    education: GTM_PERSON_EDUCATION_OUTPUT,
+                    current_positions: GTM_PERSON_CURRENT_POSITIONS_OUTPUT,
                   },
                 },
               },
@@ -342,6 +392,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                     title: { type: 'string', label: 'Title' },
                     headline: { type: 'string', label: 'Headline' },
                     companyName: { type: 'string', label: 'Company name' },
+                    company: { type: 'string', label: 'Company' },
                     location: { type: 'string', label: 'Location' },
                     linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
                     linkedinProfileId: {
@@ -360,6 +411,9 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                       label: 'Std function root',
                     },
                     stdGrade: { type: 'string', label: 'Std grade' },
+                    experience: GTM_PERSON_EXPERIENCE_OUTPUT,
+                    education: GTM_PERSON_EDUCATION_OUTPUT,
+                    current_positions: GTM_PERSON_CURRENT_POSITIONS_OUTPUT,
                   },
                 },
               },
