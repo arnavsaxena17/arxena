@@ -31,7 +31,7 @@ export class CompanyLogoService {
   }
 
   /**
-   * Fetch company logo: Nubela (if configured) → Twenty Icons → Google s2/favicons.
+   * Fetch company logo: Twenty Icons → Google s2/favicons → Nubela (if configured).
    */
   async fetchLogoByWebsite(website: string): Promise<{
     ok: boolean;
@@ -49,33 +49,42 @@ export class CompanyLogoService {
     }
 
     const domain = this.extractDomainFromWebsite(normalizedWebsite);
-    const apiKey = this.getApiKey();
 
-    if (apiKey) {
-      const nubelaResult = await this.fetchLogoFromNubela(
-        normalizedWebsite,
-        apiKey,
-      );
+    if (domain) {
+      const twentyResult = await this.fetchLogoFromTwentyIcons(domain);
 
-      if (nubelaResult.ok && nubelaResult.body.byteLength > 0) {
-        return nubelaResult;
+      if (this.isUsableLogo(twentyResult)) {
+        return twentyResult;
       }
-      if (!nubelaResult.ok) {
-        this.logger.warn(
-          `CompanyLogo: nubela_miss website=${normalizedWebsite}`,
-        );
-      } else {
-        this.logger.warn(
-          `CompanyLogo: nubela_empty_body website=${normalizedWebsite}`,
-        );
+
+      const googleResult = await this.fetchLogoFromGoogleS2(domain);
+
+      if (this.isUsableLogo(googleResult)) {
+        return googleResult;
       }
-    } else {
-      this.logger.warn(
-        'CompanyLogo: nubela_skip reason=no_api_key chain=twenty_icons→google_s2',
-      );
     }
 
-    if (!domain) {
+    return this.fetchLogoFromNubelaIfConfigured(normalizedWebsite);
+  }
+
+  private isUsableLogo(result: { ok: boolean; body: ArrayBuffer }): boolean {
+    return result.ok && result.body.byteLength > 0;
+  }
+
+  private async fetchLogoFromNubelaIfConfigured(
+    normalizedWebsite: string,
+  ): Promise<{
+    ok: boolean;
+    contentType: string | null;
+    body: ArrayBuffer;
+  }> {
+    const apiKey = this.getApiKey();
+
+    if (!apiKey) {
+      this.logger.warn(
+        'CompanyLogo: nubela_skip reason=no_api_key chain=twenty_icons→google_s2→nubela',
+      );
+
       return {
         ok: false,
         contentType: null,
@@ -83,13 +92,26 @@ export class CompanyLogoService {
       };
     }
 
-    const twentyResult = await this.fetchLogoFromTwentyIcons(domain);
+    const nubelaResult = await this.fetchLogoFromNubela(
+      normalizedWebsite,
+      apiKey,
+    );
 
-    if (twentyResult.ok && twentyResult.body.byteLength > 0) {
-      return twentyResult;
+    if (this.isUsableLogo(nubelaResult)) {
+      return nubelaResult;
     }
 
-    return this.fetchLogoFromGoogleS2(domain);
+    if (!nubelaResult.ok) {
+      this.logger.warn(
+        `CompanyLogo: nubela_miss website=${normalizedWebsite}`,
+      );
+    } else {
+      this.logger.warn(
+        `CompanyLogo: nubela_empty_body website=${normalizedWebsite}`,
+      );
+    }
+
+    return nubelaResult;
   }
 
   private async fetchLogoFromNubela(

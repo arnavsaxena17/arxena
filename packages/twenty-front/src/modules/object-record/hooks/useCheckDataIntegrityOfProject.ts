@@ -9,6 +9,10 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
 import {
+  MessagingChannel,
+  normalizeMessagingChannel,
+} from 'twenty-shared/arx';
+import {
   findWorkspaceMemberProfiles,
   graphqlToFindManyProjectsWithCandidateValues,
 } from 'twenty-shared/graphql';
@@ -160,29 +164,29 @@ export const useCheckDataIntegrityOfProject = ({
         )
           ? options.messagingChannelsForKeys
           : null;
-        const normalizeMessagingChannel = (channel: string | null | undefined) =>
-          (channel ?? '').replace(/-/g, '_').toUpperCase();
         const needsWhatsappOfficialKeys =
           channelsForWhatsappKeyRules !== null
             ? channelsForWhatsappKeyRules.some(
                 (channel) =>
-                  normalizeMessagingChannel(channel) === 'WHATSAPP_OFFICIAL',
+                  normalizeMessagingChannel(channel) ===
+                  MessagingChannel.WHATSAPP_OFFICIAL,
               )
             : candidateEdges.some(
                 (edge) =>
                   normalizeMessagingChannel(edge?.node?.messagingChannel) ===
-                  'WHATSAPP_OFFICIAL',
+                  MessagingChannel.WHATSAPP_OFFICIAL,
               );
         const needsWhatsappUnipileKey =
           channelsForWhatsappKeyRules !== null
             ? channelsForWhatsappKeyRules.some(
                 (channel) =>
-                  normalizeMessagingChannel(channel) === 'WHATSAPP_UNIPILE',
+                  normalizeMessagingChannel(channel) ===
+                  MessagingChannel.WHATSAPP_UNIPILE,
               )
             : candidateEdges.some(
                 (edge) =>
                   normalizeMessagingChannel(edge?.node?.messagingChannel) ===
-                  'WHATSAPP_UNIPILE',
+                  MessagingChannel.WHATSAPP_UNIPILE,
               );
 
         const consolidatedErrorMessage = [

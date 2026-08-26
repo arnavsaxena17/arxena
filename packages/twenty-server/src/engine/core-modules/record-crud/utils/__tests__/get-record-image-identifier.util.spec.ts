@@ -1,4 +1,5 @@
 import { FieldMetadataType, FileFolder } from 'twenty-shared/types';
+import { getLinkFaviconUrl } from 'twenty-shared/utils';
 
 import { getRecordImageIdentifier } from 'src/engine/core-modules/record-crud/utils/get-record-image-identifier.util';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
@@ -24,6 +25,8 @@ const buildFieldMaps = (
   };
 };
 
+const SERVER_BASE_URL = 'http://localhost:3000';
+
 const signUrl = (fileId: string, fileFolder: FileFolder) =>
   `signed:${fileFolder}:${fileId}`;
 
@@ -48,9 +51,12 @@ describe('getRecordImageIdentifier', () => {
       flatObjectMetadata: company,
       flatFieldMetadataMaps: buildFieldMaps([domainNameField]),
       allowRequestsToTwentyIcons: true,
+      serverBaseUrl: SERVER_BASE_URL,
     });
 
-    expect(result).toBe('https://twenty-icons.com/twenty.com');
+    expect(result).toBe(
+      getLinkFaviconUrl('twenty.com', SERVER_BASE_URL),
+    );
   });
 
   it('returns null for a LINKS image identifier when twenty-icons requests are disabled', async () => {
@@ -160,9 +166,10 @@ describe('getRecordImageIdentifier', () => {
       flatObjectMetadata: customObject,
       flatFieldMetadataMaps: buildFieldMaps([baseTextField, domainNameField]),
       allowRequestsToTwentyIcons: true,
+      serverBaseUrl: SERVER_BASE_URL,
     });
 
-    expect(result).toBe('https://twenty-icons.com/acme.com');
+    expect(result).toBe(getLinkFaviconUrl('acme.com', SERVER_BASE_URL));
   });
 
   it('respects an explicit null override (cleared image identifier)', async () => {

@@ -1,3 +1,5 @@
+import { MessagingChannel } from 'twenty-shared/arx';
+
 import { GtmOutreachMessagePersistService } from '../gtm-outreach-message-persist.service';
 
 describe('GtmOutreachMessagePersistService.materializeCandidateEvent', () => {
@@ -45,14 +47,14 @@ describe('GtmOutreachMessagePersistService.materializeCandidateEvent', () => {
       workspaceId: 'ws-1',
       event: 'connection_sent',
       candidateId: 'cand-1',
-      messagingChannel: 'LINKEDIN_CONNECT',
+      messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
     });
 
     expect(applyCandidateEvent).toHaveBeenCalledWith({
       candidateId: 'cand-1',
       event: 'connection_sent',
       apiToken: 'api-token',
-      messagingChannel: 'LINKEDIN_CONNECT',
+      messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
       existingFirstOutboundAt: '2026-08-01T00:00:00.000Z',
     });
   });
@@ -62,7 +64,7 @@ describe('GtmOutreachMessagePersistService.materializeCandidateEvent', () => {
       workspaceId: 'ws-1',
       event: 'connection_sent',
       candidateId: 'cand-1',
-      messagingChannel: 'LINKEDIN_CONNECT',
+      messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
     });
 
     expect(applyCandidateEvent).toHaveBeenCalledWith(

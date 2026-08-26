@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UnipileAttachmentStorageService } from 'src/engine/core-modules/unipile-attachments/services/unipile-attachment-storage.service';
-import { graphQlToFetchChatMessages, graphqlToUpdateChatMessage } from 'twenty-shared';
+import {
+  graphQlToFetchChatMessages,
+  graphqlToUpdateChatMessage,
+  MessagingChannel,
+} from 'twenty-shared';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { InjectMessageQueue } from '../../message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from '../../message-queue/message-queue.constants';
@@ -1079,7 +1083,7 @@ export class UnipileWebhookService {
           linkedinUrl: profileUrl,
           event: 'connection_accepted',
           apiToken,
-          messagingChannel: 'LINKEDIN_CONNECT',
+          messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         });
       }
     } catch (error) {
@@ -1115,7 +1119,7 @@ export class UnipileWebhookService {
       linkedinUrl: profileUrl,
       event: 'connection_ignored',
       apiToken,
-      messagingChannel: 'LINKEDIN_CONNECT',
+      messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
     });
   }
 

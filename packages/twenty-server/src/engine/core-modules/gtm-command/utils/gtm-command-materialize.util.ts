@@ -1,3 +1,5 @@
+import { MessagingChannel, normalizeMessagingChannel } from 'twenty-shared/arx';
+
 export type GtmCoverageBucket = 'ZERO' | 'ONE_TWO' | 'THREE_PLUS';
 
 export type GtmFunnelStage =
@@ -209,39 +211,25 @@ export const computeTimeBucket = (
 export const mapMessagingChannelToGtmChannel = (
   messagingChannel: string | null | undefined,
 ): GtmChannel => {
-  const normalized = (messagingChannel ?? '').toLowerCase();
+  const normalized = normalizeMessagingChannel(messagingChannel);
 
-  if (normalized.includes('inmail')) {
-    return 'INMAIL';
+  switch (normalized) {
+    case MessagingChannel.LINKEDIN_INMAIL:
+      return 'INMAIL';
+    case MessagingChannel.LINKEDIN_CONNECT:
+      return 'LINKEDIN_CONNECT';
+    case MessagingChannel.COMMENT:
+      return 'COMMENT';
+    case MessagingChannel.EMAIL:
+      return 'EMAIL';
+    case MessagingChannel.BAILEYS:
+    case MessagingChannel.WHATSAPP_UNIPILE:
+    case MessagingChannel.WHATSAPP_WEB:
+    case MessagingChannel.WHATSAPP_OFFICIAL:
+      return 'WHATSAPP';
+    default:
+      return 'OTHER';
   }
-
-  if (
-    normalized.includes('connect') ||
-    normalized.includes('invite') ||
-    normalized === 'linkedin-connect' ||
-    normalized === 'linkedin_connect'
-  ) {
-    return 'LINKEDIN_CONNECT';
-  }
-
-  if (normalized.includes('comment')) {
-    return 'COMMENT';
-  }
-
-  if (normalized.includes('whatsapp') || normalized === 'baileys') {
-    return 'WHATSAPP';
-  }
-
-  if (normalized.includes('email') || normalized.includes('gmail')) {
-    return 'EMAIL';
-  }
-
-  // Plain LinkedIn DM / sock / premium — not a connection invite
-  if (normalized.includes('linkedin')) {
-    return 'OTHER';
-  }
-
-  return 'OTHER';
 };
 
 export const mapOutboundStageForChannel = (

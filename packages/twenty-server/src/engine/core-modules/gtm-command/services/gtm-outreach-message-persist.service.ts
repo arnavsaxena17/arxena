@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { MessagingChannel } from 'twenty-shared/arx';
 import { isDefined, escapeForIlike } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
@@ -126,10 +127,10 @@ export class GtmOutreachMessagePersistService {
       candidateId: resolvedCandidateId,
       messagingChannel:
         channel === 'WHATSAPP'
-          ? 'WHATSAPP_UNIPILE'
+          ? MessagingChannel.WHATSAPP_UNIPILE
           : channel === 'EMAIL'
-            ? 'EMAIL'
-            : 'LINKEDIN',
+            ? MessagingChannel.EMAIL
+            : MessagingChannel.LINKEDIN,
     });
   }
 

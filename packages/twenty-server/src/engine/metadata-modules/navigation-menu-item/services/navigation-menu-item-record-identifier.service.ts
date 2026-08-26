@@ -130,6 +130,7 @@ export class NavigationMenuItemRecordIdentifierService {
       allowRequestsToTwentyIcons: this.twentyConfigService.get(
         'ALLOW_REQUESTS_TO_TWENTY_ICONS',
       ),
+      serverBaseUrl: this.twentyConfigService.get('SERVER_URL'),
       signUrl: (fileId: string, fileFolder: FileFolder) =>
         this.fileUrlService.signFileByIdUrl({
           fileId,

@@ -1204,6 +1204,55 @@ export class LinkedinUnipileRequestService {
     )) as Record<string, unknown>;
   }
 
+  /**
+   * GET /api/v1/users/relations — list 1st-degree LinkedIn connections for an account.
+   * Pass `limit` to fetch the last n connections (Unipile pages newest-first; callers sort by created_at).
+   */
+  async fetchLinkedinRelations(
+    accountId: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      filter?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<unknown> {
+    const trimmedAccountId = accountId.trim();
+    if (!trimmedAccountId) {
+      throw new HttpException('account_id is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor?.trim()) {
+      queryParams.append('cursor', options.cursor.trim());
+    }
+    if (options?.filter?.trim()) {
+      queryParams.append('filter', options.filter.trim());
+    }
+
+    await acquireAccountRateLimitOrDefer({
+      provider: 'linkedin',
+      accountId: trimmedAccountId,
+      method: 'endpoint',
+    });
+
+    return this.makeUnipileRequest(
+      `/api/v1/users/relations?${queryParams}`,
+      'GET',
+      undefined,
+      {
+        linkedinAccountCleanup: options?.cleanupContext
+          ? { ...options.cleanupContext, accountId: trimmedAccountId }
+          : undefined,
+      },
+    );
+  }
+
   async fetchLinkedinUserComments(
     accountId: string,
     identifier: string,

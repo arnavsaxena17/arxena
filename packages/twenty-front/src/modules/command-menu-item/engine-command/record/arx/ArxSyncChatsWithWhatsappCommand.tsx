@@ -9,6 +9,11 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
+import {
+  MessagingChannel,
+  normalizeMessagingChannel,
+  toMessagingChannelTransportKey,
+} from 'twenty-shared/arx';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 export const ArxSyncChatsWithWhatsappCommand = () => {
@@ -62,13 +67,12 @@ export const ArxSyncChatsWithWhatsappCommand = () => {
         const messagingChannel =
           (record.messagingChannel as string | undefined) ||
           apiKeys.whatsapp_key ||
-          'baileys';
-        const normalizedMessagingChannel = messagingChannel
-          .replace(/-/g, '_')
-          .toUpperCase();
+          MessagingChannel.BAILEYS;
         const usesUnipile =
-          normalizedMessagingChannel === 'WHATSAPP_UNIPILE' ||
-          apiKeys.whatsapp_key === 'whatsapp-unipile';
+          normalizeMessagingChannel(messagingChannel) ===
+            MessagingChannel.WHATSAPP_UNIPILE ||
+          toMessagingChannelTransportKey(apiKeys.whatsapp_key) ===
+            toMessagingChannelTransportKey(MessagingChannel.WHATSAPP_UNIPILE);
         const syncEndpoint = usesUnipile
           ? `${REACT_APP_SERVER_BASE_URL}/whatsapp-unipile/sync-messages`
           : `${REACT_APP_SERVER_BASE_URL}/baileys-whatsapp/sync-messages`;

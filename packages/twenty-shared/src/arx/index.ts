@@ -183,3 +183,18 @@ export {
   emptyInterviewData,
 } from './ArxChatTypes';
 export type { CandidateEngagementNode } from './candidate';
+export type { MessagingChannelValue } from './messagingChannel';
+export {
+  MessagingChannel,
+  MESSAGING_CHANNEL_SELECT_VALUES,
+  MESSAGING_CHANNEL_LABELS,
+  WHATSAPP_MESSAGING_CHANNELS,
+  LINKEDIN_DIRECT_MESSAGING_CHANNELS,
+  normalizeMessagingChannel,
+  parseMessagingChannel,
+  toMessagingChannelTransportKey,
+  messagingChannelEquals,
+  isAllowedMessagingChannel,
+  isWhatsappMessagingChannel,
+  isLinkedinDirectMessagingChannel,
+} from './messagingChannel';

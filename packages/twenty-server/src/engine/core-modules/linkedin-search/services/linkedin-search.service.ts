@@ -6,10 +6,11 @@ import {
     type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
 import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import {
-  isLinkedInSearchCursorRequest,
-  shouldCountLinkedInSearchQuota,
-  type LinkedInSearchQuotaInput,
+    isLinkedInSearchCursorRequest,
+    shouldCountLinkedInSearchQuota,
+    type LinkedInSearchQuotaInput,
 } from 'src/engine/core-modules/linkedin-search/utils/linkedin-search-quota.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
@@ -40,6 +41,11 @@ import {
   toUnipileV2AccountListId,
 } from '../utils/sales-navigator-account-list-sort.util';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
+import {
+    clampUnipileRelationsLimit,
+    normalizeUnipileUserRelationsList,
+    type UnipileUserRelationsList,
+} from '../utils/unipile-user-relations.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
@@ -142,6 +148,7 @@ export class LinkedInSearchService {
     @Inject(forwardRef(() => ApifyLinkedInCompanyProfileTransformerService))
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
     private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
+    private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -290,6 +297,42 @@ export class LinkedInSearchService {
     );
 
     return data;
+  }
+
+  /**
+   * List LinkedIn 1st-degree connections (Unipile GET /api/v1/users/relations).
+   * Returns the last `limit` relations sorted by created_at descending.
+   */
+  async getRelations(
+    accountId: string,
+    options: {
+      cursor?: string;
+      limit?: number | string;
+      filter?: string;
+    } = {},
+  ): Promise<UnipileUserRelationsList> {
+    const limit = clampUnipileRelationsLimit(options.limit);
+
+    try {
+      await this.enforceRequestSpacing();
+      const data = await this.linkedinUnipileRequestService.fetchLinkedinRelations(
+        accountId,
+        {
+          limit,
+          cursor: options.cursor,
+          filter: options.filter,
+        },
+      );
+
+      const result = normalizeUnipileUserRelationsList(data, limit);
+      this.logger.log(
+        `Retrieved ${result.items.length} LinkedIn relations for account ${accountId} (cursor=${result.cursor ?? 'none'}).`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to list LinkedIn relations: ${error}`);
+      throw error;
+    }
   }
 
   /**

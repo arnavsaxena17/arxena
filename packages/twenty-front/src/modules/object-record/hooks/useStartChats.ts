@@ -12,6 +12,10 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
+import {
+  isLinkedinDirectMessagingChannel,
+  isWhatsappMessagingChannel,
+} from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
@@ -70,27 +74,11 @@ export const useStartChats = ({
               return true;
             }
 
-            // Accept UPPER_SNAKE and legacy kebab-case CRM values
-            const normalizedChannel = messagingChannel
-              .replace(/-/g, '_')
-              .toUpperCase();
-
-            if (
-              [
-                'BAILEYS',
-                'WHATSAPP_WEB',
-                'WHATSAPP_OFFICIAL',
-                'WHATSAPP_UNIPILE',
-              ].includes(normalizedChannel)
-            ) {
+            if (isWhatsappMessagingChannel(messagingChannel)) {
               return !candidate?.phoneNumber?.primaryPhoneNumber;
             }
 
-            if (
-              ['LINKEDIN', 'LINKEDIN_PREMIUM', 'LINKEDIN_INMAIL'].includes(
-                normalizedChannel,
-              )
-            ) {
+            if (isLinkedinDirectMessagingChannel(messagingChannel)) {
               return !candidate?.linkedinUrl;
             }
 

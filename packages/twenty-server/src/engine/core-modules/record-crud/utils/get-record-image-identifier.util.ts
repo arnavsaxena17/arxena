@@ -14,6 +14,7 @@ type GetRecordImageIdentifierOptions = {
   flatObjectMetadata: FlatObjectMetadata;
   flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
   allowRequestsToTwentyIcons: boolean;
+  serverBaseUrl?: string;
   signUrl?: (
     fileId: string,
     fileFolder: FileFolder,
@@ -25,6 +26,7 @@ export const getRecordImageIdentifier = async ({
   flatObjectMetadata,
   flatFieldMetadataMaps,
   allowRequestsToTwentyIcons,
+  serverBaseUrl,
   signUrl,
 }: GetRecordImageIdentifierOptions): Promise<string | null> => {
   if (
@@ -87,7 +89,7 @@ export const getRecordImageIdentifier = async ({
           : undefined;
 
       return isNonEmptyString(primaryLinkUrl)
-        ? getLinkFaviconUrl(primaryLinkUrl) || null
+        ? getLinkFaviconUrl(primaryLinkUrl, serverBaseUrl) || null
         : null;
     }
     default: {

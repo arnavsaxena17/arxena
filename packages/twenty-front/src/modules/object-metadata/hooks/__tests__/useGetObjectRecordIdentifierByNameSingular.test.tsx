@@ -1,10 +1,13 @@
 import { renderHook } from '@testing-library/react';
 import { Provider as JotaiProvider } from 'jotai';
 
+import { getLinkFaviconUrl } from 'twenty-shared/utils';
+
 import { useGetObjectRecordIdentifierByNameSingular } from '@/object-metadata/hooks/useGetObjectRecordIdentifierByNameSingular';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 import { setTestObjectMetadataItemsInMetadataStore } from '~/testing/utils/setTestObjectMetadataItemsInMetadataStore';
 import { getTestEnrichedObjectMetadataItemsMock } from '~/testing/utils/getTestEnrichedObjectMetadataItemsMock';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <JotaiProvider store={jotaiStore}>{children}</JotaiProvider>
@@ -72,7 +75,10 @@ describe('useGetObjectRecordIdentifierByNameSingular', () => {
 
     expect(result.current.linkToShowPage).toBe('/object/company/recordId');
     expect(result.current.avatarUrl).toBe(
-      'https://twenty-icons.com/cool-company.com',
+      getLinkFaviconUrl(
+        'https://cool-company.com',
+        REACT_APP_SERVER_BASE_URL,
+      ),
     );
     expect(result.current.avatarType).toBe('squared');
   });

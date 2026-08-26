@@ -34,6 +34,7 @@ import {
   isPeopleLinkedInSearchUrl,
   type LinkedInSearchUrlCategory,
 } from '../utils/classify-linkedin-search-url.util';
+import { type UnipileUserRelationsList } from '../utils/unipile-user-relations.util';
 
 @Controller('linkedin-search')
 export class LinkedInSearchController {
@@ -610,6 +611,47 @@ export class LinkedInSearchController {
       }
       throw new HttpException(
         error.message || 'LinkedIn cursor search failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * List 1st-degree LinkedIn connections for the connected account
+   * (Unipile GET /api/v1/users/relations). Returns the last `limit` relations
+   * sorted by created_at descending.
+   */
+  @Get('relations')
+  async getRelations(
+    @Query('account_id') accountId: string | undefined,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+    @Query('filter') filter?: string,
+    @Headers() headers?: any,
+  ): Promise<UnipileUserRelationsList> {
+    try {
+      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+
+      this.logger.log(
+        `Listing LinkedIn relations for account: ${resolvedAccountId} (limit=${limit ?? 'default'})`,
+      );
+
+      const result = await this.linkedInSearchService.getRelations(
+        resolvedAccountId,
+        { cursor, limit, filter },
+      );
+
+      this.logger.log(
+        `Retrieved ${result.items.length} LinkedIn relations.`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to list LinkedIn relations', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || 'Failed to list LinkedIn relations',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

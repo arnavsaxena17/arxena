@@ -66,6 +66,12 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
     expectedToolHints: ['search_linkedin_continue'],
   },
   {
+    id: 's9b',
+    persona: 'sales',
+    query: 'Fetch my last 20 LinkedIn connections',
+    expectedToolHints: ['list_linkedin_relations'],
+  },
+  {
     id: 's10',
     persona: 'sales',
     query: 'Expand similar job titles for Account Executive',

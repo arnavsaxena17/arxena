@@ -6,6 +6,7 @@ import { type IconComponent } from 'twenty-ui/icon';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { DEFAULT_NAVIGATION_MENU_ITEM_COLOR_LINK } from '@/navigation-menu-item/common/constants/NavigationMenuItemDefaultColorLink';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const failedFaviconUrls = new Set<string>();
 
@@ -76,7 +77,7 @@ export const LinkIconWithLinkOverlay = ({
 }: LinkIconWithLinkOverlayProps) => {
   const { theme } = useContext(ThemeContext);
   const [localFailedLink, setLocalFailedLink] = useState<string | null>(null);
-  const faviconUrl = getLinkFaviconUrl(link);
+  const faviconUrl = getLinkFaviconUrl(link, REACT_APP_SERVER_BASE_URL);
   const linkKey = link ?? '';
   const isKnownFailed = failedFaviconUrls.has(linkKey);
   const showFavicon =

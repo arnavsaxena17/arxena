@@ -9,6 +9,7 @@ import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModa
 import { styled } from '@linaria/react';
 import { Trans } from '@lingui/react/macro';
 import { useCallback, useEffect, useState } from 'react';
+import { MESSAGING_CHANNEL_LABELS } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const defaultChannel = MESSAGING_CHANNEL_VALUES_FOR_BULK_UPDATE[0];
@@ -134,7 +135,7 @@ export const ArxUpdateMessagingChannelForCandidatesCommand = () => {
       >
         {MESSAGING_CHANNEL_VALUES_FOR_BULK_UPDATE.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {MESSAGING_CHANNEL_LABELS[value]}
           </option>
         ))}
       </StyledSelect>

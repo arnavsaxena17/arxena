@@ -5,12 +5,19 @@ import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
+import { MessagingChannel, MESSAGING_CHANNEL_LABELS } from 'twenty-shared/arx';
 import { Checkbox } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 const NOTIFY_CHANNEL_OPTIONS = [
-  { label: 'WhatsApp Official', value: 'WHATSAPP_OFFICIAL' },
-  { label: 'WhatsApp Unipile', value: 'WHATSAPP_UNIPILE' },
+  {
+    label: MESSAGING_CHANNEL_LABELS[MessagingChannel.WHATSAPP_OFFICIAL],
+    value: MessagingChannel.WHATSAPP_OFFICIAL,
+  },
+  {
+    label: MESSAGING_CHANNEL_LABELS[MessagingChannel.WHATSAPP_UNIPILE],
+    value: MessagingChannel.WHATSAPP_UNIPILE,
+  },
 ] as const;
 
 const DEFAULT_CONTEXT_TEMPLATE =
@@ -82,8 +89,8 @@ type NotifyOnPendingSettings = {
   detailsTemplate?: string;
   whatsappOfficialRegistryName?: string;
   recipients?: {
-    WHATSAPP_OFFICIAL?: string;
-    WHATSAPP_UNIPILE?: string;
+    [MessagingChannel.WHATSAPP_OFFICIAL]?: string;
+    [MessagingChannel.WHATSAPP_UNIPILE]?: string;
     unipileAccountId?: string;
   };
 };
@@ -130,7 +137,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
     channels:
       notifyOnPending?.channels?.length
         ? notifyOnPending.channels
-        : ['WHATSAPP_OFFICIAL'],
+        : [MessagingChannel.WHATSAPP_OFFICIAL],
     contextTemplate:
       notifyOnPending?.contextTemplate ?? DEFAULT_CONTEXT_TEMPLATE,
     detailsTemplate: notifyOnPending?.detailsTemplate,
@@ -165,7 +172,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               }
 
               updateNotify({
-                channels: ['WHATSAPP_OFFICIAL'],
+                channels: [MessagingChannel.WHATSAPP_OFFICIAL],
                 contextTemplate: DEFAULT_CONTEXT_TEMPLATE,
               });
             }}
@@ -189,7 +196,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
                       channels:
                         nextChannels.length > 0
                           ? nextChannels
-                          : ['WHATSAPP_OFFICIAL'],
+                          : [MessagingChannel.WHATSAPP_OFFICIAL],
                     }),
                   );
                 }}
@@ -233,19 +240,22 @@ export const WorkflowFormNotifyOnPendingSettings = ({
             </StyledFieldHint>
           </StyledFieldWithHint>
 
-          {channels.includes('WHATSAPP_OFFICIAL') && (
+          {channels.includes(MessagingChannel.WHATSAPP_OFFICIAL) && (
             <FormTextFieldInput
               label={t`Official recipient phone`}
               readonly={readonly}
               defaultValue={
-                notifyOnPending?.recipients?.WHATSAPP_OFFICIAL ?? ''
+                notifyOnPending?.recipients?.[
+                  MessagingChannel.WHATSAPP_OFFICIAL
+                ] ?? ''
               }
               onChange={(value) => {
                 updateNotify(
                   withCurrentNotify({
                     recipients: {
                       ...notifyOnPending?.recipients,
-                      WHATSAPP_OFFICIAL: value || undefined,
+                      [MessagingChannel.WHATSAPP_OFFICIAL]:
+                        value || undefined,
                     },
                   }),
                 );
@@ -255,17 +265,22 @@ export const WorkflowFormNotifyOnPendingSettings = ({
             />
           )}
 
-          {channels.includes('WHATSAPP_UNIPILE') && (
+          {channels.includes(MessagingChannel.WHATSAPP_UNIPILE) && (
             <FormTextFieldInput
               label={t`Unipile recipient phone`}
               readonly={readonly}
-              defaultValue={notifyOnPending?.recipients?.WHATSAPP_UNIPILE ?? ''}
+              defaultValue={
+                notifyOnPending?.recipients?.[
+                  MessagingChannel.WHATSAPP_UNIPILE
+                ] ?? ''
+              }
               onChange={(value) => {
                 updateNotify(
                   withCurrentNotify({
                     recipients: {
                       ...notifyOnPending?.recipients,
-                      WHATSAPP_UNIPILE: value || undefined,
+                      [MessagingChannel.WHATSAPP_UNIPILE]:
+                        value || undefined,
                     },
                   }),
                 );

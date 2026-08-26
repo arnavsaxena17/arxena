@@ -33,6 +33,7 @@ import {
   normalizeLinkedInUrl,
   reconstructLinkedInUrlForDisplay,
 } from '~/utils/linkedinUrlUtils';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledOrgChartNavCompanyLogo = styled.img`
   background: ${themeCssVariables.background.tertiary};
@@ -278,7 +279,10 @@ const OrgChartsNavigationDrawerItemsContent = ({
       }
 
       const domain = getCompanyDomainName(bestCompany as Company);
-      const logo = getLogoUrlFromDomainName(domain ?? '');
+      const logo = getLogoUrlFromDomainName(
+        domain ?? '',
+        REACT_APP_SERVER_BASE_URL,
+      );
 
       if (logo) {
         map.set(chart.id, logo);

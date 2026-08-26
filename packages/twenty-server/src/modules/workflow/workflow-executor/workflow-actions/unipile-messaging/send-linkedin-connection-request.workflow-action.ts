@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { MessagingChannel } from 'twenty-shared/arx';
 import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 
 import { SendLinkedinConnectionRequestTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-connection-request-tool';
@@ -53,7 +54,7 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
   }
 
   protected override getMaterializeMessagingChannel() {
-    return 'LINKEDIN_CONNECT';
+    return MessagingChannel.LINKEDIN_CONNECT;
   }
 
   protected getTool(): Tool {

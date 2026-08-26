@@ -15,6 +15,7 @@ export const LINKEDIN_SEARCH_ERROR_TOOLS = new Set([
   'search_linkedin_parameters',
   'search_linkedin_with_query',
   'search_linkedin_people',
+  'list_linkedin_relations',
   'generate_linkedin_query_set',
   'search_candidates',
 ]);

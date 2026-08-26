@@ -139,6 +139,7 @@ Live LinkedIn people from a connected Unipile account. **Delegate to the `linked
 ```
 
 - `search_linkedin_from_url` works for a pasted LinkedIn / Sales Nav / Recruiter people search URL.
+- Recently added 1st-degree connections: `list_linkedin_relations` with `limit` = n (linkedin-search skill).
 - Reject mismatched facet titles; drop the filter rather than using a wrong ID.
 - Do **not** call `search_linkedin_with_query` (not active in MCP).
 

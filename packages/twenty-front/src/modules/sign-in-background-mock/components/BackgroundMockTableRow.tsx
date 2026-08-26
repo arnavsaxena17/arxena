@@ -5,6 +5,7 @@ import { type BackgroundMockCompany } from '@/sign-in-background-mock/constants/
 import { BACKGROUND_MOCK_COLUMN_WIDTHS } from '@/sign-in-background-mock/constants/BackgroundMockColumnWidths';
 import { BACKGROUND_MOCK_TABLE_DIMENSIONS } from '@/sign-in-background-mock/constants/BackgroundMockTableDimensions';
 import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
   Avatar,
   Chip,
@@ -108,7 +109,10 @@ export const BackgroundMockTableRow = ({
 }: BackgroundMockTableRowProps) => {
   const { theme } = useContext(ThemeContext);
 
-  const logoUrl = getLogoUrlFromDomainName(company.domainName);
+  const logoUrl = getLogoUrlFromDomainName(
+    company.domainName,
+    REACT_APP_SERVER_BASE_URL,
+  );
 
   return (
     <StyledRow>

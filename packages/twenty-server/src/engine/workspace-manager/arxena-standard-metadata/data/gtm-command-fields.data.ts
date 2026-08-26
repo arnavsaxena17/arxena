@@ -1,3 +1,9 @@
+import {
+  MessagingChannel,
+  MESSAGING_CHANNEL_LABELS,
+  MESSAGING_CHANNEL_SELECT_VALUES,
+} from 'twenty-shared/arx';
+
 import { type ArxenaFieldWithObject } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 
 const selectOption = (
@@ -100,19 +106,29 @@ export const GTM_ENRICH_STATUS_OPTIONS = [
   selectOption('FAILED', 'Failed', 'red', 3),
 ];
 
-export const GTM_MESSAGING_CHANNEL_OPTIONS = [
-  selectOption('BAILEYS', 'Baileys', 'green', 0),
-  selectOption('WHATSAPP_UNIPILE', 'WhatsApp Unipile', 'green', 1),
-  selectOption('WHATSAPP_WEB', 'WhatsApp Web', 'turquoise', 2),
-  selectOption('WHATSAPP_OFFICIAL', 'WhatsApp Official', 'blue', 3),
-  selectOption('LINKEDIN', 'LinkedIn', 'sky', 4),
-  selectOption('LINKEDIN_PREMIUM', 'LinkedIn Premium', 'blue', 5),
-  selectOption('LINKEDIN_INMAIL', 'LinkedIn InMail', 'purple', 6),
-  selectOption('LINKEDIN_SOCK', 'LinkedIn Sock', 'orange', 7),
-  selectOption('LINKEDIN_CONNECT', 'LinkedIn Connect', 'blue', 8),
-  selectOption('COMMENT', 'Comment', 'turquoise', 9),
-  selectOption('EMAIL', 'Email', 'purple', 10),
-];
+const MESSAGING_CHANNEL_OPTION_COLORS: Record<MessagingChannel, string> = {
+  [MessagingChannel.BAILEYS]: 'green',
+  [MessagingChannel.WHATSAPP_UNIPILE]: 'green',
+  [MessagingChannel.WHATSAPP_WEB]: 'turquoise',
+  [MessagingChannel.WHATSAPP_OFFICIAL]: 'blue',
+  [MessagingChannel.LINKEDIN]: 'sky',
+  [MessagingChannel.LINKEDIN_PREMIUM]: 'blue',
+  [MessagingChannel.LINKEDIN_INMAIL]: 'purple',
+  [MessagingChannel.LINKEDIN_SOCK]: 'orange',
+  [MessagingChannel.LINKEDIN_CONNECT]: 'blue',
+  [MessagingChannel.COMMENT]: 'turquoise',
+  [MessagingChannel.EMAIL]: 'purple',
+};
+
+export const GTM_MESSAGING_CHANNEL_OPTIONS = MESSAGING_CHANNEL_SELECT_VALUES.map(
+  (value, position) =>
+    selectOption(
+      value,
+      MESSAGING_CHANNEL_LABELS[value],
+      MESSAGING_CHANNEL_OPTION_COLORS[value],
+      position,
+    ),
+);
 
 export const GTM_MEETING_OUTCOME_OPTIONS = [
   selectOption('BOOKED', 'Booked', 'sky', 0),

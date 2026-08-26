@@ -11,7 +11,11 @@ import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { isValidLinkedInProfileUrl, toTitleCase } from 'twenty-shared/utils';
+import {
+  getCompanyLogoUrl,
+  isValidLinkedInProfileUrl,
+  toTitleCase,
+} from 'twenty-shared/utils';
 
 import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
 import type { OrgChartCompanyInfoProps } from './OrgChartCompanyInfo';
@@ -496,12 +500,12 @@ export const OrgChartCompanyDrawer = ({
   const [showHistoricalTechnologies, setShowHistoricalTechnologies] =
     useState(false);
   const getLogoUrl = (site?: string): string | null => {
-    if (!site?.trim()) return null;
-    const base = REACT_APP_SERVER_BASE_URL ?? '';
-    if (!base) return null;
-    return `${base.replace(/\/$/, '')}/org-chart/company-logo?website=${encodeURIComponent(
-      site,
-    )}`;
+    return (
+      getCompanyLogoUrl({
+        website: site,
+        serverBaseUrl: REACT_APP_SERVER_BASE_URL,
+      }) ?? null
+    );
   };
 
   const getDisplayDomain = (site?: string): string | null => {

@@ -1,4 +1,5 @@
 import { isNonEmptyString } from '@sniptt/guards';
+import { type MessagingChannel } from 'twenty-shared/arx';
 import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
@@ -102,7 +103,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
     return null;
   }
 
-  protected getMaterializeMessagingChannel(): string | null {
+  protected getMaterializeMessagingChannel(): MessagingChannel | null {
     return null;
   }
 

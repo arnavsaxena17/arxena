@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { MessagingChannel } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
 import {
@@ -357,7 +358,7 @@ export const useAddGtmRecordsToCrm = () => {
               outreachSequenceStage: sequenceFields.outreachSequenceStage,
               enrichStatus: sequenceFields.enrichStatus,
               pendingChannel: person.pendingChannel ?? null,
-              messagingChannel: 'LINKEDIN',
+              messagingChannel: MessagingChannel.LINKEDIN,
               campaign: projectId,
               source: 'gtm-home',
               candConversationStatus: 'ONLY_ADDED_NO_CONVERSATION',

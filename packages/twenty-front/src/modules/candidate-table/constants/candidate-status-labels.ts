@@ -1,3 +1,5 @@
+import { MESSAGING_CHANNEL_SELECT_VALUES } from 'twenty-shared/arx';
+
 export const STATUS_LABELS: Record<string, string> = {
   NOT_INTERESTED: 'Not Interested',
   INTERESTED: 'Interested',
@@ -24,9 +26,4 @@ export const CANDIDATE_CONVERSATION_STATUS_LABELS: Record<string, string> = {
   CONVERSATION_CLOSED_TO_BE_CONTACTED: 'Closed to Contact',
 };
 
-export const MESSAGING_CHANNEL_OPTIONS = [
-  'BAILEYS',
-  'WHATSAPP_UNIPILE',
-  'LINKEDIN',
-  'LINKEDIN_SOCK',
-];
+export const MESSAGING_CHANNEL_OPTIONS = [...MESSAGING_CHANNEL_SELECT_VALUES];

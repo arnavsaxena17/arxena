@@ -476,6 +476,14 @@ export const SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR: readonly McpInputFieldDe
   { key: 'limit', type: 'number', description: 'Maximum number of results to return', required: false },
 ] as const;
 
+/** Descriptor for list_linkedin_relations tool input (Unipile GET /api/v1/users/relations). */
+export const LIST_LINKEDIN_RELATIONS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'limit', type: 'number', description: 'How many recently added connections to return (1–1000, default 25)', required: false },
+  { key: 'cursor', type: 'string', description: 'Pagination cursor from a previous list_linkedin_relations response', required: false },
+  { key: 'filter', type: 'string', description: 'Optional name filter for connections', required: false },
+  { key: 'account_id', type: 'string', description: 'LinkedIn Unipile account ID (optional; resolved from auth token if omitted)', required: false },
+] as const;
+
 /** Descriptor for search_linkedin_parameters tool input. */
 export const SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   { key: 'parameterType', type: 'string', description: 'Facet type: LOCATION, REGION (Sales Nav geography), INDUSTRY, SALES_INDUSTRY, COMPANY, SCHOOL, JOB_TITLE, SKILL, SAVED_SEARCHES, RECENT_SEARCHES (aliases like locations, job-titles also work)', required: true },

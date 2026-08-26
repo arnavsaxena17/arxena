@@ -326,6 +326,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search Linkedin Continue (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
+    name: 'list_linkedin_relations',
+    pack: 'prospecting',
+    label: 'List Linkedin Relations',
+    description:
+      'List recently added LinkedIn 1st-degree connections (last n relations) for the connected Unipile account.',
+  },
+  {
     name: 'search_linkedin_parameters',
     pack: 'prospecting',
     label: 'Search Linkedin Parameters',

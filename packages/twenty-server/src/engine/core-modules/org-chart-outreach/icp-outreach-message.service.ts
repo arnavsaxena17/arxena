@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
+import { MessagingChannel } from 'twenty-shared/arx';
 import { z } from 'zod';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
@@ -747,7 +748,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'connection_sent',
           apiToken: input.apiToken,
-          messagingChannel: 'LINKEDIN_CONNECT',
+          messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         });
       }
 
@@ -799,7 +800,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'comment_posted',
           apiToken: input.apiToken,
-          messagingChannel: 'COMMENT',
+          messagingChannel: MessagingChannel.COMMENT,
         });
       }
 
@@ -880,7 +881,7 @@ export class IcpOutreachMessageService {
           linkedinUrl: input.linkedinUrl,
           event: 'outbound_message',
           apiToken: input.apiToken,
-          messagingChannel: 'EMAIL',
+          messagingChannel: MessagingChannel.EMAIL,
         });
       }
 
@@ -927,7 +928,7 @@ export class IcpOutreachMessageService {
         linkedinUrl: input.linkedinUrl,
         event: 'outbound_message',
         apiToken: input.apiToken,
-        messagingChannel: 'WHATSAPP_UNIPILE',
+        messagingChannel: MessagingChannel.WHATSAPP_UNIPILE,
       });
     }
 

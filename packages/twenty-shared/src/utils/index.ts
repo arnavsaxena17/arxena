@@ -214,6 +214,10 @@ export {
   getEdgeTypename,
   getGroupByConnectionTypename,
 } from './graphql/graphql-get-typename.util';
+export {
+  COMPANY_LOGO_ENDPOINT_PATH,
+  getCompanyLogoUrl,
+} from './image/getCompanyLogoUrl';
 export { getImageAbsoluteURI } from './image/getImageAbsoluteURI';
 export { getLinkFaviconUrl } from './image/getLinkFaviconUrl';
 export {

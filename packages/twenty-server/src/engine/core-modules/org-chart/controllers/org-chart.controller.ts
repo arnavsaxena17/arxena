@@ -788,11 +788,17 @@ export class OrgChartController {
       await this.companyLogoService.fetchLogoByWebsite(website);
 
     if (!ok || body.byteLength === 0) {
+      res.setHeader('Cache-Control', 'public, max-age=120');
       res.status(404).send();
 
       return;
     }
     res.setHeader('Content-Type', contentType ?? 'image/png');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=86400, stale-while-revalidate=604800',
+    );
     res.send(Buffer.from(body));
   }
 

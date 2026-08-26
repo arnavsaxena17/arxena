@@ -25,6 +25,7 @@ import {
     SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
     SEARCH_LINKEDIN_POSTS_INPUT_DESCRIPTOR,
+    LIST_LINKEDIN_RELATIONS_INPUT_DESCRIPTOR,
     VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR
 } from '../utils/McpToolSchemas';
 
@@ -413,6 +414,38 @@ export const linkedinSearchTools: McpTool[] = [
         'search/continue',
         { cursor },
         buildLinkedInSearchQueryParams({ account_id, limit }),
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'list_linkedin_relations',
+      description:
+        'List 1st-degree LinkedIn connections (relations) for the connected Unipile account. Use when the user asks for recently added connections or the last n connections. Results are sorted by created_at descending. Pass limit for how many to return (1–1000, default 25). Paginate with the returned cursor.',
+      inputSchema: descriptorToInputSchema(LIST_LINKEDIN_RELATIONS_INPUT_DESCRIPTOR),
+    },
+    handler: async (args, config) => {
+      const { account_id, cursor, limit, filter } = args as {
+        account_id?: string;
+        cursor?: string;
+        limit?: number;
+        filter?: string;
+      };
+
+      const queryParams: Record<string, string> = {
+        ...buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+      };
+      if (filter?.trim()) {
+        queryParams.filter = filter.trim();
+      }
+
+      return callRestAPIGet(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-search',
+        'relations',
+        Object.keys(queryParams).length > 0 ? queryParams : undefined,
       );
     },
   },

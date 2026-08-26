@@ -5,6 +5,8 @@ import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { FieldMetadataType } from 'twenty-shared/types';
 import { getLinkFaviconUrl, isDefined } from 'twenty-shared/utils';
 
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
 export const getImageIdentifierFieldValue = (
   record: ObjectRecord,
   imageIdentifierFieldMetadataItem: FieldMetadataItem | undefined,
@@ -37,7 +39,8 @@ export const getImageIdentifierFieldValue = (
           : undefined;
 
       return isNonEmptyString(primaryLinkUrl)
-        ? (getLinkFaviconUrl(primaryLinkUrl) ?? null)
+        ? (getLinkFaviconUrl(primaryLinkUrl, REACT_APP_SERVER_BASE_URL) ??
+            null)
         : null;
     }
     default:

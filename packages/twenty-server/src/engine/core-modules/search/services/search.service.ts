@@ -698,7 +698,10 @@ export class SearchService {
           ];
 
         return isNonEmptyString(primaryLinkUrl)
-          ? getLinkFaviconUrl(primaryLinkUrl) || ''
+          ? getLinkFaviconUrl(
+              primaryLinkUrl,
+              this.twentyConfigService.get('SERVER_URL'),
+            ) || ''
           : '';
       }
       default: {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { MessagingChannel, UserProfile } from 'twenty-shared';
 import { LinkedInPeopleSearchResult, LinkedInSearchResult } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
@@ -518,7 +518,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         startMeetingSchedulingChat: false,
         startMeetingSchedulingChatCompleted: false,
         engagementStatus: false,
-        messagingChannel: 'LINKEDIN',
+        messagingChannel: MessagingChannel.LINKEDIN,
         chatCount: 0,
         lastEngagementChatControl: 'startChat',
         

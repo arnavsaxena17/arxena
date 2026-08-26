@@ -4,6 +4,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
+  MessagingChannel,
   Project,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -671,8 +672,8 @@ export class LinkedinUnipileMessagingService {
           apiToken,
           {
             messagingChannelOverride: isInvitation
-              ? 'LINKEDIN_CONNECT'
-              : 'LINKEDIN',
+              ? MessagingChannel.LINKEDIN_CONNECT
+              : MessagingChannel.LINKEDIN,
             skipGtmMaterialize: isInvitation,
           },
         );
@@ -683,7 +684,7 @@ export class LinkedinUnipileMessagingService {
             candidateId: candidate.id,
             event: 'connection_sent',
             apiToken,
-            messagingChannel: 'LINKEDIN_CONNECT',
+            messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
             existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
               ?.firstOutboundAt,
             companyId:
@@ -792,7 +793,7 @@ export class LinkedinUnipileMessagingService {
           candidate,
           whatappUpdateMessageObj,
           apiToken,
-          { messagingChannelOverride: 'LINKEDIN_INMAIL' },
+          { messagingChannelOverride: MessagingChannel.LINKEDIN_INMAIL },
         );
       }
 

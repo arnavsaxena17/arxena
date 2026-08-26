@@ -1,6 +1,6 @@
 # LinkedIn Search Skill
 
-You search LinkedIn for people, companies, jobs, and posts, and look up people via the Harvest-backed People API.
+You search LinkedIn for people, companies, jobs, and posts, look up people via the Harvest-backed People API, and list 1st-degree connections (recently added relations) for the connected Unipile account.
 
 ## When to load this skill
 
@@ -11,10 +11,11 @@ Load this skill when the user wants to:
 - Run a search from a pasted LinkedIn / Sales Nav / Recruiter URL
 - Turn a natural-language hiring or prospecting brief into structured LinkedIn search parameters
 - Search people with Harvest via the People API (`dataSource: "harvest"`)
+- Fetch recently added LinkedIn connections / the last n 1st-degree relations
 
 ## Choose a provider
 
-### Unipile (`search_linkedin_*`)
+### Unipile (`search_linkedin_*` / `list_linkedin_relations`)
 
 Use when the user wants live LinkedIn results from a connected account:
 
@@ -22,6 +23,7 @@ Use when the user wants live LinkedIn results from a connected account:
 - People, companies, jobs, posts
 - Pasted search URLs (`searchUrl` on People API, `url` on Unipile people/company search, or `search_linkedin_from_url`)
 - Facet ID lookup (`search_linkedin_parameters`)
+- Recently added connections (`list_linkedin_relations`)
 
 Requires a connected LinkedIn Unipile account. Check **Connected Accounts** in the system prompt for whether this user is connected and which search types (`classic` / `sales_navigator` / `recruiter`) are available before choosing `searchType`. `account_id` is optional on search tools (resolved from auth).
 
@@ -47,6 +49,7 @@ learn_tools([
   "search_linkedin_parameters",
   "search_linkedin_people",
   "search_linkedin_continue",
+  "list_linkedin_relations",
   "generate_linkedin_query_set",
   "validate_linkedin_query_set"
 ])
@@ -54,8 +57,8 @@ learn_tools([
 
 3. Resolve facet IDs with `search_linkedin_parameters` before ID-based filters.
 4. Prefer People API `searchUrl` or `search_linkedin_from_url` when the user pastes a LinkedIn / Sales Nav / Recruiter search URL.
-5. Keep `limit` small (5–10) unless the user asks for more.
-6. Paginate with `search_linkedin_continue` using the returned `cursor`.
+5. Keep search `limit` small (5–10) unless the user asks for more. For connections, set `limit` to the n they asked for (default 25).
+6. Paginate search with `search_linkedin_continue` using the returned `cursor`. Paginate connections with `list_linkedin_relations` and its `cursor`.
 
 ## Unipile tool map
 
@@ -67,6 +70,7 @@ learn_tools([
 | `search_linkedin_posts` | Posts (classic) |
 | `search_linkedin_from_url` | Paste browser search URL |
 | `search_linkedin_continue` | Next page via `cursor` |
+| `list_linkedin_relations` | Last n 1st-degree connections (`limit`); newest first via `created_at` |
 | `search_linkedin_parameters` | Resolve LOCATION / REGION / INDUSTRY / SALES_INDUSTRY / COMPANY / SCHOOL / JOB_TITLE / SKILL / saved\|recent searches |
 
 Do **not** call `search_linkedin_with_query` — it is catalogued but not active in MCP.
@@ -263,6 +267,16 @@ Use `search_linkedin_from_url` for this shape (not `search_linkedin_people`).
 }
 ```
 
+### Recently added connections (last n)
+
+```json
+{
+  "limit": 20
+}
+```
+
+Use `list_linkedin_relations` for this shape (not `search_linkedin_people`). Pass the user's n as `limit`. Present name, headline, LinkedIn URL, and connection date (`created_at`) when available. Paginate with the returned `cursor` if they ask for more. Do **not** walk the entire network.
+
 ## Harvest People API examples
 
 Check availability:
@@ -334,7 +348,7 @@ When the user wants search hits exported and/or saved to CRM / a project:
 
 ## Constraints
 
-- Respect LinkedIn rate limits and provider restrictions; avoid large bulk scrapes unless the user explicitly asks.
+- Respect LinkedIn rate limits and provider restrictions; avoid large bulk scrapes unless the user explicitly asks. Do not dump an entire connections list — fetch only the last n the user asked for.
 - Do not invent facet IDs — always resolve via `search_linkedin_parameters`.
 - Reject mismatched facet titles; drop the filter rather than using a wrong ID.
 - Do not call `search_linkedin_with_query` (not active in MCP).

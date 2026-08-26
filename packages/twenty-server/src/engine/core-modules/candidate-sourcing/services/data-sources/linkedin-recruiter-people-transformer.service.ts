@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { MessagingChannel, UserProfile } from 'twenty-shared';
 import {
     LinkedInEducation,
     LinkedInPeopleSearchResult,
@@ -89,7 +89,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         startMeetingSchedulingChat: false,
         startMeetingSchedulingChatCompleted: false,
         engagementStatus: false,
-        messagingChannel: 'LINKEDIN',
+        messagingChannel: MessagingChannel.LINKEDIN,
         chatCount: 0,
         lastEngagementChatControl: 'startChat',
         chatMessages: { edges: [] },

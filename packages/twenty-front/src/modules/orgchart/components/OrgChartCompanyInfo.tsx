@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { toTitleCase } from 'twenty-shared/utils';
+import { getCompanyLogoUrl, toTitleCase } from 'twenty-shared/utils';
 
 import { getCompanyLogoAbbreviation } from '../utils/orgChartUtils';
 
@@ -212,12 +212,12 @@ export const OrgChartCompanyInfo = ({
   const [logoError, setLogoError] = useState(false);
 
   const getLogoUrl = (site?: string): string | null => {
-    if (!site?.trim()) return null;
-    const base = REACT_APP_SERVER_BASE_URL ?? '';
-    if (!base) return null;
-    return `${base.replace(/\/$/, '')}/org-chart/company-logo?website=${encodeURIComponent(
-      site,
-    )}`;
+    return (
+      getCompanyLogoUrl({
+        website: site,
+        serverBaseUrl: REACT_APP_SERVER_BASE_URL,
+      }) ?? null
+    );
   };
 
   const getDisplayDomain = (site?: string): string | null => {

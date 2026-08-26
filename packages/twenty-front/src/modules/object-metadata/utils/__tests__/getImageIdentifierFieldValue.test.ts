@@ -2,6 +2,9 @@ import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataIte
 import { getImageIdentifierFieldValue } from '@/object-metadata/utils/getImageIdentifierFieldValue';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { FieldMetadataType } from 'twenty-shared/types';
+import { getLinkFaviconUrl } from 'twenty-shared/utils';
+
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const buildFieldMetadataItem = (
   type: FieldMetadataType,
@@ -48,14 +51,14 @@ describe('getImageIdentifierFieldValue', () => {
   });
 
   describe('LINKS', () => {
-    it('returns the favicon url when requests to twenty-icons are allowed', () => {
+    it('returns the company-logo proxy url when requests to twenty-icons are allowed', () => {
       expect(
         getImageIdentifierFieldValue(
           buildRecord({ primaryLinkUrl: 'twenty.com' }),
           buildFieldMetadataItem(FieldMetadataType.LINKS),
           true,
         ),
-      ).toBe('https://twenty-icons.com/twenty.com');
+      ).toBe(getLinkFaviconUrl('twenty.com', REACT_APP_SERVER_BASE_URL));
     });
 
     it('returns null when requests to twenty-icons are not allowed', () => {

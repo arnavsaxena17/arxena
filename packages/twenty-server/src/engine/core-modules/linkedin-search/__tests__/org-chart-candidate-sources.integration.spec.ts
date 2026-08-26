@@ -10,6 +10,7 @@ import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-sear
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
+import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { HarvestLinkedinTransformerService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin-transformer.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -195,6 +196,7 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
         { provide: LinkedInHtmlParserService, useValue: {} },
         { provide: ApifyService, useValue: apifyMock },
         { provide: UnipileV2AccountResolver, useValue: {} },
+        { provide: LinkedinUnipileRequestService, useValue: {} },
       ],
     }).compile();
 
