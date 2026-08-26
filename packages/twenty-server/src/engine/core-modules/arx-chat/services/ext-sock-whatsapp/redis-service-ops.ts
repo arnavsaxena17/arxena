@@ -266,8 +266,55 @@ export class RedisService implements OnModuleInit {
     return { acquired: false, waitMs: Math.max(100, Math.ceil(result)) };
   }
 
+  async removeMemberFromWindows(
+    keys: string[],
+    member: string,
+  ): Promise<number> {
+    if (keys.length === 0 || !member.trim()) {
+      return 0;
+    }
+
+    const pipeline = this.redisClient.pipeline();
+    for (const [index, key] of keys.entries()) {
+      pipeline.zrem(key, `${member}:${index + 1}`);
+    }
+
+    const results = await pipeline.exec();
+    return (results ?? []).reduce((sum, result) => {
+      const count = result?.[1];
+      return sum + (typeof count === 'number' ? count : 0);
+    }, 0);
+  }
+
+  async addSetMembers(
+    key: string,
+    members: string[],
+    ttlSeconds: number,
+  ): Promise<void> {
+    if (members.length === 0) {
+      return;
+    }
+
+    await this.redisClient.sadd(key, ...members);
+    if (ttlSeconds > 0) {
+      await this.redisClient.expire(key, ttlSeconds);
+    }
+  }
+
+  async getSetMembers(key: string): Promise<string[]> {
+    return this.redisClient.smembers(key);
+  }
+
+  async removeSetMembers(key: string, members: string[]): Promise<void> {
+    if (members.length === 0) {
+      return;
+    }
+
+    await this.redisClient.srem(key, ...members);
+  }
+
   async countSlidingWindowMembers(
-    windows: Array<{ key: string; windowMs: number }>,
+    windows: Array<{ key: string; windowMs: number; maxScore?: number | '+inf' }>,
     now: number,
   ): Promise<number[]> {
     if (windows.length === 0) {
@@ -276,7 +323,12 @@ export class RedisService implements OnModuleInit {
 
     const pipeline = this.redisClient.pipeline();
     for (const window of windows) {
-      pipeline.zcount(window.key, `(${now - window.windowMs}`, '+inf');
+      const maxScore = window.maxScore ?? '+inf';
+      pipeline.zcount(
+        window.key,
+        `(${now - window.windowMs}`,
+        maxScore === '+inf' ? '+inf' : maxScore,
+      );
     }
 
     const results = await pipeline.exec();

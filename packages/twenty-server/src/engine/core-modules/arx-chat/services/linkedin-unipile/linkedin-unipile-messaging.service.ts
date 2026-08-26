@@ -15,7 +15,7 @@ import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/servic
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
-import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
 import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
@@ -217,8 +217,9 @@ export class LinkedinUnipileMessagingService {
     }
 
     console.log("This is the form data!!!", formData);
-    await this.acquireLinkedinChatSendLimit(accountId, isInMail);
-    return this.makeRequest('/api/v1/chats', 'POST', formData, true);
+    return this.withLinkedinChatSendLimit(accountId, isInMail, () =>
+      this.makeRequest('/api/v1/chats', 'POST', formData, true),
+    );
   }
 
   /**
@@ -250,15 +251,17 @@ export class LinkedinUnipileMessagingService {
         publicIdentifier,
       });
 
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'profile',
-      });
-
-      const response = await this.makeRequest(
-        `/api/v1/users/${publicIdentifier}?account_id=${accountId}`,
-        'GET',
+      const response = await withAcquiredAccountRateLimit(
+        {
+          provider: 'linkedin',
+          accountId,
+          method: 'profile',
+        },
+        () =>
+          this.makeRequest(
+            `/api/v1/users/${publicIdentifier}?account_id=${accountId}`,
+            'GET',
+          ),
       );
 
       if (response && (response as any).provider_id) {
@@ -301,14 +304,17 @@ export class LinkedinUnipileMessagingService {
     // If it's neither, assume it's a public identifier and try to get the profile
     console.log('Treating as public identifier:', providerIdOrUrl);
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'profile',
-      });
-      const response = await this.makeRequest(
-        `/api/v1/users/${providerIdOrUrl}?account_id=${accountId}`,
-        'GET',
+      const response = await withAcquiredAccountRateLimit(
+        {
+          provider: 'linkedin',
+          accountId,
+          method: 'profile',
+        },
+        () =>
+          this.makeRequest(
+            `/api/v1/users/${providerIdOrUrl}?account_id=${accountId}`,
+            'GET',
+          ),
       );
 
       if (response && (response as any).provider_id) {
@@ -329,15 +335,19 @@ export class LinkedinUnipileMessagingService {
     return this.resolveProviderId(accountId, providerIdOrUrl);
   }
 
-  private async acquireLinkedinChatSendLimit(
+  private async withLinkedinChatSendLimit<T>(
     accountId: string,
-    isInMail?: boolean,
-  ): Promise<void> {
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId,
-      method: isInMail ? 'inmail' : 'message',
-    });
+    isInMail: boolean | undefined,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    return withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId,
+        method: isInMail ? 'inmail' : 'message',
+      },
+      fn,
+    );
   }
 
   /**
@@ -353,11 +363,6 @@ export class LinkedinUnipileMessagingService {
       // Use the provided actualProviderId if available, otherwise get it
       const finalProviderId = actualProviderId || await this.getProviderId(accountId, providerId);
       console.log("This is the actual provider id to which we are sending the invitation!!!", finalProviderId);
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'connection_request',
-      });
       const data = {
         provider_id: finalProviderId,
         account_id: accountId,
@@ -366,7 +371,14 @@ export class LinkedinUnipileMessagingService {
 
       console.log('LinkedIn invitation data to which we are sending the invitation!!!', data);
 
-      const response = await this.makeRequest('/api/v1/users/invite', 'POST', data);
+      const response = await withAcquiredAccountRateLimit(
+        {
+          provider: 'linkedin',
+          accountId,
+          method: 'connection_request',
+        },
+        () => this.makeRequest('/api/v1/users/invite', 'POST', data),
+      );
       console.log('LinkedIn invitation response to which we are sending the invitation!!!', response);
       return response;
     } catch (error) {
@@ -535,8 +547,11 @@ export class LinkedinUnipileMessagingService {
       }
 
       console.log("This is the form data!!!", formData);
-      await this.acquireLinkedinChatSendLimit(accountId, isInMail);
-      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+      const response = await this.withLinkedinChatSendLimit(
+        accountId,
+        isInMail,
+        () => this.makeRequest('/api/v1/chats', 'POST', formData, true),
+      );
 
       console.log('LinkedIn message sent successfully:', response);
       return { status: 'success', method: 'message' };
@@ -876,8 +891,11 @@ export class LinkedinUnipileMessagingService {
       });
 
       // Send message with attachment
-      await this.acquireLinkedinChatSendLimit(linkedinAccountId, false);
-      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+      const response = await this.withLinkedinChatSendLimit(
+        linkedinAccountId,
+        false,
+        () => this.makeRequest('/api/v1/chats', 'POST', formData, true),
+      );
 
       console.log('LinkedIn attachment message sent successfully:', response);
       return { status: 'success' };
@@ -1007,8 +1025,11 @@ export class LinkedinUnipileMessagingService {
       });
 
       // Send InMail with attachment
-      await this.acquireLinkedinChatSendLimit(linkedinAccountId, true);
-      const response = await this.makeRequest('/api/v1/chats', 'POST', formData, true);
+      const response = await this.withLinkedinChatSendLimit(
+        linkedinAccountId,
+        true,
+        () => this.makeRequest('/api/v1/chats', 'POST', formData, true),
+      );
 
       console.log('LinkedIn InMail attachment message sent successfully:', response);
       return { status: 'success' };

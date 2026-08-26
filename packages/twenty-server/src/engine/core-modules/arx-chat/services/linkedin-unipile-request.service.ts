@@ -8,7 +8,7 @@ import {
     type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
 
-import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -782,22 +782,24 @@ export class LinkedinUnipileRequestService {
       linkedin_sections: '*',
     });
 
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId: trimmed,
-      method: 'profile',
-    });
-
     try {
-      const fullProfile = (await this.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(publicIdentifier)}?${queryParams}`,
-        'GET',
-        undefined,
+      const fullProfile = (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmed }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmed,
+          method: 'profile',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/users/${encodeURIComponent(publicIdentifier)}?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmed }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
 
       const entry: LinkedinSenderFullProfileCacheEntry = {
@@ -822,6 +824,9 @@ export class LinkedinUnipileRequestService {
 
       return { entry, fromCache: false };
     } catch (err) {
+      if (isAccountRateLimitDeferredError(err)) {
+        throw err;
+      }
       this.logger.warn(
         `fetchLinkedinSenderFullProfile failed for ${trimmed}: ${err instanceof Error ? err.message : err}`,
       );
@@ -867,20 +872,23 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId: trimmedAccountId,
-        method: 'profile',
-      });
-      const profile = (await this.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
-        'GET',
-        undefined,
+      const profile = (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmedAccountId }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmedAccountId,
+          method: 'profile',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmedAccountId }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
 
       if (profile && this.linkedinProfileCacheService) {
@@ -973,20 +981,23 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId: trimmedAccountId,
-        method: 'endpoint',
-      });
-      return (await this.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/posts?${queryParams}`,
-        'GET',
-        undefined,
+      return (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmedAccountId }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmedAccountId,
+          method: 'endpoint',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/posts?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmedAccountId }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
     } catch (err) {
       if (isAccountRateLimitDeferredError(err)) {
@@ -1018,20 +1029,23 @@ export class LinkedinUnipileRequestService {
     });
 
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId: trimmedAccountId,
-        method: 'endpoint',
-      });
-      return (await this.makeUnipileRequest(
-        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}?${queryParams}`,
-        'GET',
-        undefined,
+      return (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmedAccountId }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmedAccountId,
+          method: 'endpoint',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/posts/${encodeURIComponent(trimmedPostId)}?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmedAccountId }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
     } catch (err) {
       if (isAccountRateLimitDeferredError(err)) {
@@ -1075,20 +1089,23 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId: trimmedAccountId,
-        method: 'endpoint',
-      });
-      return (await this.makeUnipileRequest(
-        `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments?${queryParams}`,
-        'GET',
-        undefined,
+      return (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmedAccountId }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmedAccountId,
+          method: 'endpoint',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmedAccountId }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
     } catch (err) {
       if (isAccountRateLimitDeferredError(err)) {
@@ -1155,21 +1172,23 @@ export class LinkedinUnipileRequestService {
       `Commenting on LinkedIn post ${trimmedPostId} via account ${trimmedAccountId} (${trimmedText.length} chars)`,
     );
 
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId: trimmedAccountId,
-      method: 'comment',
-    });
-
-    return (await this.makeUnipileRequest(
-      `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
-      'POST',
-      body,
+    return (await withAcquiredAccountRateLimit(
       {
-        linkedinAccountCleanup: options?.cleanupContext
-          ? { ...options.cleanupContext, accountId: trimmedAccountId }
-          : undefined,
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'comment',
       },
+      () =>
+        this.makeUnipileRequest(
+          `/api/v1/posts/${encodeURIComponent(trimmedPostId)}/comments`,
+          'POST',
+          body,
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
     )) as Record<string, unknown>;
   }
 
@@ -1208,21 +1227,23 @@ export class LinkedinUnipileRequestService {
       `Sending LinkedIn invitation to ${trimmedProviderId} via account ${trimmedAccountId} (${trimmedMessage.length} chars)`,
     );
 
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId: trimmedAccountId,
-      method: 'connection_request',
-    });
-
-    return (await this.makeUnipileRequest(
-      '/api/v1/users/invite',
-      'POST',
-      body,
+    return (await withAcquiredAccountRateLimit(
       {
-        linkedinAccountCleanup: options?.cleanupContext
-          ? { ...options.cleanupContext, accountId: trimmedAccountId }
-          : undefined,
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'connection_request',
       },
+      () =>
+        this.makeUnipileRequest(
+          '/api/v1/users/invite',
+          'POST',
+          body,
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
     )) as Record<string, unknown>;
   }
 
@@ -1257,21 +1278,23 @@ export class LinkedinUnipileRequestService {
       queryParams.append('filter', options.filter.trim());
     }
 
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId: trimmedAccountId,
-      method: 'endpoint',
-    });
-
-    return this.makeUnipileRequest(
-      `/api/v1/users/relations?${queryParams}`,
-      'GET',
-      undefined,
+    return withAcquiredAccountRateLimit(
       {
-        linkedinAccountCleanup: options?.cleanupContext
-          ? { ...options.cleanupContext, accountId: trimmedAccountId }
-          : undefined,
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
       },
+      () =>
+        this.makeUnipileRequest(
+          `/api/v1/users/relations?${queryParams}`,
+          'GET',
+          undefined,
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
     );
   }
 
@@ -1301,20 +1324,23 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId: trimmedAccountId,
-        method: 'endpoint',
-      });
-      return (await this.makeUnipileRequest(
-        `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/comments?${queryParams}`,
-        'GET',
-        undefined,
+      return (await withAcquiredAccountRateLimit(
         {
-          linkedinAccountCleanup: options?.cleanupContext
-            ? { ...options.cleanupContext, accountId: trimmedAccountId }
-            : undefined,
+          provider: 'linkedin',
+          accountId: trimmedAccountId,
+          method: 'endpoint',
         },
+        () =>
+          this.makeUnipileRequest(
+            `/api/v1/users/${encodeURIComponent(trimmedIdentifier)}/comments?${queryParams}`,
+            'GET',
+            undefined,
+            {
+              linkedinAccountCleanup: options?.cleanupContext
+                ? { ...options.cleanupContext, accountId: trimmedAccountId }
+                : undefined,
+            },
+          ),
       )) as Record<string, unknown>;
     } catch (err) {
       if (isAccountRateLimitDeferredError(err)) {

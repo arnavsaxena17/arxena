@@ -2,6 +2,9 @@ jest.mock(
   'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util',
   () => ({
     acquireAccountRateLimitOrDefer: jest.fn().mockResolvedValue(undefined),
+    withAcquiredAccountRateLimit: jest.fn(
+      async (_params: unknown, fn: () => Promise<unknown>) => fn(),
+    ),
   }),
 );
 

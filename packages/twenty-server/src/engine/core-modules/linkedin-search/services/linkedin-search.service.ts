@@ -5,7 +5,7 @@ import {
     ApifyService,
     type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
-import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import {
     isLinkedInSearchCursorRequest,
@@ -206,13 +206,15 @@ export class LinkedInSearchService {
       countSearchQuota?: boolean;
     },
   ): Promise<LinkedInSearchResponse> {
-    await this.acquireSearchQuotaIfNeeded(accountId, {
-      cursor: options.cursor,
-      start: options.start,
-      offset: options.offset,
-      countSearchQuota: options.countSearchQuota,
-    }, searchRequest);
-
+    return this.withSearchQuotaIfNeeded(
+      accountId,
+      {
+        cursor: options.cursor,
+        start: options.start,
+        offset: options.offset,
+        countSearchQuota: options.countSearchQuota,
+      },
+      async () => {
     // Track request if workspaceId is provided
     if (options.workspaceId) {
       const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
@@ -274,6 +276,9 @@ export class LinkedInSearchService {
       )}`,
     );
     return response;
+      },
+      searchRequest,
+    );
   }
 
   /**
@@ -375,11 +380,13 @@ export class LinkedInSearchService {
       // Location / company / industry / other facet lookups are not a people
       // search. Keep them on the general endpoint cap so they do not consume
       // searchPerMinute / searchPerDay.
-      await acquireAccountRateLimitOrDefer({
-        provider: 'linkedin',
-        accountId,
-        method: 'endpoint',
-      });
+      return await withAcquiredAccountRateLimit(
+        {
+          provider: 'linkedin',
+          accountId,
+          method: 'endpoint',
+        },
+        async () => {
       const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
       const queryParams = new URLSearchParams({
         type,
@@ -390,6 +397,8 @@ export class LinkedInSearchService {
       this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
 
       return await this.getSearchParametersWithRetry(url, queryParams);
+        },
+      );
     } catch (error) {
       this.logger.error(`Failed to get LinkedIn search parameters: ${error}`);
       throw error;
@@ -439,11 +448,13 @@ export class LinkedInSearchService {
     options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
   ): Promise<LinkedInSearchResponse> {
     try {
-      await this.acquireSearchQuotaIfNeeded(accountId, {
-        cursor: options.cursor,
-        start: options.start,
-      });
-
+      return await this.withSearchQuotaIfNeeded(
+        accountId,
+        {
+          cursor: options.cursor,
+          start: options.start,
+        },
+        async () => {
       // Track request if workspaceId is provided
       if (options.workspaceId) {
         const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
@@ -530,6 +541,7 @@ export class LinkedInSearchService {
           cursor: options.cursor,
           limit: options.limit,
           workspaceId: options.workspaceId,
+          countSearchQuota: false,
         });
       }
 
@@ -550,6 +562,8 @@ export class LinkedInSearchService {
 
       this.logger.log(`LinkedIn raw search completed successfully. Found ${items.length} results.`);
       return searchResponse;
+        },
+      );
     } catch (error) {
       this.logger.error(`LinkedIn raw search failed exception: ${error}`);
       throw error;
@@ -763,9 +777,12 @@ export class LinkedInSearchService {
       offset?: number;
     } = {},
   ): Promise<LinkedInSearchResponse> {
-    await this.acquireSearchQuotaIfNeeded(accountId, {
-      offset: options.offset,
-    });
+    return this.withSearchQuotaIfNeeded(
+      accountId,
+      {
+        offset: options.offset,
+      },
+      async () => {
     await this.enforceRequestSpacing();
 
     const { baseUrl, apiKey } = this.unipileV2AccountResolver.getCredentials();
@@ -848,6 +865,8 @@ export class LinkedInSearchService {
       },
       cursor: payload.next_cursor ?? null,
     };
+      },
+    );
   }
 
   /**
@@ -1316,11 +1335,12 @@ export class LinkedInSearchService {
     return { current, past };
   }
 
-  private async acquireSearchQuotaIfNeeded(
+  private async withSearchQuotaIfNeeded<T>(
     accountId: string,
     input: LinkedInSearchQuotaInput,
+    fn: () => Promise<T>,
     searchRequest?: LinkedInSearchRequest,
-  ): Promise<void> {
+  ): Promise<T> {
     const cursor =
       input.cursor ??
       (isLinkedInSearchCursorRequest(searchRequest)
@@ -1333,14 +1353,17 @@ export class LinkedInSearchService {
         cursor,
       })
     ) {
-      return;
+      return fn();
     }
 
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId,
-      method: 'search',
-    });
+    return withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId,
+        method: 'search',
+      },
+      fn,
+    );
   }
 
   private async enforceRequestSpacing(): Promise<void> {

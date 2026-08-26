@@ -5,7 +5,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
 import {
@@ -301,13 +301,14 @@ export class FetchLinkedinMessagesService {
     accountId: string,
     endpoint: string,
   ): Promise<unknown> {
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId,
-      method: 'endpoint',
-    });
-
-    return this.linkedinUnipileRequestService.makeUnipileRequest(endpoint);
+    return withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId,
+        method: 'endpoint',
+      },
+      () => this.linkedinUnipileRequestService.makeUnipileRequest(endpoint),
+    );
   }
 
   private async resolveChatId(

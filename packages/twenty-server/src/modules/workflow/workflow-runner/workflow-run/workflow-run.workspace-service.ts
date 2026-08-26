@@ -7,6 +7,7 @@ import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialE
 import { v4 } from 'uuid';
 
 import { WithLock } from 'src/engine/core-modules/cache-lock/with-lock.decorator';
+import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
@@ -217,6 +218,19 @@ export class WorkflowRunWorkspaceService {
     };
 
     await this.updateWorkflowRun({ workflowRunId, workspaceId, partialUpdate });
+
+    if (
+      status === WorkflowRunStatus.STOPPED ||
+      status === WorkflowRunStatus.FAILED
+    ) {
+      try {
+        await getRegisteredAccountRateLimiter()?.releaseGhostReservationsForWorkflowRun(
+          workflowRunId,
+        );
+      } catch {
+        // Ending the run must not fail because unused slot cleanup failed.
+      }
+    }
 
     const metricKey =
       status === WorkflowRunStatus.COMPLETED

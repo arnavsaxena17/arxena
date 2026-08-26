@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { acquireAccountRateLimitOrDefer } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
 
 export type UnipileCompanyProfileDto = {
@@ -130,32 +131,39 @@ export class UnipileCompanyService {
 
     const baseUrl = process.env.UNIPILE_API_URL ?? '';
     const apiKey = process.env.UNIPILE_ACCESS_TOKEN ?? '';
-    await acquireAccountRateLimitOrDefer({
-      provider: 'linkedin',
-      accountId,
-      method: 'company_profile',
-    });
     const url = `${baseUrl.replace(/\/$/, '')}/api/v1/linkedin/company/${encodeURIComponent(slug)}?account_id=${encodeURIComponent(accountId)}`;
 
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'X-API-KEY': apiKey,
+      const data = await withAcquiredAccountRateLimit(
+        {
+          provider: 'linkedin',
+          accountId,
+          method: 'company_profile',
         },
-      });
+        async () => {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              'X-API-KEY': apiKey,
+            },
+          });
 
-      const data = (await response.json()) as Record<string, unknown>;
+          const payload = (await response.json()) as Record<string, unknown>;
 
-      if (!response.ok) {
-        const errMsg =
-          (data.detail as string) ?? (data.message as string) ?? response.statusText;
-        this.logger.warn(
-          `Unipile company API error for ${slug}: ${response.status} ${errMsg}`,
-        );
-        return null;
-      }
+          if (!response.ok) {
+            const errMsg =
+              (payload.detail as string) ??
+              (payload.message as string) ??
+              response.statusText;
+            throw new Error(
+              `Unipile company API error for ${slug}: ${response.status} ${errMsg}`,
+            );
+          }
+
+          return payload;
+        },
+      );
 
       const raw = data as UnipileCompanyProfileRaw;
       const rawId =
@@ -189,6 +197,9 @@ export class UnipileCompanyService {
       await this.linkedinProfileCacheService.saveLinkedinCompanyProfile(slug, profile);
       return profile;
     } catch (error) {
+      if (isAccountRateLimitDeferredError(error)) {
+        throw error;
+      }
       this.logger.error(`Unipile company profile fetch failed for ${slug}`, error);
       return null;
     }

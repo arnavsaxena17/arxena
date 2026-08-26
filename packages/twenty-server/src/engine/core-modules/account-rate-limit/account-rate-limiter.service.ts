@@ -20,7 +20,15 @@ import {
 import { RedisService } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/redis-service-ops';
 import { AccountRateLimitConfigService } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-config.service';
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { takeAccountRateLimitReservationMember } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
+import {
+  hasAccountRateLimitAcquireScope,
+  peekAccountRateLimitReservationBase,
+  popAccountRateLimitAcquireRecord,
+  pushAccountRateLimitAcquireRecord,
+  takeAccountRateLimitReservationMember,
+  workflowRunIdFromReservationBase,
+  type AccountRateLimitAcquireRecord,
+} from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { shouldPaceAccountRateLimitWindow } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-slot.util';
 import { registerAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 
@@ -43,6 +51,8 @@ export type AccountRateLimitMethod =
   | WhatsappRateLimitMethod;
 
 export const MAX_IN_PROCESS_WAIT_MS = 120_000;
+const GHOST_SET_TTL_SECONDS = 2 * 24 * 60 * 60;
+const GHOST_SET_PREFIX = 'account-rate-limit-ghost:';
 
 const escapeRedisGlob = (value: string): string =>
   value.replace(/[\\*?[\]]/g, '\\$&');
@@ -77,6 +87,43 @@ type RateLimitWindow = {
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+const serializeGhostRecord = (record: AccountRateLimitAcquireRecord): string =>
+  JSON.stringify({
+    provider: record.provider,
+    accountId: record.accountId,
+    method: record.method,
+    member: record.member,
+    keys: record.keys,
+  });
+
+const parseGhostRecord = (
+  raw: string,
+): AccountRateLimitAcquireRecord | undefined => {
+  try {
+    const parsed = JSON.parse(raw) as Partial<AccountRateLimitAcquireRecord>;
+    if (
+      typeof parsed.provider !== 'string' ||
+      typeof parsed.accountId !== 'string' ||
+      typeof parsed.method !== 'string' ||
+      typeof parsed.member !== 'string' ||
+      !Array.isArray(parsed.keys) ||
+      parsed.keys.some((key) => typeof key !== 'string')
+    ) {
+      return undefined;
+    }
+
+    return {
+      provider: parsed.provider,
+      accountId: parsed.accountId,
+      method: parsed.method,
+      member: parsed.member,
+      keys: parsed.keys,
+    };
+  } catch {
+    return undefined;
+  }
+};
 
 @Injectable()
 export class AccountRateLimiterService implements OnModuleInit {
@@ -117,7 +164,124 @@ export class AccountRateLimiterService implements OnModuleInit {
       params.member ??
       takeAccountRateLimitReservationMember() ??
       `${now}:${Math.random().toString(36).slice(2)}`;
-    return this.redisService.tryAcquireMultiWindowSlots(windows, member, now);
+    const result = await this.redisService.tryAcquireMultiWindowSlots(
+      windows,
+      member,
+      now,
+    );
+    const record: AccountRateLimitAcquireRecord = {
+      provider: params.provider,
+      accountId,
+      method: params.method,
+      member,
+      keys: windows.map((window) => window.key),
+    };
+    await this.rememberAcquisition(record);
+
+    return result;
+  }
+
+  async commitLastAcquisition(): Promise<void> {
+    const record = popAccountRateLimitAcquireRecord();
+    if (!record) {
+      return;
+    }
+
+    await this.untrackGhost(record);
+  }
+
+  async releaseLastAcquisition(): Promise<void> {
+    const record = popAccountRateLimitAcquireRecord();
+    if (!record) {
+      return;
+    }
+
+    await this.redisService.removeMemberFromWindows(record.keys, record.member);
+    await this.untrackGhost(record);
+    this.logger.log(
+      `Released unused ${record.provider} ${record.method} slot for account ${record.accountId}`,
+    );
+  }
+
+  async releaseGhostReservationsForWorkflowRun(
+    workflowRunId: string,
+  ): Promise<{ released: number }> {
+    const trimmed = workflowRunId.trim();
+    if (!trimmed) {
+      return { released: 0 };
+    }
+
+    const ghostKey = `${GHOST_SET_PREFIX}${trimmed}`;
+    const records = await this.redisService.getSetMembers(ghostKey);
+    let released = 0;
+
+    for (const raw of records) {
+      const parsed = parseGhostRecord(raw);
+      if (!parsed) {
+        continue;
+      }
+
+      released += await this.redisService.removeMemberFromWindows(
+        parsed.keys,
+        parsed.member,
+      );
+    }
+
+    if (records.length > 0) {
+      await this.redisService.deleteKeys(ghostKey);
+    }
+
+    if (released > 0) {
+      this.logger.log(
+        `Released ${released} unused rate-limit members for stopped workflow ${trimmed}`,
+      );
+    }
+
+    return { released };
+  }
+
+  private async rememberAcquisition(
+    record: AccountRateLimitAcquireRecord,
+  ): Promise<void> {
+    if (!hasAccountRateLimitAcquireScope()) {
+      return;
+    }
+
+    pushAccountRateLimitAcquireRecord(record);
+    await this.trackGhost(record);
+  }
+
+  private async trackGhost(
+    record: AccountRateLimitAcquireRecord,
+  ): Promise<void> {
+    const workflowRunId = workflowRunIdFromReservationBase(
+      peekAccountRateLimitReservationBase(),
+    );
+    if (!workflowRunId) {
+      return;
+    }
+
+    await this.redisService.addSetMembers(
+      `${GHOST_SET_PREFIX}${workflowRunId}`,
+      [serializeGhostRecord(record)],
+      GHOST_SET_TTL_SECONDS,
+    );
+  }
+
+  private async untrackGhost(
+    record: AccountRateLimitAcquireRecord,
+  ): Promise<void> {
+    const workflowRunId = workflowRunIdFromReservationBase(
+      peekAccountRateLimitReservationBase(),
+    );
+    if (!workflowRunId) {
+      return;
+    }
+
+    await this.redisService.removeSetMembers(
+      `${GHOST_SET_PREFIX}${workflowRunId}`,
+      [serializeGhostRecord(record)],
+    );
   }
 
   async flushUsage(params: {
@@ -198,9 +362,14 @@ export class AccountRateLimiterService implements OnModuleInit {
       ];
     });
 
+    const now = Date.now();
     const counts = await this.redisService.countSlidingWindowMembers(
-      fields.map(({ key, windowMs }) => ({ key, windowMs })),
-      Date.now(),
+      fields.map(({ key, windowMs }) => ({
+        key,
+        windowMs,
+        maxScore: shouldPaceAccountRateLimitWindow(windowMs) ? now : '+inf',
+      })),
+      now,
     );
 
     return Object.fromEntries(

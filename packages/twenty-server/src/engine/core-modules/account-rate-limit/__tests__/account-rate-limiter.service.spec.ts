@@ -4,6 +4,10 @@ import {
   buildAccountRateLimitUsageScanPattern,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.service';
 import { AccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import {
+  runWithAccountRateLimitAcquireScope,
+  runWithAccountRateLimitReservation,
+} from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 
 describe('RedisService.tryAcquireMultiWindowSlots', () => {
   it('reserves a future slot when lua returns a wait', async () => {
@@ -146,6 +150,74 @@ describe('RedisService.countSlidingWindowMembers', () => {
       'linkedin:a:connection_request:day',
       '(-85400000',
       '+inf',
+    );
+  });
+
+  it('counts paced windows up to now so future reserved slots are excluded', async () => {
+    const pipeline = {
+      zcount: jest.fn(),
+      exec: jest.fn().mockResolvedValue([[null, 1]]),
+    };
+    const redisClient = {
+      pipeline: jest.fn().mockReturnValue(pipeline),
+    };
+    const redisService = new RedisService({ get: jest.fn() } as never);
+    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
+      redisClient;
+
+    await redisService.countSlidingWindowMembers(
+      [
+        {
+          key: 'linkedin:a:connection_request:5m',
+          windowMs: 300_000,
+          maxScore: 1_000_000,
+        },
+      ],
+      1_000_000,
+    );
+
+    expect(pipeline.zcount).toHaveBeenCalledWith(
+      'linkedin:a:connection_request:5m',
+      '(700000',
+      1_000_000,
+    );
+  });
+});
+
+describe('RedisService.removeMemberFromWindows', () => {
+  it('removes the lua member suffix from each window', async () => {
+    const pipeline = {
+      zrem: jest.fn(),
+      exec: jest.fn().mockResolvedValue([
+        [null, 1],
+        [null, 1],
+      ]),
+    };
+    const redisClient = {
+      pipeline: jest.fn().mockReturnValue(pipeline),
+    };
+    const redisService = new RedisService({ get: jest.fn() } as never);
+    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
+      redisClient;
+
+    await expect(
+      redisService.removeMemberFromWindows(
+        [
+          'linkedin:a:connection_request:5m',
+          'linkedin:a:connection_request:day',
+        ],
+        'run-1:step-1:0',
+      ),
+    ).resolves.toBe(2);
+    expect(pipeline.zrem).toHaveBeenNthCalledWith(
+      1,
+      'linkedin:a:connection_request:5m',
+      'run-1:step-1:0:1',
+    );
+    expect(pipeline.zrem).toHaveBeenNthCalledWith(
+      2,
+      'linkedin:a:connection_request:day',
+      'run-1:step-1:0:2',
     );
   });
 });
@@ -517,10 +589,22 @@ describe('AccountRateLimiterService', () => {
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:5m',
           windowMs: 300_000,
+          maxScore: expect.any(Number),
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:endpoint:minute',
+          windowMs: 60_000,
+          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:search:day',
           windowMs: 86_400_000,
+          maxScore: '+inf',
+        }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:connection_request:day',
+          windowMs: 86_400_000,
+          maxScore: '+inf',
         }),
       ]),
       expect.any(Number),
@@ -557,5 +641,99 @@ describe('AccountRateLimiterService', () => {
     expect(
       buildAccountRateLimitUsageScanPattern('linkedin', 'acc-1', 'search'),
     ).toBe('linkedin:acc-1:search:*');
+  });
+
+  it('keeps successful slots and releases unused ones for a stopped workflow', async () => {
+    const workflowRunId = '54a99d20-8be6-4869-8eeb-aa1aeadfb694';
+    const addSetMembers = jest.fn().mockResolvedValue(undefined);
+    const removeSetMembers = jest.fn().mockResolvedValue(undefined);
+    const getSetMembers = jest.fn().mockResolvedValue([]);
+    const removeMemberFromWindows = jest.fn().mockResolvedValue(2);
+    const deleteKeys = jest.fn().mockResolvedValue(1);
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest
+          .fn()
+          .mockResolvedValue({ acquired: true, waitMs: 0 }),
+        addSetMembers,
+        removeSetMembers,
+        getSetMembers,
+        removeMemberFromWindows,
+        deleteKeys,
+        deleteByPattern: jest.fn(),
+        getString: jest.fn().mockResolvedValue(null),
+        setString: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn().mockResolvedValue(null),
+        readCachedWhatsappLimits: jest.fn().mockResolvedValue(null),
+      } as never,
+    );
+
+    await runWithAccountRateLimitReservation(
+      `${workflowRunId}:step-1`,
+      async () => {
+        await runWithAccountRateLimitAcquireScope(async () => {
+          await limiter.tryAcquire({
+            provider: 'linkedin',
+            accountId: 'acc-1',
+            method: 'connection_request',
+            member: `${workflowRunId}:step-1:0`,
+          });
+          await limiter.commitLastAcquisition();
+        });
+      },
+    );
+
+    expect(addSetMembers).toHaveBeenCalledTimes(1);
+    expect(removeSetMembers).toHaveBeenCalledTimes(1);
+    expect(removeMemberFromWindows).not.toHaveBeenCalled();
+
+    await runWithAccountRateLimitReservation(
+      `${workflowRunId}:step-2`,
+      async () => {
+        await runWithAccountRateLimitAcquireScope(async () => {
+          await limiter.tryAcquire({
+            provider: 'linkedin',
+            accountId: 'acc-1',
+            method: 'search',
+            member: `${workflowRunId}:step-2:0`,
+          });
+          await limiter.releaseLastAcquisition();
+        });
+      },
+    );
+
+    expect(removeMemberFromWindows).toHaveBeenCalledWith(
+      ['linkedin:acc-1:search:minute', 'linkedin:acc-1:search:day'],
+      `${workflowRunId}:step-2:0`,
+    );
+
+    await runWithAccountRateLimitReservation(
+      `${workflowRunId}:step-3`,
+      async () => {
+        await runWithAccountRateLimitAcquireScope(async () => {
+          await limiter.tryAcquire({
+            provider: 'linkedin',
+            accountId: 'acc-1',
+            method: 'comment',
+            member: `${workflowRunId}:step-3:0`,
+          });
+        });
+      },
+    );
+
+    const ghostPayload = addSetMembers.mock.calls.at(-1)?.[1][0] as string;
+    getSetMembers.mockResolvedValue([ghostPayload]);
+
+    await limiter.releaseGhostReservationsForWorkflowRun(workflowRunId);
+
+    expect(removeMemberFromWindows).toHaveBeenCalledWith(
+      ['linkedin:acc-1:comment:30s', 'linkedin:acc-1:comment:day'],
+      `${workflowRunId}:step-3:0`,
+    );
+    expect(deleteKeys).toHaveBeenCalledWith(
+      `account-rate-limit-ghost:${workflowRunId}`,
+    );
   });
 });

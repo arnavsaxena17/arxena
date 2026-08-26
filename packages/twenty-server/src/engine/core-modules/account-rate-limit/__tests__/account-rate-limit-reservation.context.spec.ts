@@ -1,6 +1,8 @@
 import {
+  peekAccountRateLimitReservationBase,
   runWithAccountRateLimitReservation,
   takeAccountRateLimitReservationMember,
+  workflowRunIdFromReservationBase,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 
 describe('account rate limit reservation context', () => {
@@ -24,5 +26,15 @@ describe('account rate limit reservation context', () => {
 
   it('returns undefined outside a reservation context', () => {
     expect(takeAccountRateLimitReservationMember()).toBeUndefined();
+    expect(peekAccountRateLimitReservationBase()).toBeUndefined();
+  });
+
+  it('extracts the workflow run id from a reservation base', () => {
+    expect(
+      workflowRunIdFromReservationBase(
+        '54a99d20-8be6-4869-8eeb-aa1aeadfb694:c416d226:0',
+      ),
+    ).toBe('54a99d20-8be6-4869-8eeb-aa1aeadfb694');
+    expect(workflowRunIdFromReservationBase('run-1:step-1')).toBeUndefined();
   });
 });
