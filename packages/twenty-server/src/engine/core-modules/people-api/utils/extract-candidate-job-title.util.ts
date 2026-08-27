@@ -109,7 +109,7 @@ const positionHasCompanyIdentity = (entry: Record<string, unknown>): boolean =>
   !!extractCompanyFromPositionLike(entry) ||
   !!extractCompanyIdFromPositionLike(entry);
 
-const toMatchInput = (entry: Record<string, unknown>) => ({
+export const toPositionMatchInput = (entry: Record<string, unknown>) => ({
   company: extractCompanyFromPositionLike(entry),
   company_id: extractCompanyIdFromPositionLike(entry),
   role: extractTitleFromPositionLike(entry),
@@ -119,6 +119,7 @@ const toMatchInput = (entry: Record<string, unknown>) => ({
 export type ExtractCandidateJobTitleOptions = {
   companyName?: string | null;
   companyId?: string | number | null;
+  companyIds?: Array<string | number | null | undefined>;
   companySlug?: string | null;
 };
 
@@ -129,14 +130,22 @@ const hasCompanyScope = (
   !!options?.companySlug?.trim() ||
   (typeof options?.companyId === 'string' &&
     options.companyId.trim().length > 0) ||
-  (typeof options?.companyId === 'number' && Number.isFinite(options.companyId));
+  (typeof options?.companyId === 'number' && Number.isFinite(options.companyId)) ||
+  (options?.companyIds ?? []).some((id) => {
+    if (typeof id === 'number') {
+      return Number.isFinite(id);
+    }
+    return typeof id === 'string' && id.trim().length > 0;
+  });
 
 const isCurrentExperienceEntry = (entry: Record<string, unknown>): boolean => {
   const end = entry.end ?? entry.endDate ?? entry.end_date;
   return end === null || end === undefined || end === '';
 };
 
-const collectCurrentPositionRecords = (candidate: Record<string, unknown>) => {
+export const collectCurrentPositionRecords = (
+  candidate: Record<string, unknown>,
+) => {
   const currentPositions = [
     ...asPositionRecords(candidate.current_positions),
     ...asPositionRecords(candidate.currentPositions),
@@ -156,6 +165,7 @@ const collectCurrentPositionRecords = (candidate: Record<string, unknown>) => {
 const toTargetCompany = (options?: ExtractCandidateJobTitleOptions) => ({
   companyName: options?.companyName,
   companyId: options?.companyId,
+  companyIds: options?.companyIds,
   companySlug: options?.companySlug,
 });
 
@@ -178,7 +188,7 @@ export const candidateCurrentlyWorksAtTargetCompany = (
 
   if (
     pickEmploymentPositionMatchingCompany(
-      currentPositions.map(toMatchInput),
+      currentPositions.map(toPositionMatchInput),
       target,
     )
   ) {
@@ -187,7 +197,7 @@ export const candidateCurrentlyWorksAtTargetCompany = (
 
   if (
     pickEmploymentPositionMatchingCompany(
-      currentExperience.map(toMatchInput),
+      currentExperience.map(toPositionMatchInput),
       target,
     )
   ) {
@@ -203,7 +213,7 @@ export const candidateCurrentlyWorksAtTargetCompany = (
 
   if (positionHasCompanyIdentity(candidate)) {
     return !!pickEmploymentPositionMatchingCompany(
-      [toMatchInput(candidate)],
+      [toPositionMatchInput(candidate)],
       target,
     );
   }
@@ -221,7 +231,7 @@ export const extractCandidateJobTitle = (
     const target = toTargetCompany(options);
 
     const matchedCurrent = pickEmploymentPositionMatchingCompany(
-      currentPositions.map(toMatchInput),
+      currentPositions.map(toPositionMatchInput),
       target,
     );
     if (matchedCurrent) {
@@ -229,7 +239,7 @@ export const extractCandidateJobTitle = (
     }
 
     const matchedExperience = pickEmploymentPositionMatchingCompany(
-      currentExperience.map(toMatchInput),
+      currentExperience.map(toPositionMatchInput),
       target,
     );
     if (matchedExperience) {
@@ -302,7 +312,7 @@ export const extractCandidateCompanyName = (
   if (hasCompanyScope(options)) {
     const target = toTargetCompany(options);
     const matchedCurrent = pickEmploymentPositionMatchingCompany(
-      currentPositions.map(toMatchInput),
+      currentPositions.map(toPositionMatchInput),
       target,
     );
     if (matchedCurrent) {
@@ -310,7 +320,7 @@ export const extractCandidateCompanyName = (
     }
 
     const matchedExperience = pickEmploymentPositionMatchingCompany(
-      currentExperience.map(toMatchInput),
+      currentExperience.map(toPositionMatchInput),
       target,
     );
     if (matchedExperience) {

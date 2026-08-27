@@ -176,12 +176,6 @@ export const buildPeopleApiOpenApiDocument = (
             default: 20,
             example: 20,
           },
-          offset: {
-            type: 'integer',
-            minimum: 0,
-            default: 0,
-            example: 0,
-          },
         },
         example: {
           naturalLanguage: '',
@@ -271,7 +265,6 @@ export const buildPeopleApiOpenApiDocument = (
             default: 20,
             example: 10,
           },
-          offset: { type: 'integer', minimum: 0, default: 0, example: 0 },
         },
         example: {
           jobTitle: 'CEO',

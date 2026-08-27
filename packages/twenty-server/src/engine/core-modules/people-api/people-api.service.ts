@@ -8,6 +8,7 @@ import { PdlPersonOrgMovementService } from 'src/engine/core-modules/org-chart/s
 import { PeopleEsService } from 'src/engine/core-modules/org-chart/services/people-es.service';
 
 import { resolveApolloFilters } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import {
   PEOPLE_DATA_SOURCE_CATEGORIES,
   type PeopleDataSourceAlias,
@@ -50,7 +51,9 @@ import { collectPeopleSearchLocations } from './utils/collect-people-search-loca
 import { extractCandidateExperience } from './utils/extract-candidate-experience.util';
 import {
   candidateCurrentlyWorksAtTargetCompany,
+  collectCurrentPositionRecords,
   extractCandidateJobTitle,
+  extractTitleFromPositionLike,
 } from './utils/extract-candidate-job-title.util';
 import {
   extractTaxonomyItemValue,
@@ -58,8 +61,13 @@ import {
 } from './utils/extract-taxonomy-item-value.util';
 import {
   classificationToResolvedFields,
-  matchesTaxonomyFilter,
+  type TaxonomyResolvedFields,
 } from './utils/filter-people-by-taxonomy.util';
+import {
+  flattenCandidateFromMatchedPosition,
+  pickCurrentPositionForSearchIntent,
+  type SearchPositionIntent,
+} from './utils/pick-current-position-for-search-intent.util';
 import {
   findStdFunctionCatalogMatch,
   listStdFunctionItemsForRoot,
@@ -218,7 +226,7 @@ export class PeopleApiService {
       );
     }
 
-    if (jobTitle && !hasTaxonomy && !body.searchUrl?.trim()) {
+    if (jobTitle && !hasTaxonomy) {
       return this.searchPeopleFromClassifiedJobTitle(
         body,
         jobTitle,
@@ -359,7 +367,6 @@ export class PeopleApiService {
         stdGrade: taxonomy.stdGrade ?? undefined,
         jobTitle,
         limit: body.limit,
-        offset: body.offset,
       },
       apiToken,
       options,
@@ -695,7 +702,6 @@ export class PeopleApiService {
         locationScope?.raw ??
         body.country,
       limit: body.limit,
-      offset: body.offset,
     });
 
     return {
@@ -766,10 +772,7 @@ export class PeopleApiService {
           ? apolloFilters.person_department_or_subdepartments
           : undefined,
       per_page: body.limit ?? 20,
-      page:
-        body.offset && body.limit
-          ? Math.floor(body.offset / body.limit) + 1
-          : 1,
+      page: 1,
     });
 
     const people = Array.isArray((raw as { people?: unknown }).people)
@@ -910,8 +913,9 @@ export class PeopleApiService {
       sourcingResult.items,
       sourcingResult.company,
     );
+    const seniorities = sourcingResult.appliedFilters?.seniorities ?? [];
 
-    if (stdFunction || stdFunctionRoot) {
+    if (stdFunction || stdFunctionRoot || seniorities.length > 0) {
       const filtered = await this.filterCandidatesByTaxonomy(
         companyMatched,
         {
@@ -920,6 +924,7 @@ export class PeopleApiService {
           stdGrade,
         },
         sourcingResult.company,
+        seniorities,
       );
 
       return {
@@ -1046,11 +1051,13 @@ export class PeopleApiService {
       name?: string | null;
       slug?: string | null;
       id?: string | null;
+      ids?: string[];
     },
   ): Array<Record<string, unknown>> {
     const options = {
       companyName: company?.name,
       companyId: company?.id,
+      companyIds: company?.ids,
       companySlug: company?.slug,
     };
 
@@ -1062,6 +1069,9 @@ export class PeopleApiService {
           options.companyId.trim().length > 0) ||
         (typeof options.companyId === 'number' &&
           Number.isFinite(options.companyId))
+      ) &&
+      !(options.companyIds ?? []).some(
+        (id) => typeof id === 'string' && id.trim().length > 0,
       )
     ) {
       return items;
@@ -1076,7 +1086,8 @@ export class PeopleApiService {
 
     for (const item of items) {
       if (candidateCurrentlyWorksAtTargetCompany(item, options)) {
-        kept.push(item);
+        const matched = pickCurrentPositionForSearchIntent(item, options);
+        kept.push(flattenCandidateFromMatchedPosition(item, matched));
         continue;
       }
 
@@ -1112,7 +1123,9 @@ export class PeopleApiService {
       name?: string | null;
       slug?: string | null;
       id?: string | null;
+      ids?: string[];
     },
+    seniorities: LinkedInSeniorityType[] = [],
   ): Promise<
     Array<
       Record<string, unknown> & {
@@ -1129,17 +1142,45 @@ export class PeopleApiService {
       return [];
     }
 
-    const titleOptions = {
+    const intent: SearchPositionIntent = {
       companyName: company?.name,
       companyId: company?.id,
+      companyIds: company?.ids,
       companySlug: company?.slug,
+      stdFunction: criteria.stdFunction,
+      stdFunctionRoot: criteria.stdFunctionRoot,
+      stdGrade: criteria.stdGrade,
+      salesNavSeniorities: seniorities,
     };
-    const profiles = items.map((item) => ({
-      jobTitle: extractCandidateJobTitle(item, titleOptions) ?? '',
-      experience: extractCandidateExperience(item),
-    }));
+    const positionRefs: Array<{
+      itemIndex: number;
+      position: Record<string, unknown>;
+      title: string;
+    }> = [];
+
+    for (const [itemIndex, item] of items.entries()) {
+      const { currentPositions, currentExperience } =
+        collectCurrentPositionRecords(item);
+      const pool =
+        currentPositions.length > 0 ? currentPositions : currentExperience;
+      const positions = pool.length > 0 ? pool : [item];
+
+      for (const position of positions) {
+        positionRefs.push({
+          itemIndex,
+          position,
+          title: extractTitleFromPositionLike(position) ?? '',
+        });
+      }
+    }
+
     const classifications =
-      await this.titleTaxonomyRemoteService.classifyProfiles(profiles);
+      await this.titleTaxonomyRemoteService.classifyProfiles(
+        positionRefs.map((ref) => ({
+          jobTitle: ref.title,
+          experience: extractCandidateExperience(items[ref.itemIndex]),
+        })),
+      );
 
     if (!classifications) {
       throw new HttpException(
@@ -1148,14 +1189,26 @@ export class PeopleApiService {
       );
     }
 
+    const classifiedByItem = new Map<
+      number,
+      Map<string, TaxonomyResolvedFields>
+    >();
+
+    for (const [index, ref] of positionRefs.entries()) {
+      const resolved = classificationToResolvedFields(classifications[index]);
+      const perItem = classifiedByItem.get(ref.itemIndex) ?? new Map();
+      const key = ref.title.trim().toLowerCase();
+
+      if (key && !perItem.has(key)) {
+        perItem.set(key, resolved);
+      }
+
+      classifiedByItem.set(ref.itemIndex, perItem);
+    }
+
     const kept: Array<
       Record<string, unknown> & {
-        resolved: {
-          stdFunction: string | null;
-          stdFunctionRoot: string | null;
-          stdGrade: string | null;
-          confidence: number;
-        };
+        resolved: TaxonomyResolvedFields;
       }
     > = [];
     const dropped: Array<{
@@ -1166,24 +1219,36 @@ export class PeopleApiService {
     }> = [];
 
     for (const [index, item] of items.entries()) {
-      const resolved = classificationToResolvedFields(classifications[index]);
-      if (!matchesTaxonomyFilter(resolved, criteria)) {
+      const classifiedByRole = classifiedByItem.get(index);
+      const matched = pickCurrentPositionForSearchIntent(
+        item,
+        intent,
+        classifiedByRole,
+      );
+
+      if (!matched) {
         dropped.push({
-          jobTitle: extractCandidateJobTitle(item, titleOptions) ?? '',
-          stdFunction: resolved.stdFunction,
-          stdFunctionRoot: resolved.stdFunctionRoot,
-          stdGrade: resolved.stdGrade,
+          jobTitle: extractCandidateJobTitle(item, intent) ?? '',
+          stdFunction: null,
+          stdFunctionRoot: null,
+          stdGrade: null,
         });
         continue;
       }
+
+      const resolved =
+        classifiedByRole?.get(
+          (extractTitleFromPositionLike(matched) ?? '').trim().toLowerCase(),
+        ) ?? classificationToResolvedFields(null);
+
       kept.push({
-        ...item,
+        ...flattenCandidateFromMatchedPosition(item, matched),
         resolved,
       });
     }
 
     this.logger.log(
-      `People API taxonomy filter received=${items.length} kept=${kept.length} dropped=${dropped.length} criteria=stdFunction=${criteria.stdFunction ?? ''} stdFunctionRoot=${criteria.stdFunctionRoot ?? ''} stdGrade=${criteria.stdGrade ?? ''} dropped=${JSON.stringify(dropped)}`,
+      `People API taxonomy filter received=${items.length} kept=${kept.length} dropped=${dropped.length} criteria=stdFunction=${criteria.stdFunction ?? ''} stdFunctionRoot=${criteria.stdFunctionRoot ?? ''} stdGrade=${criteria.stdGrade ?? ''} seniorities=${seniorities.join(',')} dropped=${JSON.stringify(dropped)}`,
     );
 
     return kept;

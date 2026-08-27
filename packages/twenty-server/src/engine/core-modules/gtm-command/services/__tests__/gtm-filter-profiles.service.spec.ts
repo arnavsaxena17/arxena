@@ -149,6 +149,54 @@ describe('GtmFilterProfilesService', () => {
     expect(result.assessments[1]?.name).toBe('Jordan Lee');
   });
 
+  it('keeps only the more senior match when onlyOnePersonPerCompany is true', async () => {
+    generateObjectMock.mockResolvedValue({
+      object: {
+        matches: true,
+        reason: 'Decision maker in finance.',
+      },
+    } as Awaited<ReturnType<typeof generateObject>>);
+
+    const cfo = {
+      ...SALES_PROFILE,
+      name: 'Priya Shah',
+      title: 'CFO',
+      headline: 'CFO at Acme',
+      current_positions: [
+        { role: 'CFO', company: 'Acme', company_id: '1441' },
+      ],
+    };
+    const director = {
+      ...SALES_PROFILE,
+      name: 'Alex Kim',
+      title: 'Finance Director',
+      headline: 'Finance Director at Acme',
+      current_positions: [
+        { role: 'Finance Director', company: 'Acme', company_id: '1441' },
+      ],
+    };
+
+    const service = new GtmFilterProfilesService(mockAiModelRegistry());
+    const result = await service.execute({
+      input: {
+        prompt: 'MD/CEO/CFO decision makers',
+        onlyOnePersonPerCompany: true,
+        profiles: [director, cfo],
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.matchedCount).toBe(1);
+    expect(result.rejectedCount).toBe(1);
+    expect(result.people).toEqual([cfo]);
+    expect(result.rejected).toEqual([director]);
+    expect(result.assessments[0]?.matches).toBe(false);
+    expect(result.assessments[0]?.reason).toContain(
+      'A more senior person from the same company was kept',
+    );
+    expect(result.assessments[1]?.matches).toBe(true);
+  });
+
   it('starts a batch of profile LLM calls before waiting for the first to finish', async () => {
     const started: number[] = [];
     const resolvers: Array<(value: Awaited<ReturnType<typeof generateObject>>) => void> =

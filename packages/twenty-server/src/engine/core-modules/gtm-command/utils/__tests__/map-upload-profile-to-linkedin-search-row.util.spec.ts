@@ -43,6 +43,51 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
     );
   });
 
+  it('keeps Unipile current_positions company_id instead of synthesizing a role', () => {
+    const mapped = mapUploadProfileToLinkedinSearchRow({
+      name: 'Gopala Krishnan',
+      title: 'Group President',
+      company: 'Hinduja Group Limited',
+      linkedinUrl: 'https://www.linkedin.com/in/gopala',
+      current_positions: [
+        {
+          role: 'Group President',
+          company: 'Hinduja Group Limited',
+          company_id: '946958',
+        },
+        {
+          role: 'Advisor',
+          company: 'Other Co',
+          company_id: '1',
+        },
+      ],
+    });
+
+    expect(mapped.current_positions).toEqual([
+      {
+        role: 'Group President',
+        company: 'Hinduja Group Limited',
+        company_id: '946958',
+      },
+      {
+        role: 'Advisor',
+        company: 'Other Co',
+        company_id: '1',
+      },
+    ]);
+  });
+
+  it('keeps a CRM UUID on companyId and a LinkedIn id on jobCompanyId', () => {
+    const mapped = mapUploadProfileToLinkedinSearchRow({
+      linkedinUrl: 'https://www.linkedin.com/in/ann',
+      companyId: '3616d8a1-0219-408a-a6e9-75105117be4e',
+      jobCompanyId: '946958',
+    });
+
+    expect(mapped.companyId).toBe('3616d8a1-0219-408a-a6e9-75105117be4e');
+    expect(mapped.jobCompanyId).toBe('946958');
+  });
+
   it('prefers a per-person companyId over the upload-profiles argument', () => {
     const mapped = mapUploadProfileToLinkedinSearchRow(
       {
@@ -54,6 +99,20 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
 
     expect(mapped.companyId).toBe('person-company');
     expect(mapped.jobCompanyId).toBe('person-company');
+  });
+
+  it('reads a Links composite linkedinUrl', () => {
+    const mapped = mapUploadProfileToLinkedinSearchRow({
+      firstName: 'Prenisha',
+      linkedinUrl: {
+        primaryLinkUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',
+      },
+    });
+
+    expect(mapped.linkedinUrl).toBe(
+      'https://www.linkedin.com/in/prenisha-harry-075760b',
+    );
+    expect(mapped.public_identifier).toBe('prenisha-harry-075760b');
   });
 
   it('fills title and company from fetch-linkedin-profile experience', () => {

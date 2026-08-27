@@ -196,6 +196,7 @@ export const main = async (params: {
   profiles?: Array<Record<string, unknown>>;
   prompt?: string;
   modelId?: string;
+  onlyOnePersonPerCompany?: boolean;
 }) => {
   return params;
 };

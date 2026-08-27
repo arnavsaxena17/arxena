@@ -33,6 +33,7 @@ export type ArxenaFieldDefinition = {
   options?: ArxenaFieldOption[];
   defaultValue?: unknown;
   isNullable?: boolean;
+  isUnique?: boolean;
 };
 
 export type ArxenaFieldWithObject = {

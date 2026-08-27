@@ -97,9 +97,4 @@ export class PeopleSearchDto {
   @Min(1)
   @Max(100)
   limit?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  offset?: number;
 }

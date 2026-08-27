@@ -17,6 +17,10 @@ import {
   extractProfilesFromPayload,
   profileDisplayName,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-fake-profile-investigation.util';
+import {
+  isOnlyOnePersonPerCompanyEnabled,
+  keepSeniorPersonPerCompany,
+} from 'src/engine/core-modules/gtm-command/utils/keep-one-person-per-company.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
@@ -98,6 +102,7 @@ export type GtmFilterProfilesInput = {
   snapshot?: unknown;
   prompt?: string;
   modelId?: string;
+  onlyOnePersonPerCompany?: boolean | string;
 };
 
 export type GtmFilterProfilesAssessment = {
@@ -161,7 +166,7 @@ export class GtmFilterProfilesService {
       );
     }
 
-    const assessments = await this.mapInBatches(
+    const assessed = await this.mapInBatches(
       profiles,
       concurrencyForFilterProfilesModel(registeredModel.modelId),
       (profile, index) =>
@@ -174,6 +179,15 @@ export class GtmFilterProfilesService {
         }),
     );
 
+    const assessments = isOnlyOnePersonPerCompanyEnabled(
+      input.onlyOnePersonPerCompany,
+    )
+      ? keepSeniorPersonPerCompany(
+          assessed,
+          (assessment) => assessment.profile,
+        )
+      : assessed;
+
     const people = assessments
       .filter((assessment) => assessment.matches)
       .map((assessment) => assessment.profile);
@@ -182,7 +196,7 @@ export class GtmFilterProfilesService {
       .map((assessment) => assessment.profile);
 
     this.logger.log(
-      `Filter-profiles model=${registeredModel.modelId} total=${assessments.length} matched=${people.length} rejected=${rejected.length}`,
+      `Filter-profiles model=${registeredModel.modelId} total=${assessments.length} matched=${people.length} rejected=${rejected.length} onlyOnePersonPerCompany=${isOnlyOnePersonPerCompanyEnabled(input.onlyOnePersonPerCompany)}`,
     );
 
     return {

@@ -42,6 +42,10 @@ import { pickManualLinkedInBooleanQuery } from '../utils/pick-manual-linkedin-bo
 import type { ManualLinkedInQuery } from '../utils/pick-manual-linkedin-boolean-query.util';
 import { usablePeopleTaxonomyLabel } from '../utils/extract-taxonomy-item-value.util';
 import {
+  extractUnipilePeopleSearchIntent,
+  parseSalesNavUrlSearchIntent,
+} from '../utils/extract-unipile-search-intent.util';
+import {
   PeopleSalesNavAccountResolver,
   type PeopleSalesNavAccountSource,
 } from './people-sales-nav-account.resolver';
@@ -79,6 +83,7 @@ export type PeopleLinkedInSourcingResult = {
     slug: string | null;
     linkedinUrl: string | null;
     id?: string | null;
+    ids?: string[];
   };
   items: Array<Record<string, unknown>>;
 };
@@ -324,6 +329,7 @@ export class PeopleLinkedInSourcingService {
         slug: primaryCompany?.slug ?? null,
         linkedinUrl: primaryCompany?.linkedinUrl ?? null,
         id: unipileSearch.companyParameterIds[0] ?? null,
+        ids: unipileSearch.companyParameterIds,
       },
       items: unipileSearch.items.map((item) =>
         this.normalizePersonItem(item, account.candidateSource),
@@ -352,7 +358,8 @@ export class PeopleLinkedInSourcingService {
       name: input.companyName?.trim() || null,
       slug: input.companyId?.trim() || null,
       linkedinUrl: null,
-      id: null,
+      id: null as string | null,
+      ids: [] as string[],
     };
 
     if (account.candidateSource === 'harvest') {
@@ -377,12 +384,18 @@ export class PeopleLinkedInSourcingService {
           emptyCompany.name ?? '',
         );
 
+      const fromUrl = parseSalesNavUrlSearchIntent(classified.url);
+
       return {
         dataSource: 'harvest',
         keywords: null,
         jobTitle: null,
-        appliedFilters: { functionIds: [], seniorities: [] },
-        company: emptyCompany,
+        appliedFilters: { functionIds: [], seniorities: fromUrl.seniorities },
+        company: {
+          ...emptyCompany,
+          id: fromUrl.companyIds[0] ?? emptyCompany.id,
+          ids: fromUrl.companyIds,
+        },
         items: items.map((item) =>
           this.normalizePersonItem(
             item as unknown as Record<string, unknown>,
@@ -400,26 +413,44 @@ export class PeopleLinkedInSourcingService {
       );
     }
 
-    const items = await this.linkedinUnipileSessionService.withLinkedinSession(
-      input.apiToken,
-      accountId,
-      async (session) => {
-        const response = await this.linkedInSearchService.searchFromUrl(
-          classified.url,
-          session.accountId,
-          { limit },
-        );
+    const fromUrl = parseSalesNavUrlSearchIntent(classified.url);
+    const { items, config } =
+      await this.linkedinUnipileSessionService.withLinkedinSession(
+        input.apiToken,
+        accountId,
+        async (session) => {
+          const response = await this.linkedInSearchService.searchFromUrl(
+            classified.url,
+            session.accountId,
+            { limit },
+          );
 
-        return (response.items ?? []) as Array<Record<string, unknown>>;
-      },
-    );
+          return {
+            items: (response.items ?? []) as Array<Record<string, unknown>>,
+            config: response.config,
+          };
+        },
+      );
+    const fromConfig = extractUnipilePeopleSearchIntent(config);
+    const companyIds =
+      fromConfig.companyIds.length > 0
+        ? fromConfig.companyIds
+        : fromUrl.companyIds;
+    const seniorities =
+      fromConfig.seniorities.length > 0
+        ? fromConfig.seniorities
+        : fromUrl.seniorities;
 
     return {
       dataSource: account.candidateSource,
       keywords: null,
       jobTitle: null,
-      appliedFilters: { functionIds: [], seniorities: [] },
-      company: emptyCompany,
+      appliedFilters: { functionIds: [], seniorities },
+      company: {
+        ...emptyCompany,
+        id: companyIds[0] ?? emptyCompany.id,
+        ids: companyIds,
+      },
       items: items.map((item) =>
         this.normalizePersonItem(item, account.candidateSource),
       ),

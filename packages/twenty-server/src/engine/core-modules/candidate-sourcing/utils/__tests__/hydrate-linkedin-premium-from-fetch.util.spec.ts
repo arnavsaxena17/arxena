@@ -37,6 +37,16 @@ describe('hydrate-linkedin-premium-from-fetch', () => {
     ).toBe('https://www.linkedin.com/in/prenisha-harry-075760b/');
   });
 
+  it('reads linkedin url from a Links composite', () => {
+    expect(
+      readLinkedinUrlFromCandidate({
+        linkedinUrl: {
+          primaryLinkUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b/',
+        },
+      }),
+    ).toBe('https://www.linkedin.com/in/prenisha-harry-075760b/');
+  });
+
   it('needs fetch when url is present but name is missing or a placeholder', () => {
     expect(
       linkedinPremiumProfileNeedsFetch({

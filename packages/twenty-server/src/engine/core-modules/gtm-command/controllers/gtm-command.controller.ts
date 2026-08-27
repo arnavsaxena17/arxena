@@ -446,6 +446,7 @@ export class GtmCommandController {
       snapshot?: unknown;
       prompt?: string;
       modelId?: string;
+      onlyOnePersonPerCompany?: boolean | string;
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {

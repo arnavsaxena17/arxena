@@ -26,6 +26,11 @@ const UPLOAD_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
     objectNameSingular: 'company',
   },
   people: { type: 'array', label: 'People' },
+  candidateId: {
+    type: 'record',
+    label: 'Candidate',
+    objectNameSingular: 'candidate',
+  },
   limit: { type: 'number', label: 'Limit' },
 };
 
@@ -63,6 +68,10 @@ const DETECT_FAKE_PROFILES_INPUT_PROPERTIES: Record<
 
 const FILTER_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
   profiles: { type: 'array', label: 'Profiles', multiline: false },
+  onlyOnePersonPerCompany: {
+    type: 'boolean',
+    label: 'Only one person per company',
+  },
   prompt: { type: 'string', label: 'Prompt', multiline: true },
   modelId: { type: 'string', label: 'Model' },
 };
@@ -231,6 +240,15 @@ export const normalizeGtmNativeLogicFunctionInput = (
   logicFunctionName: string | null | undefined,
   functionInput: FunctionInput,
 ): FunctionInput => {
+  if (logicFunctionName === GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME) {
+    return {
+      ...functionInput,
+      onlyOnePersonPerCompany:
+        functionInput.onlyOnePersonPerCompany === true ||
+        functionInput.onlyOnePersonPerCompany === 'true',
+    };
+  }
+
   if (logicFunctionName !== GTM_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME) {
     return functionInput;
   }

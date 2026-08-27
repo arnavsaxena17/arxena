@@ -47,6 +47,7 @@ const collectCandidateUrlCandidates = (
   const keys = [
     'linkedin_url',
     'linkedinUrl',
+    'linkedinLink',
     'public_linkedin_url',
     'publicLinkedinUrl',
     'public_profile_url',
@@ -61,6 +62,14 @@ const collectCandidateUrlCandidates = (
 
     if (typeof value === 'string' && value.trim()) {
       urls.push(value.trim());
+    }
+
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const primary = (value as Record<string, unknown>).primaryLinkUrl;
+
+      if (typeof primary === 'string' && primary.trim()) {
+        urls.push(primary.trim());
+      }
     }
   }
 

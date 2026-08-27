@@ -1,5 +1,6 @@
 import {
   type FieldManifest,
+  type IndexManifest,
   type Manifest,
   type ObjectFieldManifest,
   type ObjectManifest,
@@ -9,6 +10,7 @@ import {
   type ViewManifest,
   getFieldUniversalIdentifier,
   getFieldsWidgetViewUniversalIdentifier,
+  getIndexUniversalIdentifier,
   getIndexViewUniversalIdentifier,
   getObjectNavigationMenuItemUniversalIdentifier,
   getObjectUniversalIdentifier,
@@ -212,6 +214,7 @@ const buildScalarFieldManifest = ({
     description: field.description || undefined,
     icon: field.icon || undefined,
     isNullable: field.isNullable ?? true,
+    ...(field.isUnique === true && { isUnique: true }),
     ...(field.defaultValue !== undefined && {
       defaultValue: field.defaultValue as RegularFieldManifest['defaultValue'],
     }),
@@ -735,6 +738,43 @@ const buildArxenaFamilyManifest = ({
     );
   }
 
+  const indexes: IndexManifest[] = [];
+
+  if (owner === 'arxena-standard') {
+    const companyObjectUniversalIdentifier =
+      STANDARD_OBJECTS.company.universalIdentifier;
+    const linkedinIdFieldUniversalIdentifier = getFieldUniversalIdentifier({
+      applicationUniversalIdentifier:
+        ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
+      objectUniversalIdentifier: companyObjectUniversalIdentifier,
+      name: 'linkedinId',
+    });
+    const linkedinIdUniqueIndexUniversalIdentifier =
+      getIndexUniversalIdentifier({
+        applicationUniversalIdentifier:
+          ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
+        objectUniversalIdentifier: companyObjectUniversalIdentifier,
+        name: 'linkedinIdUniqueIndex',
+      });
+
+    indexes.push({
+      universalIdentifier: linkedinIdUniqueIndexUniversalIdentifier,
+      objectUniversalIdentifier: companyObjectUniversalIdentifier,
+      isUnique: true,
+      fields: [
+        {
+          universalIdentifier: getIndexUniversalIdentifier({
+            applicationUniversalIdentifier:
+              ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
+            objectUniversalIdentifier: companyObjectUniversalIdentifier,
+            name: 'linkedinIdUniqueIndex:linkedinId',
+          }),
+          fieldUniversalIdentifier: linkedinIdFieldUniversalIdentifier,
+        },
+      ],
+    });
+  }
+
   if (owner === 'arxena-standard') {
     pageLayouts.push(buildGtmCommandDashboardPageLayout());
   }
@@ -759,6 +799,7 @@ const buildArxenaFamilyManifest = ({
     },
     objects,
     fields: topLevelFields,
+    indexes,
     logicFunctions: [],
     frontComponents: [],
     permissionFlags: [],

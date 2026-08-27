@@ -7,6 +7,14 @@ const readString = (row: Record<string, unknown>, keys: string[]): string => {
     if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }
+
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      const primary = (value as Record<string, unknown>).primaryLinkUrl;
+
+      if (typeof primary === 'string' && primary.trim()) {
+        return primary.trim();
+      }
+    }
   }
 
   return '';
@@ -22,7 +30,12 @@ export const mapUploadProfileToLinkedinSearchRow = (
 
   const person = row as Record<string, unknown>;
   const linkedinUrl =
-    readString(person, ['linkedinUrl', 'profileUrl', 'profile_url']) ||
+    readString(person, [
+      'linkedinUrl',
+      'linkedinLink',
+      'profileUrl',
+      'profile_url',
+    ]) ||
     (readString(person, ['linkedinProfileId', 'public_identifier'])
       ? `https://www.linkedin.com/in/${readString(person, ['linkedinProfileId', 'public_identifier'])}`
       : '');
@@ -63,7 +76,13 @@ export const mapUploadProfileToLinkedinSearchRow = (
       : '');
   const location = readString(person, ['location', 'locationName']);
   const resolvedCompanyId =
-    readString(person, ['companyId', 'jobCompanyId']) || companyId.trim();
+    readString(person, ['companyId']) || companyId.trim();
+  const jobCompanyId = readString(person, ['jobCompanyId']);
+  const incomingPositions = Array.isArray(person.current_positions)
+    ? person.current_positions
+    : Array.isArray(person.currentPositions)
+      ? person.currentPositions
+      : [];
 
   return {
     ...person,
@@ -86,19 +105,24 @@ export const mapUploadProfileToLinkedinSearchRow = (
     profilePictureUrl,
     profile_picture_url: profilePictureUrl,
     displayPicture: profilePictureUrl,
-    ...(resolvedCompanyId
-      ? { companyId: resolvedCompanyId, jobCompanyId: resolvedCompanyId }
-      : {}),
-    ...(companyName || jobTitle
-      ? {
-          current_positions: [
-            {
-              company: companyName,
-              role: jobTitle,
-              location,
-            },
-          ],
-        }
-      : {}),
+    ...(resolvedCompanyId ? { companyId: resolvedCompanyId } : {}),
+    ...(jobCompanyId
+      ? { jobCompanyId }
+      : resolvedCompanyId
+        ? { jobCompanyId: resolvedCompanyId }
+        : {}),
+    ...(incomingPositions.length > 0
+      ? { current_positions: incomingPositions }
+      : companyName || jobTitle
+        ? {
+            current_positions: [
+              {
+                company: companyName,
+                role: jobTitle,
+                location,
+              },
+            ],
+          }
+        : {}),
   };
 };

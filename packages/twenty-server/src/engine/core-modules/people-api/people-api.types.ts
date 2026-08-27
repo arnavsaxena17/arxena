@@ -20,6 +20,7 @@ export type PeopleSearchLinkedInCompany = {
   linkedinUrl: string | null;
   website?: string | null;
   id?: string | null;
+  ids?: string[];
   resolvedVia?: PeopleCompanyScopeResolvedVia;
 };
 

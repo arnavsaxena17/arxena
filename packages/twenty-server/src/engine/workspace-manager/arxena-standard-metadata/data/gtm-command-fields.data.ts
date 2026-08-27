@@ -193,6 +193,7 @@ export const getGtmCommandFieldsData = (
     field: {
       description: 'LinkedIn company numeric id or Unipile account id',
       icon: 'IconId',
+      isUnique: true,
       label: 'LinkedIn Id',
       name: 'linkedinId',
       objectMetadataId: objectsNameIdMap.company,

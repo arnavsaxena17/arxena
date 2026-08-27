@@ -1,4 +1,4 @@
-import { ArxenaCandidateNode, ArxenaPersonNode } from "twenty-shared";
+import { isValidUuid } from 'twenty-shared/utils';
 import { normalizeMessagingChannel } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import {
   extractDisplayPictureUrl,
@@ -120,9 +120,11 @@ export const mapArxCandidateToPersonNode = (candidate: any) => {
     },
     uniqueStringKey : candidate?.uniqueStringKey || '',
     jobTitle: jobTitle,
-    ...(typeof candidate?.companyId === 'string' && candidate.companyId.trim()
+    ...(typeof candidate?.companyId === 'string' &&
+    isValidUuid(candidate.companyId.trim())
       ? { companyId: candidate.companyId.trim() }
-      : typeof candidate?.jobCompanyId === 'string' && candidate.jobCompanyId.trim()
+      : typeof candidate?.jobCompanyId === 'string' &&
+          isValidUuid(candidate.jobCompanyId.trim())
         ? { companyId: candidate.jobCompanyId.trim() }
         : {}),
   };

@@ -51,6 +51,12 @@ const GTM_COMPANY_RECORD_INPUT = {
   objectNameSingular: 'company',
 };
 
+const GTM_CANDIDATE_RECORD_INPUT = {
+  type: 'record' as const,
+  label: 'Candidate',
+  objectNameSingular: 'candidate',
+};
+
 const GTM_PERSON_EXPERIENCE_OUTPUT = {
   type: 'array' as const,
   label: 'Employment history',
@@ -726,7 +732,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.uploadProfilesId,
       name: GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       description:
-        'Enroll people as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId, optional companyId, and people[] from search-people-for-company. Recruiter is taken from the Project.',
+        'Enroll people or candidates as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId, optional companyId, and people[] from search/fetch — or a candidate/linkedinUrl (URL-only rows are hydrated via fetch-linkedin-profile). Recruiter is taken from the Project.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       ),
@@ -739,6 +745,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
             properties: {
               projectId: GTM_PROJECT_RECORD_INPUT,
               companyId: GTM_COMPANY_RECORD_INPUT,
+              candidateId: GTM_CANDIDATE_RECORD_INPUT,
               people: {
                 type: 'array',
                 label: 'People',
@@ -966,7 +973,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.filterProfilesId,
       name: GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
       description:
-        'LLM filter of LinkedIn people against a prompt. Pass profiles and a criteria prompt. Each profile is assessed independently against the full profile JSON. Returns matching people. Uses Nous HY3 (hy3:free) by default.',
+        'LLM filter of LinkedIn people against a prompt. Pass profiles and a criteria prompt. Optionally keep only the most senior person per company. Each profile is assessed independently against the full profile JSON. Returns matching people. Uses Nous HY3 (hy3:free) by default.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
       ),
@@ -978,6 +985,10 @@ export const getGtmOutreachLogicFunctionDefinitions = (
             type: 'object',
             properties: {
               profiles: { type: 'array', label: 'Profiles', multiline: false },
+              onlyOnePersonPerCompany: {
+                type: 'boolean',
+                label: 'Only one person per company',
+              },
               prompt: { type: 'string', label: 'Prompt', multiline: true },
               modelId: { type: 'string', label: 'Model' },
             },

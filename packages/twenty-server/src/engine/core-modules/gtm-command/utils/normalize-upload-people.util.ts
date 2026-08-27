@@ -18,6 +18,12 @@ export type UploadProfilesPerson = {
   linkedinProfileId?: string;
   peopleId?: string;
   profilePictureUrl?: string;
+  candidateId?: string;
+  projectId?: string;
+  current_positions?: unknown[];
+  stdFunction?: string;
+  stdFunctionRoot?: string;
+  stdGrade?: string;
 };
 
 const UUID_REGEX =
@@ -45,6 +51,69 @@ const readString = (
 
   return '';
 };
+
+const readLinkUrl = (value: unknown): string => {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return '';
+  }
+
+  const record = value as Record<string, unknown>;
+  const primary = record.primaryLinkUrl;
+
+  return typeof primary === 'string' && primary.trim() ? primary.trim() : '';
+};
+
+const readStringOrLink = (
+  record: Record<string, unknown>,
+  keys: string[],
+): string => {
+  for (const key of keys) {
+    const fromString = readString(record, [key]);
+
+    if (fromString) {
+      return fromString;
+    }
+
+    const fromLink = readLinkUrl(record[key]);
+
+    if (fromLink) {
+      return fromLink;
+    }
+  }
+
+  return '';
+};
+
+const readNestedName = (
+  record: Record<string, unknown>,
+): { firstName: string; lastName: string; name: string } => {
+  const nested = record.name;
+
+  if (typeof nested !== 'object' || nested === null || Array.isArray(nested)) {
+    return { firstName: '', lastName: '', name: '' };
+  }
+
+  const nameRecord = nested as Record<string, unknown>;
+  const firstName = readString(nameRecord, ['firstName', 'first_name']);
+  const lastName = readString(nameRecord, ['lastName', 'last_name']);
+
+  return {
+    firstName,
+    lastName,
+    name: [firstName, lastName].filter(Boolean).join(' '),
+  };
+};
+
+const looksLikeCandidateRecord = (record: Record<string, unknown>): boolean =>
+  record.linkedinUrl != null ||
+  record.linkedinLink != null ||
+  record.projectsId != null ||
+  record.peopleId != null ||
+  record.jobTitle != null;
 
 const firstExperience = (
   record: Record<string, unknown>,
@@ -102,10 +171,15 @@ export const toUploadProfilesPerson = (
 
   const person = row as Record<string, unknown>;
   const experience = firstExperience(person);
-  const firstName = readString(person, ['firstName', 'first_name']);
-  const lastName = readString(person, ['lastName', 'last_name']);
+  const nestedName = readNestedName(person);
+  const firstName =
+    readString(person, ['firstName', 'first_name']) || nestedName.firstName;
+  const lastName =
+    readString(person, ['lastName', 'last_name']) || nestedName.lastName;
   const name =
-    readString(person, ['name', 'fullName']) ||
+    readString(person, ['fullName']) ||
+    (typeof person.name === 'string' ? person.name.trim() : '') ||
+    nestedName.name ||
     [firstName, lastName].filter(Boolean).join(' ');
   const headline = readString(person, ['headline', 'title', 'jobTitle']);
   const title =
@@ -117,14 +191,17 @@ export const toUploadProfilesPerson = (
     (experience
       ? readString(experience, ['company', 'companyName', 'company_name'])
       : '');
-  const linkedinUrl = readString(person, [
-    'linkedinUrl',
-    'profileUrl',
-    'profile_url',
-  ]);
+  const linkedinUrl =
+    readStringOrLink(person, [
+      'linkedinUrl',
+      'linkedinLink',
+      'profileUrl',
+      'profile_url',
+    ]) || readLinkUrl(person);
   const linkedinProfileId =
     readString(person, ['linkedinProfileId', 'public_identifier']) ||
-    extractLinkedinProfileId(linkedinUrl);
+    extractLinkedinProfileId(linkedinUrl) ||
+    extractLinkedinProfileId(person);
   const profilePictureUrl = readString(person, [
     'profilePictureUrl',
     'displayPicture',
@@ -132,8 +209,25 @@ export const toUploadProfilesPerson = (
     'avatarUrl',
   ]);
   const location = readString(person, ['location', 'locationName']);
-  const peopleId = readString(person, ['peopleId']) || linkedinProfileId;
+  const peopleId =
+    readString(person, ['peopleId', 'personId']) || linkedinProfileId;
   const companyId = readString(person, ['companyId', 'jobCompanyId']);
+  const candidateIdRaw = readString(person, ['candidateId']);
+  const recordId = readString(person, ['id']);
+  const candidateId = UUID_REGEX.test(candidateIdRaw)
+    ? candidateIdRaw
+    : UUID_REGEX.test(recordId) && looksLikeCandidateRecord(person)
+      ? recordId
+      : '';
+  const projectId = readString(person, ['projectId', 'projectsId']);
+  const currentPositions = Array.isArray(person.current_positions)
+    ? person.current_positions
+    : Array.isArray(person.currentPositions)
+      ? person.currentPositions
+      : [];
+  const stdFunction = readString(person, ['stdFunction']);
+  const stdFunctionRoot = readString(person, ['stdFunctionRoot']);
+  const stdGrade = readString(person, ['stdGrade']);
 
   if (
     !isNonEmptyString(linkedinUrl) &&
@@ -157,6 +251,12 @@ export const toUploadProfilesPerson = (
     ...(isNonEmptyString(linkedinProfileId) ? { linkedinProfileId } : {}),
     ...(isNonEmptyString(peopleId) ? { peopleId } : {}),
     ...(isNonEmptyString(profilePictureUrl) ? { profilePictureUrl } : {}),
+    ...(isNonEmptyString(candidateId) ? { candidateId } : {}),
+    ...(isNonEmptyString(projectId) ? { projectId } : {}),
+    ...(currentPositions.length > 0 ? { current_positions: currentPositions } : {}),
+    ...(isNonEmptyString(stdFunction) ? { stdFunction } : {}),
+    ...(isNonEmptyString(stdFunctionRoot) ? { stdFunctionRoot } : {}),
+    ...(isNonEmptyString(stdGrade) ? { stdGrade } : {}),
   };
 };
 
@@ -220,3 +320,69 @@ export const normalizeUploadPeople = (raw: unknown): UploadProfilesPerson[] =>
   unwrapPeopleRows(raw)
     .map((item) => toUploadProfilesPerson(item))
     .filter((person): person is UploadProfilesPerson => person !== null);
+
+const visitCandidateIds = (value: unknown, ids: Set<string>): void => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    const parsed = parseJsonValue(trimmed);
+
+    if (parsed !== trimmed) {
+      visitCandidateIds(parsed, ids);
+
+      return;
+    }
+
+    if (UUID_REGEX.test(trimmed)) {
+      ids.add(trimmed);
+    }
+
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      visitCandidateIds(item, ids);
+    }
+
+    return;
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  const candidateId = readString(record, ['candidateId']);
+  const recordId = readString(record, ['id']);
+
+  if (UUID_REGEX.test(candidateId)) {
+    ids.add(candidateId);
+  }
+
+  if (UUID_REGEX.test(recordId) && looksLikeCandidateRecord(record)) {
+    ids.add(recordId);
+  }
+
+  if (Array.isArray(record.people)) {
+    visitCandidateIds(record.people, ids);
+  }
+
+  if (Array.isArray(record.candidates)) {
+    visitCandidateIds(record.candidates, ids);
+  }
+};
+
+export const collectUploadCandidateIds = (...values: unknown[]): string[] => {
+  const ids = new Set<string>();
+
+  for (const value of values) {
+    visitCandidateIds(value, ids);
+  }
+
+  return [...ids];
+};

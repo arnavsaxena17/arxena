@@ -349,7 +349,6 @@ export const SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR: readonly McpInputField
   { key: 'dataSource', type: 'string', description: 'Data source alias: omit or auto (resolve workspace member Unipile / API-key Sales Navigator seat), index, apollo, pdl, contactout, harvest, pool, unipile (unipile requires accountId unless resolved)', required: false },
   { key: 'accountId', type: 'string', description: 'Unipile LinkedIn account id. Required when dataSource is unipile.', required: false },
   { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
-  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
 ] as const;
 
 /** Descriptor for search_people_api tool input. */
@@ -368,7 +367,6 @@ export const SEARCH_PEOPLE_API_INPUT_DESCRIPTOR: readonly McpInputFieldDescripto
   { key: 'country', type: 'string', description: 'Location country filter', required: false },
   { key: 'searchUrl', type: 'string', description: 'Optional LinkedIn people search URL: classic /search/results/people, Sales Nav /sales/search/people (incl. savedSearchId), Recruiter /talent/search. Harvest accepts Sales Nav people URLs only; Unipile/pool accept classic, Sales Nav, and Recruiter.', required: false },
   { key: 'limit', type: 'number', description: 'Maximum results (default 20, max 100)', required: false },
-  { key: 'offset', type: 'number', description: 'Pagination offset', required: false },
 ] as const;
 
 /** Shared optional title param for taxonomy list tools. */

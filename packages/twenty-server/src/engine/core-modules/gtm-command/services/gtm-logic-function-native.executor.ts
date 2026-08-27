@@ -159,6 +159,7 @@ export class GtmLogicFunctionNativeExecutor
           companyId?: string;
           people?: unknown;
           candidates?: unknown;
+          candidateId?: string;
           linkedinUrl?: string;
           limit?: number;
         },
@@ -220,6 +221,7 @@ export class GtmLogicFunctionNativeExecutor
           snapshot?: unknown;
           prompt?: string;
           modelId?: string;
+          onlyOnePersonPerCompany?: boolean | string;
         },
       });
     }

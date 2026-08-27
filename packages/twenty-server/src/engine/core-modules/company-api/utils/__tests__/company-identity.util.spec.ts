@@ -1,6 +1,7 @@
 import {
   collectIdentityKeySet,
   extractLinkedinCompanyId,
+  findMatchingCompanyRecord,
   hitMatchesIdentityKeys,
   identityKeysForHit,
   normalizeCompanyUrl,
@@ -68,5 +69,37 @@ describe('company-identity.util', () => {
         industry: '',
       }),
     ).toContain('id:1035');
+  });
+
+  it('matches linkedinId first and will not merge onto a different id', () => {
+    const rows = [
+      { id: 'older', name: 'Hinduja Hospital', linkedinId: '946958' },
+      { id: 'other', name: 'Namokar', linkedinId: '99' },
+    ];
+
+    expect(
+      findMatchingCompanyRecord(
+        {
+          id: '946958',
+          name: 'P.D. Hinduja National Hospital',
+          website: '',
+          linkedinUrl: '',
+          industry: '',
+        },
+        rows,
+      )?.id,
+    ).toBe('older');
+    expect(
+      findMatchingCompanyRecord(
+        {
+          id: '946958',
+          name: 'Namokar',
+          website: '',
+          linkedinUrl: '',
+          industry: '',
+        },
+        rows,
+      )?.id,
+    ).toBe('older');
   });
 });

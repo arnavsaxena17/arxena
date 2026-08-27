@@ -93,6 +93,39 @@ export const hitMatchesIdentityKeys = (
   knownKeys: Set<string>,
 ): boolean => identityKeysForHit(hit).some((key) => knownKeys.has(key));
 
+export const findMatchingCompanyRecord = <T extends CompanyIdentityRecord>(
+  hit: CompanySearchHit,
+  rows: T[],
+): T | undefined => {
+  const linkedinId = extractLinkedinCompanyId(hit);
+
+  if (isNonEmptyString(linkedinId)) {
+    const byId = rows.find(
+      (row) => (row.linkedinId ?? '').trim() === linkedinId,
+    );
+
+    if (byId) {
+      return byId;
+    }
+  }
+
+  const hitKeys = identityKeysForHit(hit);
+
+  return rows.find((row) => {
+    const existingId = (row.linkedinId ?? '').trim();
+
+    if (
+      isNonEmptyString(linkedinId) &&
+      isNonEmptyString(existingId) &&
+      existingId !== linkedinId
+    ) {
+      return false;
+    }
+
+    return identityKeysForRecord(row).some((key) => hitKeys.includes(key));
+  });
+};
+
 const identityKeys = (input: {
   id: string;
   name: string;

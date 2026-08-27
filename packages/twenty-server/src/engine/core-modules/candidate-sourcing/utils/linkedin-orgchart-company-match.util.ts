@@ -39,6 +39,7 @@ export type EmploymentPositionMatchInput = {
 export type TargetCompanyForPositionMatch = {
   companyName?: string | null;
   companyId?: string | number | null;
+  companyIds?: Array<string | number | null | undefined>;
   companySlug?: string | null;
 };
 
@@ -52,9 +53,15 @@ const normalizeCompanyId = (value: unknown): string => {
   return value.trim();
 };
 
-const collectTargetCompanyId = (
+const collectTargetCompanyIds = (
   target: TargetCompanyForPositionMatch,
-): string => normalizeCompanyId(target.companyId);
+): string[] => {
+  const ids = [target.companyId, ...(target.companyIds ?? [])]
+    .map((value) => normalizeCompanyId(value))
+    .filter((id) => id.length > 0);
+
+  return [...new Set(ids)];
+};
 
 const collectTargetCompanyNames = (
   target: TargetCompanyForPositionMatch,
@@ -79,7 +86,7 @@ const collectTargetCompanyNames = (
 };
 
 const hasCompanyScope = (target: TargetCompanyForPositionMatch): boolean =>
-  collectTargetCompanyId(target).length > 0 ||
+  collectTargetCompanyIds(target).length > 0 ||
   collectTargetCompanyNames(target).length > 0;
 
 /**
@@ -98,11 +105,12 @@ export const pickEmploymentPositionMatchingCompany = <
     return undefined;
   }
 
-  const targetId = collectTargetCompanyId(target);
-  if (targetId) {
+  const targetIds = collectTargetCompanyIds(target);
+  if (targetIds.length > 0) {
+    const idSet = new Set(targetIds);
     const idHit = positions.find((position) => {
       const id = normalizeCompanyId(position.company_id ?? position.companyId);
-      return id.length > 0 && id === targetId;
+      return id.length > 0 && idSet.has(id);
     });
     if (idHit) {
       return idHit;

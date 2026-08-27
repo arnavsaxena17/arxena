@@ -76,6 +76,13 @@ describe('pickEmploymentPositionMatchingCompany', () => {
     expect(matched?.role).toBe('Operation Manager');
   });
 
+  it('matches any of several target company ids', () => {
+    const matched = pickEmploymentPositionMatchingCompany(positions, {
+      companyIds: ['68533040', '946958'],
+    });
+    expect(matched?.role).toBe('Operation Manager');
+  });
+
   it('does not assume current_positions[0] when nothing matches', () => {
     expect(
       pickEmploymentPositionMatchingCompany(positions, {

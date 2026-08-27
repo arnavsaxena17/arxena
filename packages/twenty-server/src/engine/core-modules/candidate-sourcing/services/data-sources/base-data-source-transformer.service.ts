@@ -11,6 +11,7 @@ export interface TransformationContext {
   timestamp: string;
   targetCompanyName?: string;
   targetCompanyId?: string;
+  targetCompanyIds?: string[];
   targetCompanySlug?: string;
 }
 

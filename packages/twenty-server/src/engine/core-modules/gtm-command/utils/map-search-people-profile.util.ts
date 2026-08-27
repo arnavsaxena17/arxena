@@ -6,6 +6,10 @@ import {
   extractCompanyIdFromPositionLike,
   extractTitleFromPositionLike,
 } from 'src/engine/core-modules/people-api/utils/extract-candidate-job-title.util';
+import {
+  flattenCandidateFromMatchedPosition,
+  pickCurrentPositionForSearchIntent,
+} from 'src/engine/core-modules/people-api/utils/pick-current-position-for-search-intent.util';
 
 export type SearchPeopleExperience = {
   company: string;
@@ -255,6 +259,7 @@ export const mapSearchPeopleProfile = (
   options?: {
     source?: string;
     companyId?: string;
+    companyIds?: string[];
     companyName?: string | null;
     companySlug?: string | null;
   },
@@ -272,23 +277,26 @@ export const mapSearchPeopleProfile = (
   const titleOptions = {
     companyName: options?.companyName,
     companyId: options?.companyId,
+    companyIds: options?.companyIds,
     companySlug: options?.companySlug,
   };
+  const matchedPosition = pickCurrentPositionForSearchIntent(item, titleOptions);
+  const flattened = flattenCandidateFromMatchedPosition(item, matchedPosition);
   const title =
-    extractCandidateJobTitle(item, titleOptions) ??
-    readString(item, ['title', 'jobTitle']);
-  const headline = readString(item, ['headline', 'linkedinHeadline']);
+    extractCandidateJobTitle(flattened, titleOptions) ??
+    readString(flattened, ['title', 'jobTitle']);
+  const headline = readString(flattened, ['headline', 'linkedinHeadline']);
   const companyName =
-    extractCandidateCompanyName(item, titleOptions) ??
-    readString(item, ['companyName', 'company', 'org', 'jobCompanyName']);
+    extractCandidateCompanyName(flattened, titleOptions) ??
+    readString(flattened, ['companyName', 'company', 'org', 'jobCompanyName']);
   const currentPositions = asRecordArray(
-    item.current_positions ?? item.currentPositions,
+    flattened.current_positions ?? flattened.currentPositions,
   );
-  const taxonomy = readTaxonomy(item);
+  const taxonomy = readTaxonomy(flattened);
 
   return {
     name:
-      readString(item, ['name', 'fullName', 'full_name']) ||
+      readString(flattened, ['name', 'fullName', 'full_name']) ||
       [firstName, lastName].filter(Boolean).join(' '),
     firstName,
     lastName,

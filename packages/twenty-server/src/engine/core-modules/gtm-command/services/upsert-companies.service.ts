@@ -3,7 +3,7 @@ import { v4 } from 'uuid';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { In, type ObjectLiteral } from 'typeorm';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
 import type { CompanySearchHit } from 'src/engine/core-modules/company-api/company-api.types';
@@ -12,8 +12,7 @@ import {
   companyLinkedinUrl as identityCompanyLinkedinUrl,
   companyWebsiteUrl as identityCompanyWebsiteUrl,
   extractLinkedinCompanyId,
-  identityKeysForHit,
-  identityKeysForRecord,
+  findMatchingCompanyRecord,
   normalizeCompanyUrl,
 } from 'src/engine/core-modules/company-api/utils/company-identity.util';
 import { appendGtmRunKey, gtmRunKeyHasProject } from 'src/engine/core-modules/gtm-command/utils/gtm-run-key.util';
@@ -199,9 +198,11 @@ export class UpsertCompaniesService {
         }
 
         const columns = columnNamesFromRepository(companyRepository);
-        const existing = await companyRepository.find({
-          take: 5000,
-        });
+        const existing = await this.loadExistingCompanies(
+          companyRepository,
+          hits,
+          columns,
+        );
 
         let created = 0;
         let updated = 0;
@@ -228,10 +229,7 @@ export class UpsertCompaniesService {
             continue;
           }
 
-          const hitKeys = identityKeysForHit(hit);
-          const match = existing.find((row) =>
-            identityKeysForRecord(row).some((key) => hitKeys.includes(key)),
-          );
+          const match = findMatchingCompanyRecord(hit, existing);
 
           const nextGtmRunKey = appendGtmRunKey(match?.gtmRunKey, projectId);
           const patch = pickWritable(
@@ -321,5 +319,46 @@ export class UpsertCompaniesService {
       },
       authContext,
     );
+  }
+
+  private async loadExistingCompanies(
+    companyRepository: {
+      find: (options?: {
+        take?: number;
+        where?: Array<Record<string, unknown>> | Record<string, unknown>;
+      }) => Promise<CompanyRecord[]>;
+    },
+    hits: CompanySearchHit[],
+    columns: Set<string>,
+  ): Promise<CompanyRecord[]> {
+    const linkedinIds = [
+      ...new Set(
+        hits
+          .map((hit) => extractLinkedinCompanyId(hit))
+          .filter((id) => isNonEmptyString(id)),
+      ),
+    ];
+    const names = [
+      ...new Set(
+        hits
+          .map((hit) => hit.name.trim())
+          .filter((name) => isNonEmptyString(name)),
+      ),
+    ];
+    const where: Array<Record<string, unknown>> = [];
+
+    if (linkedinIds.length > 0 && (columns.size === 0 || columns.has('linkedinId'))) {
+      where.push({ linkedinId: In(linkedinIds) });
+    }
+
+    if (names.length > 0 && (columns.size === 0 || columns.has('name'))) {
+      where.push({ name: In(names) });
+    }
+
+    if (where.length === 0) {
+      return companyRepository.find({ take: 5000 });
+    }
+
+    return companyRepository.find({ where });
   }
 }

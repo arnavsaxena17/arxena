@@ -855,6 +855,14 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
       titleTaxonomyRemoteService.classifyProfiles as jest.Mock
     ).mockResolvedValueOnce([
       {
+        title: 'Co-Founder',
+        normalized_title: 'co founder',
+        function_root: { id: 'entrepreneurship', name: 'entrepreneurship' },
+        function: { id: 'entrepreneurship', name: 'entrepreneurship' },
+        grade: { id: 'leadership', name: 'leadership' },
+        confidence: 0.7,
+      },
+      {
         title: 'Operation Manager',
         normalized_title: 'operation manager',
         function_root: { id: 'operations', name: 'operations' },
@@ -874,6 +882,23 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     );
 
     expect(titleTaxonomyRemoteService.classifyProfiles).toHaveBeenCalledWith([
+      {
+        jobTitle: 'Co-Founder',
+        experience: [
+          {
+            title: 'Co-Founder',
+            startDate: null,
+            endDate: null,
+            isCurrent: true,
+          },
+          {
+            title: 'Operation Manager',
+            startDate: null,
+            endDate: null,
+            isCurrent: true,
+          },
+        ],
+      },
       {
         jobTitle: 'Operation Manager',
         experience: [

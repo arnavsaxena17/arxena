@@ -2,13 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { v4 } from 'uuid';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isValidUuid } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
 import { linkedinPremiumProfileNeedsFetch } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
+import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
 import { mapUploadProfileToLinkedinSearchRow } from 'src/engine/core-modules/gtm-command/utils/map-upload-profile-to-linkedin-search-row.util';
 import {
   collectUploadCandidateIds,
@@ -16,6 +17,12 @@ import {
   toUploadProfilesPerson,
   type UploadProfilesPerson,
 } from 'src/engine/core-modules/gtm-command/utils/normalize-upload-people.util';
+import {
+  buildUploadSearchIntent,
+  collectUniqueEmployerHits,
+  prepareUploadPersonEmployer,
+  stampCrmCompanyIds,
+} from 'src/engine/core-modules/gtm-command/utils/prepare-upload-people-employers.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -25,6 +32,12 @@ type ProjectRecord = ObjectLiteral & {
   recruiterId?: string | null;
   createdBy?: { workspaceMemberId?: string | null } | null;
   createdByWorkspaceMemberId?: string | null;
+};
+
+type CompanyRecord = ObjectLiteral & {
+  id: string;
+  name?: string | null;
+  linkedinId?: string | null;
 };
 
 type CandidateRecord = ObjectLiteral & {
@@ -63,6 +76,7 @@ export class UploadProfilesService {
     private readonly gtmWorkspaceAuthTokenService: GtmWorkspaceAuthTokenService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly upsertCompaniesService: UpsertCompaniesService,
   ) {}
 
   async execute({
@@ -147,8 +161,38 @@ export class UploadProfilesService {
       workspaceId,
       people: rows,
     });
-    const mapped = hydrated.map((row) =>
-      mapUploadProfileToLinkedinSearchRow(row, companyId),
+    const workflowCompany = await this.loadWorkflowCompany(
+      workspaceId,
+      companyId,
+    );
+    const prepared = hydrated.map((person) =>
+      prepareUploadPersonEmployer(
+        person,
+        buildUploadSearchIntent({ workflowCompany, person }),
+        isValidUuid(companyId) ? companyId : undefined,
+      ),
+    );
+    const kept = prepared.filter((entry) => !entry.skip);
+    const uniqueHits = collectUniqueEmployerHits(
+      kept.map((entry) => entry.employerHit),
+    );
+    const upserted =
+      uniqueHits.length > 0
+        ? await this.upsertCompaniesService.execute({
+            workspaceId,
+            input: {
+              projectId,
+              companies: uniqueHits,
+            },
+          })
+        : { companyIds: [] as string[] };
+    const stamped = stampCrmCompanyIds(
+      kept.map((entry) => entry.person),
+      uniqueHits,
+      upserted.companyIds,
+    );
+    const mapped = stamped.map((row) =>
+      mapUploadProfileToLinkedinSearchRow(row, row.companyId ?? ''),
     );
 
     await this.processCandidatesService.queueRawDataForProcessing(
@@ -196,6 +240,36 @@ export class UploadProfilesService {
         });
       },
       authContext,
+    );
+  }
+
+  private async loadWorkflowCompany(
+    workspaceId: string,
+    companyId: string,
+  ): Promise<CompanyRecord | undefined> {
+    if (!isValidUuid(companyId)) {
+      return undefined;
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return (
+      (await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const companyRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CompanyRecord>(
+              workspaceId,
+              'company',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          return companyRepository.findOne({
+            where: { id: companyId },
+            select: ['id', 'name', 'linkedinId'],
+          });
+        },
+        authContext,
+      )) ?? undefined
     );
   }
 

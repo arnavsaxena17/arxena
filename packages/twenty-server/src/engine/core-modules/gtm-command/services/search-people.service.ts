@@ -68,11 +68,15 @@ export class SearchPeopleService {
       );
 
       const companyId = input.companyId?.trim();
+      const linkedinCompanyId = search.query?.company?.id?.trim();
       const people = (search.items ?? []).map((item) => {
         const mapped = mapSearchPeopleProfile(item, {
           source: search.dataSource,
-          companyId,
-          companyName: input.companyName,
+          companyId: linkedinCompanyId,
+          companyIds: search.query?.company?.ids,
+          companyName:
+            search.query?.company?.name ?? input.companyName,
+          companySlug: search.query?.company?.slug,
         });
 
         return {

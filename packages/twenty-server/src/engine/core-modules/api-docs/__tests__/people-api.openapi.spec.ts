@@ -60,6 +60,16 @@ describe('buildPeopleApiOpenApiDocument', () => {
       'leadership',
     ]);
     expect(searchRequest.properties?.stdFunction?.enum).toBeUndefined();
+    expect(
+      (searchRequest.properties as { offset?: unknown } | undefined)?.offset,
+    ).toBeUndefined();
+    expect(
+      (
+        doc.components?.schemas?.TitleFromJobSearchRequest as {
+          properties?: { offset?: unknown };
+        }
+      ).properties?.offset,
+    ).toBeUndefined();
     expect(searchRequest.properties?.naturalLanguage).toBeDefined();
     expect(searchRequest.properties?.naturalLanguage?.example).toBe('');
     expect(searchRequest.properties?.naturalLanguage?.description).toMatch(

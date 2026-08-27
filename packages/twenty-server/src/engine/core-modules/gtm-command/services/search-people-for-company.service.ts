@@ -30,6 +30,7 @@ type CompanyRecord = ObjectLiteral & {
   domainName?: { primaryLinkUrl?: string } | null;
   linkedinLink?: { primaryLinkUrl?: string | null } | null;
   linkedinLinkPrimaryLinkUrl?: string | null;
+  linkedinId?: string | null;
   gtmRunKey?: string | null;
 };
 
@@ -290,7 +291,8 @@ export class SearchPeopleForCompanyService {
         companyId,
         {
           companyName: context.company.name ?? search.query?.company?.name,
-          companyId: search.query?.company?.id,
+          companyId:
+            search.query?.company?.id ?? context.company.linkedinId ?? null,
           companySlug: search.query?.company?.slug,
         },
       );
@@ -356,6 +358,9 @@ export class SearchPeopleForCompanyService {
             {
               targetCompanyName: targetCompany?.companyName ?? undefined,
               targetCompanyId: targetCompany?.companyId ?? undefined,
+              targetCompanyIds: targetCompany?.companyId
+                ? [targetCompany.companyId]
+                : undefined,
               targetCompanySlug: targetCompany?.companySlug ?? undefined,
             },
           ),
@@ -374,7 +379,7 @@ export class SearchPeopleForCompanyService {
       const taxonomy = readTaxonomyResolved(items[index]);
       const mapped = mapSearchPeopleProfile(items[index] ?? {}, {
         source: dataSource,
-        companyId,
+        companyId: targetCompany?.companyId ?? undefined,
         companyName: targetCompany?.companyName,
         companySlug: targetCompany?.companySlug,
       });

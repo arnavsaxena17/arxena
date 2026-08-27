@@ -196,6 +196,38 @@ describe('UpsertCompaniesService', () => {
     );
   });
 
+  it('matches two Hinduja hospital names to one existing linkedinId', async () => {
+    existingRows.push({
+      id: 'crm-hinduja',
+      name: 'Hinduja Hospital',
+      linkedinId: '946958',
+    });
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          projectId: 'project-1',
+          companies: [
+            { id: '946958', name: 'Hinduja Hospital' },
+            {
+              id: '946958',
+              name: 'P.D. Hinduja National Hospital',
+            },
+          ],
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      created: 0,
+      updated: 1,
+      skipped: 1,
+      companyIds: ['crm-hinduja', 'crm-hinduja'],
+    });
+
+    expect(createdRecords).toHaveLength(0);
+  });
+
   it('returns Project not found when the tag target is missing', async () => {
     projectRepository.findOne.mockResolvedValueOnce(null);
 

@@ -64,7 +64,6 @@ export const peopleApiTools: McpTool[] = [
           country: args.country,
           searchUrl: args.searchUrl,
           limit: args.limit,
-          offset: args.offset,
         },
       );
     },
@@ -100,7 +99,6 @@ export const peopleApiTools: McpTool[] = [
           website: args.website,
           country: args.country,
           limit: args.limit,
-          offset: args.offset,
         },
       );
     },

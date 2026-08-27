@@ -20,7 +20,7 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
     },
   ];
 
-  it('keeps only project, company, people, and limit for upload-profiles', () => {
+  it('keeps project, company, people, candidate, and limit for upload-profiles', () => {
     const result = applyGtmNativeLogicFunctionInputSchema(
       'upload-profiles',
       leftoverUploadProfilesSchema,
@@ -30,12 +30,18 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
       'projectId',
       'companyId',
       'people',
+      'candidateId',
       'limit',
     ]);
     expect(result?.[0].properties?.projectId).toEqual({
       type: 'record',
       label: 'Project',
       objectNameSingular: 'project',
+    });
+    expect(result?.[0].properties?.candidateId).toEqual({
+      type: 'record',
+      label: 'Candidate',
+      objectNameSingular: 'candidate',
     });
   });
 
@@ -259,6 +265,7 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
 
     expect(Object.keys(result?.[0].properties ?? {})).toEqual([
       'profiles',
+      'onlyOnePersonPerCompany',
       'prompt',
       'modelId',
     ]);
@@ -271,6 +278,10 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
       type: 'array',
       label: 'Profiles',
       multiline: false,
+    });
+    expect(result?.[0].properties?.onlyOnePersonPerCompany).toEqual({
+      type: 'boolean',
+      label: 'Only one person per company',
     });
   });
 
@@ -307,7 +318,21 @@ describe('applyGtmNativeLogicFunctionInputSchema', () => {
     ]);
     expect(Object.keys(formFields.inputSchema?.[0].properties ?? {})).toEqual([
       'profiles',
+      'onlyOnePersonPerCompany',
       'prompt',
     ]);
+  });
+
+  it('defaults onlyOnePersonPerCompany to false for filter-profiles', () => {
+    expect(
+      normalizeGtmNativeLogicFunctionInput('filter-profiles', {
+        profiles: '{{people}}',
+        prompt: 'decision makers',
+      }),
+    ).toEqual({
+      profiles: '{{people}}',
+      prompt: 'decision makers',
+      onlyOnePersonPerCompany: false,
+    });
   });
 });

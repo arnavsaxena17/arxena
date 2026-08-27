@@ -1,4 +1,8 @@
-import { normalizeUploadPeople } from '../normalize-upload-people.util';
+import {
+  collectUploadCandidateIds,
+  normalizeUploadPeople,
+  toUploadProfilesPerson,
+} from '../normalize-upload-people.util';
 
 describe('normalizeUploadPeople', () => {
   it('keeps search-people hits', () => {
@@ -76,5 +80,67 @@ describe('normalizeUploadPeople', () => {
     expect(
       normalizeUploadPeople('02143774-8d09-44e8-bb72-9a0d1e5104f3'),
     ).toEqual([]);
+  });
+
+  it('maps a candidate record with Links + nested name', () => {
+    expect(
+      toUploadProfilesPerson({
+        id: '02143774-8d09-44e8-bb72-9a0d1e5104f3',
+        name: { firstName: 'Prenisha', lastName: 'Harry' },
+        jobTitle: 'Senior People Director',
+        jobCompanyName: 'E.L.F. BEAUTY',
+        projectsId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+        peopleId: 'ACoAAAIRqlkBVrZQVLDnz6_oel2hQOLSyF77bKk',
+        linkedinUrl: {
+          primaryLinkUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',
+        },
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        firstName: 'Prenisha',
+        lastName: 'Harry',
+        name: 'Prenisha Harry',
+        title: 'Senior People Director',
+        company: 'E.L.F. BEAUTY',
+        linkedinUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',
+        linkedinProfileId: 'prenisha-harry-075760b',
+        candidateId: '02143774-8d09-44e8-bb72-9a0d1e5104f3',
+        projectId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+      }),
+    );
+  });
+});
+
+describe('collectUploadCandidateIds', () => {
+  it('collects a candidate UUID string', () => {
+    expect(
+      collectUploadCandidateIds('02143774-8d09-44e8-bb72-9a0d1e5104f3'),
+    ).toEqual(['02143774-8d09-44e8-bb72-9a0d1e5104f3']);
+  });
+
+  it('collects candidate ids from people and candidateId without treating projectId as a candidate', () => {
+    expect(
+      collectUploadCandidateIds(
+        '02143774-8d09-44e8-bb72-9a0d1e5104f3',
+        [
+          {
+            id: 'a1b2c3d4-e5f6-4789-8abc-def012345678',
+            linkedinUrl: {
+              primaryLinkUrl: 'https://www.linkedin.com/in/example',
+            },
+            projectsId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+          },
+        ],
+        undefined,
+        {
+          projectId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+          candidateId: '11111111-1111-4111-8111-111111111111',
+        },
+      ),
+    ).toEqual([
+      '02143774-8d09-44e8-bb72-9a0d1e5104f3',
+      'a1b2c3d4-e5f6-4789-8abc-def012345678',
+      '11111111-1111-4111-8111-111111111111',
+    ]);
   });
 });

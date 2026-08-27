@@ -3,6 +3,8 @@ import { MessagingChannel, UserProfile } from 'twenty-shared';
 import { LinkedInPeopleSearchResult, LinkedInSearchResult } from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
+import { pickCurrentPositionForSearchIntent } from 'src/engine/core-modules/people-api/utils/pick-current-position-for-search-intent.util';
+import { isValidUuid } from 'twenty-shared/utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
 /**
@@ -191,13 +193,25 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
 
     const jobCompanyId =
-      (typeof candidateData.jobCompanyId === 'string'
-        ? candidateData.jobCompanyId
+      (typeof candidateData.jobCompanyId === 'string' &&
+      /^\d+$/.test(candidateData.jobCompanyId.trim())
+        ? candidateData.jobCompanyId.trim()
         : '') ||
-      (typeof candidateData.companyId === 'string' ? candidateData.companyId : '');
+      (typeof candidateData.companyId === 'string' &&
+      /^\d+$/.test(candidateData.companyId.trim())
+        ? candidateData.companyId.trim()
+        : '');
 
-    if (jobCompanyId.trim()) {
-      userProfile.jobCompanyId = jobCompanyId.trim();
+    if (jobCompanyId) {
+      userProfile.jobCompanyId = jobCompanyId;
+    }
+
+    if (
+      typeof candidateData.companyId === 'string' &&
+      isValidUuid(candidateData.companyId.trim())
+    ) {
+      (userProfile as UserProfile & { companyId?: string }).companyId =
+        candidateData.companyId.trim();
     }
 
     // Store LinkedIn-specific data in linkedinSpecificData
@@ -235,6 +249,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     target?: {
       companyName?: string;
       companyId?: string;
+      companyIds?: string[];
       companySlug?: string;
     },
   ) {
@@ -243,13 +258,30 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       return undefined;
     }
 
-    return (
-      pickEmploymentPositionMatchingCompany(positions, {
-        companyName: target?.companyName,
-        companyId: target?.companyId,
-        companySlug: target?.companySlug,
-      }) ?? positions[0]
+    const intentPresent = !!(
+      target?.companyName?.trim() ||
+      target?.companyId?.trim() ||
+      target?.companySlug?.trim() ||
+      (target?.companyIds?.length ?? 0) > 0
     );
+    const matched = pickEmploymentPositionMatchingCompany(positions, {
+      companyName: target?.companyName,
+      companyId: target?.companyId,
+      companyIds: target?.companyIds,
+      companySlug: target?.companySlug,
+    });
+
+    if (matched) {
+      return matched;
+    }
+
+    if (intentPresent) {
+      return undefined;
+    }
+
+    return pickCurrentPositionForSearchIntent(
+      peopleResult as unknown as Record<string, unknown>,
+    ) as (typeof positions)[number] | undefined;
   }
 
   private processLinkedInExperienceData(
@@ -260,7 +292,15 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     if (candidateData.current_positions && candidateData.current_positions.length > 0) {
       const currentPosition = this.pickCurrentPosition(candidateData, {
         companyName: context.targetCompanyName,
-        companyId: context.targetCompanyId,
+        companyId:
+          typeof context.targetCompanyId === 'string' &&
+          /^\d+$/.test(context.targetCompanyId.trim())
+            ? context.targetCompanyId.trim()
+            : typeof candidateData.jobCompanyId === 'string' &&
+                /^\d+$/.test(candidateData.jobCompanyId.trim())
+              ? candidateData.jobCompanyId.trim()
+              : context.targetCompanyId,
+        companyIds: context.targetCompanyIds,
         companySlug: context.targetCompanySlug,
       });
 
@@ -268,6 +308,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         userProfile.jobCompanyName = currentPosition.company;
         userProfile.jobTitle = currentPosition.role;
         userProfile.locationName = currentPosition.location || userProfile.locationName;
+        if (currentPosition.company_id) {
+          userProfile.jobCompanyId = String(currentPosition.company_id);
+        }
 
         userProfile.linkedinSpecificData = {
           ...userProfile.linkedinSpecificData,
@@ -461,6 +504,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     options?: {
       targetCompanyName?: string;
       targetCompanyId?: string;
+      targetCompanyIds?: string[];
       targetCompanySlug?: string;
     },
   ): TransformedCandidateForTable[] {
@@ -482,6 +526,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         timestamp,
         targetCompanyName: options?.targetCompanyName,
         targetCompanyId: options?.targetCompanyId,
+        targetCompanyIds: options?.targetCompanyIds,
         targetCompanySlug: options?.targetCompanySlug,
       };
       
@@ -491,6 +536,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       const currentPosition = this.pickCurrentPosition(peopleResult, {
         companyName: options?.targetCompanyName,
         companyId: options?.targetCompanyId,
+        companyIds: options?.targetCompanyIds,
         companySlug: options?.targetCompanySlug,
       });
 
