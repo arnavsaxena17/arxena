@@ -1,6 +1,5 @@
 import {
   type FieldManifest,
-  type IndexManifest,
   type Manifest,
   type ObjectFieldManifest,
   type ObjectManifest,
@@ -10,7 +9,6 @@ import {
   type ViewManifest,
   getFieldUniversalIdentifier,
   getFieldsWidgetViewUniversalIdentifier,
-  getIndexUniversalIdentifier,
   getIndexViewUniversalIdentifier,
   getObjectNavigationMenuItemUniversalIdentifier,
   getObjectUniversalIdentifier,
@@ -738,43 +736,6 @@ const buildArxenaFamilyManifest = ({
     );
   }
 
-  const indexes: IndexManifest[] = [];
-
-  if (owner === 'arxena-standard') {
-    const companyObjectUniversalIdentifier =
-      STANDARD_OBJECTS.company.universalIdentifier;
-    const linkedinIdFieldUniversalIdentifier = getFieldUniversalIdentifier({
-      applicationUniversalIdentifier:
-        ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
-      objectUniversalIdentifier: companyObjectUniversalIdentifier,
-      name: 'linkedinId',
-    });
-    const linkedinIdUniqueIndexUniversalIdentifier =
-      getIndexUniversalIdentifier({
-        applicationUniversalIdentifier:
-          ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
-        objectUniversalIdentifier: companyObjectUniversalIdentifier,
-        name: 'linkedinIdUniqueIndex',
-      });
-
-    indexes.push({
-      universalIdentifier: linkedinIdUniqueIndexUniversalIdentifier,
-      objectUniversalIdentifier: companyObjectUniversalIdentifier,
-      isUnique: true,
-      fields: [
-        {
-          universalIdentifier: getIndexUniversalIdentifier({
-            applicationUniversalIdentifier:
-              ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
-            objectUniversalIdentifier: companyObjectUniversalIdentifier,
-            name: 'linkedinIdUniqueIndex:linkedinId',
-          }),
-          fieldUniversalIdentifier: linkedinIdFieldUniversalIdentifier,
-        },
-      ],
-    });
-  }
-
   if (owner === 'arxena-standard') {
     pageLayouts.push(buildGtmCommandDashboardPageLayout());
   }
@@ -799,7 +760,7 @@ const buildArxenaFamilyManifest = ({
     },
     objects,
     fields: topLevelFields,
-    indexes,
+    indexes: [],
     logicFunctions: [],
     frontComponents: [],
     permissionFlags: [],
