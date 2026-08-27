@@ -65,6 +65,13 @@ describe('buildPeopleApiOpenApiDocument', () => {
     ).toBeUndefined();
     expect(
       (
+        searchRequest.properties as {
+          limit?: { maximum?: number };
+        } | undefined
+      )?.limit?.maximum,
+    ).toBe(500);
+    expect(
+      (
         doc.components?.schemas?.TitleFromJobSearchRequest as {
           properties?: { offset?: unknown };
         }

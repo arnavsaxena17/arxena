@@ -216,9 +216,10 @@
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
+            "maximum": 500,
             "default": 20,
-            "example": 20
+            "example": 20,
+            "description": "Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed."
           }
         },
         "example": {
@@ -376,9 +377,10 @@
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
+            "maximum": 500,
             "default": 20,
-            "example": 10
+            "example": 10,
+            "description": "Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed."
           }
         },
         "example": {
@@ -780,9 +782,10 @@
           "limit": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 100,
+            "maximum": 500,
             "default": 20,
-            "example": 20
+            "example": 20,
+            "description": "Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed."
           }
         },
         "example": {

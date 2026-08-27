@@ -48,6 +48,7 @@ describe('SearchPeopleService', () => {
         naturalLanguage: 'CEO at Acme',
         accountId: 'member-unipile',
         dataSource: 'unipile',
+        limit: 10,
       }),
       undefined,
       { workspaceId: 'ws-1' },
@@ -153,6 +154,51 @@ describe('SearchPeopleService', () => {
         accountId: 'member-unipile',
         limit: 10,
       }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('forwards requested profile counts up to 500 instead of capping at 25', async () => {
+    gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
+    unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
+      { accountId: 'member-unipile', product: 'sales_navigator', via: 'member' },
+    );
+    peopleApiService.searchPeople.mockResolvedValue({
+      status: 'ok',
+      dataSource: 'unipile',
+      total: 0,
+      items: [],
+    });
+
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 100 },
+    });
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 500 },
+    });
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 1000 },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ limit: 100 }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
+    expect(peopleApiService.searchPeople).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ limit: 500 }),
+      undefined,
+      { workspaceId: 'ws-1' },
+    );
+    expect(peopleApiService.searchPeople).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ limit: 500 }),
       undefined,
       { workspaceId: 'ws-1' },
     );

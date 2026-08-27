@@ -13,6 +13,7 @@ import {
   PEOPLE_LINKEDIN_DATA_SOURCES,
   type PeopleLinkedInDataSource,
 } from '../constants/people-data-source-aliases';
+import { PEOPLE_SEARCH_MAX_LIMIT } from '../constants/people-search-limits';
 import {
   PEOPLE_TAXONOMY_FUNCTION_ROOT_VALUES,
   PEOPLE_TAXONOMY_GRADE_VALUES,
@@ -78,6 +79,6 @@ export class PeopleSearchByTaxonomyDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(PEOPLE_SEARCH_MAX_LIMIT)
   limit?: number;
 }

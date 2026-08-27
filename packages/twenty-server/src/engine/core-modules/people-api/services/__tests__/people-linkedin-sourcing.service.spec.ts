@@ -1,4 +1,27 @@
+import { sleepMs } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
+
 import { PeopleLinkedInSourcingService } from '../people-linkedin-sourcing.service';
+
+jest.mock(
+  'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util',
+  () => {
+    const actual = jest.requireActual(
+      'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util',
+    );
+
+    return {
+      ...actual,
+      sleepMs: jest.fn().mockResolvedValue(undefined),
+      randomOrgChartLinkedInPageDelayMs: jest.fn().mockReturnValue(0),
+    };
+  },
+);
+
+const makeUnipilePeople = (count: number, prefix: string) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${prefix}-${index}`,
+    name: `Person ${prefix} ${index}`,
+  }));
 
 describe('PeopleLinkedInSourcingService company resolution', () => {
   const orgChartSuperImposeService = {
@@ -15,6 +38,8 @@ describe('PeopleLinkedInSourcingService company resolution', () => {
   };
   const linkedInSearchService = {
     searchPeopleSalesNavigator: jest.fn(),
+    searchFromUrl: jest.fn(),
+    searchWithCursor: jest.fn(),
   };
   const linkedinUnipileSessionService = {
     withLinkedinSession: jest.fn(),
@@ -77,7 +102,17 @@ describe('PeopleLinkedInSourcingService company resolution', () => {
     );
     linkedInSearchService.searchPeopleSalesNavigator.mockResolvedValue({
       items: [],
+      cursor: null,
     });
+    linkedInSearchService.searchFromUrl.mockResolvedValue({
+      items: [],
+      cursor: null,
+    });
+    linkedInSearchService.searchWithCursor.mockResolvedValue({
+      items: [],
+      cursor: null,
+    });
+    (sleepMs as jest.Mock).mockClear();
   });
 
   it('resolves a workspace company UUID + website through ES domain lookup', async () => {
@@ -211,5 +246,105 @@ describe('PeopleLinkedInSourcingService company resolution', () => {
         primaryCompanyName: 'Egon Zehnder',
       }),
     );
+  });
+
+  it('sends one Unipile page of 100 when 100 profiles are requested', async () => {
+    linkedInSearchService.searchPeopleSalesNavigator.mockResolvedValue({
+      items: makeUnipilePeople(100, 'p1'),
+      cursor: 'next-page',
+    });
+
+    const result = await service.search({
+      apiToken: 'token',
+      companyName: 'Egon Zehnder',
+      website: 'www.egonzehnder.com',
+      dataSource: 'unipile',
+      accountId: 'acct-1',
+      limit: 100,
+    });
+
+    expect(result.items).toHaveLength(100);
+    expect(
+      linkedInSearchService.searchPeopleSalesNavigator,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      linkedInSearchService.searchPeopleSalesNavigator,
+    ).toHaveBeenCalledWith(expect.any(Object), 'acct-1', { limit: 100 });
+    expect(linkedInSearchService.searchWithCursor).not.toHaveBeenCalled();
+    expect(sleepMs).not.toHaveBeenCalled();
+  });
+
+  it('paginates Unipile at 100 per page and uses cursor after Redis-limited first page', async () => {
+    linkedInSearchService.searchPeopleSalesNavigator.mockResolvedValue({
+      items: makeUnipilePeople(100, 'p1'),
+      cursor: 'cursor-2',
+    });
+    linkedInSearchService.searchWithCursor.mockResolvedValue({
+      items: makeUnipilePeople(50, 'p2'),
+      cursor: 'cursor-3',
+    });
+
+    const result = await service.search({
+      apiToken: 'token',
+      companyName: 'Egon Zehnder',
+      website: 'www.egonzehnder.com',
+      dataSource: 'unipile',
+      accountId: 'acct-1',
+      limit: 150,
+    });
+
+    expect(result.items).toHaveLength(150);
+    expect(
+      linkedInSearchService.searchPeopleSalesNavigator,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      linkedInSearchService.searchPeopleSalesNavigator,
+    ).toHaveBeenCalledWith(expect.any(Object), 'acct-1', { limit: 100 });
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledTimes(1);
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledWith(
+      'cursor-2',
+      'acct-1',
+      { limit: 50 },
+    );
+    expect(sleepMs).toHaveBeenCalledTimes(1);
+  });
+
+  it('paginates searchFromUrl with cursor when more than one Unipile page is needed', async () => {
+    linkedInSearchService.searchFromUrl.mockResolvedValue({
+      items: makeUnipilePeople(100, 'u1'),
+      cursor: 'url-cursor-2',
+      config: { params: {} },
+    });
+    linkedInSearchService.searchWithCursor.mockResolvedValue({
+      items: makeUnipilePeople(100, 'u2'),
+      cursor: null,
+      config: { params: {} },
+    });
+
+    const result = await service.search({
+      apiToken: 'token',
+      searchUrl:
+        'https://www.linkedin.com/sales/search/people?savedSearchId=4499073553',
+      dataSource: 'unipile',
+      accountId: 'acct-1',
+      limit: 200,
+    });
+
+    expect(result.items).toHaveLength(200);
+    expect(linkedInSearchService.searchFromUrl).toHaveBeenCalledTimes(1);
+    expect(linkedInSearchService.searchFromUrl).toHaveBeenCalledWith(
+      expect.stringContaining('sales/search/people'),
+      'acct-1',
+      { limit: 100 },
+    );
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledTimes(1);
+    expect(linkedInSearchService.searchWithCursor).toHaveBeenCalledWith(
+      'url-cursor-2',
+      'acct-1',
+      { limit: 100 },
+    );
+    expect(
+      linkedInSearchService.searchPeopleSalesNavigator,
+    ).not.toHaveBeenCalled();
   });
 });

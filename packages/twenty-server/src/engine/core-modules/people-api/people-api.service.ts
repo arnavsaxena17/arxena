@@ -771,7 +771,7 @@ export class PeopleApiService {
         apolloFilters.person_department_or_subdepartments.length > 0
           ? apolloFilters.person_department_or_subdepartments
           : undefined,
-      per_page: body.limit ?? 20,
+      per_page: Math.min(body.limit ?? 20, 100),
       page: 1,
     });
 

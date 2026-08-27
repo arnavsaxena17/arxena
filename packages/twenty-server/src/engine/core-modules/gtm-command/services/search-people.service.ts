@@ -5,6 +5,7 @@ import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
 import { mapSearchPeopleProfile } from 'src/engine/core-modules/gtm-command/utils/map-search-people-profile.util';
 import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-search-account.resolver';
+import { PEOPLE_SEARCH_MAX_LIMIT } from 'src/engine/core-modules/people-api/constants/people-search-limits';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
 
 export type SearchPeopleInput = {
@@ -48,7 +49,10 @@ export class SearchPeopleService {
 
       const accountId = defaultAccount?.accountId;
       dataSource = accountId ? 'unipile' : 'harvest';
-      const limit = Math.min(Math.max(1, input.limit ?? 10), 25);
+      const limit = Math.min(
+        Math.max(1, input.limit ?? 10),
+        PEOPLE_SEARCH_MAX_LIMIT,
+      );
       const search = await this.peopleApiService.searchPeople(
         {
           naturalLanguage: input.naturalLanguage,

@@ -2,6 +2,7 @@ import { OpenAPIV3_1 } from 'openapi-types';
 
 import { FUNCTION_ROOT_VALUES } from '../candidate-search/schemas/org-chart.schema';
 import { PEOPLE_DATA_SOURCE_CATEGORIES } from '../people-api/constants/people-data-source-aliases';
+import { PEOPLE_SEARCH_MAX_LIMIT } from '../people-api/constants/people-search-limits';
 
 const dataSourceEnum = PEOPLE_DATA_SOURCE_CATEGORIES.map(
   (category) => category.alias,
@@ -172,9 +173,11 @@ export const buildPeopleApiOpenApiDocument = (
           limit: {
             type: 'integer',
             minimum: 1,
-            maximum: 100,
+            maximum: PEOPLE_SEARCH_MAX_LIMIT,
             default: 20,
             example: 20,
+            description:
+              'Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed.',
           },
         },
         example: {
@@ -261,9 +264,11 @@ export const buildPeopleApiOpenApiDocument = (
           limit: {
             type: 'integer',
             minimum: 1,
-            maximum: 100,
+            maximum: PEOPLE_SEARCH_MAX_LIMIT,
             default: 20,
             example: 10,
+            description:
+              'Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed.',
           },
         },
         example: {
@@ -503,9 +508,11 @@ export const buildPeopleApiOpenApiDocument = (
           limit: {
             type: 'integer',
             minimum: 1,
-            maximum: 100,
+            maximum: PEOPLE_SEARCH_MAX_LIMIT,
             default: 20,
             example: 20,
+            description:
+              'Desired number of profiles. Unipile people search uses a page size of up to 100 and paginates with cursor when more than one page is needed.',
           },
         },
         example: {

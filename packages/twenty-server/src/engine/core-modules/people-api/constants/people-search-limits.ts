@@ -1,0 +1,1 @@
+export const PEOPLE_SEARCH_MAX_LIMIT = 500;

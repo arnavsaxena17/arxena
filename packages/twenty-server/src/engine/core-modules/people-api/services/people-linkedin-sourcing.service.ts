@@ -2,7 +2,10 @@ import { randomUUID } from 'crypto';
 
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { isValidUuid } from 'twenty-shared/utils';
+import {
+  getLinkedInUnipileSearchPageLimit,
+  isValidUuid,
+} from 'twenty-shared/utils';
 
 import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
 import {
@@ -13,6 +16,7 @@ import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-
 import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
+import type { LinkedInSearchResponse } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import {
   classifyLinkedInSearchUrl,
   isHarvestSalesNavigatorPeopleSearchUrl,
@@ -25,6 +29,10 @@ import {
   type SuperImposeFetchContext,
 } from 'src/engine/core-modules/org-chart/services/org-chart-super-impose.service';
 import type { SuperImposeInputs } from 'src/engine/core-modules/org-chart/types/super-impose.types';
+import {
+  randomOrgChartLinkedInPageDelayMs,
+  sleepMs,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import { normalizeLinkedinCompanyUrl } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
   andMergeBooleanSearchClauses,
@@ -87,6 +95,8 @@ export type PeopleLinkedInSourcingResult = {
   };
   items: Array<Record<string, unknown>>;
 };
+
+const PEOPLE_UNIPILE_SEARCH_MAX_PAGES = 20;
 
 @Injectable()
 export class PeopleLinkedInSourcingService {
@@ -418,18 +428,23 @@ export class PeopleLinkedInSourcingService {
       await this.linkedinUnipileSessionService.withLinkedinSession(
         input.apiToken,
         accountId,
-        async (session) => {
-          const response = await this.linkedInSearchService.searchFromUrl(
-            classified.url,
-            session.accountId,
-            { limit },
-          );
-
-          return {
-            items: (response.items ?? []) as Array<Record<string, unknown>>,
-            config: response.config,
-          };
-        },
+        async (session) =>
+          this.collectUnipilePeoplePages({
+            limit,
+            searchType: classified.product,
+            fetchFirstPage: (pageLimit) =>
+              this.linkedInSearchService.searchFromUrl(
+                classified.url,
+                session.accountId,
+                { limit: pageLimit },
+              ),
+            fetchNextPage: (cursor, pageLimit) =>
+              this.linkedInSearchService.searchWithCursor(
+                cursor,
+                session.accountId,
+                { limit: pageLimit },
+              ),
+          }),
       );
     const fromConfig = extractUnipilePeopleSearchIntent(config);
     const companyIds =
@@ -527,22 +542,137 @@ export class PeopleLinkedInSourcingService {
         });
 
         this.logger.log(
-          `People API Sales Nav search account=${session.accountId} companies=${companyParameterIds.join(',')} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')} keywords=${request.keywords ?? 'omitted'} jobTitle=${request.role?.include?.[0] ?? 'omitted'}`,
+          `People API Sales Nav search account=${session.accountId} companies=${companyParameterIds.join(',')} functionIds=${input.functionIds.join(',')} seniorities=${input.seniorities.join(',')} keywords=${request.keywords ?? 'omitted'} jobTitle=${request.role?.include?.[0] ?? 'omitted'} limit=${input.limit}`,
         );
 
-        const response =
-          await this.linkedInSearchService.searchPeopleSalesNavigator(
-            request,
-            session.accountId,
-            { limit: input.limit },
-          );
+        const paged = await this.collectUnipilePeoplePages({
+          limit: input.limit,
+          searchType: 'sales_navigator',
+          fetchFirstPage: (pageLimit) =>
+            this.linkedInSearchService.searchPeopleSalesNavigator(
+              request,
+              session.accountId,
+              { limit: pageLimit },
+            ),
+          fetchNextPage: (cursor, pageLimit) =>
+            this.linkedInSearchService.searchWithCursor(
+              cursor,
+              session.accountId,
+              { limit: pageLimit },
+            ),
+        });
 
         return {
-          items: (response.items ?? []) as Array<Record<string, unknown>>,
+          items: paged.items,
           companyParameterIds,
         };
       },
     );
+  }
+
+  private async collectUnipilePeoplePages(input: {
+    limit: number;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    fetchFirstPage: (pageLimit: number) => Promise<LinkedInSearchResponse>;
+    fetchNextPage: (
+      cursor: string,
+      pageLimit: number,
+    ) => Promise<LinkedInSearchResponse>;
+  }): Promise<{
+    items: Array<Record<string, unknown>>;
+    config: LinkedInSearchResponse['config'] | undefined;
+  }> {
+    const desired = Math.max(1, input.limit);
+    const pageSize = getLinkedInUnipileSearchPageLimit(input.searchType);
+    const collected: Array<Record<string, unknown>> = [];
+    const seenKeys = new Set<string>();
+    let cursor: string | undefined;
+    let config: LinkedInSearchResponse['config'] | undefined;
+
+    for (
+      let page = 0;
+      page < PEOPLE_UNIPILE_SEARCH_MAX_PAGES && collected.length < desired;
+      page += 1
+    ) {
+      if (page > 0) {
+        await sleepMs(randomOrgChartLinkedInPageDelayMs());
+      }
+
+      const remaining = desired - collected.length;
+      const pageLimit = Math.min(pageSize, remaining);
+      let response: LinkedInSearchResponse;
+
+      if (page === 0) {
+        response = await input.fetchFirstPage(pageLimit);
+      } else if (!cursor) {
+        break;
+      } else {
+        response = await input.fetchNextPage(cursor, pageLimit);
+      }
+
+      if (page === 0) {
+        config = response.config;
+      }
+
+      const items = (response.items ?? []) as Array<Record<string, unknown>>;
+      if (items.length === 0) {
+        break;
+      }
+
+      for (const item of items) {
+        if (collected.length >= desired) {
+          break;
+        }
+        const key = this.unipilePersonIdentityKey(item);
+        if (key) {
+          if (seenKeys.has(key)) {
+            continue;
+          }
+          seenKeys.add(key);
+        }
+        collected.push(item);
+      }
+
+      const nextCursor = response.cursor?.trim();
+      if (!nextCursor || collected.length >= desired) {
+        break;
+      }
+      cursor = nextCursor;
+    }
+
+    this.logger.log(
+      `People API Unipile people search collected=${collected.length} requested=${desired} pageSize=${pageSize} searchType=${input.searchType}`,
+    );
+
+    return { items: collected, config };
+  }
+
+  private unipilePersonIdentityKey(
+    item: Record<string, unknown>,
+  ): string | undefined {
+    const id = typeof item.id === 'string' ? item.id.trim() : '';
+    if (id) {
+      return `id:${id}`;
+    }
+
+    const publicIdentifier =
+      typeof item.public_identifier === 'string'
+        ? item.public_identifier.trim()
+        : '';
+    if (publicIdentifier) {
+      return `pub:${publicIdentifier}`;
+    }
+
+    const urlValue =
+      (typeof item.public_profile_url === 'string' &&
+        item.public_profile_url.trim()) ||
+      (typeof item.linkedin_url === 'string' && item.linkedin_url.trim()) ||
+      '';
+    if (urlValue) {
+      return `url:${urlValue}`;
+    }
+
+    return undefined;
   }
 
   private async resolveManualBooleanQuery(args: {
