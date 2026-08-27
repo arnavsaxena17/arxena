@@ -214,12 +214,22 @@ export class MemberLinkedinUnipileConnectionService {
     }
 
     this.logger.log(`Fetching account by id if exists: ${trimmed}`);
-    const account =
-      await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
-        trimmed,
-        { bypassSnapshot: true },
+    const lookup =
+      await this.linkedinUnipileRequestService.lookupAccountById(trimmed, {
+        bypassSnapshot: true,
+      });
+    this.logger.log(
+      `Account lookup in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED: ${JSON.stringify(lookup, null, 2)}`,
+    );
+
+    if (lookup.status === 'unavailable') {
+      this.logger.warn(
+        `Skipping LinkedIn Unipile account cleanup accountId=${trimmed} workspaceMemberId=${workspaceMemberId} because Unipile lookup is unavailable reason=${lookup.reason} context=${context}`,
       );
-    this.logger.log(`Account in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED: ${JSON.stringify(account, null, 2)}`);
+      return false;
+    }
+
+    const account = lookup.status === 'found' ? lookup.account : null;
 
     const rawSourceStatus = account?.sources?.[0]?.status;
     if (typeof rawSourceStatus === 'string') {
@@ -236,7 +246,7 @@ export class MemberLinkedinUnipileConnectionService {
       }
     }
 
-    if (!account) {
+    if (lookup.status === 'not_found') {
       this.logger.log(`Account not found in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED`);
       this.logger.warn(
         `Clearing missing LinkedIn Unipile account id=${trimmed} from workspace member profile workspaceMemberId=${workspaceMemberId} context=${context}`,
@@ -250,6 +260,10 @@ export class MemberLinkedinUnipileConnectionService {
       );
       this.logger.log(`Cleared missing linkedin account id if needed in CLEANUP UNUSABLE STORED LINKEDIN ACCOUNT IF NEEDED`);
       return true;
+    }
+
+    if (!account) {
+      return false;
     }
 
     const mappedStatus =

@@ -9,10 +9,14 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     fetchAccountResult?: Record<string, unknown> | null;
     mappedStatus?: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required';
   }) => {
+    const fetchAccountResult = options?.fetchAccountResult ?? null;
     const linkedinUnipileRequestService = {
-      fetchAccountByIdIfExists: jest
-        .fn()
-        .mockResolvedValue(options?.fetchAccountResult ?? null),
+      fetchAccountByIdIfExists: jest.fn().mockResolvedValue(fetchAccountResult),
+      lookupAccountById: jest.fn().mockResolvedValue(
+        fetchAccountResult
+          ? { status: 'found', account: fetchAccountResult }
+          : { status: 'not_found' },
+      ),
       mapAccountStatus: jest
         .fn()
         .mockReturnValue(options?.mappedStatus ?? 'connected'),
@@ -66,7 +70,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
     expect(cleared).toBe(true);
     expect(
-      linkedinUnipileRequestService.fetchAccountByIdIfExists,
+      linkedinUnipileRequestService.lookupAccountById,
     ).toHaveBeenCalledWith(staleAccountId, { bypassSnapshot: true });
     expect(
       linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
@@ -175,6 +179,26 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     expect(
       linkedinUnipileRequestService.disconnectAccountBestEffort,
     ).not.toHaveBeenCalled();
+    expect(
+      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('clearStaleStoredLinkedinAccountIdIfNeeded keeps the profile when Unipile lookup is unavailable', async () => {
+    const { service, linkedinUnipileRequestService, workspaceMemberProfileUnipileService } =
+      createService();
+    linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
+      status: 'unavailable',
+      reason: '503 Service Unavailable',
+    });
+
+    const cleared = await service.clearStaleStoredLinkedinAccountIdIfNeeded(
+      workspaceMemberId,
+      authToken,
+      staleAccountId,
+    );
+
+    expect(cleared).toBe(false);
     expect(
       workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).not.toHaveBeenCalled();

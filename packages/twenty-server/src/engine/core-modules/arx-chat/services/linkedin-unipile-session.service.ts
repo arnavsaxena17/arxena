@@ -84,11 +84,17 @@ export class LinkedinUnipileSessionService {
         );
 
       if (linkedinAccountId) {
-        const account =
-          await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
+        const lookup =
+          await this.linkedinUnipileRequestService.lookupAccountById(
             linkedinAccountId,
+            { bypassSnapshot: true },
           );
-        if (account) {
+        if (lookup.status === 'found' || lookup.status === 'unavailable') {
+          if (lookup.status === 'unavailable') {
+            this.logger.warn(
+              `Keeping stored LinkedIn Unipile account id=${linkedinAccountId} because Unipile lookup is unavailable reason=${lookup.reason}`,
+            );
+          }
           return {
             accountId: linkedinAccountId,
             source: 'workspace_member_profile',

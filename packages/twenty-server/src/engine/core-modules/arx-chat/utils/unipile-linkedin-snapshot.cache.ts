@@ -106,8 +106,10 @@ export const getSnapshotRawAccountById = (
     (item) => item.id?.trim() === trimmed,
   );
 
+  // Absence from GET /accounts is not a negative cache: Unipile's list can omit
+  // member accounts that still exist on GET /accounts/:id.
   if (!match) {
-    return null;
+    return undefined;
   }
 
   return match;

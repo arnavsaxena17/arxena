@@ -272,10 +272,28 @@ export class LinkedinUnipileMemberAccountResolverService {
     this.logger.log(`Workspace id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceId}`);
     this.logger.log(`Auth token in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.authToken}`);
     this.logger.log(`Cleanup context in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.cleanupContext}`);
-    const account =
-      await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
+    const lookup =
+      await this.linkedinUnipileRequestService.lookupAccountById(
         args.accountId,
+        { bypassSnapshot: true },
       );
+    this.logger.log(
+      `Account lookup in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${JSON.stringify(lookup, null, 2)}`,
+    );
+    if (lookup.status === 'unavailable') {
+      this.logger.warn(
+        `Keeping stored LinkedIn Unipile account id=${args.accountId} because Unipile lookup is unavailable reason=${lookup.reason}`,
+      );
+      return {
+        kind: 'active',
+        accountId: args.accountId,
+        accountStatus: 'connected',
+        isConnected: true,
+        staleProfileAccountCleared: false,
+      };
+    }
+
+    const account = lookup.status === 'found' ? lookup.account : null;
     this.logger.log(`Account in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${JSON.stringify(account, null, 2)}`);
     if (account) {
       const mappedStatus =

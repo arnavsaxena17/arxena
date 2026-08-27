@@ -41,6 +41,18 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
         }
         return { id, status: 'connected' };
       }),
+      lookupAccountById: jest.fn().mockImplementation(async (id: string) => {
+        if (id === staleAccountId) {
+          return { status: 'not_found' };
+        }
+        if (id === disconnectedIdentityId) {
+          return {
+            status: 'found',
+            account: { id: disconnectedIdentityId, status: 'disconnected' },
+          };
+        }
+        return { status: 'found', account: { id, status: 'connected' } };
+      }),
       mapAccountStatus: jest.fn().mockImplementation((account: { id?: string }) =>
         account.id === disconnectedIdentityId ? 'disconnected' : 'connected',
       ),
@@ -138,9 +150,12 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       storedAccountId: activeAccountId,
     });
 
-    linkedinUnipileRequestService.fetchAccountByIdIfExists.mockResolvedValue({
-      id: activeAccountId,
-      status: 'connected',
+    linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
+      status: 'found',
+      account: {
+        id: activeAccountId,
+        status: 'connected',
+      },
     });
 
     const result = await service.resolveMemberLinkedinUnipileAccount({
@@ -150,6 +165,36 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       reconnectSourceToken: 'li-at-token',
     });
 
+    expect(linkedinUnipileRequestService.makeUnipileRequest).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      accountId: activeAccountId,
+      resolution: 'stored_profile',
+      reconnectAttempted: false,
+    });
+  });
+
+  it('keeps stored account when Unipile lookup is unavailable', async () => {
+    const activeAccountId = 'active-account';
+    const { service, linkedinUnipileRequestService, memberLinkedinUnipileConnectionService } =
+      createService({
+        storedAccountId: activeAccountId,
+      });
+
+    linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
+      status: 'unavailable',
+      reason: '503 Service Unavailable',
+    });
+
+    const result = await service.resolveMemberLinkedinUnipileAccount({
+      workspaceId,
+      workspaceMemberId,
+      authToken,
+      reconnectSourceToken: 'li-at-token',
+    });
+
+    expect(
+      memberLinkedinUnipileConnectionService.clearStaleStoredLinkedinAccountIdIfNeeded,
+    ).not.toHaveBeenCalled();
     expect(linkedinUnipileRequestService.makeUnipileRequest).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       accountId: activeAccountId,

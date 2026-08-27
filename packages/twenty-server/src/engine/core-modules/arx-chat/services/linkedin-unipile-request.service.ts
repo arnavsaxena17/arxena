@@ -77,6 +77,11 @@ type LinkedinUnipileAccountItem = Record<string, unknown> & {
   groups?: unknown[];
 };
 
+export type LinkedinUnipileAccountLookupResult =
+  | { status: 'found'; account: LinkedinUnipileAccountItem }
+  | { status: 'not_found' }
+  | { status: 'unavailable'; reason: string };
+
 @Injectable()
 export class LinkedinUnipileRequestService {
   private readonly logger = new Logger(LinkedinUnipileRequestService.name);
@@ -256,29 +261,77 @@ export class LinkedinUnipileRequestService {
     }
   }
 
-  /** Fetch a single account by id; returns null on 404 (e.g. account disconnected) without logging ERROR. */
-  async fetchAccountByIdIfExists(
+  /**
+   * Lookup a Unipile account by id.
+   * `not_found` requires GET /accounts/:id 404 and the id absent from a live GET /accounts.
+   * Snapshot misses, list omissions, and Unipile 5xx/network errors are not enough to wipe.
+   */
+  async lookupAccountById(
     accountId: string,
     options?: { bypassSnapshot?: boolean },
-  ): Promise<LinkedinUnipileAccountItem | null> {
+  ): Promise<LinkedinUnipileAccountLookupResult> {
     const trimmed = accountId.trim();
     if (!trimmed) {
-      return null;
+      return { status: 'not_found' };
     }
 
     if (options?.bypassSnapshot !== true) {
       await this.ensureLinkedinSnapshotFresh();
       const snapshotAccount = getSnapshotRawAccountById(trimmed);
-      if (snapshotAccount !== undefined) {
-        return snapshotAccount as LinkedinUnipileAccountItem | null;
+      if (snapshotAccount) {
+        return {
+          status: 'found',
+          account: snapshotAccount as LinkedinUnipileAccountItem,
+        };
       }
     }
 
-    const url = `${this.unipileApiUrl}/api/v1/accounts/${trimmed}`;
+    const byId = await this.fetchAccountByIdFromUnipileApi(trimmed);
+    if (byId.status === 'found') {
+      patchSnapshotRawAccount(byId.account as UnipileLinkedinSnapshotRawAccount);
+      return byId;
+    }
+
+    const fromList = await this.findAccountInLiveAccountsList(trimmed);
+    if (fromList.status === 'found') {
+      this.logger.log(
+        `Unipile GET /accounts/:id did not return accountId=${trimmed}; found it on live GET /accounts`,
+      );
+      patchSnapshotRawAccount(
+        fromList.account as UnipileLinkedinSnapshotRawAccount,
+      );
+      return fromList;
+    }
+
+    if (byId.status === 'not_found' && fromList.status === 'not_found') {
+      this.logger.warn(
+        `Workspace linked account ${trimmed} not found in Unipile GET /accounts/:id (404) or live GET /accounts`,
+      );
+      invalidateUnipileAccountsListCache();
+      return { status: 'not_found' };
+    }
+
+    const reason =
+      byId.status === 'unavailable'
+        ? byId.reason
+        : fromList.status === 'unavailable'
+          ? fromList.reason
+          : 'Unipile lookup inconclusive';
+    this.logger.warn(
+      `Unipile account lookup unavailable accountId=${trimmed} reason=${reason}`,
+    );
+    return { status: 'unavailable', reason };
+  }
+
+  private async fetchAccountByIdFromUnipileApi(
+    accountId: string,
+  ): Promise<LinkedinUnipileAccountLookupResult> {
+    const url = `${this.unipileApiUrl}/api/v1/accounts/${accountId}`;
     const headers = {
       Accept: 'application/json',
       'X-API-KEY': this.unipileAccessToken || '',
     };
+
     try {
       const response = await fetch(url, { method: 'GET', headers });
       const data = (await response.json().catch(() => ({}))) as Record<
@@ -286,27 +339,59 @@ export class LinkedinUnipileRequestService {
         unknown
       >;
       if (response.status === 404) {
-        this.logger.warn(
-          `Workspace linked account ${trimmed} not found in Unipile (404); it may have been disconnected`,
-        );
-        invalidateUnipileAccountsListCache();
-        return null;
+        return { status: 'not_found' };
       }
       if (!response.ok) {
         this.logger.error(
           `Unipile API error: ${response.status} ${response.statusText}`,
           data,
         );
-        return null;
+        return {
+          status: 'unavailable',
+          reason: `${response.status} ${response.statusText}`,
+        };
       }
-      patchSnapshotRawAccount(data as UnipileLinkedinSnapshotRawAccount);
-      return data as LinkedinUnipileAccountItem;
+      return { status: 'found', account: data as LinkedinUnipileAccountItem };
     } catch (err) {
-      this.logger.warn(
-        `Could not fetch account ${trimmed}: ${err instanceof Error ? err.message : err}`,
-      );
-      return null;
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Could not fetch account ${accountId}: ${reason}`);
+      return { status: 'unavailable', reason };
     }
+  }
+
+  private async findAccountInLiveAccountsList(
+    accountId: string,
+  ): Promise<LinkedinUnipileAccountLookupResult> {
+    try {
+      this.logger.log(
+        `Checking live Unipile GET /accounts for accountId=${accountId}`,
+      );
+      const response = (await this.makeUnipileRequest('/api/v1/accounts')) as {
+        items?: LinkedinUnipileAccountItem[];
+      };
+      const match = (response.items ?? []).find(
+        (item) => item.id?.trim() === accountId,
+      );
+      if (match) {
+        return { status: 'found', account: match };
+      }
+      return { status: 'not_found' };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.warn(
+        `Live Unipile GET /accounts failed while looking up ${accountId}: ${reason}`,
+      );
+      return { status: 'unavailable', reason };
+    }
+  }
+
+  /** Fetch a single account by id; returns null when missing or Unipile lookup is unavailable. */
+  async fetchAccountByIdIfExists(
+    accountId: string,
+    options?: { bypassSnapshot?: boolean },
+  ): Promise<LinkedinUnipileAccountItem | null> {
+    const lookup = await this.lookupAccountById(accountId, options);
+    return lookup.status === 'found' ? lookup.account : null;
   }
 
   async ensureLinkedinSnapshotFresh(): Promise<void> {

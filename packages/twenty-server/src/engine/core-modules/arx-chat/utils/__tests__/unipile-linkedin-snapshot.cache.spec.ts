@@ -92,11 +92,24 @@ describe('unipile-linkedin-snapshot.cache', () => {
     });
 
     expect(removeSnapshotAccountById('acc-1')).toBe(true);
-    expect(getSnapshotRawAccountById('acc-1')).toBeNull();
+    expect(getSnapshotRawAccountById('acc-1')).toBeUndefined();
     expect(getSnapshotRawAccountById('acc-2')?.id).toBe('acc-2');
     expect(getSnapshotOwnerProfile('acc-1')).toBeUndefined();
     expect(getSnapshotOwnerProfile('acc-2')?.public_identifier).toBe('bob');
     expect(getSnapshotLinkedinAccounts()).toHaveLength(1);
     console.log('snapshot cache remove account test: success');
+  });
+
+  it('does not treat a missing list entry as a negative cache', () => {
+    setUnipileLinkedinSnapshot({
+      rawAccountsList: {
+        items: [{ id: 'pool-acc', type: 'LINKEDIN' }],
+      },
+      linkedinAccounts: [],
+      ownerProfilesByAccountId: new Map(),
+    });
+
+    expect(getSnapshotRawAccountById('member-acc')).toBeUndefined();
+    expect(getSnapshotRawAccountById('pool-acc')?.id).toBe('pool-acc');
   });
 });
