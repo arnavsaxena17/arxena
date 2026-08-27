@@ -77,6 +77,74 @@ describe('UploadProfilesService', () => {
     );
   });
 
+  it('queues every person when limit is unset (no default/hard cap)', async () => {
+    const people = Array.from({ length: 64 }, (_, index) => ({
+      ...classifiedSearchHit,
+      name: `Person ${index}`,
+      linkedinUrl: `https://www.linkedin.com/in/person-${index}`,
+      linkedinProfileId: `person-${index}`,
+    }));
+
+    await expect(
+      service.execute({
+        workspaceId: '54a99d20-8be6-4869-8eeb-aa1aeadfb694',
+        input: {
+          projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+          people,
+        },
+      }),
+    ).resolves.toEqual({
+      success: true,
+      queued: 64,
+      projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      error: '',
+    });
+
+    expect(
+      processCandidatesService.queueRawDataForProcessing,
+    ).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ linkedinProfileId: 'person-0' }),
+        expect.objectContaining({ linkedinProfileId: 'person-63' }),
+      ]),
+      'linkedin_search',
+      '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      'GTM Harvest',
+      '',
+      expect.any(String),
+      'gtm-workflow-upload-profiles',
+      'token',
+      expect.any(String),
+    );
+    expect(
+      processCandidatesService.queueRawDataForProcessing.mock.calls[0][0],
+    ).toHaveLength(64);
+  });
+
+  it('honors an explicit limit when provided', async () => {
+    const people = Array.from({ length: 10 }, (_, index) => ({
+      ...classifiedSearchHit,
+      name: `Person ${index}`,
+      linkedinUrl: `https://www.linkedin.com/in/person-${index}`,
+      linkedinProfileId: `person-${index}`,
+    }));
+
+    await expect(
+      service.execute({
+        workspaceId: '54a99d20-8be6-4869-8eeb-aa1aeadfb694',
+        input: {
+          projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+          people,
+          limit: 3,
+        },
+      }),
+    ).resolves.toMatchObject({ success: true, queued: 3 });
+
+    expect(
+      processCandidatesService.queueRawDataForProcessing.mock.calls[0][0],
+    ).toHaveLength(3);
+  });
+
   it('queues classified search hits when the workflow did not pass a company', async () => {
     await expect(
       service.execute({

@@ -272,6 +272,8 @@ export class MessageQueueExplorer implements OnModuleInit {
         // @ts-expect-error legacy noImplicitAny
         await instance[processMethodName].call(instance, job.data, {
           abortSignal: job.abortSignal,
+          attemptsMade: job.attemptsMade,
+          attempts: job.attempts,
         });
       } catch (err) {
         if (shouldCaptureException(err)) {

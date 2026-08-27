@@ -82,14 +82,22 @@ export class UploadProfilesService {
   async execute({
     workspaceId,
     input,
+    workflowRunId,
+    stepId,
   }: {
     workspaceId: string;
     input: UploadProfilesInput;
+    workflowRunId?: string;
+    stepId?: string;
   }): Promise<{
     success: boolean;
     queued: number;
     projectId: string;
     error?: string;
+    pending?: boolean;
+    created?: number;
+    candidateIds?: string[];
+    uploadSessionId?: string;
   }> {
     const people = normalizeUploadPeople(input.people);
     const legacyCandidates = normalizeUploadPeople(input.candidates);
@@ -112,7 +120,13 @@ export class UploadProfilesService {
       ),
     });
     const merged = this.mergePeople([...fromPayload, ...loaded.people]);
-    const limit = Math.min(Math.max(1, input.limit ?? 25), 50);
+    // Optional limit only — when unset/null, enroll everyone passed in.
+    const limit =
+      typeof input.limit === 'number' &&
+      Number.isFinite(input.limit) &&
+      input.limit > 0
+        ? Math.floor(input.limit)
+        : merged.length;
     const projectId =
       input.projectId?.trim() || loaded.projectId || merged[0]?.projectId || '';
 
@@ -216,6 +230,10 @@ export class UploadProfilesService {
       };
     }
 
+    const uploadSessionId = v4();
+    const shouldParkWorkflowStep =
+      isNonEmptyString(workflowRunId) && isNonEmptyString(stepId);
+
     await this.processCandidatesService.queueRawDataForProcessing(
       mapped,
       'linkedin_search',
@@ -225,18 +243,31 @@ export class UploadProfilesService {
       new Date().toISOString(),
       'gtm-workflow-upload-profiles',
       apiToken,
-      v4(),
+      uploadSessionId,
+      shouldParkWorkflowStep
+        ? {
+            workflowRunId,
+            workflowStepId: stepId,
+            workspaceId,
+          }
+        : undefined,
     );
 
     this.logger.log(
-      `upload-profiles queued ${mapped.length} profiles for project ${projectId}`,
+      `upload-profiles queued ${mapped.length} profiles for project ${projectId}${
+        shouldParkWorkflowStep ? ' (workflow step pending)' : ''
+      }`,
     );
 
     return {
       success: true,
       queued: mapped.length,
       projectId,
+      uploadSessionId,
+      created: 0,
+      candidateIds: [],
       error: '',
+      ...(shouldParkWorkflowStep ? { pending: true } : {}),
     };
   }
 

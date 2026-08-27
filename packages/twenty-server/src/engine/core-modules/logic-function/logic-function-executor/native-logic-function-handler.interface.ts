@@ -4,5 +4,7 @@ export interface NativeLogicFunctionHandler {
     name: string;
     workspaceId: string;
     payload: object;
+    workflowRunId?: string;
+    stepId?: string;
   }): Promise<object>;
 }

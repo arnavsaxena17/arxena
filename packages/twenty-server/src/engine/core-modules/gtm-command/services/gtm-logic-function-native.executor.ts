@@ -68,10 +68,14 @@ export class GtmLogicFunctionNativeExecutor
     name,
     workspaceId,
     payload,
+    workflowRunId,
+    stepId,
   }: {
     name: string;
     workspaceId: string;
     payload: object;
+    workflowRunId?: string;
+    stepId?: string;
   }): Promise<object> {
     if (name === GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME) {
       return this.searchPeopleForCompanyService.execute({
@@ -154,6 +158,8 @@ export class GtmLogicFunctionNativeExecutor
     if (name === GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME) {
       return this.uploadProfilesService.execute({
         workspaceId,
+        workflowRunId,
+        stepId,
         input: payload as {
           projectId?: string;
           companyId?: string;

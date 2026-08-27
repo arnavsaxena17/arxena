@@ -732,7 +732,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.uploadProfilesId,
       name: GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       description:
-        'Enroll people or candidates as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId, optional companyId, and people[] from search/fetch — or a candidate/linkedinUrl (URL-only rows are hydrated via fetch-linkedin-profile). Recruiter is taken from the Project.',
+        'Enroll people or candidates as Person + Candidate on a Project via the upload-profiles pipeline (GTM projects get QUEUED + linkedinProfileId). Pass projectId, optional companyId, and people[] from search/fetch — or a candidate/linkedinUrl (URL-only rows are hydrated via fetch-linkedin-profile). Recruiter is taken from the Project. Optional limit truncates the batch; when omitted, all people are enrolled.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
       ),
@@ -773,7 +773,10 @@ export const getGtmOutreachLogicFunctionDefinitions = (
                   },
                 },
               },
-              limit: { type: 'number', label: 'Limit' },
+              limit: {
+                type: 'number',
+                label: 'Limit (optional — default all)',
+              },
             },
           },
         ],

@@ -7,6 +7,11 @@ export const GTM_WF_ERROR_HANDLING = {
 
 export const GTM_WF_MEMBER_STEP_ID = 'b8e1d001-4a11-4c11-8c11-000000000001';
 export const GTM_WF_PROFILE_STEP_ID = 'b8e1d002-4a22-4c22-8c22-000000000002';
+/** Separate member/profile path for "no company name" so IF_ELSE skip does not kill the company path join. */
+export const GTM_WF_MEMBER_NO_COMPANY_STEP_ID =
+  'c7a10007-4a11-4c11-8c11-000000000001';
+export const GTM_WF_PROFILE_NO_COMPANY_STEP_ID =
+  'c7a10008-4a22-4c22-8c22-000000000002';
 
 export const GTM_WF_AGENT_LINKEDIN = '__AGENT_linkedin_message__';
 export const GTM_WF_AGENT_EMAIL = '__AGENT_fallback_email__';
@@ -85,7 +90,8 @@ const v = (stepId: string, path: string) => `{{${stepId}.${path}}}`;
 export const gtmWfTriggerAfter = (field: string) =>
   `{{trigger.properties.after.${field}}}`;
 
-export const gtmWfMemberId = () => v(GTM_WF_MEMBER_STEP_ID, 'first.id');
+export const gtmWfMemberId = (memberStepId: string = GTM_WF_MEMBER_STEP_ID) =>
+  v(memberStepId, 'first.id');
 
 export const gtmWfProfilePhone = () =>
   v(GTM_WF_PROFILE_STEP_ID, 'first.phoneNumber');
@@ -629,19 +635,32 @@ export const gtmWfSendLinkedInMessageStep = ({
     nextStepIds,
   );
 
-export const gtmWfMemberAndProfileSteps = (nextStepIds: string[]): StepBase[] => [
+export const gtmWfMemberAndProfileSteps = (
+  nextStepIds: string[],
+  {
+    memberStepId = GTM_WF_MEMBER_STEP_ID,
+    profileStepId = GTM_WF_PROFILE_STEP_ID,
+    memberStepName = 'Load workspace member',
+    profileStepName = 'Load workspace member profile',
+  }: {
+    memberStepId?: string;
+    profileStepId?: string;
+    memberStepName?: string;
+    profileStepName?: string;
+  } = {},
+): StepBase[] => [
   gtmWfFindRecordsStep({
-    id: GTM_WF_MEMBER_STEP_ID,
-    name: 'Load workspace member',
+    id: memberStepId,
+    name: memberStepName,
     objectName: 'workspaceMember',
-    nextStepIds: [GTM_WF_PROFILE_STEP_ID],
+    nextStepIds: [profileStepId],
   }),
   gtmWfFindRecordsStep({
-    id: GTM_WF_PROFILE_STEP_ID,
-    name: 'Load workspace member profile',
+    id: profileStepId,
+    name: profileStepName,
     objectName: 'workspaceMemberProfile',
     fieldMetadataId: GTM_WF_FIELD.profileMemberId,
-    filterValue: gtmWfMemberId(),
+    filterValue: gtmWfMemberId(memberStepId),
     filterLabel: 'Workspace Member',
     filterType: 'UUID',
     nextStepIds,

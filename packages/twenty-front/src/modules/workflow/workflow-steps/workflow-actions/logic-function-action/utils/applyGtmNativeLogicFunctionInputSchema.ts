@@ -31,7 +31,7 @@ const UPLOAD_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
     label: 'Candidate',
     objectNameSingular: 'candidate',
   },
-  limit: { type: 'number', label: 'Limit' },
+  limit: { type: 'number', label: 'Limit (optional — default all)' },
 };
 
 const SEARCH_PEOPLE_FOR_COMPANY_COMPANY_ID: InputSchemaProperty = {

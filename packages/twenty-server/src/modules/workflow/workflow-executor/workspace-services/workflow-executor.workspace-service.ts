@@ -389,6 +389,9 @@ export class WorkflowExecutorWorkspaceService {
 
       stepInfo = {
         status: StepStatus.PENDING,
+        ...(isDefined(actionOutput.result)
+          ? { result: actionOutput.result }
+          : {}),
         ...(hasRateLimitDeferral
           ? {
               waitMs: actionOutput.waitMs,
@@ -398,6 +401,10 @@ export class WorkflowExecutorWorkspaceService {
                 ? { method: actionOutput.method }
                 : {}),
               result: {
+                ...(isDefined(actionOutput.result) &&
+                typeof actionOutput.result === 'object'
+                  ? actionOutput.result
+                  : {}),
                 waitMs: actionOutput.waitMs,
                 scheduledAt: actionOutput.scheduledAt,
                 pendingReason: actionOutput.pendingReason,
@@ -448,7 +455,8 @@ export class WorkflowExecutorWorkspaceService {
 
     return {
       shouldProcessNextSteps:
-        isSuccess || isStopped || isSkipped || isFailedSafely,
+        !isPendingEvent &&
+        (isSuccess || isStopped || isSkipped || isFailedSafely),
     };
   }
 

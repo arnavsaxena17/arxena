@@ -22,7 +22,9 @@ import {
   GTM_WF_AI_MESSAGE_OUTPUT,
   GTM_WF_FIELD,
   GTM_WF_HARVEST_PROJECT_ID,
+  GTM_WF_MEMBER_NO_COMPANY_STEP_ID,
   GTM_WF_MEMBER_STEP_ID,
+  GTM_WF_PROFILE_NO_COMPANY_STEP_ID,
   GTM_WF_ERROR_HANDLING,
   type GtmWfFindRecordFilter,
   gtmWfAiAgentStep,
@@ -90,8 +92,10 @@ const IDS = {
   contactedIf: 'c7a10003-aaaa-4fcb-a7d8-17a7736ed045',
   findEarlierQueued: 'c7a10004-aaaa-4fcb-a7d8-17a7736ed045',
   earlierQueuedIf: 'c7a10005-aaaa-4fcb-a7d8-17a7736ed045',
-  markDeferredCompany: 'c7a10006-aaaa-4fcb-a7d8-17a7736ed045',
+  markDeferredContacted: 'c7a10006-aaaa-4fcb-a7d8-17a7736ed045',
+  markDeferredEarlierQueued: 'c7a10009-aaaa-4fcb-a7d8-17a7736ed045',
   sendConnect: 'c416d226-a466-4915-b9ab-282fb79ff044',
+  sendConnectNoCompany: 'c7a1000a-aaaa-4fcb-a7d8-17a7736ed045',
   markSent: 'f2350842-a4ff-4c24-874c-9f016c20f3a9',
   waitAccept: '67f433aa-9f97-4b87-aa9e-792d23839323',
   reloadAfterWait: '69577635-4f2f-4596-8828-441c8484ad38',
@@ -808,7 +812,9 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         type: 'TEXT',
         operand: 'IS_NOT_EMPTY',
         ifNextStepIds: [IDS.findContacted],
-        elseNextStepIds: [GTM_WF_MEMBER_STEP_ID],
+        // Own member path — must not share GTM_WF_MEMBER_STEP_ID with
+        // "Earlier QUEUED sibling?" else, or IF_ELSE skip kills outreach.
+        elseNextStepIds: [GTM_WF_MEMBER_NO_COMPANY_STEP_ID],
       }),
       gtmWfFindRecordsStep({
         id: IDS.findContacted,
@@ -832,7 +838,7 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         value: '',
         type: 'TEXT',
         operand: 'IS_NOT_EMPTY',
-        ifNextStepIds: [IDS.markDeferredCompany],
+        ifNextStepIds: [IDS.markDeferredContacted],
         elseNextStepIds: [IDS.findEarlierQueued],
       }),
       gtmWfFindRecordsStep({
@@ -864,18 +870,34 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         value: '',
         type: 'TEXT',
         operand: 'IS_NOT_EMPTY',
-        ifNextStepIds: [IDS.markDeferredCompany],
+        ifNextStepIds: [IDS.markDeferredEarlierQueued],
         elseNextStepIds: [GTM_WF_MEMBER_STEP_ID],
       }),
+      // Unique DEFERRED terminals — shared id would be cascade-skipped when the
+      // other IF_ELSE's unused branch is pruned.
       gtmWfUpdateRecordStep({
-        id: IDS.markDeferredCompany,
-        name: 'Mark DEFERRED — other person at company',
+        id: IDS.markDeferredContacted,
+        name: 'Mark DEFERRED — company already contacted',
+        objectRecordId: gtmWfFindId(IDS.queuedFind),
+        objectRecord: {
+          outreachSequenceStage: 'DEFERRED',
+        },
+      }),
+      gtmWfUpdateRecordStep({
+        id: IDS.markDeferredEarlierQueued,
+        name: 'Mark DEFERRED — earlier QUEUED sibling',
         objectRecordId: gtmWfFindId(IDS.queuedFind),
         objectRecord: {
           outreachSequenceStage: 'DEFERRED',
         },
       }),
       ...gtmWfMemberAndProfileSteps([IDS.sendConnect]),
+      ...gtmWfMemberAndProfileSteps([IDS.sendConnectNoCompany], {
+        memberStepId: GTM_WF_MEMBER_NO_COMPANY_STEP_ID,
+        profileStepId: GTM_WF_PROFILE_NO_COMPANY_STEP_ID,
+        memberStepName: 'Load workspace member (no company)',
+        profileStepName: 'Load workspace member profile (no company)',
+      }),
       {
         id: IDS.sendConnect,
         name: 'Send LinkedIn connection',
@@ -895,6 +917,31 @@ export const GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
             ),
             candidateId: gtmWfFindId(IDS.queuedFind),
             workspaceMemberId: gtmWfMemberId(),
+          },
+          outputSchema: {},
+          errorHandlingOptions: GTM_WF_ERROR_HANDLING,
+        },
+        nextStepIds: [IDS.markSent],
+      },
+      {
+        id: IDS.sendConnectNoCompany,
+        name: 'Send LinkedIn connection (no company)',
+        type: 'SEND_LINKEDIN_CONNECTION_REQUEST',
+        valid: true,
+        settings: {
+          input: {
+            message:
+              'Happy to connect — would love to share how we help GTM teams.',
+            linkedinUrl: gtmWfFindField(
+              IDS.queuedFind,
+              'linkedinUrl.primaryLinkUrl',
+            ),
+            linkedinProfileId: gtmWfFindField(
+              IDS.queuedFind,
+              'linkedinProfileId',
+            ),
+            candidateId: gtmWfFindId(IDS.queuedFind),
+            workspaceMemberId: gtmWfMemberId(GTM_WF_MEMBER_NO_COMPANY_STEP_ID),
           },
           outputSchema: {},
           errorHandlingOptions: GTM_WF_ERROR_HANDLING,

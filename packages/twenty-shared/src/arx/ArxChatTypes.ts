@@ -154,6 +154,11 @@ export interface ProcessCandidatesJobData {
   userId?: string;
   queueStartChatAfter?: boolean;
   uploadSessionId?: string;
+  /** When set, CandidateQueueProcessor resumes this workflow step after all batches finish. */
+  workflowRunId?: string;
+  workflowStepId?: string;
+  workspaceId?: string;
+  totalBatches?: number;
 }
 
 export interface ProcessResumeUploadsJobData {

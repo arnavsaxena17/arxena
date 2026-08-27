@@ -222,6 +222,8 @@ export class BullMQDriver
             id: job.id ?? '',
             name: job.name,
             abortSignal,
+            attemptsMade: job.attemptsMade,
+            attempts: job.opts?.attempts,
           });
           const timeEnd = performance.now();
           const executionTime = timeEnd - timeStart;

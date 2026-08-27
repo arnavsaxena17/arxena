@@ -4,10 +4,14 @@ export interface MessageQueueJob<T = any> {
   name: string;
   data: T;
   abortSignal?: AbortSignal;
+  attemptsMade?: number;
+  attempts?: number;
 }
 
 export interface MessageQueueJobContext {
   abortSignal?: AbortSignal;
+  attemptsMade?: number;
+  attempts?: number;
 }
 
 export interface MessageQueueCronJobData<

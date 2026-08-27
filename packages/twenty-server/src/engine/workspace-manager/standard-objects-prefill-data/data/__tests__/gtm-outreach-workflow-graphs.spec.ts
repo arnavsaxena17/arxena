@@ -136,6 +136,9 @@ describe('GTM outreach workflow graphs', () => {
     );
     const steps = (perCandidate?.steps ?? []) as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);
+    const branchNext = (stepName: string, branchIndex: number) =>
+      byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
+      [];
 
     expect(byName('Load Candidate')?.nextStepIds).toEqual([
       byName('Has company name?')?.id,
@@ -145,8 +148,36 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Company already contacted?')).toBeDefined();
     expect(byName('Find earlier QUEUED sibling')).toBeDefined();
     expect(byName('Earlier QUEUED sibling?')).toBeDefined();
-    expect(byName('Mark DEFERRED — other person at company')?.settings?.input?.fieldsToUpdate).toEqual(
-      ['outreachSequenceStage'],
+    expect(
+      byName('Mark DEFERRED — company already contacted')?.settings?.input
+        ?.fieldsToUpdate,
+    ).toEqual(['outreachSequenceStage']);
+    expect(
+      byName('Mark DEFERRED — earlier QUEUED sibling')?.settings?.input
+        ?.fieldsToUpdate,
+    ).toEqual(['outreachSequenceStage']);
+
+    // IF_ELSE branches must not share join step ids (skip cascade bug).
+    expect(branchNext('Has company name?', 0)).toEqual([
+      byName('Find contacted company sibling')?.id,
+    ]);
+    expect(branchNext('Has company name?', 1)).toEqual([
+      byName('Load workspace member (no company)')?.id,
+    ]);
+    expect(branchNext('Company already contacted?', 0)).toEqual([
+      byName('Mark DEFERRED — company already contacted')?.id,
+    ]);
+    expect(branchNext('Earlier QUEUED sibling?', 0)).toEqual([
+      byName('Mark DEFERRED — earlier QUEUED sibling')?.id,
+    ]);
+    expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
+      byName('Load workspace member')?.id,
+    ]);
+    expect(branchNext('Has company name?', 1)[0]).not.toEqual(
+      branchNext('Earlier QUEUED sibling?', 1)[0],
+    );
+    expect(branchNext('Company already contacted?', 0)[0]).not.toEqual(
+      branchNext('Earlier QUEUED sibling?', 0)[0],
     );
 
     const contactedFilters =

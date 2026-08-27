@@ -36,7 +36,12 @@ export class ProcessCandidatesService {
     origin: string,
     apiToken: string,
     uploadSessionId?: string,
-    options?: { queueStartChatAfter?: boolean },
+    options?: {
+      queueStartChatAfter?: boolean;
+      workflowRunId?: string;
+      workflowStepId?: string;
+      workspaceId?: string;
+    },
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates from source: ${dataSource} for processing`);
@@ -137,7 +142,12 @@ export class ProcessCandidatesService {
     origin: string,
     apiToken: string,
     uploadSessionId?: string,
-    options?: { queueStartChatAfter?: boolean },
+    options?: {
+      queueStartChatAfter?: boolean;
+      workflowRunId?: string;
+      workflowStepId?: string;
+      workspaceId?: string;
+    },
   ): Promise<void> {
     try {
       console.log(`Queueing ${rawCandidatesData.length} raw candidates for processing`);
@@ -162,6 +172,8 @@ export class ProcessCandidatesService {
       const totalBatches = Math.ceil(deduplicatedRawData.length / batchSize);
       console.log(`Breaking up ${deduplicatedRawData.length} raw candidates into ${totalBatches} batches of ~${batchSize} each`);
 
+      const sessionId = uploadSessionId || v4();
+
       for (let i = 0; i < deduplicatedRawData.length; i += batchSize) {
         const batch = deduplicatedRawData.slice(i, i + batchSize);
         const batchNumber = Math.floor(i / batchSize) + 1;
@@ -178,7 +190,6 @@ export class ProcessCandidatesService {
         console.log('Raw data batch name:', batchName);
         console.log('Raw data batch number:', batchNumber, 'has', batch.length, 'candidates');
         
-        const sessionId = uploadSessionId || v4();
         const jobData: ProcessCandidatesJobData = {
           data: [], // Empty for raw data processing
           rawData: batch,
@@ -192,6 +203,10 @@ export class ProcessCandidatesService {
           userId,
           uploadSessionId: sessionId,
           queueStartChatAfter: options?.queueStartChatAfter,
+          workflowRunId: options?.workflowRunId,
+          workflowStepId: options?.workflowStepId,
+          workspaceId: options?.workspaceId,
+          totalBatches,
         };
         
         // Create unique job ID to prevent duplicate processing

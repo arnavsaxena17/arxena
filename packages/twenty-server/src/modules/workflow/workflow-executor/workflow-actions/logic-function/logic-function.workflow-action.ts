@@ -104,6 +104,8 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
               name: logicFunction.name,
               workspaceId,
               payload: workflowActionInput.logicFunctionInput ?? {},
+              workflowRunId: runInfo.workflowRunId,
+              stepId: currentStepId,
             });
 
             const isNativeFailure =
@@ -140,6 +142,19 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
               }
 
               return { error: nativeErrorMessage };
+            }
+
+            const isPending =
+              nativeResult &&
+              typeof nativeResult === 'object' &&
+              'pending' in nativeResult &&
+              (nativeResult as { pending?: unknown }).pending === true;
+
+            if (isPending) {
+              return {
+                pendingEvent: true,
+                result: nativeResult,
+              };
             }
 
             return { result: nativeResult };
