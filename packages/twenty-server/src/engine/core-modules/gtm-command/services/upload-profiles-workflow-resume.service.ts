@@ -16,7 +16,7 @@ import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runne
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
-type WorkflowUploadCorrelation = {
+export type WorkflowUploadCorrelation = {
   workflowRunId: string;
   workflowStepId: string;
   workspaceId: string;
@@ -54,9 +54,11 @@ export class UploadProfilesWorkflowResumeService {
   async recordBatchSuccess({
     correlation,
     candidateIds,
+    batchNumber,
   }: {
     correlation: WorkflowUploadCorrelation;
     candidateIds: string[];
+    batchNumber: number;
   }): Promise<void> {
     const { uploadSessionId, totalBatches } = correlation;
 
@@ -68,14 +70,14 @@ export class UploadProfilesWorkflowResumeService {
       );
     }
 
-    const completedCount = await this.cache.incrBy(
+    await this.cache.setAdd(
       this.doneKey(uploadSessionId),
-      1,
-    );
-    await this.cache.set(
-      this.doneKey(uploadSessionId),
-      completedCount,
+      [String(batchNumber)],
       SESSION_TTL_MS,
+    );
+
+    const completedCount = await this.cache.getSetLength(
+      this.doneKey(uploadSessionId),
     );
 
     if (completedCount < totalBatches) {

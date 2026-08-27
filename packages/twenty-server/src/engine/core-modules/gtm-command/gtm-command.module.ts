@@ -23,6 +23,7 @@ import { SearchCompaniesService } from 'src/engine/core-modules/gtm-command/serv
 import { SearchJobsService } from 'src/engine/core-modules/gtm-command/services/search-jobs.service';
 import { SearchPostsService } from 'src/engine/core-modules/gtm-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/gtm-command/services/upload-profiles.service';
+import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/gtm-command/services/upload-profiles-workflow-resume.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/gtm-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/gtm-command/services/enrich-contact.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/gtm-command/services/get-calendar-availability.service';
@@ -59,6 +60,7 @@ import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
+import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
 @Module({
   imports: [
@@ -80,6 +82,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     forwardRef(() => CandidateSourcingModule),
     ContactEnrichmentModule,
     GoogleCalendarModule,
+    WorkflowRunModule,
   ],
   controllers: [GtmCommandController],
   providers: [
@@ -132,6 +135,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
     UploadProfilesService,
+    UploadProfilesWorkflowResumeService,
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
@@ -156,6 +160,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
     FetchLinkedinMessagesService,
     FetchCompanyDetailsService,
     UploadProfilesService,
+    UploadProfilesWorkflowResumeService,
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,

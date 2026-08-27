@@ -6,9 +6,11 @@ import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modul
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
+import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/gtm-command/services/upload-profiles-workflow-resume.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
+import { type MessageQueueJobContext } from 'src/engine/core-modules/message-queue/interfaces/message-queue-job.interface';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -22,48 +24,60 @@ export class CandidateQueueProcessor {
     private readonly whitelistProcessingService: ExtSockWhatsappWhitelistProcessingService,
     private readonly dataSourceTransformerFactory: DataSourceTransformerFactoryService,
     private readonly uploadProgressPubSubService: UploadProgressPubSubService,
+    @Inject(forwardRef(() => UploadProfilesWorkflowResumeService))
+    private readonly uploadProfilesWorkflowResumeService: UploadProfilesWorkflowResumeService,
   ) {
     console.log('CandidateQueueProcessor initialized');
   }
 
   @Process(CandidateQueueProcessor.name)
-  async handle(jobData: ProcessCandidatesJobData): Promise<void> {
-
+  async handle(
+    jobData: ProcessCandidatesJobData,
+    context?: MessageQueueJobContext,
+  ): Promise<void> {
     const batchInfo = jobData?.batchName?.includes('Batch')
       ? jobData.batchName.match(/Batch (\d+)\/(\d+)/)
       : null;
 
     const batchNumber = batchInfo ? parseInt(batchInfo[1], 10) : 0;
-    const totalBatches = batchInfo ? parseInt(batchInfo[2], 10) : 1;
+    const totalBatchesFromName = batchInfo ? parseInt(batchInfo[2], 10) : 1;
+    const totalBatches = jobData.totalBatches ?? totalBatchesFromName;
     const projectId =
       jobData.projectId ??
       (jobData as ProcessCandidatesJobData & { jobId?: string }).jobId;
     const jobName = jobData.jobName;
+    const workflowCorrelation = this.getWorkflowCorrelation(
+      jobData,
+      projectId,
+      totalBatches,
+    );
 
-    // Determine initial candidate count (from rawData if available, otherwise from data)
-    const initialCandidateCount = jobData.rawData?.length || jobData.data.length;
+    const initialCandidateCount =
+      jobData.rawData?.length || jobData.data.length;
 
     console.log(
       `Processing batch ${batchNumber}/${totalBatches} with ${initialCandidateCount} candidates (raw: ${jobData.rawData?.length || 0}, processed: ${jobData.data.length})`,
     );
 
-    // Add job processing validation to prevent duplicate processing
     const jobKey = `${projectId}-${jobData.dataSource || 'processed'}-batch-${batchNumber}`;
     console.log(`Processing job with key: ${jobKey}`);
 
     try {
       let candidatesToProcess = jobData.data;
 
-      // If raw data is provided, transform it first
       if (jobData.rawData && jobData.rawData.length > 0 && jobData.dataSource) {
-        console.log(`Transforming ${jobData.rawData.length} raw candidates from source: ${jobData.dataSource}`);
+        console.log(
+          `Transforming ${jobData.rawData.length} raw candidates from source: ${jobData.dataSource}`,
+        );
 
-        // Check if data source is supported
-        if (!this.dataSourceTransformerFactory.isDataSourceSupported(jobData.dataSource)) {
+        if (
+          !this.dataSourceTransformerFactory.isDataSourceSupported(
+            jobData.dataSource,
+          )
+        ) {
           throw new Error(`Unsupported data source: ${jobData.dataSource}`);
         }
 
-        // Transform candidates to master format
         const transformationContext = {
           projectId,
           jobName,
@@ -71,13 +85,16 @@ export class CandidateQueueProcessor {
           timestamp: jobData.timestamp,
         };
 
-        candidatesToProcess = await this.dataSourceTransformerFactory.transformCandidatesBatch(
-          jobData.rawData,
-          jobData.dataSource,
-          transformationContext
-        );
+        candidatesToProcess =
+          await this.dataSourceTransformerFactory.transformCandidatesBatch(
+            jobData.rawData,
+            jobData.dataSource,
+            transformationContext,
+          );
 
-        console.log(`Successfully transformed ${candidatesToProcess.length} candidates from ${jobData.rawData.length} raw records`);
+        console.log(
+          `Successfully transformed ${candidatesToProcess.length} candidates from ${jobData.rawData.length} raw records`,
+        );
       }
 
       console.log(
@@ -85,16 +102,12 @@ export class CandidateQueueProcessor {
         candidatesToProcess.map((c) => c.uniqueStringKey),
       );
 
-      // Publish progress update before processing
       if (jobData.userId) {
         try {
           const actualBatchSize = candidatesToProcess.length;
           const progress = Math.round((batchNumber / totalBatches) * 100);
-
-          // Calculate processed candidates: sum of previous batches + current batch
-          // For now, we estimate based on batch number and current batch size
-          // This is approximate since we don't know exact sizes of previous batches
-          const estimatedProcessedCandidates = (batchNumber - 1) * actualBatchSize + actualBatchSize;
+          const estimatedProcessedCandidates =
+            (batchNumber - 1) * actualBatchSize + actualBatchSize;
           const estimatedTotalCandidates = totalBatches * actualBatchSize;
 
           await this.uploadProgressPubSubService.publishUploadProcessing(
@@ -103,15 +116,22 @@ export class CandidateQueueProcessor {
             batchNumber,
             totalBatches,
             estimatedProcessedCandidates,
-            estimatedTotalCandidates
+            estimatedTotalCandidates,
           );
         } catch (progressError) {
-          console.warn('Failed to publish upload progress:', progressError.message);
+          console.warn(
+            'Failed to publish upload progress:',
+            progressError.message,
+          );
         }
       }
 
-      console.log(`Candidate queue - API token length: ${jobData.apiToken?.length}`);
-      console.log(`Candidate queue - API token preview: ${jobData.apiToken?.substring(0, 50)}...`);
+      console.log(
+        `Candidate queue - API token length: ${jobData.apiToken?.length}`,
+      );
+      console.log(
+        `Candidate queue - API token preview: ${jobData.apiToken?.substring(0, 50)}...`,
+      );
 
       const createdCandidateIds = await this.candidateService.processChunk(
         candidatesToProcess,
@@ -127,8 +147,18 @@ export class CandidateQueueProcessor {
         `✅ Successfully processed batch ${batchNumber}/${totalBatches} with ${candidatesToProcess.length} candidates`,
       );
 
+      if (workflowCorrelation) {
+        await this.uploadProfilesWorkflowResumeService.recordBatchSuccess({
+          correlation: workflowCorrelation,
+          candidateIds: createdCandidateIds ?? [],
+          batchNumber: batchNumber || 1,
+        });
+      }
+
       const isLastBatch = batchNumber === totalBatches;
-      const queueStartChatAfter = (jobData as any).queueStartChatAfter as boolean | undefined;
+      const queueStartChatAfter = (jobData as any).queueStartChatAfter as
+        | boolean
+        | undefined;
       if (
         isLastBatch &&
         queueStartChatAfter === true &&
@@ -158,27 +188,25 @@ export class CandidateQueueProcessor {
         }
       }
 
-      // Publish completion notification if this is the last batch
       if (batchNumber === totalBatches && jobData.userId) {
         try {
-          // Use actual candidate count from this batch to estimate total
-          // This is approximate since earlier batches might have different sizes
           const actualBatchSize = candidatesToProcess.length;
           const estimatedTotalCandidates = totalBatches * actualBatchSize;
           await this.uploadProgressPubSubService.publishUploadCompleted(
             jobData.userId,
             estimatedTotalCandidates,
-            totalBatches
+            totalBatches,
           );
         } catch (progressError) {
-          console.warn('Failed to publish upload completion:', progressError.message);
+          console.warn(
+            'Failed to publish upload completion:',
+            progressError.message,
+          );
         }
       }
 
-      // Update whitelists after successful processing
       if (batchNumber === totalBatches) {
         console.log('Not updating whitelists after processing');
-        // await this.updateWhitelistsAfterProcessing(jobData.apiToken);
       }
     } catch (error) {
       console.error(
@@ -186,15 +214,30 @@ export class CandidateQueueProcessor {
         error,
       );
 
-      // Publish error notification
+      if (workflowCorrelation) {
+        const attemptsMade = context?.attemptsMade ?? 0;
+        const attempts = context?.attempts ?? 1;
+        const isTerminalAttempt = attemptsMade + 1 >= attempts;
+
+        await this.uploadProfilesWorkflowResumeService.recordBatchFailure({
+          correlation: workflowCorrelation,
+          errorMessage:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+          isTerminalAttempt,
+        });
+      }
+
       if (jobData.userId) {
         try {
           await this.uploadProgressPubSubService.publishUploadError(
             jobData.userId,
-            error.message || 'Unknown error occurred'
+            error.message || 'Unknown error occurred',
           );
         } catch (progressError) {
-          console.warn('Failed to publish upload error:', progressError.message);
+          console.warn(
+            'Failed to publish upload error:',
+            progressError.message,
+          );
         }
       }
 
@@ -202,37 +245,27 @@ export class CandidateQueueProcessor {
     }
   }
 
-  // private async updateWhitelistsAfterProcessing(apiToken: string): Promise<void> {
-  //   try {
-  //     const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-  //     const users = await this.whitelistProcessingService.getUsersForWorkspace(workspaceId, apiToken);
+  private getWorkflowCorrelation(
+    jobData: ProcessCandidatesJobData,
+    projectId: string,
+    totalBatches: number,
+  ) {
+    if (
+      !jobData.workflowRunId ||
+      !jobData.workflowStepId ||
+      !jobData.workspaceId ||
+      !jobData.uploadSessionId
+    ) {
+      return null;
+    }
 
-  //     for (const user of users) {
-  //       try {
-  //         const identifiers = await this.whitelistProcessingService.fetchCandidateIdentifiersForUser(
-  //           user.id,
-  //           apiToken,
-  //         );
-  //         await this.whitelistProcessingService.redisService.loadWhitelist(user.id, identifiers);
-
-  //         for (const identifier of identifiers) {
-  //           await this.whitelistProcessingService.redisService.createIdentifierToUserMapping(
-  //             identifier,
-  //             user.id,
-  //           );
-  //         }
-
-  //         console.log(`Updated whitelist with ${identifiers.length} identifiers for user ${user.id}`);
-  //       } catch (userError) {
-  //         console.error(
-  //           `Error updating whitelist for user ${user.id}:`,
-  //           userError,
-  //         );
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to update whitelists after candidate processing:', error);
-  //   }
-  // }
-
+    return {
+      workflowRunId: jobData.workflowRunId,
+      workflowStepId: jobData.workflowStepId,
+      workspaceId: jobData.workspaceId,
+      projectId,
+      uploadSessionId: jobData.uploadSessionId,
+      totalBatches: Math.max(totalBatches, 1),
+    };
+  }
 }

@@ -262,7 +262,10 @@ export const GTM_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
 export const GTM_UPLOAD_PROFILES_SAMPLE_OUTPUT = {
   success: true,
   queued: 1,
+  created: 1,
+  candidateIds: ['candidate-id'],
   projectId: 'project-id',
+  uploadSessionId: 'upload-session-id',
   error: '',
 };
 

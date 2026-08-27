@@ -96,7 +96,10 @@ describe('UploadProfilesService', () => {
     ).resolves.toEqual({
       success: true,
       queued: 64,
+      created: 0,
+      candidateIds: [],
       projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      uploadSessionId: expect.any(String),
       error: '',
     });
 
@@ -115,6 +118,7 @@ describe('UploadProfilesService', () => {
       'gtm-workflow-upload-profiles',
       'token',
       expect.any(String),
+      undefined,
     );
     expect(
       processCandidatesService.queueRawDataForProcessing.mock.calls[0][0],
@@ -157,7 +161,10 @@ describe('UploadProfilesService', () => {
     ).resolves.toEqual({
       success: true,
       queued: 1,
+      created: 0,
+      candidateIds: [],
       projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      uploadSessionId: expect.any(String),
       error: '',
     });
 
@@ -178,6 +185,49 @@ describe('UploadProfilesService', () => {
       'gtm-workflow-upload-profiles',
       'token',
       expect.any(String),
+      undefined,
+    );
+  });
+
+  it('parks the workflow step when run correlation is provided', async () => {
+    await expect(
+      service.execute({
+        workspaceId: '54a99d20-8be6-4869-8eeb-aa1aeadfb694',
+        workflowRunId: 'workflow-run-id',
+        stepId: 'upload-step-id',
+        input: {
+          projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+          people: [classifiedSearchHit],
+        },
+      }),
+    ).resolves.toEqual({
+      success: true,
+      pending: true,
+      queued: 1,
+      created: 0,
+      candidateIds: [],
+      projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      uploadSessionId: expect.any(String),
+      error: '',
+    });
+
+    expect(
+      processCandidatesService.queueRawDataForProcessing,
+    ).toHaveBeenCalledWith(
+      expect.any(Array),
+      'linkedin_search',
+      '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      'GTM Harvest',
+      '',
+      expect.any(String),
+      'gtm-workflow-upload-profiles',
+      'token',
+      expect.any(String),
+      {
+        workflowRunId: 'workflow-run-id',
+        workflowStepId: 'upload-step-id',
+        workspaceId: '54a99d20-8be6-4869-8eeb-aa1aeadfb694',
+      },
     );
   });
 
@@ -226,7 +276,10 @@ describe('UploadProfilesService', () => {
     ).resolves.toEqual({
       success: true,
       queued: 1,
+      created: 0,
+      candidateIds: [],
       projectId: '369c4ae7-4da5-5a2b-807f-4177b6e62c10',
+      uploadSessionId: expect.any(String),
       error: '',
     });
 
@@ -248,6 +301,7 @@ describe('UploadProfilesService', () => {
       'gtm-workflow-upload-profiles',
       'token',
       expect.any(String),
+      undefined,
     );
   });
 
