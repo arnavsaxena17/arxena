@@ -621,6 +621,24 @@ export const prefillGtmOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['outreachSequenceStage'],
   });
+  const jobCompanyNameFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['jobCompanyName'],
+  });
+  const projectsIdFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['projectsId', 'projects'],
+  });
+  const createdAtFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['createdAt'],
+  });
   const profileMemberFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -648,6 +666,9 @@ export const prefillGtmOutreachWorkflows = async ({
     [GTM_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [GTM_WF_FIELD.candidateId]: candidateIdFieldId,
     [GTM_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
+    [GTM_WF_FIELD.jobCompanyName]: jobCompanyNameFieldId,
+    [GTM_WF_FIELD.projectsId]: projectsIdFieldId,
+    [GTM_WF_FIELD.createdAt]: createdAtFieldId,
     [GTM_WF_FIELD.profileMemberId]: profileMemberFieldId,
     [GTM_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
   };

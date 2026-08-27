@@ -8,9 +8,23 @@ type DatabaseEventTrigger = {
 };
 
 type GraphStep = {
+  id?: string;
   type: string;
   name?: string;
-  settings?: { input?: { branches?: Array<{ filterGroupId?: string }>; fieldsToUpdate?: string[] } };
+  nextStepIds?: string[];
+  settings?: {
+    input?: {
+      branches?: Array<{ filterGroupId?: string; nextStepIds?: string[] }>;
+      fieldsToUpdate?: string[];
+      filter?: {
+        recordFilters?: Array<{
+          operand?: string;
+          type?: string;
+          label?: string;
+        }>;
+      };
+    };
+  };
 };
 
 const getTrigger = (graph: (typeof GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES)[number]) =>
@@ -114,6 +128,78 @@ describe('GTM outreach workflow graphs', () => {
 
     expect(createdGraphs).toHaveLength(1);
     expect(createdGraphs[0].name).toBe('GTM Outreach — Per Candidate');
+  });
+
+  it('skips Per Candidate connection send when another person at the company is already in outreach', () => {
+    const perCandidate = GTM_OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'GTM Outreach — Per Candidate',
+    );
+    const steps = (perCandidate?.steps ?? []) as GraphStep[];
+    const byName = (name: string) => steps.find((step) => step.name === name);
+
+    expect(byName('Load Candidate')?.nextStepIds).toEqual([
+      byName('Has company name?')?.id,
+    ]);
+    expect(byName('Has company name?')).toBeDefined();
+    expect(byName('Find contacted company sibling')).toBeDefined();
+    expect(byName('Company already contacted?')).toBeDefined();
+    expect(byName('Find earlier QUEUED sibling')).toBeDefined();
+    expect(byName('Earlier QUEUED sibling?')).toBeDefined();
+    expect(byName('Mark DEFERRED — other person at company')?.settings?.input?.fieldsToUpdate).toEqual(
+      ['outreachSequenceStage'],
+    );
+
+    const contactedFilters =
+      byName('Find contacted company sibling')?.settings?.input?.filter
+        ?.recordFilters ?? [];
+
+    expect(contactedFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'TEXT',
+          operand: 'CONTAINS',
+          label: 'Job Company Name',
+        }),
+        expect.objectContaining({
+          type: 'UUID',
+          operand: 'IS',
+          label: 'Project',
+        }),
+        expect.objectContaining({
+          type: 'UUID',
+          operand: 'IS_NOT',
+          label: 'Id',
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          operand: 'IS',
+          label: 'Outreach Sequence Stage',
+        }),
+      ]),
+    );
+
+    const earlierFilters =
+      byName('Find earlier QUEUED sibling')?.settings?.input?.filter
+        ?.recordFilters ?? [];
+
+    expect(earlierFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'DATE_TIME',
+          operand: 'IS_BEFORE',
+          label: 'Creation date',
+        }),
+        expect.objectContaining({
+          type: 'SELECT',
+          operand: 'IS',
+          label: 'Outreach Sequence Stage',
+        }),
+      ]),
+    );
+
+    expect(byName('Load Candidate')?.nextStepIds).not.toContain(
+      byName('Send LinkedIn connection')?.id,
+    );
   });
 
   it('includes fieldsToUpdate on every UPDATE_RECORD step', () => {

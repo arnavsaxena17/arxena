@@ -20,7 +20,18 @@ export const GTM_WF_FIELD = {
   profileMemberId: '__FIELD_workspaceMemberProfile.workspaceMemberId__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
+  jobCompanyName: '__FIELD_candidate.jobCompanyName__',
+  projectsId: '__FIELD_candidate.projectsId__',
+  createdAt: '__FIELD_candidate.createdAt__',
 } as const;
+
+export type GtmWfFindRecordFilter = {
+  fieldMetadataId: string;
+  filterValue: string;
+  filterType?: string;
+  filterLabel?: string;
+  filterOperand?: string;
+};
 
 export const gtmWfSelectIsValue = (option: string) => JSON.stringify([option]);
 
@@ -156,6 +167,7 @@ export const gtmWfFindRecordsStep = ({
   filterType = 'UUID',
   filterLabel = 'Id',
   filterOperand = 'IS',
+  filters,
   nextStepIds,
   limit = 1,
 }: {
@@ -167,30 +179,42 @@ export const gtmWfFindRecordsStep = ({
   filterType?: string;
   filterLabel?: string;
   filterOperand?: string;
+  filters?: GtmWfFindRecordFilter[];
   nextStepIds?: string[];
   limit?: number;
 }): StepBase => {
   const groupId = `${id.slice(0, 8)}-0000-4000-8000-00000000f001`;
-  const filterId = `${id.slice(0, 8)}-0000-4000-8000-00000000f002`;
+  const resolvedFilters: GtmWfFindRecordFilter[] =
+    filters && filters.length > 0
+      ? filters
+      : fieldMetadataId && filterValue
+        ? [
+            {
+              fieldMetadataId,
+              filterValue,
+              filterType,
+              filterLabel,
+              filterOperand,
+            },
+          ]
+        : [];
 
   const filter =
-    fieldMetadataId && filterValue
+    resolvedFilters.length > 0
       ? {
           recordFilterGroups: [
             { id: groupId, logicalOperator: 'AND' },
           ],
-          recordFilters: [
-            {
-              id: filterId,
-              type: filterType,
-              label: filterLabel,
-              value: filterValue,
-              operand: filterOperand,
-              displayValue: filterValue,
-              fieldMetadataId,
-              recordFilterGroupId: groupId,
-            },
-          ],
+          recordFilters: resolvedFilters.map((entry, index) => ({
+            id: `${id.slice(0, 8)}-0000-4000-8000-00000000f${String(index + 2).padStart(3, '0')}`,
+            type: entry.filterType ?? 'UUID',
+            label: entry.filterLabel ?? 'Id',
+            value: entry.filterValue,
+            operand: entry.filterOperand ?? 'IS',
+            displayValue: entry.filterValue,
+            fieldMetadataId: entry.fieldMetadataId,
+            recordFilterGroupId: groupId,
+          })),
         }
       : {};
 
