@@ -55,6 +55,8 @@ export type WorkflowRunState = {
 
 export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
   name: string | null;
+  relatedRecordId: string | null;
+  relatedObjectName: string | null;
   enqueuedAt: Date | null;
   startedAt: string | null;
   endedAt: string | null;

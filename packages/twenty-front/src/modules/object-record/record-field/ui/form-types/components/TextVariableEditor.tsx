@@ -14,6 +14,7 @@ const StyledEditor = styled.div<{
     multiline ? themeCssVariables.spacing[8] : '0'};
   width: 100%;
   .editor-content {
+    height: ${({ multiline }) => (multiline ? '100%' : 'auto')};
     width: 100%;
   }
 
@@ -25,18 +26,19 @@ const StyledEditor = styled.div<{
       readonly
         ? themeCssVariables.font.color.light
         : themeCssVariables.font.color.primary};
-    display: flex;
+    display: ${({ multiline }) => (multiline ? 'block' : 'flex')};
     font-family: ${themeCssVariables.font.family};
     font-weight: ${themeCssVariables.font.weight.regular};
     &::-webkit-scrollbar {
       display: none;
     }
-    height: ${({ multiline }) => (multiline ? 'auto' : '100%')};
+    height: 100%;
+    min-height: ${({ multiline }) => (multiline ? '100%' : 'auto')};
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: ${({ multiline }) => (multiline ? 'auto' : 'hidden')};
     padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
     scrollbar-width: none;
-    white-space: ${({ multiline }) => (multiline ? 'pre' : 'nowrap')};
+    white-space: ${({ multiline }) => (multiline ? 'pre-wrap' : 'nowrap')};
 
     p.is-editor-empty:first-of-type::before {
       ${FORM_FIELD_PLACEHOLDER_STYLES}

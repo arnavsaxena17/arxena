@@ -122,6 +122,9 @@ export const main = async (params: {
   projectId: string;
   companyId?: string;
   people?: Array<Record<string, unknown>>;
+  candidates?: Array<Record<string, unknown>>;
+  candidateId?: string;
+  linkedinUrl?: string;
   limit?: number;
 }) => {
   return params;

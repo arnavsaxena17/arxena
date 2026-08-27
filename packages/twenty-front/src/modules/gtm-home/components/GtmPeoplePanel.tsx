@@ -98,6 +98,7 @@ const mapGtmPersonToDataTableRow = (
     uniqueStringKey: person.id,
     peopleId: person.id,
     personId: person.id,
+    candidateId: person.candidateId,
     updatedAt: '',
     createdAt: '',
   };

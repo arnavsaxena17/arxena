@@ -108,6 +108,10 @@ export interface UnipileTrackingEmailWebhook {
  *
  * 1. Flat format from Unipile USERS webhook (source: "users", event: "new_relation").
  *    Fired when someone accepts your LinkedIn invitation.
+ *    Official keys: event, account_id, account_type, webhook_name,
+ *    user_full_name, user_provider_id, user_public_identifier,
+ *    user_profile_url, user_picture_url.
+ *    Workspace mapping uses `account_id`. Candidate update uses `user_profile_url`.
  *    @see https://developer.unipile.com/docs/detecting-accepted-invitations
  *
  * 2. Nested format with relation object (legacy)

@@ -25,6 +25,19 @@ const listWorkflowRunsSchema = z.object({
     .uuid()
     .optional()
     .describe('Filter runs by the UUID of the workflow they belong to'),
+  relatedRecordId: z
+    .uuid()
+    .optional()
+    .describe(
+      'Filter runs by the UUID of the record that triggered them (e.g. a candidate id)',
+    ),
+  relatedObjectName: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      'Filter runs by the singular object name of the trigger record (e.g. candidate)',
+    ),
   status: z
     .nativeEnum(WorkflowRunStatus)
     .optional()
@@ -48,7 +61,7 @@ export const createListWorkflowRunsTool = (
 ) => ({
   name: 'list_workflow_runs' as const,
   description:
-    'List workflow runs, optionally filtered by workflow and/or status, ordered from most to least recent. Use this to find the relevant run (for example the latest failed run of a workflow) before inspecting it in detail with get_workflow_run.',
+    'List workflow runs, optionally filtered by workflow, trigger record (relatedRecordId / relatedObjectName), and/or status, ordered from most to least recent. Use this to find the relevant run (for example all runs for a candidate, or the latest failed run of a workflow) before inspecting it in detail with get_workflow_run.',
   inputSchema: listWorkflowRunsSchema,
   execute: async (parameters: ListWorkflowRunsInput) => {
     try {
@@ -73,6 +86,14 @@ export const createListWorkflowRunsTool = (
             where.status = parameters.status;
           }
 
+          if (isDefined(parameters.relatedRecordId)) {
+            where.relatedRecordId = parameters.relatedRecordId;
+          }
+
+          if (isDefined(parameters.relatedObjectName)) {
+            where.relatedObjectName = parameters.relatedObjectName;
+          }
+
           const workflowRuns = await workflowRunRepository.find({
             where,
             order: { createdAt: 'DESC' },
@@ -90,6 +111,8 @@ export const createListWorkflowRunsTool = (
               endedAt: workflowRun.endedAt,
               workflowId: workflowRun.workflowId,
               workflowVersionId: workflowRun.workflowVersionId,
+              relatedRecordId: workflowRun.relatedRecordId,
+              relatedObjectName: workflowRun.relatedObjectName,
             })),
           };
         },

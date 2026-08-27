@@ -2618,6 +2618,12 @@ export const STANDARD_OBJECTS = {
       stepLogs: {
         universalIdentifier: '20202020-7c4e-4e1a-8fc1-1e3a55d6c2a1',
       },
+      relatedRecordId: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e2',
+      },
+      relatedObjectName: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e3',
+      },
       timelineActivities: {
         universalIdentifier: getSystemRelationFieldUniversalIdentifier({
           applicationUniversalIdentifier:
@@ -2635,6 +2641,9 @@ export const STANDARD_OBJECTS = {
       },
       workflowIdIndex: {
         universalIdentifier: '9294d9e3-0225-4c7f-9d6e-23b4c25b6b25',
+      },
+      relatedRecordIdIndex: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e4',
       },
       searchVectorGinIndex: {
         universalIdentifier: 'e0ac5ad2-d0c8-4f72-b710-8e53b9dc18d9',
@@ -2661,6 +2670,9 @@ export const STANDARD_OBJECTS = {
           },
           workflowVersion: {
             universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb4',
+          },
+          relatedObjectName: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb5',
           },
         },
       },
@@ -2702,6 +2714,12 @@ export const STANDARD_OBJECTS = {
           },
           timelineActivities: {
             universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd05',
+          },
+          relatedObjectName: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd06',
+          },
+          relatedRecordId: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd07',
           },
         },
         viewFieldGroups: {

@@ -713,10 +713,11 @@ export class ArxChatEndpoint {
   ): Promise<object[]> {
     const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     const candidateId = request.body.candidateId;
+    const personId = request.body.personId;
     const allChatMessages = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-    ).fetchAllChatMessages(candidateId, apiToken);
+    ).fetchAllChatMessages(candidateId, apiToken, personId);
 
     return allChatMessages;
   }

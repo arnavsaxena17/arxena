@@ -104,16 +104,18 @@ describe('useTextVariableEditor', () => {
       expect(countHardBreaks(editor)).toBe(1);
     });
 
+    it('should insert hardBreak on Shift+Enter in multiline mode', () => {
+      const editor = use({ multiline: true, defaultValue: 'hi' });
+      editor.commands.focus('end');
+      pressEnter(editor, true);
+      expect(countHardBreaks(editor)).toBe(1);
+    });
+
     it('should block Enter without inserting in non-multiline mode', () => {
       const editor = use({ defaultValue: 'hi' });
       editor.commands.focus('end');
       expect(pressEnter(editor)).toBe(true);
       expect(content(editor)).toBe('hi');
-    });
-
-    it('should not intercept Shift+Enter', () => {
-      const editor = use({ multiline: true });
-      expect(pressEnter(editor, true)).toBe(false);
     });
   });
 

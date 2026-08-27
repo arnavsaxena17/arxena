@@ -25,6 +25,10 @@ import {
   WorkflowRunException,
   WorkflowRunExceptionCode,
 } from 'src/modules/workflow/workflow-runner/exceptions/workflow-run.exception';
+import {
+  buildWorkflowRunName,
+  extractWorkflowRunTriggerRecord,
+} from 'src/modules/workflow/workflow-runner/utils/extract-workflow-run-trigger-record.util';
 
 @Injectable()
 export class WorkflowRunWorkspaceService {
@@ -120,9 +124,20 @@ export class WorkflowRunWorkspaceService {
           ? parseInt(workflowRunCountMatch[1], 10)
           : 0;
 
+        const relatedRecord = extractWorkflowRunTriggerRecord({
+          trigger: workflowVersion.trigger,
+          triggerPayload,
+        });
+
         const workflowRun = {
           id: workflowRunId ?? v4(),
-          name: `#${workflowRunCount + 1} - ${workflow.name}`,
+          name: buildWorkflowRunName({
+            runNumber: workflowRunCount + 1,
+            workflowName: workflow.name ?? '',
+            recordLabel: relatedRecord?.recordLabel,
+          }),
+          relatedRecordId: relatedRecord?.recordId ?? null,
+          relatedObjectName: relatedRecord?.objectNameSingular ?? null,
           workflowVersionId,
           createdBy,
           workflowId: workflow.id,

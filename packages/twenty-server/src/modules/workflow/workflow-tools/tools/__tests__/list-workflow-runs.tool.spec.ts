@@ -113,11 +113,18 @@ describe('list_workflow_runs tool', () => {
     await tool.execute({
       workflowId: 'wf-1',
       status: WorkflowRunStatus.FAILED,
+      relatedRecordId: '6bba55b1-6be2-49d3-adcd-470a56547c73',
+      relatedObjectName: 'candidate',
       limit: 5,
     });
 
     expect(findMock).toHaveBeenCalledWith({
-      where: { workflowId: 'wf-1', status: WorkflowRunStatus.FAILED },
+      where: {
+        workflowId: 'wf-1',
+        status: WorkflowRunStatus.FAILED,
+        relatedRecordId: '6bba55b1-6be2-49d3-adcd-470a56547c73',
+        relatedObjectName: 'candidate',
+      },
       order: { createdAt: 'DESC' },
       take: 5,
     });

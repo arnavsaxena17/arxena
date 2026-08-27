@@ -2907,6 +2907,12 @@ exports[`STANDARD_OBJECTS universal identifiers should never change without an e
       "position": {
         "universalIdentifier": "a7ac4402-cfb7-54ef-baf2-ee737c743a1c",
       },
+      "relatedObjectName": {
+        "universalIdentifier": "20202020-91a2-4b7c-8e3d-f1a0b6c4d8e3",
+      },
+      "relatedRecordId": {
+        "universalIdentifier": "20202020-91a2-4b7c-8e3d-f1a0b6c4d8e2",
+      },
       "searchVector": {
         "universalIdentifier": "eb28d827-78ec-59df-97f7-9f09fac056ac",
       },
@@ -2939,6 +2945,9 @@ exports[`STANDARD_OBJECTS universal identifiers should never change without an e
       },
     },
     "indexes": {
+      "relatedRecordIdIndex": {
+        "universalIdentifier": "20202020-91a2-4b7c-8e3d-f1a0b6c4d8e4",
+      },
       "searchVectorGinIndex": {
         "universalIdentifier": "e0ac5ad2-d0c8-4f72-b710-8e53b9dc18d9",
       },
@@ -2959,6 +2968,9 @@ exports[`STANDARD_OBJECTS universal identifiers should never change without an e
           },
           "name": {
             "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abcaf",
+          },
+          "relatedObjectName": {
+            "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abcb5",
           },
           "startedAt": {
             "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abcb2",
@@ -2996,6 +3008,12 @@ exports[`STANDARD_OBJECTS universal identifiers should never change without an e
           },
           "enqueuedAt": {
             "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abcfd",
+          },
+          "relatedObjectName": {
+            "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abd06",
+          },
+          "relatedRecordId": {
+            "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abd07",
           },
           "startedAt": {
             "universalIdentifier": "20202020-af11-4a11-8a11-a0bcf10abcf9",

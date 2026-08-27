@@ -23,6 +23,8 @@ const NOTIFY_CHANNEL_OPTIONS = [
 const DEFAULT_CONTEXT_TEMPLATE =
   'Please complete the pending workflow form.';
 
+const DEFAULT_WHATSAPP_OFFICIAL_REGISTRY_NAME = 'wf_form_boolean_text';
+
 const StyledSection = styled.div`
   border-top: 1px solid ${themeCssVariables.border.color.medium};
   display: flex;
@@ -142,7 +144,8 @@ export const WorkflowFormNotifyOnPendingSettings = ({
       notifyOnPending?.contextTemplate ?? DEFAULT_CONTEXT_TEMPLATE,
     detailsTemplate: notifyOnPending?.detailsTemplate,
     whatsappOfficialRegistryName:
-      notifyOnPending?.whatsappOfficialRegistryName,
+      notifyOnPending?.whatsappOfficialRegistryName ??
+      DEFAULT_WHATSAPP_OFFICIAL_REGISTRY_NAME,
     recipients: notifyOnPending?.recipients,
     ...patch,
   });
@@ -174,6 +177,8 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               updateNotify({
                 channels: [MessagingChannel.WHATSAPP_OFFICIAL],
                 contextTemplate: DEFAULT_CONTEXT_TEMPLATE,
+                whatsappOfficialRegistryName:
+                  DEFAULT_WHATSAPP_OFFICIAL_REGISTRY_NAME,
               });
             }}
           />
@@ -224,6 +229,8 @@ export const WorkflowFormNotifyOnPendingSettings = ({
           <StyledFieldWithHint>
             <FormTextFieldInput
               label={t`WhatsApp details`}
+              placeholder={t`Enter your text`}
+              multiline
               readonly={readonly}
               defaultValue={notifyOnPending?.detailsTemplate ?? ''}
               onChange={(value) => {
@@ -295,7 +302,10 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               label={t`Official WhatsApp template`}
               dropdownId="workflow-form-notify-registry"
               disabled={readonly}
-              value={notifyOnPending?.whatsappOfficialRegistryName ?? ''}
+              value={
+                notifyOnPending?.whatsappOfficialRegistryName ??
+                DEFAULT_WHATSAPP_OFFICIAL_REGISTRY_NAME
+              }
               options={[
                 { label: t`Auto from field types`, value: '' },
                 { label: t`Yes / No`, value: 'wf_form_boolean' },
@@ -327,7 +337,7 @@ export const WorkflowFormNotifyOnPendingSettings = ({
               }}
             />
             <StyledFieldHint>
-              {t`Leave on Auto unless the Official send must use a specific template. Yes / No + message matches Approve send + Edited message.`}
+              {t`Yes / No + message matches Approve send + Edited message. Switch only if the Official send must use a different template.`}
             </StyledFieldHint>
           </StyledFieldWithHint>
         </StyledFieldsGroup>

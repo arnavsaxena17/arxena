@@ -82,6 +82,65 @@ const normalizeLinkedInUrl = (url: string | undefined | null | any): string | nu
   }
 };
 
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+export type ChatLookupIds = {
+  candidateId?: string;
+  personId?: string;
+};
+
+export const findSelectedTableRow = (
+  selectedId: string | null | undefined,
+  rows: Array<Record<string, unknown> | CandidateNode>,
+): Record<string, unknown> | undefined => {
+  if (!selectedId) {
+    return undefined;
+  }
+
+  return rows.find((row) => {
+    const record = row as Record<string, unknown>;
+    const otherFields = asRecord(record.otherFields);
+
+    return (
+      record.id === selectedId ||
+      record.tempId === selectedId ||
+      record.personId === selectedId ||
+      record.peopleId === selectedId ||
+      record.candidateId === selectedId ||
+      otherFields?.candidateId === selectedId
+    );
+  }) as Record<string, unknown> | undefined;
+};
+
+const firstUuid = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === 'string' && isUUID(value)) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
+export const resolveChatLookupIds = (
+  selectedId: string | null | undefined,
+  row?: Record<string, unknown>,
+): ChatLookupIds => {
+  const otherFields = asRecord(row?.otherFields);
+
+  return {
+    candidateId: firstUuid(
+      otherFields?.candidateId,
+      row?.candidateId,
+      selectedId,
+    ),
+    personId: firstUuid(row?.peopleId, row?.personId, selectedId),
+  };
+};
+
 // Helper function to get permanent ID for a candidate
 // Checks if a LinkedIn candidate (by tempId) has been saved to database and has a permanent UUID
 export const getPermanentId = (rowData: Record<string, unknown>, rawData: CandidateNode[] | Record<string, unknown>[]): string | undefined => {

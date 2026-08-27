@@ -5,7 +5,7 @@ import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchR
 import { NaukriQueueStatusEffect } from '@/candidate-table/components/NaukriQueueStatusEffect';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
-import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, resolveChatLookupIds, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
 import '@/candidate-table/initHandsontable';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
@@ -1496,16 +1496,22 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             if (selectedRow?.id === data.candidateId) {
               // Fetch and update messages for the open chat
               // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
-              const permanentId = getPermanentId(selectedRow, tableState.rawData || []);
-              if (!permanentId || !isUUID(permanentId)) {
-                console.log(`Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found (permanentId: ${permanentId})`);
+              const lookup = resolveChatLookupIds(
+                getPermanentId(selectedRow, tableState.rawData || []) || selectedRow?.id,
+                selectedRow as Record<string, unknown>,
+              );
+              if (
+                (!lookup.candidateId || !isUUID(lookup.candidateId)) &&
+                (!lookup.personId || !isUUID(lookup.personId))
+              ) {
+                console.log(`Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found`);
                 return;
               }
 
               try {
                 const response = await axios.post(
                   `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-                  { candidateId: permanentId },
+                  { candidateId: lookup.candidateId, personId: lookup.personId },
                   { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
                 );
                 const unreadMessageIds = response.data

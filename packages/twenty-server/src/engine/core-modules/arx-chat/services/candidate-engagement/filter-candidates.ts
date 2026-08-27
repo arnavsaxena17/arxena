@@ -28,6 +28,7 @@ import {
   messagingChannelEquals,
   toMessagingChannelTransportKey,
 } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
+import { expandLinkedinTranscriptRows } from 'src/engine/core-modules/arx-chat/utils/expand-linkedin-chat-turns.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -228,18 +229,154 @@ export class FilterCandidates {
   async fetchAllChatMessages(
     candidateId: string,
     apiToken: string,
+    personId?: string,
   ): Promise<MessageNode[]> {
+    const lookup = await this.resolveChatMessagesLookupIds(
+      candidateId,
+      personId,
+      apiToken,
+    );
 
+    if (lookup.candidateIds.length === 0 && lookup.personIds.length === 0) {
+      return [];
+    }
+
+    let allChatMessages: MessageNode[] = [];
+
+    if (lookup.candidateIds.length > 0) {
+      try {
+        allChatMessages = await this.paginateChatMessages(
+          { candidateId: { in: lookup.candidateIds } },
+          apiToken,
+        );
+      } catch (error) {
+        console.warn('chatMessages candidateId lookup failed:', error);
+      }
+    }
+
+    if (lookup.personIds.length > 0) {
+      try {
+        const byPerson = await this.paginateChatMessages(
+          { personId: { in: lookup.personIds } },
+          apiToken,
+        );
+        allChatMessages = [...allChatMessages, ...byPerson];
+      } catch (error) {
+        console.warn('chatMessages personId lookup failed:', error);
+      }
+    }
+
+    const deduped = this.dedupeChatMessagesById(allChatMessages);
+
+    console.log(
+      `Completed fetching chat messages for candidate: ${candidateId}, person: ${personId ?? ''}, total messages: ${deduped.length}`,
+    );
+
+    return expandLinkedinTranscriptRows(deduped);
+  }
+
+  private async resolveChatMessagesLookupIds(
+    candidateId: string | undefined,
+    personId: string | undefined,
+    apiToken: string,
+  ): Promise<{ candidateIds: string[]; personIds: string[] }> {
+    const candidateIds = new Set<string>();
+    const personIds = new Set<string>();
+    const trimmedPersonId =
+      typeof personId === 'string' ? personId.trim() : '';
+    const trimmedCandidateId =
+      typeof candidateId === 'string' ? candidateId.trim() : '';
+    const explicitPersonId = trimmedPersonId.length > 0;
+
+    if (explicitPersonId) {
+      personIds.add(trimmedPersonId);
+    }
+
+    if (trimmedCandidateId.length > 0) {
+      candidateIds.add(trimmedCandidateId);
+    }
+
+    let candidateLookupFailed = false;
+
+    if (trimmedCandidateId.length > 0 && !explicitPersonId) {
+      try {
+        const candidate = await this.getCandidateDetailsById(
+          trimmedCandidateId,
+          apiToken,
+        );
+
+        if (candidate?.id) {
+          candidateIds.add(candidate.id);
+          if (typeof candidate.peopleId === 'string' && candidate.peopleId) {
+            personIds.add(candidate.peopleId);
+          }
+        } else {
+          candidateLookupFailed = true;
+          personIds.add(trimmedCandidateId);
+        }
+      } catch {
+        candidateLookupFailed = true;
+        personIds.add(trimmedCandidateId);
+      }
+    }
+
+    const shouldResolveCandidatesFromPerson =
+      explicitPersonId || candidateLookupFailed;
+
+    if (shouldResolveCandidatesFromPerson) {
+      for (const resolvedPersonId of [...personIds]) {
+        try {
+          const response = await this.staticGraphQLService.executeGraphQL(
+            graphqlToFetchAllCandidateData,
+            {
+              filter: { peopleId: { eq: resolvedPersonId } },
+              limit: 50,
+            },
+            apiToken,
+          );
+          const edges = (response?.data?.data?.candidates?.edges ?? []) as Array<{
+            node?: { id?: string; peopleId?: string };
+          }>;
+
+          for (const edge of edges) {
+            if (typeof edge?.node?.id === 'string' && edge.node.id) {
+              candidateIds.add(edge.node.id);
+            }
+            if (
+              typeof edge?.node?.peopleId === 'string' &&
+              edge.node.peopleId
+            ) {
+              personIds.add(edge.node.peopleId);
+            }
+          }
+        } catch (error) {
+          console.warn(
+            `Failed resolving candidates for person ${resolvedPersonId}:`,
+            error,
+          );
+        }
+      }
+    }
+
+    return {
+      candidateIds: [...candidateIds],
+      personIds: [...personIds],
+    };
+  }
+
+  private async paginateChatMessages(
+    filter: Record<string, unknown>,
+    apiToken: string,
+  ): Promise<MessageNode[]> {
     let allChatMessages: MessageNode[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
     let pageCount = 0;
-    const maxPages = 50; // Safety limit to prevent infinite loops
-    const processedCursors = new Set<string>(); // Track processed cursors to prevent loops
+    const maxPages = 50;
+    const processedCursors = new Set<string>();
 
     while (hasNextPage && pageCount < maxPages) {
       try {
-        // Check if we've already processed this cursor (infinite loop prevention)
         if (lastCursor && processedCursors.has(lastCursor)) {
           console.warn(`Detected infinite loop with cursor: ${lastCursor}. Breaking pagination.`);
           break;
@@ -252,7 +389,7 @@ export class FilterCandidates {
         const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, {
           limit: 400,
           lastCursor: lastCursor,
-          filter: { candidateId: { in: [candidateId] } },
+          filter,
           orderBy: [{ position: 'DescNullsFirst' }],
         }, apiToken);
 
@@ -262,47 +399,55 @@ export class FilterCandidates {
         } | undefined;
 
         if (!chatMessages || chatMessages.edges.length === 0) {
-          console.log('No more data to fetch.');
           break;
         }
 
-        const newChatMessages = chatMessages.edges.map(
-          (edge) => edge.node
+        allChatMessages = allChatMessages.concat(
+          chatMessages.edges.map((edge) => edge.node),
         );
 
-        allChatMessages = allChatMessages.concat(newChatMessages);
-
-        // Validate pageInfo before using it
         if (!chatMessages.pageInfo) {
-          console.warn('No pageInfo in response, breaking pagination');
           break;
         }
 
         const newCursor = chatMessages.pageInfo.endCursor;
         const newHasNextPage = chatMessages.pageInfo.hasNextPage;
 
-        // Check if cursor has changed
         if (newCursor === lastCursor) {
-          console.warn('Cursor has not changed, breaking pagination to prevent infinite loop');
           break;
         }
 
         lastCursor = newCursor;
         hasNextPage = newHasNextPage;
         pageCount++;
-
       } catch (error) {
-        hasNextPage = false;
-        console.error('Error fetching whatsappmessages:', error);
+        if (pageCount === 0) {
+          throw error;
+        }
+        console.error('Error fetching chat messages:', error);
+        break;
       }
     }
 
-    if (pageCount >= maxPages) {
-      console.warn(`Reached maximum page limit (${maxPages}) for candidate: ${candidateId}`);
+    return allChatMessages;
+  }
+
+  private dedupeChatMessagesById(messages: MessageNode[]): MessageNode[] {
+    const seen = new Set<string>();
+    const deduped: MessageNode[] = [];
+
+    for (const message of messages) {
+      const key = message.id || `${message.candidateId}:${message.position}:${message.message}`;
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      deduped.push(message);
     }
 
-    console.log(`Completed fetching WhatsApp messages for candidate: ${candidateId}, total messages: ${allChatMessages.length}`);
-    return allChatMessages;
+    return deduped;
   }
 
 

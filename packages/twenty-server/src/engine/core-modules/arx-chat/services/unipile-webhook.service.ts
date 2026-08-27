@@ -26,6 +26,10 @@ import type {
     UnipileWebhookPayload,
 } from '../types/unipile-webhook.types';
 import { UnipileAttachmentStorageUtil } from '../utils/unipile-attachment-storage.util';
+import {
+  normalizeLinkedinProfileUrl,
+  resolveAcceptedRelationIdentity,
+} from '../utils/unipile-new-relation.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
 import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
 import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
@@ -1006,41 +1010,59 @@ export class UnipileWebhookService {
   }
 
   private async onConnectionAccepted(payload: UnipileNewRelationWebhook): Promise<void> {
-    const { account_id, user_full_name, user_provider_id, user_profile_url, relation } = payload;
+    const { account_id } = payload;
+    const identity = resolveAcceptedRelationIdentity(payload);
 
-    const name = user_full_name ?? relation?.name;
-    const providerId = user_provider_id ?? relation?.profile_url;
-    const profileUrl = user_profile_url ?? relation?.profile_url;
-
-    if (!name || !providerId || !profileUrl) {
-      this.logger.warn('New relation payload missing required fields for accepted connection');
+    if (!identity) {
+      this.logger.warn(
+        'New relation payload missing required fields for accepted connection',
+      );
       return;
     }
+
+    const { name, providerId, profileUrl, publicIdentifier } = identity;
 
     const workspaceId =
-      await this.workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId(account_id);
+      await this.workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId(
+        account_id,
+      );
     if (!workspaceId) {
-      this.logger.warn(`No workspace found for LinkedIn Unipile account ${account_id}, skipping new relation`);
+      this.logger.warn(
+        `No workspace found for LinkedIn Unipile account ${account_id}, skipping new relation`,
+      );
       return;
     }
 
-    const workspaceKeys = await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-    const linkedinUrl = workspaceKeys?.linkedin_url;
-    if (!linkedinUrl) {
-      this.logger.warn(`Workspace ${workspaceId} has no linkedin_url, skipping new relation`);
-      return;
+    const recipientProfileUrl =
+      await this.resolveWorkspaceRecipientLinkedinUrl(workspaceId);
+
+    if (!recipientProfileUrl) {
+      this.logger.log(
+        `Workspace ${workspaceId} has no linkedin_url; applying connection_accepted without workspace profile URL`,
+      );
     }
 
-    const normalizeUrl = (url: string) =>
-      url?.replace('www.linkedin.com', 'linkedin.com') ?? '';
-    const recipientProfileUrl = normalizeUrl(linkedinUrl.startsWith('http') ? linkedinUrl : `https://linkedin.com/in/${linkedinUrl}`);
+    try {
+      await this.applyAcceptedRelationMaterialize({
+        workspaceId,
+        profileUrl,
+        name,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error applying connection_accepted for ${name}:`,
+        error,
+      );
+      throw error;
+    }
 
     const senderAttendee = {
       attendee_id: providerId,
       attendee_name: name,
       attendee_provider_id: providerId,
       attendee_profile_url: profileUrl,
-      attendee_public_identifier: payload.user_public_identifier ?? profileUrl.split('/').pop() ?? '',
+      attendee_public_identifier:
+        publicIdentifier || profileUrl.split('/').filter(Boolean).pop() || '',
     };
 
     const syntheticMessagePayload: UnipileMessageWebhook = {
@@ -1059,8 +1081,9 @@ export class UnipileWebhookService {
           attendee_id: 'workspace-linkedin',
           attendee_name: 'Connected User',
           attendee_provider_id: 'workspace-linkedin',
-          attendee_profile_url: recipientProfileUrl,
-          attendee_public_identifier: recipientProfileUrl.split('/').pop() ?? '',
+          attendee_profile_url: recipientProfileUrl ?? '',
+          attendee_public_identifier:
+            recipientProfileUrl?.split('/').filter(Boolean).pop() ?? '',
         },
       ],
     };
@@ -1074,22 +1097,71 @@ export class UnipileWebhookService {
         this.gtmInboundReplyWindowService,
         this.gtmCommandMaterializeService,
       );
-      await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(syntheticMessagePayload);
+      await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(
+        syntheticMessagePayload,
+      );
       this.logger.log(`Processed new relation as "Yes, I'm keen" for ${name}`);
-
-      const apiToken = await this.resolveWorkspaceApiToken(workspaceId);
-      if (apiToken) {
-        await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
-          linkedinUrl: profileUrl,
-          event: 'connection_accepted',
-          apiToken,
-          messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
-        });
-      }
     } catch (error) {
       this.logger.error(`Error processing new relation for ${name}:`, error);
       throw error;
     }
+  }
+
+  private async resolveWorkspaceRecipientLinkedinUrl(
+    workspaceId: string,
+  ): Promise<string | undefined> {
+    try {
+      const workspaceKeys =
+        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
+      const fromUrl = normalizeLinkedinProfileUrl(workspaceKeys?.linkedin_url);
+
+      if (fromUrl) {
+        return fromUrl;
+      }
+
+      return (
+        normalizeLinkedinProfileUrl(workspaceKeys?.linkedin_profile_id) ||
+        undefined
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve workspace LinkedIn URL for ${workspaceId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return undefined;
+    }
+  }
+
+  private async applyAcceptedRelationMaterialize({
+    workspaceId,
+    profileUrl,
+    name,
+  }: {
+    workspaceId: string;
+    profileUrl: string;
+    name: string;
+  }): Promise<void> {
+    const apiToken = await this.resolveWorkspaceApiToken(workspaceId);
+
+    if (!apiToken) {
+      this.logger.warn(
+        `No API token for workspace ${workspaceId}, skipping connection_accepted for ${name}`,
+      );
+
+      return;
+    }
+
+    await this.gtmCommandMaterializeService.applyEventByLinkedinUrl({
+      linkedinUrl: profileUrl,
+      event: 'connection_accepted',
+      apiToken,
+      messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
+    });
+    this.logger.log(
+      `Applied connection_accepted for ${name} workspace=${workspaceId} profileUrl=${profileUrl}`,
+    );
   }
 
   private async onConnectionIgnored(payload: UnipileNewRelationWebhook): Promise<void> {

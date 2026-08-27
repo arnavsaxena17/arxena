@@ -95,6 +95,8 @@ export const createGetWorkflowRunTool = (
               enqueuedAt: workflowRun.enqueuedAt,
               workflowId: workflowRun.workflowId,
               workflowVersionId: workflowRun.workflowVersionId,
+              relatedRecordId: workflowRun.relatedRecordId,
+              relatedObjectName: workflowRun.relatedObjectName,
               steps,
               failedStepLogs,
             },
