@@ -68,6 +68,26 @@ export type TitleTaxonomyClassifyProfileInput = {
   experience?: TitleTaxonomyProfileExperience[];
 };
 
+/** Must stay in sync with arxena-site `/api/title-taxonomy/classify-titles`. */
+export const TITLE_TAXONOMY_CLASSIFY_TITLES_MAX = 200;
+
+/** Must stay in sync with arxena-site `/api/title-taxonomy/classify-profiles`. */
+export const TITLE_TAXONOMY_CLASSIFY_PROFILES_MAX = 500;
+
+const chunkArray = <T>(items: T[], size: number): T[][] => {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+};
+
 @Injectable()
 export class TitleTaxonomyRemoteService {
   private readonly logger = new Logger(TitleTaxonomyRemoteService.name);
@@ -185,6 +205,26 @@ export class TitleTaxonomyRemoteService {
   async classifyTitles(
     titles: string[],
   ): Promise<TitleTaxonomyClassifyResponse[] | null> {
+    if (titles.length === 0) {
+      return [];
+    }
+
+    const classifiedChunks = await Promise.all(
+      chunkArray(titles, TITLE_TAXONOMY_CLASSIFY_TITLES_MAX).map((chunk) =>
+        this.classifyTitlesChunk(chunk),
+      ),
+    );
+
+    if (classifiedChunks.some((chunk) => chunk === null)) {
+      return null;
+    }
+
+    return classifiedChunks.flatMap((chunk) => chunk ?? []);
+  }
+
+  private async classifyTitlesChunk(
+    titles: string[],
+  ): Promise<TitleTaxonomyClassifyResponse[] | null> {
     const url = `${this.getBaseUrl()}/api/title-taxonomy/classify-titles`;
     try {
       const response = await fetch(url, {
@@ -273,6 +313,26 @@ export class TitleTaxonomyRemoteService {
   }
 
   async classifyProfiles(
+    profiles: TitleTaxonomyClassifyProfileInput[],
+  ): Promise<TitleTaxonomyClassifyResponse[] | null> {
+    if (profiles.length === 0) {
+      return [];
+    }
+
+    const classifiedChunks = await Promise.all(
+      chunkArray(profiles, TITLE_TAXONOMY_CLASSIFY_PROFILES_MAX).map((chunk) =>
+        this.classifyProfilesChunk(chunk),
+      ),
+    );
+
+    if (classifiedChunks.some((chunk) => chunk === null)) {
+      return null;
+    }
+
+    return classifiedChunks.flatMap((chunk) => chunk ?? []);
+  }
+
+  private async classifyProfilesChunk(
     profiles: TitleTaxonomyClassifyProfileInput[],
   ): Promise<TitleTaxonomyClassifyResponse[] | null> {
     const url = `${this.getBaseUrl()}/api/title-taxonomy/classify-profiles`;
