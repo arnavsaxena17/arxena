@@ -168,32 +168,53 @@ export class UploadProfilesService {
     const prepared = hydrated.map((person) =>
       prepareUploadPersonEmployer(
         person,
-        buildUploadSearchIntent({ workflowCompany, person }),
+        buildUploadSearchIntent({ workflowCompany }),
         isValidUuid(companyId) ? companyId : undefined,
       ),
     );
     const kept = prepared.filter((entry) => !entry.skip);
+    const skipped = prepared.length - kept.length;
+
+    if (skipped > 0) {
+      this.logger.warn(
+        `upload-profiles skipped ${skipped} of ${prepared.length} people for project ${projectId}`,
+      );
+    }
+
     const uniqueHits = collectUniqueEmployerHits(
       kept.map((entry) => entry.employerHit),
     );
-    const upserted =
-      uniqueHits.length > 0
-        ? await this.upsertCompaniesService.execute({
-            workspaceId,
-            input: {
-              projectId,
-              companies: uniqueHits,
-            },
-          })
-        : { companyIds: [] as string[] };
+    const companyIds = await this.upsertEmployersBestEffort({
+      workspaceId,
+      projectId,
+      uniqueHits,
+    });
     const stamped = stampCrmCompanyIds(
       kept.map((entry) => entry.person),
       uniqueHits,
-      upserted.companyIds,
+      companyIds,
     );
     const mapped = stamped.map((row) =>
       mapUploadProfileToLinkedinSearchRow(row, row.companyId ?? ''),
     );
+
+    if (mapped.length === 0) {
+      const error =
+        skipped > 0
+          ? `All ${skipped} people were skipped because none matched the workflow company`
+          : 'No profiles to queue';
+
+      this.logger.warn(
+        `upload-profiles queued 0 profiles for project ${projectId}: ${error}`,
+      );
+
+      return {
+        success: false,
+        queued: 0,
+        projectId,
+        error,
+      };
+    }
 
     await this.processCandidatesService.queueRawDataForProcessing(
       mapped,
@@ -253,24 +274,78 @@ export class UploadProfilesService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return (
-      (await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-        async () => {
-          const companyRepository =
-            await this.globalWorkspaceOrmManager.getRepository<CompanyRecord>(
-              workspaceId,
-              'company',
-              { shouldBypassPermissionChecks: true },
-            );
+    try {
+      return (
+        (await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+          async () => {
+            const companyRepository =
+              await this.globalWorkspaceOrmManager.getRepository<CompanyRecord>(
+                workspaceId,
+                'company',
+                { shouldBypassPermissionChecks: true },
+              );
 
-          return companyRepository.findOne({
-            where: { id: companyId },
-            select: ['id', 'name', 'linkedinId'],
-          });
+            return companyRepository.findOne({
+              where: { id: companyId },
+              select: ['id', 'name', 'linkedinId'],
+            });
+          },
+          authContext,
+        )) ?? undefined
+      );
+    } catch (error) {
+      this.logger.warn(
+        `upload-profiles failed to load workflow company ${companyId}; continuing without company scope: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
+
+      return undefined;
+    }
+  }
+
+  private async upsertEmployersBestEffort({
+    workspaceId,
+    projectId,
+    uniqueHits,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    uniqueHits: Array<{ id: string; name: string }>;
+  }): Promise<string[]> {
+    if (uniqueHits.length === 0) {
+      return [];
+    }
+
+    try {
+      const upserted = await this.upsertCompaniesService.execute({
+        workspaceId,
+        input: {
+          projectId,
+          companies: uniqueHits,
         },
-        authContext,
-      )) ?? undefined
-    );
+      });
+
+      if (upserted.success === false) {
+        this.logger.warn(
+          `upload-profiles company tagging failed for project ${projectId}; continuing without CRM company ids: ${
+            upserted.error || 'upsert-companies returned success=false'
+          }`,
+        );
+
+        return [];
+      }
+
+      return Array.isArray(upserted.companyIds) ? upserted.companyIds : [];
+    } catch (error) {
+      this.logger.warn(
+        `upload-profiles company tagging threw for project ${projectId}; continuing without CRM company ids: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
+
+      return [];
+    }
   }
 
   private resolveRecruiterId(project: ProjectRecord): string {

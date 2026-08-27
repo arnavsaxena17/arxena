@@ -82,6 +82,8 @@ export const useRelevantRecordsGqlFields = ({
   const isObjectAnActivity =
     objectMetadataItem.nameSingular === CoreObjectNameSingular.Note ||
     objectMetadataItem.nameSingular === CoreObjectNameSingular.Task;
+  const isWorkflowRun =
+    objectMetadataItem.nameSingular === CoreObjectNameSingular.WorkflowRun;
 
   return {
     id: true,
@@ -93,6 +95,9 @@ export const useRelevantRecordsGqlFields = ({
       : {}),
     ...(hasPosition ? { position: true } : {}),
     ...allDepthOneGqlFields,
+    ...(isWorkflowRun
+      ? { relatedRecordId: true, relatedObjectName: true }
+      : {}),
     createdAt: true,
     updatedAt: true,
     deletedAt: true,

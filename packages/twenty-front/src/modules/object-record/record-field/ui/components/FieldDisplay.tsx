@@ -12,6 +12,7 @@ import { RatingFieldDisplay } from '@/object-record/record-field/ui/meta-types/d
 import { RelationFromManyFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/RelationFromManyFieldDisplay';
 import { RichTextFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/RichTextFieldDisplay';
 import { isFieldIdentifierDisplay } from '@/object-record/record-field/ui/meta-types/display/utils/isFieldIdentifierDisplay';
+import { isWorkflowRunRelatedRecordField } from '@/object-record/record-field/ui/meta-types/display/utils/isWorkflowRunRelatedRecordField';
 import { isFieldActor } from '@/object-record/record-field/ui/types/guards/isFieldActor';
 import { isFieldArray } from '@/object-record/record-field/ui/types/guards/isFieldArray';
 import { isFieldBoolean } from '@/object-record/record-field/ui/types/guards/isFieldBoolean';
@@ -39,6 +40,7 @@ import { FullNameFieldDisplay } from '@/object-record/record-field/ui/meta-types
 import { JsonFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/JsonFieldDisplay';
 import { MultiSelectFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/MultiSelectFieldDisplay';
 import { NumberFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/NumberFieldDisplay';
+import { RelatedRecordFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/RelatedRecordFieldDisplay';
 import { RelationToOneFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/RelationToOneFieldDisplay';
 import { SelectFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/SelectFieldDisplay';
 import { TextFieldDisplay } from '@/object-record/record-field/ui/meta-types/display/components/TextFieldDisplay';
@@ -67,6 +69,8 @@ export const FieldDisplay = () => {
     fieldDefinition,
     isLabelIdentifier,
   );
+  const isRelatedRecordChipDisplay =
+    isWorkflowRunRelatedRecordField(fieldDefinition);
 
   if (isDefined(isForbidden) && isForbidden) {
     return <ForbiddenFieldDisplay />;
@@ -82,6 +86,8 @@ export const FieldDisplay = () => {
     <MorphRelationManyToOneFieldDisplay />
   ) : isFieldMorphRelationOneToMany(fieldDefinition) ? (
     <MorphRelationOneToManyFieldDisplay />
+  ) : isRelatedRecordChipDisplay ? (
+    <RelatedRecordFieldDisplay />
   ) : isFieldText(fieldDefinition) ? (
     <TextFieldDisplay />
   ) : isFieldUuid(fieldDefinition) ? (

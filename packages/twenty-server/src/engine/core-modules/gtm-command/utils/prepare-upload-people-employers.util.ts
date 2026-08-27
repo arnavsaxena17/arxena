@@ -25,29 +25,19 @@ export type PreparedUploadPerson = UploadProfilesPerson & {
 
 export const buildUploadSearchIntent = ({
   workflowCompany,
-  person,
 }: {
   workflowCompany?: {
     id?: string | null;
     name?: string | null;
     linkedinId?: string | null;
   };
-  person: UploadProfilesPerson;
 }): SearchPositionIntent => {
   const linkedinId = workflowCompany?.linkedinId?.trim();
-  const personLinkedinId =
-    person.jobCompanyId?.trim() && /^\d+$/.test(person.jobCompanyId.trim())
-      ? person.jobCompanyId.trim()
-      : person.companyId?.trim() && /^\d+$/.test(person.companyId.trim())
-        ? person.companyId.trim()
-        : '';
+  const companyName = workflowCompany?.name?.trim();
 
   return {
-    companyId: linkedinId || personLinkedinId || undefined,
-    companyName: workflowCompany?.name ?? person.company ?? person.companyName,
-    stdFunction: person.stdFunction,
-    stdFunctionRoot: person.stdFunctionRoot,
-    stdGrade: person.stdGrade,
+    ...(linkedinId ? { companyId: linkedinId } : {}),
+    ...(companyName ? { companyName } : {}),
   };
 };
 
