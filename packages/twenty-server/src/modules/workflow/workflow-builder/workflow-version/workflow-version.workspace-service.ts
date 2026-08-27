@@ -31,9 +31,10 @@ import { assertWorkflowVersionHasSteps } from 'src/modules/workflow/common/utils
 import { assertWorkflowVersionIsDraft } from 'src/modules/workflow/common/utils/assert-workflow-version-is-draft.util';
 import { assertWorkflowVersionTriggerIsDefined } from 'src/modules/workflow/common/utils/assert-workflow-version-trigger-is-defined.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
+import { remapClonedWorkflowIds } from 'src/modules/workflow/workflow-builder/utils/remap-cloned-workflow-ids.util';
 import { WorkflowVersionStepOperationsWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-operations.workspace-service';
 import { WorkflowVersionStepWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step.workspace-service';
-import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { type WorkflowAction, type WorkflowIteratorAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 
 @Injectable()
 export class WorkflowVersionWorkspaceService {
@@ -298,40 +299,31 @@ export class WorkflowVersionWorkspaceService {
         }
 
         const remappedTrigger = isDefined(newTrigger)
-          ? {
-              ...newTrigger,
-              nextStepIds: (newTrigger.nextStepIds ?? []).map(
-                (oldId) => oldToNewIdMap.get(oldId) ?? oldId,
-              ),
-            }
+          ? remapClonedWorkflowIds(newTrigger, oldToNewIdMap)
           : undefined;
 
         const remappedSteps: WorkflowAction[] = sourceToClonedPairs.map(
           ({ source, duplicated }) => {
-            const remappedStep = {
+            const withSourceLinks: WorkflowAction = {
               ...duplicated,
-              nextStepIds: (source.nextStepIds ?? []).map(
-                (oldId) => oldToNewIdMap.get(oldId) ?? oldId,
-              ),
+              nextStepIds: source.nextStepIds ?? [],
             };
 
-            if (
-              source.type === WorkflowActionType.ITERATOR &&
-              isDefined(source.settings?.input?.initialLoopStepIds)
-            ) {
-              remappedStep.settings = {
-                ...remappedStep.settings,
+            if (source.type === WorkflowActionType.ITERATOR) {
+              const iteratorSource = source as WorkflowIteratorAction;
+              const iteratorClone = withSourceLinks as WorkflowIteratorAction;
+
+              iteratorClone.settings = {
+                ...iteratorClone.settings,
                 input: {
-                  ...remappedStep.settings.input,
+                  ...iteratorClone.settings.input,
                   initialLoopStepIds:
-                    source.settings.input.initialLoopStepIds.map(
-                      (oldId: string) => oldToNewIdMap.get(oldId) ?? oldId,
-                    ),
+                    iteratorSource.settings?.input?.initialLoopStepIds ?? [],
                 },
               };
             }
 
-            return remappedStep;
+            return remapClonedWorkflowIds(withSourceLinks, oldToNewIdMap);
           },
         );
 
