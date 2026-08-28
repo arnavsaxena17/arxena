@@ -594,17 +594,17 @@ describe('AccountRateLimiterService', () => {
         expect.objectContaining({
           key: 'linkedin:acc-1:profile:day',
           windowMs: 86_400_000,
-          maxScore: '+inf',
+          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:search:day',
           windowMs: 86_400_000,
-          maxScore: '+inf',
+          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:day',
           windowMs: 86_400_000,
-          maxScore: '+inf',
+          maxScore: expect.any(Number),
         }),
       ]),
       expect.any(Number),

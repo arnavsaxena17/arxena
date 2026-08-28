@@ -367,7 +367,9 @@ export class AccountRateLimiterService implements OnModuleInit {
       fields.map(({ key, windowMs }) => ({
         key,
         windowMs,
-        maxScore: shouldPaceAccountRateLimitWindow(windowMs) ? now : '+inf',
+        // Only count slots due now or earlier. Future deferred reservations
+        // must not inflate usage or block new requests on daily caps.
+        maxScore: now,
       })),
       now,
     );
@@ -399,6 +401,10 @@ export class AccountRateLimiterService implements OnModuleInit {
       }
 
       if (waitMs > maxInProcessWaitMs) {
+        // Release the future slot reservation so deferred workflows do not
+        // consume daily quota before the retry actually runs.
+        await this.releaseLastAcquisition();
+
         throw new AccountRateLimitDeferredError({
           waitMs,
           accountId: params.accountId,

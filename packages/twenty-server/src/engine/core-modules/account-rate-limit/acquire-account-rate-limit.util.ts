@@ -1,5 +1,4 @@
 import { runWithAccountRateLimitAcquireScope } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
-import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import {
   type AccountRateLimitMethod,
@@ -41,9 +40,7 @@ export const withAcquiredAccountRateLimit = async <T>(
 
       return result;
     } catch (error) {
-      if (!isAccountRateLimitDeferredError(error)) {
-        await limiter.releaseLastAcquisition();
-      }
+      await limiter.releaseLastAcquisition();
 
       throw error;
     }

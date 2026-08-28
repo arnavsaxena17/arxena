@@ -86,7 +86,7 @@ describe('account rate limit slot reservation', () => {
     ).toEqual([0, 0, MS_PER_DAY, MS_PER_DAY]);
   });
 
-  it('takes the max of paced short windows and capped long windows', () => {
+  it('only counts day-cap slots at or before now when combining with paced windows', () => {
     expect(
       reserveSequentialWaits(
         [
@@ -104,7 +104,7 @@ describe('account rate limit slot reservation', () => {
         4,
         0,
       ),
-    ).toEqual([0, 300_000, MS_PER_DAY, MS_PER_DAY + 300_000]);
+    ).toEqual([0, 300_000, 600_000, 900_000]);
   });
 
   it('returns remaining wait for an existing reservation without booking another slot', () => {

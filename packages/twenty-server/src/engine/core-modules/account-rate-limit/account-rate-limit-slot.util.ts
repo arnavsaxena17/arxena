@@ -37,11 +37,16 @@ export const nextSlotForWindowMs = (
     return Math.max(now, last + pacingIntervalMs(window.windowMs, limit));
   }
 
-  if (scores.length < limit) {
+  const activeScores = scores.filter((score) => score <= now);
+
+  if (activeScores.length < limit) {
     return now;
   }
 
-  return Math.max(now, scores[scores.length - limit] + window.windowMs);
+  return Math.max(
+    now,
+    activeScores[activeScores.length - limit] + window.windowMs,
+  );
 };
 
 export const computeReservedSlotMs = (
@@ -100,10 +105,17 @@ export const RESERVE_MULTI_WINDOW_SLOT_LUA = `
             end
           end
         else
-          local count = #packed / 2
+          local activeScores = {}
+          for j = 1, #packed, 2 do
+            local score = tonumber(packed[j + 1])
+            if score <= now then
+              activeScores[#activeScores + 1] = score
+            end
+          end
+          table.sort(activeScores)
+          local count = #activeScores
           if count >= limit then
-            local idx = count - limit
-            nextSlot = tonumber(packed[2 * idx + 2]) + window
+            nextSlot = activeScores[count - limit + 1] + window
             if nextSlot < now then
               nextSlot = now
             end
