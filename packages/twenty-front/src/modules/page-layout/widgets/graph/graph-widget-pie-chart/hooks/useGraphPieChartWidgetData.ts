@@ -1,3 +1,4 @@
+import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type PieChartDataItemWithColor } from '@/page-layout/widgets/graph/graph-widget-pie-chart/types/PieChartDataItem';
@@ -44,9 +45,14 @@ export const useGraphPieChartWidgetData = ({
     objectId: objectMetadataItemId,
   });
 
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration,
+    objectMetadataItemId,
+  });
+
   const dataConfiguration = useMemo(
-    () => extractPieChartDataConfiguration(configuration),
-    [configuration],
+    () => extractPieChartDataConfiguration(scopedConfiguration),
+    [scopedConfiguration],
   );
 
   const {

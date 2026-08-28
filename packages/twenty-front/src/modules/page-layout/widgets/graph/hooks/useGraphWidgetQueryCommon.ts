@@ -1,3 +1,4 @@
+import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { flattenedFieldMetadataItemsSelector } from '@/object-metadata/states/flattenedFieldMetadataItemsSelector';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
@@ -29,7 +30,12 @@ export const useGraphWidgetQueryCommon = ({
     objectId: objectMetadataItemId,
   });
 
-  const aggregateFieldId = configuration.aggregateFieldMetadataId;
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration,
+    objectMetadataItemId,
+  });
+
+  const aggregateFieldId = scopedConfiguration.aggregateFieldMetadataId;
 
   const aggregateField = objectMetadataItem.readableFields.find(
     (field: { id: string }) => field.id === aggregateFieldId,
@@ -53,7 +59,7 @@ export const useGraphWidgetQueryCommon = ({
 
   const { recordFilters: sanitizedRecordFilters } =
     dropChartRecordFiltersWithDeletedFields({
-      chartFilters: configuration.filter ?? {},
+      chartFilters: scopedConfiguration.filter ?? {},
       validFieldMetadataIds: objectFieldMetadataIds,
     });
 
@@ -61,7 +67,7 @@ export const useGraphWidgetQueryCommon = ({
     fieldMetadataItems: flattenedFieldMetadataItems,
     filterValueDependencies,
     recordFilters: sanitizedRecordFilters ?? [],
-    recordFilterGroups: configuration.filter?.recordFilterGroups ?? [],
+    recordFilterGroups: scopedConfiguration.filter?.recordFilterGroups ?? [],
   });
 
   return {

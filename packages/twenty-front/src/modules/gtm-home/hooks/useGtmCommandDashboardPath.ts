@@ -1,7 +1,7 @@
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
 
-import { GTM_COMMAND_DASHBOARD_TITLE } from '@/gtm-home/constants/gtm-command.constants';
+import { GTM_COMMAND_DASHBOARD_TITLE, GTM_PROJECT_ID_QUERY_PARAM } from '@/gtm-home/constants/gtm-command.constants';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -14,6 +14,29 @@ export const getGtmCommandDashboardFallbackPath = () =>
   getAppPath(AppPath.RecordIndexPage, {
     objectNamePlural: 'dashboards',
   });
+
+export const buildGtmCommandDashboardPath = ({
+  dashboardId,
+  projectId,
+}: {
+  dashboardId: string;
+  projectId?: string | null;
+}) => {
+  const path = getAppPath(AppPath.RecordShowPage, {
+    objectNameSingular: 'dashboard',
+    objectRecordId: dashboardId,
+  });
+
+  if (!isDefined(projectId) || projectId.length === 0) {
+    return path;
+  }
+
+  const searchParams = new URLSearchParams();
+
+  searchParams.set(GTM_PROJECT_ID_QUERY_PARAM, projectId);
+
+  return `${path}?${searchParams.toString()}`;
+};
 
 export const useCanQueryDashboardRecords = () => {
   const { objectMetadataItems } = useObjectMetadataItems();
@@ -43,10 +66,7 @@ export const useGtmCommandDashboardPath = () => {
 
   const dashboard = records[0];
   const dashboardPath = isDefined(dashboard)
-    ? getAppPath(AppPath.RecordShowPage, {
-        objectNameSingular: 'dashboard',
-        objectRecordId: dashboard.id,
-      })
+    ? buildGtmCommandDashboardPath({ dashboardId: dashboard.id })
     : getAppPath(AppPath.RecordIndexPage, {
         objectNamePlural: 'dashboards',
       });

@@ -1,3 +1,4 @@
+import { useGtmDashboardChartScopeKey, useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useIsPageLayoutInEditMode } from '@/page-layout/hooks/useIsPageLayoutInEditMode';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
@@ -57,6 +58,11 @@ export const GraphWidgetLineChartRenderer = () => {
 
   const navigate = useNavigate();
   const configuration = widget.configuration;
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration,
+    objectMetadataItemId: widget.objectMetadataId,
+  });
+  const gtmDashboardChartScopeKey = useGtmDashboardChartScopeKey();
   const isPageLayoutInEditMode = useIsPageLayoutInEditMode();
 
   const hasGroupByOnSecondaryAxis = isDefined(
@@ -86,6 +92,7 @@ export const GraphWidgetLineChartRenderer = () => {
     configuration.rangeMin,
     configuration.rangeMax,
     configuration.omitNullValues,
+    gtmDashboardChartScopeKey,
   );
 
   const indexViewId = useAtomFamilySelectorValue(
@@ -107,7 +114,7 @@ export const GraphWidgetLineChartRenderer = () => {
 
     const queryParams = buildChartDrilldownQueryParams({
       objectMetadataItem,
-      configuration,
+      configuration: scopedConfiguration,
       clickedData: {
         primaryBucketRawValue: rawValue,
       },

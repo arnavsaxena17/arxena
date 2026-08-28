@@ -1,3 +1,4 @@
+import { useGtmDashboardChartScopeKey } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
 import { useGraphWidgetAggregateQuery } from '@/page-layout/widgets/graph/hooks/useGraphWidgetAggregateQuery';
@@ -19,6 +20,8 @@ export const GraphWidgetAggregateChartRenderer = () => {
 
   assertAggregateChartWidgetOrThrow(widget);
 
+  const gtmDashboardChartScopeKey = useGtmDashboardChartScopeKey();
+
   const { value, loading, error } = useGraphWidgetAggregateQuery({
     objectMetadataItemId: widget.objectMetadataId,
     configuration: widget.configuration,
@@ -35,6 +38,7 @@ export const GraphWidgetAggregateChartRenderer = () => {
   return (
     <Suspense fallback={<WidgetSkeletonLoader />}>
       <GraphWidgetAggregateChart
+        key={gtmDashboardChartScopeKey}
         value={value ?? '-'}
         prefix={widget.configuration.prefix ?? undefined}
         suffix={widget.configuration.suffix ?? undefined}

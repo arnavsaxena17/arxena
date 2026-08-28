@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from 'twenty-ui/input';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { isDefined } from 'twenty-shared/utils';
 
 import {
+  buildGtmCommandDashboardPath,
   getGtmCommandDashboardFallbackPath,
   useCanQueryDashboardRecords,
   useGtmCommandDashboardPath,
@@ -56,15 +58,20 @@ export const GtmRunProgressHeader = (props: GtmRunProgressHeaderProps) => {
 const GtmRunProgressHeaderWithDashboardQuery = (
   props: GtmRunProgressHeaderProps,
 ) => {
-  const { dashboardPath } = useGtmCommandDashboardPath();
+  const { dashboard, dashboardPath } = useGtmCommandDashboardPath();
 
   return (
-    <GtmRunProgressHeaderView {...props} dashboardPath={dashboardPath} />
+    <GtmRunProgressHeaderView
+      {...props}
+      dashboardPath={dashboardPath}
+      dashboardId={dashboard?.id}
+    />
   );
 };
 
 type GtmRunProgressHeaderViewProps = GtmRunProgressHeaderProps & {
   dashboardPath: string;
+  dashboardId?: string;
 };
 
 const GtmRunProgressHeaderView = ({
@@ -74,8 +81,17 @@ const GtmRunProgressHeaderView = ({
   onCreateProject,
   isCreatingProject = false,
   dashboardPath,
+  dashboardId,
 }: GtmRunProgressHeaderViewProps) => {
   const navigate = useNavigate();
+
+  const crmDashboardPath =
+    isDefined(dashboardId) && isDefined(projectId)
+      ? buildGtmCommandDashboardPath({
+          dashboardId,
+          projectId,
+        })
+      : dashboardPath;
 
   return (
     <StyledActions>
@@ -111,7 +127,7 @@ const GtmRunProgressHeaderView = ({
         title="CRM"
         variant="secondary"
         size="small"
-        onClick={() => navigate(dashboardPath)}
+        onClick={() => navigate(crmDashboardPath)}
       />
     </StyledActions>
   );

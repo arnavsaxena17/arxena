@@ -1,3 +1,4 @@
+import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { type FieldMetadataItemOption } from '@/object-metadata/types/FieldMetadataItem';
 import { type BarChartSeriesWithColor } from '@/page-layout/widgets/graph/graph-widget-bar-chart/types/BarChartSeries';
@@ -56,9 +57,14 @@ export const useGraphBarChartWidgetData = ({
     objectId: objectMetadataItemId,
   });
 
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration,
+    objectMetadataItemId,
+  });
+
   const dataConfiguration = useMemo(
-    () => extractBarChartDataConfiguration(configuration),
-    [configuration],
+    () => extractBarChartDataConfiguration(scopedConfiguration),
+    [scopedConfiguration],
   );
 
   const {

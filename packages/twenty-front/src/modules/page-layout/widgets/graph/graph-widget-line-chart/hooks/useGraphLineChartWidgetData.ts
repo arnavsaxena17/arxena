@@ -1,3 +1,4 @@
+import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type LineChartSeriesWithColor } from '@/page-layout/widgets/graph/graph-widget-line-chart/types/LineChartSeriesWithColor';
@@ -45,7 +46,14 @@ export const useGraphLineChartWidgetData = ({
     objectId: objectMetadataItemId,
   });
 
-  const dataConfiguration = extractLineChartDataConfiguration(configuration);
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration,
+    objectMetadataItemId,
+  });
+
+  const dataConfiguration = extractLineChartDataConfiguration(
+    scopedConfiguration,
+  );
 
   const {
     data: queryData,

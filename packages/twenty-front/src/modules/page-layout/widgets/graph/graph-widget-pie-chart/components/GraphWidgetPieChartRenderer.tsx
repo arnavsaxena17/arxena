@@ -1,3 +1,4 @@
+import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
 import { useIsPageLayoutInEditMode } from '@/page-layout/hooks/useIsPageLayoutInEditMode';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
@@ -49,6 +50,10 @@ export const GraphWidgetPieChartRenderer = () => {
   });
 
   const navigate = useNavigate();
+  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+    configuration: widget.configuration,
+    objectMetadataItemId: widget.objectMetadataId,
+  });
 
   const isPageLayoutInEditMode = useIsPageLayoutInEditMode();
   const indexViewId = useAtomFamilySelectorValue(
@@ -69,7 +74,7 @@ export const GraphWidgetPieChartRenderer = () => {
 
     const drilldownQueryParams = buildChartDrilldownQueryParams({
       objectMetadataItem,
-      configuration: widget.configuration,
+      configuration: scopedConfiguration,
       clickedData: {
         primaryBucketRawValue: rawValue,
       },

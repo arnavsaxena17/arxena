@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 
-import { SidePanelToggleButton } from '@/side-panel/components/SidePanelToggleButton';
+import { GtmDashboardProjectFilter } from '@/gtm-dashboard/components/GtmDashboardProjectFilter';
+import { GtmDashboardScopeProvider } from '@/gtm-dashboard/components/GtmDashboardScopeProvider';
 import { RecordShowCommandMenu } from '@/command-menu-item/components/RecordShowCommandMenu';
 import { CommandMenuComponentInstanceContext } from '@/command-menu/states/contexts/CommandMenuComponentInstanceContext';
 import { TimelineActivityContext } from '@/activities/timeline-activities/contexts/TimelineActivityContext';
@@ -12,6 +13,7 @@ import { PageLayoutRecordPageRenderer } from '@/object-record/record-show/compon
 import { RecordShowPageSSESubscribeEffect } from '@/object-record/record-show/components/RecordShowPageSSESubscribeEffect';
 import { useRecordShowPage } from '@/object-record/record-show/hooks/useRecordShowPage';
 import { computeRecordShowComponentInstanceId } from '@/object-record/record-show/utils/computeRecordShowComponentInstanceId';
+import { SidePanelToggleButton } from '@/side-panel/components/SidePanelToggleButton';
 import { PageCardLayout } from '@/ui/layout/page/components/PageCardLayout';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { RecordShowPageHeader } from '~/pages/object-record/RecordShowPageHeader';
@@ -45,39 +47,47 @@ export const RecordShowPage = () => {
         <CommandMenuComponentInstanceContext.Provider
           value={{ instanceId: recordShowComponentInstanceId }}
         >
-          <RecordShowPageTitle
+          <GtmDashboardScopeProvider
             objectNameSingular={objectNameSingular}
             objectRecordId={objectRecordId}
-          />
-          <PageCardLayout
-            header={
-              <RecordShowPageHeader
-                objectNameSingular={objectNameSingular}
-                objectRecordId={objectRecordId}
-              >
-                <RecordShowCommandMenu />
-                {!isLayoutCustomizationModeEnabled && <SidePanelToggleButton />}
-              </RecordShowPageHeader>
-            }
           >
-            <TimelineActivityContext.Provider
-              value={{
-                recordId: objectRecordId,
-              }}
+            <RecordShowPageTitle
+              objectNameSingular={objectNameSingular}
+              objectRecordId={objectRecordId}
+            />
+            <PageCardLayout
+              header={
+                <RecordShowPageHeader
+                  objectNameSingular={objectNameSingular}
+                  objectRecordId={objectRecordId}
+                >
+                  <GtmDashboardProjectFilter />
+                  <RecordShowCommandMenu />
+                  {!isLayoutCustomizationModeEnabled && (
+                    <SidePanelToggleButton />
+                  )}
+                </RecordShowPageHeader>
+              }
             >
-              <PageLayoutRecordPageRenderer
-                targetRecordIdentifier={{
-                  id: objectRecordId,
-                  targetObjectNameSingular: objectNameSingular,
+              <TimelineActivityContext.Provider
+                value={{
+                  recordId: objectRecordId,
                 }}
-                isInSidePanel={false}
-              />
-              <RecordShowPageSSESubscribeEffect
-                objectNameSingular={objectNameSingular}
-                recordId={objectRecordId}
-              />
-            </TimelineActivityContext.Provider>
-          </PageCardLayout>
+              >
+                <PageLayoutRecordPageRenderer
+                  targetRecordIdentifier={{
+                    id: objectRecordId,
+                    targetObjectNameSingular: objectNameSingular,
+                  }}
+                  isInSidePanel={false}
+                />
+                <RecordShowPageSSESubscribeEffect
+                  objectNameSingular={objectNameSingular}
+                  recordId={objectRecordId}
+                />
+              </TimelineActivityContext.Provider>
+            </PageCardLayout>
+          </GtmDashboardScopeProvider>
         </CommandMenuComponentInstanceContext.Provider>
       </ContextStoreComponentInstanceContext.Provider>
     </RecordComponentInstanceContextsWrapper>

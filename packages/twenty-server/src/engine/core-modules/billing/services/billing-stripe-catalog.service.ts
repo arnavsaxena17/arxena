@@ -2,7 +2,8 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { isDefined, isNonEmptyString } from 'twenty-shared/utils';
+import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import type Stripe from 'stripe';
 

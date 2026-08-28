@@ -215,11 +215,11 @@ export {
   getGroupByConnectionTypename,
 } from './graphql/graphql-get-typename.util';
 export {
-  buildCompanyLogoPath,
   COMPANY_LOGO_ENDPOINT_PATH,
+  WEBSITE_COMPANY_LOGO_ENDPOINT_PATH,
+  buildCompanyLogoPath,
   getCompanyLogoUrl,
   getWebsiteCompanyLogoUrl,
-  WEBSITE_COMPANY_LOGO_ENDPOINT_PATH,
 } from './image/getCompanyLogoUrl';
 export { getImageAbsoluteURI } from './image/getImageAbsoluteURI';
 export { getLinkFaviconUrl } from './image/getLinkFaviconUrl';
