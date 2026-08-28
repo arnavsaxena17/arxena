@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
+  buildRandomizedLinkedInUnipilePageLimits,
   getLinkedInUnipileSearchPageLimit,
   isValidUuid,
 } from 'twenty-shared/utils';
@@ -583,7 +584,11 @@ export class PeopleLinkedInSourcingService {
     config: LinkedInSearchResponse['config'] | undefined;
   }> {
     const desired = Math.max(1, input.limit);
-    const pageSize = getLinkedInUnipileSearchPageLimit(input.searchType);
+    const maxPageSize = getLinkedInUnipileSearchPageLimit(input.searchType);
+    const pageLimits = buildRandomizedLinkedInUnipilePageLimits(
+      desired,
+      maxPageSize,
+    );
     const collected: Array<Record<string, unknown>> = [];
     const seenKeys = new Set<string>();
     let cursor: string | undefined;
@@ -591,15 +596,16 @@ export class PeopleLinkedInSourcingService {
 
     for (
       let page = 0;
-      page < PEOPLE_UNIPILE_SEARCH_MAX_PAGES && collected.length < desired;
+      page < pageLimits.length &&
+      page < PEOPLE_UNIPILE_SEARCH_MAX_PAGES &&
+      collected.length < desired;
       page += 1
     ) {
       if (page > 0) {
         await sleepMs(randomOrgChartLinkedInPageDelayMs());
       }
 
-      const remaining = desired - collected.length;
-      const pageLimit = Math.min(pageSize, remaining);
+      const pageLimit = pageLimits[page] ?? Math.min(maxPageSize, desired - collected.length);
       let response: LinkedInSearchResponse;
 
       if (page === 0) {
@@ -641,7 +647,7 @@ export class PeopleLinkedInSourcingService {
     }
 
     this.logger.log(
-      `People API Unipile people search collected=${collected.length} requested=${desired} pageSize=${pageSize} searchType=${input.searchType}`,
+      `People API Unipile people search collected=${collected.length} requested=${desired} pageLimits=${pageLimits.join(',')} maxPageSize=${maxPageSize} searchType=${input.searchType}`,
     );
 
     return { items: collected, config };

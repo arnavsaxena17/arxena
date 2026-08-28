@@ -12,10 +12,10 @@ export const MS_PER_TEN_SECONDS = 10_000;
 export const MS_PER_THIRTY_SECONDS = 30_000;
 
 export type LinkedinAccountRateLimits = {
-  endpointPerMinute: number;
-  endpointPerDay: number;
   companyProfilePer10Seconds: number;
+  companyProfilePerDay: number;
   profilePer10Seconds: number;
+  profilePerDay: number;
   connectionRequestPer5Minutes: number;
   connectionRequestPerDay: number;
   commentPer30Seconds: number;
@@ -46,10 +46,10 @@ export type WhatsappAccountRateLimitsMap = Record<
 >;
 
 export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
-  endpointPerMinute: 5,
-  endpointPerDay: 40,
   companyProfilePer10Seconds: 1,
+  companyProfilePerDay: 100,
   profilePer10Seconds: 1,
+  profilePerDay: 100,
   connectionRequestPer5Minutes: 1,
   connectionRequestPerDay: 20,
   commentPer30Seconds: 1,
@@ -73,10 +73,10 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   keyof LinkedinAccountRateLimits,
   { min: number; max: number }
 > = {
-  endpointPerMinute: { min: 1, max: 10 },
-  endpointPerDay: { min: 5, max: 100 },
   companyProfilePer10Seconds: { min: 1, max: 3 },
+  companyProfilePerDay: { min: 1, max: 200 },
   profilePer10Seconds: { min: 1, max: 3 },
+  profilePerDay: { min: 1, max: 200 },
   connectionRequestPer5Minutes: { min: 1, max: 5 },
   connectionRequestPerDay: { min: 1, max: 50 },
   commentPer30Seconds: { min: 1, max: 5 },
@@ -134,10 +134,10 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
   keyof LinkedinAccountRateLimits,
   AccountRateLimitUsageWindow
 > = {
-  endpointPerMinute: { method: 'endpoint', windowName: 'minute' },
-  endpointPerDay: { method: 'endpoint', windowName: 'day' },
   companyProfilePer10Seconds: { method: 'company_profile', windowName: '10s' },
+  companyProfilePerDay: { method: 'company_profile', windowName: 'day' },
   profilePer10Seconds: { method: 'profile', windowName: '10s' },
+  profilePerDay: { method: 'profile', windowName: 'day' },
   connectionRequestPer5Minutes: {
     method: 'connection_request',
     windowName: '5m',

@@ -2,6 +2,29 @@ import { sleepMs } from 'src/engine/core-modules/org-chart/utils/orgchart-linked
 
 import { PeopleLinkedInSourcingService } from '../people-linkedin-sourcing.service';
 
+jest.mock('twenty-shared/utils', () => {
+  const actual = jest.requireActual('twenty-shared/utils');
+
+  return {
+    ...actual,
+    buildRandomizedLinkedInUnipilePageLimits: jest.fn(
+      (desired: number, maxPageSize: number) => {
+        const limits: number[] = [];
+        let remaining = desired;
+
+        while (remaining > 0) {
+          const pageLimit = Math.min(maxPageSize, remaining);
+
+          limits.push(pageLimit);
+          remaining -= pageLimit;
+        }
+
+        return limits;
+      },
+    ),
+  };
+});
+
 jest.mock(
   'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util',
   () => {

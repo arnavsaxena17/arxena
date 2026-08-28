@@ -763,12 +763,46 @@ export class OrgChartController {
     };
   }
 
+  @Get('company-logo/:website')
+  async getCompanyLogoByWebsitePath(
+    @Param('website') website: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return this.serveCompanyLogo({
+      website: decodeURIComponent(website),
+      req,
+      res,
+      allowPublicCaching: true,
+    });
+  }
+
+  /** @deprecated Prefer path-based `/company-logo/:website` (CDN-safe cache key). */
   @Get('company-logo')
   async getCompanyLogo(
     @Query('website') website: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    return this.serveCompanyLogo({
+      website,
+      req,
+      res,
+      allowPublicCaching: false,
+    });
+  }
+
+  private async serveCompanyLogo({
+    website,
+    req,
+    res,
+    allowPublicCaching,
+  }: {
+    website: string;
+    req: Request;
+    res: Response;
+    allowPublicCaching: boolean;
+  }) {
     if (
       !isLikelyBrowserOrgChartRequest(req) &&
       !isLikelyBrowserLogoRequest(req.headers)
@@ -788,7 +822,10 @@ export class OrgChartController {
       await this.companyLogoService.fetchLogoByWebsite(website);
 
     if (!ok || body.byteLength === 0) {
-      res.setHeader('Cache-Control', 'public, max-age=120');
+      res.setHeader(
+        'Cache-Control',
+        allowPublicCaching ? 'public, max-age=120' : 'private, no-cache',
+      );
       res.status(404).send();
 
       return;
@@ -797,7 +834,9 @@ export class OrgChartController {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader(
       'Cache-Control',
-      'public, max-age=86400, stale-while-revalidate=604800',
+      allowPublicCaching
+        ? 'public, max-age=86400, stale-while-revalidate=604800'
+        : 'private, no-cache',
     );
     res.send(Buffer.from(body));
   }

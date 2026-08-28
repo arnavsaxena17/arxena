@@ -20,6 +20,7 @@ import { trackGA4Event } from '@/lib/analytics';
 import { HOMEPAGE_HERO } from '@/lib/brand-content';
 import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
+import { getWebsiteCompanyLogoUrl } from 'twenty-shared/utils';
 
 const StyledHero = styled.section`
   display: flex;
@@ -436,7 +437,7 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
                       </StyledExampleLogoPlaceholder>
                     ) : (
                       <StyledExampleLogo
-                        src={`/api/org-chart/company-logo?website=${encodeURIComponent(website)}`}
+                        src={getWebsiteCompanyLogoUrl(website) ?? ''}
                         alt=""
                         onError={() => handleLogoError(website)}
                       />

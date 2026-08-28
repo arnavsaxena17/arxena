@@ -425,7 +425,7 @@ describe('AccountRateLimiterService', () => {
     );
   });
 
-  it('uses profile pace plus shared endpoint day for profile lookups', async () => {
+  it('uses profile pace plus dedicated profile day for profile lookups', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -441,11 +441,11 @@ describe('AccountRateLimiterService', () => {
 
     expect(keys).toEqual([
       'linkedin:acc-1:profile:10s',
-      'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:profile:day',
     ]);
   });
 
-  it('uses company-profile pace plus shared endpoint day', async () => {
+  it('uses company-profile pace plus dedicated company profile day', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -461,7 +461,7 @@ describe('AccountRateLimiterService', () => {
 
     expect(keys).toEqual([
       'linkedin:acc-1:company_profile:10s',
-      'linkedin:acc-1:endpoint:day',
+      'linkedin:acc-1:company_profile:day',
     ]);
   });
 
@@ -592,9 +592,9 @@ describe('AccountRateLimiterService', () => {
           maxScore: expect.any(Number),
         }),
         expect.objectContaining({
-          key: 'linkedin:acc-1:endpoint:minute',
-          windowMs: 60_000,
-          maxScore: expect.any(Number),
+          key: 'linkedin:acc-1:profile:day',
+          windowMs: 86_400_000,
+          maxScore: '+inf',
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:search:day',

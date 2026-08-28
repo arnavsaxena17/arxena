@@ -465,31 +465,9 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: LinkedinRateLimitMethod,
     limits: LinkedinAccountRateLimits,
   ): RateLimitWindow[] {
-    // Each action is pace + daily quota. Lookups share endpoint:day so
-    // profile/company fetches cannot spend a separate daily budget on top of
-    // generic endpoint traffic. Outreach and search never share that counter.
-    const endpointDay = this.window(
-      accountId,
-      'linkedin',
-      'endpoint',
-      'day',
-      limits.endpointPerDay,
-      MS_PER_DAY,
-    );
-
     switch (method) {
       case 'endpoint':
-        return [
-          this.window(
-            accountId,
-            'linkedin',
-            'endpoint',
-            'minute',
-            limits.endpointPerMinute,
-            MS_PER_MINUTE,
-          ),
-          endpointDay,
-        ];
+        return [];
       case 'company_profile':
         return [
           this.window(
@@ -500,7 +478,14 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.companyProfilePer10Seconds,
             MS_PER_TEN_SECONDS,
           ),
-          endpointDay,
+          this.window(
+            accountId,
+            'linkedin',
+            'company_profile',
+            'day',
+            limits.companyProfilePerDay,
+            MS_PER_DAY,
+          ),
         ];
       case 'profile':
         return [
@@ -512,7 +497,14 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.profilePer10Seconds,
             MS_PER_TEN_SECONDS,
           ),
-          endpointDay,
+          this.window(
+            accountId,
+            'linkedin',
+            'profile',
+            'day',
+            limits.profilePerDay,
+            MS_PER_DAY,
+          ),
         ];
       case 'connection_request':
         return [

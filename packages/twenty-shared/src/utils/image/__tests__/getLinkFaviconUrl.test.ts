@@ -7,13 +7,13 @@ describe('getLinkFaviconUrl', () => {
     expect(
       getLinkFaviconUrl('https://cool-company.com/about', SERVER_BASE_URL),
     ).toBe(
-      'http://localhost:3000/org-chart/company-logo?website=cool-company.com',
+      'http://localhost:3000/org-chart/company-logo/cool-company.com',
     );
   });
 
   it('accepts a bare domain', () => {
     expect(getLinkFaviconUrl('twenty.com', SERVER_BASE_URL)).toBe(
-      'http://localhost:3000/org-chart/company-logo?website=twenty.com',
+      'http://localhost:3000/org-chart/company-logo/twenty.com',
     );
   });
 

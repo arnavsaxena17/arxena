@@ -215,8 +215,11 @@ export {
   getGroupByConnectionTypename,
 } from './graphql/graphql-get-typename.util';
 export {
+  buildCompanyLogoPath,
   COMPANY_LOGO_ENDPOINT_PATH,
   getCompanyLogoUrl,
+  getWebsiteCompanyLogoUrl,
+  WEBSITE_COMPANY_LOGO_ENDPOINT_PATH,
 } from './image/getCompanyLogoUrl';
 export { getImageAbsoluteURI } from './image/getImageAbsoluteURI';
 export { getLinkFaviconUrl } from './image/getLinkFaviconUrl';
@@ -246,6 +249,9 @@ export {
   getLinkedInUnipileSearchPageLimit,
   getLinkedInUnipileEstimateProbePageLimit,
   computeLinkedInUnipilePagesRequired,
+  LINKEDIN_UNIPILE_RANDOM_PAGE_LIMIT_BUCKETS,
+  pickRandomLinkedInUnipilePageLimit,
+  buildRandomizedLinkedInUnipilePageLimits,
 } from './linkedinUnipileSearchPageLimit';
 export { getAppPath } from './navigation/getAppPath';
 export { getSettingsPath } from './navigation/getSettingsPath';

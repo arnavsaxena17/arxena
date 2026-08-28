@@ -1,11 +1,13 @@
 import {
-    computeLinkedInUnipilePagesRequired,
-    getLinkedInUnipileEstimateProbePageLimit,
-    getLinkedInUnipileSearchPageLimit,
-    LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
-    LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+  buildRandomizedLinkedInUnipilePageLimits,
+  computeLinkedInUnipilePagesRequired,
+  getLinkedInUnipileEstimateProbePageLimit,
+  getLinkedInUnipileSearchPageLimit,
+  LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_ESTIMATE_PROBE_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_RECRUITER_SEARCH_PAGE_LIMIT,
+  LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,
+  pickRandomLinkedInUnipilePageLimit,
 } from './linkedinUnipileSearchPageLimit';
 
 describe('linkedinUnipileSearchPageLimit', () => {
@@ -68,5 +70,36 @@ describe('linkedinUnipileSearchPageLimit', () => {
         searchType: 'classic',
       }),
     ).toBe(10);
+  });
+
+  it('builds randomized page limits that sum to the requested total', () => {
+    let call = 0;
+    const random = () => {
+      const values = [0.1, 0.6, 0.85, 0.95, 0.2, 0.55, 0.9, 0.98];
+      const value = values[call % values.length] ?? 0.5;
+
+      call += 1;
+
+      return value;
+    };
+
+    const limits = buildRandomizedLinkedInUnipilePageLimits(500, 100, random);
+
+    expect(limits.reduce((sum, limit) => sum + limit, 0)).toBe(500);
+    expect(limits.every((limit) => limit > 0 && limit <= 100)).toBe(true);
+    expect(limits.length).toBeGreaterThan(1);
+  });
+
+  it('picks page limits from eligible buckets for classic search', () => {
+    const limits = new Set<number>();
+
+    for (let index = 0; index < 50; index += 1) {
+      limits.add(pickRandomLinkedInUnipilePageLimit(50));
+    }
+
+    expect([...limits].every((limit) => limit >= 25 && limit <= 50)).toBe(
+      true,
+    );
+    expect(limits.has(80)).toBe(false);
   });
 });

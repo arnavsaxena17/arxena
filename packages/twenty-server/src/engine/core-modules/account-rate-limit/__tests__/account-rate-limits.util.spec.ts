@@ -40,9 +40,11 @@ describe('account rate limit sanitization', () => {
     expect(migrated.profilePer10Seconds).toBe(2);
     expect(migrated.companyProfilePer10Seconds).toBe(2);
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer10Seconds).toBe(1);
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePerDay).toBe(100);
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds).toBe(
       1,
     );
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePerDay).toBe(100);
   });
 
   it('parses a per-account LinkedIn map', () => {
@@ -90,11 +92,21 @@ describe('account rate limit sanitization', () => {
       method: 'profile',
       windowName: '10s',
     });
+    expect(getLinkedinAccountRateLimitUsageWindow('profilePerDay')).toEqual({
+      method: 'profile',
+      windowName: 'day',
+    });
     expect(
       getLinkedinAccountRateLimitUsageWindow('companyProfilePer10Seconds'),
     ).toEqual({
       method: 'company_profile',
       windowName: '10s',
+    });
+    expect(
+      getLinkedinAccountRateLimitUsageWindow('companyProfilePerDay'),
+    ).toEqual({
+      method: 'company_profile',
+      windowName: 'day',
     });
     expect(getLinkedinAccountRateLimitUsageWindow('toString')).toBeUndefined();
     expect(

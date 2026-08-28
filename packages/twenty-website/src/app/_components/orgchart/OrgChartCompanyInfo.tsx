@@ -8,7 +8,10 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
-import { toTitleCase } from 'twenty-shared/utils';
+import {
+  buildCompanyLogoPath,
+  toTitleCase,
+} from 'twenty-shared/utils';
 
 const StyledCompanyInfo = styled.div`
   display: flex;
@@ -144,9 +147,12 @@ function getLogoAbbreviation(website?: string, companyName?: string): string {
 }
 
 function getLogoUrl(website?: string, logoBaseUrl?: string): string | null {
-  if (!website?.trim()) return null;
-  const base = logoBaseUrl ?? '/api/org-chart';
-  return `${base.replace(/\/$/, '')}/company-logo?website=${encodeURIComponent(website)}`;
+  const base = (logoBaseUrl ?? '/api/org-chart').replace(/\/$/, '');
+  const endpoint = base.endsWith('/company-logo')
+    ? base
+    : `${base}/company-logo`;
+
+  return buildCompanyLogoPath(website ?? '', endpoint) ?? null;
 }
 
 function getDisplayDomain(website?: string): string | null {

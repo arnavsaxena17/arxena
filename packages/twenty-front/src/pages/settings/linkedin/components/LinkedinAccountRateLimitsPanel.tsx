@@ -52,20 +52,6 @@ export const LinkedinAccountRateLimitsPanel = ({
       flushUsage={flushUsage}
       fields={[
         {
-          key: 'endpointPerMinute',
-          label: 'Per-endpoint minute limit',
-          windowLabel: 'per 1 min',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.endpointPerMinute,
-          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerMinute,
-        },
-        {
-          key: 'endpointPerDay',
-          label: 'Per-endpoint day limit',
-          windowLabel: 'per 1 day',
-          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.endpointPerDay,
-          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay,
-        },
-        {
           key: 'companyProfilePer10Seconds',
           label: 'Get company profile',
           windowLabel: 'per 10 sec',
@@ -74,11 +60,26 @@ export const LinkedinAccountRateLimitsPanel = ({
             DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds,
         },
         {
+          key: 'companyProfilePerDay',
+          label: 'Get company profile',
+          windowLabel: 'per 1 day',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.companyProfilePerDay,
+          recommended:
+            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePerDay,
+        },
+        {
           key: 'profilePer10Seconds',
           label: 'Get profile',
           windowLabel: 'per 10 sec',
           ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.profilePer10Seconds,
           recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer10Seconds,
+        },
+        {
+          key: 'profilePerDay',
+          label: 'Get profile',
+          windowLabel: 'per 1 day',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.profilePerDay,
+          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePerDay,
         },
         {
           key: 'connectionRequestPer5Minutes',

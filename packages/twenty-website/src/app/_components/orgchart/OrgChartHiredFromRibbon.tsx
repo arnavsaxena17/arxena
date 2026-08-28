@@ -4,12 +4,10 @@ import styled from '@emotion/styled';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { toTitleCase } from 'twenty-shared/utils';
+import { getWebsiteCompanyLogoUrl, toTitleCase } from 'twenty-shared/utils';
 
 function getLogoUrl(website?: string): string | null {
-  if (!website?.trim()) return null;
-  const base = '/api/org-chart';
-  return `${base.replace(/\/$/, '')}/company-logo?website=${encodeURIComponent(website)}`;
+  return getWebsiteCompanyLogoUrl(website) ?? null;
 }
 
 function getLogoAbbreviation(website?: string, companyName?: string): string {

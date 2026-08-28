@@ -3,7 +3,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { resolveOrgChartCanonicalCompanyId, toTitleCase } from 'twenty-shared/utils';
+import { buildCompanyLogoPath, resolveOrgChartCanonicalCompanyId, toTitleCase } from 'twenty-shared/utils';
 
 import {
     CompanyAutocompleteItem,
@@ -403,7 +403,8 @@ export const CompanySearchAutocomplete = ({
       if (!website?.trim()) return null;
       const base =
         logoBaseUrl ?? `${baseUrl.replace(/\/$/, '')}/org-chart/company-logo`;
-      return `${base.replace(/\/$/, '')}?website=${encodeURIComponent(website)}`;
+
+      return buildCompanyLogoPath(website, base) ?? null;
     },
     [baseUrl, logoBaseUrl],
   );

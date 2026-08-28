@@ -6,7 +6,7 @@ import {
 const SERVER_BASE_URL = 'http://localhost:3000';
 
 const expectedLogoUrl = (domain: string) =>
-  `${SERVER_BASE_URL}/org-chart/company-logo?website=${encodeURIComponent(domain)}`;
+  `${SERVER_BASE_URL}/org-chart/company-logo/${encodeURIComponent(domain)}`;
 
 describe('sanitizeURL', () => {
   test('should sanitize the URL correctly', () => {
