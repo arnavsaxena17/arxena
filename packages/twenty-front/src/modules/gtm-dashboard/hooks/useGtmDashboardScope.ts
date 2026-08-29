@@ -4,6 +4,7 @@ import { GtmDashboardScopeContext } from '@/gtm-dashboard/contexts/GtmDashboardS
 import { mergeGtmDashboardScopeIntoChartFilters } from '@/gtm-dashboard/utils/mergeGtmDashboardScopeIntoChartFilters';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { type ChartFilters } from '@/side-panel/pages/page-layout/types/ChartFilters';
+import { isDefined } from 'twenty-shared/utils';
 
 export const useGtmDashboardScopeContext = () => {
   const context = useContext(GtmDashboardScopeContext);
@@ -35,11 +36,16 @@ export const useGtmDashboardScopedChartConfiguration = <
   });
 
   return useMemo(() => {
-    if (
-      !scope?.isActive ||
-      !scope.selectedProjectId ||
-      scope.selectedProjectId.length === 0
-    ) {
+    if (!scope?.isActive) {
+      return configuration;
+    }
+
+    const hasProject =
+      isDefined(scope.selectedProjectId) &&
+      scope.selectedProjectId.length > 0;
+    const hasVariant = scope.experimentVariant !== 'ALL';
+
+    if (!hasProject && !hasVariant) {
       return configuration;
     }
 
@@ -49,6 +55,7 @@ export const useGtmDashboardScopedChartConfiguration = <
         chartFilters: configuration.filter ?? {},
         objectMetadataItem,
         projectId: scope.selectedProjectId,
+        experimentVariant: scope.experimentVariant,
       }),
     };
   }, [configuration, objectMetadataItem, scope]);
@@ -57,5 +64,5 @@ export const useGtmDashboardScopedChartConfiguration = <
 export const useGtmDashboardChartScopeKey = () => {
   const scope = useGtmDashboardScopeContextOptional();
 
-  return scope?.selectedProjectId ?? 'all-projects';
+  return `${scope?.selectedProjectId ?? 'all-projects'}:${scope?.experimentVariant ?? 'ALL'}`;
 };

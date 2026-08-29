@@ -6,18 +6,21 @@ import { WorkspaceIteratorService } from 'src/database/commands/command-runners/
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
-import { STANDARD_SKILL } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-skill.constant';
+import {
+  RETIRED_STANDARD_SKILL_UNIVERSAL_IDENTIFIERS,
+  STANDARD_SKILL,
+} from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-skill.constant';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { computeTwentyStandardApplicationAllFlatEntityMaps } from 'src/engine/workspace-manager/twenty-standard-application/utils/twenty-standard-application-all-flat-entity-maps.constant';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
 const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   STANDARD_SKILL['workflow-building'].universalIdentifier,
-  STANDARD_SKILL['gtm-outreach-workflows'].universalIdentifier,
-  STANDARD_SKILL['search-companies'].universalIdentifier,
-  STANDARD_SKILL['search-people'].universalIdentifier,
+  STANDARD_SKILL.outreach.universalIdentifier,
+  STANDARD_SKILL.search.universalIdentifier,
+  RETIRED_STANDARD_SKILL_UNIVERSAL_IDENTIFIERS.searchPeople,
   STANDARD_SKILL['dashboard-building'].universalIdentifier,
-  STANDARD_SKILL['gtm-icp-onboarding'].universalIdentifier,
+  STANDARD_SKILL.setup.universalIdentifier,
 ] as const;
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000037)

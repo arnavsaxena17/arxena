@@ -94,6 +94,7 @@ import { SystemPromptBuilderService } from './services/system-prompt-builder.ser
   exports: [
     AgentChatService,
     AgentChatStreamingService,
+    SystemPromptBuilderService,
     TypeOrmModule.forFeature([AgentChatThreadEntity]),
   ],
 })

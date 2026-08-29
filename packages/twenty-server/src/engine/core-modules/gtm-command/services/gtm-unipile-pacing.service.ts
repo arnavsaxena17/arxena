@@ -21,6 +21,7 @@ type ProjectPacingRecord = ObjectLiteral & {
   sendTimezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
+  outreachStatus?: string | null;
 };
 
 type WorkspaceMemberProfilePacingRecord = ObjectLiteral & {
@@ -87,6 +88,7 @@ export class GtmUnipilePacingService {
       linkedinConnected: isNonEmptyString(
         loaded.profile?.linkedinUnipileAccountId,
       ),
+      outreachStatus: loaded.project?.outreachStatus ?? 'LIVE',
       sendWindow: loaded.project
         ? {
             timezone: loaded.project.sendTimezone ?? 'Asia/Kolkata',

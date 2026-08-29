@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Param,
   Post,
   Put,
   Query,
@@ -27,6 +28,7 @@ import {
 } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/gtm-command/services/search-people-for-company.service';
 import { GtmWorkspaceProfileProvisioningService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-profile-provisioning.service';
+import { GtmProjectOutreachControlService } from 'src/engine/core-modules/gtm-command/services/gtm-project-outreach-control.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('gtm-command')
@@ -45,6 +47,7 @@ export class GtmCommandController {
     private readonly gtmWorkspaceProfileProvisioningService: GtmWorkspaceProfileProvisioningService,
     private readonly gtmFakeProfileDetectorService: GtmFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: GtmFilterProfilesService,
+    private readonly gtmProjectOutreachControlService: GtmProjectOutreachControlService,
   ) {}
 
   @Get('cache/companies')
@@ -508,6 +511,135 @@ export class GtmCommandController {
         error instanceof Error
           ? error.message
           : 'Failed to regenerate GTM workspace profile',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('projects/:projectId/pause')
+  async pauseProjectOutreach(
+    @Param('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.setProjectOutreachStatus({
+      projectId,
+      request,
+      action: 'pause',
+    });
+  }
+
+  @Post('projects/:projectId/resume')
+  async resumeProjectOutreach(
+    @Param('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.setProjectOutreachStatus({
+      projectId,
+      request,
+      action: 'resume',
+    });
+  }
+
+  @Post('projects/:projectId/candidates/stop')
+  async stopCandidateOutreach(
+    @Param('projectId') projectId: string,
+    @Body() body: { candidateIds?: string[] },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!projectId) {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const candidateIds = Array.isArray(body?.candidateIds)
+      ? body.candidateIds.filter((id): id is string => typeof id === 'string')
+      : [];
+
+    if (candidateIds.length === 0) {
+      throw new HttpException(
+        'candidateIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const result = await this.gtmProjectOutreachControlService.stopCandidates({
+        workspaceId,
+        projectId,
+        candidateIds,
+      });
+
+      return { ok: true, ...result };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to stop GTM candidate outreach', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to stop candidate outreach',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async setProjectOutreachStatus({
+    projectId,
+    request,
+    action,
+  }: {
+    projectId: string;
+    request: { headers?: { authorization?: string } };
+    action: 'pause' | 'resume';
+  }) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!projectId) {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      if (action === 'pause') {
+        const result = await this.gtmProjectOutreachControlService.pauseProject({
+          workspaceId,
+          projectId,
+        });
+
+        return { ok: true, outreachStatus: 'PAUSED', ...result };
+      }
+
+      const result = await this.gtmProjectOutreachControlService.resumeProject({
+        workspaceId,
+        projectId,
+      });
+
+      return { ok: true, outreachStatus: 'LIVE', ...result };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error(`Failed to ${action} GTM project outreach`, error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : `Failed to ${action} GTM project outreach`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

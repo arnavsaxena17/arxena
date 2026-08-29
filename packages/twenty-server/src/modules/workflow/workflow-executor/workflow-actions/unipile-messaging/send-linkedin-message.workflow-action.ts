@@ -7,6 +7,7 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
 import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
+import { resolveGtmOutboundMessageKind } from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -51,6 +52,26 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
 
   protected override getTranscriptChannel() {
     return 'LINKEDIN' as const;
+  }
+
+  protected override getMaterializeEvent() {
+    return 'outbound_message' as const;
+  }
+
+  protected override getOutboundMessageKind(
+    resolvedInput: WorkflowSendLinkedinMessageActionInput,
+  ) {
+    return (
+      resolveGtmOutboundMessageKind({
+        materializeEvent: 'outbound_message',
+        messagingChannel: 'LINKEDIN',
+        explicitKind:
+          typeof (resolvedInput as { messageKind?: unknown }).messageKind ===
+          'string'
+            ? ((resolvedInput as { messageKind: string }).messageKind)
+            : null,
+      }) ?? 'OPENER'
+    );
   }
 
   protected override async preprocessInput(

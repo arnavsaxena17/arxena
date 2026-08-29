@@ -2,7 +2,9 @@ export const GTM_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME =
   'search-people-for-company';
 export const GTM_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME =
   'fetch-linkedin-profile';
+/** Native workflow LF — not the LLM `search` skill. */
 export const GTM_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME = 'search-people';
+/** Native harvest LF — not the LLM `search` skill. */
 export const GTM_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME = 'search-companies';
 export const GTM_SEARCH_JOBS_LOGIC_FUNCTION_NAME = 'search-jobs';
 export const GTM_SEARCH_POSTS_LOGIC_FUNCTION_NAME = 'search-posts';

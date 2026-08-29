@@ -77,6 +77,25 @@ export const GTM_OUTREACH_SEND_MODE_OPTIONS = [
   selectOption('APPROVAL', 'Send with approval', 'orange', 1),
 ];
 
+export const GTM_OUTREACH_STATUS_OPTIONS = [
+  selectOption('LIVE', 'Live', 'green', 0),
+  selectOption('PAUSED', 'Paused', 'orange', 1),
+];
+
+export const GTM_EXPERIMENT_VARIANT_OPTIONS = [
+  selectOption('A', 'Variant A', 'blue', 0),
+  selectOption('B', 'Variant B', 'purple', 1),
+];
+
+export const GTM_OUTBOUND_MESSAGE_KIND_OPTIONS = [
+  selectOption('CONNECT_NOTE', 'Connection note', 'blue', 0),
+  selectOption('OPENER', 'Opener', 'sky', 1),
+  selectOption('FU1', 'Follow-up 1', 'turquoise', 2),
+  selectOption('FU2', 'Follow-up 2', 'green', 3),
+  selectOption('FU3', 'Follow-up 3', 'orange', 4),
+  selectOption('EMAIL', 'Email', 'purple', 5),
+];
+
 export const GTM_OUTREACH_SEQUENCE_STAGE_OPTIONS = [
   selectOption('QUEUED', 'Queued', 'gray', 0),
   selectOption('NEEDS_CONNECTION', 'Needs connection', 'red', 1),
@@ -466,12 +485,47 @@ export const getGtmCommandFieldsData = (
       defaultValue: 0,
     },
   },
-  // Person — cross-project memory / compliance
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Sticky A/B experiment arm assigned at enroll (hash of LinkedIn profile id)',
+      icon: 'IconAB',
+      label: 'Experiment Variant',
+      name: 'experimentVariant',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: GTM_EXPERIMENT_VARIANT_OPTIONS,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Kind of the last outbound outreach message',
+      icon: 'IconMailForward',
+      label: 'Last Outbound Message Kind',
+      name: 'lastOutboundMessageKind',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: GTM_OUTBOUND_MESSAGE_KIND_OPTIONS,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Outbound message kind that produced the first real inbound reply',
+      icon: 'IconMailOpened',
+      label: 'Converted On Message Kind',
+      name: 'convertedOnMessageKind',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: GTM_OUTBOUND_MESSAGE_KIND_OPTIONS,
+    },
+  },
   {
     objectName: 'person',
     field: {
-      description:
-        'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',
+      description: 'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',
       icon: 'IconId',
       label: 'LinkedIn Profile Id',
       name: 'linkedinProfileId',
@@ -514,6 +568,32 @@ export const getGtmCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.project,
       type: 'SELECT',
       options: GTM_OUTREACH_SEND_MODE_OPTIONS,
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description:
+        'Whether outbound GTM outreach is live or paused for this project',
+      icon: 'IconPlayerPause',
+      label: 'Outreach Status',
+      name: 'outreachStatus',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'SELECT',
+      options: GTM_OUTREACH_STATUS_OPTIONS,
+      defaultValue: "'LIVE'",
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description:
+        'A/B experiment config JSON (status, split, name, workflow version ids)',
+      icon: 'IconFlask',
+      label: 'Experiment Config',
+      name: 'experimentConfig',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'TEXT',
     },
   },
   {

@@ -106,7 +106,7 @@ LOGIC_FUNCTION steps:
 - settings.input.logicFunctionId
 - settings.input.logicFunctionInput (never flatten params onto settings.input)
 - Call list_logic_function_tools for inputSchema. Native functions (isNative) ignore source code — do not call get_logic_function_source for them.
-- GTM harvest (CRON + upsert-companies), company.created enroll, LinkedIn/email sequencer: load_skills(["gtm-outreach-workflows"]) — do not invent FIND_RECORDS + icpSpec unpacking or Redis upserts for harvest.
+- GTM harvest (CRON + upsert-companies), company.created enroll, LinkedIn/email sequencer: load_skills(["outreach"]) — do not invent FIND_RECORDS + icpSpec unpacking or Redis upserts for harvest.
 
 Other:
 - Each step needs id (UUID), name, type, valid, settings

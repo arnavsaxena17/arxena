@@ -10,7 +10,10 @@ import {
   useCanQueryDashboardRecords,
   useGtmCommandDashboardPath,
 } from '@/gtm-home/hooks/useGtmCommandDashboardPath';
-import { type GtmProjectOption } from '@/gtm-home/types/gtm-home.types';
+import {
+  type GtmOutreachStatus,
+  type GtmProjectOption,
+} from '@/gtm-home/types/gtm-home.types';
 
 const StyledActions = styled.div`
   align-items: center;
@@ -31,12 +34,39 @@ const StyledSelect = styled.select`
   padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
 `;
 
+const StyledStatusChip = styled.span<{
+  $tone: 'live' | 'paused' | 'needs-connection';
+}>`
+  border: 1px solid
+    ${({ $tone }) =>
+      $tone === 'live'
+        ? themeCssVariables.color.green
+        : $tone === 'paused'
+          ? themeCssVariables.color.orange
+          : themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${({ $tone }) =>
+    $tone === 'live'
+      ? themeCssVariables.color.green
+      : $tone === 'paused'
+        ? themeCssVariables.color.orange
+        : themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: 2px ${themeCssVariables.spacing[1]};
+`;
+
 type GtmRunProgressHeaderProps = {
   projectId: string | null;
   projectOptions: GtmProjectOption[];
   onSelectProjectId: (projectId: string) => void;
   onCreateProject: () => void;
   isCreatingProject?: boolean;
+  outreachStatus: GtmOutreachStatus | null;
+  linkedinConnected?: boolean;
+  onPauseOutreach?: () => void;
+  onResumeOutreach?: () => void;
+  isUpdatingOutreachStatus?: boolean;
 };
 
 // Compact project switcher for the page header — identity lives in the select, not a second title.
@@ -74,12 +104,39 @@ type GtmRunProgressHeaderViewProps = GtmRunProgressHeaderProps & {
   dashboardId?: string;
 };
 
+const resolveStatusChip = ({
+  outreachStatus,
+  linkedinConnected,
+}: {
+  outreachStatus: GtmOutreachStatus | null;
+  linkedinConnected?: boolean;
+}): { label: string; tone: 'live' | 'paused' | 'needs-connection' } | null => {
+  if (linkedinConnected === false) {
+    return { label: 'Needs connection', tone: 'needs-connection' };
+  }
+
+  if (outreachStatus === 'PAUSED') {
+    return { label: 'Paused', tone: 'paused' };
+  }
+
+  if (outreachStatus === 'LIVE') {
+    return { label: 'Live', tone: 'live' };
+  }
+
+  return null;
+};
+
 const GtmRunProgressHeaderView = ({
   projectId,
   projectOptions,
   onSelectProjectId,
   onCreateProject,
   isCreatingProject = false,
+  outreachStatus,
+  linkedinConnected,
+  onPauseOutreach,
+  onResumeOutreach,
+  isUpdatingOutreachStatus = false,
   dashboardPath,
   dashboardId,
 }: GtmRunProgressHeaderViewProps) => {
@@ -92,6 +149,11 @@ const GtmRunProgressHeaderView = ({
           projectId,
         })
       : dashboardPath;
+
+  const statusChip = resolveStatusChip({
+    outreachStatus,
+    linkedinConnected,
+  });
 
   return (
     <StyledActions>
@@ -116,6 +178,29 @@ const GtmRunProgressHeaderView = ({
           ))
         )}
       </StyledSelect>
+      {isDefined(statusChip) && (
+        <StyledStatusChip $tone={statusChip.tone}>
+          {statusChip.label}
+        </StyledStatusChip>
+      )}
+      {outreachStatus === 'LIVE' && isDefined(onPauseOutreach) && (
+        <Button
+          title="Pause outreach"
+          variant="secondary"
+          size="small"
+          disabled={isUpdatingOutreachStatus || !isDefined(projectId)}
+          onClick={onPauseOutreach}
+        />
+      )}
+      {outreachStatus === 'PAUSED' && isDefined(onResumeOutreach) && (
+        <Button
+          title="Resume outreach"
+          variant="secondary"
+          size="small"
+          disabled={isUpdatingOutreachStatus || !isDefined(projectId)}
+          onClick={onResumeOutreach}
+        />
+      )}
       <Button
         title="New project"
         variant="secondary"

@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
@@ -37,6 +37,7 @@ import {
 import {
   buildGtmFindCompaniesSendPrompt,
   buildGtmFindPeopleSendPrompt,
+  type GtmOutreachSendMode,
 } from '@/gtm-home/types/gtm-home.types';
 import {
   parseGtmIcpSpec,
@@ -54,6 +55,7 @@ import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledMain = styled.div`
   background: ${themeCssVariables.background.primary};
@@ -122,6 +124,7 @@ const GtmHomePageContent = () => {
     projectOptions,
     activeProjectId,
     setActiveProjectId,
+    refetchProjects,
     createGtmProject,
     isIcpProjectOverride,
     linkedinConnected,
@@ -151,6 +154,9 @@ const GtmHomePageContent = () => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingIcp, setIsSavingIcp] = useState(false);
   const [isSavingSendSchedule, setIsSavingSendSchedule] = useState(false);
+  const [isSavingOutreachPolicy, setIsSavingOutreachPolicy] = useState(false);
+  const [isUpdatingOutreachStatus, setIsUpdatingOutreachStatus] =
+    useState(false);
   const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
   const [workflowMode, setWorkflowMode] =
     useState<GtmWorkflowEmbedMode>('definition');
@@ -421,6 +427,120 @@ const GtmHomePageContent = () => {
     }
   };
 
+  const handleSaveOutreachPolicy = async (input: {
+    outreachSendMode: GtmOutreachSendMode;
+    maxPersonasPerCompany: number;
+  }) => {
+    if (!isDefined(activeProjectId)) {
+      enqueueErrorSnackBar({
+        message:
+          'Create or select a GTM project before saving outreach policy.',
+      });
+      return;
+    }
+
+    setIsSavingOutreachPolicy(true);
+
+    try {
+      await updateOneRecord({
+        objectNameSingular: 'project',
+        idToUpdate: activeProjectId,
+        updateOneRecordInput: {
+          outreachSendMode: input.outreachSendMode,
+          maxPersonasPerCompany: input.maxPersonasPerCompany,
+        },
+      });
+      enqueueSuccessSnackBar({ message: 'Outreach policy saved' });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save outreach policy.',
+      });
+    } finally {
+      setIsSavingOutreachPolicy(false);
+    }
+  };
+
+  const updateOutreachStatus = useCallback(
+    async (action: 'pause' | 'resume') => {
+      if (!isDefined(activeProjectId)) {
+        enqueueErrorSnackBar({
+          message: 'Select a GTM project before updating outreach.',
+        });
+        return;
+      }
+
+      const accessToken =
+        tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+
+      if (!accessToken) {
+        enqueueErrorSnackBar({
+          message: 'Sign in again to update outreach status.',
+        });
+        return;
+      }
+
+      setIsUpdatingOutreachStatus(true);
+
+      try {
+        const response = await fetch(
+          `${REACT_APP_SERVER_BASE_URL}/gtm-command/projects/${activeProjectId}/${action}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          const result = (await response.json().catch(() => null)) as {
+            message?: string;
+            error?: string;
+          } | null;
+
+          throw new Error(
+            result?.message ??
+              result?.error ??
+              `Failed to ${action} outreach (${response.status})`,
+          );
+        }
+
+        await refetchProjects();
+        enqueueSuccessSnackBar({
+          message:
+            action === 'pause' ? 'Outreach paused' : 'Outreach resumed',
+        });
+      } catch (error) {
+        enqueueErrorSnackBar({
+          message:
+            error instanceof Error
+              ? error.message
+              : `Failed to ${action} outreach.`,
+        });
+      } finally {
+        setIsUpdatingOutreachStatus(false);
+      }
+    },
+    [
+      activeProjectId,
+      enqueueErrorSnackBar,
+      enqueueSuccessSnackBar,
+      refetchProjects,
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    ],
+  );
+
+  const handlePauseOutreach = () => {
+    void updateOutreachStatus('pause');
+  };
+
+  const handleResumeOutreach = () => {
+    void updateOutreachStatus('resume');
+  };
+
   const handleFindCompanies = () => {
     openAskAiPageWithPreprompt({
       mode: 'SEND',
@@ -463,6 +583,11 @@ const GtmHomePageContent = () => {
           onSelectProjectId={setActiveProjectId}
           onCreateProject={handleCreateProject}
           isCreatingProject={isCreatingProject}
+          outreachStatus={projectSettings.outreachStatus}
+          linkedinConnected={linkedinConnected}
+          onPauseOutreach={handlePauseOutreach}
+          onResumeOutreach={handleResumeOutreach}
+          isUpdatingOutreachStatus={isUpdatingOutreachStatus}
         />
         <CandidateTableProjectsPageMenuDropdown
           onAddJob={handleCreateProject}
@@ -560,6 +685,10 @@ const GtmHomePageContent = () => {
                     sendWindowEnd={projectSettings.sendWindowEnd}
                     isSavingSendSchedule={isSavingSendSchedule}
                     onSaveSendSchedule={handleSaveSendSchedule}
+                    outreachSendMode={projectSettings.outreachSendMode}
+                    maxPersonasPerCompany={projectSettings.maxPersonasPerCompany}
+                    isSavingOutreachPolicy={isSavingOutreachPolicy}
+                    onSaveOutreachPolicy={handleSaveOutreachPolicy}
                     onFindCompanies={handleFindCompanies}
                     onFindPeople={handleFindPeople}
                   />

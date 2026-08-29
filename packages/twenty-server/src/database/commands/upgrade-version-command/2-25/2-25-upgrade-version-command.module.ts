@@ -65,6 +65,7 @@ import { SyncGtmProjectSendWindowFieldsCommand } from 'src/database/commands/upg
 import { AddWorkflowRunProgressFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000070-add-workflow-run-progress-fields.command';
 import { AddCandidateWorkflowRunsRelationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000071-add-candidate-workflow-runs-relation.command';
 import { BackfillWorkflowRunRelatedRecordsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000072-backfill-workflow-run-related-records.command';
+import { UnifyLlmIntentSkillsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000073-unify-llm-intent-skills.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -162,6 +163,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     AddWorkflowRunProgressFieldsCommand,
     AddCandidateWorkflowRunsRelationCommand,
     BackfillWorkflowRunRelatedRecordsCommand,
+    UnifyLlmIntentSkillsCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

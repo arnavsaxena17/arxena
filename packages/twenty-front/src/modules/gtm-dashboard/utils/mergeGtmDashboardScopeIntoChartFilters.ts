@@ -71,56 +71,99 @@ const buildScopeRecordFilter = ({
   recordFilterGroupId: `gtm-dashboard-scope-group:${projectId}`,
 });
 
+const buildVariantRecordFilter = ({
+  field,
+  variant,
+}: {
+  field: FieldMetadataItem;
+  variant: 'A' | 'B';
+}): RecordFilter => ({
+  id: `gtm-dashboard-variant:${variant}`,
+  fieldMetadataId: field.id,
+  value: JSON.stringify([variant]),
+  displayValue: variant,
+  type: field.type as RecordFilter['type'],
+  operand: ViewFilterOperand.IS,
+  label: field.label,
+  recordFilterGroupId: `gtm-dashboard-variant-group:${variant}`,
+});
+
 export const mergeGtmDashboardScopeIntoChartFilters = ({
   chartFilters,
   objectMetadataItem,
   projectId,
+  experimentVariant = 'ALL',
 }: {
   chartFilters: ChartFilters;
   objectMetadataItem: EnrichedObjectMetadataItem;
-  projectId: string;
+  projectId: string | null;
+  experimentVariant?: 'ALL' | 'A' | 'B';
 }): ChartFilters => {
-  const scopeRule = GTM_DASHBOARD_SCOPE_RULES[objectMetadataItem.nameSingular];
+  let nextFilters = chartFilters.recordFilters ?? [];
+  let nextGroups = chartFilters.recordFilterGroups ?? [];
 
-  if (!isDefined(scopeRule)) {
-    return chartFilters;
+  if (isDefined(projectId) && projectId.length > 0) {
+    const scopeRule = GTM_DASHBOARD_SCOPE_RULES[objectMetadataItem.nameSingular];
+
+    if (isDefined(scopeRule)) {
+      const scopeField = findScopeField(
+        objectMetadataItem,
+        scopeRule.fieldNames,
+      );
+
+      if (isDefined(scopeField)) {
+        const scopeFilter = buildScopeRecordFilter({
+          field: scopeField,
+          projectId,
+          objectNameSingular: objectMetadataItem.nameSingular,
+          operand: scopeRule.operand,
+        });
+
+        if (!nextFilters.some((filter) => filter.id === scopeFilter.id)) {
+          const scopeGroup = {
+            id: scopeFilter.recordFilterGroupId!,
+            logicalOperator: RecordFilterGroupLogicalOperator.AND,
+          };
+
+          nextFilters = [...nextFilters, scopeFilter];
+          nextGroups = nextGroups.some((group) => group.id === scopeGroup.id)
+            ? nextGroups
+            : [...nextGroups, scopeGroup];
+        }
+      }
+    }
   }
 
-  const scopeField = findScopeField(objectMetadataItem, scopeRule.fieldNames);
+  if (
+    (experimentVariant === 'A' || experimentVariant === 'B') &&
+    objectMetadataItem.nameSingular === 'candidate'
+  ) {
+    const variantField = findScopeField(objectMetadataItem, [
+      'experimentVariant',
+    ]);
 
-  if (!isDefined(scopeField)) {
-    return chartFilters;
+    if (isDefined(variantField)) {
+      const variantFilter = buildVariantRecordFilter({
+        field: variantField,
+        variant: experimentVariant,
+      });
+
+      if (!nextFilters.some((filter) => filter.id === variantFilter.id)) {
+        const variantGroup = {
+          id: variantFilter.recordFilterGroupId!,
+          logicalOperator: RecordFilterGroupLogicalOperator.AND,
+        };
+
+        nextFilters = [...nextFilters, variantFilter];
+        nextGroups = nextGroups.some((group) => group.id === variantGroup.id)
+          ? nextGroups
+          : [...nextGroups, variantGroup];
+      }
+    }
   }
-
-  const scopeFilter = buildScopeRecordFilter({
-    field: scopeField,
-    projectId,
-    objectNameSingular: objectMetadataItem.nameSingular,
-    operand: scopeRule.operand,
-  });
-
-  const existingFilters = chartFilters.recordFilters ?? [];
-  const existingGroups = chartFilters.recordFilterGroups ?? [];
-
-  const hasScopeFilter = existingFilters.some(
-    (filter) => filter.id === scopeFilter.id,
-  );
-
-  if (hasScopeFilter) {
-    return chartFilters;
-  }
-
-  const scopeGroup = {
-    id: scopeFilter.recordFilterGroupId!,
-    logicalOperator: RecordFilterGroupLogicalOperator.AND,
-  };
-
-  const hasScopeGroup = existingGroups.some((group) => group.id === scopeGroup.id);
 
   return {
-    recordFilters: [...existingFilters, scopeFilter],
-    recordFilterGroups: hasScopeGroup
-      ? existingGroups
-      : [...existingGroups, scopeGroup],
+    recordFilters: nextFilters,
+    recordFilterGroups: nextGroups,
   };
 };

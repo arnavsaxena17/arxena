@@ -41,20 +41,18 @@ export const STANDARD_SKILL = {
   'custom-objects-cleanup': {
     universalIdentifier: '20202020-a1d3-4e5f-b6c7-8d9e0f1a2b3c',
   },
-  'linkedin-search': {
-    universalIdentifier: '20202020-c4e8-4f7a-9b2d-1e6a0c8f5d3b',
-  },
-  'gtm-icp-onboarding': {
+  // Intent skills (LLM vocabulary). UUIDs preserved from prior skill names.
+  setup: {
+    // formerly gtm-icp-onboarding
     universalIdentifier: '20202020-a7c3-4e91-8b5f-2d6e9f1a4c80',
   },
-  'gtm-outreach-workflows': {
-    universalIdentifier: '20202020-b8d4-4c2e-9a71-5e3f0d8a6b12',
-  },
-  'search-companies': {
+  search: {
+    // formerly search-companies (linkedin-search + search-people merged into this content)
     universalIdentifier: '20202020-9c2b-4f1a-8d3e-6b7a0c5e2f41',
   },
-  'search-people': {
-    universalIdentifier: '20202020-3f7d-4a9b-8c2e-1a5b0d4e7c69',
+  outreach: {
+    // formerly gtm-outreach-workflows
+    universalIdentifier: '20202020-b8d4-4c2e-9a71-5e3f0d8a6b12',
   },
 } as const satisfies Record<
   string,
@@ -62,3 +60,14 @@ export const STANDARD_SKILL = {
     universalIdentifier: string;
   }
 >;
+
+/**
+ * Skills removed from STANDARD_SKILL after the intent-vocabulary merge.
+ * Kept as UUID constants for historical upgrade commands and one-shot workspace cleanup.
+ */
+export const RETIRED_STANDARD_SKILL_UNIVERSAL_IDENTIFIERS = {
+  /** formerly `linkedin-search` — content lives in `search` */
+  linkedinSearch: '20202020-c4e8-4f7a-9b2d-1e6a0c8f5d3b',
+  /** formerly `search-people` — content lives in `search` */
+  searchPeople: '20202020-3f7d-4a9b-8c2e-1a5b0d4e7c69',
+} as const;

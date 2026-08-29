@@ -3,9 +3,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   assertUnreachable,
   getValidTimeZoneOrUndefined,
+  isDefined,
 } from 'twenty-shared/utils';
 
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import {
+  ARXENA_TOOL_CATALOG,
+  type ArxenaToolPack,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolCategory } from 'twenty-shared/ai';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
@@ -84,7 +89,10 @@ export class SystemPromptBuilderService {
 
     const sections: SystemPromptSection[] = [];
 
-    const baseContent = CHAT_SYSTEM_PROMPTS.BASE;
+    const baseContent = [
+      CHAT_SYSTEM_PROMPTS.CORE,
+      CHAT_SYSTEM_PROMPTS.CHAT_UI,
+    ].join('\n');
 
     sections.push({
       title: 'Base Instructions',
@@ -177,7 +185,8 @@ export class SystemPromptBuilderService {
     connectedAccountsContext?: LinkedinConnectedAccountsContext,
   ): string {
     const parts: string[] = [
-      CHAT_SYSTEM_PROMPTS.BASE,
+      CHAT_SYSTEM_PROMPTS.CORE,
+      CHAT_SYSTEM_PROMPTS.CHAT_UI,
       CHAT_SYSTEM_PROMPTS.BROWSING_CONTEXT_INSTRUCTION,
       CHAT_SYSTEM_PROMPTS.RESPONSE_FORMAT,
     ];
@@ -200,6 +209,64 @@ export class SystemPromptBuilderService {
     if (storedFiles && storedFiles.length > 0) {
       parts.push(this.buildUploadedFilesSection(storedFiles));
     }
+
+    return parts.join('\n');
+  }
+
+  async buildMcpInstructions({
+    workspaceId,
+    roleId,
+    userId,
+    userWorkspaceId,
+    workspaceMemberId,
+    userContext,
+    excludeTools,
+    preloadedTools = COMMON_PRELOAD_TOOLS,
+  }: {
+    workspaceId: string;
+    roleId: string;
+    userId?: string;
+    userWorkspaceId?: string;
+    workspaceMemberId?: string;
+    userContext?: UserContext;
+    excludeTools?: Set<string>;
+    preloadedTools?: string[];
+  }): Promise<string> {
+    const toolCatalog = await this.toolRegistry.buildToolIndex(
+      workspaceId,
+      roleId,
+      { userId, userWorkspaceId },
+    );
+
+    const skillCatalog = await this.skillService.findAllFlatSkills(workspaceId);
+
+    const parts: string[] = [
+      CHAT_SYSTEM_PROMPTS.CORE,
+      CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT,
+    ];
+
+    if (userContext) {
+      parts.push(this.buildUserContextSection(userContext));
+    }
+
+    if (isDefined(workspaceMemberId)) {
+      const connectedAccountsContext =
+        await this.resolveLinkedinConnectedAccountsContext(
+          workspaceId,
+          workspaceMemberId,
+        );
+
+      parts.push(this.buildConnectedAccountsSection(connectedAccountsContext));
+    }
+
+    parts.push(
+      this.buildMcpCompactToolCatalogSection(
+        toolCatalog,
+        preloadedTools,
+        excludeTools,
+      ),
+    );
+    parts.push(this.buildSkillCatalogSection(skillCatalog));
 
     return parts.join('\n');
   }
@@ -385,6 +452,128 @@ export class SystemPromptBuilderService {
     ${skillsList}`;
   }
 
+  buildMcpCompactToolCatalogSection(
+    toolCatalog: ToolIndexEntry[],
+    preloadedTools: string[],
+    excludeTools?: Set<string>,
+  ): string {
+    const filteredCatalog = excludeTools
+      ? toolCatalog.filter((entry) => !excludeTools.has(entry.name))
+      : toolCatalog;
+
+    const filteredPreloaded = excludeTools
+      ? preloadedTools.filter((name) => !excludeTools.has(name))
+      : preloadedTools;
+
+    const preloadedSet = new Set(filteredPreloaded);
+    const toolsByCategory = new Map<string, ToolIndexEntry[]>();
+
+    for (const tool of filteredCatalog) {
+      const existing = toolsByCategory.get(tool.category) ?? [];
+
+      existing.push(tool);
+      toolsByCategory.set(tool.category, existing);
+    }
+
+    const sections: string[] = [];
+    const preloadedList =
+      filteredPreloaded.length > 0
+        ? filteredPreloaded.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
+        : '(none)';
+
+    sections.push(`
+      ## Available Tools
+
+      You have access to ${filteredCatalog.length} tools via \`learn_tools\` / \`execute_tool\`. They are NOT bound as top-level MCP tools.
+      Construct CRUD names from the grammar below. Load a skill for GTM/workflow/metadata tool names.
+
+      ### Pre-loaded Tools (ready to use now)
+      ${preloadedList}`);
+
+    const crudTools = toolsByCategory.get(ToolCategory.DATABASE_CRUD);
+
+    if (crudTools && crudTools.length > 0) {
+      sections.push(
+        this.buildDatabaseCrudCatalogSection(
+          crudTools,
+          preloadedSet,
+          this.getCategoryLabel(ToolCategory.DATABASE_CRUD),
+        ),
+      );
+    }
+
+    const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
+
+    if (arxenaTools && arxenaTools.length > 0) {
+      sections.push(this.buildArxenaPackCatalogSection(arxenaTools.length));
+    }
+
+    const categoryOrder = Object.values(ToolCategory).filter(
+      (category) =>
+        category !== ToolCategory.DATABASE_CRUD &&
+        category !== ToolCategory.ARXENA,
+    );
+
+    for (const category of categoryOrder) {
+      const tools = toolsByCategory.get(category);
+
+      if (!tools || tools.length === 0) {
+        continue;
+      }
+
+      const categoryLabel = this.getCategoryLabel(category);
+
+      sections.push(`
+      #### ${categoryLabel} (${tools.length} tools)
+      ${tools
+        .map((tool) => {
+          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
+
+          return `- \`${tool.name}\`${status}`;
+        })
+        .join('\n')}`);
+    }
+
+    sections.push(`
+      ### How to Use Tools
+      1. **Pre-loaded tools** (marked with ✓): Use directly
+      2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`);
+
+    return sections.join('\n');
+  }
+
+  private buildArxenaPackCatalogSection(toolCount: number): string {
+    const packLabels: Record<ArxenaToolPack, string> = {
+      prospecting: 'people/company search',
+      enrichment: 'emails/phones',
+      orgchart: 'account maps',
+      outreach: 'messaging',
+      accounts: 'companies/contacts/projects',
+      crm_workspace: 'workspace helpers',
+      general: 'general',
+    };
+
+    const packs = [
+      ...new Set(ARXENA_TOOL_CATALOG.map((entry) => entry.pack)),
+    ].sort();
+
+    const packLines = packs
+      .map((pack) => `- \`${pack}\`: ${packLabels[pack]}`)
+      .join('\n');
+
+    return `
+      #### ${this.getCategoryLabel(ToolCategory.ARXENA)} (${toolCount} tools)
+      Exact names come from the matching skill after \`load_skills\`. Do not \`learn_tools\` this whole pack list.
+
+      Packs:
+      ${packLines}
+
+      Preferred tools (learn only these unless a skill names others):
+      - \`get_org_chart\`
+      - \`check_contact_availability\`
+      - \`fetch_contacts\``;
+  }
+
   buildToolCatalogSection(
     toolCatalog: ToolIndexEntry[],
     preloadedTools: string[],
@@ -409,17 +598,39 @@ export class SystemPromptBuilderService {
         : '(none)';
 
     sections.push(`
-## Available Tools
+      ## Available Tools
 
-You have access to ${toolCatalog.length} tools. Some are pre-loaded and ready to use immediately.
-To use any other tool, first call \`${LEARN_TOOLS_TOOL_NAME}\` to learn its schema, then call \`${EXECUTE_TOOL_TOOL_NAME}\` to run it.
+      You have access to ${toolCatalog.length} tools. Some are pre-loaded and ready to use immediately.
+      To use any other tool, first call \`${LEARN_TOOLS_TOOL_NAME}\` to learn its schema, then call \`${EXECUTE_TOOL_TOOL_NAME}\` to run it.
 
-### Pre-loaded Tools (ready to use now)
-${preloadedList}
+      ### Pre-loaded Tools (ready to use now)
+      ${preloadedList}
 
-### Tool Catalog by Category`);
+      ### Tool Catalog by Category`);
 
-    const categoryOrder = Object.values(ToolCategory);
+    const crudTools = toolsByCategory.get(ToolCategory.DATABASE_CRUD);
+
+    if (crudTools && crudTools.length > 0) {
+      sections.push(
+        this.buildDatabaseCrudCatalogSection(
+          crudTools,
+          preloadedSet,
+          this.getCategoryLabel(ToolCategory.DATABASE_CRUD),
+        ),
+      );
+    }
+
+    const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
+
+    if (arxenaTools && arxenaTools.length > 0) {
+      sections.push(this.buildArxenaPackCatalogSection(arxenaTools.length));
+    }
+
+    const categoryOrder = Object.values(ToolCategory).filter(
+      (category) =>
+        category !== ToolCategory.DATABASE_CRUD &&
+        category !== ToolCategory.ARXENA,
+    );
 
     for (const category of categoryOrder) {
       const tools = toolsByCategory.get(category);
@@ -430,31 +641,21 @@ ${preloadedList}
 
       const categoryLabel = this.getCategoryLabel(category);
 
-      if (category === ToolCategory.DATABASE_CRUD) {
-        sections.push(
-          this.buildDatabaseCrudCatalogSection(
-            tools,
-            preloadedSet,
-            categoryLabel,
-          ),
-        );
-      } else {
-        sections.push(`
-#### ${categoryLabel} (${tools.length} tools)
-${tools
-  .map((tool) => {
-    const status = preloadedSet.has(tool.name) ? ' ✓' : '';
+      sections.push(`
+      #### ${categoryLabel} (${tools.length} tools)
+      ${tools
+        .map((tool) => {
+          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
 
-    return `- \`${tool.name}\`${status}`;
-  })
-  .join('\n')}`);
-      }
+          return `- \`${tool.name}\`${status}`;
+        })
+        .join('\n')}`);
     }
 
     sections.push(`
-### How to Use Tools
-1. **Pre-loaded tools** (marked with ✓): Use directly
-2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`);
+      ### How to Use Tools
+      1. **Pre-loaded tools** (marked with ✓): Use directly
+      2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`);
 
     return sections.join('\n');
   }
@@ -537,15 +738,15 @@ ${tools
       case ToolCategory.DASHBOARD:
         return 'Dashboard Tools (create/manage dashboards)';
       case ToolCategory.LOGIC_FUNCTION:
-        return 'Logic Functions (custom tools)';
+        return 'Logic Functions (custom / native workflow actions)';
       case ToolCategory.NAVIGATION_MENU_ITEM:
         return 'Navigation Menu Item Tools (sidebar entries, folders, and user favorites)';
       case ToolCategory.WEBHOOK:
         return 'Webhook Tools (outgoing webhooks)';
       case ToolCategory.ARXENA:
-        return 'Arxena Tools (first-party CRM actions)';
+        return 'Prospecting & enrichment (first-party packs)';
       case ToolCategory.EXTERNAL_MCP:
-        return 'External MCP Tools (tools proxied from external providers)';
+        return 'Connected apps (workspace MCP servers)';
       default:
         return assertUnreachable(category);
     }

@@ -27,6 +27,13 @@ export const getWorkflowVersionStatusTagProps = ({
     };
   }
 
+  if (workflowVersionStatus === 'EXPERIMENT') {
+    return {
+      color: 'purple',
+      text: 'Experiment (B)',
+    };
+  }
+
   return {
     color: 'gray',
     text: 'Deactivated',

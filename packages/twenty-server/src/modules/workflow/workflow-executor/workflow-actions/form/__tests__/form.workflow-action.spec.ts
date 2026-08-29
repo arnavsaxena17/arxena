@@ -5,6 +5,7 @@ import { FieldMetadataType } from 'twenty-shared/types';
 
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { FormWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action';
 import { type WorkflowFormAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 
@@ -60,6 +61,17 @@ describe('FormWorkflowAction', () => {
         {
           provide: WorkflowFormDecisionPointerService,
           useValue: { createPointer: jest.fn().mockReturnValue('pointer') },
+        },
+        {
+          provide: GlobalWorkspaceOrmManager,
+          useValue: {
+            executeInWorkspaceContext: jest.fn(async (fn: () => unknown) =>
+              fn(),
+            ),
+            getRepository: jest.fn().mockResolvedValue({
+              findOne: jest.fn().mockResolvedValue(null),
+            }),
+          },
         },
       ],
     }).compile();

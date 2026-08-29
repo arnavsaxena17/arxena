@@ -47,6 +47,9 @@ type CandidateRecord = ObjectLiteral & {
   linkedinUrl?: { primaryLinkUrl?: string } | null;
   phoneNumber?: { primaryPhoneNumber?: string } | null;
   firstOutboundAt?: string | null;
+  lastOutboundMessageKind?: string | null;
+  convertedOnMessageKind?: string | null;
+  linkedinFollowUpCount?: number | null;
 };
 
 @Injectable()
@@ -141,12 +144,14 @@ export class GtmOutreachMessagePersistService {
     candidateId,
     linkedinProfileId,
     messagingChannel,
+    outboundMessageKind,
   }: {
     workspaceId: string;
     event: GtmCandidateEventKind;
     candidateId?: string | null;
     linkedinProfileId?: string | null;
     messagingChannel?: string | null;
+    outboundMessageKind?: string | null;
   }): Promise<void> {
     try {
       const resolvedCandidateId = await this.resolveCandidateId({
@@ -176,6 +181,9 @@ export class GtmOutreachMessagePersistService {
         apiToken,
         messagingChannel,
         existingFirstOutboundAt: candidate?.firstOutboundAt,
+        outboundMessageKind,
+        existingConvertedOnMessageKind: candidate?.convertedOnMessageKind,
+        existingLastOutboundMessageKind: candidate?.lastOutboundMessageKind,
       });
     } catch (error) {
       this.logger.warn(

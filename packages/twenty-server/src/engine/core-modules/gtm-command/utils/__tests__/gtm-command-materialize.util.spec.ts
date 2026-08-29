@@ -104,6 +104,7 @@ describe('gtm-command-materialize.util', () => {
     ).toMatchObject({
       outreachSequenceStage: 'CONNECTION_SENT',
       firstOutboundAt: '2026-01-01T00:00:00.000Z',
+      lastOutboundMessageKind: 'CONNECT_NOTE',
     });
 
     expect(
@@ -112,10 +113,12 @@ describe('gtm-command-materialize.util', () => {
         messagingChannel: 'linkedin-inmail',
         nowIso: '2026-01-01T00:00:00.000Z',
         existingFirstOutboundAt: '2025-12-01T00:00:00.000Z',
+        outboundMessageKind: 'OPENER',
       }),
     ).toMatchObject({
       outreachSequenceStage: 'INMAIL_SENT',
       lastOutboundAt: '2026-01-01T00:00:00.000Z',
+      lastOutboundMessageKind: 'OPENER',
     });
 
     expect(
@@ -123,10 +126,12 @@ describe('gtm-command-materialize.util', () => {
         event: 'inbound_reply_flush',
         classifiedOutreachStage: 'DEFERRED',
         nowIso: '2026-01-01T00:00:00.000Z',
+        existingLastOutboundMessageKind: 'CONNECT_NOTE',
       }),
     ).toMatchObject({
       outreachSequenceStage: 'DEFERRED',
       lastInboundAt: '2026-01-01T00:00:00.000Z',
+      convertedOnMessageKind: 'CONNECT_NOTE',
     });
   });
 

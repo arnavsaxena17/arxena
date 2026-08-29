@@ -145,7 +145,7 @@ export class DropGtmIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRun
 
   private async syncIcpOnboardingSkill(workspaceId: string): Promise<void> {
     const universalIdentifier =
-      STANDARD_SKILL['gtm-icp-onboarding'].universalIdentifier;
+      STANDARD_SKILL.setup.universalIdentifier;
     const { twentyStandardFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
         { workspaceId },

@@ -7,7 +7,7 @@ import { useMutation } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
 import { isObject, isString } from '@sniptt/guards';
 import { useState } from 'react';
-import { isDefined, parseJson, resolveInput } from 'twenty-shared/utils';
+import { isDefined, parseJson } from 'twenty-shared/utils';
 
 type TestAiAgentResponse = {
   success: boolean;
@@ -19,29 +19,6 @@ type TestAiAgentResponse = {
 
 type TestAiAgentMutationResult = {
   testAiAgent: TestAiAgentResponse;
-};
-
-const convertFlatVariablesToNestedContext = (flatVariables: {
-  [variablePath: string]: string;
-}): Record<string, unknown> => {
-  const result: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(flatVariables)) {
-    const parts = key.split('.');
-    let current = result;
-
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i];
-      if (!(part in current)) {
-        current[part] = {};
-      }
-      current = current[part] as Record<string, unknown>;
-    }
-
-    current[parts[parts.length - 1]] = value;
-  }
-
-  return result;
 };
 
 export const useTestAiAgent = (actionId: string) => {
@@ -60,31 +37,34 @@ export const useTestAiAgent = (actionId: string) => {
     client: apolloCoreClient,
   });
 
+  const showTestError = (errorMessage: string) => {
+    setAiAgentTestData((prev) => ({
+      ...prev,
+      output: {
+        data: undefined,
+        duration: undefined,
+        error: errorMessage,
+      },
+      language: 'plaintext',
+    }));
+  };
+
   const testAiAgent = async ({
     agentId,
     prompt,
-    variableValues,
   }: {
     agentId: string;
     prompt: string;
-    variableValues: { [variablePath: string]: string };
   }) => {
     setIsTesting(true);
     const startTime = Date.now();
 
     try {
-      const nestedVariableContext =
-        convertFlatVariablesToNestedContext(variableValues);
-      const substitutedPrompt = resolveInput(
-        prompt,
-        nestedVariableContext,
-      ) as string;
-
       const result = await mutate({
         variables: {
           input: {
             agentId,
-            prompt: substitutedPrompt,
+            prompt,
           },
         },
       });
@@ -146,6 +126,7 @@ export const useTestAiAgent = (actionId: string) => {
 
   return {
     testAiAgent,
+    showTestError,
     isTesting,
     aiAgentTestData,
   };

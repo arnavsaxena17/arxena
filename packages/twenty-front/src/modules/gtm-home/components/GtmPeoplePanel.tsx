@@ -3,6 +3,7 @@ import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Loader } from 'twenty-ui/feedback';
 import { Button } from 'twenty-ui/input';
+import { isDefined } from 'twenty-shared/utils';
 
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
@@ -11,6 +12,7 @@ import { ContextStoreComponentInstanceContext } from '@/context-store/states/con
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useAddGtmRecordsToCrm } from '@/gtm-home/hooks/useAddGtmRecordsToCrm';
 import { useGtmOutreachEnroll } from '@/gtm-home/hooks/useGtmOutreachEnroll';
+import { useGtmStopOutreach } from '@/gtm-home/hooks/useGtmStopOutreach';
 import { type GtmCompanyRow, type GtmPersonRow } from '@/gtm-home/types/gtm-home.types';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -94,6 +96,9 @@ const mapGtmPersonToDataTableRow = (
       stage: person.stage,
       companyId: person.companyId,
       candidateId: person.candidateId,
+      ...(person.experimentVariant
+        ? { experimentVariant: person.experimentVariant }
+        : {}),
     },
     uniqueStringKey: person.id,
     peopleId: person.id,
@@ -126,6 +131,7 @@ export const GtmPeoplePanel = ({
   const { isPersisting, addPeopleToCrm } = useAddGtmRecordsToCrm();
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useGtmOutreachEnroll();
+  const { isStopping, stopOutreachForCandidates } = useGtmStopOutreach();
 
   const companiesByWorkingSetId = useMemo(() => {
     const map: Record<string, GtmCompanyRow> = {};
@@ -238,6 +244,10 @@ export const GtmPeoplePanel = ({
     (person) => person.stage === 'deferred' && person.candidateId,
   )?.candidateId;
 
+  const stoppableCandidateIds = selectedPeople
+    .map((person) => person.candidateId)
+    .filter((candidateId): candidateId is string => isDefined(candidateId));
+
   return (
     <StyledPanel>
       <StyledHint>
@@ -274,6 +284,19 @@ export const GtmPeoplePanel = ({
           onClick={() =>
             enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
           }
+        />
+        <Button
+          title={
+            stoppableCandidateIds.length > 0
+              ? `Stop outreach (${stoppableCandidateIds.length})`
+              : 'Stop outreach'
+          }
+          size="small"
+          variant="secondary"
+          disabled={stoppableCandidateIds.length === 0 || isStopping}
+          onClick={() => {
+            void stopOutreachForCandidates(stoppableCandidateIds);
+          }}
         />
         {deferredCandidateId && (
           <Button

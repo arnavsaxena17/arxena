@@ -1,29 +1,48 @@
-# GTM Outreach Workflows Skill
+# Outreach Skill
 
-You build and run **GTM Command automation graphs** (company harvest + enroll + LinkedIn/email sequencer). Generic mechanics (DELAY vs event, FORM HITL, CRON schema) live in `workflow-building` — load both; do not restate them here.
+You build and run **campaign automation graphs** (company harvest + enroll + LinkedIn/email sequencer). Generic mechanics (DELAY vs event, FORM HITL, CRON schema) live in `workflow-building` — load both; do not restate them here.
 
 Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}` for LOGIC_FUNCTION / AI_AGENT, `{{<step-uuid>.first.<field>}}` for FIND_RECORDS, `{{trigger.properties.after.<field>}}` for DATABASE_EVENT, and `{{<form-uuid>.<fieldName>}}` for FORM (no extra `.result`).
 
-This is **not** ICP preference collection (`gtm-icp-onboarding`) and **not** Ask AI target-list search (`search-companies` / `search-people` → Redis tabs). Interactive GTM Companies tab stays Redis. **Scheduled harvest that writes the CRM companies table** is this skill.
+This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`search` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
+
+## Ignite (prefer reuse — do not invent webhooks)
+
+Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.created` / `candidate.updated` — **not** WEBHOOK. Do **not** call `http_request` against `/webhooks/workflows/...` for these seeds.
+
+| Seeded name | Trigger | Role |
+| --- | --- | --- |
+| `GTM Harvest — LinkedIn Companies` | CRON | Harvest |
+| `Company Created → ICP People Search` | `company.created` | Enroll-on-company |
+| `GTM Outreach — Per Candidate` | `candidate.created` (+ `QUEUED`) | Sequencer B |
+| `GTM Outreach — Candidate Updated` | `candidate.updated` | Stage updates |
+
+**Ignite path:**
+
+1. `list_workflows` by the names above (or use browsing-context `outreachWorkflowId` for Stage B).
+2. Prefer reuse: activate DRAFT with `activate_workflow_version`. Clone via `create_draft_from_workflow_version` before editing — do not rebuild Stage B from scratch.
+3. Enroll: native `upload-profiles` / Candidates with `outreachSequenceStage=QUEUED` → fires Per Candidate.
+4. Harvest and company-created run once ACTIVE — no manual fire.
+5. Finish with `list_workflow_runs`.
 
 ## When to load this skill
 
-Load `gtm-outreach-workflows` (with `workflow-building`) when:
+Load `outreach` (with `workflow-building`) when:
 
 - The user wants a **workflow** that harvests LinkedIn companies on a schedule, enrolls people on company create, or runs LinkedIn / email / meeting outreach
-- The user wants to clone or edit the seeded GTM outreach graphs, or browsing context is GTM Command (`/gtm-home`) and the ask is about outreach **workflows**
+- The user wants to clone or edit the seeded outreach graphs, or browsing context is the campaign home and the ask is about outreach **workflows**
 
-Do **not** load this skill for generic CRM automations (email on person create) or for chat-only company/people lists — use `workflow-building` or `search-companies` / `search-people`. Dashboards: load `dashboard-building` and **extend** the existing GTM Command dashboard.
+Do **not** load this skill for generic CRM automations or for chat-only company/people lists — use `workflow-building` or `search`. Dashboards: load `dashboard-building` and **extend** the existing campaign dashboard.
 
 ## Plan → Skill → Learn → Execute
 
-1. `load_skills(["gtm-outreach-workflows", "workflow-building"])`.
+1. `load_skills(["outreach", "workflow-building"])`.
 2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
 3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
 
-Native GTM functions (`search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`) have stub source. Do **not** call `get_logic_function_source` for them.
+Native workflow actions (kebab-case LFs — **not** the `search` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
 
-Search LFs return hits only. People persist with `upload-profiles`. Company persist for automation is CRM + `gtmRunKey` (not Redis).
+Search LFs return hits only. People persist with `upload-profiles`. Company persist for automation is CRM + `gtmRunKey` (not Find/Redis).
 
 ## GTM workflows (do not conflate)
 

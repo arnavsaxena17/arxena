@@ -13,6 +13,7 @@ import { MCP_PROTOCOL_VERSION } from 'src/engine/api/mcp/constants/mcp-protocol-
 import { MCP_SERVER_INFO } from 'src/engine/api/mcp/constants/mcp-server-info.const';
 import { JsonRpc } from 'src/engine/api/mcp/dtos/json-rpc';
 import { McpInstructionBuilderService } from 'src/engine/api/mcp/services/mcp-instruction-builder.service';
+import { McpPromptService } from 'src/engine/api/mcp/services/mcp-prompt.service';
 import { McpToolExecutorService } from 'src/engine/api/mcp/services/mcp-tool-executor.service';
 import {
   createListObjectMetadataNamesTool,
@@ -94,13 +95,37 @@ export class McpProtocolService {
     private readonly apiKeyRoleService: ApiKeyRoleService,
     private readonly skillService: SkillService,
     private readonly mcpInstructionBuilderService: McpInstructionBuilderService,
+    private readonly mcpPromptService: McpPromptService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly workspaceCacheService: WorkspaceCacheService,
   ) {}
 
-  async handleInitialize(requestId: string | number, workspaceId: string) {
+  async handleInitialize(
+    requestId: string | number,
+    {
+      workspace,
+      userId,
+      userWorkspaceId,
+      apiKey,
+    }: {
+      workspace: FlatWorkspace;
+      userId?: string;
+      userWorkspaceId?: string;
+      apiKey: FlatApiKey | undefined;
+    },
+  ) {
+    const roleId = await this.getRoleId(
+      workspace.id,
+      userWorkspaceId,
+      apiKey,
+    );
     const instructions =
-      await this.mcpInstructionBuilderService.buildInstructions(workspaceId);
+      await this.mcpInstructionBuilderService.buildInstructions({
+        workspaceId: workspace.id,
+        roleId,
+        userId,
+        userWorkspaceId,
+      });
 
     return wrapJsonRpcResponse(requestId, {
       result: {
@@ -114,6 +139,16 @@ export class McpProtocolService {
         instructions,
       },
     });
+  }
+
+  private readOptionalPromptTask(args: unknown): string | undefined {
+    if (!isDefined(args) || typeof args !== 'object' || Array.isArray(args)) {
+      return undefined;
+    }
+
+    const task = (args as { task?: unknown }).task;
+
+    return typeof task === 'string' ? task : undefined;
   }
 
   async getRoleId(
@@ -300,7 +335,12 @@ export class McpProtocolService {
       }
 
       if (method === 'initialize') {
-        return this.handleInitialize(id, workspace.id);
+        return this.handleInitialize(id, {
+          workspace,
+          userId,
+          userWorkspaceId,
+          apiKey,
+        });
       }
 
       if (method === 'ping') {
@@ -308,8 +348,43 @@ export class McpProtocolService {
       }
 
       if (method === 'prompts/list') {
+        const prompts = await this.mcpPromptService.listPrompts(workspace.id);
+
         return wrapJsonRpcResponse(id, {
-          result: { prompts: [] },
+          result: { prompts },
+        });
+      }
+
+      if (method === 'prompts/get') {
+        const promptName = params?.name;
+
+        if (!isDefined(promptName) || promptName.length === 0) {
+          return wrapJsonRpcResponse(id, {
+            error: {
+              code: JSON_RPC_ERROR_CODE.INVALID_PARAMS,
+              message: 'prompts/get requires params.name',
+            },
+          });
+        }
+
+        const task = this.readOptionalPromptTask(params.arguments);
+        const prompt = await this.mcpPromptService.getPrompt({
+          workspaceId: workspace.id,
+          name: promptName,
+          task,
+        });
+
+        if (!isDefined(prompt)) {
+          return wrapJsonRpcResponse(id, {
+            error: {
+              code: JSON_RPC_ERROR_CODE.INVALID_PARAMS,
+              message: `Unknown prompt '${promptName}'`,
+            },
+          });
+        }
+
+        return wrapJsonRpcResponse(id, {
+          result: prompt,
         });
       }
 

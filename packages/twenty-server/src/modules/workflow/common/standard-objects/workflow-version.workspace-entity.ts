@@ -9,6 +9,7 @@ import { type WorkflowTrigger } from 'src/modules/workflow/workflow-trigger/type
 export enum WorkflowVersionStatus {
   DRAFT = 'DRAFT',
   ACTIVE = 'ACTIVE',
+  EXPERIMENT = 'EXPERIMENT',
   DEACTIVATED = 'DEACTIVATED',
   ARCHIVED = 'ARCHIVED',
 }

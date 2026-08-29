@@ -12,6 +12,7 @@ type StandardSkillDefinition = {
   label: string;
   description: string;
   icon: string;
+  isActive?: boolean;
 };
 
 const createStandardSkillBuilder =
@@ -23,6 +24,7 @@ const createStandardSkillBuilder =
         ...definition,
         content: loadStandardSkillContent(definition.skillName),
         isCustom: false,
+        isActive: definition.isActive ?? true,
       },
     });
 
@@ -70,7 +72,8 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     skillName: 'research',
     name: 'research',
     label: 'Research',
-    description: 'Finding information and gathering facts from the web',
+    description:
+      'Finding general facts from the web — prefer `search` when sourcing target companies or people',
     icon: 'IconSearch',
   }),
   'code-interpreter': createStandardSkillBuilder({
@@ -129,45 +132,29 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Archiving custom objects from a workspace (e.g. dev seed objects like pets, rockets)',
     icon: 'IconArchive',
   }),
-  'linkedin-search': createStandardSkillBuilder({
-    skillName: 'linkedin-search',
-    name: 'linkedin-search',
-    label: 'LinkedIn Search',
+  setup: createStandardSkillBuilder({
+    skillName: 'setup',
+    name: 'setup',
+    label: 'Setup',
     description:
-      'Searching LinkedIn people, companies, jobs, and posts via Unipile (classic, Sales Navigator, Recruiter) and Harvest People API',
-    icon: 'IconBrandLinkedin',
-  }),
-  'gtm-icp-onboarding': createStandardSkillBuilder({
-    skillName: 'gtm-icp-onboarding',
-    name: 'gtm-icp-onboarding',
-    label: 'GTM ICP Onboarding',
-    description:
-      'Conversational GTM Command bootstrap: collect ICP and outreach preferences in Ask AI, persist on Project, hand off to company/people discovery',
+      'Campaign setup: ICP and outreach preferences on workspaceProfile defaults; hand off to Find companies/people',
     icon: 'IconTargetArrow',
   }),
-  'gtm-outreach-workflows': createStandardSkillBuilder({
-    skillName: 'gtm-outreach-workflows',
-    name: 'gtm-outreach-workflows',
-    label: 'GTM Outreach Workflows',
+  outreach: createStandardSkillBuilder({
+    skillName: 'outreach',
+    name: 'outreach',
+    label: 'Outreach',
     description:
-      'GTM Command automation graphs: cron company harvest, company.created enroll, LinkedIn/email sequencer, HITL send, meeting invite',
+      'Campaign automation: activate seeded harvest/enroll/sequencer graphs, enroll QUEUED candidates, HITL send',
     icon: 'IconSend',
   }),
-  'search-companies': createStandardSkillBuilder({
-    skillName: 'search-companies',
-    name: 'search-companies',
-    label: 'Search Companies',
+  search: createStandardSkillBuilder({
+    skillName: 'search',
+    name: 'search',
+    label: 'Search',
     description:
-      'Sourcing companies across Arxena data providers; GTM Command tab → Redis, scheduled harvest → CRM + gtmRunKey',
+      'Source companies and people (Apollo/LinkedIn/Harvest/Exa); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs',
     icon: 'IconBuildingSkyscraper',
-  }),
-  'search-people': createStandardSkillBuilder({
-    skillName: 'search-people',
-    name: 'search-people',
-    label: 'Search People',
-    description:
-      'Sourcing people across Arxena data providers; GTM Command tab → Redis, workflow enroll → upload-profiles',
-    icon: 'IconUsers',
   }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',

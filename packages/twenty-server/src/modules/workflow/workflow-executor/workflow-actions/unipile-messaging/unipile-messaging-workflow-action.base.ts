@@ -11,6 +11,7 @@ import {
   type GtmOutreachTranscriptChannel,
 } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
 import { type GtmCandidateEventKind } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
+import { resolveGtmOutboundMessageKind } from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
 import { type GtmThrottleChannel } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -23,6 +24,7 @@ import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-executor/utils/defer-workflow-for-account-rate-limit.util';
+import { GTM_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
 import { ToolBackedWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/tool-backed/tool-backed.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
@@ -107,6 +109,12 @@ export abstract class UnipileMessagingWorkflowActionBase<
     return null;
   }
 
+  protected getOutboundMessageKind(
+    _resolvedInput: TInput,
+  ): string | null {
+    return null;
+  }
+
   async execute({
     currentStepId,
     steps,
@@ -145,6 +153,16 @@ export abstract class UnipileMessagingWorkflowActionBase<
 
       pacingProjectId = check.projectId;
       pacingPatch = check.counterPatch;
+
+      if (!check.allowed && check.reason === 'paused') {
+        // Park without a Bull retry — resume time is unknown until the
+        // operator clicks Resume and we re-kick with delay 0.
+        return {
+          pendingEvent: true,
+          waitMs: 0,
+          pendingReason: GTM_PROJECT_PAUSED_PENDING_REASON,
+        };
+      }
 
       if (!check.allowed && check.delayMs > 0) {
         return deferWorkflowForAccountRateLimit({
@@ -201,6 +219,8 @@ export abstract class UnipileMessagingWorkflowActionBase<
             linkedinProfileId: resolvedLinkedinProfileId,
             phone: resolvedInput.phone,
             externalMessageId: extractProviderMessageId(toolOutput.result),
+            // Prefer explicit getMaterializeEvent path (stamps message kinds).
+            materializeOutbound: !isDefined(materializeEvent),
           });
         } catch (error) {
           this.logger.warn(
@@ -216,12 +236,25 @@ export abstract class UnipileMessagingWorkflowActionBase<
         isDefined(this.gtmOutreachMessagePersistService)
       ) {
         try {
+          const outboundMessageKind =
+            this.getOutboundMessageKind(resolvedInput) ??
+            resolveGtmOutboundMessageKind({
+              materializeEvent,
+              messagingChannel: this.getMaterializeMessagingChannel(),
+              explicitKind:
+                typeof (resolvedInput as { messageKind?: unknown })
+                  .messageKind === 'string'
+                  ? ((resolvedInput as { messageKind: string }).messageKind)
+                  : null,
+            });
+
           await this.gtmOutreachMessagePersistService.materializeCandidateEvent({
             workspaceId: runInfo.workspaceId,
             event: materializeEvent,
             candidateId: resolvedInput.candidateId,
             linkedinProfileId: resolvedLinkedinProfileId,
             messagingChannel: this.getMaterializeMessagingChannel(),
+            outboundMessageKind,
           });
         } catch (error) {
           this.logger.warn(

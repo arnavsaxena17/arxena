@@ -60,6 +60,18 @@ export class WorkflowTriggerResolver {
   }
 
   @Mutation(() => Boolean)
+  async publishExperimentVersion(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('workflowVersionId', { type: () => UUIDScalarType })
+    workflowVersionId: string,
+  ) {
+    return this.workflowTriggerWorkspaceService.publishExperimentVersion(
+      workflowVersionId,
+      workspace.id,
+    );
+  }
+
+  @Mutation(() => Boolean)
   async deactivateWorkflowVersion(
     @AuthWorkspace() workspace: WorkspaceEntity,
     @Args('workflowVersionId', { type: () => UUIDScalarType })

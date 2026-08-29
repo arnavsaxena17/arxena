@@ -53,6 +53,10 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
     return 'connection_sent' as const;
   }
 
+  protected override getOutboundMessageKind() {
+    return 'CONNECT_NOTE';
+  }
+
   protected override getMaterializeMessagingChannel() {
     return MessagingChannel.LINKEDIN_CONNECT;
   }

@@ -1,11 +1,10 @@
 ---
 name: gtm-home-e2e-browser
 description: >-
-  Drives the GTM Command (/gtm-home) happy-path in the Cursor IDE browser:
-  new run → Ask AI company search → Companies tab + chat snippet → MD/CEO
-  people search → People tab → LinkedIn connection outreach workflow. Use when
-  the user asks to test GTM home, demo Ask AI companies/people upsert, verify
-  ephemeral Redis tabs, or run LinkedIn outreach from GTM chat.
+  Drives GTM Command (/gtm-home) in the Cursor IDE browser on arxena-4:
+  discovery happy-path, start campaign (Enroll + Live), pause/resume outreach,
+  and A/B Publish as experiment on Per Candidate workflow 6b606456…. Use when
+  testing GTM home controls, pause/resume, or A/B experiments.
 ---
 
 # GTM Home E2E (Cursor browser)
@@ -17,10 +16,11 @@ watch. Only fall back to API smoke curls when UI is blocked.
 
 | Check | How |
 | --- | --- |
-| Front | `http://arxena.localhost:3001` → 200 |
-| Server | `http://arxena.localhost:3000` → 200 |
+| Front | `http://arxena-4.localhost:3001` → 200 (legacy: `arxena.localhost:3001`) |
+| Server | `http://arxena-4.localhost:3000` → 200 |
 | Auth | User ACCESS JWT (Bearer). Workspace from JWT `workspaceId` claim |
 | Skills synced | `upgrade:2-25:sync-gtm-company-skill-content` + `sync-gtm-people-skill-content` for that workspace |
+| Per Candidate workflow | Already open: `/object/workflow/6b606456-4e40-556f-aae0-1efddac1b0b7` |
 
 Default local workspace used in prior runs: `635976bf-1483-4259-8a3b-eed5cd4e87f1`.
 
@@ -29,7 +29,7 @@ curl), use that token for API checks and browser auth injection.
 
 ### Auth injection (when browser is logged out)
 
-1. Navigate to `http://arxena.localhost:3001/`
+1. Navigate to `http://arxena-4.localhost:3001/`
 2. Lock tab
 3. CDP `Runtime.evaluate`:
 
@@ -40,7 +40,7 @@ localStorage.setItem(
     accessOrWorkspaceAgnosticToken: { token: '<ACCESS_JWT>' },
   }),
 );
-location.href = 'http://arxena.localhost:3001/gtm-home';
+location.href = 'http://arxena-4.localhost:3001/gtm-home';
 ```
 
 Key is `tokenPairState` (see `TOKEN_PAIR_LOCAL_STORAGE_KEY`). Reuse an existing
@@ -67,6 +67,9 @@ GTM E2E:
 - [ ] 1 New project + company search → Companies tab
 - [ ] 2 MD/CEO for first 3 companies → People tab
 - [ ] 3 LinkedIn connection outreach workflow
+- [ ] 4 Start campaign (Enroll + Live chip)
+- [ ] 5 Pause / resume campaign
+- [ ] 6 A/B experiment on Per Candidate workflow
 ```
 
 Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
@@ -74,7 +77,7 @@ Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
 ### Step 0 — Setup
 
 1. `browser_tabs` list; open/reuse front tab with `position: "active"`.
-2. Go to `http://arxena.localhost:3001/gtm-home` (inject token if needed).
+2. Go to `http://arxena-4.localhost:3001/gtm-home` (inject token if needed).
 3. Snapshot: PageHeader **GTM Command**, tabs Companies / People / Workflow.
 4. Note `projectId` from URL (`?projectId=`).
 
@@ -95,7 +98,7 @@ Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
 6. Confirm Redis (optional):
 
 ```bash
-curl -s "http://arxena.localhost:3000/gtm-command/cache/companies?projectId=<PROJECT_ID>" \
+curl -s "http://arxena-4.localhost:3000/gtm-command/cache/companies?projectId=<PROJECT_ID>" \
   -H "authorization: Bearer <TOKEN>"
 ```
 
@@ -119,7 +122,7 @@ Expected agent path:
 not necessarily CRM Candidates). Verify Redis:
 
 ```bash
-curl -s "http://arxena.localhost:3000/gtm-command/cache/people?projectId=<PROJECT_ID>" \
+curl -s "http://arxena-4.localhost:3000/gtm-command/cache/people?projectId=<PROJECT_ID>" \
   -H "authorization: Bearer <TOKEN>"
 ```
 
@@ -142,6 +145,38 @@ one candidate is queued / connection step started. If Unipile LinkedIn is
 disconnected, report **Needs connection** banner and stop (not a product fail
 of the chat routing).
 
+### Step 4 — Start campaign (`gtm-start-campaign`)
+
+Maps to Enroll + Live (not a separate “Start” control).
+
+1. Open `/gtm-home`, note `projectId`. Chip **Live** (or Resume first if leftover **Paused**).
+2. People tab: select ≥1 row → **Enroll in outreach**.
+3. Workflow tab: Per Candidate bound; at least one run `RUNNING` / pending send.
+
+**PASS:** candidate `QUEUED` or `CONNECTION_SENT`; header Live; a workflow run exists for that candidate. Outside send window is still PASS if the run is pending `gtm_send_window`.
+
+### Step 5 — Pause campaign (`gtm-pause-campaign`)
+
+Depends on start (or an already-live project).
+
+1. Header **Pause outreach** → chip **Paused**.
+2. Assert no new outbound: pending send stays `PENDING` / `gtm_project_paused`; ghosts for those runs released.
+3. Optional: enroll another person while paused → run parks, no send.
+4. **Resume outreach** → chip **Live**; capacity waits retry immediately (`retryPendingStep`, delay 0) and pick up **current** window/limits.
+
+**PASS:** no send while paused; after resume, either a send attempt or a **new** `waitMs`/`scheduledAt` (not the pre-pause timer). Do not fail if Unipile is disconnected — assert **Needs connection** / parked run instead.
+
+### Step 6 — A/B test (`gtm-ab-test`)
+
+Author on the **already-open** workflow record, then operate from GTM Home.
+
+1. On `http://arxena-4.localhost:3001/object/workflow/6b606456-4e40-556f-aae0-1efddac1b0b7`: **Use as draft**, change connection note (or opener), **Publish as experiment**. Header: Active A + Experiment B · 50/50.
+2. GTM Home People: enroll enough people (aim ≥4) so both letters appear.
+3. People Variant column and/or Workflow Runs Version: mix of A and B.
+4. CRM dashboard → **Experiments**: A vs B KPIs or grouped bars have counts.
+
+**PASS:** B is `EXPERIMENT` without archiving A; at least one candidate A and one B; dashboard (or Runs) shows both arms. Company-search A/B is out of scope.
+
 ## Waiting / interaction rules
 
 - Lock before interactions; unlock when done with the browser turn.
@@ -163,6 +198,9 @@ of the chat routing).
 - Step 1 Companies: PASS/FAIL — <n> rows, snippet Y/N, projectId=
 - Step 2 People: PASS/FAIL — <n> people, tool used=
 - Step 3 Outreach: PASS/FAIL — workflow= , runs=
+- Step 4 Start campaign: PASS/FAIL — Live chip, enrolled=
+- Step 5 Pause/resume: PASS/FAIL — paused parks, resume recomputes=
+- Step 6 A/B: PASS/FAIL — variants A/B seen, Experiments tab=
 - Blockers: <none | …>
 ```
 

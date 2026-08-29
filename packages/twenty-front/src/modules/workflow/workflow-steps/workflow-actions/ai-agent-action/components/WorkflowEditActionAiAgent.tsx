@@ -3,16 +3,17 @@ import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTab
 import { type SingleTabProps } from '@/ui/layout/tab-list/types/SingleTabProps';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
 import { type WorkflowAiAgentAction } from '@/workflow/types/Workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepCmdEnterButton } from '@/workflow/workflow-steps/components/WorkflowStepCmdEnterButton';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
 import { AiAgentExecutionResult } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult';
-import { AiAgentTestVariableInput } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentTestVariableInput';
 import { WorkflowAiAgentPermissionsTab } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentPermissionsTab';
 import { WORKFLOW_AI_AGENT_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabListComponentId';
 import { WORKFLOW_AI_AGENT_TABS } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabs';
 import { useResetWorkflowAiAgentPermissionsStateOnSidePanelClose } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useResetWorkflowAiAgentPermissionsStateOnSidePanelClose';
+import { useResolveAiAgentTestPromptFromLatestRun } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useResolveAiAgentTestPromptFromLatestRun';
 import { useTestAiAgent } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useTestAiAgent';
 import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentActionAgentState';
 import { workflowAiAgentPermissionsIsAddingPermissionState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentPermissionsIsAddingPermissionState';
@@ -93,7 +94,14 @@ export const WorkflowEditActionAiAgent = ({
 
   const actionPrompt = action.settings.input.prompt || '';
   const [prompt, setPrompt] = useState(actionPrompt);
-  const { testAiAgent, isTesting, aiAgentTestData } = useTestAiAgent(action.id);
+  const workflowVisualizerWorkflowId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowIdComponentState,
+  );
+  const { resolvePrompt } = useResolveAiAgentTestPromptFromLatestRun(
+    workflowVisualizerWorkflowId,
+  );
+  const { testAiAgent, showTestError, isTesting, aiAgentTestData } =
+    useTestAiAgent(action.id);
 
   const savePrompt = useDebouncedCallback((newPrompt: string) => {
     if (actionOptions.readonly === true) {
@@ -122,10 +130,19 @@ export const WorkflowEditActionAiAgent = ({
       return;
     }
 
+    const { resolvedPrompt, missingVariablePaths } =
+      await resolvePrompt(prompt);
+
+    if (missingVariablePaths.length > 0) {
+      showTestError(
+        t`This prompt uses values from previous steps. Test fills those chips from a recent workflow run that produced them. Run this branch once, or temporarily replace the chips with sample text.`,
+      );
+      return;
+    }
+
     await testAiAgent({
       agentId,
-      prompt,
-      variableValues: aiAgentTestData.variableValues,
+      prompt: resolvedPrompt,
     });
   };
 
@@ -243,12 +260,19 @@ export const WorkflowEditActionAiAgent = ({
               variant={'warning'}
               Icon={IconAlertTriangle}
               title={t`Runs the agent with its tools`}
-              description={t`Fill any prompt variables, then press Test. Record changes and credit usage are real. This does not start a workflow run.`}
+              description={t`Use the same prompt, model, and output as this step. Variable chips are filled from a recent workflow run. Record changes and credit usage are real.`}
             />
-            <AiAgentTestVariableInput
+            <WorkflowAiAgentPromptTab
+              action={action}
               prompt={prompt}
-              actionId={action.id}
               readonly={actionOptions.readonly === true}
+              modelSelectDropdownId={`select-agent-model-test-${action.id}`}
+              onPromptChange={handleAgentPromptChange}
+              onActionUpdate={
+                actionOptions.readonly === true
+                  ? undefined
+                  : actionOptions.onActionUpdate
+              }
             />
             <AiAgentExecutionResult
               aiAgentTestData={aiAgentTestData}

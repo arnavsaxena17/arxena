@@ -32,6 +32,11 @@ import {
   buildGtmQueuedCreateFields,
   isGtmSourcingEnrollment,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-queued-enrollment.util';
+import {
+  assignGtmExperimentVariant,
+  parseGtmExperimentConfig,
+} from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import {
   CandidateUploadLookup,
@@ -1619,6 +1624,27 @@ export class CandidateService {
           );
           const otherFields = buildOtherFieldsFromUnmapped(unmappedCandidateObject);
           const enrollGtm = isGtmSourcingEnrollment(origin, jobObject);
+          const experimentConfig = parseGtmExperimentConfig(
+            (jobObject as { experimentConfig?: string | null }).experimentConfig,
+          );
+          const linkedinProfileIdForVariant =
+            extractLinkedinProfileId(
+              (
+                profile as UserProfile & { linkedinProfileId?: string }
+              ).linkedinProfileId,
+            ) ||
+            extractLinkedinProfileId(profile.linkedinUrl) ||
+            extractLinkedinProfileId(profile.profileUrl) ||
+            '';
+          const experimentVariant =
+            enrollGtm &&
+            experimentConfig?.status === 'running' &&
+            linkedinProfileIdForVariant
+              ? assignGtmExperimentVariant({
+                  seed: linkedinProfileIdForVariant,
+                  split: experimentConfig.split,
+                })
+              : null;
 
           const candidateWithOtherFields = {
             ...candidateNode,
@@ -1631,6 +1657,7 @@ export class CandidateService {
                   linkedinProfileId: (
                     profile as UserProfile & { linkedinProfileId?: string }
                   ).linkedinProfileId,
+                  experimentVariant,
                 })
               : {}),
           };

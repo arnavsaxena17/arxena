@@ -43,6 +43,9 @@ export class GtmCommandMaterializeService {
     companyId,
     companyCreatedAt,
     classifiedOutreachStage,
+    outboundMessageKind,
+    existingConvertedOnMessageKind,
+    existingLastOutboundMessageKind,
   }: {
     candidateId: string;
     event: GtmCandidateEventKind;
@@ -52,13 +55,36 @@ export class GtmCommandMaterializeService {
     companyId?: string | null;
     companyCreatedAt?: string | null;
     classifiedOutreachStage?: string | null;
+    outboundMessageKind?: string | null;
+    existingConvertedOnMessageKind?: string | null;
+    existingLastOutboundMessageKind?: string | null;
   }): Promise<void> {
     try {
+      let convertedOn = existingConvertedOnMessageKind;
+      let lastOutboundKind = existingLastOutboundMessageKind;
+
+      if (
+        (event === 'inbound_reply_flush' || event === 'meeting_booked') &&
+        (convertedOn === undefined || lastOutboundKind === undefined)
+      ) {
+        const messageKinds = await this.fetchCandidateMessageKinds(
+          candidateId,
+          apiToken,
+        );
+
+        convertedOn = convertedOn ?? messageKinds.convertedOnMessageKind;
+        lastOutboundKind =
+          lastOutboundKind ?? messageKinds.lastOutboundMessageKind;
+      }
+
       const input = buildCandidateEventUpdate({
         event,
         messagingChannel,
         existingFirstOutboundAt,
         classifiedOutreachStage,
+        outboundMessageKind,
+        existingConvertedOnMessageKind: convertedOn,
+        existingLastOutboundMessageKind: lastOutboundKind,
       });
 
       if (Object.keys(input).length > 0) {
@@ -451,6 +477,53 @@ export class GtmCommandMaterializeService {
       event: eventByTouch[touch],
       apiToken,
     });
+  }
+
+  private async fetchCandidateMessageKinds(
+    candidateId: string,
+    apiToken: string,
+  ): Promise<{
+    lastOutboundMessageKind: string | null;
+    convertedOnMessageKind: string | null;
+  }> {
+    try {
+      const response = (await this.staticGraphQLService.executeGraphQL(
+        `query CandidateMessageKinds($filter: CandidateFilterInput) {
+          candidates(first: 1, filter: $filter) {
+            edges {
+              node {
+                id
+                lastOutboundMessageKind
+                convertedOnMessageKind
+              }
+            }
+          }
+        }`,
+        { filter: { id: { eq: candidateId } } },
+        apiToken,
+      )) as GraphqlEnvelope;
+
+      const node = (
+        response?.data?.data?.candidates as {
+          edges?: Array<{
+            node: {
+              lastOutboundMessageKind?: string | null;
+              convertedOnMessageKind?: string | null;
+            };
+          }>;
+        }
+      )?.edges?.[0]?.node;
+
+      return {
+        lastOutboundMessageKind: node?.lastOutboundMessageKind ?? null,
+        convertedOnMessageKind: node?.convertedOnMessageKind ?? null,
+      };
+    } catch {
+      return {
+        lastOutboundMessageKind: null,
+        convertedOnMessageKind: null,
+      };
+    }
   }
 
   private async fetchCandidateCompanyId(

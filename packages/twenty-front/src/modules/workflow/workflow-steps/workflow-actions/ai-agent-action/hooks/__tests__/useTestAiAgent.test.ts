@@ -13,32 +13,6 @@ jest.mock('@/object-metadata/hooks/useApolloCoreClient', () => ({
   useApolloCoreClient: jest.fn(),
 }));
 
-jest.mock('twenty-shared/utils', () => ({
-  ...jest.requireActual('twenty-shared/utils'),
-  resolveInput: jest.fn((input, context) => {
-    if (typeof input === 'string') {
-      return input.replace(/{{([^}]+)}}/g, (_match, path) => {
-        const parts = path.split('.');
-        let current = context;
-        for (const part of parts) {
-          if (
-            current !== null &&
-            current !== undefined &&
-            typeof current === 'object' &&
-            part in current
-          ) {
-            current = (current as Record<string, unknown>)[part];
-          } else {
-            return 'undefined';
-          }
-        }
-        return current;
-      });
-    }
-    return input;
-  }),
-}));
-
 describe('useTestAiAgent', () => {
   const actionId = 'test-action-id';
   const agentId = 'agent-1';
@@ -64,7 +38,7 @@ describe('useTestAiAgent', () => {
     expect(result.current.aiAgentTestData).toBeDefined();
   });
 
-  it('substitutes prompt variables and stores a JSON result', async () => {
+  it('sends the prompt and stores a JSON result', async () => {
     mockMutate.mockResolvedValueOnce({
       data: {
         testAiAgent: {
@@ -85,7 +59,6 @@ describe('useTestAiAgent', () => {
       await result.current.testAiAgent({
         agentId,
         prompt: 'Summarize {{trigger.record.name}}',
-        variableValues: { 'trigger.record.name': 'Jane' },
       });
     });
 
@@ -93,7 +66,7 @@ describe('useTestAiAgent', () => {
       variables: {
         input: {
           agentId,
-          prompt: 'Summarize Jane',
+          prompt: 'Summarize {{trigger.record.name}}',
         },
       },
     });
@@ -127,7 +100,6 @@ describe('useTestAiAgent', () => {
       await result.current.testAiAgent({
         agentId,
         prompt: 'Hello',
-        variableValues: {},
       });
     });
 
@@ -135,5 +107,20 @@ describe('useTestAiAgent', () => {
       'Agent with id agent-1 not found',
     );
     expect(result.current.aiAgentTestData.output.data).toBeUndefined();
+  });
+
+  it('records a local error without calling the mutation', () => {
+    const { result } = renderHook(() => useTestAiAgent(actionId), {
+      wrapper,
+    });
+
+    act(() => {
+      result.current.showTestError('Missing previous step values');
+    });
+
+    expect(mockMutate).not.toHaveBeenCalled();
+    expect(result.current.aiAgentTestData.output.error).toBe(
+      'Missing previous step values',
+    );
   });
 });

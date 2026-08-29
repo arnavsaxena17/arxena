@@ -28,6 +28,7 @@ type WorkflowAiAgentPromptTabProps = {
   readonly: boolean;
   onPromptChange: (value: string) => void;
   onActionUpdate?: (action: WorkflowAiAgentAction) => void;
+  modelSelectDropdownId?: string;
 };
 
 export const WorkflowAiAgentPromptTab = ({
@@ -36,6 +37,7 @@ export const WorkflowAiAgentPromptTab = ({
   readonly,
   onPromptChange,
   onActionUpdate,
+  modelSelectDropdownId = 'select-agent-model',
 }: WorkflowAiAgentPromptTabProps) => {
   const [workflowAiAgentActionAgent, setWorkflowAiAgentActionAgent] =
     useAtomState(workflowAiAgentActionAgentState);
@@ -135,7 +137,7 @@ export const WorkflowAiAgentPromptTab = ({
     <>
       <Select
         label={t`Model`}
-        dropdownId="select-agent-model"
+        dropdownId={modelSelectDropdownId}
         options={aiModelOptions}
         pinnedOption={pinnedOption}
         value={agent.modelId}

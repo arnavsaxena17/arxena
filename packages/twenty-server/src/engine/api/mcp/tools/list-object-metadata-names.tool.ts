@@ -20,7 +20,7 @@ export const createListObjectMetadataNamesTool = (
   workspaceId: string,
 ) => ({
   description:
-    'List all available object metadata names in the workspace. Use this to get a fresh list of objects when the initial instructions may be outdated.',
+    'List object names only when the initialize CRUD grammar looks stale. Do not call this on the happy path — construct find_many_{objects} from the objects listed in server instructions.',
   inputSchema: listObjectMetadataNamesInputSchema,
   execute: async (): Promise<ListObjectMetadataNamesResult> => {
     const { flatObjectMetadataMaps } =

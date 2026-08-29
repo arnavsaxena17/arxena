@@ -1,5 +1,7 @@
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
+import { useActivateWorkflowVersion } from '@/workflow/hooks/useActivateWorkflowVersion';
+import { usePublishExperimentVersion } from '@/workflow/hooks/usePublishExperimentVersion';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
 import { WorkflowDiagramCanvasBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase';
@@ -25,6 +27,7 @@ import { useDeleteEdge } from '@/workflow/workflow-steps/hooks/useDeleteEdge';
 import { useUpdateStep } from '@/workflow/workflow-steps/hooks/useUpdateStep';
 import { prepareIfElseStepWithNewBranch } from '@/workflow/workflow-steps/workflow-actions/if-else-action/utils/prepareIfElseStepWithNewBranch';
 import { useUpdateWorkflowVersionTrigger } from '@/workflow/workflow-trigger/hooks/useUpdateWorkflowVersionTrigger';
+import { styled } from '@linaria/react';
 import {
   addEdge,
   ReactFlowProvider,
@@ -32,8 +35,15 @@ import {
   type Edge,
   type OnNodeDrag,
 } from '@xyflow/react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
+import { Button } from 'twenty-ui/input';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+
+const StyledAbSubtitle = styled.span`
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+`;
 
 export const WorkflowDiagramCanvasEditable = () => {
   const workflowVisualizerWorkflowId = useAtomComponentStateValue(
@@ -61,6 +71,11 @@ export const WorkflowDiagramCanvasEditable = () => {
   const { updateTrigger } = useUpdateWorkflowVersionTrigger();
 
   const { startNodeCreation } = useStartNodeCreation();
+
+  const { publishExperimentVersion } = usePublishExperimentVersion();
+  const { activateWorkflowVersion } = useActivateWorkflowVersion();
+  const [isPublishingExperiment, setIsPublishingExperiment] = useState(false);
+  const [isPromotingWinner, setIsPromotingWinner] = useState(false);
 
   const onConnect = async (edgeConnect: WorkflowConnection) => {
     const steps = workflowWithCurrentVersion?.currentVersion?.steps;
@@ -165,9 +180,47 @@ export const WorkflowDiagramCanvasEditable = () => {
     return null;
   }
 
+  const currentVersionStatus =
+    workflowWithCurrentVersion.currentVersion.status;
   const tagProps = getWorkflowVersionStatusTagProps({
-    workflowVersionStatus: workflowWithCurrentVersion.currentVersion.status,
+    workflowVersionStatus: currentVersionStatus,
   });
+
+  const hasActiveVersion = workflowWithCurrentVersion.versions.some(
+    (version) => version.status === 'ACTIVE',
+  );
+  const hasExperimentVersion = workflowWithCurrentVersion.versions.some(
+    (version) => version.status === 'EXPERIMENT',
+  );
+  const abSubtitle =
+    hasActiveVersion && hasExperimentVersion
+      ? 'Active (A) · Experiment (B) · 50/50'
+      : null;
+
+  const handlePublishAsExperiment = async () => {
+    setIsPublishingExperiment(true);
+
+    try {
+      await publishExperimentVersion({
+        workflowVersionId: workflowWithCurrentVersion.currentVersion.id,
+      });
+    } finally {
+      setIsPublishingExperiment(false);
+    }
+  };
+
+  const handlePromoteWinner = async () => {
+    setIsPromotingWinner(true);
+
+    try {
+      await activateWorkflowVersion({
+        workflowVersionId: workflowWithCurrentVersion.currentVersion.id,
+        workflowId: workflowWithCurrentVersion.id,
+      });
+    } finally {
+      setIsPromotingWinner(false);
+    }
+  };
 
   const handlePaneContextMenu = ({ x, y }: { x: number; y: number }) => {
     setWorkflowDiagramRightClickMenuPosition({
@@ -175,6 +228,40 @@ export const WorkflowDiagramCanvasEditable = () => {
       y,
     });
   };
+
+  const tagArea = (
+    <>
+      {isDefined(abSubtitle) && (
+        <StyledAbSubtitle>{abSubtitle}</StyledAbSubtitle>
+      )}
+      {currentVersionStatus === 'DRAFT' && (
+        <Button
+          title={
+            isPublishingExperiment
+              ? 'Publishing…'
+              : 'Publish as experiment'
+          }
+          variant="secondary"
+          size="small"
+          disabled={isPublishingExperiment}
+          onClick={() => {
+            void handlePublishAsExperiment();
+          }}
+        />
+      )}
+      {currentVersionStatus === 'EXPERIMENT' && (
+        <Button
+          title={isPromotingWinner ? 'Promoting…' : 'Promote winner'}
+          variant="secondary"
+          size="small"
+          disabled={isPromotingWinner}
+          onClick={() => {
+            void handlePromoteWinner();
+          }}
+        />
+      )}
+    </>
+  );
 
   return (
     <ReactFlowProvider>
@@ -191,6 +278,7 @@ export const WorkflowDiagramCanvasEditable = () => {
         tagContainerTestId="workflow-visualizer-status"
         tagColor={tagProps.color}
         tagText={tagProps.text}
+        tagArea={tagArea}
         onConnect={onConnect}
         onReconnect={handleReconnect}
         onNodeDragStop={onNodeDragStop}

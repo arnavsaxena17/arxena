@@ -18,6 +18,7 @@ import {
     type GtmCompanyRow,
     type GtmMainTab,
     type GtmOutreachSendMode,
+    type GtmOutreachStatus,
     type GtmPersonRow,
     type GtmProjectOption,
     type GtmProjectSettings,
@@ -44,6 +45,7 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 type GtmProjectRecord = ObjectRecord & {
   name?: string;
   outreachWorkflowId?: string | null;
+  outreachStatus?: string | null;
   outreachSendMode?: string | null;
   maxPersonasPerCompany?: number | null;
   inMailFallbackEnabled?: boolean | null;
@@ -51,6 +53,7 @@ type GtmProjectRecord = ObjectRecord & {
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
   icpSpec?: string | null;
+  experimentConfig?: string | null;
   updatedAt?: string;
 };
 
@@ -62,9 +65,25 @@ type GtmCandidateRecord = ObjectRecord & {
   projectsId?: string | null;
   outreachSequenceStage?: string | null;
   pendingChannel?: string | null;
+  experimentVariant?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
   email?: { primaryEmail?: string } | null;
   peopleId?: string | null;
+};
+
+const normalizeOutreachStatus = (
+  value: string | null | undefined,
+): GtmOutreachStatus =>
+  value?.toUpperCase() === 'PAUSED' ? 'PAUSED' : 'LIVE';
+
+const normalizeExperimentVariant = (
+  value: string | null | undefined,
+): 'A' | 'B' | null => {
+  if (value === 'A' || value === 'B') {
+    return value;
+  }
+
+  return null;
 };
 
 const isGtmProject = (project: GtmProjectRecord): boolean =>
@@ -124,7 +143,7 @@ const gtmPersonSignature = (people: GtmPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}`,
     )
     .join('|');
 
@@ -206,25 +225,30 @@ export const useGtmLiveWorkingSet = () => {
       },
     });
 
-  const { records: allProjects, loading: projectsLoading } =
-    useFindManyRecords<GtmProjectRecord>({
-      objectNameSingular: 'project',
-      orderBy: [{ updatedAt: 'DescNullsFirst' }],
-      limit: 50,
-      recordGqlFields: {
-        id: true,
-        name: true,
-        outreachWorkflowId: true,
-        outreachSendMode: true,
-        maxPersonasPerCompany: true,
-        inMailFallbackEnabled: true,
-        sendTimezone: true,
-        sendWindowStart: true,
-        sendWindowEnd: true,
-        icpSpec: true,
-        updatedAt: true,
-      },
-    });
+  const {
+    records: allProjects,
+    loading: projectsLoading,
+    refetch: refetchProjects,
+  } = useFindManyRecords<GtmProjectRecord>({
+    objectNameSingular: 'project',
+    orderBy: [{ updatedAt: 'DescNullsFirst' }],
+    limit: 50,
+    recordGqlFields: {
+      id: true,
+      name: true,
+      outreachWorkflowId: true,
+      outreachStatus: true,
+      outreachSendMode: true,
+      maxPersonasPerCompany: true,
+      inMailFallbackEnabled: true,
+      sendTimezone: true,
+      sendWindowStart: true,
+      sendWindowEnd: true,
+      icpSpec: true,
+      experimentConfig: true,
+      updatedAt: true,
+    },
+  });
 
   const { records: workspaceProfiles, loading: workspaceProfilesLoading, refetch: refetchWorkspaceProfiles } =
     useFindManyRecords<WorkspaceProfileRecord>({
@@ -431,6 +455,7 @@ export const useGtmLiveWorkingSet = () => {
         projectsId: true,
         outreachSequenceStage: true,
         pendingChannel: true,
+        experimentVariant: true,
         linkedinUrl: true,
         email: true,
         peopleId: true,
@@ -589,6 +614,9 @@ export const useGtmLiveWorkingSet = () => {
           stage: mapCrmStageToGtmOutreachStage(candidate.outreachSequenceStage),
           email: candidate.email?.primaryEmail ?? '',
           pendingChannel: candidate.pendingChannel ?? undefined,
+          experimentVariant: normalizeExperimentVariant(
+            candidate.experimentVariant,
+          ),
         };
       }),
     [candidateRecords],
@@ -631,6 +659,7 @@ export const useGtmLiveWorkingSet = () => {
     projectName: project?.name ?? null,
     gtmRunKey: project?.id ?? null,
     outreachWorkflowId: project?.outreachWorkflowId ?? null,
+    outreachStatus: normalizeOutreachStatus(project?.outreachStatus),
     outreachSendMode:
       (project?.outreachSendMode as GtmOutreachSendMode | null) ?? 'APPROVAL',
     maxPersonasPerCompany: project?.maxPersonasPerCompany ?? 2,
@@ -641,6 +670,7 @@ export const useGtmLiveWorkingSet = () => {
     whatsappConnected,
     icpSpec: effectiveIcp.icpSpec,
     isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
+    experimentConfig: project?.experimentConfig ?? null,
   };
 
   const parsedIcp = effectiveIcp.parsedIcp;
@@ -678,6 +708,7 @@ export const useGtmLiveWorkingSet = () => {
     projectOptions,
     activeProjectId,
     setActiveProjectId,
+    refetchProjects,
     createGtmProject,
     setCompanies,
     appendCompanies,

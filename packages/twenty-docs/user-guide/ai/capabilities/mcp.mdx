@@ -97,12 +97,24 @@ Ask your AI assistant to interact with your CRM:
 
 ## Available Tools
 
-Once connected, the MCP server exposes tools that mirror the Arxena API. The recommended workflow is:
+Once connected, `tools/list` exposes a small **meta-set** — not every CRM or GTM operation:
 
-1. **`learn_tools`** — get the input schema for specific tools
-2. **`execute_tool`** — run a tool
+- **`load_skills`** — load step-by-step skill markdown (`linkedin-search`, `search-companies`, `workflow-building`, …)
+- **`learn_tools`** — fetch input schemas for the exact tool names you will run
+- **`execute_tool`** — run one CRM/GTM/workflow tool by name
+- **`search_help_center`** — product docs
+- **`get_tool_catalog`**, **`list_skills`**, **`list_object_metadata_names`** — refresh only when initialize instructions look stale
 
-You don't need to remember tool names. Ask your AI assistant what it can do and it will call `learn_tools` automatically.
+Skills are also available as MCP **prompts** (`prompts/list` / `prompts/get`). If you attach a skill prompt, skip `load_skills` for that turn.
+
+Recommended workflow:
+
+1. Read skill names and CRUD grammar from initialize instructions (do not start with `get_tool_catalog`)
+2. For skilled tasks: **`load_skills`** (or use an attached prompt)
+3. **`learn_tools`** once with every tool name you will execute
+4. **`execute_tool`** as needed
+
+Simple CRM reads skip the skill step: `learn_tools({toolNames:["find_many_companies"]})` then `execute_tool`.
 
 ## Permissions
 

@@ -1,40 +1,60 @@
 import { Injectable } from '@nestjs/common';
 
-import { camelToSnakeCase } from 'twenty-shared/utils';
+import { isDefined } from 'twenty-shared/utils';
 
-import { buildMcpServerInstructions } from 'src/engine/api/mcp/utils/build-mcp-server-instructions.util';
-import { getDatabaseCrudToolFlatObjects } from 'src/engine/metadata-modules/ai/ai-agent/utils/get-database-crud-tool-flat-objects.util';
-import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
-import { SkillService } from 'src/engine/metadata-modules/skill/skill.service';
+import { MCP_EXCLUDED_TOOL_NAMES } from 'src/engine/api/mcp/constants/mcp-excluded-tool-names.const';
+import {
+  AgentActorContextService,
+  type UserContext,
+} from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-actor-context.service';
+import { SystemPromptBuilderService } from 'src/engine/metadata-modules/ai/ai-chat/services/system-prompt-builder.service';
+
+export type McpInstructionAuthContext = {
+  workspaceId: string;
+  roleId: string;
+  userId?: string;
+  userWorkspaceId?: string;
+};
 
 @Injectable()
 export class McpInstructionBuilderService {
   constructor(
-    private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
-    private readonly skillService: SkillService,
+    private readonly systemPromptBuilderService: SystemPromptBuilderService,
+    private readonly agentActorContextService: AgentActorContextService,
   ) {}
 
-  async buildInstructions(workspaceId: string): Promise<string> {
-    const [{ flatObjectMetadataMaps }, allSkills] = await Promise.all([
-      this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps({
-        workspaceId,
-        flatMapsKeys: ['flatObjectMetadataMaps'],
-      }),
-      this.skillService.findAllFlatSkills(workspaceId),
-    ]);
+  async buildInstructions({
+    workspaceId,
+    roleId,
+    userId,
+    userWorkspaceId,
+  }: McpInstructionAuthContext): Promise<string> {
+    let workspaceMemberId: string | undefined;
+    let userContext: UserContext | undefined;
 
-    const objectNames = getDatabaseCrudToolFlatObjects(
-      flatObjectMetadataMaps.byUniversalIdentifier,
-    )
-      .map((obj) => camelToSnakeCase(obj.namePlural))
-      .sort()
-      .join(', ');
+    if (isDefined(userWorkspaceId)) {
+      try {
+        const actorContext =
+          await this.agentActorContextService.buildUserAndAgentActorContext(
+            userWorkspaceId,
+            workspaceId,
+          );
 
-    const skillNames =
-      allSkills.length > 0
-        ? allSkills.map((skill) => skill.name).join(', ')
-        : undefined;
+        workspaceMemberId = actorContext.workspaceMemberId;
+        userContext = actorContext.userContext;
+      } catch {
+        // API-key sessions and missing workspace members skip user/LinkedIn context.
+      }
+    }
 
-    return buildMcpServerInstructions(objectNames, skillNames);
+    return this.systemPromptBuilderService.buildMcpInstructions({
+      workspaceId,
+      roleId,
+      userId,
+      userWorkspaceId,
+      workspaceMemberId,
+      userContext,
+      excludeTools: MCP_EXCLUDED_TOOL_NAMES,
+    });
   }
 }

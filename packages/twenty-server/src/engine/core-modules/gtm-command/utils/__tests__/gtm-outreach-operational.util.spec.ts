@@ -180,4 +180,24 @@ describe('GtmOutreachThrottleService send window', () => {
     expect(result.allowed).toBe(true);
     expect(result.reason).toBe('ok');
   });
+
+  it('blocks sends when project outreachStatus is PAUSED without Bull delay', () => {
+    const result = service.checkAndReserve({
+      counters: {},
+      channel: 'connect',
+      linkedinConnected: true,
+      outreachStatus: 'PAUSED',
+      now: new Date('2026-01-06T03:30:00.000Z'),
+      sendWindow: {
+        timezone: 'Asia/Kolkata',
+        sendWindowStart: '08:00',
+        sendWindowEnd: '10:00',
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('paused');
+    expect(result.delayMs).toBe(0);
+    expect(result.nextSendAt).toBeNull();
+  });
 });

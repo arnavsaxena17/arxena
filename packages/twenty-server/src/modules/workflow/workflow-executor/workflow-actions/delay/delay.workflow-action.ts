@@ -111,8 +111,13 @@ export class DelayWorkflowAction implements WorkflowAction {
       },
     );
 
+    const scheduledAt = new Date(Date.now() + delayInMs).toISOString();
+
     return {
       pendingEvent: true,
+      waitMs: delayInMs,
+      scheduledAt,
+      pendingReason: 'gtm_sequence_delay',
     };
   }
 }

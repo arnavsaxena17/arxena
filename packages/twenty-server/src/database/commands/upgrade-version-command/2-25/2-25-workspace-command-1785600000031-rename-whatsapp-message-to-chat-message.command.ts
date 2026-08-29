@@ -17,7 +17,7 @@ import { computeTwentyStandardApplicationAllFlatEntityMaps } from 'src/engine/wo
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
 const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
-  STANDARD_SKILL['gtm-outreach-workflows'].universalIdentifier,
+  STANDARD_SKILL.outreach.universalIdentifier,
 ] as const;
 
 type WorkflowVersionRecord = ObjectLiteral & {

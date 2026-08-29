@@ -145,7 +145,7 @@ LOGIC_FUNCTION steps run workspace logic functions. To add one:
    Never flatten params onto `settings.input`. Edges are `{ "source": "trigger", "target": "<step-uuid>" }` (not from/to).
 4. DATABASE_EVENT `settings.eventName` must be `objectName.action` (e.g. `company.created`). Trigger fields: `{{trigger.properties.after.id}}`.
 
-For GTM harvest / enroll / LinkedIn sequencer graphs, also load `gtm-outreach-workflows` (do not invent those recipes here).
+For GTM harvest / enroll / LinkedIn sequencer graphs, also load `outreach` (do not invent those recipes here).
 
 ## Listing Workflows
 

@@ -48,6 +48,7 @@ import { GtmCompaniesCacheService } from 'src/engine/core-modules/gtm-command/se
 import { GtmLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-linkedin-pool-company-enrichment.source';
 import { GtmOutreachThrottleService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
 import { GtmPeopleCacheService } from 'src/engine/core-modules/gtm-command/services/gtm-people-cache.service';
+import { GtmProjectOutreachControlService } from 'src/engine/core-modules/gtm-command/services/gtm-project-outreach-control.service';
 import { GtmWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-wikidata-company-enrichment.source';
 import { GtmWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/gtm-command/services/gtm-web-search-company-enrichment.source';
 import { GtmWorkspaceAuthTokenService } from 'src/engine/core-modules/gtm-command/services/gtm-workspace-auth-token.service';
@@ -144,6 +145,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
+    GtmProjectOutreachControlService,
     GtmInboundReplyWindowService,
   ],
   exports: [
@@ -169,6 +171,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     GtmOutreachMessagePersistService,
     GtmLogicFunctionNativeExecutor,
     GtmUnipilePacingService,
+    GtmProjectOutreachControlService,
     GtmInboundReplyWindowService,
   ],
 })

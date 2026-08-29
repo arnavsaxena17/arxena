@@ -6,7 +6,10 @@ import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { GtmChipTagInput } from '@/gtm-home/components/GtmChipTagInput';
-import { type GtmWorkspaceCompany } from '@/gtm-home/types/gtm-home.types';
+import {
+  type GtmOutreachSendMode,
+  type GtmWorkspaceCompany,
+} from '@/gtm-home/types/gtm-home.types';
 import {
   GTM_ICP_CHIP_FIELDS,
   parseIcpSpecObject,
@@ -177,6 +180,11 @@ export type GtmSendScheduleInput = {
   sendWindowEnd: string;
 };
 
+export type GtmOutreachPolicyInput = {
+  outreachSendMode: GtmOutreachSendMode;
+  maxPersonasPerCompany: number;
+};
+
 type GtmSetupPanelProps = {
   workspaceCompany: GtmWorkspaceCompany;
   icpSpec: string | null;
@@ -192,6 +200,10 @@ type GtmSetupPanelProps = {
   sendWindowEnd: string;
   isSavingSendSchedule: boolean;
   onSaveSendSchedule: (input: GtmSendScheduleInput) => Promise<void>;
+  outreachSendMode: GtmOutreachSendMode;
+  maxPersonasPerCompany: number;
+  isSavingOutreachPolicy: boolean;
+  onSaveOutreachPolicy: (input: GtmOutreachPolicyInput) => Promise<void>;
   onFindCompanies: () => void;
   onFindPeople: () => void;
 };
@@ -211,6 +223,10 @@ export const GtmSetupPanel = ({
   sendWindowEnd,
   isSavingSendSchedule,
   onSaveSendSchedule,
+  outreachSendMode,
+  maxPersonasPerCompany,
+  isSavingOutreachPolicy,
+  onSaveOutreachPolicy,
   onFindCompanies,
   onFindPeople,
 }: GtmSetupPanelProps) => {
@@ -223,6 +239,14 @@ export const GtmSetupPanel = ({
   const [sendScheduleError, setSendScheduleError] = useState<string | null>(
     null,
   );
+  const [sendModeDraft, setSendModeDraft] =
+    useState<GtmOutreachSendMode>(outreachSendMode);
+  const [maxPersonasDraft, setMaxPersonasDraft] = useState(
+    String(maxPersonasPerCompany),
+  );
+  const [outreachPolicyError, setOutreachPolicyError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setIcpDraft(formatIcpDraft(icpSpec));
@@ -233,6 +257,11 @@ export const GtmSetupPanel = ({
     setWindowStartDraft(sendWindowStart);
     setWindowEndDraft(sendWindowEnd);
   }, [sendTimezone, sendWindowStart, sendWindowEnd]);
+
+  useEffect(() => {
+    setSendModeDraft(outreachSendMode);
+    setMaxPersonasDraft(String(maxPersonasPerCompany));
+  }, [outreachSendMode, maxPersonasPerCompany]);
 
   const canPersist = hasWorkspaceProfile || hasProject;
   const parsedIcp = parseIcpSpecObject(icpDraft);
@@ -289,6 +318,21 @@ export const GtmSetupPanel = ({
       sendTimezone: timezone,
       sendWindowStart: start,
       sendWindowEnd: end,
+    });
+  };
+
+  const handleSaveOutreachPolicy = async () => {
+    const parsedMax = Number.parseInt(maxPersonasDraft.trim(), 10);
+
+    if (!Number.isFinite(parsedMax) || parsedMax < 1 || parsedMax > 10) {
+      setOutreachPolicyError('Max personas per company must be between 1 and 10.');
+      return;
+    }
+
+    setOutreachPolicyError(null);
+    await onSaveOutreachPolicy({
+      outreachSendMode: sendModeDraft,
+      maxPersonasPerCompany: parsedMax,
     });
   };
 
@@ -371,6 +415,53 @@ export const GtmSetupPanel = ({
             placeholder="ICP JSON will appear here after bootstrap or regenerate."
           />
         )}
+      </StyledSection>
+
+      <StyledSection>
+        <StyledTitle>Outreach policy</StyledTitle>
+        <StyledBody>
+          Choose approval vs auto send, and how many personas to enroll per
+          company before deferring the rest.
+        </StyledBody>
+        <StyledScheduleRow>
+          <StyledFieldStack>
+            <StyledFieldLabel>Send mode</StyledFieldLabel>
+            <StyledSelect
+              value={sendModeDraft}
+              disabled={!hasProject}
+              onChange={(event) =>
+                setSendModeDraft(event.target.value as GtmOutreachSendMode)
+              }
+            >
+              <option value="APPROVAL">APPROVAL</option>
+              <option value="AUTO">AUTO</option>
+            </StyledSelect>
+          </StyledFieldStack>
+          <StyledFieldStack>
+            <StyledFieldLabel>Max personas / company</StyledFieldLabel>
+            <TextInput
+              value={maxPersonasDraft}
+              onChange={setMaxPersonasDraft}
+              placeholder="2"
+              disabled={!hasProject}
+              fullWidth
+            />
+          </StyledFieldStack>
+        </StyledScheduleRow>
+        {isNonEmptyString(outreachPolicyError) && (
+          <StyledMuted>{outreachPolicyError}</StyledMuted>
+        )}
+        <StyledActions>
+          <Button
+            title={isSavingOutreachPolicy ? 'Saving…' : 'Save outreach policy'}
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              void handleSaveOutreachPolicy();
+            }}
+            disabled={!hasProject || isSavingOutreachPolicy}
+          />
+        </StyledActions>
       </StyledSection>
 
       <StyledSection>

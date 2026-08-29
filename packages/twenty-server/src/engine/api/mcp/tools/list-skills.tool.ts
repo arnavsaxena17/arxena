@@ -16,7 +16,7 @@ export const createListSkillsTool = (
   workspaceId: string,
 ) => ({
   description:
-    'List all available skill names in the workspace. Use this to get a fresh list of skills when the initial instructions may be outdated.',
+    'List skill names only when the initialize instructions look stale. Do not call this on the happy path — skill names are already listed in server instructions. Then load a matching skill with load_skills.',
   inputSchema: listSkillsInputSchema,
   execute: async (): Promise<ListSkillsResult> => {
     const allSkills = await skillService.findAllFlatSkills(workspaceId);

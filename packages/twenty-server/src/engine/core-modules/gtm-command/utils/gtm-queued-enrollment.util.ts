@@ -12,9 +12,11 @@ export const buildGtmQueuedCreateFields = (profile: {
   linkedinUrl?: string;
   profileUrl?: string;
   linkedinProfileId?: string;
+  experimentVariant?: 'A' | 'B' | null;
 }): {
   outreachSequenceStage: 'QUEUED';
   linkedinProfileId?: string;
+  experimentVariant?: 'A' | 'B';
 } => {
   const linkedinProfileId =
     extractLinkedinProfileId(
@@ -26,5 +28,8 @@ export const buildGtmQueuedCreateFields = (profile: {
   return {
     outreachSequenceStage: 'QUEUED',
     ...(linkedinProfileId ? { linkedinProfileId } : {}),
+    ...(profile.experimentVariant
+      ? { experimentVariant: profile.experimentVariant }
+      : {}),
   };
 };

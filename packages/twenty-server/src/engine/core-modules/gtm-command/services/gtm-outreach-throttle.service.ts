@@ -21,15 +21,23 @@ export type GtmOutreachThrottleCheckInput = {
   gmailConnected?: boolean;
   whatsappConnected?: boolean;
   sendWindow?: GtmSendWindowConfig | null;
+  outreachStatus?: string | null;
 };
 
 export type GtmOutreachThrottleCheckResult = {
   allowed: boolean;
-  reason: 'ok' | 'needs_connection' | 'outside_send_window' | null;
+  reason:
+    | 'ok'
+    | 'needs_connection'
+    | 'outside_send_window'
+    | 'paused'
+    | null;
   delayMs: number;
   nextSendAt: Date | null;
   counterPatch: Partial<GtmThrottleCounters>;
 };
+
+export const GTM_PROJECT_PAUSED_PENDING_REASON = 'gtm_project_paused';
 
 const SEND_WINDOW_CHANNELS = new Set<GtmThrottleChannel>(['connect']);
 
@@ -39,6 +47,16 @@ export class GtmOutreachThrottleService {
     input: GtmOutreachThrottleCheckInput,
   ): GtmOutreachThrottleCheckResult {
     const now = input.now ?? new Date();
+
+    if ((input.outreachStatus ?? 'LIVE').toUpperCase() === 'PAUSED') {
+      return {
+        allowed: false,
+        reason: 'paused',
+        delayMs: 0,
+        nextSendAt: null,
+        counterPatch: {},
+      };
+    }
 
     const needsLinkedIn =
       input.channel === 'connect' || input.channel === 'comment';

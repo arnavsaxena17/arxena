@@ -13,7 +13,7 @@ import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspa
 
 const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   STANDARD_SKILL['workflow-building'].universalIdentifier,
-  STANDARD_SKILL['gtm-icp-onboarding'].universalIdentifier,
+  STANDARD_SKILL.setup.universalIdentifier,
 ] as const;
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000023)

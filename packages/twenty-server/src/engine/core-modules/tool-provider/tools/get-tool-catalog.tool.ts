@@ -37,7 +37,7 @@ export const createGetToolCatalogTool = (
   },
 ) => ({
   description:
-    'STEP 1: Start here. Browse available tools by category. Returns tool names and descriptions. You MUST call this before using learn_tools or execute_tool — do not guess tool names.',
+    'Refresh-only. Browse available tools by category when the initialize instructions look stale or you need a category filter. Do not call this before learn_tools on the happy path. Construct CRUD names from grammar and take GTM names from loaded skills. Never request the full catalog when you already know the tool names.',
   inputSchema: getToolCatalogInputSchema,
   execute: async (
     parameters: GetToolCatalogInput,

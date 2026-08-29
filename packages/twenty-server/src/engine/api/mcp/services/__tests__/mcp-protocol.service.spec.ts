@@ -10,6 +10,7 @@ import { MCP_PROTOCOL_VERSION } from 'src/engine/api/mcp/constants/mcp-protocol-
 import { MCP_SERVER_INFO } from 'src/engine/api/mcp/constants/mcp-server-info.const';
 import { type JsonRpc } from 'src/engine/api/mcp/dtos/json-rpc';
 import { McpInstructionBuilderService } from 'src/engine/api/mcp/services/mcp-instruction-builder.service';
+import { McpPromptService } from 'src/engine/api/mcp/services/mcp-prompt.service';
 import { McpProtocolService } from 'src/engine/api/mcp/services/mcp-protocol.service';
 import { McpToolExecutorService } from 'src/engine/api/mcp/services/mcp-tool-executor.service';
 import { LIST_OBJECT_METADATA_NAMES_TOOL_NAME } from 'src/engine/api/mcp/tools/list-object-metadata-names.tool';
@@ -18,6 +19,7 @@ import { type McpToolAnnotations } from 'src/engine/api/mcp/types/mcp-tool-annot
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-key-role.service';
 import { EXECUTE_TOOL_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/execute-tool.tool';
+import { GET_TOOL_CATALOG_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/get-tool-catalog.tool';
 import { LEARN_TOOLS_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/learn-tools.tool';
 import { LOAD_SKILL_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
@@ -33,6 +35,8 @@ describe('McpProtocolService', () => {
   let userRoleService: jest.Mocked<UserRoleService>;
   let mcpToolExecutorService: jest.Mocked<McpToolExecutorService>;
   let apiKeyRoleService: jest.Mocked<ApiKeyRoleService>;
+  let mcpInstructionBuilderService: jest.Mocked<McpInstructionBuilderService>;
+  let mcpPromptService: jest.Mocked<McpPromptService>;
 
   const mockWorkspace = { id: 'workspace-1' } as FlatWorkspace;
   const mockUserWorkspaceId = 'user-workspace-1';
@@ -49,6 +53,7 @@ describe('McpProtocolService', () => {
     LOAD_SKILL_TOOL_NAME,
     LIST_OBJECT_METADATA_NAMES_TOOL_NAME,
     LIST_SKILLS_TOOL_NAME,
+    GET_TOOL_CATALOG_TOOL_NAME,
     'search_help_center',
   ] as const;
 
@@ -62,6 +67,7 @@ describe('McpProtocolService', () => {
     [LIST_OBJECT_METADATA_NAMES_TOOL_NAME]:
       MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     [LIST_SKILLS_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
+    [GET_TOOL_CATALOG_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     search_help_center: MCP_OPEN_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
   };
 
@@ -117,6 +123,13 @@ describe('McpProtocolService', () => {
           },
         },
         {
+          provide: McpPromptService,
+          useValue: {
+            listPrompts: jest.fn().mockResolvedValue([]),
+            getPrompt: jest.fn().mockResolvedValue(null),
+          },
+        },
+        {
           provide: WorkspaceManyOrAllFlatEntityMapsCacheService,
           useValue: {
             getOrRecomputeManyOrAllFlatEntityMaps: jest.fn().mockResolvedValue({
@@ -143,6 +156,8 @@ describe('McpProtocolService', () => {
     userRoleService = module.get(UserRoleService);
     mcpToolExecutorService = module.get(McpToolExecutorService);
     apiKeyRoleService = module.get(ApiKeyRoleService);
+    mcpInstructionBuilderService = module.get(McpInstructionBuilderService);
+    mcpPromptService = module.get(McpPromptService);
   });
 
   it('should be defined', () => {
@@ -152,9 +167,23 @@ describe('McpProtocolService', () => {
   describe('handleInitialize', () => {
     it('should return spec-compliant initialization response', async () => {
       const requestId = '123';
-      const result = await service.handleInitialize(
-        requestId,
-        mockWorkspace.id,
+
+      userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
+
+      const result = await service.handleInitialize(requestId, {
+        workspace: mockWorkspace,
+        userWorkspaceId: mockUserWorkspaceId,
+        userId: 'user-1',
+        apiKey: undefined,
+      });
+
+      expect(mcpInstructionBuilderService.buildInstructions).toHaveBeenCalledWith(
+        {
+          workspaceId: mockWorkspace.id,
+          roleId: mockRoleId,
+          userId: 'user-1',
+          userWorkspaceId: mockUserWorkspaceId,
+        },
       );
 
       expect(result).toEqual({
@@ -222,6 +251,8 @@ describe('McpProtocolService', () => {
 
   describe('handleMCPCoreQuery', () => {
     it('should handle initialize method', async () => {
+      userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
+
       const mockRequest: JsonRpc = {
         jsonrpc: '2.0',
         method: 'initialize',
@@ -265,7 +296,7 @@ describe('McpProtocolService', () => {
       expect(result).toBeNull();
     });
 
-    it('should build a ToolSet with exactly 6 tools and pass it to executor for tools/call', async () => {
+    it('should build a meta-only ToolSet and pass it to executor for tools/call', async () => {
       userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
 
       const mockToolCallResponse = {
@@ -316,7 +347,7 @@ describe('McpProtocolService', () => {
       );
     });
 
-    it('should build a ToolSet with exactly 6 tools and pass it to executor for tools/list', async () => {
+    it('should build a meta-only ToolSet and pass it to executor for tools/list', async () => {
       userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
 
       mcpToolExecutorService.handleToolsListing.mockReturnValue({
@@ -351,6 +382,15 @@ describe('McpProtocolService', () => {
           ),
         ),
       );
+
+      const listedToolSet = mcpToolExecutorService.handleToolsListing.mock
+        .calls[0][1] as Record<string, unknown>;
+
+      expect(Object.keys(listedToolSet).sort()).toEqual(
+        [...EXPECTED_MCP_TOOL_NAMES].sort(),
+      );
+      expect(Object.keys(listedToolSet)).not.toContain('search_people_api');
+      expect(Object.keys(listedToolSet)).not.toContain('find_many_companies');
     });
 
     it('should pass actorContext with FieldActorSource.AGENT to getToolsByName', async () => {
@@ -378,7 +418,24 @@ describe('McpProtocolService', () => {
       );
     });
 
-    it('should return prompts list without role resolution', async () => {
+    it('should list workspace skills as MCP prompts without role resolution', async () => {
+      const listedPrompts = [
+        {
+          name: 'linkedin-search',
+          title: 'LinkedIn Search',
+          description: 'Search LinkedIn',
+          arguments: [
+            {
+              name: 'task',
+              description: 'Optional user request',
+              required: false,
+            },
+          ],
+        },
+      ];
+
+      mcpPromptService.listPrompts.mockResolvedValue(listedPrompts);
+
       const mockRequest: JsonRpc = {
         jsonrpc: '2.0',
         method: 'prompts/list',
@@ -394,9 +451,86 @@ describe('McpProtocolService', () => {
       expect(result).toEqual({
         id: '123',
         jsonrpc: '2.0',
-        result: { prompts: [] },
+        result: { prompts: listedPrompts },
+      });
+      expect(mcpPromptService.listPrompts).toHaveBeenCalledWith(
+        mockWorkspace.id,
+      );
+      expect(userRoleService.getRoleIdForUserWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('should return skill markdown for prompts/get', async () => {
+      mcpPromptService.getPrompt.mockResolvedValue({
+        description: 'Search people',
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: '# Search people\nUser request:\nFind CEOs at Acme',
+            },
+          },
+        ],
+      });
+
+      const result = await service.handleMCPCoreQuery(
+        {
+          jsonrpc: '2.0',
+          method: 'prompts/get',
+          id: 'prompt-get-1',
+          params: {
+            name: 'search-people',
+            arguments: { task: 'Find CEOs at Acme' },
+          },
+        },
+        {
+          workspace: mockWorkspace,
+          userWorkspaceId: mockUserWorkspaceId,
+          apiKey: undefined,
+        },
+      );
+
+      expect(result).toMatchObject({
+        id: 'prompt-get-1',
+        jsonrpc: '2.0',
+        result: {
+          messages: [
+            {
+              content: {
+                text: expect.stringContaining('Find CEOs at Acme'),
+              },
+            },
+          ],
+        },
       });
       expect(userRoleService.getRoleIdForUserWorkspace).not.toHaveBeenCalled();
+    });
+
+    it('should return invalid params for an unknown prompt name', async () => {
+      mcpPromptService.getPrompt.mockResolvedValue(null);
+
+      const result = await service.handleMCPCoreQuery(
+        {
+          jsonrpc: '2.0',
+          method: 'prompts/get',
+          id: 'prompt-missing',
+          params: { name: 'not-a-skill', arguments: {} },
+        },
+        {
+          workspace: mockWorkspace,
+          userWorkspaceId: mockUserWorkspaceId,
+          apiKey: undefined,
+        },
+      );
+
+      expect(result).toEqual({
+        id: 'prompt-missing',
+        jsonrpc: '2.0',
+        error: {
+          code: JSON_RPC_ERROR_CODE.INVALID_PARAMS,
+          message: "Unknown prompt 'not-a-skill'",
+        },
+      });
     });
 
     it('should return resources list without role resolution', async () => {

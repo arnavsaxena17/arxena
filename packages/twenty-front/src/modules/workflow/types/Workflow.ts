@@ -112,7 +112,8 @@ export type WorkflowVersionStatus =
   | 'DRAFT'
   | 'ACTIVE'
   | 'DEACTIVATED'
-  | 'ARCHIVED';
+  | 'ARCHIVED'
+  | 'EXPERIMENT';
 
 export type WorkflowVersion = {
   id: string;

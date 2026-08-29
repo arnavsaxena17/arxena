@@ -9,7 +9,6 @@ export const aiAgentTestDataFamilyState = createAtomFamilyState<
   key: 'aiAgentTestDataFamilyState',
   defaultValue: {
     language: 'plaintext',
-    variableValues: {},
     output: DEFAULT_AI_AGENT_TEST_OUTPUT_VALUE,
   },
 });

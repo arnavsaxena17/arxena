@@ -331,12 +331,18 @@ export const buildCandidateEventUpdate = ({
   messagingChannel,
   existingFirstOutboundAt,
   classifiedOutreachStage,
+  outboundMessageKind,
+  existingConvertedOnMessageKind,
+  existingLastOutboundMessageKind,
 }: {
   event: GtmCandidateEventKind;
   nowIso?: string;
   messagingChannel?: string | null;
   existingFirstOutboundAt?: string | null;
   classifiedOutreachStage?: string | null;
+  outboundMessageKind?: string | null;
+  existingConvertedOnMessageKind?: string | null;
+  existingLastOutboundMessageKind?: string | null;
 }): Record<string, unknown> => {
   switch (event) {
     case 'connection_sent':
@@ -344,6 +350,9 @@ export const buildCandidateEventUpdate = ({
         outreachSequenceStage: 'CONNECTION_SENT',
         lastOutboundAt: nowIso,
         ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
+        ...(outboundMessageKind
+          ? { lastOutboundMessageKind: outboundMessageKind }
+          : { lastOutboundMessageKind: 'CONNECT_NOTE' }),
       };
     case 'connection_accepted':
       return {
@@ -388,6 +397,9 @@ export const buildCandidateEventUpdate = ({
         ...(outboundStage ? { outreachSequenceStage: outboundStage } : {}),
         lastOutboundAt: nowIso,
         ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
+        ...(outboundMessageKind
+          ? { lastOutboundMessageKind: outboundMessageKind }
+          : {}),
       };
     }
     case 'inbound_reply':
@@ -398,11 +410,18 @@ export const buildCandidateEventUpdate = ({
       return {
         outreachSequenceStage: classifiedOutreachStage ?? 'REPLIED',
         lastInboundAt: nowIso,
+        // First real inbound only — skip if already stamped (accept is separate).
+        ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
+          ? { convertedOnMessageKind: existingLastOutboundMessageKind }
+          : {}),
       };
     case 'meeting_booked':
       return {
         outreachSequenceStage: 'MEETING_BOOKED',
         lastOutboundAt: nowIso,
+        ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
+          ? { convertedOnMessageKind: existingLastOutboundMessageKind }
+          : {}),
       };
     case 'meeting_held':
       return {

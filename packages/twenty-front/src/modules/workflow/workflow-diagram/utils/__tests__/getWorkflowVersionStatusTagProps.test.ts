@@ -41,6 +41,19 @@ describe('getWorkflowVersionStatusTagProps', () => {
 `);
   });
 
+  it('should return purple color and "Experiment (B)" text for EXPERIMENT status', () => {
+    const result = getWorkflowVersionStatusTagProps({
+      workflowVersionStatus: 'EXPERIMENT',
+    });
+
+    expect(result).toMatchInlineSnapshot(`
+{
+  "color": "purple",
+  "text": "Experiment (B)",
+}
+`);
+  });
+
   it('should return gray color and "Deactivated" text for DEACTIVATED status', () => {
     const result = getWorkflowVersionStatusTagProps({
       workflowVersionStatus: 'DEACTIVATED',

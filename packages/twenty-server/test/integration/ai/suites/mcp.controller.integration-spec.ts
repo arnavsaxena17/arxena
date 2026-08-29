@@ -180,7 +180,7 @@ describe('MCP Controller (integration)', () => {
       }
     }, 60_000);
 
-    it('should list prompts and resources as empty arrays', async () => {
+    it('should list prompts from workspace skills and keep resources empty', async () => {
       const prompts = await postMcp({
         jsonrpc: '2.0',
         method: 'prompts/list',
@@ -195,7 +195,7 @@ describe('MCP Controller (integration)', () => {
         id: 'resources-1',
       }).expect(200);
 
-      expect(Array.isArray(resources.body.result.resources)).toBe(true);
+      expect(resources.body.result.resources).toEqual([]);
     });
   });
 

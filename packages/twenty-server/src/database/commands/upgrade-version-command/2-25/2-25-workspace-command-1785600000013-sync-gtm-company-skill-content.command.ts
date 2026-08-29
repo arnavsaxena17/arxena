@@ -12,8 +12,8 @@ import { computeTwentyStandardApplicationAllFlatEntityMaps } from 'src/engine/wo
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
 const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
-  STANDARD_SKILL['search-companies'].universalIdentifier,
-  STANDARD_SKILL['gtm-icp-onboarding'].universalIdentifier,
+  STANDARD_SKILL.search.universalIdentifier,
+  STANDARD_SKILL.setup.universalIdentifier,
 ] as const;
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000013)
