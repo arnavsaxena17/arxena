@@ -2624,6 +2624,18 @@ export const STANDARD_OBJECTS = {
       relatedObjectName: {
         universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e3',
       },
+      currentStepName: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e5',
+      },
+      currentStepKind: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e6',
+      },
+      resumeAt: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e7',
+      },
+      upcomingSteps: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e8',
+      },
       timelineActivities: {
         universalIdentifier: getSystemRelationFieldUniversalIdentifier({
           applicationUniversalIdentifier:
@@ -2644,6 +2656,9 @@ export const STANDARD_OBJECTS = {
       },
       relatedRecordIdIndex: {
         universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e4',
+      },
+      currentStepKindIndex: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e9',
       },
       searchVectorGinIndex: {
         universalIdentifier: 'e0ac5ad2-d0c8-4f72-b710-8e53b9dc18d9',
@@ -2673,6 +2688,18 @@ export const STANDARD_OBJECTS = {
           },
           relatedObjectName: {
             universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb5',
+          },
+          currentStepName: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb6',
+          },
+          currentStepKind: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb7',
+          },
+          resumeAt: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb8',
+          },
+          upcomingSteps: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abcb9',
           },
         },
       },
@@ -2720,6 +2747,18 @@ export const STANDARD_OBJECTS = {
           },
           relatedRecordId: {
             universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd07',
+          },
+          currentStepName: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd08',
+          },
+          currentStepKind: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd09',
+          },
+          resumeAt: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd0a',
+          },
+          upcomingSteps: {
+            universalIdentifier: '20202020-af11-4a11-8a11-a0bcf10abd0b',
           },
         },
         viewFieldGroups: {

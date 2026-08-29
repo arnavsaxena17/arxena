@@ -152,21 +152,41 @@ export const GtmPeoplePanel = ({
 
   useEffect(() => {
     if (tableRows.length === 0) {
-      setSearchResults([]);
-      return;
+      setSearchResults((previous) => (previous.length === 0 ? previous : []));
+    } else {
+      setSearchResults((previous) => {
+        if (
+          previous.length === tableRows.length &&
+          previous.every(
+            (row, index) =>
+              (row.tempId || row.id) === tableRows[index]?.id,
+          )
+        ) {
+          return previous;
+        }
+
+        return tableRows as never[];
+      });
     }
 
-    setSearchResults(tableRows as never[]);
-    setTableStateAtom((previous) => ({
-      ...previous,
-      rawData: [],
-      selectedRowIds: [],
-    }));
+    setTableStateAtom((previous) => {
+      if (previous.rawData.length === 0 && previous.isLoading === false) {
+        return previous;
+      }
 
+      return {
+        ...previous,
+        rawData: [],
+        isLoading: false,
+      };
+    });
+  }, [setSearchResults, setTableStateAtom, tableRows]);
+
+  useEffect(() => {
     return () => {
       setSearchResults([]);
     };
-  }, [setSearchResults, setTableStateAtom, tableRows]);
+  }, [setSearchResults]);
 
   const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
     contextStoreTargetedRecordsRuleComponentState,
@@ -178,12 +198,12 @@ export const GtmPeoplePanel = ({
       return;
     }
 
-    const selectedIds = contextStoreTargetedRecordsRule.selectedRecordIds;
+    const nextId = contextStoreTargetedRecordsRule.selectedRecordIds[0];
 
-    if (selectedIds.length > 0) {
-      onSelectPersonId(selectedIds[0]);
+    if (nextId && nextId !== selectedPersonId) {
+      onSelectPersonId(nextId);
     }
-  }, [onSelectPersonId, contextStoreTargetedRecordsRule]);
+  }, [onSelectPersonId, selectedPersonId, contextStoreTargetedRecordsRule]);
 
   const selectedPeople = useMemo(() => {
     if (contextStoreTargetedRecordsRule.mode === 'selection') {

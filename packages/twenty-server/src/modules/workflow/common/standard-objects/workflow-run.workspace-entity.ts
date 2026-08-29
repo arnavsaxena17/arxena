@@ -25,6 +25,14 @@ export enum WorkflowRunStatus {
   STOPPED = 'STOPPED',
 }
 
+export enum WorkflowRunCurrentStepKind {
+  EXECUTING = 'EXECUTING',
+  RATE_LIMITED = 'RATE_LIMITED',
+  DELAY = 'DELAY',
+  FORM = 'FORM',
+  PENDING = 'PENDING',
+}
+
 registerEnumType(WorkflowRunStatus, {
   name: 'WorkflowRunStatusEnum',
   description: 'Status of the workflow run',
@@ -61,6 +69,10 @@ export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
   startedAt: string | null;
   endedAt: string | null;
   status: WorkflowRunStatus;
+  currentStepName: string | null;
+  currentStepKind: WorkflowRunCurrentStepKind | null;
+  resumeAt: string | null;
+  upcomingSteps: string | null;
   createdBy: ActorMetadata;
   updatedBy: ActorMetadata;
   state: WorkflowRunState;

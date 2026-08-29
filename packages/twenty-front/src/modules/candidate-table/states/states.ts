@@ -173,17 +173,38 @@ export const selectedConversationStatusState = createAtomState<string | null>({
   defaultValue: null,
 });
 
+const EMPTY_PROCESSED_DATA: ReturnType<typeof ProcessedData> = [];
+
+const areProcessedDataRowsEqual = (
+  previous: ReturnType<typeof ProcessedData>,
+  next: ReturnType<typeof ProcessedData>,
+) => {
+  if (previous === next) {
+    return true;
+  }
+
+  if (previous.length !== next.length) {
+    return false;
+  }
+
+  return previous.every((item, index) => item.id === next[index]?.id);
+};
+
 export const processedDataSelector = createAtomSelector({
   key: 'processedDataSelector',
   get: ({ get }) => {
-    const { rawData, selectedRowIds } = get(tableStateAtom);
+    // Do not read selectedRowIds here. Selection must not rebuild row objects
+    // or column defs — that retriggers HotTable updateSettings → afterSelectionEnd
+    // → setState → max update depth.
+    const { rawData } = get(tableStateAtom);
 
-    if (!rawData || !Array.isArray(rawData)) {
-      return [];
+    if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+      return EMPTY_PROCESSED_DATA;
     }
 
-    return ProcessedData({ rawData, selectedRowIds });
+    return ProcessedData({ rawData, selectedRowIds: [] });
   },
+  areEqual: areProcessedDataRowsEqual,
 });
 
 export const configuredDataSelector = createAtomSelector({
@@ -289,6 +310,25 @@ export const columnsSelector = createAtomSelector({
       processedData: mergedData,
       unreadMessagesCounts,
       enrichments: allAiFilters,
+    });
+  },
+  areEqual: (previous, next) => {
+    if (previous === next) {
+      return true;
+    }
+
+    if (previous.length !== next.length) {
+      return false;
+    }
+
+    return previous.every((column, index) => {
+      const other = next[index];
+
+      return (
+        column.data === other.data &&
+        column.title === other.title &&
+        column.width === other.width
+      );
     });
   },
 });

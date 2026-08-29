@@ -61,6 +61,8 @@ import { AddWorkflowRunRelatedRecordFieldsCommand } from 'src/database/commands/
 import { UniqueCompanyLinkedinIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000066-unique-company-linkedin-id.command';
 import { SyncGtmFilterProfilesOnlyOnePersonPerCompanyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000067-sync-gtm-filter-profiles-only-one-person-per-company.command';
 import { ResyncGtmPerCandidateOnePersonPerCompanyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000068-resync-gtm-per-candidate-one-person-per-company.command';
+import { SyncGtmProjectSendWindowFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000069-sync-gtm-project-send-window-fields.command';
+import { AddWorkflowRunProgressFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000070-add-workflow-run-progress-fields.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -154,6 +156,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     UniqueCompanyLinkedinIdCommand,
     SyncGtmFilterProfilesOnlyOnePersonPerCompanyCommand,
     ResyncGtmPerCandidateOnePersonPerCompanyCommand,
+    SyncGtmProjectSendWindowFieldsCommand,
+    AddWorkflowRunProgressFieldsCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

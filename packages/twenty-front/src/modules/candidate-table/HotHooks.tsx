@@ -24,6 +24,10 @@ export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tok
 };
 
 // Helper function to check if an ID is a UUID (permanent ID) vs LinkedIn ID (tempId)
+const areSelectedIdListsEqual = (left: string[], right: string[]): boolean =>
+  left.length === right.length &&
+  left.every((id, index) => id === right[index]);
+
 export const isUUID = (id: string): boolean => {
   // UUID format: 8-4-4-4-12 hexadecimal characters
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -286,7 +290,8 @@ export const afterSelectionEnd = (
   setContextStoreTargetedRecordsRule: any,
   openRightDrawer: any,
   tokenPair: any,
-  rawData?: any[]
+  rawData?: any[],
+  selectedRowIdsRef?: { current: string[] },
 ) => {
   console.log("row in afterSelectionEnd", row);
   console.log("row2 in afterSelectionEnd", row2);
@@ -305,18 +310,53 @@ export const afterSelectionEnd = (
     const selectedIds = hot.getSelected();
     console.log("selectedIds in afterSelectionEnd", selectedIds);
 
-    // Handle chat drawer opening (name column only; not other cells / ranges)
+    // Checkbox clicks are owned by afterChange/handleCheckboxChange. Updating
+    // selectedRowIds here as well toggles on every HotTable updateSettings and
+    // loops with afterSelectionEnd.
+    if (column === 0) {
+      return;
+    }
+
+    const selectedRows: string[] = [];
+    for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
+      const physicalRow = hot.toPhysicalRow(i);
+      const rowData = hot.getSourceDataAtRow(physicalRow);
+      const candidateId = getPermanentId(rowData, rawData || []);
+
+      if (rowData && candidateId) {
+        selectedRows.push(candidateId);
+      }
+    }
+
+    // updateSettings can fire afterSelectionEnd with an empty range while the
+    // instance is being rebuilt. Clearing selection here oscillates with the
+    // previous selectedRowIds write and loops React.
+    if (selectedRows.length === 0) {
+      return;
+    }
+
+    const previousSelectedIds = selectedRowIdsRef?.current ?? [];
+    if (areSelectedIdListsEqual(previousSelectedIds, selectedRows)) {
+      return;
+    }
+
+    if (selectedRowIdsRef) {
+      selectedRowIdsRef.current = selectedRows;
+    }
+
+    // Name-column single cell: open chat only when the selected row set changed.
+    // updateSettings re-fires afterSelectionEnd; opening the drawer then
+    // (new side-panel pageId) retriggers HotTable → max update depth.
     if (selectedIds.length === 1 && row === row2 && isSingleCellNameColumn(hot, column, column2)) {
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
-      console.log("selectedRow in afterSelectionEnd", selectedRow);
 
       if (selectedRow?.id) {
-        // Use getPermanentId to get UUID if available, otherwise use the LinkedIn ID
-        // This ensures we can find the candidate in processedData
         const candidateId = getPermanentId(selectedRow, rawData || []) || selectedRow.id;
         setSelectedCandidateId(candidateId);
-        // Open the drawer - CandidateChatDrawer will handle fetching messages
+        // Defer so Handsontable updateSettings can finish. Opening the side
+        // panel synchronously retriggers afterSelectionEnd and max update depth.
+        window.setTimeout(() => {
           openRightDrawer(RightDrawerPages.CandidateChat, {
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessage,
@@ -324,83 +364,33 @@ export const afterSelectionEnd = (
               candidateId: candidateId,
               unreadMessageIds: []
             }
-        });
+          });
+        }, 0);
       }
     }
 
-    // Handle row selection for both checkbox and regular cell selection
-    const selectedRows: string[] = [];
+    setTableState((prev: any) => {
+      const currentSelectedIds = Array.isArray(prev.selectedRowIds)
+        ? prev.selectedRowIds
+        : [];
 
-    if (column === 0) {
-      console.log("column is 0");
-      // For checkbox column, toggle the selected state of the clicked row
-      const physicalRow = hot.toPhysicalRow(row);
-      const rowData = hot.getSourceDataAtRow(physicalRow);
-      let updatedSelection: string[] = [];
-      let currentSelectedIds: string[] = [];
-
-      // Get permanent ID - check if LinkedIn candidate has been saved to database
-      const candidateId = getPermanentId(rowData, rawData || []);
-      console.log('afterSelectionEnd: rowData.id =', rowData?.id, 'rowData.tempId =', rowData?.tempId, 'candidateId =', candidateId);
-
-      if (rowData && candidateId) {
-        setTableState((prev: any) => {
-          currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
-          const rowId = candidateId;
-
-          const index = currentSelectedIds.indexOf(rowId);
-          if (index > -1) {
-            currentSelectedIds.splice(index, 1);
-          } else {
-            currentSelectedIds.push(rowId);
-          }
-          updatedSelection = [...currentSelectedIds];
-          return {
-            ...prev,
-            selectedRowIds: currentSelectedIds
-          };
-        });
-        setSelectedCandidateId(updatedSelection[0] ?? null);
-
-        setContextStoreNumberOfSelectedRecords(currentSelectedIds.length);
-        setContextStoreTargetedRecordsRule({
-          mode: 'selection',
-          selectedRecordIds: currentSelectedIds,
-        });
+      if (areSelectedIdListsEqual(currentSelectedIds, selectedRows)) {
+        return prev;
       }
-    } else {
-      console.log("column is not 0 and its a regular cell selection");
-      // For regular cell selection, select all rows in the range using physical indices
-      for (let i = Math.min(row, row2); i <= Math.max(row, row2); i++) {
-        const physicalRow = hot.toPhysicalRow(i);
-        console.log("physicalRow::", physicalRow);
-        const rowData = hot.getSourceDataAtRow(physicalRow);
-        console.log("rowData::", rowData);
 
-        // Get permanent ID - check if LinkedIn candidate has been saved to database
-        const candidateId = getPermanentId(rowData, rawData || []);
-
-        if (rowData && candidateId) {
-          selectedRows.push(candidateId);
-        }
-      }
-      console.log("selectedRows::", selectedRows);
-
-      setTableState((prev: any) => ({
+      return {
         ...prev,
-        selectedRowIds: selectedRows
-      }));
-      setSelectedCandidateId(selectedRows[0] ?? null);
+        selectedRowIds: selectedRows,
+      };
+    });
 
-      setContextStoreNumberOfSelectedRecords(selectedRows.length);
-      setContextStoreTargetedRecordsRule({
-        mode: 'selection',
-        selectedRecordIds: selectedRows,
-      });
+    setSelectedCandidateId(selectedRows[0] ?? null);
 
-      // Note: Checkbox values will be automatically synced via mutatableData
-      // which recalculates when selectedRowIds changes in state
-    }
+    setContextStoreNumberOfSelectedRecords(selectedRows.length);
+    setContextStoreTargetedRecordsRule({
+      mode: 'selection',
+      selectedRecordIds: selectedRows,
+    });
   } catch (error) {
     console.error('Error in afterSelectionEnd:', error);
   }
@@ -454,10 +444,9 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   console.log("prop is checkbox and hence setting table states");
   let nextSelectedIds: string[] = [];
   setTableState((prev: any) => {
-    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? [...prev.selectedRowIds] : [];
+    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
     console.log("currentSelectedIds::", currentSelectedIds);
 
-    // Get permanent ID - check if LinkedIn candidate has been saved to database
     const candidateId = getPermanentId(rowData, rawData || []);
     console.log("candidateId selected of rowData::", candidateId);
 
@@ -466,19 +455,24 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
       return prev;
     }
 
-    if (newValue === true && !currentSelectedIds.includes(candidateId)) {
+    const isSelected = currentSelectedIds.includes(candidateId);
+
+    if (newValue === true && !isSelected) {
       nextSelectedIds = [...currentSelectedIds, candidateId];
       return {
         ...prev,
-        selectedRowIds: nextSelectedIds
+        selectedRowIds: nextSelectedIds,
       };
-    } else if (newValue === false) {
+    }
+
+    if (newValue === false && isSelected) {
       nextSelectedIds = currentSelectedIds.filter((id: string) => id !== candidateId);
       return {
         ...prev,
-        selectedRowIds: nextSelectedIds
+        selectedRowIds: nextSelectedIds,
       };
     }
+
     nextSelectedIds = currentSelectedIds;
     return prev;
   });
@@ -768,9 +762,12 @@ export const afterChange = async (
     console.log("rowData in afterChange::", rowData);
     if (!rowData || !rowData.id) continue;
 
-    // Handle checkbox changes
+    // Checkbox renderer/updateSettings writes are not user edits. Treating them
+    // as such clears selectedRowIds and retriggers HotTable → max update depth.
     if (prop === 'checkbox') {
-      handleCheckboxChange(rowData, newValue, setTableState, setSelectedCandidateId, rawData);
+      if (source === 'edit') {
+        handleCheckboxChange(rowData, newValue, setTableState, setSelectedCandidateId, rawData);
+      }
       continue;
     }
 

@@ -4,7 +4,6 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { useCallback } from 'react';
 import { SidePanelPages } from 'twenty-shared/types';
 import { IconMessage, type IconComponent } from 'twenty-ui/icon';
-import { v4 } from 'uuid';
 
 import { RightDrawerPages } from '../types/RightDrawerPages';
 
@@ -43,12 +42,22 @@ export const useRightDrawer = () => {
         setSelectedCandidateId(candidateId);
       }
 
-      setTableStateAtom((previousState) => ({
-        ...previousState,
-        isRightPanelOpen: true,
-        currentRightPanelRowId:
-          candidateId ?? previousState.currentRightPanelRowId,
-      }));
+      setTableStateAtom((previousState) => {
+        const nextRowId = candidateId ?? previousState.currentRightPanelRowId;
+
+        if (
+          previousState.isRightPanelOpen &&
+          previousState.currentRightPanelRowId === nextRowId
+        ) {
+          return previousState;
+        }
+
+        return {
+          ...previousState,
+          isRightPanelOpen: true,
+          currentRightPanelRowId: nextRowId,
+        };
+      });
 
       const sidePanelPage = mapRightDrawerPageToSidePanelPage(page);
 
@@ -60,7 +69,7 @@ export const useRightDrawer = () => {
         page: sidePanelPage,
         pageTitle: options?.title ?? 'Candidate Info',
         pageIcon: options?.Icon ?? IconMessage,
-        pageId: v4(),
+        pageId: candidateId,
         resetNavigationStack: true,
       });
     },

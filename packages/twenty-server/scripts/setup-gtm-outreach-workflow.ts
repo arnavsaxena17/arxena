@@ -1963,9 +1963,9 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         outreachSendMode: 'APPROVAL',
         maxPersonasPerCompany: 2,
         inMailFallbackEnabled: false,
-        sendTimezone: 'America/Los_Angeles',
-        sendWindowStart: '09:00',
-        sendWindowEnd: '17:00',
+        sendTimezone: 'Asia/Kolkata',
+        sendWindowStart: '08:00',
+        sendWindowEnd: '10:00',
         // icpSpec: JSON.stringify({
           // std_function: ['talent acquisition', 'people'],
           // std_grade: ['leadership', 'mid'],

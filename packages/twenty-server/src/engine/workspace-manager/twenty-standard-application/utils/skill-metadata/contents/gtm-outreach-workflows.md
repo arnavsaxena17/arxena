@@ -120,3 +120,26 @@ Treat phrases like “start outreach”, “send connection requests”, “run 
 1. Load this skill + `workflow-building`; list logic functions; ensure Stage B is pinned/activated (clone+edit only if broken).
 2. Enroll People-tab rows → Candidates (`QUEUED` + `linkedinUrl` + `linkedinProfileId` slug).
 3. Summarize workflow runs — do not stop after “I’ll fix the template next”.
+
+## Send window (project-level)
+
+Connection requests (`SEND_LINKEDIN_CONNECTION_REQUEST`) honor Project fields:
+
+| Field | Default | Role |
+| --- | --- | --- |
+| `sendTimezone` | `Asia/Kolkata` | IANA timezone for the window |
+| `sendWindowStart` | `08:00` | Local start (HH:mm) |
+| `sendWindowEnd` | `10:00` | Local end (HH:mm) |
+
+Allowed days are **Tue–Thu** only. Outside the window the Unipile step defers with `pendingReason: gtm_send_window` (same delayed-job resume path as account rate limits). Volume caps stay on the LinkedIn Unipile account limiter (not Project fields).
+
+**Multi-market ops:** use one GTM Project per geography so the window matches ICP locations:
+
+| GTM run | `sendTimezone` | Window | ICP `locations` focus |
+| --- | --- | --- | --- |
+| India | `Asia/Kolkata` | 08:00–10:00 | India cities |
+| GCC | `Asia/Dubai` | 08:00–10:00 | UAE / Saudi / etc. |
+| UK | `Europe/London` | 08:00–10:00 | United Kingdom |
+| US East | `America/New_York` | 08:00–10:00 | United States (East) |
+
+Configure under GTM Home → Setup → **Send schedule**. Do not mix India + US prospects in one Project if you care about local morning delivery.

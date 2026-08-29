@@ -1081,18 +1081,21 @@ const PROJECT_FIELDS_TO_ENSURE: FieldToCreate[] = [
     label: 'Send Timezone',
     type: 'TEXT',
     icon: 'IconWorld',
+    defaultValue: "'Asia/Kolkata'",
   },
   {
     name: 'sendWindowStart',
     label: 'Send Window Start',
     type: 'TEXT',
     icon: 'IconClockHour4',
+    defaultValue: "'08:00'",
   },
   {
     name: 'sendWindowEnd',
     label: 'Send Window End',
     type: 'TEXT',
     icon: 'IconClockHour9',
+    defaultValue: "'10:00'",
   },
   { name: 'icpSpec', label: 'ICP Spec', type: 'TEXT', icon: 'IconJson' },
 

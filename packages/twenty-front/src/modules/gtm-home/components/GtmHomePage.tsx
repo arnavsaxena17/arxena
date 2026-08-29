@@ -150,6 +150,7 @@ const GtmHomePageContent = () => {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingIcp, setIsSavingIcp] = useState(false);
+  const [isSavingSendSchedule, setIsSavingSendSchedule] = useState(false);
   const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
   const [workflowMode, setWorkflowMode] =
     useState<GtmWorkflowEmbedMode>('definition');
@@ -383,6 +384,43 @@ const GtmHomePageContent = () => {
     }
   };
 
+  const handleSaveSendSchedule = async (input: {
+    sendTimezone: string;
+    sendWindowStart: string;
+    sendWindowEnd: string;
+  }) => {
+    if (!isDefined(activeProjectId)) {
+      enqueueErrorSnackBar({
+        message: 'Create or select a GTM run before saving send schedule.',
+      });
+      return;
+    }
+
+    setIsSavingSendSchedule(true);
+
+    try {
+      await updateOneRecord({
+        objectNameSingular: 'project',
+        idToUpdate: activeProjectId,
+        updateOneRecordInput: {
+          sendTimezone: input.sendTimezone,
+          sendWindowStart: input.sendWindowStart,
+          sendWindowEnd: input.sendWindowEnd,
+        },
+      });
+      enqueueSuccessSnackBar({ message: 'Send schedule saved' });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to save send schedule.',
+      });
+    } finally {
+      setIsSavingSendSchedule(false);
+    }
+  };
+
   const handleFindCompanies = () => {
     openAskAiPageWithPreprompt({
       mode: 'SEND',
@@ -517,6 +555,11 @@ const GtmHomePageContent = () => {
                     }}
                     isRegeneratingIcp={isRegeneratingIcp}
                     onSaveIcp={handleSaveIcp}
+                    sendTimezone={projectSettings.sendTimezone}
+                    sendWindowStart={projectSettings.sendWindowStart}
+                    sendWindowEnd={projectSettings.sendWindowEnd}
+                    isSavingSendSchedule={isSavingSendSchedule}
+                    onSaveSendSchedule={handleSaveSendSchedule}
                     onFindCompanies={handleFindCompanies}
                     onFindPeople={handleFindPeople}
                   />

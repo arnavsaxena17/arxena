@@ -3,8 +3,15 @@ import { Injectable } from '@nestjs/common';
 import {
   type GtmThrottleChannel,
   type GtmThrottleCounters,
+  computeNextSendWindow,
   incrementThrottleCounter,
 } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
+
+export type GtmSendWindowConfig = {
+  timezone?: string | null;
+  sendWindowStart?: string | null;
+  sendWindowEnd?: string | null;
+};
 
 export type GtmOutreachThrottleCheckInput = {
   counters: GtmThrottleCounters;
@@ -13,15 +20,18 @@ export type GtmOutreachThrottleCheckInput = {
   linkedinConnected?: boolean;
   gmailConnected?: boolean;
   whatsappConnected?: boolean;
+  sendWindow?: GtmSendWindowConfig | null;
 };
 
 export type GtmOutreachThrottleCheckResult = {
   allowed: boolean;
-  reason: 'ok' | 'needs_connection' | null;
+  reason: 'ok' | 'needs_connection' | 'outside_send_window' | null;
   delayMs: number;
   nextSendAt: Date | null;
   counterPatch: Partial<GtmThrottleCounters>;
 };
+
+const SEND_WINDOW_CHANNELS = new Set<GtmThrottleChannel>(['connect']);
 
 @Injectable()
 export class GtmOutreachThrottleService {
@@ -52,6 +62,25 @@ export class GtmOutreachThrottleService {
         nextSendAt: null,
         counterPatch: {},
       };
+    }
+
+    if (SEND_WINDOW_CHANNELS.has(input.channel) && input.sendWindow) {
+      const windowResult = computeNextSendWindow({
+        now,
+        timezone: input.sendWindow.timezone,
+        sendWindowStart: input.sendWindow.sendWindowStart,
+        sendWindowEnd: input.sendWindow.sendWindowEnd,
+      });
+
+      if (!windowResult.canSendNow) {
+        return {
+          allowed: false,
+          reason: 'outside_send_window',
+          delayMs: windowResult.delayMs,
+          nextSendAt: windowResult.nextSendAt,
+          counterPatch: {},
+        };
+      }
     }
 
     return {

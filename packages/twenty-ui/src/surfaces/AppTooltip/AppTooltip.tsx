@@ -120,7 +120,12 @@ export const AppTooltip = ({
 
     const queryAnchorElements = () => {
       try {
-        return Array.from(document.querySelectorAll(anchorSelect));
+        return Array.from(document.querySelectorAll(anchorSelect)).filter(
+          // Handsontable AutoColumnSize clones cells into .htGhostTable.
+          // Those clones duplicate anchor ids and would make this observer
+          // setState during table render → max update depth / freeze.
+          (element) => !element.closest('.htGhostTable'),
+        );
       } catch {
         return [];
       }

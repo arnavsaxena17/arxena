@@ -113,6 +113,10 @@ export const createListWorkflowRunsTool = (
               workflowVersionId: workflowRun.workflowVersionId,
               relatedRecordId: workflowRun.relatedRecordId,
               relatedObjectName: workflowRun.relatedObjectName,
+              currentStepName: workflowRun.currentStepName,
+              currentStepKind: workflowRun.currentStepKind,
+              resumeAt: workflowRun.resumeAt,
+              upcomingSteps: workflowRun.upcomingSteps,
             })),
           };
         },

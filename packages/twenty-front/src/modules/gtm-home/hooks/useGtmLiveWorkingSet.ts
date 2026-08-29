@@ -111,6 +111,22 @@ const personMergeKey = (person: {
   return `id:${person.id}`;
 };
 
+const gtmCompanySignature = (companies: GtmCompanyRow[]): string =>
+  companies
+    .map(
+      (company) =>
+        `${company.id}:${company.name}:${company.status}:${company.icpFit}`,
+    )
+    .join('|');
+
+const gtmPersonSignature = (people: GtmPersonRow[]): string =>
+  people
+    .map(
+      (person) =>
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}`,
+    )
+    .join('|');
+
 const mergeEphemeralAndCrmPeople = (
   ephemeralPeople: GtmPersonRow[],
   crmPeople: GtmPersonRow[],
@@ -274,9 +290,15 @@ export const useGtmLiveWorkingSet = () => {
     const refreshCompanies = () => {
       fetchGtmCompaniesCache(activeProjectId, accessToken)
         .then((companies) => {
-          if (!cancelled) {
-            setEphemeralCompanies(companies);
+          if (cancelled) {
+            return;
           }
+
+          setEphemeralCompanies((previous) =>
+            gtmCompanySignature(previous) === gtmCompanySignature(companies)
+              ? previous
+              : companies,
+          );
         })
         .finally(() => {
           if (!cancelled) {
@@ -309,21 +331,27 @@ export const useGtmLiveWorkingSet = () => {
     const refreshPeople = () => {
       fetchGtmPeopleCache(activeProjectId, accessToken)
         .then((people) => {
-          if (!cancelled) {
-            setEphemeralPeople(
-              people.map((person) => ({
-                ...person,
-                stage: mapCrmStageToGtmOutreachStage(person.stage),
-                warmPath: person.warmPath || '—',
-                email: person.email || '',
-                companyId: person.companyId || '',
-                companyName: person.companyName || '',
-                title: person.title || '',
-                linkedinUrl: person.linkedinUrl || '',
-                candidateId: undefined,
-              })),
-            );
+          if (cancelled) {
+            return;
           }
+
+          const nextPeople = people.map((person) => ({
+            ...person,
+            stage: mapCrmStageToGtmOutreachStage(person.stage),
+            warmPath: person.warmPath || '—',
+            email: person.email || '',
+            companyId: person.companyId || '',
+            companyName: person.companyName || '',
+            title: person.title || '',
+            linkedinUrl: person.linkedinUrl || '',
+            candidateId: undefined,
+          }));
+
+          setEphemeralPeople((previous) =>
+            gtmPersonSignature(previous) === gtmPersonSignature(nextPeople)
+              ? previous
+              : nextPeople,
+          );
         })
         .finally(() => {
           if (!cancelled) {
@@ -425,9 +453,9 @@ export const useGtmLiveWorkingSet = () => {
       outreachSendMode: 'APPROVAL',
       maxPersonasPerCompany: 2,
       inMailFallbackEnabled: false,
-      sendTimezone: 'America/Los_Angeles',
-      sendWindowStart: '09:00',
-      sendWindowEnd: '17:00',
+      sendTimezone: 'Asia/Kolkata',
+      sendWindowStart: '08:00',
+      sendWindowEnd: '10:00',
       ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),
     });
 
@@ -565,9 +593,14 @@ export const useGtmLiveWorkingSet = () => {
     [candidateRecords],
   );
 
+  const crmPeopleSignature = gtmPersonSignature(crmPeople);
+  const ephemeralPeopleSignature = gtmPersonSignature(ephemeralPeople);
   const people = useMemo(
     () => mergeEphemeralAndCrmPeople(ephemeralPeople, crmPeople),
-    [crmPeople, ephemeralPeople],
+    // Ignore array identity from GraphQL/record-store rerenders; selection
+    // must not rebuild GTM People rows or Handsontable updateSettings loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [crmPeopleSignature, ephemeralPeopleSignature],
   );
 
   const effectiveIcp = resolveEffectiveGtmIcp({
@@ -601,9 +634,9 @@ export const useGtmLiveWorkingSet = () => {
       (project?.outreachSendMode as GtmOutreachSendMode | null) ?? 'APPROVAL',
     maxPersonasPerCompany: project?.maxPersonasPerCompany ?? 2,
     inMailFallbackEnabled: project?.inMailFallbackEnabled ?? false,
-    sendTimezone: project?.sendTimezone ?? 'America/Los_Angeles',
-    sendWindowStart: project?.sendWindowStart ?? '09:00',
-    sendWindowEnd: project?.sendWindowEnd ?? '17:00',
+    sendTimezone: project?.sendTimezone ?? 'Asia/Kolkata',
+    sendWindowStart: project?.sendWindowStart ?? '08:00',
+    sendWindowEnd: project?.sendWindowEnd ?? '10:00',
     whatsappConnected,
     icpSpec: effectiveIcp.icpSpec,
     isIcpRunOverride: effectiveIcp.isIcpRunOverride,

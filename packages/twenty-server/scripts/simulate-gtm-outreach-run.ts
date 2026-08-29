@@ -229,9 +229,9 @@ const simulateBootstrap = async (project: ResolvedGtmProject) => {
     outreachSendMode: 'APPROVAL',
     maxPersonasPerCompany: 2,
     inMailFallbackEnabled: true,
-    sendTimezone: 'America/Los_Angeles',
-    sendWindowStart: '09:00',
-    sendWindowEnd: '17:00',
+    sendTimezone: 'Asia/Kolkata',
+    sendWindowStart: '08:00',
+    sendWindowEnd: '10:00',
   });
 
   console.log(`  bootstrap ICP → project ${project.id}`);

@@ -102,12 +102,12 @@ const getZonedParts = (
   };
 };
 
-// Default window: Tue–Thu 09:00–17:00 in project timezone (or UTC)
+// Default window: Tue–Thu 08:00–10:00 in project timezone (or UTC)
 export const computeNextSendWindow = ({
   now,
   timezone = 'UTC',
-  sendWindowStart = '09:00',
-  sendWindowEnd = '17:00',
+  sendWindowStart = '08:00',
+  sendWindowEnd = '10:00',
   delayMsOverride,
 }: GtmSendWindowInput): GtmSendWindowResult => {
   if (
@@ -125,8 +125,8 @@ export const computeNextSendWindow = ({
   }
 
   const resolvedTimezone = timezone || 'UTC';
-  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 9 * 60;
-  const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 17 * 60;
+  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 8 * 60;
+  const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 10 * 60;
   const allowedWeekdays = new Set([2, 3, 4]); // Tue Wed Thu
   const { weekday, minutes } = getZonedParts(now, resolvedTimezone);
 

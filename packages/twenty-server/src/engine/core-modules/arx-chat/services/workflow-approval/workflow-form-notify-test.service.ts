@@ -13,6 +13,7 @@ import {
   type FormFieldMetadata,
   type WorkflowFormNotifyOnPending,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/form/types/workflow-form-action-settings.type';
+import { resolveNotifyOnPendingRecipients } from 'src/modules/workflow/workflow-executor/workflow-actions/form/utils/resolve-notify-on-pending-recipients.util';
 
 const convertFlatVariablesToNestedContext = (flatVariables: {
   [variablePath: string]: unknown;
@@ -111,31 +112,10 @@ export class WorkflowFormNotifyTestService {
     const fieldSummary = formSnapshot
       .map((field) => `${field.label || field.name} (${field.type})`)
       .join(', ');
-    const recipients = notifyOnPending.recipients ?? {};
-    const resolvedRecipients = {
-      WHATSAPP_OFFICIAL: recipients.WHATSAPP_OFFICIAL
-        ? String(
-            resolveInput(
-              recipients.WHATSAPP_OFFICIAL,
-              nestedVariableContext,
-            ) ?? '',
-          )
-        : undefined,
-      WHATSAPP_UNIPILE: recipients.WHATSAPP_UNIPILE
-        ? String(
-            resolveInput(recipients.WHATSAPP_UNIPILE, nestedVariableContext) ??
-              '',
-          )
-        : undefined,
-      unipileAccountId: recipients.unipileAccountId
-        ? String(
-            resolveInput(
-              recipients.unipileAccountId,
-              nestedVariableContext,
-            ) ?? '',
-          )
-        : undefined,
-    };
+    const resolvedRecipients = resolveNotifyOnPendingRecipients(
+      notifyOnPending.recipients,
+      nestedVariableContext,
+    );
 
     const testId = randomUUID();
     const pointer = this.workflowFormDecisionPointerService.createPointer({

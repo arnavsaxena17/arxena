@@ -1,6 +1,6 @@
-import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
-import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
-import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
+// import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
+// import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
+// import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
 import { DraggableItem } from '@/ui/layout/draggable-list/components/DraggableItem';
 import { DraggableList } from '@/ui/layout/draggable-list/components/DraggableList';
 import { type DraggableListDropResult } from '@/ui/layout/draggable-list/types/DraggableListDropResult';
@@ -23,26 +23,26 @@ import { WORKFLOW_FORM_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/w
 import { useTestWorkflowFormNotify } from '@/workflow/workflow-steps/workflow-actions/form-action/hooks/useTestWorkflowFormNotify';
 import { type WorkflowFormActionField } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormActionField';
 import { WorkflowFormTabId } from '@/workflow/workflow-steps/workflow-actions/form-action/types/WorkflowFormTabId';
-import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
+// import { getDefaultFormFieldSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getDefaultFormFieldSettings';
 import { type WorkflowFormNotifyOnPendingSettings as NotifyOnPendingSettings } from '@/workflow/workflow-steps/workflow-actions/form-action/utils/getWorkflowFormNotifyVariablesUsed';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
-import { useContext, useEffect, useState } from 'react';
-import { FieldMetadataType } from 'twenty-shared/types';
+import { useEffect, useState } from 'react';
+// import { FieldMetadataType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { Callout } from 'twenty-ui/feedback';
 import {
   IconAlertTriangle,
   IconGripVertical,
   IconPlayerPlay,
-  IconPlus,
+  // IconPlus,
   IconSettings,
   IconTrash,
 } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
-import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
-import { v4 } from 'uuid';
+// import { v4 } from 'uuid';
 
 export type WorkflowEditActionFormBuilderProps = {
   triggerType: WorkflowTriggerType | undefined;
@@ -107,45 +107,45 @@ const StyledOpenedSettingsContainer = styled.div`
   grid-area: settings;
 `;
 
-const StyledFieldContainer = styled.div<{
-  readonly?: boolean;
-}>`
-  align-items: center;
-  background: transparent;
-  border: none;
-  cursor: ${({ readonly }) => (readonly ? 'default' : 'pointer')};
-  display: flex;
-  font-family: inherit;
-  height: 100%;
-  padding-left: ${themeCssVariables.spacing[2]};
+// const StyledFieldContainer = styled.div<{
+//   readonly?: boolean;
+// }>`
+//   align-items: center;
+//   background: transparent;
+//   border: none;
+//   cursor: ${({ readonly }) => (readonly ? 'default' : 'pointer')};
+//   display: flex;
+//   font-family: inherit;
+//   height: 100%;
+//   padding-left: ${themeCssVariables.spacing[2]};
 
-  padding-right: ${themeCssVariables.spacing[2]};
-  width: 100%;
+//   padding-right: ${themeCssVariables.spacing[2]};
+//   width: 100%;
 
-  &:hover,
-  &[data-open='true'] {
-    background-color: ${({ readonly }) =>
-      readonly
-        ? 'transparent'
-        : themeCssVariables.background.transparent.lighter};
-  }
-`;
+//   &:hover,
+//   &[data-open='true'] {
+//     background-color: ${({ readonly }) =>
+//       readonly
+//         ? 'transparent'
+//         : themeCssVariables.background.transparent.lighter};
+//   }
+// `;
 
-const StyledAddFieldButtonContainer = styled.div`
-  padding-left: ${themeCssVariables.spacing[7]};
-  padding-right: ${themeCssVariables.spacing[7]};
-  padding-top: ${themeCssVariables.spacing[2]};
-`;
+// const StyledAddFieldButtonContainer = styled.div`
+//   padding-left: ${themeCssVariables.spacing[7]};
+//   padding-right: ${themeCssVariables.spacing[7]};
+//   padding-top: ${themeCssVariables.spacing[2]};
+// `;
 
-const StyledAddFieldButtonContentContainer = styled.div`
-  align-items: center;
-  color: ${themeCssVariables.font.color.secondary};
-  display: flex;
-  font-weight: ${themeCssVariables.font.weight.medium};
-  gap: ${themeCssVariables.spacing[0.5]};
-  justify-content: center;
-  width: 100%;
-`;
+// const StyledAddFieldButtonContentContainer = styled.div`
+//   align-items: center;
+//   color: ${themeCssVariables.font.color.secondary};
+//   display: flex;
+//   font-weight: ${themeCssVariables.font.weight.medium};
+//   gap: ${themeCssVariables.spacing[0.5]};
+//   justify-content: center;
+//   width: 100%;
+// `;
 
 const StyledFormFieldsHint = styled.div`
   color: ${themeCssVariables.font.color.tertiary};
@@ -187,12 +187,10 @@ const StyledTestTabContent = styled.div`
 `;
 
 export const WorkflowEditActionFormBuilder = ({
-  triggerType,
   action,
   actionOptions,
 }: WorkflowEditActionFormBuilderProps) => {
   const { t } = useLingui();
-  const { theme } = useContext(ThemeContext);
   const activeTabId = useAtomComponentStateValue(
     activeTabIdComponentState,
     WORKFLOW_FORM_TAB_LIST_COMPONENT_ID,
@@ -208,7 +206,7 @@ export const WorkflowEditActionFormBuilder = ({
 
   const [formData, setFormData] = useState<FormData>(action.settings.input);
 
-  const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(true);
+  // const [isCalloutVisible, setIsCalloutVisible] = useState<boolean>(true);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [hoveredField, setHoveredField] = useState<string | null>(null);
 
@@ -478,49 +476,11 @@ export const WorkflowEditActionFormBuilder = ({
           </StyledFormFieldsHint>
         )}
 
-        {!actionOptions.readonly && (
+        {/* {!actionOptions.readonly && (
           <StyledAddFieldButtonContainer>
-            <FormFieldInputContainer>
-              <FormFieldInputRowContainer>
-                <FormFieldInputInnerContainer
-                  formFieldInputInstanceId="add-field-button"
-                  hasRightElement={false}
-                  onClick={() => {
-                    const { label, name } = getDefaultFormFieldSettings(
-                      FieldMetadataType.TEXT,
-                    );
-
-                    const newField: WorkflowFormActionField = {
-                      id: v4(),
-                      name,
-                      type: FieldMetadataType.TEXT,
-                      label,
-                    };
-
-                    setFormData([...formData, newField]);
-
-                    actionOptions.onActionUpdate({
-                      ...action,
-                      settings: {
-                        ...action.settings,
-                        input: [...action.settings.input, newField],
-                      },
-                    });
-
-                    setSelectedField(newField.id);
-                  }}
-                >
-                  <StyledFieldContainer>
-                    <StyledAddFieldButtonContentContainer>
-                      <IconPlus size={theme.icon.size.sm} />
-                      {t`Add Field`}
-                    </StyledAddFieldButtonContentContainer>
-                  </StyledFieldContainer>
-                </FormFieldInputInnerContainer>
-              </FormFieldInputRowContainer>
-            </FormFieldInputContainer>
+            ...Add Field button hidden...
           </StyledAddFieldButtonContainer>
-        )}
+        )} */}
         {!actionOptions.readonly && (
           <WorkflowFormNotifyOnPendingSettings
             action={action}

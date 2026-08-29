@@ -10,8 +10,24 @@ export type PersistedFilterCondition = {
 const getTableFiltersStorageKey = (projectId: string) =>
   `candidate-table-filters:${projectId}`;
 
-export const clearPersistedTableFilters = (projectId: string) => {
+export const isBackendBackedDataTableProjectId = (
+  projectId: string | undefined,
+): projectId is string => {
   if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+    return false;
+  }
+
+  // GTM People embeds DataTable with a synthetic projectId for context-store
+  // scoping; it is not a CRM Project and must not hit candidate-sourcing APIs.
+  if (projectId.startsWith('gtm-people-')) {
+    return false;
+  }
+
+  return true;
+};
+
+export const clearPersistedTableFilters = (projectId: string) => {
+  if (!isBackendBackedDataTableProjectId(projectId)) {
     return;
   }
 
@@ -27,7 +43,7 @@ export const savePersistedTableFilters = (
   filters: FilterCondition[],
   columns: Array<{ data?: string | number } | undefined> | undefined,
 ) => {
-  if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+  if (!isBackendBackedDataTableProjectId(projectId)) {
     return;
   }
 
@@ -70,7 +86,7 @@ export const savePersistedTableFilters = (
 export const loadPersistedTableFilters = (
   projectId: string,
 ): PersistedFilterCondition[] => {
-  if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+  if (!isBackendBackedDataTableProjectId(projectId)) {
     return [];
   }
 

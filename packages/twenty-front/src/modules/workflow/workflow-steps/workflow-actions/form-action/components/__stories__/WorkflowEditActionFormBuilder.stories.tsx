@@ -80,7 +80,7 @@ export const Default: Story = {
     const canvas = within(canvasElement);
 
     await canvas.findByText('Company');
-    await canvas.findByText('Add Field');
+    await canvas.findByText('Notify on pending');
   },
 };
 
@@ -187,7 +187,6 @@ export const EmptyForm: Story = {
 
     expect(messageContainer).toBeVisible();
 
-    const addFieldButton = await canvas.findByText('Add Field');
-    expect(addFieldButton).toBeVisible();
+    expect(canvas.queryByText('Add Field')).not.toBeInTheDocument();
   },
 };

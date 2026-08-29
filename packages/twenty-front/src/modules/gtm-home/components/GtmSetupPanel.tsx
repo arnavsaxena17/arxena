@@ -1,6 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { styled } from '@linaria/react';
 import { useEffect, useState } from 'react';
+import { getValidTimeZoneOrUndefined } from 'twenty-shared/utils';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -13,7 +14,15 @@ import {
   writeIcpChipValues,
   type GtmIcpChipFieldKey,
 } from '@/gtm-home/utils/gtm-icp-chip-fields.util';
+import { AVAILABLE_TIME_ZONE_OPTIONS_BY_LABEL } from '@/settings/experience/constants/AvailableTimezoneOptionsByLabel';
 import { TextArea } from '@/ui/input/components/TextArea';
+import { TextInput } from '@/ui/input/components/TextInput';
+
+const GTM_SEND_TIMEZONE_OPTIONS = Object.values(
+  AVAILABLE_TIME_ZONE_OPTIONS_BY_LABEL,
+).sort((a, b) => a.label.localeCompare(b.label));
+
+const HH_MM_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 
 const StyledPanel = styled.div`
   display: flex;
@@ -124,6 +133,32 @@ const StyledStickyBar = styled.div`
   z-index: 1;
 `;
 
+const StyledScheduleRow = styled.div`
+  display: grid;
+  gap: ${themeCssVariables.spacing[3]};
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const StyledFieldStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledSelect = styled.select`
+  background: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[2]};
+  width: 100%;
+`;
+
 const formatIcpDraft = (icpSpec: string | null): string => {
   if (!isNonEmptyString(icpSpec)) {
     return '';
@@ -136,6 +171,12 @@ const formatIcpDraft = (icpSpec: string | null): string => {
   }
 };
 
+export type GtmSendScheduleInput = {
+  sendTimezone: string;
+  sendWindowStart: string;
+  sendWindowEnd: string;
+};
+
 type GtmSetupPanelProps = {
   workspaceCompany: GtmWorkspaceCompany;
   icpSpec: string | null;
@@ -146,6 +187,11 @@ type GtmSetupPanelProps = {
   onRegenerateIcp: () => void;
   isRegeneratingIcp: boolean;
   onSaveIcp: (input: { icpSpec: string }) => Promise<void>;
+  sendTimezone: string;
+  sendWindowStart: string;
+  sendWindowEnd: string;
+  isSavingSendSchedule: boolean;
+  onSaveSendSchedule: (input: GtmSendScheduleInput) => Promise<void>;
   onFindCompanies: () => void;
   onFindPeople: () => void;
 };
@@ -160,16 +206,33 @@ export const GtmSetupPanel = ({
   onRegenerateIcp,
   isRegeneratingIcp,
   onSaveIcp,
+  sendTimezone,
+  sendWindowStart,
+  sendWindowEnd,
+  isSavingSendSchedule,
+  onSaveSendSchedule,
   onFindCompanies,
   onFindPeople,
 }: GtmSetupPanelProps) => {
   const [icpDraft, setIcpDraft] = useState(() => formatIcpDraft(icpSpec));
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [timezoneDraft, setTimezoneDraft] = useState(sendTimezone);
+  const [windowStartDraft, setWindowStartDraft] = useState(sendWindowStart);
+  const [windowEndDraft, setWindowEndDraft] = useState(sendWindowEnd);
+  const [sendScheduleError, setSendScheduleError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setIcpDraft(formatIcpDraft(icpSpec));
   }, [icpSpec]);
+
+  useEffect(() => {
+    setTimezoneDraft(sendTimezone);
+    setWindowStartDraft(sendWindowStart);
+    setWindowEndDraft(sendWindowEnd);
+  }, [sendTimezone, sendWindowStart, sendWindowEnd]);
 
   const canPersist = hasWorkspaceProfile || hasProject;
   const parsedIcp = parseIcpSpecObject(icpDraft);
@@ -193,6 +256,39 @@ export const GtmSetupPanel = ({
   const handleSaveAll = async () => {
     await onSaveIcp({
       icpSpec: icpDraft,
+    });
+  };
+
+  const handleSaveSendSchedule = async () => {
+    const timezone = getValidTimeZoneOrUndefined(timezoneDraft.trim());
+    const start = windowStartDraft.trim();
+    const end = windowEndDraft.trim();
+
+    if (!timezone) {
+      setSendScheduleError('Choose a valid IANA timezone.');
+      return;
+    }
+
+    if (!HH_MM_PATTERN.test(start) || !HH_MM_PATTERN.test(end)) {
+      setSendScheduleError('Start and end must be HH:mm (24-hour).');
+      return;
+    }
+
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    if (endMinutes <= startMinutes) {
+      setSendScheduleError('End time must be after start time.');
+      return;
+    }
+
+    setSendScheduleError(null);
+    await onSaveSendSchedule({
+      sendTimezone: timezone,
+      sendWindowStart: start,
+      sendWindowEnd: end,
     });
   };
 
@@ -275,6 +371,67 @@ export const GtmSetupPanel = ({
             placeholder="ICP JSON will appear here after bootstrap or regenerate."
           />
         )}
+      </StyledSection>
+
+      <StyledSection>
+        <StyledTitle>Send schedule</StyledTitle>
+        <StyledBody>
+          Connection requests send Tue–Thu within this window in the selected
+          timezone. Outside the window, sends are queued automatically.
+        </StyledBody>
+        <StyledScheduleRow>
+          <StyledFieldStack>
+            <StyledFieldLabel>Timezone</StyledFieldLabel>
+            <StyledSelect
+              value={timezoneDraft}
+              disabled={!hasProject}
+              onChange={(event) => setTimezoneDraft(event.target.value)}
+            >
+              {!GTM_SEND_TIMEZONE_OPTIONS.some(
+                (option) => option.value === timezoneDraft,
+              ) && <option value={timezoneDraft}>{timezoneDraft}</option>}
+              {GTM_SEND_TIMEZONE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </StyledSelect>
+          </StyledFieldStack>
+          <StyledFieldStack>
+            <StyledFieldLabel>Start (HH:mm)</StyledFieldLabel>
+            <TextInput
+              value={windowStartDraft}
+              onChange={setWindowStartDraft}
+              placeholder="08:00"
+              disabled={!hasProject}
+              fullWidth
+            />
+          </StyledFieldStack>
+          <StyledFieldStack>
+            <StyledFieldLabel>End (HH:mm)</StyledFieldLabel>
+            <TextInput
+              value={windowEndDraft}
+              onChange={setWindowEndDraft}
+              placeholder="10:00"
+              disabled={!hasProject}
+              fullWidth
+            />
+          </StyledFieldStack>
+        </StyledScheduleRow>
+        {isNonEmptyString(sendScheduleError) && (
+          <StyledMuted>{sendScheduleError}</StyledMuted>
+        )}
+        <StyledActions>
+          <Button
+            title={isSavingSendSchedule ? 'Saving…' : 'Save schedule'}
+            variant="secondary"
+            size="small"
+            onClick={() => {
+              void handleSaveSendSchedule();
+            }}
+            disabled={!hasProject || isSavingSendSchedule}
+          />
+        </StyledActions>
       </StyledSection>
 
       <StyledStickyBar>

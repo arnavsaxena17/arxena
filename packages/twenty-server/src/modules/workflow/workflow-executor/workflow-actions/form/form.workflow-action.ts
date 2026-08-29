@@ -7,6 +7,7 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/inte
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
 import { resolveWorkflowFormRegistryEntry } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-template.registry';
+import { resolveNotifyOnPendingRecipients } from 'src/modules/workflow/workflow-executor/workflow-actions/form/utils/resolve-notify-on-pending-recipients.util';
 import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,
@@ -102,7 +103,10 @@ export class FormWorkflowAction implements WorkflowAction {
           formFields: formSnapshot,
           forcedRegistryName:
             settings.notifyOnPending.whatsappOfficialRegistryName,
-          recipients: settings.notifyOnPending.recipients ?? {},
+          recipients: resolveNotifyOnPendingRecipients(
+            settings.notifyOnPending.recipients,
+            context,
+          ),
           fieldSummary,
         });
 

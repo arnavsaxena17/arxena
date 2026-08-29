@@ -18,6 +18,9 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 
 type ProjectPacingRecord = ObjectLiteral & {
   id: string;
+  sendTimezone?: string | null;
+  sendWindowStart?: string | null;
+  sendWindowEnd?: string | null;
 };
 
 type WorkspaceMemberProfilePacingRecord = ObjectLiteral & {
@@ -84,6 +87,17 @@ export class GtmUnipilePacingService {
       linkedinConnected: isNonEmptyString(
         loaded.profile?.linkedinUnipileAccountId,
       ),
+      sendWindow: loaded.project
+        ? {
+            timezone: loaded.project.sendTimezone ?? 'Asia/Kolkata',
+            sendWindowStart: loaded.project.sendWindowStart ?? '08:00',
+            sendWindowEnd: loaded.project.sendWindowEnd ?? '10:00',
+          }
+        : {
+            timezone: 'Asia/Kolkata',
+            sendWindowStart: '08:00',
+            sendWindowEnd: '10:00',
+          },
     });
 
     return { ...result, projectId: loaded.project?.id ?? null };

@@ -153,7 +153,10 @@ export abstract class UnipileMessagingWorkflowActionBase<
           currentStepId,
           workspaceId: runInfo.workspaceId,
           workflowRunId: runInfo.workflowRunId,
-          pendingReason: 'gtm_unipile_pacing',
+          pendingReason:
+            check.reason === 'outside_send_window'
+              ? 'gtm_send_window'
+              : 'gtm_unipile_pacing',
         });
       }
     }

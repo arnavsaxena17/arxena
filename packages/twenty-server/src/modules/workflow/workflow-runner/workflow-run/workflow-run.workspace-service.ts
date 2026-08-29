@@ -25,6 +25,7 @@ import {
   WorkflowRunException,
   WorkflowRunExceptionCode,
 } from 'src/modules/workflow/workflow-runner/exceptions/workflow-run.exception';
+import { computeWorkflowRunProgressFields } from 'src/modules/workflow/workflow-runner/utils/compute-workflow-run-progress-fields.util';
 import {
   buildWorkflowRunName,
   extractWorkflowRunTriggerRecord,
@@ -138,6 +139,10 @@ export class WorkflowRunWorkspaceService {
           }),
           relatedRecordId: relatedRecord?.recordId ?? null,
           relatedObjectName: relatedRecord?.objectNameSingular ?? null,
+          ...computeWorkflowRunProgressFields({
+            state: initState,
+            status,
+          }),
           workflowVersionId,
           createdBy,
           workflowId: workflow.id,
@@ -463,9 +468,22 @@ export class WorkflowRunWorkspaceService {
         );
       }
 
+      const nextState = isDefined(partialUpdate.state)
+        ? (partialUpdate.state as WorkflowRunState)
+        : workflowRunToUpdate.state;
+      const nextStatus = isDefined(partialUpdate.status)
+        ? (partialUpdate.status as WorkflowRunStatus)
+        : workflowRunToUpdate.status;
+
       await workflowRunRepository.update(
         workflowRunToUpdate.id,
-        partialUpdate,
+        {
+          ...partialUpdate,
+          ...computeWorkflowRunProgressFields({
+            state: nextState,
+            status: nextStatus,
+          }),
+        },
         undefined,
         undefined,
         ['id'],

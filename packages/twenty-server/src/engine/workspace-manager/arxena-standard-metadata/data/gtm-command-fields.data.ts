@@ -531,6 +531,44 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'project',
     field: {
+      description:
+        'IANA timezone for LinkedIn connection send window (Tue–Thu local hours)',
+      icon: 'IconWorld',
+      label: 'Send Timezone',
+      name: 'sendTimezone',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'TEXT',
+      // TEXT defaults must satisfy IsQuotedString
+      defaultValue: "'Asia/Kolkata'",
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Send window start (HH:mm) in sendTimezone',
+      icon: 'IconClockHour4',
+      label: 'Send Window Start',
+      name: 'sendWindowStart',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'TEXT',
+      defaultValue: "'08:00'",
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description: 'Send window end (HH:mm) in sendTimezone',
+      icon: 'IconClockHour9',
+      label: 'Send Window End',
+      name: 'sendWindowEnd',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'TEXT',
+      defaultValue: "'10:00'",
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
       description: 'Optional run override ICP JSON (buyerTitles and locations)',
       icon: 'IconJson',
       label: 'ICP Spec',

@@ -15,6 +15,7 @@ import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/uti
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import {
     clearPersistedTableFilters,
+    isBackendBackedDataTableProjectId,
     loadPersistedTableFilters,
     mapPersistedFiltersToColumnIndexes,
     savePersistedTableFilters,
@@ -33,7 +34,7 @@ import { styled } from '@linaria/react';
 import axios from 'axios';
 import type Handsontable from 'handsontable';
 import { type CellChange, type ChangeSource } from 'handsontable';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Loader } from 'twenty-ui/feedback';
 import { IconPlus, IconX } from 'twenty-ui/icon';
 import {
@@ -233,6 +234,9 @@ type ColumnRenderer = (
   value: any,
   cellProperties: Handsontable.CellProperties
 ) => HTMLTableCellElement;
+
+const MemoHotTable = memo(HotTable);
+const ENTER_MOVES = { row: 1, col: 0 };
 
 export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ projectId, onImportCandidatesClick }, ref) => {
     const colorScheme = useThemeColorScheme();
@@ -501,21 +505,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       return filtered;
     }, [mergedData, chatSearchQuery, selectedConversationStatus]);
 
+    // Keep this independent of selectedRowIds. Selection checkboxes are synced
+    // onto the live Handsontable instance below; putting them in `data` would
+    // force HotTable updateSettings on every click and loop with afterRender.
     const mutatableData = useMemo(() => {
-      return filteredData.map((candidate: any) => {
-        // Get permanent ID - check if LinkedIn candidate has been saved to database
-        const candidateId = getPermanentId(candidate, tableState.rawData);
-        // Check if this candidate is selected
-        // Note: selectedRowIds now contains permanent IDs when available
-        const isSelected = candidateId ? tableState.selectedRowIds.includes(candidateId) : false;
-
-        return {
-          ...candidate,
-          isEditable: true,
-          checkbox: isSelected // Sync checkbox with selectedRowIds
-        };
-      });
-    }, [filteredData, tableState.selectedRowIds]);
+      return filteredData.map((candidate: any) => ({
+        ...candidate,
+        isEditable: true,
+        checkbox: Boolean(candidate.checkbox),
+      }));
+    }, [filteredData]);
 
     // const keyDownHandler = (event: KeyboardEvent) => {
     //   handleKeyDown(event, tableRef, tableState, setTableStateAtom);
@@ -526,17 +525,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       return tokenPair?.accessOrWorkspaceAgnosticToken?.token;
     }, [tokenPair]);
 
-    const afterChangeHandler = ( changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange( tableRef, changes, source, projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData);
-    }
-
-    // const beforeOnCellMouseDownHandler = (event: MouseEvent, coords: { row: number; col: number }) => {
-    //   console.log("event in beforeOnCellMouseDownHandler", event);
-    //   beforeOnCellMouseDown(tableRef, event, coords, tableState , setTableStateAtom)
-    // }
-
     const refreshData = useCallback(async (specificIds?: string[]) => {
-      if (!projectId || projectId === 'project-id' || projectId === '__search__') return;
+      if (!isBackendBackedDataTableProjectId(projectId)) return;
       try {
         const requestBody = specificIds?.length
           ? { projectId, candidateIds: specificIds }
@@ -649,6 +639,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         throw error;
       }
     }, [projectId, setTableStateAtom, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCandidatesCount]);
+
+    const afterChangeHandler = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
+      afterChange(tableRef, changes, source, projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData);
+    }, [projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData]);
 
     const reapplyPersistedFilters = useCallback((force = false) => {
       if (!force && hasRestoredFiltersRef.current) {
@@ -1093,6 +1087,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       };
     }, [setDataTableRefreshFunction, setDataTableApplySortsFunction]);
 
+    const selectedRowIdsRef = useRef(tableState.selectedRowIds);
+    useEffect(() => {
+      selectedRowIdsRef.current = tableState.selectedRowIds;
+    }, [tableState.selectedRowIds]);
+    const rawDataRef = useRef(tableState.rawData);
+    rawDataRef.current = tableState.rawData;
+    const openRightDrawerRef = useRef(openRightDrawer);
+    openRightDrawerRef.current = openRightDrawer;
+    const tokenPairRef = useRef(tokenPair);
+    tokenPairRef.current = tokenPair;
+
     const afterSelectionEndHandler = useCallback((
       row: number,
       column: number,
@@ -1112,9 +1117,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         setUnreadMessagesCounts,
         setContextStoreNumberOfSelectedRecords,
         setContextStoreTargetedRecordsRule,
-        openRightDrawer,
-        tokenPair,
-        tableState.rawData
+        openRightDrawerRef.current,
+        tokenPairRef.current,
+        rawDataRef.current,
+        selectedRowIdsRef,
       );
     }, [
       setTableStateAtom,
@@ -1122,9 +1128,6 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       setUnreadMessagesCounts,
       setContextStoreNumberOfSelectedRecords,
       setContextStoreTargetedRecordsRule,
-      openRightDrawer,
-      tokenPair,
-      tableState.rawData,
     ]);
 
     const dropdownMenuItems = useMemo(
@@ -1140,9 +1143,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     );
 
     const loadData = useCallback(async () => {
-      if (!projectId || projectId === 'project-id' || projectId === '__search__') {
-        // For virtual job IDs (assistant search), ensure we're not stuck in a
-        // loading state left over from a previous real-job DataTable render.
+      if (!isBackendBackedDataTableProjectId(projectId)) {
+        // For virtual job IDs (assistant search / GTM People), ensure we're not
+        // stuck in a loading state left over from a previous real-job DataTable render.
         setTableStateAtom(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
         return;
       }
@@ -1231,12 +1234,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Load persisted search results and metadata from backend cache on mount or when projectId changes
     useEffect(() => {
-      // '__search__' is a virtual projectId used by the assistant for LinkedIn candidates;
-      // searchResultsState is populated externally (e.g. GTM People panel), so skip here.
-      if (projectId === '__search__') return;
-      if (!projectId || projectId === 'project-id') {
-        setSearchResults([]);
-        setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
+      // Virtual projectIds (assistant search / GTM People) keep searchResults
+      // populated by the parent; do not clear or hydrate from backend cache.
+      if (!isBackendBackedDataTableProjectId(projectId)) {
         return;
       }
       setSearchResults([]);
@@ -1244,7 +1244,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
       let cancelled = false;
       fetchSearchResultsCache(projectId, accessToken).then((cached) => {
-        if (cancelled || !projectId || projectId === 'project-id') return;
+        if (cancelled || !isBackendBackedDataTableProjectId(projectId)) return;
         if (!cached) {
           return;
         }
@@ -1261,7 +1261,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
     // Persist search results and metadata to backend cache whenever they change
     useEffect(() => {
-      if (!projectId || projectId === 'project-id' || projectId === '__search__') return;
+      if (!isBackendBackedDataTableProjectId(projectId)) return;
       const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
       if (!accessToken) return;
       if (searchResults.length > 0) {
@@ -1305,7 +1305,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         return;
       }
 
-      if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+      if (!isBackendBackedDataTableProjectId(projectId)) {
         return;
       }
 
@@ -1365,7 +1365,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       reapplyPersistedFilters(true);
     }, [filteredData, reapplyPersistedFilters]);
 
-    // Sync checkbox values with selectedRowIds when selection changes
+    // Sync checkbox values with selectedRowIds when selection changes.
+    // Do not call hot.render() — that retriggers AutoColumnSize injectTable
+    // and loops with AppTooltip's document MutationObserver.
     useEffect(() => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
@@ -1375,14 +1377,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
       const selectedIdsSet = new Set(tableState.selectedRowIds);
       const totalRows = hot.countRows();
-      let needsRender = false;
 
       for (let visualRow = 0; visualRow < totalRows; visualRow++) {
         const physicalRow = hot.toPhysicalRow(visualRow);
         if (physicalRow === null || physicalRow === undefined) continue;
 
         const rowData = hot.getSourceDataAtRow(physicalRow);
-        // Get permanent ID - check if LinkedIn candidate has been saved to database
         const candidateId = getPermanentId(rowData, tableState.rawData);
 
         if (candidateId) {
@@ -1391,15 +1391,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
           if (shouldBeChecked !== currentChecked) {
             hot.setDataAtCell(visualRow, checkboxColIndex, shouldBeChecked, 'external');
-            needsRender = true;
           }
         }
       }
-
-      if (needsRender) {
-        hot.render();
-      }
-    }, [tableState.selectedRowIds]);
+    }, [tableState.selectedRowIds, tableState.rawData]);
 
     const allVisibleIds = useMemo(() => {
       const hot = tableRef.current?.hotInstance;
@@ -1417,13 +1412,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
     const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
     const someSelected = !allSelected && !noneSelected;
 
-    const handleSelectAll = (checked: boolean) => {
+    const handleSelectAll = useCallback((checked: boolean) => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
       const visibleIds = filteredData.map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
         const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        // Get permanent ID - check if LinkedIn candidate has been saved to database
         return getPermanentId(rowData, tableState.rawData);
       }).filter((id): id is string => Boolean(id));
 
@@ -1433,48 +1427,73 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }));
       setSelectedCandidateId(checked ? (visibleIds[0] ?? null) : null);
 
-      // Update context store states
       setContextStoreNumberOfSelectedRecords(checked ? visibleIds.length : 0);
       setContextStoreTargetedRecordsRule({
         mode: 'selection',
         selectedRecordIds: checked ? visibleIds : [],
       });
+    }, [
+      filteredData,
+      setContextStoreNumberOfSelectedRecords,
+      setContextStoreTargetedRecordsRule,
+      setSelectedCandidateId,
+      setTableStateAtom,
+      tableState.rawData,
+    ]);
 
-      // Note: Checkbox values will be automatically synced via mutatableData
-      // which recalculates when selectedRowIds changes in state
-    };
+    const headerSelectRef = useRef({
+      allSelected: false,
+      someSelected: false,
+      handleSelectAll,
+    });
+    headerSelectRef.current = { allSelected, someSelected, handleSelectAll };
 
-    // Custom colHeaders: first column is empty string, others use column title
-    const colHeaders = (col: number) => {
+    useEffect(() => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) {
+        return;
+      }
+
+      const headerCheckbox = hot.rootElement?.querySelector(
+        'th input[type="checkbox"]',
+      ) as HTMLInputElement | null;
+
+      if (!headerCheckbox) {
+        return;
+      }
+
+      headerCheckbox.checked = allSelected;
+      headerCheckbox.indeterminate = someSelected;
+    }, [allSelected, someSelected]);
+
+    const colHeaders = useCallback((col: number) => {
       if (col === 0) return '';
       return columns[col]?.title || '';
-    };
+    }, [columns]);
 
-    // afterGetColHeader hook to inject select-all checkbox
-    const afterGetColHeader = (col: number, TH: HTMLTableCellElement) => {
+    const afterGetColHeader = useCallback((col: number, TH: HTMLTableCellElement) => {
       if (col === 0) {
-        // Prevent duplicate checkboxes
         if (TH.querySelector('input[type="checkbox"]')) return;
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.style.marginTop = '8px';
-        checkbox.checked = allSelected;
-        checkbox.indeterminate = someSelected;
+        checkbox.checked = headerSelectRef.current.allSelected;
+        checkbox.indeterminate = headerSelectRef.current.someSelected;
         checkbox.style.cursor = 'pointer';
         checkbox.onclick = (e) => {
           e.stopPropagation();
-          handleSelectAll(!allSelected);
+          headerSelectRef.current.handleSelectAll(
+            !headerSelectRef.current.allSelected,
+          );
         };
-        // Clear and append
         TH.innerHTML = '';
         TH.appendChild(checkbox);
       } else {
-        // Add title attribute for tooltip on other columns
         const columnTitle = columns[col]?.title || '';
         TH.title = columnTitle;
         TH.style.cursor = 'help';
       }
-    };
+    }, [columns]);
 
     // Add WebSocket event listener for WhatsApp message updates
     useWebSocketEvent<{
@@ -1546,54 +1565,170 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }
     }, [refreshData]);
 
-    const createRenderer = (originalRenderer: ColumnRenderer | undefined): ColumnRenderer => {
-      return (instance: Handsontable.Core, td: HTMLTableCellElement, row: number, column: number, prop: string | number, value: any, cellProperties: Handsontable.CellProperties) => {
-        // Get the original renderer
-        const defaultRenderer = (instance: Handsontable.Core, td: HTMLTableCellElement, row: number, column: number, prop: string | number, value: any, cellProperties: Handsontable.CellProperties) => {
-          td.innerHTML = value !== null && value !== undefined ? String(value) : '';
-          return td;
-        };
+    const mergedDataRef = useRef(mergedData);
+    mergedDataRef.current = mergedData;
+    const candidateStateRef = useRef(candidateState);
+    candidateStateRef.current = candidateState;
+    const allAiFiltersRef = useRef(allAiFilters);
+    allAiFiltersRef.current = allAiFilters;
 
-        // Call the original renderer first
-        const renderedTd = (originalRenderer || defaultRenderer)(instance, td, row, column, prop, value, cellProperties);
+    const hotColumns = useMemo(
+      () =>
+        columns.map((col) => ({
+          ...col,
+          renderer: ((
+            instance: Handsontable.Core,
+            td: HTMLTableCellElement,
+            row: number,
+            column: number,
+            prop: string | number,
+            value: any,
+            cellProperties: Handsontable.CellProperties,
+          ) => {
+            const defaultRenderer = (
+              _instance: Handsontable.Core,
+              cellTd: HTMLTableCellElement,
+              _row: number,
+              _column: number,
+              _prop: string | number,
+              cellValue: any,
+              _cellProperties: Handsontable.CellProperties,
+            ) => {
+              cellTd.innerHTML =
+                cellValue !== null && cellValue !== undefined
+                  ? String(cellValue)
+                  : '';
+              return cellTd;
+            };
 
-        // Apply row state border color (only on first column)
-        if (column === 0 && mergedData[row]) {
-          const candidate = mergedData[row];
-          const borderColor = getRowBorderColor(candidate, candidateState);
+            const originalRenderer = col.renderer as ColumnRenderer | undefined;
+            const renderedTd = (originalRenderer || defaultRenderer)(
+              instance,
+              td,
+              row,
+              column,
+              prop,
+              value,
+              cellProperties,
+            );
 
-          // Add left border to indicate persistence state
-          Object.assign(renderedTd.style, {
-            borderLeft: `4px solid ${borderColor}`,
-            transition: 'border-color 150ms ease'
-          });
+            if (column === 0 && mergedDataRef.current[row]) {
+              const candidate = mergedDataRef.current[row];
+              const borderColor = getRowBorderColor(
+                candidate,
+                candidateStateRef.current,
+              );
+
+              Object.assign(renderedTd.style, {
+                borderLeft: `4px solid ${borderColor}`,
+                transition: 'border-color 150ms ease',
+              });
+            }
+
+            if (isAiFilterField(String(prop), allAiFiltersRef.current)) {
+              Object.assign(renderedTd.style, {
+                backgroundColor: '#f0f7ff',
+                fontStyle: 'italic',
+                position: 'relative',
+              });
+            }
+
+            return renderedTd;
+          }) as ColumnRenderer,
+        })),
+      [columns],
+    );
+
+    const afterFilterHandler = useCallback((conditionsStack: any) => {
+      const hot = tableRef.current?.hotInstance;
+      if (!hot) return;
+
+      const activeFilters: FilterCondition[] = (conditionsStack || []).map((condition: any) => ({
+        column: condition.column,
+        conditions: condition.conditions.map((cond: any) => ({
+          name: cond.name || 'unknown',
+          args: cond.args || []
+        })),
+        operation: condition.operation || 'conjunction'
+      }));
+      setTableStateAtom(prev => ({
+        ...prev,
+        activeFilters
+      }));
+
+      const columnsForPersist = hot.getSettings().columns as
+        | Array<{ data?: string | number } | undefined>
+        | undefined;
+      if (!isApplyingFilterRef.current) {
+        savePersistedTableFilters(
+          projectId,
+          activeFilters,
+          columnsForPersist,
+        );
+      }
+
+      if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
+        setFilteredCandidatesCount(hot.countRows());
+      } else {
+        setFilteredCandidatesCount(hot.getData().length);
+      }
+
+      setTimeout(() => {
+        const currentSortConfig = sortConfigRef.current;
+        if (currentSortConfig.length > 0) {
+          const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+          if (multiColumnSortingPlugin) {
+            const current = multiColumnSortingPlugin.getSortConfig();
+            if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
+              const settingsColumns = hot.getSettings().columns;
+              currentSortConfig.forEach(sortItem => {
+                const column = settingsColumns?.[sortItem.column];
+                if (column && needsCustomSorting(column.data)) {
+                  const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                  if (customSortFunction) {
+                    multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                  }
+                }
+              });
+
+              isApplyingSortRef.current = true;
+              multiColumnSortingPlugin.sort(currentSortConfig);
+              setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+            }
+          }
         }
+      }, 100);
+    }, [projectId, setFilteredCandidatesCount, setTableStateAtom]);
 
-        // Apply enrichment styling if needed
-        if (isAiFilterField(String(prop), allAiFilters)) {
-          Object.assign(renderedTd.style, {
-            backgroundColor: '#f0f7ff',
-            fontStyle: 'italic',
-            position: 'relative'
-          });
+    const beforeKeyDownHandler = useCallback((event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        performUndo(tableRef, setTableStateAtom);
+      }
+      if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
+          ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
+        event.preventDefault();
+        performRedo(tableRef, setTableStateAtom);
+      }
+    }, [setTableStateAtom]);
 
-          // // Add indicator dot
-          // const indicator = document.createElement('div');
-          // Object.assign(indicator.style, {
-          //   position: 'absolute',
-          //   top: '2px',
-          //   right: '2px',
-          //   width: '6px',
-          //   height: '6px',
-          //   borderRadius: '50%',
-          //   backgroundColor: '#2563eb'
-          // });
-          // renderedTd.appendChild(indicator);
-        }
-
-        return renderedTd;
-      };
-    };
+    const afterColumnSortHandler = useCallback((
+      _currentSortConfig: SortConfig[] | undefined,
+      destinationSortConfigs: SortConfig[] | undefined,
+    ) => {
+      if (isApplyingSortRef.current) {
+        isApplyingSortRef.current = false;
+        return;
+      }
+      const newSortConfig = destinationSortConfigs || [];
+      if (!areSortConfigsEqual(newSortConfig as SortConfig[] | null, sortConfigRef.current)) {
+        sortConfigRef.current = newSortConfig;
+        setTableStateAtom(prev => ({
+          ...prev,
+          sortConfig: newSortConfig
+        }));
+      }
+    }, [setTableStateAtom]);
 
     if (tableState.isLoading) {
       return (
@@ -1657,14 +1792,11 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         </StyledControlsContainer>
 
         <StyledTableContainer>
-          <HotTable
+          <MemoHotTable
             id={`candidate-table-${projectId}`}
             ref={tableRef}
             data={mutatableData}
-            columns={columns.map(col => ({
-              ...col,
-              renderer: createRenderer(col.renderer as ColumnRenderer)
-            }))}
+            columns={hotColumns}
             colHeaders={colHeaders}
             afterGetColHeader={afterGetColHeader}
             rowHeaders={true}
@@ -1685,6 +1817,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             afterSelectionEnd={afterSelectionEndHandler}
             afterChange={afterChangeHandler}
             autoWrapCol={false}
+            autoColumnSize={false}
             autoRowSize={false}
             rowHeights={30}
             manualRowResize={true}
@@ -1696,111 +1829,12 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             customBorders={true}
             outsideClickDeselects={false}
             enterBeginsEditing={true}
-            enterMoves={{ row: 1, col: 0 }}
+            enterMoves={ENTER_MOVES}
             fillHandle={true}
             persistentState={true}
-            afterFilter={(conditionsStack) => {
-              const hot = tableRef.current?.hotInstance;
-              if (!hot) return;
-              console.log("These are conditionsStack::", conditionsStack);
-
-              // Update active filters in state
-              const activeFilters: FilterCondition[] = (conditionsStack || []).map((condition: any) => ({
-                column: condition.column,
-                conditions: condition.conditions.map((cond: any) => ({
-                  name: cond.name || 'unknown',
-                  args: cond.args || []
-                })),
-                operation: condition.operation || 'conjunction'
-              }));
-              setTableStateAtom(prev => ({
-                ...prev,
-                activeFilters
-              }));
-
-              const columnsForPersist = hot.getSettings().columns as
-                | Array<{ data?: string | number } | undefined>
-                | undefined;
-              if (!isApplyingFilterRef.current) {
-                savePersistedTableFilters(
-                  projectId,
-                  activeFilters,
-                  columnsForPersist,
-                );
-              }
-
-              // If there are no conditions, show total count
-              if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
-                setFilteredCandidatesCount(hot.countRows());
-              } else {
-                // Count visible rows
-                const visibleCount = hot.getData().length;
-                setFilteredCandidatesCount(visibleCount);
-              }
-
-              // Reapply multi-column sorting after filter changes (avoid loops)
-              setTimeout(() => {
-                const currentSortConfig = sortConfigRef.current;
-                if (currentSortConfig.length > 0) {
-                  console.log("Reapplying multi-column sort after filter change:", currentSortConfig);
-                  const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
-                  if (multiColumnSortingPlugin) {
-                    const current = multiColumnSortingPlugin.getSortConfig();
-                    if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
-                      // Register custom sorting functions for enum columns
-                      const columns = hot.getSettings().columns;
-                      currentSortConfig.forEach(sortItem => {
-                        const column = columns?.[sortItem.column];
-                        if (column && needsCustomSorting(column.data)) {
-                          const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
-                          if (customSortFunction) {
-                            multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
-                            console.log(`Registered custom sort function for column ${column.data} after filter change`);
-                          }
-                        }
-                      });
-
-                      isApplyingSortRef.current = true;
-                      multiColumnSortingPlugin.sort(currentSortConfig);
-                      setTimeout(() => { isApplyingSortRef.current = false; }, 50);
-                    }
-                  }
-                }
-              }, 100);
-            }}
-            beforeKeyDown={(event: KeyboardEvent) => {
-              // Handle Ctrl/Cmd + Z for undo
-              if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
-                event.preventDefault();
-                performUndo(tableRef, setTableStateAtom);
-              }
-              // Handle Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo
-              if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
-                  ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
-                event.preventDefault();
-                performRedo(tableRef, setTableStateAtom);
-              }
-            }}
-            afterColumnSort={(currentSortConfig, destinationSortConfigs) => {
-              console.log("afterColumnSort triggered:");
-              console.log("currentSortConfig:", currentSortConfig);
-              console.log("destinationSortConfigs:", destinationSortConfigs);
-
-              // Sync the sorting state when columns are sorted via header clicks
-              if (isApplyingSortRef.current) {
-                // Ignore programmatic sorts
-                isApplyingSortRef.current = false;
-                return;
-              }
-              const newSortConfig = destinationSortConfigs || [];
-              if (!areSortConfigsEqual(newSortConfig as SortConfig[] | null, sortConfigRef.current)) {
-                sortConfigRef.current = newSortConfig;
-                setTableStateAtom(prev => ({
-                  ...prev,
-                  sortConfig: newSortConfig
-                }));
-              }
-            }}
+            afterFilter={afterFilterHandler}
+            beforeKeyDown={beforeKeyDownHandler}
+            afterColumnSort={afterColumnSortHandler}
           />
         </StyledTableContainer>
 

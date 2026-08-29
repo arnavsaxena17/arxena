@@ -56,6 +56,54 @@ export const computeStandardWorkflowRunViewFields = (
         size: 150,
       },
     }),
+    allWorkflowRunsCurrentStepName: createStandardViewFieldFlatMetadata({
+      ...args,
+      objectName: 'workflowRun',
+      context: {
+        viewName: 'allWorkflowRuns',
+        viewFieldName: 'currentStepName',
+        fieldName: 'currentStepName',
+        position: 4,
+        isVisible: true,
+        size: 180,
+      },
+    }),
+    allWorkflowRunsCurrentStepKind: createStandardViewFieldFlatMetadata({
+      ...args,
+      objectName: 'workflowRun',
+      context: {
+        viewName: 'allWorkflowRuns',
+        viewFieldName: 'currentStepKind',
+        fieldName: 'currentStepKind',
+        position: 5,
+        isVisible: true,
+        size: 150,
+      },
+    }),
+    allWorkflowRunsResumeAt: createStandardViewFieldFlatMetadata({
+      ...args,
+      objectName: 'workflowRun',
+      context: {
+        viewName: 'allWorkflowRuns',
+        viewFieldName: 'resumeAt',
+        fieldName: 'resumeAt',
+        position: 6,
+        isVisible: true,
+        size: 150,
+      },
+    }),
+    allWorkflowRunsUpcomingSteps: createStandardViewFieldFlatMetadata({
+      ...args,
+      objectName: 'workflowRun',
+      context: {
+        viewName: 'allWorkflowRuns',
+        viewFieldName: 'upcomingSteps',
+        fieldName: 'upcomingSteps',
+        position: 7,
+        isVisible: true,
+        size: 200,
+      },
+    }),
 
     // workflowRunRecordPageFields view fields
     workflowRunRecordPageFieldsStatus: createStandardViewFieldFlatMetadata({
@@ -239,6 +287,61 @@ export const computeStandardWorkflowRunViewFields = (
           viewFieldName: 'relatedRecordId',
           fieldName: 'relatedRecordId',
           position: 10,
+          isVisible: true,
+          size: 150,
+          viewFieldGroupName: 'general',
+        },
+      }),
+    workflowRunRecordPageFieldsCurrentStepName:
+      createStandardViewFieldFlatMetadata({
+        ...args,
+        objectName: 'workflowRun',
+        context: {
+          viewName: 'workflowRunRecordPageFields',
+          viewFieldName: 'currentStepName',
+          fieldName: 'currentStepName',
+          position: 11,
+          isVisible: true,
+          size: 150,
+          viewFieldGroupName: 'general',
+        },
+      }),
+    workflowRunRecordPageFieldsCurrentStepKind:
+      createStandardViewFieldFlatMetadata({
+        ...args,
+        objectName: 'workflowRun',
+        context: {
+          viewName: 'workflowRunRecordPageFields',
+          viewFieldName: 'currentStepKind',
+          fieldName: 'currentStepKind',
+          position: 12,
+          isVisible: true,
+          size: 150,
+          viewFieldGroupName: 'general',
+        },
+      }),
+    workflowRunRecordPageFieldsResumeAt: createStandardViewFieldFlatMetadata({
+      ...args,
+      objectName: 'workflowRun',
+      context: {
+        viewName: 'workflowRunRecordPageFields',
+        viewFieldName: 'resumeAt',
+        fieldName: 'resumeAt',
+        position: 13,
+        isVisible: true,
+        size: 150,
+        viewFieldGroupName: 'general',
+      },
+    }),
+    workflowRunRecordPageFieldsUpcomingSteps:
+      createStandardViewFieldFlatMetadata({
+        ...args,
+        objectName: 'workflowRun',
+        context: {
+          viewName: 'workflowRunRecordPageFields',
+          viewFieldName: 'upcomingSteps',
+          fieldName: 'upcomingSteps',
+          position: 14,
           isVisible: true,
           size: 150,
           viewFieldGroupName: 'general',
