@@ -18,11 +18,11 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000013)
 @Command({
-  name: 'upgrade:2-25:sync-gtm-company-skill-content',
+  name: 'upgrade:2-25:sync-outreach-company-skill-content',
   description:
-    'Sync search-companies + gtm-icp-onboarding skill content (GTM ephemeral upsert routing) for existing workspaces',
+    'Sync search-companies + outreach-icp-onboarding skill content (GTM ephemeral upsert routing) for existing workspaces',
 })
-export class SyncGtmCompanySkillContentCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachCompanySkillContentCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

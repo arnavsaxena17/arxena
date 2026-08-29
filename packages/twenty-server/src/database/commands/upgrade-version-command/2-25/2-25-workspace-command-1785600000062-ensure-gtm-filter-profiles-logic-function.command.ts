@@ -6,16 +6,16 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000062)
 @Command({
-  name: 'upgrade:2-25:ensure-gtm-filter-profiles-logic-function',
+  name: 'upgrade:2-25:ensure-outreach-filter-profiles-logic-function',
   description:
     'Seed native GTM logic function filter-profiles for existing workspaces',
 })
-export class EnsureGtmFilterProfilesLogicFunctionCommand extends ProvisionedWorkspaceCommandRunner {
+export class EnsureOutreachFilterProfilesLogicFunctionCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -44,7 +44,7 @@ export class EnsureGtmFilterProfilesLogicFunctionCommand extends ProvisionedWork
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
 

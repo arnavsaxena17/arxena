@@ -4,11 +4,11 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { NavigationDrawerOpenedSection } from '@/navigation-menu-item/display/sections/components/NavigationDrawerOpenedSection';
 import { FavoritesSectionDispatcher } from '@/navigation-menu-item/display/sections/favorites/components/FavoritesSectionDispatcher';
 import { WorkspaceSectionDispatcher } from '@/navigation-menu-item/display/sections/workspace/components/WorkspaceSectionDispatcher';
-import { GtmHomeNavigationDrawerItem } from '@/navigation/components/GtmHomeNavigationDrawerItem';
+import { OutreachHomeNavigationDrawerItem } from '@/navigation/components/OutreachHomeNavigationDrawerItem';
 import { OrgChartsNavigationDrawerItems } from '@/navigation/components/OrgChartsNavigationDrawerItems';
 import { ProjectsNavigationDrawerItems } from '@/navigation/components/ProjectsNavigationDrawerItems';
 
-// Eager: lazy+Suspense for these hung on /gtm-home next to GtmHomePage lazy route
+// Eager: lazy+Suspense for these hung on /outreach-home next to OutreachHomePage lazy route
 const StyledScrollableItemsContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -18,7 +18,7 @@ const StyledScrollableItemsContainer = styled.div`
 export const MainNavigationDrawerScrollableItems = () => {
   return (
     <StyledScrollableItemsContainer>
-      <GtmHomeNavigationDrawerItem />
+      <OutreachHomeNavigationDrawerItem />
       <ProjectsNavigationDrawerItems />
       <OrgChartsNavigationDrawerItems />
       <NavigationDrawerOpenedSection />

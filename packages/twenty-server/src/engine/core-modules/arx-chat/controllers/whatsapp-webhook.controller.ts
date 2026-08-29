@@ -3,7 +3,7 @@ import { Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';
 import { WorkflowFormWhatsappDecisionService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-whatsapp-decision.service';
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { IncomingWhatsappMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/incoming-messages';
-import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -22,7 +22,7 @@ export class WhatsappWebhook {
     private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     private readonly workflowFormWhatsappDecisionService: WorkflowFormWhatsappDecisionService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
-    private readonly gtmInboundReplyWindowService?: GtmInboundReplyWindowService,
+    private readonly gtmInboundReplyWindowService?: OutreachInboundReplyWindowService,
   ) {}
 
   // Resume pending FORM steps from Official WhatsApp Flow / quick-reply

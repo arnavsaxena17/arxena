@@ -14,10 +14,9 @@ export type BrowsingContextType =
       filterDescriptions: string[];
     }
   | {
-      type: 'gtmCommand';
+      type: 'outreachCommand';
       projectId: string | null;
       projectName: string | null;
-      gtmRunKey: string | null;
       outreachWorkflowId: string | null;
       outreachSendMode: string;
       phase: string | null;

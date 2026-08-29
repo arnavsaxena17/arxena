@@ -2,9 +2,9 @@ import { isObject } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import {
-  getGtmNativeLogicFunctionSampleOutput,
-  isNativeGtmLogicFunction,
-} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+  getOutreachNativeLogicFunctionSampleOutput,
+  isNativeOutreachLogicFunction,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 
 const containsCanonicalKeys = (
   actual: unknown,
@@ -50,11 +50,11 @@ export const shouldDefaultLogicFunctionSampleOutput = ({
     return true;
   }
 
-  if (!isNativeGtmLogicFunction(logicFunctionName)) {
+  if (!isNativeOutreachLogicFunction(logicFunctionName)) {
     return false;
   }
 
-  const canonical = getGtmNativeLogicFunctionSampleOutput(logicFunctionName);
+  const canonical = getOutreachNativeLogicFunctionSampleOutput(logicFunctionName);
 
   if (!isDefined(canonical)) {
     return false;

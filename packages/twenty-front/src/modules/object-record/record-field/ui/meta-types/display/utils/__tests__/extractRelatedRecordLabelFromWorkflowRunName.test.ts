@@ -4,7 +4,7 @@ describe('extractRelatedRecordLabelFromWorkflowRunName', () => {
   it('extracts the trigger record label from a named run', () => {
     expect(
       extractRelatedRecordLabelFromWorkflowRunName(
-        '#30 - Mohamed Mazen Batterjee · GTM Outreach — Candidate Updated',
+        '#30 - Mohamed Mazen Batterjee · Outreach — Enrolled Person Updated',
       ),
     ).toBe('Mohamed Mazen Batterjee');
   });

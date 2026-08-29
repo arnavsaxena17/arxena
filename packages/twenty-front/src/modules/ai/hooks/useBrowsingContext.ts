@@ -14,7 +14,7 @@ import { contextStoreCurrentViewTypeComponentState } from '@/context-store/state
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
-import { gtmCommandContextState } from '@/gtm-home/states/gtmCommandContextState';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
 import { recordStoreFamilySelector } from '@/object-record/record-store/states/selectors/recordStoreFamilySelector';
 import { getTabListInstanceIdFromPageLayoutId } from '@/page-layout/utils/getTabListInstanceIdFromPageLayoutId';
@@ -22,33 +22,32 @@ import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTab
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { viewFromViewIdFamilySelector } from '@/views/states/selectors/viewFromViewIdFamilySelector';
 
-const isGtmHomePath = (pathname: string): boolean =>
-  pathname === `/${AppPath.GtmHome}` ||
-  pathname.endsWith(`/${AppPath.GtmHome}`) ||
-  pathname.includes(`/${AppPath.GtmHome}/`);
+const isOutreachHomePath = (pathname: string): boolean =>
+  pathname === `/${AppPath.OutreachHome}` ||
+  pathname.endsWith(`/${AppPath.OutreachHome}`) ||
+  pathname.includes(`/${AppPath.OutreachHome}/`);
 
 export const useGetBrowsingContext = () => {
   const store = useStore();
   const location = useLocation();
-  const gtmCommandContext = useAtomStateValue(gtmCommandContextState);
+  const outreachContext = useAtomStateValue(outreachContextState);
 
   const getBrowsingContext = useCallback((): BrowsingContext | null => {
-    if (isGtmHomePath(location.pathname)) {
+    if (isOutreachHomePath(location.pathname)) {
       return {
-        type: 'gtmCommand',
-        projectId: gtmCommandContext.projectId,
-        projectName: gtmCommandContext.projectName,
-        gtmRunKey: gtmCommandContext.gtmRunKey,
-        outreachWorkflowId: gtmCommandContext.outreachWorkflowId,
-        outreachSendMode: gtmCommandContext.outreachSendMode,
-        phase: gtmCommandContext.phase,
-        selectedCompanyId: gtmCommandContext.selectedCompanyId,
-        selectedPersonId: gtmCommandContext.selectedPersonId,
-        icpName: gtmCommandContext.icpName,
-        icpSpecSummary: gtmCommandContext.icpSpecSummary,
-        linkedinConnected: gtmCommandContext.linkedinConnected,
-        gmailConnected: gtmCommandContext.gmailConnected,
-        whatsappConnected: gtmCommandContext.whatsappConnected,
+        type: 'outreachCommand',
+        projectId: outreachContext.projectId,
+        projectName: outreachContext.projectName,
+        outreachWorkflowId: outreachContext.outreachWorkflowId,
+        outreachSendMode: outreachContext.outreachSendMode,
+        phase: outreachContext.phase,
+        selectedCompanyId: outreachContext.selectedCompanyId,
+        selectedPersonId: outreachContext.selectedPersonId,
+        icpName: outreachContext.icpName,
+        icpSpecSummary: outreachContext.icpSpecSummary,
+        linkedinConnected: outreachContext.linkedinConnected,
+        gmailConnected: outreachContext.gmailConnected,
+        whatsappConnected: outreachContext.whatsappConnected,
       };
     }
 
@@ -179,7 +178,7 @@ export const useGetBrowsingContext = () => {
     }
 
     return null;
-  }, [gtmCommandContext, location.pathname, store]);
+  }, [outreachContext, location.pathname, store]);
 
   return { getBrowsingContext };
 };

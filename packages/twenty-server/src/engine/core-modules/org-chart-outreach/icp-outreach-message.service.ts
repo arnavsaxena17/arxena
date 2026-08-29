@@ -12,7 +12,7 @@ import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/ar
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
 import { IcpExtractionService } from 'src/engine/core-modules/org-chart-outreach/icp-extraction.service';
 import type {
@@ -121,7 +121,7 @@ export class IcpOutreachMessageService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly whatsappOutboundRateLimiter: WhatsappOutboundRateLimiterService,
-    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
+    private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
   ) {}
 
   private whatsappMessaging(): WhatsappUnipileMessagingService {

@@ -96,7 +96,7 @@ import { WebSocketGateway } from 'src/modules/websocket/websocket.gateway';
 import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { LinkedinSalesNavigatorTransformerService } from '../candidate-sourcing/services/data-sources/linkedin-sales-navigator-transformer.service';
-import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { CandidateDataProcessorService } from './services/candidate-engagement/candidate-data-processor.service';
@@ -157,7 +157,7 @@ const conditionalImports = isWorker
     ContactEnrichmentModule,
     JwtModule,
     UnipilePoolModule,
-    GtmCommandModule,
+    OutreachCommandModule,
     WorkflowApprovalModule,
     forwardRef(() => OrgChartModule),
     TypeORMModule,

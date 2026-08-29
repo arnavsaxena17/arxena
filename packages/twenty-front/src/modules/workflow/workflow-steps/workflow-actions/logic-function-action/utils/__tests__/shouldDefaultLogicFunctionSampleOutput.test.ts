@@ -1,8 +1,8 @@
 import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
 import {
-  GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
-  GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
-} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+  OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
+  OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 
 describe('shouldDefaultLogicFunctionSampleOutput', () => {
   it('defaults when no sample is set', () => {
@@ -27,7 +27,7 @@ describe('shouldDefaultLogicFunctionSampleOutput', () => {
     expect(
       shouldDefaultLogicFunctionSampleOutput({
         logicFunctionName: 'search-people-for-company',
-        expectedOutputSchema: GTM_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
+        expectedOutputSchema: OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
       }),
     ).toBe(false);
   });
@@ -48,7 +48,7 @@ describe('shouldDefaultLogicFunctionSampleOutput', () => {
     expect(
       shouldDefaultLogicFunctionSampleOutput({
         logicFunctionName: 'search-people',
-        expectedOutputSchema: GTM_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+        expectedOutputSchema: OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
       }),
     ).toBe(false);
   });

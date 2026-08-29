@@ -116,9 +116,9 @@ export const useAgentChat = (
         : JSON.stringify(browsingContext) !==
           JSON.stringify(lastSentBrowsingContext);
     // GTM context is injected server-side into the model turn only (not
-    // persisted on the user message), so re-send it every /gtm-home turn.
+    // persisted on the user message), so re-send it every /outreach-home turn.
     const browsingContextToSend =
-      browsingContext?.type === 'gtmCommand'
+      browsingContext?.type === 'outreachCommand'
         ? browsingContext
         : isBrowsingContextChanged
           ? browsingContext
@@ -191,7 +191,7 @@ export const useAgentChat = (
         },
       });
 
-      if (isBrowsingContextChanged || browsingContext?.type === 'gtmCommand') {
+      if (isBrowsingContextChanged || browsingContext?.type === 'outreachCommand') {
         store.set(lastSentBrowsingContextAtom, browsingContext);
       }
 

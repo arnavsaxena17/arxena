@@ -2,9 +2,9 @@ export const BRAND = {
   name: 'Arxena',
   category: 'Org Intelligence',
   northStar: 'The org graph layer',
-  wedge: 'Enterprise sales and executive search',
+  wedge: 'Org intelligence for teams who book meetings from structure',
   mission:
-    'To make the hidden structure of organizations visible — so sales and recruiting teams can have more of the right meetings, with the right people, for the same time and budget.',
+    'To make the hidden structure of organizations visible — so teams can have more of the right meetings, with the right people, for the same time and budget.',
   vision:
     "A world where every company's organizational structure — every function, every level, every move — is queryable in real time, so the meetings you book are with the people who actually decide.",
 } as const;
@@ -12,7 +12,7 @@ export const BRAND = {
 export const DEFAULT_OG_TITLE = `${BRAND.name} — ${BRAND.category} Platform`;
 
 export const DEFAULT_SITE_DESCRIPTION =
-  "More targeted meetings, same budget. Arxena maps any company's live org structure so enterprise sales and executive search teams reach the right decision-makers — not just more contacts.";
+  "More targeted meetings, same budget. Arxena maps any company's live org structure so teams reach the right decision-makers — not just more contacts.";
 
 export const HOMEPAGE_HERO = {
   title: 'Org Intelligence',
@@ -25,7 +25,7 @@ export const HOMEPAGE_HERO = {
     "A tool that helps you draw or document your own company's org chart.",
   clarifyIsLabel: 'This',
   clarifyIsText:
-    'The live, queryable org graph of any company you sell into or recruit from — so every meeting you book is with someone who can actually say yes.',
+    'The live, queryable org graph of any target company — so every meeting you book is with someone who can actually say yes.',
 } as const;
 
 export const SECTION_SUBTITLES = {
@@ -39,11 +39,11 @@ export const STORY_PAGE = {
   headline: 'Same effort, more of the right meetings',
   subheadline: BRAND.vision,
   paragraph1:
-    'Every rep and every recruiter has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.',
+    'Every team has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.',
   paragraph2:
-    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker or hiring stakeholder, enrich their contact details, and engage on LinkedIn, WhatsApp, and email — all from one workflow.',
+    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker, enrich their contact details, and engage on LinkedIn, WhatsApp, and email — all from one workflow.',
   scenarioExample:
-    'Two reps send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the budget, mapped from the live org chart. Same volume, same week — very different number of meetings booked.',
+    'Two people send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the decision, mapped from the live org chart. Same volume, same week — very different number of meetings booked.',
 } as const;
 
 export const TEAM_PAGE = {
@@ -65,7 +65,7 @@ export const PRODUCTS_INDEX = {
 
 export const SOLUTIONS_INDEX = {
   title: 'Solutions',
-  sub: 'Enterprise sales and executive search start here. Know exactly who to talk to before you spend a single message on them.',
+  sub: 'Start with the org graph. Know exactly who to talk to before you spend a single message on them.',
 } as const;
 
 export const RESOURCES_INDEX = {
@@ -79,7 +79,7 @@ export const RESOURCES_INDEX = {
       'Calculate how many extra meetings the org graph adds at your current outreach volume.',
   },
   blogParagraphs: [
-    'Long-form stories and practical guides on org intelligence — from enterprise sales and executive search to corporate strategy and diligence.',
+    'Long-form stories and practical guides on org intelligence — from outreach and mapping to corporate strategy and diligence.',
     'New articles ship on a regular cadence. Subscribe to updates or talk to us about topics you want covered.',
   ],
   reportsParagraphs: [
@@ -93,7 +93,7 @@ export const RESOURCES_INDEX = {
 } as const;
 
 export const PRICING_PAGE_DESCRIPTION =
-  'Access the org graph — credits to map any target company and reach the right person first. Plans for enterprise sales, executive search, investors, and corporate strategy.';
+  'Access the org graph — credits to map any target company and reach the right person first. Plans for outreach, mapping, investors, and corporate strategy.';
 
 export const CONTACT_PAGE_SUB =
   'Talk to us about getting more of the right meetings for your team — email, WhatsApp, live chat, and office locations.';
@@ -106,7 +106,7 @@ export const CHROME_EXTENSION_PAGE = {
 
 export const STRUCTURED_DATA = {
   siteDescription:
-    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps sales and recruiting teams book more meetings with the right people for the same effort.',
+    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps teams book more meetings with the right people for the same effort.',
   nav: {
     pricing: 'Access the org graph — credits for mapping any target company',
     story: 'Why more targeted meetings beat more volume',

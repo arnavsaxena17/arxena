@@ -9,15 +9,15 @@ import { ApplicationService } from 'src/engine/core-modules/application/applicat
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000039)
 @Command({
-  name: 'upgrade:2-25:resync-gtm-outreach-workflow-graphs',
+  name: 'upgrade:2-25:resync-outreach-workflow-graphs',
   description:
     'Replace System GTM outreach DRAFT graphs, merge candidate.updated into one IF_ELSE workflow, and deactivate leftover stage listeners',
 })
-export class ResyncGtmOutreachWorkflowGraphsCommand extends ProvisionedWorkspaceCommandRunner {
+export class ResyncOutreachWorkflowGraphsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,
@@ -55,7 +55,7 @@ export class ResyncGtmOutreachWorkflowGraphsCommand extends ProvisionedWorkspace
     try {
       await queryRunner.startTransaction();
 
-      await prefillGtmOutreachWorkflows({
+      await prefillOutreachWorkflows({
         entityManager: queryRunner.manager,
         workspaceId,
         schemaName,

@@ -70,7 +70,7 @@ import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-s
 import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { hydrateLinkedinPremiumCandidates } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
-import { FetchLinkedinProfileService } from 'src/engine/core-modules/gtm-command/services/fetch-linkedin-profile.service';
+import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';

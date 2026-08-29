@@ -43,7 +43,7 @@ export enum AppPath {
   Project = 'project/:projectId',
   Search = 'search',
   Assistant = 'assistant',
-  GtmHome = 'gtm-home',
+  OutreachHome = 'outreach-home',
   ClientCandidateSearch = 'candidate-search',
   VideoInterview = 'video-interview',
   VideoInterviewReview = 'video-interview-review',

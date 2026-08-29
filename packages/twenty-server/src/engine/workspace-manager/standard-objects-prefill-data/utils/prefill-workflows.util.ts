@@ -12,7 +12,7 @@ import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object
 import { buildPersonSyncSourceFilter } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/build-person-sync-source-filter.util';
 import { generateFakeObjectRecordEvent } from 'src/modules/workflow/workflow-builder/workflow-schema/utils/generate-fake-object-record-event';
 import { generateObjectRecordFields } from 'src/modules/workflow/workflow-builder/workflow-schema/utils/generate-object-record-fields';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
 const WORKFLOW_PREFILL_ID_NAMESPACE = '8b213cac-a68b-4ffe-817a-3ec994e9932d';
@@ -937,7 +937,7 @@ export const prefillWorkflows = async (
     ])
     .execute();
 
-  await prefillGtmOutreachWorkflows({
+  await prefillOutreachWorkflows({
     entityManager,
     workspaceId,
     schemaName,

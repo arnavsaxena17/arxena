@@ -5,9 +5,9 @@ import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 import { SendLinkedinMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-message-tool';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
-import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
-import { GtmOutreachMessagePersistService } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
-import { resolveGtmOutboundMessageKind } from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
+import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
+import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { resolveOutreachOutboundMessageKind } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -31,10 +31,10 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
     private readonly sendLinkedinMessageTool: SendLinkedinMessageTool,
     workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
     globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-    gtmUnipilePacingService: GtmUnipilePacingService,
+    gtmUnipilePacingService: OutreachUnipilePacingService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     delayedQueue: MessageQueueService,
-    gtmOutreachMessagePersistService: GtmOutreachMessagePersistService,
+    gtmOutreachMessagePersistService: OutreachMessagePersistService,
   ) {
     super(
       SendLinkedinMessageWorkflowAction.name,
@@ -62,7 +62,7 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
     resolvedInput: WorkflowSendLinkedinMessageActionInput,
   ) {
     return (
-      resolveGtmOutboundMessageKind({
+      resolveOutreachOutboundMessageKind({
         materializeEvent: 'outbound_message',
         messagingChannel: 'LINKEDIN',
         explicitKind:

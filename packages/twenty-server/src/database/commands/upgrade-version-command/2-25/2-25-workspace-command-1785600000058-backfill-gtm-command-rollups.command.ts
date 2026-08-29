@@ -5,12 +5,12 @@ import { type ObjectLiteral } from 'typeorm';
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
-import { parseGtmRunKeys } from 'src/engine/core-modules/gtm-command/utils/gtm-run-key.util';
+import { parseProjectIds } from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
 import {
   candidateStageImpliesOutbound,
   computeCoverageBucket,
-  rollupGtmFunnelStage,
-} from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
+  rollupOutreachFunnelStage,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -29,8 +29,8 @@ type CandidateRow = ObjectLiteral & {
 
 type CompanyRow = ObjectLiteral & {
   id: string;
-  gtmRunKey?: unknown;
-  gtmFunnelStage?: string | null;
+  projectIds?: unknown;
+  outreachFunnelStage?: string | null;
   firstContactAt?: string | Date | null;
   peopleReached?: number | null;
   peopleTargeted?: number | null;
@@ -75,7 +75,7 @@ const toIso = (value: string | Date | null | undefined): string | null => {
   description:
     'Stamp candidate firstOutboundAt and company GTM funnel/first-contact rollups for existing outreach',
 })
-export class BackfillGtmCommandRollupsCommand extends ProvisionedWorkspaceCommandRunner {
+export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
@@ -183,8 +183,8 @@ export class BackfillGtmCommandRollupsCommand extends ProvisionedWorkspaceComman
         }
 
         if (
-          !companyColumns.has('gtmRunKey') ||
-          !companyColumns.has('gtmFunnelStage')
+          !companyColumns.has('projectIds') ||
+          !companyColumns.has('outreachFunnelStage')
         ) {
           this.logger.log(
             `Stamped firstOutboundAt on ${stampedCandidates} candidates; company fields missing`,
@@ -236,7 +236,7 @@ export class BackfillGtmCommandRollupsCommand extends ProvisionedWorkspaceComman
         let stampedCompanies = 0;
 
         for (const company of companies) {
-          if (parseGtmRunKeys(company.gtmRunKey).length === 0) {
+          if (parseProjectIds(company.projectIds).length === 0) {
             continue;
           }
 
@@ -247,15 +247,15 @@ export class BackfillGtmCommandRollupsCommand extends ProvisionedWorkspaceComman
             toIso(company.firstContactAt) ??
             [...reachedAt].sort()[0] ??
             null;
-          const gtmFunnelStage = rollupGtmFunnelStage({
-            current: company.gtmFunnelStage ?? 'ADDED',
+          const outreachFunnelStage = rollupOutreachFunnelStage({
+            current: company.outreachFunnelStage ?? 'ADDED',
             event: peopleReached > 0 ? 'connection_sent' : 'enrich_started',
             peopleReached,
           });
           const patch: Record<string, unknown> = {};
 
-          if (company.gtmFunnelStage !== gtmFunnelStage) {
-            patch.gtmFunnelStage = gtmFunnelStage;
+          if (company.outreachFunnelStage !== outreachFunnelStage) {
+            patch.outreachFunnelStage = outreachFunnelStage;
           }
 
           if (

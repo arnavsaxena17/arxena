@@ -12,7 +12,7 @@ export const UNTESTED_APP_PATHS = [
   AppPath.Project,
   AppPath.Search,
   AppPath.Assistant,
-  AppPath.GtmHome,
+  AppPath.OutreachHome,
   AppPath.ClientCandidateSearch,
   AppPath.VideoInterview,
   AppPath.VideoInterviewReview,

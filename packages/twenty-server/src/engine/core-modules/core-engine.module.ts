@@ -72,7 +72,7 @@ import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service'
 import { OpenApiModule } from 'src/engine/core-modules/open-api/open-api.module';
 import { OrgChartEmbedModule } from 'src/engine/core-modules/org-chart-embed/org-chart-embed.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
-import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
@@ -229,7 +229,7 @@ import { FileModule } from './file/file.module';
     CompanyApiModule,
     JobsApiModule,
     PostsApiModule,
-    GtmCommandModule,
+    OutreachCommandModule,
     ArxChatAgentModule,
     GoogleCalendarModule,
     GoogleDriveModule,

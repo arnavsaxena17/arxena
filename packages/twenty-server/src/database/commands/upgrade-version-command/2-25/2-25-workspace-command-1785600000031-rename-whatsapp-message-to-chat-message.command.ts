@@ -66,7 +66,7 @@ export class RenameWhatsappMessageToChatMessageCommand extends ProvisionedWorksp
     }
 
     await this.patchWorkflowObjectNames({ workspaceId, isDryRun });
-    await this.syncGtmOutreachWorkflowsSkill({ workspaceId, isDryRun });
+    await this.syncOutreachWorkflowsSkill({ workspaceId, isDryRun });
   }
 
   private async ensureChatMessageIndexes(workspaceId: string): Promise<void> {
@@ -170,7 +170,7 @@ export class RenameWhatsappMessageToChatMessageCommand extends ProvisionedWorksp
     );
   }
 
-  private async syncGtmOutreachWorkflowsSkill({
+  private async syncOutreachWorkflowsSkill({
     workspaceId,
     isDryRun,
   }: {

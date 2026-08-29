@@ -35,7 +35,7 @@ const PROJECT_RATE_LIMIT_FIELDS = [
   description:
     'Drop Project GTM quota/counter/gap fields; LinkedIn Unipile account limits own those caps',
 })
-export class DropGtmProjectRateLimitFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class DropOutreachProjectRateLimitFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     @InjectRepository(FieldMetadataEntity)

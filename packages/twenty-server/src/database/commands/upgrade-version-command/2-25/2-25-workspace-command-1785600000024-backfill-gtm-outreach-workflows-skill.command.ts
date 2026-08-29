@@ -16,7 +16,7 @@ import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspa
   description:
     'Backfill missing standard skills (including gtm-outreach-workflows) for existing workspaces',
 })
-export class BackfillGtmOutreachWorkflowsSkillCommand extends ProvisionedWorkspaceCommandRunner {
+export class BackfillOutreachWorkflowsSkillCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

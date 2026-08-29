@@ -25,7 +25,7 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   description:
     'Sync GTM sequencer skill content (harvest vs Redis, FORM HITL, .result paths) for existing workspaces',
 })
-export class SyncGtmSequencerSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachSequencerSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

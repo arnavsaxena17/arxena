@@ -9,7 +9,7 @@ import { ApplicationService } from 'src/engine/core-modules/application/applicat
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000040)
 @Command({
@@ -17,7 +17,7 @@ import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standa
   description:
     'Replace System GTM outreach DRAFT graphs with WhatsApp form Details contact, company, and draft variables',
 })
-export class ResyncGtmOutreachWhatsappFormDetailsCommand extends ProvisionedWorkspaceCommandRunner {
+export class ResyncOutreachWhatsappFormDetailsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,
@@ -55,7 +55,7 @@ export class ResyncGtmOutreachWhatsappFormDetailsCommand extends ProvisionedWork
     try {
       await queryRunner.startTransaction();
 
-      await prefillGtmOutreachWorkflows({
+      await prefillOutreachWorkflows({
         entityManager: queryRunner.manager,
         workspaceId,
         schemaName,

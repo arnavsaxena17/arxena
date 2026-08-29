@@ -18,15 +18,15 @@ import { mergeDefaultFunctionInputAndFunctionInput } from '@/workflow/workflow-s
 import { setNestedValue } from '@/workflow/workflow-steps/workflow-actions/code-action/utils/setNestedValue';
 import { WORKFLOW_LOGIC_FUNCTION_ACTION_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/WorkflowLogicFunctionActionTabListComponentId';
 import {
-  getGtmNativeLogicFunctionSampleOutput,
-  isNativeGtmLogicFunction,
-} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+  getOutreachNativeLogicFunctionSampleOutput,
+  isNativeOutreachLogicFunction,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 import { WorkflowLogicFunctionAiModelSelect } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/components/WorkflowLogicFunctionAiModelSelect';
 import {
-  applyGtmNativeLogicFunctionInputSchema,
-  getGtmNativeLogicFunctionFormFields,
-  normalizeGtmNativeLogicFunctionInput,
-} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/applyGtmNativeLogicFunctionInputSchema';
+  applyOutreachNativeLogicFunctionInputSchema,
+  getOutreachNativeLogicFunctionFormFields,
+  normalizeOutreachNativeLogicFunctionInput,
+} from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/applyOutreachNativeLogicFunctionInputSchema';
 import { shouldDefaultLogicFunctionSampleOutput } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/utils/shouldDefaultLogicFunctionSampleOutput';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variables/hooks/useAvailableVariablesInWorkflowStep';
@@ -106,7 +106,7 @@ export const WorkflowEditActionLogicFunction = ({
 
   const inputSchema = useMemo(
     () =>
-      applyGtmNativeLogicFunctionInputSchema(
+      applyOutreachNativeLogicFunctionInputSchema(
         logicFunction?.name,
         logicFunction?.workflowActionTriggerSettings?.inputSchema,
       ),
@@ -118,7 +118,7 @@ export const WorkflowEditActionLogicFunction = ({
 
   const functionInput = useMemo(() => {
     if (!isDefined(inputSchema)) {
-      return normalizeGtmNativeLogicFunctionInput(
+      return normalizeOutreachNativeLogicFunctionInput(
         logicFunction?.name,
         action.settings.input.logicFunctionInput ?? {},
       );
@@ -127,13 +127,13 @@ export const WorkflowEditActionLogicFunction = ({
     const defaultInput = getFunctionInputFromInputSchema(inputSchema)[0];
 
     if (!isObject(defaultInput)) {
-      return normalizeGtmNativeLogicFunctionInput(
+      return normalizeOutreachNativeLogicFunctionInput(
         logicFunction?.name,
         action.settings.input.logicFunctionInput ?? {},
       );
     }
 
-    return normalizeGtmNativeLogicFunctionInput(
+    return normalizeOutreachNativeLogicFunctionInput(
       logicFunction?.name,
       mergeDefaultFunctionInputAndFunctionInput({
         newInput: defaultInput,
@@ -146,7 +146,7 @@ export const WorkflowEditActionLogicFunction = ({
     logicFunction?.name,
   ]);
 
-  const formFields = getGtmNativeLogicFunctionFormFields({
+  const formFields = getOutreachNativeLogicFunctionFormFields({
     logicFunctionName: logicFunction?.name,
     inputSchema,
     functionInput,
@@ -174,7 +174,7 @@ export const WorkflowEditActionLogicFunction = ({
       return sampleFromSettings;
     }
 
-    return getGtmNativeLogicFunctionSampleOutput(logicFunction?.name);
+    return getOutreachNativeLogicFunctionSampleOutput(logicFunction?.name);
   }, [
     logicFunction?.name,
     logicFunction?.workflowActionTriggerSettings?.sampleOutput,
@@ -221,7 +221,7 @@ export const WorkflowEditActionLogicFunction = ({
       return;
     }
 
-    if (isNativeGtmLogicFunction(logicFunction?.name)) {
+    if (isNativeOutreachLogicFunction(logicFunction?.name)) {
       return;
     }
 
@@ -243,7 +243,7 @@ export const WorkflowEditActionLogicFunction = ({
     callback: updateOutputSchemaFromTestResult,
   });
 
-  const testInput = normalizeGtmNativeLogicFunctionInput(
+  const testInput = normalizeOutreachNativeLogicFunctionInput(
     logicFunction?.name,
     mergeDefaultFunctionInputAndFunctionInput({
       newInput: functionInput,
@@ -251,7 +251,7 @@ export const WorkflowEditActionLogicFunction = ({
     }),
   );
 
-  const testFormFields = getGtmNativeLogicFunctionFormFields({
+  const testFormFields = getOutreachNativeLogicFunctionFormFields({
     logicFunctionName: logicFunction?.name,
     inputSchema,
     functionInput: testInput,

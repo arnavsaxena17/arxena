@@ -6,7 +6,7 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000025)
 @Command({
@@ -14,7 +14,7 @@ import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-man
   description:
     'Seed missing native GTM logic functions (search-people, search-companies, search-jobs, search-posts) for existing workspaces',
 })
-export class EnsureGtmSearchLogicFunctionsCommand extends ProvisionedWorkspaceCommandRunner {
+export class EnsureOutreachSearchLogicFunctionsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -42,7 +42,7 @@ export class EnsureGtmSearchLogicFunctionsCommand extends ProvisionedWorkspaceCo
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
   }

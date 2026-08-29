@@ -11,8 +11,8 @@ import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/works
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000059)
 @Command({
@@ -20,7 +20,7 @@ import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standa
   description:
     'Re-seed fetch-linkedin-profile so existing workspaces get people[] on outputSchema/sampleOutput, and resync GTM outreach draft graphs',
 })
-export class SyncGtmFetchLinkedinProfilePeopleOutputCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachFetchLinkedinProfilePeopleOutputCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -53,7 +53,7 @@ export class SyncGtmFetchLinkedinProfilePeopleOutputCommand extends ProvisionedW
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
 
@@ -69,7 +69,7 @@ export class SyncGtmFetchLinkedinProfilePeopleOutputCommand extends ProvisionedW
     try {
       await queryRunner.startTransaction();
 
-      await prefillGtmOutreachWorkflows({
+      await prefillOutreachWorkflows({
         entityManager: queryRunner.manager,
         workspaceId,
         schemaName,

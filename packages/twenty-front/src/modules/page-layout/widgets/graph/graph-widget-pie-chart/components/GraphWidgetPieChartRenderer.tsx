@@ -1,4 +1,4 @@
-import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
+import { useOutreachDashboardScopedChartConfiguration } from '@/outreach-dashboard/hooks/useOutreachDashboardScope';
 import { useIsPageLayoutInEditMode } from '@/page-layout/hooks/useIsPageLayoutInEditMode';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
@@ -50,7 +50,7 @@ export const GraphWidgetPieChartRenderer = () => {
   });
 
   const navigate = useNavigate();
-  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+  const scopedConfiguration = useOutreachDashboardScopedChartConfiguration({
     configuration: widget.configuration,
     objectMetadataItemId: widget.objectMetadataId,
   });

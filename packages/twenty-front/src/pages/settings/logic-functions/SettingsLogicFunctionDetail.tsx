@@ -25,7 +25,7 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { SettingsLogicFunctionCodeEditorTab } from '@/settings/logic-functions/components/tabs/SettingsLogicFunctionCodeEditorTab';
 import { useExecuteLogicFunction } from '@/logic-functions/hooks/useExecuteLogicFunction';
-import { isNativeGtmLogicFunction } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+import { isNativeOutreachLogicFunction } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 
 const LOGIC_FUNCTION_DETAIL_ID = 'logic-function-detail';
 
@@ -159,7 +159,7 @@ export const SettingsLogicFunctionDetail = () => {
               onChange={onChange('sourceHandlerCode')}
               isTesting={isExecuting}
               applicationVariableKeys={applicationVariableKeys}
-              isNative={isNativeGtmLogicFunction(logicFunction?.name)}
+              isNative={isNativeOutreachLogicFunction(logicFunction?.name)}
             />
           )}
           {isTriggersTab && (

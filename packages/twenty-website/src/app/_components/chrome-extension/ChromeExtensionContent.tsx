@@ -125,8 +125,8 @@ export const ChromeExtensionContent = () => {
         </li>
         <li>Fetch phone numbers and other contact details where available.</li>
         <li>
-          Start a conversation with someone for a specific job so outreach stays
-          tied to the role you are recruiting for.
+          Start a conversation tied to a specific role or account so outreach
+          stays grounded in context.
         </li>
       </StyledBulletList>
     </StyledSection>

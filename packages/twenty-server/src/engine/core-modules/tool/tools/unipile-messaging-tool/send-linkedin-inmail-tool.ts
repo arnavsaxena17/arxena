@@ -3,12 +3,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/gtm-command/services/linkedin-provider-id.store';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
   SendLinkedinInmailToolInputZodSchema,
   type SendLinkedinInmailToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-inmail-tool-input.type';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,

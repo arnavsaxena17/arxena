@@ -1,5 +1,10 @@
+import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+
 /**
  * LLM-facing intent vocabulary. Internal ToolCategory / MCP / LF names stay unchanged.
+ *
+ * Neutral CRM copy: Outreach (not GTM); Your company; Target titles (JSON key
+ * buyerTitles); people / enrolled people; create_candidate = enrollment record.
  */
 export const CHAT_INTENT_SKILLS = {
   setup: 'setup',
@@ -13,38 +18,38 @@ export const CHAT_INTENT_SKILLS = {
 export type ChatIntentSkillName =
   (typeof CHAT_INTENT_SKILLS)[keyof typeof CHAT_INTENT_SKILLS];
 
-/** Stable display names for seeded GTM outreach graphs (IDs via list_workflows). */
-export const GTM_SEEDED_WORKFLOW_INVENTORY = [
+/** Stable display names for seeded outreach graphs (IDs via list_workflows). */
+export const SEEDED_OUTREACH_WORKFLOW_INVENTORY = [
   {
-    name: 'GTM Harvest — LinkedIn Companies',
-    trigger: 'CRON',
-    role: 'Harvest',
+    name: SEEDED_OUTREACH_WORKFLOW.harvest.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.harvest.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.harvest.role,
   },
   {
-    name: 'Company Created → ICP People Search',
-    trigger: 'company.created',
-    role: 'Enroll-on-company',
+    name: SEEDED_OUTREACH_WORKFLOW.companySearch.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.companySearch.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.companySearch.role,
   },
   {
-    name: 'GTM Outreach — Per Candidate',
-    trigger: 'candidate.created',
-    role: 'Sequencer B',
+    name: SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.perCandidate.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.perCandidate.role,
   },
   {
-    name: 'GTM Outreach — Candidate Updated',
-    trigger: 'candidate.updated',
-    role: 'Stage updates',
+    name: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.role,
   },
 ] as const;
 
-export const buildGtmSeededWorkflowInventoryLines = (
+export const buildSeededOutreachWorkflowInventoryLines = (
   outreachWorkflowId?: string | null,
 ): string[] => {
   const lines = [
     'Seeded workflows (prefer activate + reuse; resolve ids via list_workflows):',
   ];
 
-  for (const entry of GTM_SEEDED_WORKFLOW_INVENTORY) {
+  for (const entry of SEEDED_OUTREACH_WORKFLOW_INVENTORY) {
     const isPerCandidate = entry.role === 'Sequencer B';
     const bound =
       isPerCandidate && outreachWorkflowId

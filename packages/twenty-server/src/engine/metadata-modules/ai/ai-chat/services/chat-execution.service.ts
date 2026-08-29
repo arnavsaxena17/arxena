@@ -58,7 +58,7 @@ import {
 } from 'src/engine/metadata-modules/ai/ai-billing/utils/extract-cache-creation-tokens.util';
 import { AI_CHAT_TOOL_NAMES_TO_PRELOAD } from 'src/engine/metadata-modules/ai/ai-chat/constants/ai-chat-tool-names-to-preload.const';
 import {
-  buildGtmSeededWorkflowInventoryLines,
+  buildSeededOutreachWorkflowInventoryLines,
   CHAT_INTENT_SKILLS,
 } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
 import { MessagePruningService } from 'src/engine/metadata-modules/ai/ai-chat/services/message-pruning.service';
@@ -858,8 +858,8 @@ export class ChatExecutionService {
 
     const lastUserMessage = messages[lastUserIndex];
     const note =
-      browsingContextType === 'gtmCommand'
-        ? 'When the user asks to find/fetch/add/build target companies for this GTM project, follow the GTM rules below and call upsert_gtm_target_companies with this projectId. When they ask to find people (MD/CEO, buyers, etc.), call upsert_gtm_target_people — never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list.'
+      browsingContextType === 'outreachCommand'
+        ? 'When the user asks to find/fetch/add/build target companies for this GTM project, follow the GTM rules below and call upsert_outreach_target_companies with this projectId. When they ask to find people (MD/CEO, buyers, etc.), call upsert_outreach_target_people — never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list.'
         : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
     const browsingContextPart = {
       type: 'text' as const,
@@ -894,15 +894,15 @@ export class ChatExecutionService {
       return this.buildListViewContext(browsingContext);
     }
 
-    if (browsingContext.type === 'gtmCommand') {
-      return this.buildGtmCommandContext(browsingContext);
+    if (browsingContext.type === 'outreachCommand') {
+      return this.buildOutreachCommandContext(browsingContext);
     }
 
     return '';
   }
 
-  private buildGtmCommandContext(
-    browsingContext: Extract<BrowsingContextType, { type: 'gtmCommand' }>,
+  private buildOutreachCommandContext(
+    browsingContext: Extract<BrowsingContextType, { type: 'outreachCommand' }>,
   ): string {
     const { search, outreach, workflowBuilding } = CHAT_INTENT_SKILLS;
 
@@ -910,7 +910,6 @@ export class ChatExecutionService {
       'The user is on campaign home (Find companies / people / outreach).',
       `projectId: ${browsingContext.projectId ?? 'none'}`,
       `projectName: ${browsingContext.projectName ?? 'none'}`,
-      `gtmRunKey: ${browsingContext.gtmRunKey ?? browsingContext.projectId ?? 'none'}`,
       `outreachWorkflowId: ${browsingContext.outreachWorkflowId ?? 'none'}`,
       `sendMode: ${browsingContext.outreachSendMode}`,
       `phase: ${browsingContext.phase ?? 'live'}`,
@@ -919,26 +918,26 @@ export class ChatExecutionService {
       `icp: ${browsingContext.icpName ?? 'none'}`,
       `icpSpec: ${browsingContext.icpSpecSummary ?? 'none'}`,
       `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
-      ...buildGtmSeededWorkflowInventoryLines(
+      ...buildSeededOutreachWorkflowInventoryLines(
         browsingContext.outreachWorkflowId,
       ),
       'Target companies on the Companies tab are ephemeral (Find destination), not CRM membership.',
       'When the user asks to find/fetch/add/build target companies:',
       `1. load_skills(["${search}"])`,
       '2. Search providers per the search skill',
-      '3. learn_tools({toolNames:["upsert_gtm_target_companies"]}) then execute_tool with a JSON-object arguments field',
-      '4. Call upsert_gtm_target_companies({ projectId, mode: "merge", companies: [...] }) before ending the turn',
+      '3. learn_tools({toolNames:["upsert_outreach_target_companies"]}) then execute_tool with a JSON-object arguments field',
+      '4. Call upsert_outreach_target_companies({ projectId, mode: "merge", companies: [...] }) before ending the turn',
       'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when enrolling people.',
       'Target people on the People tab are ephemeral (Find) until the user selects rows and confirms Add to CRM / Enroll.',
-      'When the user asks to find/fetch/search people (MD/CEO, buyers, personas) for this campaign:',
+      'When the user asks to find/fetch/search people (target titles, MD/CEO, personas) for this campaign:',
       `1. load_skills(["${search}"])`,
       '2. Search using companies from this project when relevant',
-      '3. learn_tools({toolNames:["upsert_gtm_target_people"]}) then execute_tool with a JSON-object arguments field',
-      '4. Call upsert_gtm_target_people({ projectId, mode: "merge", people: [...] }) before ending the turn',
+      '3. learn_tools({toolNames:["upsert_outreach_target_people"]}) then execute_tool with a JSON-object arguments field',
+      '4. Call upsert_outreach_target_people({ projectId, mode: "merge", people: [...] }) before ending the turn',
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
       'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this project:',
       `1. load_skills(["${outreach}","${workflowBuilding}"]) — treat that ask as execute authorization for enrollment`,
-      '2. Prefer Project outreachWorkflowId / name "GTM Outreach — Per Candidate"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
+      '2. Prefer Project outreachWorkflowId / name "Outreach — Per Enrolled Person" (legacy: "GTM Outreach — Per Candidate"); clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
       '3. Candidate Links field is linkedinUrl.primaryLinkUrl (Person uses linkedinLink) — fix SEND_* templates if they still say linkedinLink',
       '4. Activate the draft, then create Candidates for ephemeral People with projectsId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',
       '5. list_workflow_runs for outreachWorkflowId and summarize — do not end the turn stuck on metadata or parse retries',

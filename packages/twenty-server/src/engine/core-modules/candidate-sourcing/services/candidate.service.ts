@@ -29,14 +29,14 @@ import { NameProcessor } from '../../workspace-modifications/object-apis/data/na
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { generateCompleteMappings, mapArxCandidateToPersonNode, processArxCandidate } from 'src/engine/core-modules/candidate-sourcing/utils/data-transformation-utility';
 import {
-  buildGtmQueuedCreateFields,
-  isGtmSourcingEnrollment,
-} from 'src/engine/core-modules/gtm-command/utils/gtm-queued-enrollment.util';
+  buildOutreachQueuedCreateFields,
+  isOutreachSourcingEnrollment,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-queued-enrollment.util';
 import {
-  assignGtmExperimentVariant,
-  parseGtmExperimentConfig,
-} from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+  assignOutreachExperimentVariant,
+  parseOutreachExperimentConfig,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import {
   CandidateUploadLookup,
@@ -1623,8 +1623,8 @@ export class CandidateService {
             whatsapp_key,
           );
           const otherFields = buildOtherFieldsFromUnmapped(unmappedCandidateObject);
-          const enrollGtm = isGtmSourcingEnrollment(origin, jobObject);
-          const experimentConfig = parseGtmExperimentConfig(
+          const enrollOutreach = isOutreachSourcingEnrollment(origin, jobObject);
+          const experimentConfig = parseOutreachExperimentConfig(
             (jobObject as { experimentConfig?: string | null }).experimentConfig,
           );
           const linkedinProfileIdForVariant =
@@ -1637,10 +1637,10 @@ export class CandidateService {
             extractLinkedinProfileId(profile.profileUrl) ||
             '';
           const experimentVariant =
-            enrollGtm &&
+            enrollOutreach &&
             experimentConfig?.status === 'running' &&
             linkedinProfileIdForVariant
-              ? assignGtmExperimentVariant({
+              ? assignOutreachExperimentVariant({
                   seed: linkedinProfileIdForVariant,
                   split: experimentConfig.split,
                 })
@@ -1650,8 +1650,8 @@ export class CandidateService {
             ...candidateNode,
             peopleId: personId || undefined,
             otherFields,
-            ...(enrollGtm
-              ? buildGtmQueuedCreateFields({
+            ...(enrollOutreach
+              ? buildOutreachQueuedCreateFields({
                   linkedinUrl: profile.linkedinUrl,
                   profileUrl: profile.profileUrl,
                   linkedinProfileId: (

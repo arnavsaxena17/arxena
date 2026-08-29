@@ -51,9 +51,9 @@ const AssistantPage = lazy(() =>
   })),
 );
 
-const GtmHomePage = lazy(() =>
-  import('@/gtm-home/components/GtmHomePage').then((module) => ({
-    default: module.GtmHomePage,
+const OutreachHomePage = lazy(() =>
+  import('@/outreach-home/components/OutreachHomePage').then((module) => ({
+    default: module.OutreachHomePage,
   })),
 );
 
@@ -306,11 +306,11 @@ const createWorkspaceAppRouter = (
                 }
               />
               <Route
-                path={AppPath.GtmHome}
+                path={AppPath.OutreachHome}
                 element={
                   <LazyRoute>
                     <Suspense fallback={null}>
-                      <GtmHomePage />
+                      <OutreachHomePage />
                     </Suspense>
                   </LazyRoute>
                 }

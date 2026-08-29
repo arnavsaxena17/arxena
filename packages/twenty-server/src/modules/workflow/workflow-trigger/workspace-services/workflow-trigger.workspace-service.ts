@@ -8,9 +8,9 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import {
-  parseGtmExperimentConfig,
-  stringifyGtmExperimentConfig,
-} from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
+  parseOutreachExperimentConfig,
+  stringifyOutreachExperimentConfig,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { CommandMenuItemService } from 'src/engine/metadata-modules/command-menu-item/command-menu-item.service';
 import { CommandMenuItemAvailabilityType } from 'src/engine/metadata-modules/command-menu-item/enums/command-menu-item-availability-type.enum';
@@ -396,7 +396,7 @@ export class WorkflowTriggerWorkspaceService {
       });
 
       for (const project of projects) {
-        const existing = parseGtmExperimentConfig(project.experimentConfig);
+        const existing = parseOutreachExperimentConfig(project.experimentConfig);
         const nextConfig = {
           status: 'running' as const,
           split: existing?.split ?? 0.5,
@@ -412,7 +412,7 @@ export class WorkflowTriggerWorkspaceService {
         };
 
         await projectRepository.update(project.id, {
-          experimentConfig: stringifyGtmExperimentConfig(nextConfig),
+          experimentConfig: stringifyOutreachExperimentConfig(nextConfig),
         });
       }
     } catch (error) {

@@ -1,7 +1,7 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { GTM_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
+import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
@@ -53,7 +53,7 @@ Do NOT use this for native GTM workflow actions (kebab-case LFs — distinct fro
 
       const isNative =
         isDefined(logicFunction) &&
-        GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(logicFunction.name);
+        OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES.has(logicFunction.name);
 
       if (isNative) {
         return {

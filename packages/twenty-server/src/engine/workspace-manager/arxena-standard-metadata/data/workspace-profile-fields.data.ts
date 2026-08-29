@@ -6,7 +6,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Seller company name for GTM Command',
+      description: 'Your company name for Outreach',
       icon: 'IconBuilding',
       label: 'Company Name',
       name: 'companyName',
@@ -17,7 +17,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Seller company domain (usually signup work email domain)',
+      description: 'Your company domain (usually signup work email domain)',
       icon: 'IconWorld',
       label: 'Company Domain',
       name: 'companyDomain',
@@ -28,7 +28,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Seller company industry',
+      description: 'Your company industry',
       icon: 'IconBuildingFactory',
       label: 'Industry',
       name: 'industry',
@@ -39,7 +39,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Short seller company summary / blurb',
+      description: 'Short company summary / blurb',
       icon: 'IconNotes',
       label: 'Summary',
       name: 'summary',
@@ -50,7 +50,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Seller company employee range',
+      description: 'Your company employee range',
       icon: 'IconUsers',
       label: 'Employee Range',
       name: 'employeeRange',
@@ -61,7 +61,7 @@ export const getWorkspaceProfileFieldsData = (
   {
     objectName: 'workspaceProfile',
     field: {
-      description: 'Seller company HQ / primary geo',
+      description: 'Your company HQ / primary geo',
       icon: 'IconMapPin',
       label: 'HQ',
       name: 'hq',
@@ -85,7 +85,7 @@ export const getWorkspaceProfileFieldsData = (
     objectName: 'workspaceProfile',
     field: {
       description:
-        'Default ICP JSON (buyerTitles and locations) shared across GTM projects',
+        'Default ICP JSON (buyerTitles and locations) shared across outreach projects',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',

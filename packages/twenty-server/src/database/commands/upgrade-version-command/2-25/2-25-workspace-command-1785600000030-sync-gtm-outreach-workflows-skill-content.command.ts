@@ -21,7 +21,7 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   description:
     'Sync gtm-outreach-workflows skill content (upload-profiles enroll + sequential messageObj) for existing workspaces',
 })
-export class SyncGtmOutreachWorkflowsSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachWorkflowsSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

@@ -2,7 +2,7 @@ import { CODE_STEP_LOGIC_FUNCTION_NAME } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { GTM_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/gtm-command/constants/gtm-logic-function-names.const';
+import { OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
 import { type WorkflowToolContext } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
@@ -10,7 +10,7 @@ import { type WorkflowToolContext } from 'src/modules/workflow/workflow-tools/ty
 const listLogicFunctionToolsSchema = z.object({});
 
 const isNativeLogicFunction = (fn: FlatLogicFunction): boolean =>
-  GTM_NATIVE_LOGIC_FUNCTION_NAMES.has(fn.name);
+  OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES.has(fn.name);
 
 export const createListLogicFunctionToolsTool = (
   deps: {
@@ -20,7 +20,7 @@ export const createListLogicFunctionToolsTool = (
 ) => ({
   name: 'list_logic_function_tools' as const,
   description:
-    `List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (${[...GTM_NATIVE_LOGIC_FUNCTION_NAMES].join(', ')}) include isNative=true — do not read their source; use inputSchema. Search LFs return hits only. Persist people with upload-profiles; persist harvested companies with upsert-companies. enrich-contact and get-calendar-availability are native.`,
+    `List workflow LOGIC_FUNCTION actions with IDs, names, descriptions, and input/output schemas. Native GTM functions (${[...OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES].join(', ')}) include isNative=true — do not read their source; use inputSchema. Search LFs return hits only. Persist people with upload-profiles; persist harvested companies with upsert-companies. enrich-contact and get-calendar-availability are native.`,
   inputSchema: listLogicFunctionToolsSchema,
   execute: async () => {
     const { flatLogicFunctionMaps } =

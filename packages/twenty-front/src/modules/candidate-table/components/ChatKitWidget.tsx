@@ -183,10 +183,10 @@ export const ChatKitWidget = ({ isOpen, onClose, workflowId }: ChatKitWidgetProp
       density: 'compact',
     },
     composer: {
-      placeholder: 'Ask anything about your candidates...',
+      placeholder: 'Ask anything about these people...',
     },
     startScreen: {
-      greeting: 'Welcome! How can I help you with your recruitment today?',
+      greeting: 'Welcome! How can I help with this project today?',
     },
   });
 

@@ -9,16 +9,16 @@ import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/deco
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
-import { GTM_COMMAND_DASHBOARD_TITLE } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-gtm-command-dashboard-page-layout.util';
-import { prefillGtmCommandDashboard } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-dashboards.util';
+import { OUTREACH_DASHBOARD_TITLE } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-page-layout.util';
+import { prefillOutreachDashboard } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-dashboards.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000057)
 @Command({
   name: 'upgrade:2-25:prefill-gtm-command-dashboard',
   description:
-    'Sync the GTM Command dashboard page layout and insert the dashboard record on existing workspaces (skip if already titled GTM Command)',
+    'Sync the Outreach dashboard page layout and insert the dashboard record on existing workspaces (skip if already titled Outreach)',
 })
-export class PrefillGtmCommandDashboardCommand extends ProvisionedWorkspaceCommandRunner {
+export class PrefillOutreachCommandDashboardCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
@@ -37,7 +37,7 @@ export class PrefillGtmCommandDashboardCommand extends ProvisionedWorkspaceComma
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     this.logger.log(
-      `${isDryRun ? '[DRY RUN] ' : ''}Prefilling ${GTM_COMMAND_DASHBOARD_TITLE} dashboard for workspace ${workspaceId}`,
+      `${isDryRun ? '[DRY RUN] ' : ''}Prefilling ${OUTREACH_DASHBOARD_TITLE} dashboard for workspace ${workspaceId}`,
     );
 
     if (isDryRun) {
@@ -64,7 +64,7 @@ export class PrefillGtmCommandDashboardCommand extends ProvisionedWorkspaceComma
     try {
       await queryRunner.startTransaction();
 
-      const result = await prefillGtmCommandDashboard({
+      const result = await prefillOutreachDashboard({
         entityManager: queryRunner.manager,
         schemaName,
         flatPageLayoutMaps,
@@ -74,12 +74,12 @@ export class PrefillGtmCommandDashboardCommand extends ProvisionedWorkspaceComma
 
       if (result === 'skipped-missing-layout') {
         throw new Error(
-          `${GTM_COMMAND_DASHBOARD_TITLE} page layout was not found after Arxena standard sync for workspace ${workspaceId}`,
+          `${OUTREACH_DASHBOARD_TITLE} page layout was not found after Arxena standard sync for workspace ${workspaceId}`,
         );
       }
 
       this.logger.log(
-        `${GTM_COMMAND_DASHBOARD_TITLE} dashboard ${result} for workspace ${workspaceId}`,
+        `${OUTREACH_DASHBOARD_TITLE} dashboard ${result} for workspace ${workspaceId}`,
       );
     } catch (error) {
       if (queryRunner.isTransactionActive) {

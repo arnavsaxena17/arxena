@@ -1,4 +1,4 @@
-import { useGtmDashboardChartScopeKey } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
+import { useOutreachDashboardChartScopeKey } from '@/outreach-dashboard/hooks/useOutreachDashboardScope';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
 import { useGraphWidgetAggregateQuery } from '@/page-layout/widgets/graph/hooks/useGraphWidgetAggregateQuery';
@@ -20,7 +20,7 @@ export const GraphWidgetAggregateChartRenderer = () => {
 
   assertAggregateChartWidgetOrThrow(widget);
 
-  const gtmDashboardChartScopeKey = useGtmDashboardChartScopeKey();
+  const outreachDashboardChartScopeKey = useOutreachDashboardChartScopeKey();
 
   const { value, loading, error } = useGraphWidgetAggregateQuery({
     objectMetadataItemId: widget.objectMetadataId,
@@ -38,7 +38,7 @@ export const GraphWidgetAggregateChartRenderer = () => {
   return (
     <Suspense fallback={<WidgetSkeletonLoader />}>
       <GraphWidgetAggregateChart
-        key={gtmDashboardChartScopeKey}
+        key={outreachDashboardChartScopeKey}
         value={value ?? '-'}
         prefix={widget.configuration.prefix ?? undefined}
         suffix={widget.configuration.suffix ?? undefined}

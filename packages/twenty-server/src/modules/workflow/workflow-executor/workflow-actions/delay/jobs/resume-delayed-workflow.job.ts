@@ -4,7 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { StepStatus } from 'twenty-shared/workflow';
 import { type ObjectLiteral } from 'typeorm';
 
-import { GTM_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
+import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
@@ -92,7 +92,7 @@ export class ResumeDelayedWorkflowJob {
             stepInfo: {
               ...stepInfo,
               status: StepStatus.PENDING,
-              pendingReason: GTM_PROJECT_PAUSED_PENDING_REASON,
+              pendingReason: OUTREACH_PROJECT_PAUSED_PENDING_REASON,
               waitMs: 0,
             },
             workspaceId,

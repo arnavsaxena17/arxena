@@ -12,11 +12,11 @@ import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspa
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000012)
 @Command({
-  name: 'upgrade:2-25:backfill-gtm-icp-onboarding-skill',
+  name: 'upgrade:2-25:backfill-outreach-icp-onboarding-skill',
   description:
-    'Backfill missing standard skills (including gtm-icp-onboarding) for existing workspaces',
+    'Backfill missing standard skills (including outreach-icp-onboarding) for existing workspaces',
 })
-export class BackfillGtmIcpOnboardingSkillCommand extends ProvisionedWorkspaceCommandRunner {
+export class BackfillIcpOnboardingSkillCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

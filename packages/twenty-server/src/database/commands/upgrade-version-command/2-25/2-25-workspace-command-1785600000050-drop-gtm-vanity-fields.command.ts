@@ -14,7 +14,7 @@ import { FieldMetadataService } from 'src/engine/metadata-modules/field-metadata
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 
 const FIELDS_TO_DROP_BY_OBJECT: Record<string, readonly string[]> = {
   person: [
@@ -46,7 +46,7 @@ const ALL_FIELD_NAMES = [
   description:
     'Drop unused GTM vanity/duplicate fields; collapse connectionStatus into outreachSequenceStage CONNECTION_IGNORED',
 })
-export class DropGtmVanityFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class DropOutreachVanityFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     @InjectRepository(FieldMetadataEntity)
@@ -153,7 +153,7 @@ export class DropGtmVanityFieldsCommand extends ProvisionedWorkspaceCommandRunne
 
     try {
       await queryRunner.startTransaction();
-      await prefillGtmOutreachWorkflows({
+      await prefillOutreachWorkflows({
         entityManager: queryRunner.manager,
         workspaceId,
         schemaName,

@@ -17,8 +17,8 @@ import { EngagedCandidateQueueService } from 'src/engine/core-modules/arx-chat/s
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
-import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
-import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -43,8 +43,8 @@ export class IncomingWhatsappMessages {
     private readonly staticGraphQLService: StaticGraphQLService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
-    private readonly gtmInboundReplyWindowService?: GtmInboundReplyWindowService,
-    private readonly _gtmCommandMaterializeService?: GtmCommandMaterializeService,
+    private readonly gtmInboundReplyWindowService?: OutreachInboundReplyWindowService,
+    private readonly _gtmCommandMaterializeService?: OutreachCommandMaterializeService,
     ) {
   }
 
@@ -1617,7 +1617,7 @@ export class IncomingWhatsappMessages {
     console.log("This is the replyObject in createAndUpdate Incoming CandidateChatMessage::", replyObject);
 
     try {
-      const isGtmCandidate = this.isGtmOutreachCandidate(
+      const isOutreachCandidate = this.isOutreachCandidate(
         candidateProfileDataNodeObj,
         candidateJob,
       );
@@ -1644,7 +1644,7 @@ export class IncomingWhatsappMessages {
             delayMinutes:
               candidateJob?.engagementProcessingDelayMinutes ?? 2,
             apiToken,
-            kind: isGtmCandidate ? 'gtm' : 'recruiter',
+            kind: isOutreachCandidate ? 'gtm' : 'recruiter',
             channel,
             turn: {
               role: 'user',
@@ -1687,7 +1687,7 @@ export class IncomingWhatsappMessages {
         apiToken,
       );
 
-      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && !isGtmCandidate) {
+      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && !isOutreachCandidate) {
         try {
           const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           if (workspaceId) {
@@ -1713,7 +1713,7 @@ export class IncomingWhatsappMessages {
     }
   }
 
-  private isGtmOutreachCandidate(
+  private isOutreachCandidate(
     candidate: CandidateNode & {
       projectsId?: string | null;
       outreachSequenceStage?: string | null;
@@ -1746,14 +1746,14 @@ export class IncomingWhatsappMessages {
       'FAILED_ENRICH',
       'FAILED_NO_REPLY',
     ]);
-    const projectIsGtm =
+    const projectIsOutreach =
       Boolean(project?.icpSpec) ||
       Boolean(project?.outreachWorkflowId) ||
       Boolean(project?.icpSegment) ||
       /gtm/i.test(project?.name ?? '');
 
     return Boolean(
-      (Boolean(candidate?.projectsId) && projectIsGtm) ||
+      (Boolean(candidate?.projectsId) && projectIsOutreach) ||
         gtmStages.has(stage),
     );
   }

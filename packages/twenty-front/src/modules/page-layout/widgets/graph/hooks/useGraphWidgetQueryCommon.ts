@@ -1,4 +1,4 @@
-import { useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
+import { useOutreachDashboardScopedChartConfiguration } from '@/outreach-dashboard/hooks/useOutreachDashboardScope';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { flattenedFieldMetadataItemsSelector } from '@/object-metadata/states/flattenedFieldMetadataItemsSelector';
 import { useFilterValueDependencies } from '@/object-record/record-filter/hooks/useFilterValueDependencies';
@@ -30,7 +30,7 @@ export const useGraphWidgetQueryCommon = ({
     objectId: objectMetadataItemId,
   });
 
-  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+  const scopedConfiguration = useOutreachDashboardScopedChartConfiguration({
     configuration,
     objectMetadataItemId,
   });

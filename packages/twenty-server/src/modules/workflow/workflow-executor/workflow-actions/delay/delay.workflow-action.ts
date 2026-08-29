@@ -117,7 +117,7 @@ export class DelayWorkflowAction implements WorkflowAction {
       pendingEvent: true,
       waitMs: delayInMs,
       scheduledAt,
-      pendingReason: 'gtm_sequence_delay',
+      pendingReason: 'outreach_sequence_delay',
     };
   }
 }

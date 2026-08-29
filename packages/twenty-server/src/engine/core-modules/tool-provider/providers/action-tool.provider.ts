@@ -26,8 +26,8 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
-import { UpsertGtmTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/gtm-target-companies-tool/upsert-gtm-target-companies-tool';
-import { UpsertGtmTargetPeopleTool } from 'src/engine/core-modules/tool/tools/gtm-target-people-tool/upsert-gtm-target-people-tool';
+import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
+import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
@@ -50,8 +50,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly searchHelpCenterTool: SearchHelpCenterTool,
     private readonly codeInterpreterTool: CodeInterpreterTool,
     private readonly navigateAppTool: NavigateAppTool,
-    private readonly upsertGtmTargetCompaniesTool: UpsertGtmTargetCompaniesTool,
-    private readonly upsertGtmTargetPeopleTool: UpsertGtmTargetPeopleTool,
+    private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
+    private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly extractJsonPathsTool: ExtractJsonPathsTool,
     private readonly searchOutputTool: SearchOutputTool,
     private readonly codeInterpreterService: CodeInterpreterService,
@@ -66,8 +66,8 @@ export class ActionToolProvider implements ToolProvider {
       ['search_help_center', this.searchHelpCenterTool],
       ['code_interpreter', this.codeInterpreterTool],
       ['navigate_app', this.navigateAppTool],
-      ['upsert_gtm_target_companies', this.upsertGtmTargetCompaniesTool],
-      ['upsert_gtm_target_people', this.upsertGtmTargetPeopleTool],
+      ['upsert_outreach_target_companies', this.upsertOutreachTargetCompaniesTool],
+      ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
       ['extract_json_paths', this.extractJsonPathsTool],
       ['search_output', this.searchOutputTool],
     ]);
@@ -164,8 +164,8 @@ export class ActionToolProvider implements ToolProvider {
 
     descriptors.push(
       this.buildDescriptor(
-        'upsert_gtm_target_companies',
-        this.upsertGtmTargetCompaniesTool,
+        'upsert_outreach_target_companies',
+        this.upsertOutreachTargetCompaniesTool,
         includeSchemas,
         context.locale,
       ),
@@ -173,8 +173,8 @@ export class ActionToolProvider implements ToolProvider {
 
     descriptors.push(
       this.buildDescriptor(
-        'upsert_gtm_target_people',
-        this.upsertGtmTargetPeopleTool,
+        'upsert_outreach_target_people',
+        this.upsertOutreachTargetPeopleTool,
         includeSchemas,
         context.locale,
       ),

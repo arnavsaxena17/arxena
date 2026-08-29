@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { SendLinkedinConnectionRequestWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-connection-request.workflow-action';
 import { SendLinkedinInmailWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-inmail.workflow-action';
@@ -9,7 +9,7 @@ import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
 @Module({
-  imports: [ToolModule, WorkflowRunModule, GtmCommandModule],
+  imports: [ToolModule, WorkflowRunModule, OutreachCommandModule],
   providers: [
     SendLinkedinConnectionRequestWorkflowAction,
     SendLinkedinInmailWorkflowAction,

@@ -179,18 +179,18 @@ describe('buildWorkflowRunName', () => {
     expect(
       buildWorkflowRunName({
         runNumber: 47,
-        workflowName: 'GTM Outreach — Candidate Updated',
+        workflowName: 'Outreach — Enrolled Person Updated',
         recordLabel: 'Jane Doe',
       }),
-    ).toBe('#47 - Jane Doe · GTM Outreach — Candidate Updated');
+    ).toBe('#47 - Jane Doe · Outreach — Enrolled Person Updated');
   });
 
   it('falls back to the workflow name', () => {
     expect(
       buildWorkflowRunName({
         runNumber: 1,
-        workflowName: 'GTM Outreach — Candidate Updated',
+        workflowName: 'Outreach — Enrolled Person Updated',
       }),
-    ).toBe('#1 - GTM Outreach — Candidate Updated');
+    ).toBe('#1 - Outreach — Enrolled Person Updated');
   });
 });

@@ -12,7 +12,7 @@ import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/a
   description:
     'Restore Project sendTimezone / sendWindowStart / sendWindowEnd for GTM LinkedIn send scheduling',
 })
-export class SyncGtmProjectSendWindowFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachProjectSendWindowFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,

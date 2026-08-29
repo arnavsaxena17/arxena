@@ -6,7 +6,7 @@ import {
   toCrmPrimaryLink,
 } from './avatar-url.util';
 import { DataProcessingUtils } from './data-processing.utils';
-import { extractLinkedinProfileId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-profile-id.util';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from './linkedin-url.utils';
 
 // Define enhanced types that support additional phone and email fields

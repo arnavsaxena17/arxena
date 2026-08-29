@@ -14,12 +14,12 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
 import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
 import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
-import { isValidLinkedInProviderId } from 'src/engine/core-modules/gtm-command/utils/extract-linkedin-attendee-id.util';
+import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 
 /**
  * Truncates LinkedIn invitation message to under 300 characters
@@ -687,7 +687,7 @@ export class LinkedinUnipileMessagingService {
           apiToken,
           {
             messagingChannelOverride: MessagingChannel.LINKEDIN_CONNECT,
-            skipGtmMaterialize: isInvitation,
+            skipOutreachMaterialize: isInvitation,
           },
         );
 

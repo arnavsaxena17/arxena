@@ -71,7 +71,7 @@ export class CreateCalendarEventService {
         workspaceId,
       );
 
-      await this.markEventAsGtmSourced(createdEvent, workspaceId);
+      await this.markEventAsOutreachSourced(createdEvent, workspaceId);
     } catch (persistenceError) {
       this.logger.warn(
         `Failed to persist created calendar event (sync will recover): ${persistenceError}`,
@@ -79,7 +79,7 @@ export class CreateCalendarEventService {
     }
   }
 
-  private async markEventAsGtmSourced(
+  private async markEventAsOutreachSourced(
     createdEvent: FetchedCalendarEvent,
     workspaceId: string,
   ): Promise<void> {
@@ -103,10 +103,10 @@ export class CreateCalendarEventService {
             : { id: createdEvent.id };
 
           await calendarEventRepository.update(where, {
-            gtmSourced: true,
+            outreachSourced: true,
             meetingOutcome: 'BOOKED',
           } as Partial<CalendarEventWorkspaceEntity> & {
-            gtmSourced: boolean;
+            outreachSourced: boolean;
             meetingOutcome: string;
           });
         },

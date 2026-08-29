@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 
-import { GtmDashboardProjectFilter } from '@/gtm-dashboard/components/GtmDashboardProjectFilter';
-import { GtmDashboardScopeProvider } from '@/gtm-dashboard/components/GtmDashboardScopeProvider';
+import { OutreachDashboardProjectFilter } from '@/outreach-dashboard/components/OutreachDashboardProjectFilter';
+import { OutreachDashboardScopeProvider } from '@/outreach-dashboard/components/OutreachDashboardScopeProvider';
 import { RecordShowCommandMenu } from '@/command-menu-item/components/RecordShowCommandMenu';
 import { CommandMenuComponentInstanceContext } from '@/command-menu/states/contexts/CommandMenuComponentInstanceContext';
 import { TimelineActivityContext } from '@/activities/timeline-activities/contexts/TimelineActivityContext';
@@ -47,7 +47,7 @@ export const RecordShowPage = () => {
         <CommandMenuComponentInstanceContext.Provider
           value={{ instanceId: recordShowComponentInstanceId }}
         >
-          <GtmDashboardScopeProvider
+          <OutreachDashboardScopeProvider
             objectNameSingular={objectNameSingular}
             objectRecordId={objectRecordId}
           >
@@ -61,7 +61,7 @@ export const RecordShowPage = () => {
                   objectNameSingular={objectNameSingular}
                   objectRecordId={objectRecordId}
                 >
-                  <GtmDashboardProjectFilter />
+                  <OutreachDashboardProjectFilter />
                   <RecordShowCommandMenu />
                   {!isLayoutCustomizationModeEnabled && (
                     <SidePanelToggleButton />
@@ -87,7 +87,7 @@ export const RecordShowPage = () => {
                 />
               </TimelineActivityContext.Provider>
             </PageCardLayout>
-          </GtmDashboardScopeProvider>
+          </OutreachDashboardScopeProvider>
         </CommandMenuComponentInstanceContext.Provider>
       </ContextStoreComponentInstanceContext.Provider>
     </RecordComponentInstanceContextsWrapper>

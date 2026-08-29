@@ -252,7 +252,7 @@ export async function generateMetadata({
     descParts.push(`${companyName} ${country} office.`);
   }
   descParts.push(
-    `Find decision-makers for recruitment, sales outreach, talent mapping. 1M+ companies on Arxena.`,
+    `Find decision-makers for outreach, talent and account mapping. 1M+ companies on Arxena.`,
   );
   const description = descParts.join(' ');
 
@@ -285,8 +285,10 @@ export async function generateMetadata({
     );
   }
   keywords.push(
-    'recruitment',
+    'outreach',
+    'decision-makers',
     'talent mapping',
+    'account mapping',
     'people analytics',
     'leadership',
     'management',

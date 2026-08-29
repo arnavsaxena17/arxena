@@ -6,7 +6,7 @@ import { usePersistLogicFunction } from '@/logic-functions/hooks/usePersistLogic
 import { getInputSchemaFromSourceCode, jsonSchemaToInputSchema, type InputJsonSchema } from 'twenty-shared/logic-function';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { isNativeGtmLogicFunction } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/gtmNativeLogicFunctionSampleOutput';
+import { isNativeOutreachLogicFunction } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 
 export const useLogicFunctionForm = ({
   logicFunctionId,
@@ -32,7 +32,7 @@ export const useLogicFunctionForm = ({
       value: LogicFunctionFormValues[TKey],
     ): Promise<InputJsonSchema | undefined> => {
       if (key === 'sourceHandlerCode') {
-        if (isNativeGtmLogicFunction(formValues.name)) {
+        if (isNativeOutreachLogicFunction(formValues.name)) {
           setFormValues((prevState: LogicFunctionFormValues) => ({
             ...prevState,
             sourceHandlerCode: value as string,

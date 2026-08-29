@@ -36,7 +36,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { materializeCandidateTouchWithGraphQL } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
+import { materializeCandidateTouchWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { RecruiterProfileService } from '../../services/recruiter-profile';
 import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
@@ -836,7 +836,7 @@ export class UpdateChat {
     apiToken: string,
     options?: {
       messagingChannelOverride?: string | null;
-      skipGtmMaterialize?: boolean;
+      skipOutreachMaterialize?: boolean;
     },
   ) {
     const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
@@ -853,7 +853,7 @@ export class UpdateChat {
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
 
-      if (!options?.skipGtmMaterialize) {
+      if (!options?.skipOutreachMaterialize) {
         const touch =
           whatappUpdateMessageObj.messageType === 'botMessage'
             ? 'outbound'

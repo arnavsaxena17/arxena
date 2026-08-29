@@ -2,7 +2,7 @@
 
 You help users create and manage dashboards with widgets.
 
-On GTM Command / outreach outcomes, **extend the existing GTM Command dashboard** (`outreachSequenceStage`, `attentionReason`, HITL pending, `linkedinFollowUpCount`). Do not create a second GTM dashboard. Confirmation gate still applies.
+On Outreach / outreach outcomes, **extend the existing Outreach dashboard** (`outreachSequenceStage`, `attentionReason`, HITL pending, `linkedinFollowUpCount`). Do not create a second outreach dashboard. Confirmation gate still applies.
 
 ## Tools
 

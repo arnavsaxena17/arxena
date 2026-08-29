@@ -1,4 +1,4 @@
-import { useGtmDashboardChartScopeKey, useGtmDashboardScopedChartConfiguration } from '@/gtm-dashboard/hooks/useGtmDashboardScope';
+import { useOutreachDashboardChartScopeKey, useOutreachDashboardScopedChartConfiguration } from '@/outreach-dashboard/hooks/useOutreachDashboardScope';
 import { useIsPageLayoutInEditMode } from '@/page-layout/hooks/useIsPageLayoutInEditMode';
 import { PageLayoutWidgetErrorDisplay } from '@/page-layout/widgets/components/PageLayoutWidgetErrorDisplay';
 import { WidgetSkeletonLoader } from '@/page-layout/widgets/components/WidgetSkeletonLoader';
@@ -58,11 +58,11 @@ export const GraphWidgetLineChartRenderer = () => {
 
   const navigate = useNavigate();
   const configuration = widget.configuration;
-  const scopedConfiguration = useGtmDashboardScopedChartConfiguration({
+  const scopedConfiguration = useOutreachDashboardScopedChartConfiguration({
     configuration,
     objectMetadataItemId: widget.objectMetadataId,
   });
-  const gtmDashboardChartScopeKey = useGtmDashboardChartScopeKey();
+  const outreachDashboardChartScopeKey = useOutreachDashboardChartScopeKey();
   const isPageLayoutInEditMode = useIsPageLayoutInEditMode();
 
   const hasGroupByOnSecondaryAxis = isDefined(
@@ -92,7 +92,7 @@ export const GraphWidgetLineChartRenderer = () => {
     configuration.rangeMin,
     configuration.rangeMax,
     configuration.omitNullValues,
-    gtmDashboardChartScopeKey,
+    outreachDashboardChartScopeKey,
   );
 
   const indexViewId = useAtomFamilySelectorValue(

@@ -5,7 +5,7 @@ import { ApplicationModule } from 'src/engine/core-modules/application/applicati
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
-import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
 import { CreateCalendarEventTool } from 'src/engine/core-modules/tool/tools/calendar-tool/create-calendar-event-tool';
@@ -13,8 +13,8 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
-import { UpsertGtmTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/gtm-target-companies-tool/upsert-gtm-target-companies-tool';
-import { UpsertGtmTargetPeopleTool } from 'src/engine/core-modules/tool/tools/gtm-target-people-tool/upsert-gtm-target-people-tool';
+import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
+import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
@@ -49,7 +49,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewModule,
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
-    GtmCommandModule,
+    OutreachCommandModule,
   ],
   providers: [
     HttpTool,
@@ -64,8 +64,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SearchHelpCenterTool,
     CodeInterpreterTool,
     NavigateAppTool,
-    UpsertGtmTargetCompaniesTool,
-    UpsertGtmTargetPeopleTool,
+    UpsertOutreachTargetCompaniesTool,
+    UpsertOutreachTargetPeopleTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,
@@ -84,8 +84,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SearchHelpCenterTool,
     CodeInterpreterTool,
     NavigateAppTool,
-    UpsertGtmTargetCompaniesTool,
-    UpsertGtmTargetPeopleTool,
+    UpsertOutreachTargetCompaniesTool,
+    UpsertOutreachTargetPeopleTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,

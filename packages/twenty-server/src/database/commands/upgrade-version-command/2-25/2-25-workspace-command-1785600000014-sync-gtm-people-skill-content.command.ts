@@ -24,9 +24,9 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
 @Command({
   name: 'upgrade:2-25:sync-gtm-people-skill-content',
   description:
-    'Sync search-people + linkedin-search + gtm-icp-onboarding skill content (GTM ephemeral people upsert routing) for existing workspaces',
+    'Sync search-people + linkedin-search + outreach-icp-onboarding skill content (GTM ephemeral people upsert routing) for existing workspaces',
 })
-export class SyncGtmPeopleSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachPeopleSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

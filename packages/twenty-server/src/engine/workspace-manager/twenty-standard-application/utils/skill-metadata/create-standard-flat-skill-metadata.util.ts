@@ -145,7 +145,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'outreach',
     label: 'Outreach',
     description:
-      'Campaign automation: activate seeded harvest/enroll/sequencer graphs, enroll QUEUED candidates, HITL send',
+      'Campaign automation: activate seeded harvest/enroll/sequencer graphs, enroll QUEUED people, HITL send',
     icon: 'IconSend',
   }),
   search: createStandardSkillBuilder({

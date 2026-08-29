@@ -6,10 +6,10 @@ import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/typ
 import { findFlatEntityByUniversalIdentifier } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-universal-identifier.util';
 import { type FlatPageLayout } from 'src/engine/metadata-modules/flat-page-layout/types/flat-page-layout.type';
 import {
-  GTM_COMMAND_DASHBOARD_ID,
-  GTM_COMMAND_DASHBOARD_TITLE,
-  getGtmCommandDashboardPageLayoutUniversalIdentifier,
-} from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-gtm-command-dashboard-page-layout.util';
+  OUTREACH_DASHBOARD_ID,
+  OUTREACH_DASHBOARD_TITLE,
+  getOutreachDashboardPageLayoutUniversalIdentifier,
+} from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-page-layout.util';
 import { STANDARD_PAGE_LAYOUTS } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-page-layout.constant';
 
 export const MY_FIRST_DASHBOARD_ID = 'f31ecf3b-87d3-4e8a-a84b-b6f0f3f8c7e2';
@@ -68,7 +68,7 @@ const insertDashboardRecord = async ({
     .execute();
 };
 
-export const prefillGtmCommandDashboard = async ({
+export const prefillOutreachDashboard = async ({
   entityManager,
   schemaName,
   flatPageLayoutMaps,
@@ -79,22 +79,33 @@ export const prefillGtmCommandDashboard = async ({
 }): Promise<'inserted' | 'skipped-exists' | 'skipped-missing-layout'> => {
   const existing = (await entityManager.query(
     `
-      SELECT id
+      SELECT id, title
       FROM ${schemaName}.dashboard
-      WHERE title = $1
+      WHERE title = ANY($1)
         AND "deletedAt" IS NULL
       LIMIT 1
     `,
-    [GTM_COMMAND_DASHBOARD_TITLE],
-  )) as Array<{ id: string }>;
+    [[OUTREACH_DASHBOARD_TITLE, 'GTM Command']],
+  )) as Array<{ id: string; title: string }>;
 
   if (existing.length > 0) {
+    if (existing[0].title !== OUTREACH_DASHBOARD_TITLE) {
+      await entityManager.query(
+        `
+          UPDATE ${schemaName}.dashboard
+          SET title = $2, "updatedAt" = NOW()
+          WHERE id = $1
+        `,
+        [existing[0].id, OUTREACH_DASHBOARD_TITLE],
+      );
+    }
+
     return 'skipped-exists';
   }
 
   const gtmCommandPageLayout = findFlatEntityByUniversalIdentifier({
     flatEntityMaps: flatPageLayoutMaps,
-    universalIdentifier: getGtmCommandDashboardPageLayoutUniversalIdentifier(),
+    universalIdentifier: getOutreachDashboardPageLayoutUniversalIdentifier(),
   });
 
   if (!isDefined(gtmCommandPageLayout)) {
@@ -104,8 +115,8 @@ export const prefillGtmCommandDashboard = async ({
   await insertDashboardRecord({
     entityManager,
     schemaName,
-    id: GTM_COMMAND_DASHBOARD_ID,
-    title: GTM_COMMAND_DASHBOARD_TITLE,
+    id: OUTREACH_DASHBOARD_ID,
+    title: OUTREACH_DASHBOARD_TITLE,
     pageLayoutId: gtmCommandPageLayout.id,
     position: 1,
   });
@@ -139,7 +150,7 @@ export const prefillDashboards = async (
     position: 0,
   });
 
-  const gtmCommandResult = await prefillGtmCommandDashboard({
+  const gtmCommandResult = await prefillOutreachDashboard({
     entityManager,
     schemaName,
     flatPageLayoutMaps,
@@ -147,7 +158,7 @@ export const prefillDashboards = async (
 
   if (gtmCommandResult === 'skipped-missing-layout') {
     throw new Error(
-      `Page layout with universalIdentifier '${getGtmCommandDashboardPageLayoutUniversalIdentifier()}' not found`,
+      `Page layout with universalIdentifier '${getOutreachDashboardPageLayoutUniversalIdentifier()}' not found`,
     );
   }
 };

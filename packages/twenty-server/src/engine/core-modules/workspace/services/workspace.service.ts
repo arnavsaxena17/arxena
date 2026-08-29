@@ -28,9 +28,9 @@ import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decora
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import {
-  GTM_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
-  type GtmWorkspaceProfileBootstrapJobData,
-} from 'src/engine/core-modules/gtm-command/jobs/gtm-workspace-profile-bootstrap.job-constants';
+  OUTREACH_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
+  type OutreachWorkspaceProfileBootstrapJobData,
+} from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job-constants';
 import { DnsManagerService } from 'src/engine/core-modules/dns-manager/services/dns-manager.service';
 import { CustomDomainManagerService } from 'src/engine/core-modules/domain/custom-domain-manager/services/custom-domain-manager.service';
 import { SubdomainManagerService } from 'src/engine/core-modules/domain/subdomain-manager/services/subdomain-manager.service';
@@ -79,7 +79,7 @@ import { prefillCompanies } from 'src/engine/workspace-manager/standard-objects-
 import { prefillDashboards } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-dashboards.util';
 import { prefillOpportunities } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-opportunities.util';
 import { prefillPeople } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-people.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 import { prefillWorkflowCommandMenuItems } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-command-menu-items.util';
 import { prefillWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflows.util';
@@ -446,8 +446,8 @@ export class WorkspaceService {
     }
 
     try {
-      await this.workspaceQueueService.add<GtmWorkspaceProfileBootstrapJobData>(
-        GTM_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
+      await this.workspaceQueueService.add<OutreachWorkspaceProfileBootstrapJobData>(
+        OUTREACH_WORKSPACE_PROFILE_BOOTSTRAP_JOB_NAME,
         {
           workspaceId: workspace.id,
           userEmail: user.email,
@@ -927,7 +927,7 @@ export class WorkspaceService {
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
 

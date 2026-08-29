@@ -21,7 +21,7 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   description:
     'Sync workflow-building skill content (GTM clone/edit/enroll outreach path) for existing workspaces',
 })
-export class SyncGtmOutreachWorkflowSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachWorkflowSkillContentCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

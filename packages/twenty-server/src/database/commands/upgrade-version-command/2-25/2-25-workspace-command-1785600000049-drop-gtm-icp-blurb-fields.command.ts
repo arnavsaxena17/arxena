@@ -17,7 +17,7 @@ import { STANDARD_SKILL } from 'src/engine/workspace-manager/twenty-standard-app
 import { computeTwentyStandardApplicationAllFlatEntityMaps } from 'src/engine/workspace-manager/twenty-standard-application/utils/twenty-standard-application-all-flat-entity-maps.constant';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
-const GTM_ICP_BLURB_FIELDS = [
+const ICP_BLURB_FIELDS = [
   'icpBlurb',
   'companySearchBlurb',
   'peopleSearchBlurb',
@@ -35,11 +35,11 @@ const OBJECTS_WITH_BLURB_FIELDS_TO_DROP = new Set([
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000049)
 @Command({
-  name: 'upgrade:2-25:drop-gtm-icp-blurb-fields',
+  name: 'upgrade:2-25:drop-outreach-icp-blurb-fields',
   description:
     'Drop unused GTM ICP segment/blurb fields from workspaceProfile and Project; keep icpSpec only',
 })
-export class DropGtmIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class DropIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     @InjectRepository(FieldMetadataEntity)
@@ -66,7 +66,7 @@ export class DropGtmIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRun
     const fields = await this.fieldMetadataRepository.find({
       where: {
         workspaceId,
-        name: In(['icpSegment', ...GTM_ICP_BLURB_FIELDS]),
+        name: In(['icpSegment', ...ICP_BLURB_FIELDS]),
       },
       relations: ['object'],
     });
@@ -82,8 +82,8 @@ export class DropGtmIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRun
         field.name === 'icpSegment' &&
         OBJECTS_WITH_ICP_SEGMENT_TO_DROP.has(objectName);
       const shouldDropBlurb =
-        GTM_ICP_BLURB_FIELDS.includes(
-          field.name as (typeof GTM_ICP_BLURB_FIELDS)[number],
+        ICP_BLURB_FIELDS.includes(
+          field.name as (typeof ICP_BLURB_FIELDS)[number],
         ) && OBJECTS_WITH_BLURB_FIELDS_TO_DROP.has(objectName);
 
       if (!shouldDropSegment && !shouldDropBlurb) {
@@ -210,7 +210,7 @@ export class DropGtmIcpBlurbFieldsCommand extends ProvisionedWorkspaceCommandRun
 
     if (validateAndBuildResult.status === 'fail') {
       throw new Error(
-        `Failed to sync gtm-icp-onboarding skill for workspace ${workspaceId}`,
+        `Failed to sync outreach-icp-onboarding skill for workspace ${workspaceId}`,
       );
     }
   }

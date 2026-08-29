@@ -125,7 +125,7 @@ export function OrgChartStructureSSR({
   if (country || locationName) {
     descParts.push(`${companyName} ${country ?? locationName ?? ''} office.`);
   }
-  descParts.push('Recruitment, talent mapping, people analytics.');
+  descParts.push('Decision-makers, talent and account mapping, people analytics.');
 
   const jsonLd = {
     '@context': 'https://schema.org',

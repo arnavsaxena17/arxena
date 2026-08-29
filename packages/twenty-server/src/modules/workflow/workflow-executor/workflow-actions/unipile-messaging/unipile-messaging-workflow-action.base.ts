@@ -5,14 +5,14 @@ import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { runWithAccountRateLimitReservation } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
-import { GtmUnipilePacingService } from 'src/engine/core-modules/gtm-command/services/gtm-unipile-pacing.service';
+import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
 import {
-  GtmOutreachMessagePersistService,
-  type GtmOutreachTranscriptChannel,
-} from 'src/engine/core-modules/gtm-command/services/gtm-outreach-message-persist.service';
-import { type GtmCandidateEventKind } from 'src/engine/core-modules/gtm-command/utils/gtm-command-materialize.util';
-import { resolveGtmOutboundMessageKind } from 'src/engine/core-modules/gtm-command/utils/gtm-experiment.util';
-import { type GtmThrottleChannel } from 'src/engine/core-modules/gtm-command/utils/gtm-outreach-throttle.util';
+  OutreachMessagePersistService,
+  type OutreachTranscriptChannel,
+} from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { resolveOutreachOutboundMessageKind } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { type OutreachThrottleChannel } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -24,7 +24,7 @@ import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-executor/utils/defer-workflow-for-account-rate-limit.util';
-import { GTM_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/gtm-command/services/gtm-outreach-throttle.service';
+import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import { ToolBackedWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/tool-backed/tool-backed.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
@@ -84,24 +84,24 @@ export abstract class UnipileMessagingWorkflowActionBase<
     loggerName: string,
     private readonly unipileStepLogService: WorkflowRunStepLogWorkspaceService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-    private readonly gtmUnipilePacingService: GtmUnipilePacingService,
+    private readonly gtmUnipilePacingService: OutreachUnipilePacingService,
     private readonly delayedQueue: MessageQueueService,
-    private readonly gtmOutreachMessagePersistService?: GtmOutreachMessagePersistService,
+    private readonly gtmOutreachMessagePersistService?: OutreachMessagePersistService,
   ) {
     super(loggerName, unipileStepLogService);
   }
 
   protected abstract getAccountType(): UnipileMessagingAccountType;
 
-  protected getPacingChannel(): GtmThrottleChannel | null {
+  protected getPacingChannel(): OutreachThrottleChannel | null {
     return null;
   }
 
-  protected getTranscriptChannel(): GtmOutreachTranscriptChannel | null {
+  protected getTranscriptChannel(): OutreachTranscriptChannel | null {
     return null;
   }
 
-  protected getMaterializeEvent(): GtmCandidateEventKind | null {
+  protected getMaterializeEvent(): OutreachCandidateEventKind | null {
     return null;
   }
 
@@ -140,7 +140,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
         : undefined;
     let pacingProjectId: string | null = null;
     let pacingPatch: Parameters<
-      GtmUnipilePacingService['stampSuccess']
+      OutreachUnipilePacingService['stampSuccess']
     >[0]['patch'] = {};
 
     if (!skipPacing && pacingChannel) {
@@ -160,7 +160,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
         return {
           pendingEvent: true,
           waitMs: 0,
-          pendingReason: GTM_PROJECT_PAUSED_PENDING_REASON,
+          pendingReason: OUTREACH_PROJECT_PAUSED_PENDING_REASON,
         };
       }
 
@@ -173,8 +173,8 @@ export abstract class UnipileMessagingWorkflowActionBase<
           workflowRunId: runInfo.workflowRunId,
           pendingReason:
             check.reason === 'outside_send_window'
-              ? 'gtm_send_window'
-              : 'gtm_unipile_pacing',
+              ? 'outreach_send_window'
+              : 'outreach_unipile_pacing',
         });
       }
     }
@@ -238,7 +238,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
         try {
           const outboundMessageKind =
             this.getOutboundMessageKind(resolvedInput) ??
-            resolveGtmOutboundMessageKind({
+            resolveOutreachOutboundMessageKind({
               materializeEvent,
               messagingChannel: this.getMaterializeMessagingChannel(),
               explicitKind:

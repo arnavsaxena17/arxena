@@ -3,9 +3,9 @@ import {
   type ArxenaFieldWithObject,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 import {
-  getGtmCommandFieldsData,
-  GTM_MESSAGING_CHANNEL_OPTIONS,
-} from 'src/engine/workspace-manager/arxena-standard-metadata/data/gtm-command-fields.data';
+  getOutreachCommandFieldsData,
+  OUTREACH_MESSAGING_CHANNEL_OPTIONS,
+} from 'src/engine/workspace-manager/arxena-standard-metadata/data/outreach-command-fields.data';
 import { getWorkspaceProfileFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/workspace-profile-fields.data';
 import { getWebsiteDomainFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-domain-fields.data';
 import { getWebsiteVisitorFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-visitor-fields.data';
@@ -1786,7 +1786,7 @@ const getAllFieldsData = (
         name: 'messagingChannel',
         objectMetadataId: objectsNameIdMap.candidate,
         type: 'SELECT',
-        options: GTM_MESSAGING_CHANNEL_OPTIONS,
+        options: OUTREACH_MESSAGING_CHANNEL_OPTIONS,
       },
     },
     {
@@ -2299,7 +2299,7 @@ const getAllFieldsData = (
     //     type: 'LINKS',
     //   },
     // },
-    ...getGtmCommandFieldsData(objectsNameIdMap),
+    ...getOutreachCommandFieldsData(objectsNameIdMap),
     ...getWorkspaceProfileFieldsData(objectsNameIdMap),
     ...getWebsiteDomainFieldsData(objectsNameIdMap),
     ...getWebsiteVisitorFieldsData(objectsNameIdMap),

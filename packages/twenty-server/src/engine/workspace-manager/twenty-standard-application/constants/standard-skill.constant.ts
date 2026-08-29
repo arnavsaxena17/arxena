@@ -43,7 +43,7 @@ export const STANDARD_SKILL = {
   },
   // Intent skills (LLM vocabulary). UUIDs preserved from prior skill names.
   setup: {
-    // formerly gtm-icp-onboarding
+    // formerly outreach-icp-onboarding
     universalIdentifier: '20202020-a7c3-4e91-8b5f-2d6e9f1a4c80',
   },
   search: {

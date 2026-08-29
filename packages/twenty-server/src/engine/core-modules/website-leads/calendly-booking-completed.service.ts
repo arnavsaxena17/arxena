@@ -141,10 +141,10 @@ export class CalendlyBookingCompletedService {
           meetingBookedAt:
             (company as { meetingBookedAt?: string | null } | null)
               ?.meetingBookedAt ?? meetingBookedAtIso,
-          gtmFunnelStage: 'MEETING_BOOKED',
+          outreachFunnelStage: 'MEETING_BOOKED',
         } as Partial<CompanyWorkspaceEntity> & {
           meetingBookedAt: string;
-          gtmFunnelStage: string;
+          outreachFunnelStage: string;
         });
       } catch (error) {
         this.logger.warn(

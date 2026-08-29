@@ -6,7 +6,7 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000048)
@@ -15,7 +15,7 @@ import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/a
   description:
     'Seed native GTM logic function detect-fake-profiles for existing workspaces',
 })
-export class EnsureGtmDetectFakeProfilesLogicFunctionCommand extends ProvisionedWorkspaceCommandRunner {
+export class EnsureOutreachDetectFakeProfilesLogicFunctionCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -44,7 +44,7 @@ export class EnsureGtmDetectFakeProfilesLogicFunctionCommand extends Provisioned
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
 

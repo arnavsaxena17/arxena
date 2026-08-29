@@ -31,8 +31,8 @@ import {
   resolveAcceptedRelationIdentity,
 } from '../utils/unipile-new-relation.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
-import { GtmCommandMaterializeService } from 'src/engine/core-modules/gtm-command/services/gtm-command-materialize.service';
-import { GtmInboundReplyWindowService } from 'src/engine/core-modules/gtm-command/jobs/gtm-inbound-reply-window.job';
+import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
 
@@ -47,8 +47,8 @@ export class UnipileWebhookService {
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
     private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
-    private readonly gtmCommandMaterializeService: GtmCommandMaterializeService,
-    private readonly gtmInboundReplyWindowService: GtmInboundReplyWindowService,
+    private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
+    private readonly gtmInboundReplyWindowService: OutreachInboundReplyWindowService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.unipileWebhookQueue)
     private readonly unipileWebhookQueueService?: MessageQueueService,

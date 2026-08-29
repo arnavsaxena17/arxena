@@ -1,0 +1,6 @@
+export const OUTREACH_DASHBOARD_RECORD_ID =
+  'c4e8b7a1-9d2f-4c6e-8b3a-1f0d5e7c9a24';
+
+export const OUTREACH_DASHBOARD_ALL_PROJECTS_VALUE = '';
+
+export const OUTREACH_EXPERIMENT_VARIANT_QUERY_PARAM = 'variant';

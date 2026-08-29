@@ -18,11 +18,11 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000018)
 @Command({
-  name: 'upgrade:2-25:rename-gtm-workspace-profile-to-workspace-profile',
+  name: 'upgrade:2-25:rename-outreach-workspace-profile-to-workspace-profile',
   description:
-    'Rename gtmWorkspaceProfile → workspaceProfile via Arxena standard sync and refresh gtm-icp-onboarding skill tool names',
+    'Rename gtmWorkspaceProfile → workspaceProfile via Arxena standard sync and refresh outreach-icp-onboarding skill tool names',
 })
-export class RenameGtmWorkspaceProfileToWorkspaceProfileCommand extends ProvisionedWorkspaceCommandRunner {
+export class RenameOutreachWorkspaceProfileToWorkspaceProfileCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
@@ -53,10 +53,10 @@ export class RenameGtmWorkspaceProfileToWorkspaceProfileCommand extends Provisio
       );
     }
 
-    await this.syncGtmIcpOnboardingSkill({ workspaceId, isDryRun });
+    await this.syncIcpOnboardingSkill({ workspaceId, isDryRun });
   }
 
-  private async syncGtmIcpOnboardingSkill({
+  private async syncIcpOnboardingSkill({
     workspaceId,
     isDryRun,
   }: {
@@ -119,7 +119,7 @@ export class RenameGtmWorkspaceProfileToWorkspaceProfileCommand extends Provisio
 
     if (skillsToCreate.length === 0 && skillsToUpdate.length === 0) {
       this.logger.log(
-        `gtm-icp-onboarding skill already up to date for workspace ${workspaceId}`,
+        `outreach-icp-onboarding skill already up to date for workspace ${workspaceId}`,
       );
 
       return;
@@ -151,16 +151,16 @@ export class RenameGtmWorkspaceProfileToWorkspaceProfileCommand extends Provisio
 
     if (validateAndBuildResult.status === 'fail') {
       this.logger.error(
-        `Failed to sync gtm-icp-onboarding skill after workspaceProfile rename:\n${JSON.stringify(validateAndBuildResult, null, 2)}`,
+        `Failed to sync outreach-icp-onboarding skill after workspaceProfile rename:\n${JSON.stringify(validateAndBuildResult, null, 2)}`,
       );
 
       throw new Error(
-        `Failed to sync gtm-icp-onboarding skill for workspace ${workspaceId}`,
+        `Failed to sync outreach-icp-onboarding skill for workspace ${workspaceId}`,
       );
     }
 
     this.logger.log(
-      `Synced gtm-icp-onboarding skill after workspaceProfile rename for workspace ${workspaceId}`,
+      `Synced outreach-icp-onboarding skill after workspaceProfile rename for workspace ${workspaceId}`,
     );
   }
 }

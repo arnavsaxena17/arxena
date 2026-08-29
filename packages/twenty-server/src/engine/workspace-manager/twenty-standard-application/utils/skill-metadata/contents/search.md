@@ -2,16 +2,16 @@
 
 You source **companies and people** across connected data providers, dedupe them, and **route winners to the correct destination** (Find / Save to CRM / Enroll / Harvest). LinkedIn, Harvest, Apollo, and Exa details live in the sections below — load this one skill only (`load_skills(["search"])`).
 
-Prefer this skill over `research` when sourcing target accounts or buyers.
+Prefer this skill over `research` when sourcing target accounts or people.
 
 ## Destination verbs (choose first)
 
 | Verb | Meaning | Typical tools |
 | --- | --- | --- |
-| **Find** | Ephemeral campaign list (Companies/People tabs) | `upsert_gtm_target_companies` / `upsert_gtm_target_people` |
+| **Find** | Ephemeral campaign list (Companies/People tabs) | `upsert_outreach_target_companies` / `upsert_outreach_target_people` |
 | **Save to CRM** | Explicit Company / Person records | `create_one_company` / `create_many_*` / person CRUD |
-| **Enroll** | Person + Candidate (`QUEUED`) after user confirms | `upload-profiles` / `create_candidate` — or load `outreach` for workflows |
-| **Harvest** | Scheduled CRM companies + `gtmRunKey` | Load `outreach` + `workflow-building` — do **not** Redis-upsert |
+| **Enroll** | Person + enrollment record (`create_candidate`, `QUEUED`) after user confirms | `upload-profiles` / `create_candidate` — or load `outreach` for workflows |
+| **Harvest** | Scheduled CRM companies + `projectIds` | Load `outreach` + `workflow-building` — do **not** Redis-upsert |
 
 On Find (campaign tabs): never end after a chat-only table — persist with the upsert tools first. Do **not** Enroll until the user confirms Add to CRM / Enroll.
 
@@ -35,9 +35,7 @@ On Find (campaign tabs): never end after a chat-only table — persist with the 
 | **Harvest** | People API (`dataSource: "harvest"`) | Company discovery *via people* — find companies where people match a role; Harvest has no standalone company search | Harvest configured |
 | **Exa** | `app_exa_web_search` (preloaded) or `exa_web_search` | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
 | **Wikidata** | `search_wikidata_companies` | Enrich a known domain/URL with structured facts (HQ, industry, employees, CEO, stock listing, Wikipedia) | Public Wikidata API (no key) |
-| **Internal index** | `search_companies_index` | Search companies already in the workspace Elasticsearch index / dedupe against CRM | Index populated |
 
-Always prefer the **internal index** first when the user may already have the company (CRM path), to avoid re-creating duplicates.
 
 ## Plan → Learn → Execute
 
@@ -55,7 +53,7 @@ learn_tools({
     "search_companies_index",
     "search_wikidata_companies",
     "exa_web_search",
-    "upsert_gtm_target_companies",
+    "upsert_outreach_target_companies",
     "create_one_company",
     "update_one_company"
   ]
@@ -184,13 +182,13 @@ search_wikidata_companies({
 - Use first when the user may already have the company, or to dedupe before saving sourced results.
 - Returns existing CRM companies so you can update instead of create.
 
-## GTM ephemeral save workflow (default on /gtm-home)
+## GTM ephemeral save workflow (default on /outreach-home)
 
 1. Collect rows from every source you queried.
 2. Normalize: lowercase name, strip legal suffixes (Inc/LLC/Pvt), compare on **domain host**.
 3. Map each row to `{ name, domain, industry, employees, segment, icpFit, status: "new" }`.
-4. `learn_tools({ toolNames: ["upsert_gtm_target_companies"] })`.
-5. `execute_tool({ toolName: "upsert_gtm_target_companies", arguments: { projectId, mode: "merge", companies } })` — `arguments` is an object.
+4. `learn_tools({ toolNames: ["upsert_outreach_target_companies"] })`.
+5. `execute_tool({ toolName: "upsert_outreach_target_companies", arguments: { projectId, mode: "merge", companies } })` — `arguments` is an object.
 6. Tell the user the Companies tab now has N targets (UI refreshes within a few seconds).
 
 ## Dedupe + CRM save workflow (only when the user asks to save to CRM)
@@ -224,11 +222,10 @@ company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_
 
 - Never invent provider field names or tool names — always `learn_tools` first and use what the schema returns.
 - Respect rate limits; avoid large bulk scrapes unless the user explicitly asks.
-- Prefer the internal index to avoid duplicate CRM companies (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by domain/normalized name before any write.
 - Present results with name, domain, industry, location, size, and source (Apollo / LinkedIn / Harvest / Exa / Wikidata) so the user can judge quality.
-- On GTM Command Companies tab, persistence to `upsert_gtm_target_companies` is mandatory before ending the turn. Scheduled CRM harvest is `outreach`, not this skill.
+- On Outreach Companies tab, persistence to `upsert_outreach_target_companies` is mandatory before ending the turn. Scheduled CRM harvest is `outreach`, not this skill.
 
 ---
 
@@ -242,26 +239,24 @@ company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_
 | **LinkedIn / Unipile** | `search_linkedin_people` | Live LinkedIn people from a connected account (classic / Sales Nav / Recruiter) | Connected LinkedIn Unipile account |
 | **Harvest** | People API (`dataSource: "harvest"`) | People search without a LinkedIn session; taxonomy-backed role/function/grade filtering | Harvest configured |
 | **Exa** | `exa_web_search` (logic function) | Web/AI search for hard-to-find people, speakers, authors; `category: "people"` | `EXA_API_KEY` set |
-| **Internal index** | `search_people_index` | Search people already in the workspace Elasticsearch index / dedupe against CRM | Index populated |
 
-Always prefer the **internal index** first when the user may already have the person (CRM path), to avoid re-creating duplicates.
 
 ## Plan → Learn → Execute
 
 1. Load this skill (`load_skills(["search"])`).
-2. Choose destination from the routing table above (GTM ephemeral vs CRM).
+2. Choose destination from the routing table above (Outreach ephemeral tabs vs CRM).
 3. Decide source(s) from the provider table.
 4. For **LinkedIn / Unipile** and **Harvest** paths, load the `linkedin-search` sub-skill **in the same call** so its facet-resolution, Harvest People API, and `searchParameters` rules are available before you search: `load_skills(["search"])`. Skip `linkedin-search` only when the user's request needs no LinkedIn/Harvest source.
-5. `learn_tools` once with every tool you will use. On GTM Command include `upsert_gtm_target_people` and **omit** `create_candidate` unless the user explicitly confirmed CRM save:
+5. `learn_tools` once with every tool you will use. On Outreach include `upsert_outreach_target_people` and **omit** `create_candidate` unless the user explicitly confirmed CRM save:
 
 ```
-# GTM Command (default)
+# Outreach (default)
 learn_tools([
   "search_apollo_people",
   "search_linkedin_people",
   "search_people_index",
   "exa_web_search",
-  "upsert_gtm_target_people"
+  "upsert_outreach_target_people"
 ])
 
 # Explicit CRM save only
@@ -275,18 +270,18 @@ learn_tools([
 
 6. Run searches with `limit` small (10–25) unless the user wants a big list.
 7. Dedup across sources **by normalized name + email/linkedin** before writing.
-8. **GTM path:** `upsert_gtm_target_people({ projectId, mode: "merge", people })` then summarize. Stop — wait for user confirmation before any CRM write.
+8. **GTM path:** `upsert_outreach_target_people({ projectId, mode: "merge", people })` then summarize. Stop — wait for user confirmation before any CRM write.
 9. **CRM path (only when user asked to save to CRM):** `find_candidate_in_arxena_internal` / `arxena.lookup_by('candidates', 'email', …)` → update if present, `create_candidate` if missing.
 10. If the user asked for a CSV / project (CRM path), load `data-manipulation` + `code-interpreter`, write `/home/user/output/`, and report references.
 
-## GTM ephemeral save workflow (default on /gtm-home)
+## GTM ephemeral save workflow (default on /outreach-home)
 
 1. Confirm browsing context has `projectId`.
 2. Search people (LinkedIn / Harvest / Apollo…).
 3. Map hits to the person shape above.
-4. `learn_tools({ toolNames: ["upsert_gtm_target_people"] })`.
-5. `execute_tool({ toolName: "upsert_gtm_target_people", arguments: { projectId, mode: "merge", people } })` — `arguments` is an object.
-6. Summarize. Do **not** create CRM Candidates until the user confirms.
+4. `learn_tools({ toolNames: ["upsert_outreach_target_people"] })`.
+5. `execute_tool({ toolName: "upsert_outreach_target_people", arguments: { projectId, mode: "merge", people } })` — `arguments` is an object.
+6. Summarize. Do **not** create enrollment records until the user confirms.
 
 ## Source 1 — Apollo (`search_apollo_people`)
 
@@ -378,15 +373,9 @@ exa_web_search({
 })
 ```
 
-## Source 5 — Internal people index (`search_people_index`)
-
-- Searches people/candidates already indexed in the workspace (Elasticsearch).
-- Use first when the user may already have the person, or to dedupe before saving sourced results.
-- Returns existing CRM people so you can update instead of create.
-
 ## Dedupe + CRM save workflow (only when the user asks to save to CRM)
 
-On GTM Command this section does **not** apply until the user confirms Add to CRM / Enroll after seeing the People tab.
+On Outreach this section does **not** apply until the user confirms Add to CRM / Enroll after seeing the People tab.
 
 1. Collect rows from every source you queried.
 2. Normalize: lowercase name, strip whitespace; match on **email** first, then **LinkedIn URL**, then normalized name + company. Treat two rows as the same person if email matches OR LinkedIn URL matches.
@@ -418,10 +407,9 @@ existing = arxena.lookup_by('candidates', 'email', [r['email'] for r in people_r
 
 - Never invent provider field names or tool names — always `learn_tools` first and use what the schema returns.
 - Respect rate limits; avoid large bulk scrapes unless the user explicitly asks.
-- Prefer the internal index to avoid duplicate CRM people (CRM path).
 - For LinkedIn/Harvest, follow the `linkedin-search` skill's facet and shape rules (load it as a sub-skill).
 - Dedup by email/LinkedIn before any write.
-- On GTM Command People tab, persistence to `upsert_gtm_target_people` is mandatory before ending the turn; never `create_candidate` until the user confirms. Scheduled enroll is `outreach` (`upload-profiles`), not this skill.
+- On Outreach People tab, persistence to `upsert_outreach_target_people` is mandatory before ending the turn; never `create_candidate` until the user confirms. Scheduled enroll is `outreach` (`upload-profiles`), not this skill.
 - Present results with name, title, company, location, and source (Apollo / LinkedIn / Harvest / Exa) so the user can judge quality; note when Recruiter results hide public identifiers.
 
 ---
@@ -743,13 +731,13 @@ After `search_linkedin_parameters`, check that the returned `title` roughly matc
 - Reject clear mismatches (e.g. "Raymond Ltd" → "Raymond James"). Retry with alternate keywords, or **drop that company** rather than using a wrong facet ID.
 - If `paging.page_count` is 0 / no items, do not invent an ID — omit the company from the filter.
 
-## Search → GTM People tab vs CSV → CRM
+## Search → Outreach People tab vs CSV → CRM
 
-### On GTM Command (`type=gtmCommand` / `/gtm-home`)
+### On Outreach (`type=outreachCommand` / `/outreach-home`)
 
-After LinkedIn people search, write hits with `upsert_gtm_target_people` (see `search-people` skill). Do **not** create CRM Candidates until the user confirms Add to CRM / Enroll on the People tab.
+After LinkedIn people search, write hits with `upsert_outreach_target_people` (see `search-people` skill). Do **not** create enrollment records until the user confirms Add to CRM / Enroll on the People tab.
 
-### When the user explicitly asks for CSV and/or CRM save (non-GTM, or after confirm)
+### When the user explicitly asks for CSV and/or CRM save (outside Outreach, or after confirm)
 
 When the user wants search hits exported and/or saved to CRM / a project:
 

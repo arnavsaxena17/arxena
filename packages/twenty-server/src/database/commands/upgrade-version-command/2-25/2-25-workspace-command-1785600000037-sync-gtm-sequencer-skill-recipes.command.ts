@@ -29,7 +29,7 @@ const SKILL_UNIVERSAL_IDENTIFIERS_TO_SYNC = [
   description:
     'Sync GTM sequencer skill recipes (harvest CRON, linkedinFollowUpCount, people-tab vs enroll)',
 })
-export class SyncGtmSequencerSkillRecipesCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachSequencerSkillRecipesCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,

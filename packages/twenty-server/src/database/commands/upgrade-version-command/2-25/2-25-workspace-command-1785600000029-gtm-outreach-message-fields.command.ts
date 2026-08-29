@@ -15,18 +15,18 @@ const FIELDS_TO_DROP: Array<{
   objectName: 'candidate' | 'project';
   fieldName: string;
 }> = [
-  { objectName: 'candidate', fieldName: 'gtmRunKey' },
+  { objectName: 'candidate', fieldName: 'projectIds' },
   { objectName: 'candidate', fieldName: 'followUpIndex' },
-  { objectName: 'project', fieldName: 'gtmRunKey' },
+  { objectName: 'project', fieldName: 'projectIds' },
 ];
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000029)
 @Command({
   name: 'upgrade:2-25:gtm-outreach-message-fields',
   description:
-    'Drop Candidate/Project gtmRunKey and Candidate followUpIndex; sync Message channel fields',
+    'Drop Candidate/Project projectIds and Candidate followUpIndex; sync Message channel fields',
 })
-export class GtmOutreachMessageFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class OutreachMessageFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     @InjectRepository(FieldMetadataEntity)
@@ -50,7 +50,7 @@ export class GtmOutreachMessageFieldsCommand extends ProvisionedWorkspaceCommand
     const fields = await this.fieldMetadataRepository.find({
       where: {
         workspaceId,
-        name: In(['gtmRunKey', 'followUpIndex']),
+        name: In(['projectIds', 'followUpIndex']),
       },
       relations: ['object'],
     });

@@ -8,11 +8,11 @@ import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/a
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000045)
 @Command({
-  name: 'upgrade:2-25:sync-gtm-company-harvest-fields',
+  name: 'upgrade:2-25:sync-outreach-company-harvest-fields',
   description:
-    'Add Company linkedinId and convert Company.gtmRunKey to an array of Project ids (no GTM Project relation)',
+    'Add Company linkedinId and convert Company.projectIds to an array of Project ids (no GTM Project relation)',
 })
-export class SyncGtmCompanyHarvestFieldsCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachCompanyHarvestFieldsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
@@ -39,7 +39,7 @@ export class SyncGtmCompanyHarvestFieldsCommand extends ProvisionedWorkspaceComm
     );
 
     this.logger.log(
-      `Synced Company.linkedinId + gtmRunKey array for workspace ${workspaceId}`,
+      `Synced Company.linkedinId + projectIds array for workspace ${workspaceId}`,
     );
   }
 }

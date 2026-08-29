@@ -8,7 +8,7 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
-import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-outreach-workflows.util';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000038)
 @Command({
@@ -16,7 +16,7 @@ import { prefillGtmOutreachWorkflows } from 'src/engine/workspace-manager/standa
   description:
     'Insert GTM outreach sequencer workflows as Drafts on existing workspaces (skip names already present)',
 })
-export class PrefillGtmOutreachWorkflowsCommand extends ProvisionedWorkspaceCommandRunner {
+export class PrefillOutreachWorkflowsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly applicationService: ApplicationService,
@@ -53,7 +53,7 @@ export class PrefillGtmOutreachWorkflowsCommand extends ProvisionedWorkspaceComm
     try {
       await queryRunner.startTransaction();
 
-      await prefillGtmOutreachWorkflows({
+      await prefillOutreachWorkflows({
         entityManager: queryRunner.manager,
         workspaceId,
         schemaName,

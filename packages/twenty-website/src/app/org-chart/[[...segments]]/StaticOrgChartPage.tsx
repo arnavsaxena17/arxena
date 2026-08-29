@@ -82,7 +82,7 @@ export function StaticOrgChartPage({
       <p style={{ margin: '0 0 16px', color: '#444', maxWidth: 720 }}>
         Interactive org chart visualization is available in the browser. Sign up
         to explore {companyName}&apos;s full leadership map, filters, and
-        recruiting workflows.
+        mapping and outreach workflows.
       </p>
       <Link
         href={signUpUrl}

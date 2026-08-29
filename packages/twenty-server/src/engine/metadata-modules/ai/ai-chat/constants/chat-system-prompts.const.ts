@@ -3,6 +3,14 @@ import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/const
 const { setup, search, outreach, crm, workflowBuilding, dashboardBuilding } =
   CHAT_INTENT_SKILLS;
 
+/**
+ * Neutral CRM copy glossary (shared Ask AI + MCP playbook):
+ * Outreach (not GTM Command); Your company (not Seller); Target titles
+ * (UI label; JSON key stays buyerTitles); people / enrolled people (not
+ * candidates in prose); create_candidate = Person + enrollment record;
+ * people/company search (not prospecting in user-facing prose). Keep
+ * LinkedIn Sales Navigator / Recruiter as product names. No sell/hire flavor.
+ */
 // Shared agent playbook (Ask AI + workspace MCP). Chat-only UI and MCP
 // transport limits live in CHAT_UI / MCP_TRANSPORT.
 export const CHAT_SYSTEM_PROMPTS = {
@@ -34,25 +42,25 @@ When searching CRM by name/fields, use the find_many_* filter format below — o
 
 ### Destination verbs (choose before tools)
 
-- **Find** → ephemeral target list for this campaign (GTM Companies/People tabs)
+- **Find** → ephemeral target list for this campaign (Outreach Companies/People tabs)
 - **Save to CRM** → Company / Person records when the user explicitly asks
-- **Enroll** → Person + Candidate (\`QUEUED\`) → sequencer (only after confirm)
+- **Enroll** → Person + enrollment record (\`create_candidate\`, \`QUEUED\`) → sequencer (only after confirm)
 - **Harvest** → scheduled CRM companies + run key (outreach workflows, not Find)
 
 Exact persist tool names live inside the loaded skill — do not invent them.
 
-### Capability packs (prospecting)
+### Capability packs (people and company search)
 
 Prefer pack intent over inventing tool names. Exact names come from the compact index and from loaded skills:
 
-- prospecting — people/company search
+- prospecting — people/company search (pack id; describe as people/company search to users)
 - enrichment — emails/phones (prefer waterfall \`check_contact_availability\`, \`fetch_contacts\` unless the user names a provider)
 - orgchart — account maps (\`get_org_chart\` when the company is known)
 - outreach — messaging
 - accounts — companies/contacts/projects
 - connected apps — tools the workspace added under Settings → AI → MCP servers (namespaced \`{slug}__{tool}\`)
 
-Never learn every prospecting or connected-app tool at once — only tools you will execute.
+Never learn every people/company-search or connected-app tool at once — only tools you will execute.
 \`execute_tool\` \`arguments\` must be a JSON **object**, never a stringified JSON string.
 
 ## Dashboards
@@ -143,7 +151,7 @@ You are connected through the workspace MCP server, not in-app Ask AI. There is 
 1. Construct CRUD names from grammar (\`find_many_{objects}\`, \`find_one_{object}\`, …). Do **not** call \`get_tool_catalog\` to discover \`find_many_companies\`.
 2. Skill names are listed in these instructions (or in a prompt the user attached). Call \`list_skills\` only if that list is missing or looks stale.
 3. One \`learn_tools\` per turn; \`toolNames\` is an array of tools you will actually execute.
-4. Never \`learn_tools\` the whole prospecting or connected-apps catalog.
+4. Never \`learn_tools\` the whole people/company-search or connected-apps catalog.
 5. Do not call \`load_skills\` if this turn already includes skill markdown from MCP \`prompts/get\`.
 6. \`get_tool_catalog\`, \`list_skills\`, and \`list_object_metadata_names\` are refresh-only when these instructions look stale.
 

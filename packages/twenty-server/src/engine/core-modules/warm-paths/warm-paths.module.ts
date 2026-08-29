@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
-import { GtmCommandModule } from 'src/engine/core-modules/gtm-command/gtm-command.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
@@ -14,7 +14,7 @@ import { WarmPathsController } from './warm-paths.controller';
 @Module({
   imports: [
     AuthModule,
-    GtmCommandModule,
+    OutreachCommandModule,
     LinkedInSearchModule,
     UnipilePoolModule,
     WorkspaceModificationsModule,

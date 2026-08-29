@@ -69,31 +69,31 @@ describe('coerceExecuteToolArguments', () => {
   it('accepts parameters / args / input aliases', () => {
     expect(
       coerceExecuteToolArguments({
-        toolName: 'upsert_gtm_target_people',
+        toolName: 'upsert_outreach_target_people',
         parameters: { projectId: 'abc', people: [] },
       }),
     ).toEqual({
-      toolName: 'upsert_gtm_target_people',
+      toolName: 'upsert_outreach_target_people',
       arguments: { projectId: 'abc', people: [] },
     });
 
     expect(
       coerceExecuteToolArguments({
-        toolName: 'upsert_gtm_target_people',
+        toolName: 'upsert_outreach_target_people',
         args: { projectId: 'abc', people: [] },
       }),
     ).toEqual({
-      toolName: 'upsert_gtm_target_people',
+      toolName: 'upsert_outreach_target_people',
       arguments: { projectId: 'abc', people: [] },
     });
 
     expect(
       coerceExecuteToolArguments({
-        toolName: 'upsert_gtm_target_people',
+        toolName: 'upsert_outreach_target_people',
         input: { projectId: 'abc', people: [] },
       }),
     ).toEqual({
-      toolName: 'upsert_gtm_target_people',
+      toolName: 'upsert_outreach_target_people',
       arguments: { projectId: 'abc', people: [] },
     });
   });
@@ -101,11 +101,11 @@ describe('coerceExecuteToolArguments', () => {
   it('leaves object arguments unchanged aside from normalizing shape', () => {
     expect(
       coerceExecuteToolArguments({
-        toolName: 'upsert_gtm_target_companies',
+        toolName: 'upsert_outreach_target_companies',
         arguments: { projectId: 'abc', companies: [] },
       }),
     ).toEqual({
-      toolName: 'upsert_gtm_target_companies',
+      toolName: 'upsert_outreach_target_companies',
       arguments: { projectId: 'abc', companies: [] },
     });
   });

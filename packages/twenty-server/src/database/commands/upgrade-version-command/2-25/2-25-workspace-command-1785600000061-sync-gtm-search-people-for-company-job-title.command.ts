@@ -6,7 +6,7 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000061)
 @Command({
@@ -14,7 +14,7 @@ import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-man
   description:
     'Re-seed Search people for company so optional jobTitle is an input and takes precedence over Project icpSpec buyerTitles[0]',
 })
-export class SyncGtmSearchPeopleForCompanyJobTitleCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachSearchPeopleForCompanyJobTitleCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -42,7 +42,7 @@ export class SyncGtmSearchPeopleForCompanyJobTitleCommand extends ProvisionedWor
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
   }

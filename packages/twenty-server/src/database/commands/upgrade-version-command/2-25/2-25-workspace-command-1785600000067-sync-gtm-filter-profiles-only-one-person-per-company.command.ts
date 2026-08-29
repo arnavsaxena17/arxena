@@ -6,15 +6,15 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000067)
 @Command({
-  name: 'upgrade:2-25:sync-gtm-filter-profiles-only-one-person-per-company',
+  name: 'upgrade:2-25:sync-outreach-filter-profiles-only-one-person-per-company',
   description:
     'Re-seed Filter profiles so onlyOnePersonPerCompany is an input that keeps the most senior person per company',
 })
-export class SyncGtmFilterProfilesOnlyOnePersonPerCompanyCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachFilterProfilesOnlyOnePersonPerCompanyCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -42,7 +42,7 @@ export class SyncGtmFilterProfilesOnlyOnePersonPerCompanyCommand extends Provisi
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
   }

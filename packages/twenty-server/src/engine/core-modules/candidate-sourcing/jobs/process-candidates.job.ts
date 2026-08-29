@@ -6,7 +6,7 @@ import { ExtSockWhatsappWhitelistProcessingService } from 'src/engine/core-modul
 import { CandidateService } from 'src/engine/core-modules/candidate-sourcing/services/candidate.service';
 import { DataSourceTransformerFactoryService } from 'src/engine/core-modules/candidate-sourcing/services/data-source-transformer-factory.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/gtm-command/services/upload-profiles-workflow-resume.service';
+import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';

@@ -6,15 +6,15 @@ import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/w
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { PrefillLogicFunctionService } from 'src/engine/workspace-manager/standard-objects-prefill-data/services/prefill-logic-function.service';
 import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
-import { getGtmOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-gtm-logic-functions.util';
+import { getOutreachLogicFunctionDefinitions } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000027)
 @Command({
-  name: 'upgrade:2-25:sync-gtm-logic-function-sample-output',
+  name: 'upgrade:2-25:sync-outreach-logic-function-sample-output',
   description:
     'Re-seed native GTM logic functions so existing workspaces pick up updated handlers, output schemas, and sampleOutput',
 })
-export class SyncGtmLogicFunctionSampleOutputCommand extends ProvisionedWorkspaceCommandRunner {
+export class SyncOutreachLogicFunctionSampleOutputCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly prefillLogicFunctionService: PrefillLogicFunctionService,
@@ -42,7 +42,7 @@ export class SyncGtmLogicFunctionSampleOutputCommand extends ProvisionedWorkspac
         ...getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions(
           workspaceId,
         ),
-        ...getGtmOutreachLogicFunctionDefinitions(workspaceId),
+        ...getOutreachLogicFunctionDefinitions(workspaceId),
       ],
     });
   }

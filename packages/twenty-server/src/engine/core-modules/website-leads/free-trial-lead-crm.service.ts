@@ -224,22 +224,22 @@ export class FreeTrialLeadCrmService {
       position: lastOpportunityPosition + 1,
       companyId: company.id,
       pointOfContactId: person.id,
-      sourcedFromGtm: true,
-      gtmRunKey: 'website-free-trial',
+      sourcedFromOutreach: true,
+      projectIds: 'website-free-trial',
       createdBy: {
         source: FieldActorSource.SYSTEM,
         name: 'Website Free Trial',
       },
     } as OpportunityWorkspaceEntity & {
-      sourcedFromGtm: boolean;
-      gtmRunKey: string;
+      sourcedFromOutreach: boolean;
+      projectIds: string;
     });
 
     try {
         await companyRepository.update(company.id, {
-          gtmFunnelStage: 'OPPORTUNITY',
+          outreachFunnelStage: 'OPPORTUNITY',
         } as Partial<CompanyWorkspaceEntity> & {
-          gtmFunnelStage: string;
+          outreachFunnelStage: string;
         });
     } catch (error) {
       this.logger.warn(
