@@ -246,7 +246,7 @@ const allObjects: ArxenaObjectDefinition[] = [
   {
     object: {
       description:
-        'Workspace-level seller company profile, default ICP, and GTM search blurbs shared across runs',
+        'Workspace-level seller company profile, default ICP, and GTM search blurbs shared across projects',
       icon: 'IconTargetArrow',
       labelPlural: 'Workspace Profiles',
       labelSingular: 'Workspace Profile',

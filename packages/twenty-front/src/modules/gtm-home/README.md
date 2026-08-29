@@ -8,12 +8,12 @@ Live working-set UI for the post-signup GTM loop. CRM-committed metrics live on 
 | --- | --- |
 | **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /gtm-command/cache/companies`) — Ask AI / discovery working set |
 | **Ephemeral people** | Redis cache keyed by `projectId` (`GET/PUT /gtm-command/cache/people`) via `upsert_gtm_target_people` — Ask AI search hits until user confirms CRM |
-| **Candidate** | Per-run outreach spine (`projectsId` = Project.id); Workflow B/C trigger unit |
+| **Candidate** | Per-project outreach spine (`projectsId` = Project.id); Workflow B/C trigger unit |
 | **Company (CRM)** | Shared account — created **only when** people are enrolled / added to CRM |
 | **Person** | Cross-project memory (DNC, degree, etc.) |
-| **Project** | Run scope: ICP, `outreachWorkflowId`, send mode, caps |
+| **Project** | Campaign scope: ICP, `outreachWorkflowId`, send mode, caps |
 
-Same Company can appear in many GTM runs’ ephemeral lists. CRM gets one shared Company row (upsert by domain/name) when outreach starts.
+Same Company can appear in many GTM projects’ ephemeral lists. CRM gets one shared Company row (upsert by domain/name) when outreach starts.
 
 Workflow topology:
 
@@ -28,7 +28,7 @@ Workflow topology:
 | Working set | `/gtm-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
 | CRM dashboard | `/object/dashboard/:id` (**GTM Command**) | Funnel / coverage / stage / channel / speed / outcomes. Prefilled on workspace create; existing workspaces: `upgrade:2-25:prefill-gtm-command-dashboard`. |
 
-On entry, Ask AI prefills an ICP onboarding kickoff (user hits Enter to send). Chrome is two rows: **PageHeader** (`GTM Command` + run picker / New run / CRM / Menu) and **main tabs** (Companies / People / Workflow; workflow mode + outreach picker trail on the same row). Switch runs via the header Project picker (**New run** creates a Project). Workflow tab prefers / auto-creates **`GTM Outreach — Per Candidate`** and binds `Project.outreachWorkflowId` when the Project has none. The Stage B dropdown lists ACTIVE workflows only; selecting one rebinds the Project pin and prefills Ask AI with that `outreachWorkflowId` context.
+On entry, Ask AI prefills an ICP onboarding kickoff (user hits Enter to send). Chrome is two rows: **PageHeader** (`GTM Command` + project picker / New project / CRM / Menu) and **main tabs** (Companies / People / Workflow; workflow mode + outreach picker trail on the same row). Switch projects via the header Project picker (**New project** creates a Project). Workflow tab prefers / auto-creates **`GTM Outreach — Per Candidate`** and binds `Project.outreachWorkflowId` when the Project has none. The Stage B dropdown lists ACTIVE workflows only; selecting one rebinds the Project pin and prefills Ask AI with that `outreachWorkflowId` context.
 
 Optional: `?workflowId=` / `?workflowRunId=`
 

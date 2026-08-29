@@ -65,6 +65,7 @@ export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
   name: string | null;
   relatedRecordId: string | null;
   relatedObjectName: string | null;
+  candidateId: string | null;
   enqueuedAt: Date | null;
   startedAt: string | null;
   endedAt: string | null;

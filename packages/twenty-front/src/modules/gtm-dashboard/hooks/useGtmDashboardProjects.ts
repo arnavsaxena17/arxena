@@ -48,7 +48,7 @@ export const useGtmDashboardProjects = () => {
       .filter(isGtmProject)
       .map((project) => ({
         id: project.id,
-        name: project.name?.trim() || 'Untitled GTM run',
+        name: project.name?.trim() || 'Untitled GTM project',
         icpSegment: parseIcpSegment(project.icpSpec),
       }));
   }, [records]);

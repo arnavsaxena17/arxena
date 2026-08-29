@@ -99,7 +99,7 @@ const toEphemeralPerson = (person: {
 @Injectable()
 export class UpsertGtmTargetPeopleTool implements Tool {
   description = `Write target people to the GTM Command People tab (ephemeral Redis list per projectId).
-Use this when the user is on /gtm-home and asks to find/fetch/search people (MD/CEO, buyers, etc.) for companies in this GTM run.
+Use this when the user is on /gtm-home and asks to find/fetch/search people (MD/CEO, buyers, etc.) for companies in this GTM project.
 Do NOT create CRM Candidate / Person records for the People tab — only call this tool.
 CRM writes happen only after the user selects rows and confirms Add to CRM / Enroll.
 Prefer mode=merge. Pass projectId from the gtmCommand browsing context.`;

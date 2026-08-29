@@ -16,7 +16,7 @@ Load this skill when the user wants to:
 
 | Context | Destination | Tool |
 | --- | --- | --- |
-| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks to find people for this run | **Ephemeral GTM People tab** (Redis) | `upsert_gtm_target_people` |
+| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks to find people for this project | **Ephemeral GTM People tab** (Redis) | `upsert_gtm_target_people` |
 | User wants a **workflow** that enrolls ICP people on `company.created` | CRM Person + Candidate (`QUEUED`) | Load `gtm-outreach-workflows` + `workflow-building`; native `upload-profiles` — do **not** Redis-upsert for that automation |
 | User explicitly asks to **save to CRM** / create Candidates / "add these people to the project as candidates" **after confirming** | CRM `candidate` / `person` | `create_candidate` / `create_one_person` / update |
 

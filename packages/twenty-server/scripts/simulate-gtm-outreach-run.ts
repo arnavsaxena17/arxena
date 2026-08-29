@@ -213,7 +213,7 @@ const resolveGtmProject = async (): Promise<ResolvedGtmProject> => {
   if (!project) {
     throw new Error(
       GTM_PROJECT_ID
-        ? `No Project id=${GTM_PROJECT_ID}. Open /gtm-home and create a run, or seed dashboard.`
+        ? `No Project id=${GTM_PROJECT_ID}. Open /gtm-home and create a project, or seed dashboard.`
         : 'Pass GTM_PROJECT_ID. Seed dashboard first.',
     );
   }

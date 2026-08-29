@@ -54,16 +54,16 @@ export const stringifyGtmIcpSpec = (spec: GtmIcpSpec): string =>
 export const resolveInheritedTextField = (
   projectValue: string | null | undefined,
   workspaceValue: string | null | undefined,
-): { value: string | null; isRunOverride: boolean } => {
+): { value: string | null; isProjectOverride: boolean } => {
   if (isNonEmptyString(projectValue)) {
-    return { value: projectValue, isRunOverride: true };
+    return { value: projectValue, isProjectOverride: true };
   }
 
   if (isNonEmptyString(workspaceValue)) {
-    return { value: workspaceValue, isRunOverride: false };
+    return { value: workspaceValue, isProjectOverride: false };
   }
 
-  return { value: null, isRunOverride: false };
+  return { value: null, isProjectOverride: false };
 };
 
 export const resolveEffectiveGtmIcp = ({
@@ -75,7 +75,7 @@ export const resolveEffectiveGtmIcp = ({
 }): {
   icpSpec: string | null;
   parsedIcp: GtmIcpSpec | null;
-  isIcpRunOverride: boolean;
+  isIcpProjectOverride: boolean;
 } => {
   const icpSpecResolution = resolveInheritedTextField(
     project?.icpSpec,
@@ -89,6 +89,6 @@ export const resolveEffectiveGtmIcp = ({
   return {
     icpSpec: normalizedIcpSpec,
     parsedIcp,
-    isIcpRunOverride: icpSpecResolution.isRunOverride,
+    isIcpProjectOverride: icpSpecResolution.isProjectOverride,
   };
 };

@@ -93,7 +93,7 @@ export type GtmProjectSettings = {
   sendWindowEnd: string;
   whatsappConnected: boolean;
   icpSpec: string | null;
-  isIcpRunOverride: boolean;
+  isIcpProjectOverride: boolean;
 };
 
 export type GtmCommandContext = {
@@ -117,7 +117,7 @@ export const buildGtmCommandContextPrompt = (
   context: GtmCommandContext,
 ): string => {
   return [
-    'You are helping with GTM Command for this Project run.',
+    'You are helping with GTM Command for this Project.',
     `projectId: ${context.projectId ?? 'none'}`,
     `projectName: ${context.projectName ?? 'none'}`,
     `gtmRunKey: ${context.gtmRunKey ?? context.projectId ?? 'none'}`,
@@ -134,7 +134,7 @@ export const buildGtmCommandContextPrompt = (
     'When the user asks to find/fetch/add/build target companies: load_skills(["search-companies"]), search, then upsert_gtm_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
     'Do NOT create CRM Company records for the Companies tab — only when enrolling people.',
     'Target people on the People tab are ephemeral (Redis per projectId) until the user selects rows and confirms Add to CRM / Enroll.',
-    'When the user asks to find/fetch/search people (MD/CEO, buyers, etc.) for this GTM run: load_skills(["search-people","linkedin-search"]) as needed, search, then upsert_gtm_target_people({ projectId, mode: "merge", people }) before ending the turn.',
+    'When the user asks to find/fetch/search people (MD/CEO, buyers, etc.) for this GTM project: load_skills(["search-people","linkedin-search"]) as needed, search, then upsert_gtm_target_people({ projectId, mode: "merge", people }) before ending the turn.',
     'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes happen only after explicit user confirmation (Add to CRM / Enroll).',
     'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectsId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
@@ -156,8 +156,8 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
   const projectLabel = input.projectName
     ? `"${input.projectName}"`
     : input.projectId
-      ? `this GTM run`
-      : 'a new GTM run';
+      ? `this GTM project`
+      : 'a new GTM project';
 
   const companyBlurb = [
     `We're ${company.name} (${company.domain})`,
@@ -186,7 +186,7 @@ export const buildGtmIcpOnboardingKickoffPrompt = (
     `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
       '. Walk me through who we should sell to (buyer titles and locations), send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (buyerTitles + locations only). Only write Project.icpSpec if I ask for a run-specific override.',
+    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (buyerTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
     ...draftLines,
   ].join('\n');
 };
@@ -200,7 +200,7 @@ export const buildGtmFindCompaniesSendPrompt = (
   input: GtmFindCompaniesSendPromptInput,
 ): string => {
   return [
-    `Find target companies for this GTM run (projectId=${input.projectId ?? 'none'}).`,
+    `Find target companies for this GTM project (projectId=${input.projectId ?? 'none'}).`,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use the workspace ICP buyer titles and locations if present.',
@@ -220,7 +220,7 @@ export const buildGtmFindPeopleSendPrompt = (
   input: GtmFindPeopleSendPromptInput,
 ): string => {
   return [
-    `Find target people for this GTM run (projectId=${input.projectId ?? 'none'}) at the companies already on the Companies tab.`,
+    `Find target people for this GTM project (projectId=${input.projectId ?? 'none'}) at the companies already on the Companies tab.`,
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use workspace ICP buyer titles and locations.',
@@ -248,7 +248,7 @@ export const buildGtmRegenerateIcpSendPrompt = (
     company.industry ? `Industry: ${company.industry}.` : null,
     company.summary ? `Company summary: ${company.summary}` : null,
     'load_skills(["gtm-icp-onboarding"]), then save icpSpec on workspaceProfile with buyerTitles and locations only.',
-    'Do not write Project.icpSpec unless I ask for a run-specific override.',
+    'Do not write Project.icpSpec unless I ask for a project-specific override.',
   ]
     .filter(Boolean)
     .join('\n');

@@ -3,6 +3,7 @@ import { WorkflowTriggerType } from 'src/modules/workflow/workflow-trigger/types
 import {
   buildWorkflowRunName,
   extractWorkflowRunTriggerRecord,
+  extractWorkflowRunTriggerRecordFromState,
 } from '../extract-workflow-run-trigger-record.util';
 
 const CANDIDATE_ID = '6bba55b1-6be2-49d3-adcd-470a56547c73';
@@ -105,6 +106,49 @@ describe('extractWorkflowRunTriggerRecord', () => {
     });
 
     expect(result).toBeUndefined();
+  });
+
+  it('extracts from a stored DATABASE_EVENT trigger step result', () => {
+    const result = extractWorkflowRunTriggerRecordFromState({
+      trigger: {
+        name: 'Candidate created',
+        type: WorkflowTriggerType.DATABASE_EVENT,
+        settings: {
+          eventName: 'candidate.created',
+          outputSchema: {},
+        },
+      },
+      triggerStepResult: {
+        recordId: CANDIDATE_ID,
+        properties: {
+          after: {
+            id: CANDIDATE_ID,
+            name: 'Prenisha Harry',
+          },
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      recordId: CANDIDATE_ID,
+      objectNameSingular: 'candidate',
+      recordLabel: 'Prenisha Harry',
+    });
+  });
+
+  it('does not extract a related record when the trigger step result is missing', () => {
+    expect(
+      extractWorkflowRunTriggerRecordFromState({
+        trigger: {
+          name: 'Candidate created',
+          type: WorkflowTriggerType.DATABASE_EVENT,
+          settings: {
+            eventName: 'candidate.created',
+            outputSchema: {},
+          },
+        },
+      }),
+    ).toBeUndefined();
   });
 
   it('does not extract a related record for bulk manual triggers', () => {

@@ -46,14 +46,14 @@ learn_tools([
 
 | Concern | Object | Notes |
 | --- | --- | --- |
-| Seller company + **default** ICP + blurbs | **`workspaceProfile`** (singleton) | Shared across runs |
-| Run override ICP / blurbs (optional) | **Project** (`icpSpec`, `icpSegment`, `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`) | Only when user asks for run-specific values |
+| Seller company + **default** ICP + blurbs | **`workspaceProfile`** (singleton) | Shared across projects |
+| Project override ICP / blurbs (optional) | **Project** (`icpSpec`, `icpSegment`, `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`) | Only when user asks for project-specific values |
 | Send mode, caps, outreach workflow | **Project** | Stay on Project |
 | Per-campaign outreach progress | **Candidate** | Later — enroll after people found |
 | Cross-project stops / degree | **Person** | Not set during ICP onboarding |
 | Account rollups | **Company** | After targets are chosen |
 
-Empty Project ICP/blurb fields mean **inherit workspace profile**. Do not clear Project fields to empty unless the user wants to drop a run override.
+Empty Project ICP/blurb fields mean **inherit workspace profile**. Do not clear Project fields to empty unless the user wants to drop a project override.
 
 ## Setup Regenerate modes (one field group per turn)
 
@@ -74,10 +74,10 @@ For regenerate-only turns: skip the full preference interview when enough seller
 From the kickoff / browsing context, capture:
 
 - Workspace / signup company domain and industry (if present)
-- `projectId` (canonical run scope — `/gtm-home?projectId=`)
+- `projectId` (canonical project scope — `/gtm-home?projectId=`)
 - Existing Project `gtmRunKey` (usually equals Project.id; may be a legacy slug)
 
-Load the singleton `workspaceProfile` (`find_many_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a run override; otherwise use profile defaults.
+Load the singleton `workspaceProfile` (`find_many_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a project override; otherwise use profile defaults.
 
 Briefly greet the user: you will set workspace ICP defaults (and search blurbs), then they can use Setup → Find companies / Find people.
 
@@ -95,7 +95,7 @@ Ask in small batches (1–4 questions per `ask_questions` call). Cover:
 
 Infer sensible defaults from their company domain when possible. If they already pasted a full ICP brief, skip redundant questions and confirm a short summary instead.
 
-Ask whether this should be the **workspace default** (recommended) or a **run-only override**.
+Ask whether this should be the **workspace default** (recommended) or a **project-only override**.
 
 Skip this step for scoped Regenerate turns that already include enough context.
 
@@ -123,8 +123,8 @@ On approval:
    - ICP regenerate: `icpSegment`, `icpSpec`, `icpBlurb` only.
    - Company blurb regenerate: `companySearchBlurb` only.
    - People blurb regenerate: `peopleSearchBlurb` only.
-3. **Run override path** (only if user asked): also `update_one_project` with the same scoped fields.
-4. Always `update_one_project` for outreach prefs that are run-scoped (`outreachSendMode`, caps, windows, etc.) during full onboarding.
+3. **Project override path** (only if user asked): also `update_one_project` with the same scoped fields.
+4. Always `update_one_project` for outreach prefs that are project-scoped (`outreachSendMode`, caps, windows, etc.) during full onboarding.
 
 `icpSpec` JSON shape (stringify into the TEXT field) — structured filters only; the NL definition lives in **`icpBlurb`**, not inside this JSON:
 

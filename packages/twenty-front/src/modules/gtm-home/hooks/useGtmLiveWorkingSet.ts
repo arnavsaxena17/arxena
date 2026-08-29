@@ -11,6 +11,7 @@ import {
     GTM_OUTREACH_WORKFLOW_B_NAME,
     GTM_PROJECT_ID_QUERY_PARAM,
     GTM_PROJECT_NAME_PREFIX,
+    isGtmProjectName,
 } from '@/gtm-home/constants/gtm-command.constants';
 import { mapCrmStageToGtmOutreachStage } from '@/gtm-home/constants/gtm-outreach-stages';
 import {
@@ -69,7 +70,7 @@ type GtmCandidateRecord = ObjectRecord & {
 const isGtmProject = (project: GtmProjectRecord): boolean =>
   isNonEmptyString(project.outreachWorkflowId) ||
   isNonEmptyString(project.icpSpec) ||
-  (project.name ?? '').startsWith(GTM_PROJECT_NAME_PREFIX);
+  isGtmProjectName(project.name);
 
 const dedupeCompaniesById = (companies: GtmCompanyRow[]): GtmCompanyRow[] => {
   const seen = new Set<string>();
@@ -253,7 +254,7 @@ export const useGtmLiveWorkingSet = () => {
     isNonEmptyString(projectIdFromQuery) &&
     gtmProjects.some((project) => project.id === projectIdFromQuery);
 
-  // Deep link wins; otherwise stay null until unused-run resolve / create finishes.
+  // Deep link wins; otherwise stay null until unused-project resolve / create finishes.
   const activeProjectId = hasValidProjectIdInQuery
     ? projectIdFromQuery
     : null;
@@ -484,7 +485,7 @@ export const useGtmLiveWorkingSet = () => {
 
   const gtmProjectIdsKey = gtmProjects.map((project) => project.id).join(',');
 
-  // On /gtm-home without a valid ?projectId=, reuse the newest unused run
+  // On /gtm-home without a valid ?projectId=, reuse the newest unused project
   // (empty Redis companies + people) or create a new Project.
   useEffect(() => {
     if (hasValidProjectIdInQuery) {
@@ -522,7 +523,7 @@ export const useGtmLiveWorkingSet = () => {
           return;
         }
 
-        // projectsSnapshot is updatedAt desc — first unused is the latest empty run
+        // projectsSnapshot is updatedAt desc — first unused is the latest empty project
         const unusedProject = occupancyByProjectId.find(
           (occupancy) => occupancy.isUnused,
         );
@@ -618,7 +619,7 @@ export const useGtmLiveWorkingSet = () => {
 
         return {
           id: gtmProject.id,
-          name: gtmProject.name ?? 'Untitled GTM run',
+          name: gtmProject.name ?? 'Untitled GTM project',
           icpSegment: resolved.parsedIcp?.buyerTitles[0] ?? null,
         };
       }),
@@ -639,7 +640,7 @@ export const useGtmLiveWorkingSet = () => {
     sendWindowEnd: project?.sendWindowEnd ?? '10:00',
     whatsappConnected,
     icpSpec: effectiveIcp.icpSpec,
-    isIcpRunOverride: effectiveIcp.isIcpRunOverride,
+    isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
   };
 
   const parsedIcp = effectiveIcp.parsedIcp;
@@ -682,7 +683,7 @@ export const useGtmLiveWorkingSet = () => {
     appendCompanies,
     setPeople,
     parsedIcp,
-    isIcpRunOverride: effectiveIcp.isIcpRunOverride,
+    isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
     linkedinConnected,
     gmailConnected,
     whatsappConnected,

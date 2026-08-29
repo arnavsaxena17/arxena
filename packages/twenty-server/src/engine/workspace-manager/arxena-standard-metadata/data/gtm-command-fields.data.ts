@@ -180,9 +180,9 @@ export const getGtmCommandFieldsData = (
       // Harvest / command membership. Project.companyId stays the job employer;
       // do not use Company.project or a second GTM relation for this list.
       description:
-        'GTM Project ids this company is tagged to (harvest and command runs)',
+        'GTM Project ids this company is tagged to (harvest and command projects)',
       icon: 'IconKey',
-      label: 'GTM Run Key',
+      label: 'GTM Project Key',
       name: 'gtmRunKey',
       objectMetadataId: objectsNameIdMap.company,
       type: 'ARRAY',
@@ -569,7 +569,7 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'project',
     field: {
-      description: 'Optional run override ICP JSON (buyerTitles and locations)',
+      description: 'Optional project override ICP JSON (buyerTitles and locations)',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',
@@ -605,9 +605,9 @@ export const getGtmCommandFieldsData = (
   {
     objectName: 'opportunity',
     field: {
-      description: 'GTM run key for outcomes filtering',
+      description: 'GTM project key for outcomes filtering',
       icon: 'IconKey',
-      label: 'GTM Run Key',
+      label: 'GTM Project Key',
       name: 'gtmRunKey',
       objectMetadataId: objectsNameIdMap.opportunity,
       type: 'TEXT',

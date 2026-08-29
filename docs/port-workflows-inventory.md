@@ -28,9 +28,9 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] Selection evaluation harness + `tools_in_context` logging
 - [x] Object-level database CRUD tool access (`none` for video interview*, `read` for orgChart) via `OBJECT_DATABASE_CRUD_TOOL_ACCESS`
 - [x] GTM ICP onboarding skill (`gtm-icp-onboarding`) + `/gtm-home` Ask AI kickoff (PREFILL); Setup regenerate scoped to ICP / company blurb / people blurb separately + `icpBlurb` field (skill sync `1785600000017`)
-- [x] GTM Stage B default workflow (`GTM Outreach — Per Candidate`) auto-create + Project bind on Workflow tab / New GTM run
+- [x] GTM Stage B default workflow (`GTM Outreach — Per Candidate`) auto-create + Project bind on Workflow tab / New project
 - [x] GTM Stage B workflow picker (ACTIVE-only list → rebind `outreachWorkflowId` + Ask AI context)
-- [x] GTM Command chrome collapse (PageHeader run controls + tabs trailing workflow modes)
+- [x] GTM Command chrome collapse (PageHeader project controls + tabs trailing workflow modes)
 - [x] Rename `gtmWorkspaceProfile` → `workspaceProfile` (Arxena standard object + workspace cmd `1785600000018`)
 - [x] GTM Workflow tab canvas centers on open (container-bounds viewport; no side-panel double-subtract)
 - [x] GTM ephemeral companies (Redis `/gtm-command/cache/companies` per projectId; CRM Company on enroll only)

@@ -401,6 +401,7 @@ export const OrgChartsNavigationDrawerItems = () => {
   const canShowOrgChartsNav =
     isOrgChartEnabled &&
     isDefined(orgChartMetadataItem) &&
+    orgChartMetadataItem.isActive &&
     orgChartMetadataItem.fields.length > 0 &&
     isDefined(workspaceMemberId);
 

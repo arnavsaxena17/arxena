@@ -16,7 +16,7 @@ Load this skill when the user wants to:
 
 | Context | Destination | Tool |
 | --- | --- | --- |
-| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks for a **target list** for this run | **Ephemeral GTM Companies tab** (Redis) | `upsert_gtm_target_companies` |
+| User is on **GTM Command** (`/gtm-home`) / browsing context `type=gtmCommand` / `projectId` present / asks for a **target list** for this project | **Ephemeral GTM Companies tab** (Redis) | `upsert_gtm_target_companies` |
 | User explicitly asks to **save to CRM** / create Company records / "add to companies object" | CRM `companies` | `create_one_company` / `create_many_companies` / update |
 | User wants a **scheduled / workflow** harvest into the companies table (tag to project) | CRM `companies` + `gtmRunKey` | Load `gtm-outreach-workflows` + `workflow-building`; do **not** use Redis for that automation |
 

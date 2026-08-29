@@ -798,7 +798,7 @@ export const getGtmOutreachLogicFunctionDefinitions = (
       id: ids.upsertCompaniesId,
       name: GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
       description:
-        'Upsert Company search hits into CRM and append projectId onto gtmRunKey[]. Pass projectId and companies[] from search-companies. Skips rows already tagged to this run.',
+        'Upsert Company search hits into CRM and append projectId onto gtmRunKey[]. Pass projectId and companies[] from search-companies. Skips rows already tagged to this project.',
       sourceHandlerCode: getGtmNativeLogicFunctionHandler(
         GTM_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
       ),

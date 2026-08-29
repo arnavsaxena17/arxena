@@ -130,6 +130,32 @@ describe('classifyTopLevelFields', () => {
       hasWorkspaceFields: true,
       hasCoreFields: false,
     });
+
+    expect(
+      classifyTopLevelFields(parse(query), 'FindManyDashboards', new Set()),
+    ).toEqual({
+      hasIntrospectionFields: false,
+      hasWorkspaceFields: true,
+      hasCoreFields: false,
+    });
+  });
+
+  it('should classify FindMany record queries as workspace when operationName is stale', () => {
+    const query = `
+      query FindManyOrgCharts($filter: OrgChartFilterInput, $orderBy: [OrgChartOrderByInput], $lastCursor: String, $limit: Int) {
+        orgCharts(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+          edges { node { id } }
+        }
+      }
+    `;
+
+    expect(
+      classifyTopLevelFields(parse(query), 'StaleOperationName', new Set()),
+    ).toEqual({
+      hasIntrospectionFields: false,
+      hasWorkspaceFields: true,
+      hasCoreFields: false,
+    });
   });
 
   it('should not classify __typename as introspection', () => {

@@ -180,7 +180,7 @@ export type GtmSendScheduleInput = {
 type GtmSetupPanelProps = {
   workspaceCompany: GtmWorkspaceCompany;
   icpSpec: string | null;
-  isIcpRunOverride: boolean;
+  isIcpProjectOverride: boolean;
   hasWorkspaceProfile: boolean;
   hasProject: boolean;
   isSavingIcp: boolean;
@@ -199,7 +199,7 @@ type GtmSetupPanelProps = {
 export const GtmSetupPanel = ({
   workspaceCompany,
   icpSpec,
-  isIcpRunOverride,
+  isIcpProjectOverride,
   hasWorkspaceProfile,
   hasProject,
   isSavingIcp,
@@ -327,7 +327,7 @@ export const GtmSetupPanel = ({
           <StyledTitleGroup>
             <StyledTitle>ICP</StyledTitle>
             <StyledBadge>
-              {isIcpRunOverride ? 'Run override' : 'Workspace default'}
+              {isIcpProjectOverride ? 'Project override' : 'Workspace default'}
             </StyledBadge>
           </StyledTitleGroup>
           <Button
@@ -462,13 +462,13 @@ export const GtmSetupPanel = ({
         </StyledActions>
         {!hasProject && (
           <StyledMuted>
-            Create or select a GTM run first, then use these actions.
+            Create or select a GTM project first, then use these actions.
           </StyledMuted>
         )}
         {hasProject && !hasWorkspaceProfile && (
           <StyledMuted>
             Workspace GTM profile is still provisioning — Save writes to this
-            run until the profile exists.
+            project until the profile exists.
           </StyledMuted>
         )}
       </StyledStickyBar>

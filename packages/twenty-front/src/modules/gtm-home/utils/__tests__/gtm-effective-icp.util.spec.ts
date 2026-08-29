@@ -7,22 +7,22 @@ import {
 } from '@/gtm-home/utils/gtm-effective-icp.util';
 
 describe('gtm-effective-icp.util', () => {
-  it('prefers non-empty project values as run overrides', () => {
+  it('prefers non-empty project values as project overrides', () => {
     expect(
       resolveInheritedTextField('project-value', 'workspace-value'),
     ).toEqual({
       value: 'project-value',
-      isRunOverride: true,
+      isProjectOverride: true,
     });
 
     expect(resolveInheritedTextField('', 'workspace-value')).toEqual({
       value: 'workspace-value',
-      isRunOverride: false,
+      isProjectOverride: false,
     });
 
     expect(resolveInheritedTextField(null, null)).toEqual({
       value: null,
-      isRunOverride: false,
+      isProjectOverride: false,
     });
   });
 
@@ -38,7 +38,7 @@ describe('gtm-effective-icp.util', () => {
       workspaceProfile: { icpSpec: workspaceIcp },
     });
 
-    expect(effective.isIcpRunOverride).toBe(false);
+    expect(effective.isIcpProjectOverride).toBe(false);
     expect(effective.parsedIcp).toEqual({
       buyerTitles: ['VP People'],
       locations: ['US'],
@@ -65,7 +65,7 @@ describe('gtm-effective-icp.util', () => {
       },
     });
 
-    expect(effective.isIcpRunOverride).toBe(true);
+    expect(effective.isIcpProjectOverride).toBe(true);
     expect(effective.parsedIcp).toEqual({
       buyerTitles: ['Head of Talent'],
       locations: ['UK'],

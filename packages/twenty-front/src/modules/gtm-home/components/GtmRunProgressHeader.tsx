@@ -39,7 +39,7 @@ type GtmRunProgressHeaderProps = {
   isCreatingProject?: boolean;
 };
 
-// Compact run switcher for the page header — identity lives in the select, not a second title.
+// Compact project switcher for the page header — identity lives in the select, not a second title.
 export const GtmRunProgressHeader = (props: GtmRunProgressHeaderProps) => {
   const canQueryDashboard = useCanQueryDashboardRecords();
 
@@ -117,7 +117,7 @@ const GtmRunProgressHeaderView = ({
         )}
       </StyledSelect>
       <Button
-        title="New run"
+        title="New project"
         variant="secondary"
         size="small"
         disabled={isCreatingProject}

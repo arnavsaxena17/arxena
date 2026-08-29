@@ -45,7 +45,9 @@ export const useCanQueryDashboardRecords = () => {
   );
 
   return (
-    isDefined(dashboardMetadataItem) && dashboardMetadataItem.fields.length > 0
+    isDefined(dashboardMetadataItem) &&
+    dashboardMetadataItem.isActive &&
+    dashboardMetadataItem.fields.length > 0
   );
 };
 

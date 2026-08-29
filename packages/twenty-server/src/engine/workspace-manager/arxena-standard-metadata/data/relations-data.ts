@@ -497,6 +497,24 @@ const getAllRelationsData = (
         toName: 'candidate',
       },
     },
+    {
+      fromObjectName: 'candidate',
+      toObjectName: 'workflowRun',
+      relationMetadata: {
+        fromDescription: 'Workflow runs triggered from this candidate',
+        fromIcon: 'IconHistoryToggle',
+        fromLabel: 'Workflow Runs',
+        fromName: 'workflowRuns',
+        fromObjectMetadataId: objectsNameIdMap.candidate,
+        relationType: 'ONE_TO_MANY',
+        toObjectMetadataId: objectsNameIdMap.workflowRun,
+        toDescription: 'Candidate that triggered this workflow run',
+        toIcon: 'IconUsers',
+        toLabel: 'Candidate',
+        toName: 'candidate',
+        isUIEditable: false,
+      },
+    },
 
     {
       fromObjectName: 'project',

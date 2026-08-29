@@ -139,6 +139,10 @@ export class WorkflowRunWorkspaceService {
           }),
           relatedRecordId: relatedRecord?.recordId ?? null,
           relatedObjectName: relatedRecord?.objectNameSingular ?? null,
+          candidateId:
+            relatedRecord?.objectNameSingular === 'candidate'
+              ? relatedRecord.recordId
+              : null,
           ...computeWorkflowRunProgressFields({
             state: initState,
             status,

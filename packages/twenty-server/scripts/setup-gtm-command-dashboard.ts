@@ -10,9 +10,9 @@ const SERVER_URL = process.env.SERVER_URL || 'http://127.0.0.1:3000';
 const SERVER_HOST = process.env.SERVER_HOST || 'apple.localhost';
 const API_TOKEN = process.env.API_TOKEN;
 const DASHBOARD_TITLE = 'GTM Command';
-// Prefer an existing Project UUID; otherwise seed creates "GTM Run · seed".
+// Prefer an existing Project UUID; otherwise seed creates "GTM Project · seed".
 const GTM_PROJECT_ID = process.env.GTM_PROJECT_ID || '';
-const GTM_SEED_PROJECT_NAME = 'GTM Run · seed';
+const GTM_SEED_PROJECT_NAME = 'GTM Project · seed';
 
 type GraphQLResponse<T> = {
   data?: T;
@@ -729,7 +729,7 @@ const COMPANY_FIELDS_TO_ENSURE: FieldToCreate[] = [
       { value: 'LOW', label: 'Low', color: 'red', position: 2 },
     ],
   },
-  { name: 'gtmRunKey', label: 'GTM Run Key', type: 'ARRAY', icon: 'IconKey' },
+  { name: 'gtmRunKey', label: 'GTM Project Key', type: 'ARRAY', icon: 'IconKey' },
   {
     name: 'peopleTargeted',
     label: 'People Targeted',
@@ -1119,7 +1119,7 @@ const OPPORTUNITY_FIELDS_TO_ENSURE: FieldToCreate[] = [
   //   icon: 'IconTargetArrow',
   //   defaultValue: false,
   // },
-  // { name: 'gtmRunKey', label: 'GTM Run Key', type: 'TEXT', icon: 'IconKey' },
+  // { name: 'gtmRunKey', label: 'GTM Project Key', type: 'TEXT', icon: 'IconKey' },
 ];
 
 const createOneField = async (

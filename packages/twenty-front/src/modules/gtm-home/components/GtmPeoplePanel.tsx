@@ -226,8 +226,8 @@ export const GtmPeoplePanel = ({
   if (filteredPeople.length === 0) {
     return (
       <StyledEmpty>
-        No target people in this GTM run yet. Use Setup → Find people (Ask AI)
-        to discover MD/CEOs or buyers from your ICP at companies on this run.
+        No target people in this GTM project yet. Use Setup → Find people (Ask AI)
+        to discover MD/CEOs or buyers from your ICP at companies on this project.
         They stay ephemeral (Redis) until you Add to CRM or Enroll, which creates
         CRM Company + Candidate under this Project.
       </StyledEmpty>

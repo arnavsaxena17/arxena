@@ -85,7 +85,7 @@ export const getWorkspaceProfileFieldsData = (
     objectName: 'workspaceProfile',
     field: {
       description:
-        'Default ICP JSON (buyerTitles and locations) shared across GTM runs',
+        'Default ICP JSON (buyerTitles and locations) shared across GTM projects',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',

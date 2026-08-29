@@ -22,6 +22,17 @@ export const classifyTopLevelFields = (
     operationName,
   );
 
+  // Named-operation lookup can miss on first load (stale operationName).
+  // Still treat *FilterInput / *OrderByInput documents as workspace so they
+  // never fall through to the core schema.
+  if (topLevelFields.length === 0 && usesWorkspaceRecordInputTypes) {
+    return {
+      hasIntrospectionFields: false,
+      hasWorkspaceFields: true,
+      hasCoreFields: false,
+    };
+  }
+
   let hasIntrospectionFields = false;
   let hasWorkspaceFields = false;
   let hasCoreFields = false;

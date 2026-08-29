@@ -4,6 +4,8 @@ import { DocumentNode, parse } from 'graphql';
 import { type Plugin } from 'graphql-yoga';
 
 import { isNull } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
+
 import { type DirectExecutionService } from 'src/engine/api/graphql/direct-execution/direct-execution.service';
 import { classifyTopLevelFields } from 'src/engine/api/graphql/direct-execution/utils/classify-top-level-fields.util';
 import { findOperationDefinition } from 'src/engine/api/graphql/direct-execution/utils/find-operation-definition.util';
@@ -16,19 +18,53 @@ export type DirectExecutionPluginConfig = {
   featureFlagService: FeatureFlagService;
 };
 
+const getExpressRequest = (
+  serverContext: unknown,
+): Request | undefined => {
+  const req = (serverContext as { req?: Request } | undefined)?.req;
+
+  return req;
+};
+
 export function useDirectExecution(
   config: DirectExecutionPluginConfig,
 ): Plugin {
-  return {
-    onRequest: async ({ endResponse, serverContext }) => {
-      const req = (serverContext as unknown as { req: Request }).req;
+  const expressReqByFetchRequest = new WeakMap<globalThis.Request, Request>();
 
-      if (!req.workspace?.id || !req.body?.query) {
+  return {
+    // onRequest runs before Yoga parses the body, so req.body.query is often
+    // missing on the first authenticated page load. Stash Express req here /
+    // in onRequestParse, then intercept in onParams where params.query exists.
+    onRequest: ({ request, serverContext }) => {
+      const req = getExpressRequest(serverContext);
+
+      if (isDefined(req)) {
+        expressReqByFetchRequest.set(request, req);
+      }
+    },
+    onRequestParse: ({ request, serverContext }) => {
+      const req = getExpressRequest(serverContext);
+
+      if (isDefined(req)) {
+        expressReqByFetchRequest.set(request, req);
+      }
+    },
+    onParams: async ({ params, request, setResult }) => {
+      const req = expressReqByFetchRequest.get(request);
+
+      if (!req?.workspace?.id || !params.query) {
         return;
       }
 
-      const queryString = req.body.query as string;
-      const operationName = req.body.operationName as string | undefined;
+      req.body = {
+        ...req.body,
+        query: params.query,
+        operationName: params.operationName,
+        variables: params.variables,
+      };
+
+      const queryString = params.query;
+      const operationName = params.operationName;
 
       let document: DocumentNode;
       try {
@@ -49,13 +85,17 @@ export function useDirectExecution(
         return;
       }
 
-      const workspaceResolverNames =
-        await config.directExecutionService.getWorkspaceResolverNames(
-          req.workspace.id,
-        );
+      let workspaceResolverNames: Set<string>;
 
-      if (!workspaceResolverNames) {
-        return;
+      try {
+        workspaceResolverNames =
+          (await config.directExecutionService.getWorkspaceResolverNames(
+            req.workspace.id,
+          )) ?? new Set();
+      } catch {
+        // Cold / stale resolver-name cache must not fall through to the core
+        // schema (HTTP 400 Unknown type "DashboardFilterInput").
+        workspaceResolverNames = new Set();
       }
 
       const { hasIntrospectionFields, hasWorkspaceFields, hasCoreFields } =
@@ -66,10 +106,16 @@ export function useDirectExecution(
           'This query cannot be executed as a single request. Please split it into separate queries.',
         );
 
-        return endResponse(Response.json({ errors: [error.toJSON()] }));
+        setResult({ errors: [error] });
+
+        return;
       }
 
       if (hasCoreFields) {
+        return;
+      }
+
+      if (!hasIntrospectionFields && !hasWorkspaceFields) {
         return;
       }
 
@@ -95,7 +141,7 @@ export function useDirectExecution(
         return;
       }
 
-      return endResponse(Response.json(result));
+      setResult(result);
     },
   };
 }

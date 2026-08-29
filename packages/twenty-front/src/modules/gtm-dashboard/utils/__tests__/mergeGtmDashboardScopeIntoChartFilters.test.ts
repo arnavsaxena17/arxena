@@ -18,7 +18,7 @@ describe('mergeGtmDashboardScopeIntoChartFilters', () => {
       {
         id: 'gtm-run-key-field',
         name: 'gtmRunKey',
-        label: 'GTM Run Key',
+        label: 'GTM Project Key',
         type: FieldMetadataType.ARRAY,
         isActive: true,
       },

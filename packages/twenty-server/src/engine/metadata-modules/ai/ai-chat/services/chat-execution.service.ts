@@ -855,7 +855,7 @@ export class ChatExecutionService {
     const lastUserMessage = messages[lastUserIndex];
     const note =
       browsingContextType === 'gtmCommand'
-        ? 'When the user asks to find/fetch/add/build target companies for this GTM run, follow the GTM rules below and call upsert_gtm_target_companies with this projectId. When they ask to find people (MD/CEO, buyers, etc.), call upsert_gtm_target_people — never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list.'
+        ? 'When the user asks to find/fetch/add/build target companies for this GTM project, follow the GTM rules below and call upsert_gtm_target_companies with this projectId. When they ask to find people (MD/CEO, buyers, etc.), call upsert_gtm_target_people — never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list.'
         : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
     const browsingContextPart = {
       type: 'text' as const,
@@ -923,14 +923,14 @@ export class ChatExecutionService {
       'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when enrolling people.',
       'Target people on the People tab are ephemeral (Redis per projectId) until the user selects rows and confirms Add to CRM / Enroll.',
       
-      'When the user asks to find/fetch/search people (MD/CEO, buyers, personas) for this GTM run:',
+      'When the user asks to find/fetch/search people (MD/CEO, buyers, personas) for this GTM project:',
       '1. load_skills(["search-people","linkedin-search"]) as needed',
-      '2. Search (Unipile LinkedIn / Harvest / Apollo / etc.) using companies from this run when relevant',
+      '2. Search (Unipile LinkedIn / Harvest / Apollo / etc.) using companies from this project when relevant',
       '3. learn_tools({toolNames:["upsert_gtm_target_people"]}) then execute_tool with a JSON-object arguments field',
       '4. Call upsert_gtm_target_people({ projectId, mode: "merge", people: [...] }) before ending the turn',
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
       
-      'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this run:',
+      'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this project:',
       '1. load_skills(["gtm-outreach-workflows","workflow-building"]) — treat that ask as execute authorization for enrollment',
       '2. Prefer Project outreachWorkflowId / name "GTM Outreach — Per Candidate"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
       '3. Candidate Links field is linkedinUrl.primaryLinkUrl (Person uses linkedinLink) — fix SEND_* templates if they still say linkedinLink',

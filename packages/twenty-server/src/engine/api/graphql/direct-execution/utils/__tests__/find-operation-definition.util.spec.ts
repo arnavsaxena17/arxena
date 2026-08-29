@@ -35,8 +35,19 @@ describe('findOperationDefinition', () => {
     expect(result?.name?.value).toBe('Second');
   });
 
-  it('should return undefined when operationName does not match any operation', () => {
+  it('should fall back to the only operation when operationName does not match', () => {
     const document = parse('query MyQuery { findManyCompanies { id } }');
+
+    const result = findOperationDefinition(document, 'NonExistent');
+
+    expect(result?.name?.value).toBe('MyQuery');
+  });
+
+  it('should return undefined when operationName does not match among multiple operations', () => {
+    const document = parse(`
+      query First { findManyCompanies { id } }
+      query Second { findManyPeople { id } }
+    `);
 
     const result = findOperationDefinition(document, 'NonExistent');
 

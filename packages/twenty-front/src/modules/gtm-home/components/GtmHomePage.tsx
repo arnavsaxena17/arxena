@@ -123,7 +123,7 @@ const GtmHomePageContent = () => {
     activeProjectId,
     setActiveProjectId,
     createGtmProject,
-    isIcpRunOverride,
+    isIcpProjectOverride,
     linkedinConnected,
     gmailConnected,
     whatsappConnected,
@@ -255,9 +255,9 @@ const GtmHomePageContent = () => {
   ]);
 
   const resolvePersistTarget = (
-    isRunOverride: boolean,
+    isProjectOverride: boolean,
   ): GtmSetupPersistTarget | null => {
-    if (isRunOverride && isDefined(activeProjectId)) {
+    if (isProjectOverride && isDefined(activeProjectId)) {
       return 'project';
     }
 
@@ -273,15 +273,15 @@ const GtmHomePageContent = () => {
   };
 
   const persistSetupField = async ({
-    isRunOverride,
+    isProjectOverride,
     updateOneRecordInput,
     successMessage,
   }: {
-    isRunOverride: boolean;
+    isProjectOverride: boolean;
     updateOneRecordInput: Record<string, string>;
     successMessage: string;
   }) => {
-    const persistTarget = resolvePersistTarget(isRunOverride);
+    const persistTarget = resolvePersistTarget(isProjectOverride);
 
     if (
       persistTarget === 'workspaceProfile' &&
@@ -303,12 +303,12 @@ const GtmHomePageContent = () => {
         updateOneRecordInput,
       });
       enqueueSuccessSnackBar({
-        message: `${successMessage} (this run)`,
+        message: `${successMessage} (this project)`,
       });
       return;
     }
 
-    throw new Error('No workspace profile or GTM run to save to.');
+    throw new Error('No workspace profile or GTM project to save to.');
   };
 
   const handleCreateProject = async () => {
@@ -368,7 +368,7 @@ const GtmHomePageContent = () => {
 
     try {
       await persistSetupField({
-        isRunOverride: projectSettings.isIcpRunOverride,
+        isProjectOverride: projectSettings.isIcpProjectOverride,
         updateOneRecordInput: {
           icpSpec: normalizedIcpSpec,
         },
@@ -391,7 +391,7 @@ const GtmHomePageContent = () => {
   }) => {
     if (!isDefined(activeProjectId)) {
       enqueueErrorSnackBar({
-        message: 'Create or select a GTM run before saving send schedule.',
+        message: 'Create or select a GTM project before saving send schedule.',
       });
       return;
     }
@@ -519,12 +519,12 @@ const GtmHomePageContent = () => {
           />
           {loading ? (
             <StyledLoading>
-              <Loader /> Loading GTM run…
+              <Loader /> Loading GTM project…
             </StyledLoading>
           ) : !activeProjectId ? (
             <StyledEmpty>
-              Preparing a GTM run… If this persists, click{' '}
-              <strong>New run</strong>.
+              Preparing a GTM project… If this persists, click{' '}
+              <strong>New project</strong>.
             </StyledEmpty>
           ) : isWorkflowTab ? (
             <StyledWorkflowContent>
@@ -546,7 +546,7 @@ const GtmHomePageContent = () => {
                   <GtmSetupPanel
                     workspaceCompany={workspaceCompany}
                     icpSpec={projectSettings.icpSpec}
-                    isIcpRunOverride={isIcpRunOverride}
+                    isIcpProjectOverride={isIcpProjectOverride}
                     hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
                     hasProject={isDefined(activeProjectId)}
                     isSavingIcp={isSavingIcp}

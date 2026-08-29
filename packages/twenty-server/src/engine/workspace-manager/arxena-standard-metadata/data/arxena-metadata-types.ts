@@ -53,6 +53,7 @@ export type ArxenaRelationMetadata = {
   toIcon?: string;
   toLabel: string;
   toName: string;
+  isUIEditable?: boolean;
 };
 
 export type ArxenaRelationWithObjects = {

@@ -33,7 +33,7 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 
 | Workflow | Trigger | Role |
 | --- | --- | --- |
-| **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `gtmRunKey`). Seed Project **GTM Harvest**. Do **not** `upsert_gtm_target_companies`. Skip rows already tagged to this run. |
+| **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `gtmRunKey`). Seed Project **GTM Harvest**. Do **not** `upsert_gtm_target_companies`. Skip rows already tagged to this project. |
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Workflow U** (manual) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
 | **Stage B** (`GTM Outreach — Per Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
@@ -135,7 +135,7 @@ Allowed days are **Tue–Thu** only. Outside the window the Unipile step defers 
 
 **Multi-market ops:** use one GTM Project per geography so the window matches ICP locations:
 
-| GTM run | `sendTimezone` | Window | ICP `locations` focus |
+| GTM project | `sendTimezone` | Window | ICP `locations` focus |
 | --- | --- | --- | --- |
 | India | `Asia/Kolkata` | 08:00–10:00 | India cities |
 | GCC | `Asia/Dubai` | 08:00–10:00 | UAE / Saudi / etc. |

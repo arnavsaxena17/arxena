@@ -221,6 +221,23 @@ export const extractWorkflowRunTriggerRecord = ({
   return undefined;
 };
 
+export const extractWorkflowRunTriggerRecordFromState = ({
+  trigger,
+  triggerStepResult,
+}: {
+  trigger?: WorkflowTrigger | null;
+  triggerStepResult?: unknown;
+}): WorkflowRunTriggerRecord | undefined => {
+  if (!isPlainObject(triggerStepResult)) {
+    return undefined;
+  }
+
+  return extractWorkflowRunTriggerRecord({
+    trigger,
+    triggerPayload: triggerStepResult,
+  });
+};
+
 export const buildWorkflowRunName = ({
   runNumber,
   workflowName,

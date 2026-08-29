@@ -240,6 +240,7 @@ const buildRelationFieldManifest = ({
   relationType,
   targetObjectName,
   targetFieldName,
+  isUIEditable,
 }: {
   objectName: string;
   fieldName: string;
@@ -249,6 +250,7 @@ const buildRelationFieldManifest = ({
   relationType: RelationType;
   targetObjectName: string;
   targetFieldName: string;
+  isUIEditable?: boolean;
 }): RelationFieldManifest => {
   const objectUniversalIdentifier =
     resolveObjectUniversalIdentifier(objectName);
@@ -280,6 +282,7 @@ const buildRelationFieldManifest = ({
     description: description || undefined,
     icon: icon || undefined,
     isNullable: true,
+    ...(isDefined(isUIEditable) ? { isUIEditable } : {}),
     relationTargetObjectMetadataUniversalIdentifier:
       targetObjectUniversalIdentifier,
     relationTargetFieldMetadataUniversalIdentifier,
@@ -381,6 +384,53 @@ const buildDefaultViewsForObject = ({
       fields: buildViewFields(fieldsViewUniversalIdentifier, false),
     },
   ];
+};
+
+const getArxenaFieldUniversalIdentifier = (
+  objectName: string,
+  fieldName: string,
+): string =>
+  getFieldUniversalIdentifier({
+    applicationUniversalIdentifier:
+      ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
+    objectUniversalIdentifier: resolveObjectUniversalIdentifier(objectName),
+    name: resolveFieldNameForUniversalIdentifier(objectName, fieldName),
+  });
+
+const appendVisibleViewField = ({
+  views,
+  fieldMetadataUniversalIdentifier,
+  size,
+}: {
+  views: ViewManifest[];
+  fieldMetadataUniversalIdentifier: string;
+  size: number;
+}): void => {
+  for (const view of views) {
+    const existingFields = view.fields ?? [];
+
+    const nextPosition =
+      existingFields.reduce(
+        (maxPosition, field) => Math.max(maxPosition, field.position),
+        -1,
+      ) + 1;
+
+    view.fields = [
+      ...existingFields,
+      {
+        universalIdentifier: getViewFieldUniversalIdentifier({
+          applicationUniversalIdentifier:
+            ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
+          viewUniversalIdentifier: view.universalIdentifier,
+          fieldMetadataUniversalIdentifier,
+        }),
+        fieldMetadataUniversalIdentifier,
+        position: nextPosition,
+        isVisible: true,
+        size,
+      },
+    ];
+  }
 };
 
 const buildDefaultRecordPageLayout = ({
@@ -609,6 +659,17 @@ const buildArxenaFamilyManifest = ({
       ),
     });
 
+    if (object.nameSingular === 'candidate') {
+      appendVisibleViewField({
+        views: objectViews,
+        fieldMetadataUniversalIdentifier: getArxenaFieldUniversalIdentifier(
+          'candidate',
+          'workflowRuns',
+        ),
+        size: 180,
+      });
+    }
+
     views.push(...objectViews);
 
     const fieldsView = objectViews[1];
@@ -722,6 +783,7 @@ const buildArxenaFamilyManifest = ({
         relationType: fromRelationType,
         targetObjectName: toObjectName,
         targetFieldName: relationMetadata.toName,
+        isUIEditable: relationMetadata.isUIEditable,
       }),
       buildRelationFieldManifest({
         objectName: toObjectName,
@@ -732,6 +794,7 @@ const buildArxenaFamilyManifest = ({
         relationType: toRelationType,
         targetObjectName: fromObjectName,
         targetFieldName: relationMetadata.fromName,
+        isUIEditable: relationMetadata.isUIEditable,
       }),
     );
   }

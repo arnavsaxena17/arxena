@@ -64,7 +64,7 @@ Copy and tick:
 ```
 GTM E2E:
 - [ ] 0 Setup (health + auth + /gtm-home)
-- [ ] 1 New run + company search → Companies tab
+- [ ] 1 New project + company search → Companies tab
 - [ ] 2 MD/CEO for first 3 companies → People tab
 - [ ] 3 LinkedIn connection outreach workflow
 ```
@@ -80,7 +80,7 @@ Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
 
 ### Step 1 — Companies discovery
 
-1. Click **New run** (creates Project; URL gains new `projectId`).
+1. Click **New project** (creates Project; URL gains new `projectId`).
 2. Ask AI right drawer opens with ICP preprompt — clear/replace composer text.
 3. Send exactly (or close equivalent):
 
@@ -104,7 +104,7 @@ curl -s "http://arxena.localhost:3000/gtm-command/cache/companies?projectId=<PRO
 Same chat thread. Send:
 
 > Find MD/CEOs for the first 3 companies in the Companies table. Use the
-> company list from this GTM run as context. Resolve MD/CEO titles (boolean
+> company list from this GTM project as context. Resolve MD/CEO titles (boolean
 > query from Python if needed), then search each company via Unipile/LinkedIn.
 > Upsert results into the GTM People tab — do not create CRM candidates yet.
 
