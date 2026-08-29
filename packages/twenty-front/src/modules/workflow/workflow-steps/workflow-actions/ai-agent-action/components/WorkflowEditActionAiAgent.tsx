@@ -7,10 +7,13 @@ import { type WorkflowAiAgentAction } from '@/workflow/types/Workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepCmdEnterButton } from '@/workflow/workflow-steps/components/WorkflowStepCmdEnterButton';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
+import { AiAgentExecutionResult } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult';
+import { AiAgentTestVariableInput } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentTestVariableInput';
 import { WorkflowAiAgentPermissionsTab } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentPermissionsTab';
 import { WORKFLOW_AI_AGENT_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabListComponentId';
 import { WORKFLOW_AI_AGENT_TABS } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabs';
 import { useResetWorkflowAiAgentPermissionsStateOnSidePanelClose } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useResetWorkflowAiAgentPermissionsStateOnSidePanelClose';
+import { useTestAiAgent } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useTestAiAgent';
 import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentActionAgentState';
 import { workflowAiAgentPermissionsIsAddingPermissionState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentPermissionsIsAddingPermissionState';
 import { useQuery } from '@apollo/client/react';
@@ -19,7 +22,13 @@ import { useLingui } from '@lingui/react/macro';
 import { useEffect, useState } from 'react';
 import { SettingsPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { IconLock, IconSparkles } from 'twenty-ui/icon';
+import { Callout } from 'twenty-ui/feedback';
+import {
+  IconAlertTriangle,
+  IconLock,
+  IconPlayerPlay,
+  IconSparkles,
+} from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
 import {
@@ -46,6 +55,15 @@ type WorkflowEditActionAiAgentProps = {
 const StyledTabListContainer = styled.div`
   background-color: ${themeCssVariables.background.secondary};
   padding-left: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledTestTabContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[4]};
+  height: 100%;
+  min-height: 400px;
 `;
 
 export const WorkflowEditActionAiAgent = ({
@@ -75,6 +93,7 @@ export const WorkflowEditActionAiAgent = ({
 
   const actionPrompt = action.settings.input.prompt || '';
   const [prompt, setPrompt] = useState(actionPrompt);
+  const { testAiAgent, isTesting, aiAgentTestData } = useTestAiAgent(action.id);
 
   const savePrompt = useDebouncedCallback((newPrompt: string) => {
     if (actionOptions.readonly === true) {
@@ -98,6 +117,18 @@ export const WorkflowEditActionAiAgent = ({
     savePrompt(newPrompt);
   };
 
+  const handleTestAgent = async () => {
+    if (actionOptions.readonly === true || !isDefined(agentId)) {
+      return;
+    }
+
+    await testAiAgent({
+      agentId,
+      prompt,
+      variableValues: aiAgentTestData.variableValues,
+    });
+  };
+
   const tabs: SingleTabProps[] = [
     {
       id: WORKFLOW_AI_AGENT_TABS.PROMPT,
@@ -108,6 +139,11 @@ export const WorkflowEditActionAiAgent = ({
       id: WORKFLOW_AI_AGENT_TABS.PERMISSIONS,
       title: t`Permissions`,
       Icon: IconLock,
+    },
+    {
+      id: WORKFLOW_AI_AGENT_TABS.TEST,
+      title: t`Test`,
+      Icon: IconPlayerPlay,
     },
   ];
 
@@ -141,6 +177,17 @@ export const WorkflowEditActionAiAgent = ({
   };
 
   const getFooterActions = () => {
+    if (currentTabId === WORKFLOW_AI_AGENT_TABS.TEST) {
+      return [
+        <WorkflowStepCmdEnterButton
+          key="test-agent"
+          title={t`Test`}
+          onClick={handleTestAgent}
+          disabled={isTesting || !isDefined(agentId)}
+        />,
+      ];
+    }
+
     if (currentTabId !== WORKFLOW_AI_AGENT_TABS.PERMISSIONS) {
       return [];
     }
@@ -188,6 +235,26 @@ export const WorkflowEditActionAiAgent = ({
             isAgentLoading={agentLoading}
             refetchAgent={refetchAgent}
           />
+        </WorkflowStepBody>
+      ) : currentTabId === WORKFLOW_AI_AGENT_TABS.TEST ? (
+        <WorkflowStepBody>
+          <StyledTestTabContent>
+            <Callout
+              variant={'warning'}
+              Icon={IconAlertTriangle}
+              title={t`Runs the agent with its tools`}
+              description={t`Fill any prompt variables, then press Test. Record changes and credit usage are real. This does not start a workflow run.`}
+            />
+            <AiAgentTestVariableInput
+              prompt={prompt}
+              actionId={action.id}
+              readonly={actionOptions.readonly === true}
+            />
+            <AiAgentExecutionResult
+              aiAgentTestData={aiAgentTestData}
+              isTesting={isTesting}
+            />
+          </StyledTestTabContent>
         </WorkflowStepBody>
       ) : (
         <WorkflowStepBody>

@@ -1,10 +1,16 @@
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
-import { useFlowOrThrow } from '@/workflow/hooks/useFlowOrThrow';
-import { useWorkflowVersionIdOrThrow } from '@/workflow/hooks/useWorkflowVersionIdOrThrow';
+import { flowComponentState } from '@/workflow/states/flowComponentState';
 import { stepsOutputSchemaFamilySelector } from '@/workflow/states/selectors/stepsOutputSchemaFamilySelector';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { searchVariableThroughOutputSchemaV2 } from '@/workflow/workflow-variables/utils/searchVariableThroughOutputSchemaV2';
 import { isDefined } from 'twenty-shared/utils';
 import { TRIGGER_STEP_ID, type VariableSearchResult } from 'twenty-shared/workflow';
+
+const EMPTY_VARIABLE_SEARCH_RESULT: VariableSearchResult = {
+  variableLabel: undefined,
+  variablePathLabel: undefined,
+};
 
 export const useSearchVariable = ({
   stepId,
@@ -15,21 +21,27 @@ export const useSearchVariable = ({
   rawVariableName: string;
   isFullRecord: boolean;
 }): VariableSearchResult => {
-  const workflowVersionId = useWorkflowVersionIdOrThrow();
-  const flow = useFlowOrThrow();
+  const flow = useAtomComponentStateValue(flowComponentState);
+  const workflowVisualizerWorkflowVersionId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowVersionIdComponentState,
+  );
+  const workflowVersionId =
+    flow?.workflowVersionId ?? workflowVisualizerWorkflowVersionId;
+
   const [stepOutputSchema] = useAtomFamilySelectorValue(
     stepsOutputSchemaFamilySelector,
     {
-      workflowVersionId,
+      workflowVersionId: workflowVersionId ?? '',
       stepIds: [stepId],
     },
   );
 
-  if (!isDefined(stepOutputSchema)) {
-    return {
-      variableLabel: undefined,
-      variablePathLabel: undefined,
-    };
+  if (
+    !isDefined(flow) ||
+    !isDefined(workflowVersionId) ||
+    !isDefined(stepOutputSchema)
+  ) {
+    return EMPTY_VARIABLE_SEARCH_RESULT;
   }
 
   const stepType =
@@ -38,10 +50,7 @@ export const useSearchVariable = ({
       : flow.steps?.find((step) => step.id === stepId)?.type;
 
   if (!isDefined(stepType)) {
-    return {
-      variableLabel: undefined,
-      variablePathLabel: undefined,
-    };
+    return EMPTY_VARIABLE_SEARCH_RESULT;
   }
 
   return searchVariableThroughOutputSchemaV2({

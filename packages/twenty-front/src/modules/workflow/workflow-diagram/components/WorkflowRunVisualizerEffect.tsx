@@ -47,6 +47,10 @@ export const WorkflowRunVisualizerEffect = ({
   const setWorkflowVisualizerWorkflowId = useSetAtomComponentState(
     workflowVisualizerWorkflowIdComponentState,
   );
+  const workflowVisualizerWorkflowVersionId =
+    useAtomComponentStateCallbackState(
+      workflowVisualizerWorkflowVersionIdComponentState,
+    );
 
   const flow = useAtomComponentStateCallbackState(flowComponentState);
   const workflowDiagram = useAtomComponentStateCallbackState(
@@ -110,6 +114,8 @@ export const WorkflowRunVisualizerEffect = ({
 
         return;
       }
+
+      store.set(workflowVisualizerWorkflowVersionId, versionId);
 
       const workflowDiagramStatus = store.get(workflowDiagramStatusState);
 
@@ -229,6 +235,7 @@ export const WorkflowRunVisualizerEffect = ({
       workflowRunId,
       workflowSelectedNode,
       workflowVisualizerWorkflowId,
+      workflowVisualizerWorkflowVersionId,
       store,
     ],
   );

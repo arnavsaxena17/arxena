@@ -7,6 +7,7 @@ import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions
 import { flowComponentState } from '@/workflow/states/flowComponentState';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
 import { workflowVisualizerWorkflowRunIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowRunIdComponentState';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { type WorkflowRun } from '@/workflow/types/Workflow';
 import { getWorkflowVisualizerComponentInstanceId } from '@/workflow/utils/getWorkflowVisualizerComponentInstanceId';
 import { workflowRunDiagramAutomaticallyOpenedStepsComponentState } from '@/workflow/workflow-diagram/states/workflowRunDiagramAutomaticallyOpenedStepsComponentState';
@@ -75,6 +76,12 @@ export const useRunWorkflowRunOpeningInSidePanelEffects = () => {
           instanceId,
         }),
         workflowRunRecord.workflowId,
+      );
+      store.set(
+        workflowVisualizerWorkflowVersionIdComponentState.atomFamily({
+          instanceId,
+        }),
+        workflowRunRecord.workflowVersionId,
       );
       store.set(
         flowComponentState.atomFamily({

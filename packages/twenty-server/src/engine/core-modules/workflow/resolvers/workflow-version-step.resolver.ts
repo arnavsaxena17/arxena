@@ -12,11 +12,14 @@ import { CreateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow
 import { DeleteWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/delete-workflow-version-step.input';
 import { DuplicateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/duplicate-workflow-version-step.input';
 import { SubmitFormStepInput } from 'src/engine/core-modules/workflow/dtos/submit-form-step.input';
+import { TestAiAgentDTO } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.dto';
+import { TestAiAgentInput } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.input';
 import { TestHttpRequestInput } from 'src/engine/core-modules/workflow/dtos/test-http-request.input';
 import { TestHttpRequestDTO } from 'src/engine/core-modules/workflow/dtos/test-http-request.dto';
 import { TestWorkflowFormNotifyInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.input';
 import { TestWorkflowFormNotifyDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.dto';
 import { WorkflowFormNotifyTestService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.service';
+import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
 import { UpdateWorkflowRunStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-run-step.input';
 import { UpdateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-step.input';
 import { UpdateWorkflowVersionTriggerInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-trigger.input';
@@ -56,6 +59,7 @@ export class WorkflowVersionStepResolver {
     private readonly httpTool: HttpTool,
     private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
     private readonly workflowFormNotifyTestService: WorkflowFormNotifyTestService,
+    private readonly workflowAiAgentTestService: WorkflowAiAgentTestService,
   ) {}
 
   // Related to https://github.com/twentyhq/private-issues/issues/478
@@ -177,6 +181,18 @@ export class WorkflowVersionStepResolver {
         stepId,
       },
     );
+  }
+
+  @Mutation(() => TestAiAgentDTO)
+  async testAiAgent(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('input') input: TestAiAgentInput,
+  ): Promise<TestAiAgentDTO> {
+    return this.workflowAiAgentTestService.test({
+      workspaceId: workspace.id,
+      agentId: input.agentId,
+      prompt: input.prompt,
+    });
   }
 
   @Mutation(() => TestHttpRequestDTO)
