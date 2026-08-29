@@ -36,22 +36,18 @@ type LlmErrorRecord = Error & {
   text?: string;
 };
 
-export const concurrencyForFilterProfilesModel = (modelId: string): number =>
-  modelId.includes('ox-alpha') ? 1 : FILTER_PROFILES_CONCURRENCY;
+export const concurrencyForFilterProfilesModel = (_modelId: string): number =>
+  FILTER_PROFILES_CONCURRENCY;
 
 export const reasoningProviderOptionsForFilterProfiles = (
-  modelId: string,
+  _modelId: string,
 ): {
-  openrouter: { reasoning: { effort: 'low' | 'medium' } };
-  nous: { reasoning: { effort: 'low' | 'medium' } };
-} => {
-  const effort = modelId.includes('ox-alpha') ? 'low' : 'medium';
-
-  return {
-    openrouter: { reasoning: { effort } },
-    nous: { reasoning: { effort } },
-  };
-};
+  openrouter: { reasoning: { effort: 'medium' } };
+  nous: { reasoning: { effort: 'medium' } };
+} => ({
+  openrouter: { reasoning: { effort: 'medium' } },
+  nous: { reasoning: { effort: 'medium' } },
+});
 
 export const repairGeneratedJsonObjectText = ({
   text,

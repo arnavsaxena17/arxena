@@ -26,7 +26,7 @@ export const DEFAULT_RECOMMENDED_MODELS = [
   'anthropic/claude-sonnet-4-6',
   'google/gemini-3.1-pro-preview',
   'xai/grok-4',
-  'openrouter/stealth/ox-alpha',
+  'openrouter/deepseek/deepseek-v4-flash-0731',
 ];
 
 export const DEFAULT_DISABLED_MODELS: string[] = [];

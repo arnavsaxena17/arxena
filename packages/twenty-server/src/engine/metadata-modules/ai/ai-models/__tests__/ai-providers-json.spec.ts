@@ -108,13 +108,14 @@ describe('ai-providers.json integrity', () => {
     expect(PROVIDERS.nous?.supportsStructuredOutputs).toBe(true);
   });
 
-  it('should include OpenRouter Ox Alpha', () => {
-    const oxAlpha = PROVIDERS.openrouter?.models?.find(
-      (model) => model.name === 'stealth/ox-alpha',
+  it('should include OpenRouter DeepSeek V4 Flash 0731', () => {
+    const deepSeekFlash = PROVIDERS.openrouter?.models?.find(
+      (model) => model.name === 'deepseek/deepseek-v4-flash-0731',
     );
 
-    expect(oxAlpha).toBeDefined();
-    expect(oxAlpha?.label).toBe('Ox Alpha');
-    expect(oxAlpha?.supportsReasoning).toBe(true);
+    expect(deepSeekFlash).toBeDefined();
+    expect(deepSeekFlash?.label).toBe('DeepSeek V4 Flash');
+    expect(deepSeekFlash?.supportsReasoning).toBe(true);
+    expect(deepSeekFlash?.contextWindowTokens).toBe(1048576);
   });
 });

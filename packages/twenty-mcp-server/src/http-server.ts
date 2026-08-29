@@ -293,7 +293,7 @@ const renderConsentPage = (params: {
         <p class="perms-title">This connection can</p>
         <ul>
           <li>Read candidates, jobs, and company data</li>
-          <li>Create and update recruitment records</li>
+          <li>Create and update records</li>
           <li>Search org charts and people intelligence</li>
         </ul>
       </div>

@@ -1425,13 +1425,13 @@
         "supportsReasoning": true
       },
       {
-        "name": "stealth/ox-alpha",
-        "label": "Ox Alpha",
-        "inputCostPerMillionTokens": 0,
-        "outputCostPerMillionTokens": 0,
+        "name": "deepseek/deepseek-v4-flash-0731",
+        "label": "DeepSeek V4 Flash",
+        "inputCostPerMillionTokens": 0.03,
+        "outputCostPerMillionTokens": 0.1,
+        "cachedInputCostPerMillionTokens": 0.007,
         "contextWindowTokens": 1048576,
-        "maxOutputTokens": 131072,
-        "modalities": ["image", "video"],
+        "maxOutputTokens": 262144,
         "supportsReasoning": true
       }
     ]

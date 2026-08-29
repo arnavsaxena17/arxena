@@ -4,7 +4,7 @@ describe('mergeExtraEnabledAiModels', () => {
   const catalog = [
     { modelId: 'openai/gpt-4.1' },
     { modelId: 'openai/gpt-4o-mini' },
-    { modelId: 'openrouter/stealth/ox-alpha' },
+    { modelId: 'openrouter/deepseek/deepseek-v4-flash-0731' },
   ];
 
   it('returns enabled models when no extras are requested', () => {
@@ -19,12 +19,12 @@ describe('mergeExtraEnabledAiModels', () => {
     expect(
       mergeExtraEnabledAiModels(enabled, catalog, [
         'openai/gpt-4o-mini',
-        'openrouter/stealth/ox-alpha',
+        'openrouter/deepseek/deepseek-v4-flash-0731',
       ]),
     ).toEqual([
       { modelId: 'openai/gpt-4.1' },
       { modelId: 'openai/gpt-4o-mini' },
-      { modelId: 'openrouter/stealth/ox-alpha' },
+      { modelId: 'openrouter/deepseek/deepseek-v4-flash-0731' },
     ]);
   });
 

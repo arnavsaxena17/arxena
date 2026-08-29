@@ -243,63 +243,6 @@ describe('OutreachFilterProfilesService', () => {
     expect(result.people).toEqual([ENGINEER_PROFILE]);
   });
 
-  it('assesses ox-alpha profiles one at a time to avoid the shared-pool 429', async () => {
-    const started: number[] = [];
-    const resolvers: Array<(value: Awaited<ReturnType<typeof generateObject>>) => void> =
-      [];
-    const oxAlphaModel = {
-      modelId: 'openrouter/stealth/ox-alpha',
-      model: { provider: 'openrouter' },
-    };
-    const registry = {
-      getDefaultSpeedModel: jest.fn().mockReturnValue(oxAlphaModel),
-      getModel: jest.fn().mockReturnValue(oxAlphaModel),
-      resolveModelForAgentInWorkspace: jest.fn(),
-    } as unknown as AiModelRegistryService;
-
-    generateObjectMock.mockImplementation(() => {
-      started.push(generateObjectMock.mock.calls.length);
-
-      return new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
-    });
-
-    const service = new OutreachFilterProfilesService(registry);
-    const executePromise = service.execute({
-      input: {
-        modelId: 'openrouter/stealth/ox-alpha',
-        prompt: 'senior engineers in fintech',
-        profiles: [SALES_PROFILE, ENGINEER_PROFILE],
-      },
-    });
-
-    await waitUntil(() => started.length === 1);
-
-    expect(started).toEqual([1]);
-    expect(resolvers).toHaveLength(1);
-    expect(generateObjectMock.mock.calls[0][0].providerOptions).toEqual({
-      openrouter: { reasoning: { effort: 'low' } },
-      nous: { reasoning: { effort: 'low' } },
-    });
-
-    resolvers[0]?.({
-      object: { matches: false, reason: 'sales' },
-    } as Awaited<ReturnType<typeof generateObject>>);
-
-    await waitUntil(() => started.length === 2);
-
-    resolvers[1]?.({
-      object: { matches: true, reason: 'engineer' },
-    } as Awaited<ReturnType<typeof generateObject>>);
-
-    const result = await executePromise;
-
-    expect(result.total).toBe(2);
-    expect(result.matchedCount).toBe(1);
-    expect(result.people).toEqual([ENGINEER_PROFILE]);
-  });
-
   it('fail-closes LLM errors so they do not enter people', async () => {
     generateObjectMock.mockRejectedValue(new Error('model timeout'));
 
@@ -325,7 +268,7 @@ describe('OutreachFilterProfilesService', () => {
       data: {
         error: {
           metadata: {
-            raw: 'stealth/ox-alpha is temporarily rate-limited upstream. Please retry shortly.',
+            raw: 'model is temporarily rate-limited upstream. Please retry shortly.',
           },
         },
       },
@@ -334,9 +277,11 @@ describe('OutreachFilterProfilesService', () => {
     expect(formatFilterProfilesLlmError(error)).toContain(
       'temporarily rate-limited upstream',
     );
-    expect(concurrencyForFilterProfilesModel('openrouter/stealth/ox-alpha')).toBe(
-      1,
-    );
+    expect(
+      concurrencyForFilterProfilesModel(
+        'openrouter/deepseek/deepseek-v4-flash-0731',
+      ),
+    ).toBe(2);
     expect(
       concurrencyForFilterProfilesModel(OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID),
     ).toBe(2);
