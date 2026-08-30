@@ -185,10 +185,11 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
 
   const bindOutreachWorkflowToProject = useCallback(
     async (workflowId: string) => {
-      setOutreachContext((previous) => ({
-        ...previous,
-        outreachWorkflowId: workflowId,
-      }));
+      setOutreachContext((previous) =>
+        previous.outreachWorkflowId === workflowId
+          ? previous
+          : { ...previous, outreachWorkflowId: workflowId },
+      );
 
       if (!isDefined(projectId)) {
         return;

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type LanguageModelUsage } from 'ai';
+import { isDefined } from 'twenty-shared/utils';
+
 import { NO_BILLING_SUBSCRIPTION } from 'src/engine/core-modules/billing/constants/no-billing-subscription.constant';
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
@@ -241,6 +243,7 @@ export class AiBillingService {
     operationType: UsageOperationType,
     agentId?: string | null,
     userWorkspaceId?: string | null,
+    metadata?: Record<string, unknown>,
   ): Promise<void> {
     let periodStart: Date | undefined;
 
@@ -272,6 +275,7 @@ export class AiBillingService {
           resourceContext: modelId,
           userWorkspaceId: userWorkspaceId || null,
           periodStart,
+          ...(isDefined(metadata) ? { metadata } : {}),
         },
       ],
       workspaceId,

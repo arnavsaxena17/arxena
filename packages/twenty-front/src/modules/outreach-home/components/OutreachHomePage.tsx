@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
+import { useStore } from 'jotai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
@@ -34,6 +35,7 @@ import {
 } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
 import {
     buildOutreachContextPrompt,
+    isSameOutreachContext,
     outreachContextState,
 } from '@/outreach-home/states/outreachContextState';
 import {
@@ -146,7 +148,7 @@ const OutreachHomePageContent = () => {
   const { updateOneRecord } = useUpdateOneRecord();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const setOutreachContext = useSetAtomState(outreachContextState);
-  const outreachContext = useAtomStateValue(outreachContextState);
+  const outreachContextStore = useStore();
   const currentUser = useAtomStateValue(currentUserState);
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
   const tokenPair = useAtomStateValue(tokenPairState);
@@ -229,32 +231,43 @@ const OutreachHomePageContent = () => {
     openAskAiPage({ resetNavigationStack: true });
   }, [openAskAiPage]);
 
-  useEffect(() => {
-    const selectedPerson = people.find(
-      (person) => person.id === selectedPersonId,
-    );
+  const selectedCandidateStage =
+    people.find((person) => person.id === selectedPersonId)?.stage ?? null;
 
-    setOutreachContext({
+  useEffect(() => {
+    const next = {
       projectId: projectSettings.projectId,
       projectName: projectSettings.projectName,
-      projectId: projectSettings.projectId,
       outreachWorkflowId: projectSettings.outreachWorkflowId,
       outreachSendMode: projectSettings.outreachSendMode,
       selectedCompanyId,
       selectedPersonId,
-      selectedCandidateStage: selectedPerson?.stage ?? null,
+      selectedCandidateStage,
       icpName: projectSettings.icpSpec,
       icpSpecSummary: projectSettings.icpSpec,
       linkedinConnected,
       gmailConnected,
       whatsappConnected,
-      phase: 'live',
-    });
+      phase: 'live' as const,
+    };
+
+    const previous = outreachContextStore.get(outreachContextState.atom);
+
+    if (isSameOutreachContext(previous, next)) {
+      return;
+    }
+
+    setOutreachContext(next);
   }, [
     gmailConnected,
     linkedinConnected,
-    people,
-    projectSettings,
+    outreachContextStore,
+    projectSettings.icpSpec,
+    projectSettings.outreachSendMode,
+    projectSettings.outreachWorkflowId,
+    projectSettings.projectId,
+    projectSettings.projectName,
+    selectedCandidateStage,
     selectedCompanyId,
     selectedPersonId,
     setOutreachContext,
@@ -569,8 +582,21 @@ const OutreachHomePageContent = () => {
     openAskAiPageWithPreprompt({
       mode: 'PREFILL',
       text: buildOutreachContextPrompt({
-        ...outreachContext,
+        projectId: projectSettings.projectId,
+        projectName: projectSettings.projectName,
         outreachWorkflowId: nextWorkflowId,
+        outreachSendMode: projectSettings.outreachSendMode,
+        selectedCompanyId,
+        selectedPersonId,
+        selectedCandidateStage:
+          people.find((person) => person.id === selectedPersonId)?.stage ??
+          null,
+        icpName: projectSettings.icpSpec,
+        icpSpecSummary: projectSettings.icpSpec,
+        linkedinConnected,
+        gmailConnected,
+        whatsappConnected,
+        phase: 'live',
       }),
     });
   };

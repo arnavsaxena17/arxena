@@ -34,6 +34,31 @@ describe('buildUsageEventEnvelopes', () => {
       creditsUsedMicro: 7500,
       resourceId: 'agent-1',
       resourceContext: 'gpt-4o',
+      metadata: {},
+    });
+  });
+
+  it('forwards Ask AI token metadata onto the ClickHouse row', () => {
+    const [envelope] = buildUsageEventEnvelopes('ws-1', [
+      usageEvent({
+        resourceId: 'thread-1',
+        metadata: {
+          source: 'ask-ai',
+          turnId: 'turn-1',
+          inputTokens: 1000,
+          outputTokens: 500,
+        },
+      }),
+    ]);
+
+    expect(envelope.row).toMatchObject({
+      resourceId: 'thread-1',
+      metadata: {
+        source: 'ask-ai',
+        turnId: 'turn-1',
+        inputTokens: 1000,
+        outputTokens: 500,
+      },
     });
   });
 

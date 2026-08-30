@@ -20,6 +20,24 @@ export const DEFAULT_OUTREACH_CONTEXT: OutreachContext = {
   phase: null,
 };
 
+export const isSameOutreachContext = (
+  left: OutreachContext,
+  right: OutreachContext,
+): boolean =>
+  left.projectId === right.projectId &&
+  left.projectName === right.projectName &&
+  left.outreachWorkflowId === right.outreachWorkflowId &&
+  left.outreachSendMode === right.outreachSendMode &&
+  left.selectedCompanyId === right.selectedCompanyId &&
+  left.selectedPersonId === right.selectedPersonId &&
+  left.selectedCandidateStage === right.selectedCandidateStage &&
+  left.icpName === right.icpName &&
+  left.icpSpecSummary === right.icpSpecSummary &&
+  left.linkedinConnected === right.linkedinConnected &&
+  left.gmailConnected === right.gmailConnected &&
+  left.whatsappConnected === right.whatsappConnected &&
+  left.phase === right.phase;
+
 export const outreachContextState = createAtomState<OutreachContext>({
   key: 'outreachContextState',
   defaultValue: DEFAULT_OUTREACH_CONTEXT,

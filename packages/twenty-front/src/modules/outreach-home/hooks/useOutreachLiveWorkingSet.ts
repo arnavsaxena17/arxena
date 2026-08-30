@@ -669,23 +669,44 @@ export const useOutreachLiveWorkingSet = () => {
     [outreachProjects, workspaceProfile],
   );
 
-  const projectSettings: OutreachProjectSettings = {
-    projectId: project?.id ?? null,
-    projectName: project?.name ?? null,
-    outreachWorkflowId: project?.outreachWorkflowId ?? null,
-    outreachStatus: normalizeOutreachStatus(project?.outreachStatus),
-    outreachSendMode:
-      (project?.outreachSendMode as OutreachSendMode | null) ?? 'APPROVAL',
-    maxPersonasPerCompany: project?.maxPersonasPerCompany ?? 2,
-    inMailFallbackEnabled: project?.inMailFallbackEnabled ?? false,
-    sendTimezone: project?.sendTimezone ?? 'Asia/Kolkata',
-    sendWindowStart: project?.sendWindowStart ?? '08:00',
-    sendWindowEnd: project?.sendWindowEnd ?? '10:00',
-    whatsappConnected,
-    icpSpec: effectiveIcp.icpSpec,
-    isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
-    experimentConfig: project?.experimentConfig ?? null,
-  };
+  // Stable identity — OutreachHomePage syncs this into outreachContextState;
+  // a fresh object every render retriggers that effect → max update depth.
+  const projectSettings: OutreachProjectSettings = useMemo(
+    () => ({
+      projectId: project?.id ?? null,
+      projectName: project?.name ?? null,
+      outreachWorkflowId: project?.outreachWorkflowId ?? null,
+      outreachStatus: normalizeOutreachStatus(project?.outreachStatus),
+      outreachSendMode:
+        (project?.outreachSendMode as OutreachSendMode | null) ?? 'APPROVAL',
+      maxPersonasPerCompany: project?.maxPersonasPerCompany ?? 2,
+      inMailFallbackEnabled: project?.inMailFallbackEnabled ?? false,
+      sendTimezone: project?.sendTimezone ?? 'Asia/Kolkata',
+      sendWindowStart: project?.sendWindowStart ?? '08:00',
+      sendWindowEnd: project?.sendWindowEnd ?? '10:00',
+      whatsappConnected,
+      icpSpec: effectiveIcp.icpSpec,
+      isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
+      experimentConfig: project?.experimentConfig ?? null,
+    }),
+    [
+      effectiveIcp.icpSpec,
+      effectiveIcp.isIcpProjectOverride,
+      project?.experimentConfig,
+      project?.id,
+      project?.icpSpec,
+      project?.inMailFallbackEnabled,
+      project?.maxPersonasPerCompany,
+      project?.name,
+      project?.outreachSendMode,
+      project?.outreachStatus,
+      project?.outreachWorkflowId,
+      project?.sendTimezone,
+      project?.sendWindowEnd,
+      project?.sendWindowStart,
+      whatsappConnected,
+    ],
+  );
 
   const parsedIcp = effectiveIcp.parsedIcp;
 

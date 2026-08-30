@@ -534,8 +534,19 @@ export class ChatExecutionService {
         totalTokens,
         registeredModel.modelId,
         UsageOperationType.AI_CHAT_TOKEN,
-        null,
+        threadId ?? null,
         userWorkspaceId,
+        {
+          source: 'ask-ai',
+          ...(isDefined(turnId) ? { turnId } : {}),
+          ...(isDefined(streamId) ? { streamId } : {}),
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+          cacheReadTokens: usage.inputTokenDetails?.cacheReadTokens ?? 0,
+          cacheWriteTokens: usage.inputTokenDetails?.cacheWriteTokens ?? 0,
+          cacheCreationTokens,
+          reasoningTokens: usage.outputTokenDetails?.reasoningTokens ?? 0,
+        },
       );
 
       // billNativeWebSearchUsage short-circuits when count <= 0, so calling

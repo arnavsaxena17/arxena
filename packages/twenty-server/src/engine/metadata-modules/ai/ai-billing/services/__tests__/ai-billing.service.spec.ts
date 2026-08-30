@@ -9,6 +9,7 @@ import { BillingUsageService } from 'src/engine/core-modules/billing/services/bi
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
 import { ModelFamily } from 'src/engine/metadata-modules/ai/ai-models/types/model-family.enum';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
+import { AiProviderCredentialsService } from 'src/engine/metadata-modules/ai/ai-provider-credentials/services/ai-provider-credentials.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 
@@ -88,6 +89,12 @@ describe('AiBillingService', () => {
             decrementAvailableCreditsInCache: jest
               .fn()
               .mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: AiProviderCredentialsService,
+          useValue: {
+            hasApiKeyConfigured: jest.fn().mockResolvedValue(false),
           },
         },
         {
@@ -380,6 +387,45 @@ describe('AiBillingService', () => {
             resourceContext: 'gpt-4o',
             userWorkspaceId: null,
           },
+        ],
+        'workspace-1',
+      );
+    });
+  });
+
+  describe('emitAiTokenUsageEvent', () => {
+    it('attaches Ask AI metadata when provided', async () => {
+      await service.emitAiTokenUsageEvent(
+        'workspace-1',
+        7500,
+        1500,
+        'gpt-4o',
+        UsageOperationType.AI_CHAT_TOKEN,
+        'thread-1',
+        'user-workspace-1',
+        {
+          source: 'ask-ai',
+          turnId: 'turn-1',
+          inputTokens: 1000,
+          outputTokens: 500,
+        },
+      );
+
+      expect(
+        mockWorkspaceEventEmitter.emitCustomBatchEvent,
+      ).toHaveBeenCalledWith(
+        USAGE_RECORDED,
+        [
+          expect.objectContaining({
+            resourceId: 'thread-1',
+            userWorkspaceId: 'user-workspace-1',
+            metadata: {
+              source: 'ask-ai',
+              turnId: 'turn-1',
+              inputTokens: 1000,
+              outputTokens: 500,
+            },
+          }),
         ],
         'workspace-1',
       );

@@ -1,10 +1,13 @@
-# Development infrastructure services only (Postgres + Redis).
+# Development infrastructure (Postgres, Redis, ClickHouse).
 # Use this when developing locally against the source code.
 #
 # Usage:
 #   docker compose -f docker-compose.dev.yml up -d
 #   docker compose -f docker-compose.dev.yml down       # stop
 #   docker compose -f docker-compose.dev.yml down -v    # stop + wipe data
+#
+# ClickHouse HTTP: http://default:clickhousePassword@localhost:8123/twenty
+# Native port 9000 stays container-only so it does not collide with DEBUG_PORT.
 
 name: twenty-dev
 
@@ -38,5 +41,36 @@ services:
       retries: 10
     restart: unless-stopped
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8.8
+    ports:
+      - "8123:8123"
+    environment:
+      CLICKHOUSE_DB: twenty
+      CLICKHOUSE_PASSWORD: clickhousePassword
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--password",
+          "clickhousePassword",
+          "--query",
+          "SELECT 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
 volumes:
   dev-db-data:
+  clickhouse-data:

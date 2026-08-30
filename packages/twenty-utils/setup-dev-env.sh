@@ -6,9 +6,11 @@
 #
 # What it does:
 #   1. Starts Postgres + Redis (local services or Docker, auto-detected)
+#      and ClickHouse via Docker (Ask AI / usage analytics)
 #   2. Creates 'default' and 'test' databases
 #   3. Copies .env.example -> .env for front and server
 #   4. Initializes database schema (runs migrations) when not already present
+#      and applies ClickHouse migrations when ClickHouse is reachable
 #
 # Usage (from repo root):
 #   bash packages/twenty-utils/setup-dev-env.sh          # start + configure
@@ -76,6 +78,25 @@ wait_for_redis() {
   while ! redis_is_up; do
     retries=$((retries - 1))
     if [ "$retries" -le 0 ]; then fail "Redis did not start in time"; exit 1; fi
+    sleep 1
+  done
+}
+
+clickhouse_is_up() {
+  if command -v curl &>/dev/null; then
+    curl -sf http://localhost:8123/ping 2>/dev/null | grep -q "Ok"
+  elif can_use_docker && docker compose -f "$COMPOSE_FILE" ps --quiet clickhouse 2>/dev/null | grep -q .; then
+    docker compose -f "$COMPOSE_FILE" exec -T clickhouse clickhouse-client --password clickhousePassword --query "SELECT 1" 2>/dev/null | grep -q 1
+  else
+    timeout 2 bash -c 'exec 3<>/dev/tcp/localhost/8123' 2>/dev/null
+  fi
+}
+
+wait_for_clickhouse() {
+  local retries=60
+  while ! clickhouse_is_up; do
+    retries=$((retries - 1))
+    if [ "$retries" -le 0 ]; then fail "ClickHouse did not start in time"; exit 1; fi
     sleep 1
   done
 }
@@ -201,18 +222,39 @@ start_redis() {
   fi
 }
 
+start_clickhouse() {
+  if clickhouse_is_up; then
+    ok "ClickHouse already running"
+    return
+  fi
+
+  if ! can_use_docker; then
+    info "Skipping ClickHouse (Docker not available)"
+    return
+  fi
+
+  info "Starting ClickHouse via Docker..."
+  docker compose -f "$COMPOSE_FILE" up -d clickhouse
+  wait_for_clickhouse
+}
+
 if [ "$USE_DOCKER" = true ]; then
   info "Starting services via Docker Compose..."
   docker compose -f "$COMPOSE_FILE" up -d
   wait_for_pg
   wait_for_redis
+  wait_for_clickhouse
 else
   start_pg
   start_redis
+  start_clickhouse
 fi
 
 ok "PostgreSQL on localhost:5432"
 ok "Redis on localhost:6379"
+if clickhouse_is_up; then
+  ok "ClickHouse on localhost:8123"
+fi
 
 # =============================================================================
 # 2. Create databases
@@ -267,6 +309,16 @@ if command -v npx &>/dev/null && [ -d node_modules ]; then
       exit 1
     fi
   fi
+
+  if clickhouse_is_up; then
+    info "Applying ClickHouse migrations..."
+    if npx nx clickhouse:migrate twenty-server; then
+      ok "ClickHouse schema initialized"
+    else
+      fail "ClickHouse migrations failed"
+      exit 1
+    fi
+  fi
 else
   info "Run 'npx nx database:init twenty-server' to initialize the schema"
 fi
@@ -278,4 +330,5 @@ echo ""
 echo "  yarn start                         # start everything"
 echo "  npx nx start twenty-front          # frontend  -> http://localhost:3001"
 echo "  npx nx start twenty-server         # backend   -> http://localhost:3000"
+echo "  ClickHouse (usage / Ask AI tokens) -> http://localhost:8123"
 echo ""
