@@ -1,3 +1,7 @@
+import { isNonEmptyString } from '@sniptt/guards';
+import { useEffect } from 'react';
+import { isDefined } from 'twenty-shared/utils';
+
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useWorkflowRun } from '@/workflow/hooks/useWorkflowRun';
 import { useWorkflowVersion } from '@/workflow/hooks/useWorkflowVersion';
@@ -6,8 +10,6 @@ import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/wo
 import { workflowVisualizerWorkflowRunIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowRunIdComponentState';
 import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { useStepsOutputSchema } from '@/workflow/workflow-variables/hooks/useStepsOutputSchema';
-import { useEffect } from 'react';
-import { isDefined } from 'twenty-shared/utils';
 
 export const SidePanelWorkflowRunViewStepEffect = ({
   workflowRunId,
@@ -39,6 +41,11 @@ export const SidePanelWorkflowRunViewStepEffect = ({
     }
 
     setWorkflowVisualizerWorkflowId(workflowRun.workflowId);
+
+    if (!isNonEmptyString(workflowRun.workflowVersionId)) {
+      return;
+    }
+
     setWorkflowVisualizerWorkflowVersionId(workflowRun.workflowVersionId);
 
     if (!isDefined(workflowRun.state)) {

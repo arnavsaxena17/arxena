@@ -26,6 +26,8 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Publish as experiment PG enum | `workflowVersion.status` SELECT + core enum lacked `EXPERIMENT`, so "Publish as experiment" died with `invalid input value for enum … "EXPERIMENT"`. Added the option to standard field metadata, core `WorkflowVersionStatus`, instance `ALTER TYPE`, workspace cmd `1785600000077`. Run `database:migrate` + `upgrade:2-25:add-workflow-version-experiment-status`. | `compute-workflow-version-standard-flat-field-metadata.util.ts`, `workflow-version.entity.ts`, `2-25-*-1785600000076/0077-*` |
+| Outreach-home Zod `workflowVersionId` null crash | `/outreach-home` always mounted `WorkflowRunRateLimitSnackBarEffect` on the latest run. `useWorkflowRun` threw when Zod required `workflowVersionId: string` but the FK is SET_NULL (deleted version). Schema now allows null; parse returns undefined instead of throwing. | `workflow-run-schema.ts`, `parseWorkflowRunRecord.ts`, `useWorkflowRun.ts` |
 | Outreach workflow SSE infinite loop | `useListenToEventsForQuery` re-subscribed every render because inline `operationSignature` objects changed identity → `requiredQueryListenersState` toggled → maximum update depth on Workflow tab. Key effect deps by `JSON.stringify(operationSignature)`. GTM cache fetch now rejects HTML bodies (502/504 pages) before `JSON.parse`. | `useListenToEventsForQuery.ts`, `parse-outreach-cache-response.ts`, `outreach-*-cache.ts` |
 | Nav GraphQL 400s + projects 403 | `dashboards`/`orgCharts` FindMany hit core `/graphql` (HTTP 400 Unknown type FilterInput) when DirectExecution classified them as core because the resolver-name cache omitted them. Classify `*FilterInput`/`*OrderByInput` ops as workspace; rebuild name map from flat objects on miss. Skip dashboard/orgChart nav queries until fields load; skip `get-all-projects` without a JWT (JwtAuthGuard → 403). | `classify-top-level-fields.util.ts`, `direct-execution.service.ts`, `useGtmCommandDashboardPath.ts`, `GtmHomeNavigationDrawerItem.tsx`, `OrgChartsNavigationDrawerItems.tsx`, `useProjectRefetch.ts`, `ProjectsNavigationDrawerItems.tsx` |
 | Unipile `setOwnerProfileCache` is not a function | Prod `r is not a function` in `applyInferredOrgChartLinkedinSearchType` after tab-visible Unipile refresh. `UnipileContext` passed shorthand `setLinkedinUnipileOwnerProfileCache` instead of `setOwnerProfileCache`. Helper still ran the search-type setter, then crashed on cache. | `UnipileContext.tsx`, `applyInferredOrgChartLinkedinSearchType.ts`, §2.1 |
@@ -800,6 +802,12 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-front/src/modules/ui/layout/page/components/PageBody.tsx` | working · intent | Restore `flex:1` / `min-height:0` / `min-width:0` on left column so ARX Handsontable (`height:100%`) gets a real height |
 | `packages/twenty-front/src/modules/ui/layout/page/components/PagePanel.tsx` | working · intent | Restore `flex:1` / `min-height:0` on panel (workflows parity) for full-height project table |
 | `packages/twenty-front/src/modules/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase.tsx` | working · intent | Center GTM/full workflow canvas on real container width (no double side-panel subtract); account for `flowBounds.x/y`; ResizeObserver on canvas resize |
+| `packages/twenty-front/src/modules/workflow/hooks/useWorkflowRun.ts` | working · intent | Do not throw ZodError when a run has null `workflowVersionId` (SET_NULL); outreach-home snackbar was crashing the page |
+| `packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts` | working · intent | `EXPERIMENT` option on `workflowVersion.status` SELECT (A/B publish) |
+| `packages/twenty-server/src/engine/core-modules/workflow/entities/workflow-version.entity.ts` | working · intent | Core `WorkflowVersionStatus.EXPERIMENT` |
+| `packages/twenty-server/src/database/commands/upgrade-version-command/instance-commands.constant.ts` | working · intent | Register `1785600000076` add-experiment-to-workflow-version-status |
+| `packages/twenty-server/src/database/commands/upgrade-version-command/2-25/2-25-upgrade-version-command.module.ts` | working · intent | Register workspace cmd `1785600000077` |
+| `packages/twenty-shared/src/workflow/schemas/workflow-run-schema.ts` | working · intent | `workflowVersionId` / `name` nullable to match DB |
 | `packages/twenty-shared/src/types/SidePanelPages.ts` | working · intent | Add `CandidateChat` side-panel page (candidate profile/chat drawer) |
 | `packages/twenty-front/src/modules/side-panel/constants/SidePanelPagesConfig.tsx` | working · intent | Mount `CandidateChatDrawer` (+ WhatsApp templates) for `CandidateChat` |
 | `.nvmrc` | working · intent | Node version pin for port env |
@@ -838,6 +846,7 @@ Not in `diff-filter=M`, but live next to core and matter for rebases:
 | `navigation/components/{Projects,OrgCharts}NavigationDrawerItems.tsx` | Nav mounts used by §9.2 |
 | `auth/utils/arxenaSiteUrl.ts` | Site URL helper |
 | `twenty-shared/src/{arx,graphql,utils/orgchart,…}` | New shared barrels (paired with §9.1 index edits) |
+| `workflow/utils/parseWorkflowRunRecord.ts` | Lenient WorkflowRun parse (null `workflowVersionId`) so outreach-home snackbar cannot crash the page |
 
 ### 9.5 Refresh commands
 

@@ -80,4 +80,26 @@ describe('baseWorkflowActionSettingsSchema', () => {
       result.data.state?.flow.steps[0]?.settings.errorHandlingOptions,
     ).toEqual(defaultErrorHandlingOptions);
   });
+
+  it('parses a workflow run after its version was deleted', () => {
+    const result = workflowRunSchema.safeParse({
+      __typename: 'WorkflowRun',
+      id: '75702b0c-d928-4d81-b172-371e7c4924c8',
+      workflowVersionId: null,
+      workflowId: '455df24c-8d01-4fb3-b01d-9c5212e2f925',
+      status: 'RUNNING',
+      createdAt: '2026-08-26T12:49:47.369Z',
+      deletedAt: null,
+      endedAt: null,
+      name: null,
+      state: null,
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) {
+      return;
+    }
+
+    expect(result.data.workflowVersionId).toBeNull();
+  });
 });

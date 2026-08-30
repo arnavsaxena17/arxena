@@ -1,11 +1,9 @@
 import { useGenerateDepthRecordGqlFieldsFromObject } from '@/object-record/graphql/record-gql-fields/hooks/useGenerateDepthRecordGqlFieldsFromObject';
 import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
 import { type WorkflowRun } from '@/workflow/types/Workflow';
-import { withDefaultWorkflowActionErrorHandlingOptions } from '@/workflow/utils/withDefaultWorkflowActionErrorHandlingOptions';
+import { parseWorkflowRunRecord } from '@/workflow/utils/parseWorkflowRunRecord';
 import { useMemo } from 'react';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
-import { workflowRunSchema } from 'twenty-shared/workflow';
 
 export const useWorkflowRun = ({
   workflowRunId,
@@ -30,25 +28,5 @@ export const useWorkflowRun = ({
     recordGqlFields,
   });
 
-  const {
-    success,
-    data: record,
-    error,
-  } = useMemo(
-    () =>
-      workflowRunSchema.safeParse(
-        withDefaultWorkflowActionErrorHandlingOptions(rawRecord),
-      ),
-    [rawRecord],
-  );
-
-  if (!isDefined(rawRecord)) {
-    return undefined;
-  }
-
-  if (!success) {
-    throw error;
-  }
-
-  return record;
+  return useMemo(() => parseWorkflowRunRecord(rawRecord), [rawRecord]);
 };

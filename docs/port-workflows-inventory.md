@@ -36,6 +36,8 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] GTM ephemeral companies (Redis `/outreach-command/cache/companies` per projectId; CRM Company on enroll only)
 - [x] Ask AI → GTM Companies tab: `upsert_gtm_target_companies` action tool + `/gtm-home` browsing context + skill/system-prompt routing + skill content sync cmd `1785600000013`
 - [x] Ask AI → GTM People tab: `upsert_gtm_target_people` action tool + Redis People cache + UI poll/merge + prompt/skill routing (no CRM until enroll) + skill sync cmd `1785600000014`
+- [x] `/outreach-home` no longer crashes when the latest workflow run has `workflowVersionId: null` (deleted version SET_NULL); Zod parse is non-throwing
+- [x] "Publish as experiment" — `EXPERIMENT` added to `workflowVersion.status` SELECT + core enum (`1785600000076` instance + `1785600000077` workspace). Existing DBs: `database:migrate` then `upgrade:2-25:add-workflow-version-experiment-status`
 
 ## Bucket B — Nest `core-modules`
 

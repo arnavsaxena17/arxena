@@ -51,6 +51,7 @@ import { FoldPromptsIntoProjectCommand } from 'src/database/commands/upgrade-ver
 import { TransferAssistantApplicationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000056-transfer-assistant-application.command';
 import { PrefillOutreachCommandDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000057-prefill-gtm-command-dashboard.command';
 import { BackfillOutreachCommandRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000058-backfill-gtm-command-rollups.command';
+import { HealOutreachDashboardPageLayoutIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000078-heal-outreach-dashboard-page-layout-id.command';
 import { SyncOutreachFetchLinkedinProfilePeopleOutputCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000059-sync-gtm-fetch-linkedin-profile-people-output.command';
 import { SyncOutreachSearchPeopleHideDataSourceAccountIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000060-sync-gtm-search-people-hide-data-source-account-id.command';
 import { SyncOutreachSearchPeopleForCompanyJobTitleCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000061-sync-gtm-search-people-for-company-job-title.command';
@@ -68,6 +69,7 @@ import { BackfillWorkflowRunRelatedRecordsCommand } from 'src/database/commands/
 import { UnifyLlmIntentSkillsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000073-unify-llm-intent-skills.command';
 import { RenameOutreachSeededOutreachWorkflowNamesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000074-rename-gtm-seeded-outreach-workflow-names.command';
 import { RenameGtmFieldsToOutreachCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000075-rename-gtm-fields-to-outreach.command';
+import { AddWorkflowVersionExperimentStatusCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000077-add-workflow-version-experiment-status.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -150,6 +152,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     FoldPromptsIntoProjectCommand,
     TransferAssistantApplicationCommand,
     PrefillOutreachCommandDashboardCommand,
+    HealOutreachDashboardPageLayoutIdCommand,
     BackfillOutreachCommandRollupsCommand,
     SyncOutreachFetchLinkedinProfilePeopleOutputCommand,
     SyncOutreachSearchPeopleHideDataSourceAccountIdCommand,
@@ -168,6 +171,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     UnifyLlmIntentSkillsCommand,
     RenameOutreachSeededOutreachWorkflowNamesCommand,
     RenameGtmFieldsToOutreachCommand,
+    AddWorkflowVersionExperimentStatusCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

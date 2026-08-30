@@ -6,7 +6,8 @@ import { workflowRunStepLogsSchema } from './workflow-run-step-log-schema';
 export const workflowRunSchema = z.looseObject({
   __typename: z.literal('WorkflowRun'),
   id: z.string(),
-  workflowVersionId: z.string(),
+  // SET_NULL when the version is deleted; outreach-home still loads the run
+  workflowVersionId: z.string().nullable(),
   workflowId: z.string(),
   state: workflowRunStateSchema.nullable(),
   stepLogs: workflowRunStepLogsSchema.nullable().optional(),
@@ -14,5 +15,5 @@ export const workflowRunSchema = z.looseObject({
   createdAt: z.string(),
   deletedAt: z.string().nullable(),
   endedAt: z.string().nullable(),
-  name: z.string(),
+  name: z.string().nullable(),
 });

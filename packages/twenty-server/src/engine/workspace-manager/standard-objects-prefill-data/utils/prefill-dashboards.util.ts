@@ -76,40 +76,59 @@ export const prefillOutreachDashboard = async ({
   entityManager: EntityManager;
   schemaName: string;
   flatPageLayoutMaps: FlatEntityMaps<FlatPageLayout>;
-}): Promise<'inserted' | 'skipped-exists' | 'skipped-missing-layout'> => {
+}): Promise<
+  | 'inserted'
+  | 'skipped-exists'
+  | 'healed-page-layout-id'
+  | 'skipped-missing-layout'
+> => {
+  const outreachPageLayout = findFlatEntityByUniversalIdentifier({
+    flatEntityMaps: flatPageLayoutMaps,
+    universalIdentifier: getOutreachDashboardPageLayoutUniversalIdentifier(),
+  });
+
+  if (!isDefined(outreachPageLayout)) {
+    return 'skipped-missing-layout';
+  }
+
   const existing = (await entityManager.query(
     `
-      SELECT id, title
+      SELECT id, title, "pageLayoutId"
       FROM ${schemaName}.dashboard
       WHERE title = ANY($1)
         AND "deletedAt" IS NULL
       LIMIT 1
     `,
-    [[OUTREACH_DASHBOARD_TITLE, 'GTM Command']],
-  )) as Array<{ id: string; title: string }>;
+    [[OUTREACH_DASHBOARD_TITLE, 'Outreach Command']],
+  )) as Array<{ id: string; title: string; pageLayoutId: string | null }>;
 
   if (existing.length > 0) {
-    if (existing[0].title !== OUTREACH_DASHBOARD_TITLE) {
+    const existingDashboard = existing[0];
+    const shouldRenameTitle =
+      existingDashboard.title !== OUTREACH_DASHBOARD_TITLE;
+    const shouldHealPageLayoutId =
+      existingDashboard.pageLayoutId !== outreachPageLayout.id;
+
+    if (shouldRenameTitle || shouldHealPageLayoutId) {
       await entityManager.query(
         `
           UPDATE ${schemaName}.dashboard
-          SET title = $2, "updatedAt" = NOW()
+          SET title = $2,
+              "pageLayoutId" = $3,
+              "updatedAt" = NOW()
           WHERE id = $1
         `,
-        [existing[0].id, OUTREACH_DASHBOARD_TITLE],
+        [
+          existingDashboard.id,
+          OUTREACH_DASHBOARD_TITLE,
+          outreachPageLayout.id,
+        ],
       );
+
+      return 'healed-page-layout-id';
     }
 
     return 'skipped-exists';
-  }
-
-  const gtmCommandPageLayout = findFlatEntityByUniversalIdentifier({
-    flatEntityMaps: flatPageLayoutMaps,
-    universalIdentifier: getOutreachDashboardPageLayoutUniversalIdentifier(),
-  });
-
-  if (!isDefined(gtmCommandPageLayout)) {
-    return 'skipped-missing-layout';
   }
 
   await insertDashboardRecord({
@@ -117,7 +136,7 @@ export const prefillOutreachDashboard = async ({
     schemaName,
     id: OUTREACH_DASHBOARD_ID,
     title: OUTREACH_DASHBOARD_TITLE,
-    pageLayoutId: gtmCommandPageLayout.id,
+    pageLayoutId: outreachPageLayout.id,
     position: 1,
   });
 

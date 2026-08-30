@@ -243,7 +243,7 @@ export const WorkflowRunVisualizerEffect = ({
   useEffect(() => {
     handleWorkflowRunDiagramGeneration({
       workflowRunState: workflowRun?.state ?? undefined,
-      workflowVersionId: workflowRun?.workflowVersionId,
+      workflowVersionId: workflowRun?.workflowVersionId ?? undefined,
       isInSidePanel,
     });
   }, [
