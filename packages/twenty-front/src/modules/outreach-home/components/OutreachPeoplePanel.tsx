@@ -1,9 +1,9 @@
-import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { Button } from 'twenty-ui/input';
-import { isDefined } from 'twenty-shared/utils';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
@@ -45,7 +45,10 @@ const StyledActions = styled.div`
 `;
 
 const StyledTableWrapper = styled.div`
+  align-items: center;
+  display: flex;
   flex: 1;
+  justify-content: center;
   min-height: 420px;
   position: relative;
 `;
@@ -109,6 +112,17 @@ const mapOutreachPersonToDataTableRow = (
   };
 };
 
+const StyledLoading = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: center;
+  min-height: 240px;
+  padding: ${themeCssVariables.spacing[6]};
+`;
+
 type OutreachPeoplePanelProps = {
   people: OutreachPersonRow[];
   companies: OutreachCompanyRow[];
@@ -116,6 +130,7 @@ type OutreachPeoplePanelProps = {
   selectedPersonId: string | null;
   onSelectPersonId: (personId: string | null) => void;
   tableInstanceId: string;
+  isLoading?: boolean;
 };
 
 export const OutreachPeoplePanel = ({
@@ -125,9 +140,11 @@ export const OutreachPeoplePanel = ({
   selectedPersonId,
   onSelectPersonId,
   tableInstanceId,
+  isLoading = false,
 }: OutreachPeoplePanelProps) => {
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
+  const [isTableDataReady, setIsTableDataReady] = useState(false);
   const { isPersisting, addPeopleToCrm } = useAddOutreachRecordsToCrm();
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
@@ -156,36 +173,42 @@ export const OutreachPeoplePanel = ({
     [filteredPeople],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    setIsTableDataReady(false);
+  }, [tableInstanceId]);
+
+  useLayoutEffect(() => {
     if (tableRows.length === 0) {
       setSearchResults((previous) => (previous.length === 0 ? previous : []));
-    } else {
-      setSearchResults((previous) => {
-        if (
-          previous.length === tableRows.length &&
-          previous.every(
-            (row, index) =>
-              (row.tempId || row.id) === tableRows[index]?.id,
-          )
-        ) {
-          return previous;
-        }
-
-        return tableRows as never[];
-      });
-    }
-
-    setTableStateAtom((previous) => {
-      if (previous.rawData.length === 0 && previous.isLoading === false) {
-        return previous;
-      }
-
-      return {
+      setTableStateAtom((previous) => ({
         ...previous,
         rawData: [],
         isLoading: false,
-      };
+      }));
+      setIsTableDataReady(true);
+
+      return;
+    }
+
+    setSearchResults((previous) => {
+      if (
+        previous.length === tableRows.length &&
+        previous.every(
+          (row, index) => (row.tempId || row.id) === tableRows[index]?.id,
+        )
+      ) {
+        return previous;
+      }
+
+      return tableRows as never[];
     });
+
+    setTableStateAtom((previous) => ({
+      ...previous,
+      rawData: [],
+      isLoading: false,
+    }));
+    setIsTableDataReady(true);
   }, [setSearchResults, setTableStateAtom, tableRows]);
 
   useEffect(() => {
@@ -228,6 +251,15 @@ export const OutreachPeoplePanel = ({
 
     return [];
   }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
+
+  if (isLoading && filteredPeople.length === 0) {
+    return (
+      <StyledLoading>
+        <Loader />
+        Loading people…
+      </StyledLoading>
+    );
+  }
 
   if (filteredPeople.length === 0) {
     return (
@@ -313,9 +345,13 @@ export const OutreachPeoplePanel = ({
         <HotTableActionMenu tableId={tableInstanceId} />
       </ContextStoreComponentInstanceContext.Provider>
       <StyledTableWrapper>
-        <Suspense fallback={<Loader />}>
-          <DataTable projectId={tableInstanceId} />
-        </Suspense>
+        {isTableDataReady ? (
+          <Suspense fallback={<Loader />}>
+            <DataTable projectId={tableInstanceId} />
+          </Suspense>
+        ) : (
+          <Loader />
+        )}
       </StyledTableWrapper>
     </StyledPanel>
   );

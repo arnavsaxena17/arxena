@@ -1,0 +1,20 @@
+# Outreach Command REST (`OutreachCommandController` @Controller('outreach-command')).
+#
+# Production `twenty.conf` proxies API prefixes via a single regex location
+# (see `location ~ ^/(client-config|...|warm-paths)(/.*)?$`). Paths NOT in
+# that list fall through to the SPA `location /` and return index.html — the
+# front then fails JSON parse with `Unexpected token '<'`.
+#
+# Add the prefix to the regex (before the closing `)(/.*)?$`):
+#   |outreach-command
+#
+# Example (fragment):
+#   ...|warm-paths|outreach-command)(/.*)?$ {
+#
+# Deploy on app.arxena.com:
+#   sudo cp /etc/nginx/sites-enabled/twenty.conf /etc/nginx/sites-enabled/twenty.conf.bak-$(date +%Y%m%d%H%M%S)
+#   # edit regex, then:
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Verify (expect JSON 401 without token, not text/html):
+#   curl -sI 'https://<workspace>.arxena.com/outreach-command/cache/companies?projectId=test'

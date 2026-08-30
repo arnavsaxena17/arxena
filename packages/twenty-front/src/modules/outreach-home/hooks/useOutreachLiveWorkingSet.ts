@@ -1,5 +1,5 @@
 import { isNonEmptyString } from '@sniptt/guards';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -7,36 +7,36 @@ import { isDefined } from 'twenty-shared/utils';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
+import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
+import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
+import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import {
-    OUTREACH_WORKFLOW_B_NAME,
     OUTREACH_PROJECT_ID_QUERY_PARAM,
     OUTREACH_PROJECT_NAME_PREFIX,
+    OUTREACH_WORKFLOW_B_NAME,
     isOutreachProjectName,
 } from '@/outreach-home/constants/outreach-command.constants';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
 import {
     type OutreachCompanyRow,
     type OutreachMainTab,
-    type OutreachSendMode,
-    type OutreachStatus,
     type OutreachPersonRow,
     type OutreachProjectOption,
     type OutreachProjectSettings,
+    type OutreachSendMode,
+    type OutreachStatus,
     type OutreachWorkspaceCompany,
     type WorkspaceProfileRecord,
 } from '@/outreach-home/types/outreach-home.types';
-import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
     fetchOutreachCompaniesCache,
     persistOutreachCompaniesCache,
 } from '@/outreach-home/utils/outreach-companies-cache';
+import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
     fetchOutreachPeopleCache,
     persistOutreachPeopleCache,
 } from '@/outreach-home/utils/outreach-people-cache';
-import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
-import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -196,6 +196,9 @@ export const useOutreachLiveWorkingSet = () => {
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [ephemeralPeople, setEphemeralPeople] = useState<OutreachPersonRow[]>([]);
   const [peopleCacheLoading, setPeopleCacheLoading] = useState(false);
+  const [peopleCacheReady, setPeopleCacheReady] = useState(
+    () => !isNonEmptyString(projectIdFromQuery),
+  );
   const [isResolvingProject, setIsResolvingProject] = useState(false);
   const outreachProjectCreateInFlightRef = useRef(false);
   const createOutreachProjectRef = useRef<
@@ -344,11 +347,22 @@ export const useOutreachLiveWorkingSet = () => {
   }, [accessToken, activeProjectId]);
 
   // Ephemeral people from Redis (per projectId) — not CRM Candidates until enroll.
+  useLayoutEffect(() => {
+    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+      setPeopleCacheReady(true);
+
+      return;
+    }
+
+    setPeopleCacheReady(false);
+  }, [accessToken, activeProjectId]);
+
   useEffect(() => {
     let cancelled = false;
 
     if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
       setEphemeralPeople([]);
+      setPeopleCacheReady(true);
 
       return;
     }
@@ -381,6 +395,7 @@ export const useOutreachLiveWorkingSet = () => {
         .finally(() => {
           if (!cancelled) {
             setPeopleCacheLoading(false);
+            setPeopleCacheReady(true);
           }
         });
     };
@@ -657,7 +672,6 @@ export const useOutreachLiveWorkingSet = () => {
   const projectSettings: OutreachProjectSettings = {
     projectId: project?.id ?? null,
     projectName: project?.name ?? null,
-    projectId: project?.id ?? null,
     outreachWorkflowId: project?.outreachWorkflowId ?? null,
     outreachStatus: normalizeOutreachStatus(project?.outreachStatus),
     outreachSendMode:
@@ -691,14 +705,17 @@ export const useOutreachLiveWorkingSet = () => {
     hq: workspaceProfile?.hq ?? '',
   };
 
+  const peopleLoading =
+    !peopleCacheReady || peopleCacheLoading || candidatesLoading;
+
   return {
     loading:
       projectsLoading ||
       workspaceProfilesLoading ||
       isResolvingProject ||
       companiesLoading ||
-      peopleCacheLoading ||
-      candidatesLoading,
+      peopleLoading,
+    peopleLoading,
     workspaceCompany,
     workspaceProfile,
     refetchWorkspaceProfiles,

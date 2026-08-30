@@ -4,7 +4,7 @@ import axios from 'axios';
  * Compressed GTM outreach simulator.
  *
  * Advances Candidate stages and Project ICP for Workflow A/B/C without real
- * Unipile delays. Pair with setup-gtm-command-dashboard.ts +
+ * Unipile delays. Pair with setup-outreach-command-dashboard.ts +
  * setup-gtm-outreach-workflow.ts.
  *
  * Env:

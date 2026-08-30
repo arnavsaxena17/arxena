@@ -1,6 +1,7 @@
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 import { type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
+import { parseOutreachCacheJsonResponse } from '@/outreach-home/utils/parse-outreach-cache-response';
 
 const getBaseUrl = (): string => REACT_APP_SERVER_BASE_URL ?? '';
 
@@ -28,9 +29,9 @@ export const fetchOutreachPeopleCache = async (
       throw new Error(await response.text());
     }
 
-    const data = (await response.json()) as {
+    const data = await parseOutreachCacheJsonResponse<{
       people?: OutreachPersonRow[];
-    };
+    }>(response);
 
     return Array.isArray(data.people) ? data.people : [];
   } catch (error) {

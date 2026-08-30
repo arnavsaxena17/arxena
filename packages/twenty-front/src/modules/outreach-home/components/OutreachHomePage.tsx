@@ -16,6 +16,8 @@ import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
 import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
+import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
+import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { OutreachCompaniesPanel } from '@/outreach-home/components/OutreachCompaniesPanel';
 import { OutreachMainTabs } from '@/outreach-home/components/OutreachMainTabs';
 import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/OutreachNeedsConnectionBanner';
@@ -27,34 +29,32 @@ import { OutreachWorkflowToolbar } from '@/outreach-home/components/OutreachWork
 import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
 import { useOutreachLiveWorkingSet } from '@/outreach-home/hooks/useOutreachLiveWorkingSet';
 import {
-  type OutreachWorkflowEmbedMode,
-  useOutreachWorkflowEmbed,
+    type OutreachWorkflowEmbedMode,
+    useOutreachWorkflowEmbed,
 } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
 import {
-  buildOutreachContextPrompt,
-  outreachContextState,
+    buildOutreachContextPrompt,
+    outreachContextState,
 } from '@/outreach-home/states/outreachContextState';
 import {
-  buildFindCompaniesSendPrompt,
-  buildFindPeopleSendPrompt,
-  type OutreachSendMode,
+    buildFindCompaniesSendPrompt,
+    buildFindPeopleSendPrompt,
+    type OutreachSendMode,
 } from '@/outreach-home/types/outreach-home.types';
 import {
-  parseIcpSpec,
-  stringifyIcpSpec,
+    parseIcpSpec,
+    stringifyIcpSpec,
 } from '@/outreach-home/utils/outreach-effective-icp.util';
 import { regenerateOutreachWorkspaceProfile } from '@/outreach-home/utils/outreach-workspace-profile-regenerate';
-import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
-import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/WorkflowRunRateLimitSnackBarEffect';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/WorkflowRunRateLimitSnackBarEffect';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledMain = styled.div`
@@ -115,6 +115,7 @@ export const OutreachHomePage = () => {
 const OutreachHomePageContent = () => {
   const {
     loading,
+    peopleLoading,
     workspaceCompany,
     workspaceProfile,
     refetchWorkspaceProfiles,
@@ -709,6 +710,7 @@ const OutreachHomePageContent = () => {
                   selectedPersonId={selectedPersonId}
                   onSelectPersonId={setSelectedPersonId}
                   tableInstanceId={peopleTableInstanceId}
+                  isLoading={peopleLoading}
                 />
               )}
             </StyledContent>

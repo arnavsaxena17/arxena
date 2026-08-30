@@ -98,7 +98,7 @@ Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
 6. Confirm Redis (optional):
 
 ```bash
-curl -s "http://arxena-4.localhost:3000/gtm-command/cache/companies?projectId=<PROJECT_ID>" \
+curl -s "http://arxena-4.localhost:3000/outreach-command/cache/companies?projectId=<PROJECT_ID>" \
   -H "authorization: Bearer <TOKEN>"
 ```
 
@@ -122,7 +122,7 @@ Expected agent path:
 not necessarily CRM Candidates). Verify Redis:
 
 ```bash
-curl -s "http://arxena-4.localhost:3000/gtm-command/cache/people?projectId=<PROJECT_ID>" \
+curl -s "http://arxena-4.localhost:3000/outreach-command/cache/people?projectId=<PROJECT_ID>" \
   -H "authorization: Bearer <TOKEN>"
 ```
 

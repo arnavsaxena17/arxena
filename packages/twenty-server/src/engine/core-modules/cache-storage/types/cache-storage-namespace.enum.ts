@@ -16,7 +16,7 @@ export enum CacheStorageNamespace {
   EngineOrgChart = 'engine:org-chart',
   EngineCandidateSearch = 'engine:candidate-search',
   EngineLinkedinSearch = 'engine:linkedin-search',
-  EngineOutreachCommand = 'engine:gtm-command',
+  EngineOutreachCommand = 'engine:outreach-command',
   EngineContactEnrichment = 'engine:contact-enrichment',
   EngineTheOrg = 'engine:theorg',
   IntegrationTests = 'integration-tests',

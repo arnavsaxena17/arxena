@@ -14,6 +14,9 @@ export const useListenToEventsForQuery = ({
   skip?: boolean;
 }) => {
   const { changeQueryIdListenState } = useChangeQueryListenState();
+  // Inline object literals in callers change identity every render; key by value
+  // so we do not remove/re-add SSE listeners and trip maximum update depth.
+  const operationSignatureKey = JSON.stringify(operationSignature);
 
   useEffect(() => {
     if (skip) {
@@ -25,5 +28,6 @@ export const useListenToEventsForQuery = ({
     return () => {
       changeQueryIdListenState(false, queryId, operationSignature);
     };
-  }, [changeQueryIdListenState, queryId, operationSignature, skip]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [changeQueryIdListenState, queryId, operationSignatureKey, skip]);
 };

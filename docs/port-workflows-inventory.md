@@ -33,7 +33,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] GTM Command chrome collapse (PageHeader project controls + tabs trailing workflow modes)
 - [x] Rename `gtmWorkspaceProfile` → `workspaceProfile` (Arxena standard object + workspace cmd `1785600000018`)
 - [x] GTM Workflow tab canvas centers on open (container-bounds viewport; no side-panel double-subtract)
-- [x] GTM ephemeral companies (Redis `/gtm-command/cache/companies` per projectId; CRM Company on enroll only)
+- [x] GTM ephemeral companies (Redis `/outreach-command/cache/companies` per projectId; CRM Company on enroll only)
 - [x] Ask AI → GTM Companies tab: `upsert_gtm_target_companies` action tool + `/gtm-home` browsing context + skill/system-prompt routing + skill content sync cmd `1785600000013`
 - [x] Ask AI → GTM People tab: `upsert_gtm_target_people` action tool + Redis People cache + UI poll/merge + prompt/skill routing (no CRM until enroll) + skill sync cmd `1785600000014`
 
@@ -48,7 +48,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `candidate-sourcing`
 - [x] `candidate-avatar`
 - [x] `contact-enrichment`
-- [x] `gtm-command` (materialize + outreach throttle; seed Workflow B/C via `setup-gtm-outreach-workflow.ts`)
+- [x] `outreach-command` (materialize + outreach throttle; seed Workflow B/C via `setup-gtm-outreach-workflow.ts`)
 - [x] `workspace-modifications`
 - [x] `people-api`
 - [x] `search-models`

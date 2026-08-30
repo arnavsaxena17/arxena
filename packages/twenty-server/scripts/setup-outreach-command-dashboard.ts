@@ -1519,7 +1519,7 @@ const seedCandidates = async ({
           ? daysAgoIso(person.lastInboundDaysAgo)
           : null,
       campaign: projectId,
-      source: 'gtm-command-seed',
+      source: 'outreach-command-seed',
     };
 
     const existing = await request<{
