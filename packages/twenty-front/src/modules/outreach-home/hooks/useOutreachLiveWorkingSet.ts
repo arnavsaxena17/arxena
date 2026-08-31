@@ -663,7 +663,7 @@ export const useOutreachLiveWorkingSet = () => {
         return {
           id: outreachProject.id,
           name: outreachProject.name ?? 'Untitled GTM project',
-          icpSegment: resolved.parsedIcp?.buyerTitles[0] ?? null,
+          icpSegment: resolved.parsedIcp?.targetTitles[0] ?? null,
         };
       }),
     [outreachProjects, workspaceProfile],
@@ -719,8 +719,8 @@ export const useOutreachLiveWorkingSet = () => {
     industry: workspaceProfile?.industry ?? '',
     summary:
       workspaceProfile?.summary ??
-      (parsedIcp && parsedIcp.buyerTitles.length > 0
-        ? `ICP target titles: ${parsedIcp.buyerTitles.join(', ')}`
+      (parsedIcp && parsedIcp.targetTitles.length > 0
+        ? `ICP target titles: ${parsedIcp.targetTitles.join(', ')}`
         : 'Use Setup to define workspace GTM buyer titles and locations.'),
     employeeRange: workspaceProfile?.employeeRange ?? '',
     hq: workspaceProfile?.hq ?? '',

@@ -51,6 +51,7 @@ export interface MessageQueueDriver {
   getInFlightJobs?<T extends MessageQueueJobData>(
     queueName: MessageQueue,
   ): Promise<InFlightQueueJob<T>[]>;
+  removeJob?(queueName: MessageQueue, jobId: string): Promise<void>;
 }
 
 export interface InFlightQueueJob<T extends MessageQueueJobData> {

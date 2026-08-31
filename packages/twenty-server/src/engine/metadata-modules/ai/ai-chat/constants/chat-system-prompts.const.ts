@@ -6,7 +6,7 @@ const { setup, search, outreach, crm, workflowBuilding, dashboardBuilding } =
 /**
  * Neutral CRM copy glossary (shared Ask AI + MCP playbook):
  * Outreach (not GTM Command); Your company (not Seller); Target titles
- * (UI label; JSON key stays buyerTitles); people / enrolled people (not
+ * (UI label; JSON key targetTitles); people / enrolled people (not
  * candidates in prose); create_candidate = Person + enrollment record;
  * people/company search (not prospecting in user-facing prose). Keep
  * LinkedIn Sales Navigator / Recruiter as product names. No sell/hire flavor.

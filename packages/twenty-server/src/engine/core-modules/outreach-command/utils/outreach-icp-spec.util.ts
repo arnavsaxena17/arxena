@@ -10,13 +10,23 @@ const toStringList = (value: unknown): string[] => {
 };
 
 export type IcpSpec = {
-  buyerTitles: string[];
+  targetTitles: string[];
   locations: string[];
 };
 
 export const EMPTY_ICP_SPEC: IcpSpec = {
-  buyerTitles: [],
+  targetTitles: [],
   locations: [],
+};
+
+const readTargetTitles = (record: Record<string, unknown>): string[] => {
+  const targetTitles = toStringList(record.targetTitles);
+
+  if (targetTitles.length > 0) {
+    return targetTitles;
+  }
+
+  return toStringList(record.buyerTitles);
 };
 
 export const normalizeIcpSpec = (value: unknown): IcpSpec => {
@@ -31,7 +41,7 @@ export const normalizeIcpSpec = (value: unknown): IcpSpec => {
   ];
 
   return {
-    buyerTitles: toStringList(record.buyerTitles),
+    targetTitles: readTargetTitles(record),
     locations: [...new Set(locations)],
   };
 };
@@ -52,3 +62,35 @@ export const parseIcpSpec = (
 
 export const stringifyIcpSpec = (spec: IcpSpec): string =>
   JSON.stringify(normalizeIcpSpec(spec));
+
+export const renameBuyerTitlesKeyInIcpSpecJson = (
+  raw: string,
+): { next: string; changed: boolean } => {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed)
+    ) {
+      return { next: raw, changed: false };
+    }
+
+    const record = parsed as Record<string, unknown>;
+
+    if (!('buyerTitles' in record)) {
+      return { next: raw, changed: false };
+    }
+
+    const { buyerTitles: _removedBuyerTitles, ...rest } = record;
+    const nextRecord = {
+      ...rest,
+      targetTitles: readTargetTitles(record),
+    };
+
+    return { next: JSON.stringify(nextRecord), changed: true };
+  } catch {
+    return { next: raw, changed: false };
+  }
+};

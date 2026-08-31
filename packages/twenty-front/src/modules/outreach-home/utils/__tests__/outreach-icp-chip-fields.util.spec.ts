@@ -15,25 +15,25 @@ describe('outreach-icp-chip-fields.util', () => {
 
   it('reads buyer titles and migrates geos into locations', () => {
     const spec = JSON.stringify({
-      buyerTitles: ['VP People'],
+      targetTitles: ['VP People'],
       geos: ['US'],
       name: 'ignored',
     });
 
-    expect(readIcpChipValues(spec, 'buyerTitles')).toEqual(['VP People']);
+    expect(readIcpChipValues(spec, 'targetTitles')).toEqual(['VP People']);
     expect(readIcpChipValues(spec, 'locations')).toEqual(['US']);
     expect(parseIcpSpecObject('[]')).toBeNull();
   });
 
-  it('writes only buyerTitles and locations', () => {
+  it('writes only targetTitles and locations', () => {
     const next = writeIcpChipValues(
       JSON.stringify({ name: 'Buyers', geos: ['UK'] }),
-      'buyerTitles',
+      'targetTitles',
       ['Head of Talent'],
     );
 
     expect(parseIcpSpecObject(next)).toEqual({
-      buyerTitles: ['Head of Talent'],
+      targetTitles: ['Head of Talent'],
       locations: ['UK'],
     });
   });

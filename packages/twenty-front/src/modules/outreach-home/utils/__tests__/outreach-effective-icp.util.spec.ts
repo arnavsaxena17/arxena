@@ -28,7 +28,7 @@ describe('outreach-effective-icp.util', () => {
 
   it('resolves effective ICP from workspace profile when project is empty', () => {
     const workspaceIcp = JSON.stringify({
-      buyerTitles: ['VP People'],
+      targetTitles: ['VP People'],
       geos: ['US'],
       industries: ['HR Tech'],
     });
@@ -40,18 +40,18 @@ describe('outreach-effective-icp.util', () => {
 
     expect(effective.isIcpProjectOverride).toBe(false);
     expect(effective.parsedIcp).toEqual({
-      buyerTitles: ['VP People'],
+      targetTitles: ['VP People'],
       locations: ['US'],
     });
     expect(JSON.parse(effective.icpSpec ?? '{}')).toEqual({
-      buyerTitles: ['VP People'],
+      targetTitles: ['VP People'],
       locations: ['US'],
     });
   });
 
   it('uses project ICP when set', () => {
     const projectIcp = JSON.stringify({
-      buyerTitles: ['Head of Talent'],
+      targetTitles: ['Head of Talent'],
       locations: ['UK'],
     });
 
@@ -59,7 +59,7 @@ describe('outreach-effective-icp.util', () => {
       project: { icpSpec: projectIcp },
       workspaceProfile: {
         icpSpec: JSON.stringify({
-          buyerTitles: ['VP People'],
+          targetTitles: ['VP People'],
           locations: ['US'],
         }),
       },
@@ -67,7 +67,7 @@ describe('outreach-effective-icp.util', () => {
 
     expect(effective.isIcpProjectOverride).toBe(true);
     expect(effective.parsedIcp).toEqual({
-      buyerTitles: ['Head of Talent'],
+      targetTitles: ['Head of Talent'],
       locations: ['UK'],
     });
   });
@@ -76,20 +76,20 @@ describe('outreach-effective-icp.util', () => {
     expect(parseIcpSpec('not-json')).toBeNull();
     expect(
       normalizeIcpSpec({
-        buyerTitles: ['CEO'],
+        targetTitles: ['CEO'],
         geos: ['India'],
         locations: ['Singapore'],
         name: 'ignored',
       }),
     ).toEqual({
-      buyerTitles: ['CEO'],
+      targetTitles: ['CEO'],
       locations: ['Singapore', 'India'],
     });
     expect(
       stringifyIcpSpec({
-        buyerTitles: ['CEO'],
+        targetTitles: ['CEO'],
         locations: ['India'],
       }),
-    ).toBe(JSON.stringify({ buyerTitles: ['CEO'], locations: ['India'] }));
+    ).toBe(JSON.stringify({ targetTitles: ['CEO'], locations: ['India'] }));
   });
 });

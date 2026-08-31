@@ -56,6 +56,14 @@ export class MessageQueueService {
     return this.driver.getInFlightJobs(this.queueName);
   }
 
+  removeJob(jobId: string): Promise<void> {
+    if (typeof this.driver.removeJob !== 'function') {
+      return Promise.resolve();
+    }
+
+    return this.driver.removeJob(this.queueName, jobId);
+  }
+
   addCron<T extends MessageQueueJobData | undefined>({
     jobName,
     data,

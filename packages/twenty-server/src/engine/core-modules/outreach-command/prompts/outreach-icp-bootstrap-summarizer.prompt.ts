@@ -3,7 +3,7 @@ export const ICP_BOOTSTRAP_SUMMARIZER_SYSTEM_PROMPT = `You draft a default Ideal
 You receive the workspace company (what they do), not the target accounts. Infer who they typically reach out to.
 
 Return only:
-- buyerTitles: 3–8 realistic decision-maker / champion job titles (JSON key name is fixed).
+- targetTitles: 3–8 realistic decision-maker / champion job titles (JSON key name is fixed).
 - locations: target markets (countries or regions). This is the renamed geos field. Do not copy company HQ unless they clearly operate only in that market.
 
 Do not invent titles or markets the evidence does not support. If evidence is thin, keep lists short. Return JSON matching the schema exactly.`;
@@ -27,5 +27,5 @@ export const buildIcpBootstrapSummarizerUserPrompt = (input: {
     'Summary:',
     input.summary.trim() || '(none)',
     '',
-    'Draft buyerTitles and locations for who this company typically reaches out to.',
+    'Draft targetTitles and locations for who this company typically reaches out to.',
   ].join('\n');

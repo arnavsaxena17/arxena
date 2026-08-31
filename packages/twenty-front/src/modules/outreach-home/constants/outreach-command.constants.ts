@@ -10,4 +10,4 @@ export const isOutreachProjectName = (
 export const OUTREACH_PROJECT_ID_QUERY_PARAM = 'projectId';
 
 /** Canonical Stage B sequencer workflow name. */
-export const OUTREACH_WORKFLOW_B_NAME = 'Outreach — Per Enrolled Person';
+export const OUTREACH_WORKFLOW_B_NAME = 'Outreach — Per Enrolled Candidate';

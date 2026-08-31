@@ -948,7 +948,7 @@ export class ChatExecutionService {
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
       'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this project:',
       `1. load_skills(["${outreach}","${workflowBuilding}"]) — treat that ask as execute authorization for enrollment`,
-      '2. Prefer Project outreachWorkflowId / name "Outreach — Per Enrolled Person" (legacy: "GTM Outreach — Per Candidate"); clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
+      '2. Prefer Project outreachWorkflowId / name "Outreach — Per Enrolled Candidate" (legacy: "Outreach — Per Enrolled Person", "GTM Outreach — Per Candidate"); clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
       '3. Candidate Links field is linkedinUrl.primaryLinkUrl (Person uses linkedinLink) — fix SEND_* templates if they still say linkedinLink',
       '4. Activate the draft, then create Candidates for ephemeral People with projectsId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',
       '5. list_workflow_runs for outreachWorkflowId and summarize — do not end the turn stuck on metadata or parse retries',

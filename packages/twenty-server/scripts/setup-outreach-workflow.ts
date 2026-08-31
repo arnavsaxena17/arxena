@@ -21,7 +21,7 @@ const OUTREACH_HARVEST_QUERY = process.env.OUTREACH_HARVEST_QUERY || '';
 
 const WORKFLOW_HARVEST_NAME = 'Harvest — LinkedIn Companies';
 const WORKFLOW_SEARCH_NAME = 'Company Created → ICP People Search';
-const WORKFLOW_B_NAME = 'Outreach — Per Enrolled Person';
+const WORKFLOW_B_NAME = 'Outreach — Per Enrolled Candidate';
 const WORKFLOW_ACCEPT_NAME = 'Outreach — Enrolled Person Updated';
 const WORKFLOW_C_NAME = 'Outreach — Reply';
 const WORKFLOW_MEETING_NAME = 'Outreach — Meeting Booked';
@@ -1969,7 +1969,7 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         // icpSpec: JSON.stringify({
           // std_function: ['talent acquisition', 'people'],
           // std_grade: ['leadership', 'mid'],
-          // buyerTitles: ['Head of Talent', 'VP People'],
+          // targetTitles: ['Head of Talent', 'VP People'],
         // }),
         // complianceCopy:
         //   'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',

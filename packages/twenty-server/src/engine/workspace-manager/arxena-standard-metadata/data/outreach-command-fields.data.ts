@@ -649,7 +649,7 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'project',
     field: {
-      description: 'Optional project override ICP JSON (buyerTitles and locations)',
+      description: 'Optional project override ICP JSON (targetTitles and locations)',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',

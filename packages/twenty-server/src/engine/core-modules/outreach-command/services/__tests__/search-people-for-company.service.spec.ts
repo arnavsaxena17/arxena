@@ -70,7 +70,7 @@ describe('SearchPeopleForCompanyService', () => {
       id: projectId,
       name: 'GTM Harvest',
       icpSpec: JSON.stringify({
-        buyerTitles: ['Head of Talent'],
+        targetTitles: ['Head of Talent'],
         locations: ['United States', 'United Kingdom'],
       }),
       maxPersonasPerCompany: 2,
@@ -120,7 +120,7 @@ describe('SearchPeopleForCompanyService', () => {
     );
   });
 
-  it('uses the provided job title instead of the Project icpSpec buyer title', async () => {
+  it('uses the provided job title instead of the Project icpSpec target title', async () => {
     await service.execute({
       workspaceId: 'ws-1',
       input: { companyId, jobTitle: 'VP Engineering' },
@@ -136,7 +136,7 @@ describe('SearchPeopleForCompanyService', () => {
     );
   });
 
-  it('falls back to the Project icpSpec buyer title when job title is blank', async () => {
+  it('falls back to the Project icpSpec target title when job title is blank', async () => {
     await service.execute({
       workspaceId: 'ws-1',
       input: { companyId, jobTitle: '   ' },

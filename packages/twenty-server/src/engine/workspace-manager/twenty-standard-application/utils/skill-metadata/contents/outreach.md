@@ -14,7 +14,7 @@ Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candid
 | --- | --- | --- |
 | `Harvest — LinkedIn Companies` | CRON | Harvest |
 | `Company Created → ICP People Search` | `company.created` | Enroll-on-company |
-| `Outreach — Per Enrolled Person` | `candidate.created` (+ `QUEUED`) | Sequencer B |
+| `Outreach — Per Enrolled Candidate` | `candidate.created` (+ `QUEUED`) | Sequencer B |
 | `Outreach — Enrolled Person Updated` | `candidate.updated` | Stage updates |
 
 **Ignite path:**
@@ -55,7 +55,7 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 | **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `projectIds`). Seed Project **Harvest**. Do **not** `upsert_outreach_target_companies`. Skip rows already tagged to this project. |
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Workflow U** (manual) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` |
-| **Stage B** (`Outreach — Per Enrolled Person`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
+| **Stage B** (`Outreach — Per Enrolled Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
 | **Enrolled Person Updated** (`Outreach — Enrolled Person Updated`; legacy `GTM Outreach — Candidate Updated`) | `candidate.updated` watching `outreachSequenceStage` | IF_ELSE on `{{trigger.properties.after.outreachSequenceStage}}`. **CONNECTION_ACCEPTED**: `fetch-linkedin-messages` → `fetch-linkedin-profile` → AI opener → FORM → SEND, then DELAY follow-ups. **REPLIED**: FIND `chatMessage` → calendar slots → AI → FORM → SEND. **NEGOTIATING** / **DEFERRED**: same shape, different prompts. **MEETING_BOOKED**: FORM times → `CREATE_CALENDAR_EVENT`. Else: end with no work. Do not use FILTER-first twins of this trigger. |
 | **Stage C inbound classify** | silence-window flush (not a workflow) | LLM classifies the **recipient burst** → stamps stage. `unsubscribe`→`STOPPED` (no send). `not_now`→`DEFERRED`. `interested`→`NEGOTIATING`. `times_proposed`/`question`→`REPLIED`. `book`→`MEETING_BOOKED`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
 
@@ -67,7 +67,7 @@ AI drafts (before FORM): opener = short hook + one question, meeting as a light 
 
 ## Workflow 1 — company created → ICP people → enroll
 
-Do **not** FIND_RECORDS Project or pass `icpSpec`. `search-people-for-company` loads the Project and parses std function/grade itself. Optional `jobTitle` takes precedence over Project `icpSpec` buyerTitles[0] and is classified the same way as `search-people`. Company trigger payload has **no** `projectId` field. Search returns hits only; `upload-profiles` persists Person + Candidate.
+Do **not** FIND_RECORDS Project or pass `icpSpec`. `search-people-for-company` loads the Project and parses std function/grade itself. Optional `jobTitle` takes precedence over Project `icpSpec` targetTitles[0] and is classified the same way as `search-people`. Company trigger payload has **no** `projectId` field. Search returns hits only; `upload-profiles` persists Person + Candidate.
 
 Use `create_complete_workflow` with:
 

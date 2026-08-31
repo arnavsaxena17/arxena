@@ -219,7 +219,7 @@ export class OutreachWorkspaceProfileProvisioningService {
 
           if (llmIcp) {
             draft.icpSpec = {
-              buyerTitles: llmIcp.buyerTitles,
+              targetTitles: llmIcp.targetTitles,
               locations: llmIcp.locations,
             };
           }

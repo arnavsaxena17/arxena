@@ -438,4 +438,18 @@ export class BullMQDriver
       .filter(isDefined)
       .map((job) => ({ id: job.id, data: job.data }));
   }
+
+  async removeJob(queueName: MessageQueue, jobId: string): Promise<void> {
+    if (!this.queueMap[queueName]) {
+      throw new Error(
+        `Queue ${queueName} is not registered, make sure you have added it as a queue provider`,
+      );
+    }
+
+    const job = await this.queueMap[queueName].getJob(jobId);
+
+    if (isDefined(job)) {
+      await job.remove();
+    }
+  }
 }

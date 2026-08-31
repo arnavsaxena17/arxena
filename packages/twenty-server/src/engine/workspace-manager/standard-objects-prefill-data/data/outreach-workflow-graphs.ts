@@ -789,7 +789,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
     ],
   },
   {
-    name: 'Outreach — Per Enrolled Person',
+    name: 'Outreach — Per Enrolled Candidate',
     trigger: gtmWfDatabaseEventTrigger({
       name: 'Candidate is Created',
       eventName: 'candidate.created',

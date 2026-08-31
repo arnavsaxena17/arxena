@@ -106,7 +106,7 @@ Present (full onboarding) or only the fields in scope (Regenerate modes):
 - Name / segment label
 - **icpBlurb** — 2–4 sentence NL definition of who the ICP is and what matters to them
 - Industries, employee range, geos
-- Target titles (`buyerTitles` in JSON), `stdFunctions` / `stdGrades`, pain signals
+- Target titles (`targetTitles` in JSON), `stdFunctions` / `stdGrades`, pain signals
 - Draft **companySearchBlurb** (NL brief for target accounts) — full onboarding only, or company-blurb regenerate
 - Draft **peopleSearchBlurb** (NL brief for target roles at those accounts) — full onboarding only, or people-blurb regenerate
 - Outreach settings for this Project: send mode, max personas, InMail, timezone/window (full onboarding)
@@ -134,7 +134,7 @@ On approval:
   "industries": ["HR Tech", "SaaS"],
   "employeeRange": "50-200",
   "geos": ["US", "UK"],
-  "buyerTitles": ["Head of Talent", "VP People"],
+  "targetTitles": ["Head of Talent", "VP People"],
   "painSignals": ["slow pipelines", "thin team capacity"],
   "stdFunctions": ["talent acquisition", "people"],
   "stdGrades": ["director", "vp"]

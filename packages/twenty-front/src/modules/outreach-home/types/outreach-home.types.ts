@@ -30,7 +30,7 @@ export type OutreachWorkspaceCompany = {
 
 /** Structured ICP stored in `icpSpec` JSON (workspaceProfile / Project). */
 export type IcpSpec = {
-  buyerTitles: string[];
+  targetTitles: string[];
   locations: string[];
 };
 
@@ -175,8 +175,8 @@ export const buildIcpOnboardingKickoffPrompt = (
     ? [
         '',
         'Current ICP draft:',
-        proposedIcp.buyerTitles.length > 0
-          ? `- Target titles: ${proposedIcp.buyerTitles.join(', ')}`
+        proposedIcp.targetTitles.length > 0
+          ? `- Target titles: ${proposedIcp.targetTitles.join(', ')}`
           : null,
         proposedIcp.locations.length > 0
           ? `- Locations: ${proposedIcp.locations.join(', ')}`
@@ -188,7 +188,7 @@ export const buildIcpOnboardingKickoffPrompt = (
     `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
       '. Walk me through who we should reach (target titles and locations), send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (buyerTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
+    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (targetTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
     ...draftLines,
   ].join('\n');
 };
@@ -249,7 +249,7 @@ export const buildRegenerateIcpSendPrompt = (
     }.`,
     company.industry ? `Industry: ${company.industry}.` : null,
     company.summary ? `Company summary: ${company.summary}` : null,
-    'load_skills(["setup"]), then save icpSpec on workspaceProfile with buyerTitles and locations only.',
+    'load_skills(["setup"]), then save icpSpec on workspaceProfile with targetTitles and locations only.',
     'Do not write Project.icpSpec unless I ask for a project-specific override.',
   ]
     .filter(Boolean)

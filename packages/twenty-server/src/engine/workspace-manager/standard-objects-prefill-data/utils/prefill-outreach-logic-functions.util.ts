@@ -177,7 +177,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleForCompanyId,
       name: OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       description:
-        'Search ICP people for a company via People API and return transformer-standardized hits (no CRM enroll). Pass companyId (required) and optional projectId/jobTitle/limit. Loads Project icpSpec itself — do not pass icpSpec. Optional jobTitle takes precedence over Project icpSpec buyerTitles[0] and is classified into std function/grade for the LinkedIn role query.',
+        'Search ICP people for a company via People API and return transformer-standardized hits (no CRM enroll). Pass companyId (required) and optional projectId/jobTitle/limit. Loads Project icpSpec itself — do not pass icpSpec. Optional jobTitle takes precedence over Project icpSpec targetTitles[0] and is classified into std function/grade for the LinkedIn role query.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
       ),

@@ -63,7 +63,7 @@ export class IcpBootstrapSummarizerService {
       });
 
       this.logger.log(
-        `LLM ICP bootstrap domain=${input.domain} model=${registeredModel.modelId} titles=${object.buyerTitles.length} locations=${object.locations.length}`,
+        `LLM ICP bootstrap domain=${input.domain} model=${registeredModel.modelId} titles=${object.targetTitles.length} locations=${object.locations.length}`,
       );
 
       return object;

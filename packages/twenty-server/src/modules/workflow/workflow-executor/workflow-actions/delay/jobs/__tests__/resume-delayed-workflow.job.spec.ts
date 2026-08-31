@@ -95,4 +95,29 @@ describe('ResumeDelayedWorkflowJob', () => {
       expect.any(Object),
     );
   });
+
+  it('no-ops when a stale timer fires after the step already advanced', async () => {
+    const { job, messageQueueService, workflowRunWorkspaceService } =
+      buildJob();
+
+    workflowRunWorkspaceService.getWorkflowRunOrFail.mockResolvedValue({
+      status: WorkflowRunStatus.RUNNING,
+      state: {
+        flow: { steps: [{ id: stepId }] },
+        stepInfos: { [stepId]: { status: StepStatus.SUCCESS } },
+      },
+    });
+
+    await job.handle({
+      workspaceId,
+      workflowRunId,
+      stepId,
+    });
+
+    expect(
+      workflowRunWorkspaceService.updateWorkflowRunStepInfo,
+    ).not.toHaveBeenCalled();
+    expect(messageQueueService.add).not.toHaveBeenCalled();
+    expect(workflowRunWorkspaceService.endWorkflowRun).not.toHaveBeenCalled();
+  });
 });

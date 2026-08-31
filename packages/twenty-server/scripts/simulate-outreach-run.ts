@@ -37,7 +37,7 @@ const MOCKS = {
     industries: ['HR Tech', 'SaaS'],
     employeeRange: '50-200',
     geos: ['US', 'UK'],
-    buyerTitles: ['Head of Talent', 'VP People'],
+    targetTitles: ['Head of Talent', 'VP People'],
     painSignals: ['slow time-to-hire', 'recruiter capacity'],
     // stdFunctions: ['talent acquisition', 'people'],
     // stdGrades: ['director', 'vp'],

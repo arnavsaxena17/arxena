@@ -70,6 +70,8 @@ import { UnifyLlmIntentSkillsCommand } from 'src/database/commands/upgrade-versi
 import { RenameOutreachSeededOutreachWorkflowNamesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000074-rename-gtm-seeded-outreach-workflow-names.command';
 import { RenameGtmFieldsToOutreachCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000075-rename-gtm-fields-to-outreach.command';
 import { AddWorkflowVersionExperimentStatusCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000077-add-workflow-version-experiment-status.command';
+import { RenameIcpSpecBuyerTitlesToTargetTitlesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000079-rename-icp-spec-buyer-titles-to-target-titles.command';
+import { RenamePerEnrolledPersonToPerEnrolledCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000080-rename-per-enrolled-person-to-per-enrolled-candidate.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -172,6 +174,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     RenameOutreachSeededOutreachWorkflowNamesCommand,
     RenameGtmFieldsToOutreachCommand,
     AddWorkflowVersionExperimentStatusCommand,
+    RenameIcpSpecBuyerTitlesToTargetTitlesCommand,
+    RenamePerEnrolledPersonToPerEnrolledCandidateCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

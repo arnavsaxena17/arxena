@@ -22,7 +22,7 @@ describe('outreach-workspace-profile-draft.util', () => {
     expect(draft.companyDomain).toBe('acme.io');
     expect(draft.industry).toBe('SaaS');
     expect(draft.hq).toContain('United States');
-    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
+    expect(draft.icpSpec).toEqual({ targetTitles: [], locations: [] });
     expect(draft.enrichmentJson.source).toBe('apollo');
   });
 
@@ -58,7 +58,7 @@ describe('outreach-workspace-profile-draft.util', () => {
     expect(draft.employeeRange).toBe('51-200');
     expect(draft.summary).toContain('Full LinkedIn company description');
     expect(draft.enrichmentJson.source).toBe('companies_index_wiki');
-    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
+    expect(draft.icpSpec).toEqual({ targetTitles: [], locations: [] });
   });
 
   it('falls back to domain heuristics without enrichment sources', () => {
@@ -69,7 +69,7 @@ describe('outreach-workspace-profile-draft.util', () => {
     expect(draft.companyName).toBe('Brightpath');
     expect(draft.companyDomain).toBe('brightpath.com');
     expect(draft.enrichmentJson.source).toBe('domain_heuristic');
-    expect(draft.icpSpec).toEqual({ buyerTitles: [], locations: [] });
+    expect(draft.icpSpec).toEqual({ targetTitles: [], locations: [] });
   });
 
   it('prefers LLM multi-source summary over raw LinkedIn/wiki fields', () => {
@@ -118,13 +118,13 @@ describe('outreach-workspace-profile-draft.util', () => {
         country: 'United States',
       },
       llmIcp: {
-        buyerTitles: ['Head of Talent'],
+        targetTitles: ['Head of Talent'],
         locations: ['United Kingdom'],
       },
     });
 
     expect(draft.icpSpec).toEqual({
-      buyerTitles: ['Head of Talent'],
+      targetTitles: ['Head of Talent'],
       locations: ['United Kingdom'],
     });
   });

@@ -127,12 +127,12 @@ describe('GTM outreach workflow graphs', () => {
     );
 
     expect(createdGraphs).toHaveLength(1);
-    expect(createdGraphs[0].name).toBe('Outreach — Per Enrolled Person');
+    expect(createdGraphs[0].name).toBe('Outreach — Per Enrolled Candidate');
   });
 
   it('skips Per Candidate connection send when another person at the company is already in outreach', () => {
     const perCandidate = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Outreach — Per Enrolled Person',
+      (graph) => graph.name === 'Outreach — Per Enrolled Candidate',
     );
     const steps = (perCandidate?.steps ?? []) as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);

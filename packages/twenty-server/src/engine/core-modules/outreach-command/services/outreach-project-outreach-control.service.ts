@@ -17,9 +17,10 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
-import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
-import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
-import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
+import {
+  cancelResumeDelayedWorkflowJobs,
+  scheduleResumeDelayedWorkflowJob,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 type ProjectRecord = ObjectLiteral & {
@@ -104,6 +105,11 @@ export class OutreachProjectOutreachControlService {
               }`,
             );
           }
+
+          await cancelResumeDelayedWorkflowJobs({
+            delayedQueue: this.delayedQueue,
+            workflowRunId: run.id,
+          });
 
           const stepInfos = run.state?.stepInfos ?? {};
           const now = Date.now();
@@ -233,37 +239,31 @@ export class OutreachProjectOutreachControlService {
                 workflowRunId: run.id,
               });
 
-              await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
-                RESUME_DELAYED_WORKFLOW_JOB_NAME,
-                {
+              await scheduleResumeDelayedWorkflowJob({
+                delayedQueue: this.delayedQueue,
+                data: {
                   workspaceId,
                   workflowRunId: run.id,
                   stepId,
                 },
-                {
-                  ...buildRunWorkflowJobOptions(run.id),
-                  delay: remainingMs,
-                },
-              );
+                delay: remainingMs,
+              });
               resumedRuns += 1;
               continue;
             }
 
             // Capacity waits: delay 0 + retryPendingStep so the send gate
             // recomputes window / spacing / rate limits with live config.
-            await this.delayedQueue.add<ResumeDelayedWorkflowJobData>(
-              RESUME_DELAYED_WORKFLOW_JOB_NAME,
-              {
+            await scheduleResumeDelayedWorkflowJob({
+              delayedQueue: this.delayedQueue,
+              data: {
                 workspaceId,
                 workflowRunId: run.id,
                 stepId,
                 retryPendingStep: true,
               },
-              {
-                ...buildRunWorkflowJobOptions(run.id),
-                delay: 0,
-              },
-            );
+              delay: 0,
+            });
             resumedRuns += 1;
           }
         }

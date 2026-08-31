@@ -4,7 +4,7 @@ import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-
  * LLM-facing intent vocabulary. Internal ToolCategory / MCP / LF names stay unchanged.
  *
  * Neutral CRM copy: Outreach (not GTM); Your company; Target titles (JSON key
- * buyerTitles); people / enrolled people; create_candidate = enrollment record.
+ * targetTitles); people / enrolled people; create_candidate = enrollment record.
  */
 export const CHAT_INTENT_SKILLS = {
   setup: 'setup',

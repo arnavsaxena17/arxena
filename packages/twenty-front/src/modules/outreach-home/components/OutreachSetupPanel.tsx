@@ -2,7 +2,9 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { styled } from '@linaria/react';
 import { useEffect, useState } from 'react';
 import { getValidTimeZoneOrUndefined } from 'twenty-shared/utils';
+import { IconInfoCircle } from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
+import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OutreachChipTagInput } from '@/outreach-home/components/OutreachChipTagInput';
@@ -26,6 +28,12 @@ const OUTREACH_SEND_TIMEZONE_OPTIONS = Object.values(
 ).sort((a, b) => a.label.localeCompare(b.label));
 
 const HH_MM_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
+const MAX_PERSONAS_PER_COMPANY_TOOLTIP_ID =
+  'outreach-max-personas-per-company-tooltip';
+
+const MAX_PERSONAS_PER_COMPANY_TOOLTIP =
+  'When multiple ICP contacts match at one company, only the top N by persona priority (function fit, seniority, connection degree, warm path) are queued for outreach. The rest are deferred until you promote them from the People tab.';
 
 const StyledPanel = styled.div`
   display: flex;
@@ -94,6 +102,19 @@ const StyledFieldLabel = styled.span`
   color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.medium};
+`;
+
+const StyledFieldLabelRow = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledFieldLabelInfoAnchor = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  display: inline-flex;
+  flex-shrink: 0;
+  outline: none;
 `;
 
 const StyledActions = styled.div`
@@ -438,7 +459,24 @@ export const OutreachSetupPanel = ({
             </StyledSelect>
           </StyledFieldStack>
           <StyledFieldStack>
-            <StyledFieldLabel>Max personas / company</StyledFieldLabel>
+            <StyledFieldLabelRow>
+              <StyledFieldLabel>Max personas / company</StyledFieldLabel>
+              <StyledFieldLabelInfoAnchor
+                id={MAX_PERSONAS_PER_COMPANY_TOOLTIP_ID}
+                tabIndex={0}
+                aria-label="Max personas per company"
+              >
+                <IconInfoCircle size={14} />
+              </StyledFieldLabelInfoAnchor>
+              <AppTooltip
+                anchorSelect={`#${MAX_PERSONAS_PER_COMPANY_TOOLTIP_ID}`}
+                content={MAX_PERSONAS_PER_COMPANY_TOOLTIP}
+                noArrow
+                place="top"
+                positionStrategy="fixed"
+                delay={TooltipDelay.shortDelay}
+              />
+            </StyledFieldLabelRow>
             <TextInput
               value={maxPersonasDraft}
               onChange={setMaxPersonasDraft}

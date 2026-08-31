@@ -33,7 +33,7 @@ export const parseIcpSpec = (
 
 export const normalizeIcpSpec = (value: unknown): IcpSpec => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return { buyerTitles: [], locations: [] };
+    return { targetTitles: [], locations: [] };
   }
 
   const record = value as Record<string, unknown>;
@@ -43,9 +43,19 @@ export const normalizeIcpSpec = (value: unknown): IcpSpec => {
   ];
 
   return {
-    buyerTitles: toStringList(record.buyerTitles),
+    targetTitles: readTargetTitles(record),
     locations: [...new Set(locations)],
   };
+};
+
+const readTargetTitles = (record: Record<string, unknown>): string[] => {
+  const targetTitles = toStringList(record.targetTitles);
+
+  if (targetTitles.length > 0) {
+    return targetTitles;
+  }
+
+  return toStringList(record.buyerTitles);
 };
 
 export const stringifyIcpSpec = (spec: IcpSpec): string =>

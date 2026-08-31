@@ -85,7 +85,7 @@ export const getWorkspaceProfileFieldsData = (
     objectName: 'workspaceProfile',
     field: {
       description:
-        'Default ICP JSON (buyerTitles and locations) shared across outreach projects',
+        'Default ICP JSON (targetTitles and locations) shared across outreach projects',
       icon: 'IconJson',
       label: 'ICP Spec',
       name: 'icpSpec',

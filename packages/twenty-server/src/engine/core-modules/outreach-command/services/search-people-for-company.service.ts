@@ -247,7 +247,7 @@ export class SearchPeopleForCompanyService {
     const icp = parseIcpSpec(
       context.project.icpSpec || context.workspaceProfile?.icpSpec,
     );
-    const buyerTitle = input.jobTitle?.trim() || icp.buyerTitles[0];
+    const targetTitle = input.jobTitle?.trim() || icp.targetTitles[0];
     const locations = icp.locations;
     const website = companyWebsite(context.company);
     const linkedinCompanyUrl = companyLinkedinUrl(context.company);
@@ -272,7 +272,7 @@ export class SearchPeopleForCompanyService {
           companyName: context.company.name ?? undefined,
           website,
           linkedinCompanyUrl,
-          jobTitle: buyerTitle,
+          jobTitle: targetTitle,
           locations,
           limit,
           dataSource: 'auto',

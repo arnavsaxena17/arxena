@@ -15,7 +15,7 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     trigger: 'company.created',
   },
   perCandidate: {
-    name: 'Outreach — Per Enrolled Person',
+    name: 'Outreach — Per Enrolled Candidate',
     slug: 'perCandidate',
     role: 'Sequencer B' as const,
     trigger: 'candidate.created',
@@ -28,21 +28,27 @@ export const SEEDED_OUTREACH_WORKFLOW = {
   },
 } as const;
 
+const SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES: Record<string, string[]> = {
+  [SEEDED_OUTREACH_WORKFLOW.perCandidate.name]: [
+    'Outreach — Per Enrolled Person',
+    'GTM Outreach — Per Candidate',
+  ],
+};
+
 export type SeededOutreachWorkflowKey =
   keyof typeof SEEDED_OUTREACH_WORKFLOW;
 
 export const seededOutreachWorkflowNameAliases = (
   canonicalName: string,
-): string[] => [canonicalName];
+): string[] => {
+  const legacyAliases =
+    SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES[canonicalName] ?? [];
+
+  return [canonicalName, ...legacyAliases];
+};
 
 export const isSeededOutreachWorkflowName = (name: string): boolean => {
-  for (const entry of Object.values(SEEDED_OUTREACH_WORKFLOW)) {
-    if (entry.name === name) {
-      return true;
-    }
-  }
-
-  return false;
+  return resolveSeededOutreachWorkflowCanonicalName(name) !== null;
 };
 
 export const resolveSeededOutreachWorkflowCanonicalName = (
@@ -50,6 +56,13 @@ export const resolveSeededOutreachWorkflowCanonicalName = (
 ): string | null => {
   for (const entry of Object.values(SEEDED_OUTREACH_WORKFLOW)) {
     if (entry.name === name) {
+      return entry.name;
+    }
+
+    const legacyAliases =
+      SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES[entry.name] ?? [];
+
+    if (legacyAliases.includes(name)) {
       return entry.name;
     }
   }

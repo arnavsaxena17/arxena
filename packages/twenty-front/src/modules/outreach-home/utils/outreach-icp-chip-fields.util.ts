@@ -1,5 +1,5 @@
 export const ICP_CHIP_FIELDS = [
-  { key: 'buyerTitles', label: 'Target titles' },
+  { key: 'targetTitles', label: 'Target titles' },
   { key: 'locations', label: 'Locations' },
 ] as const;
 
@@ -45,9 +45,19 @@ const slimIcpRecord = (
   ];
 
   return {
-    buyerTitles: toStringList(parsed.buyerTitles),
+    targetTitles: readTargetTitles(parsed),
     locations: [...new Set(locations)],
   };
+};
+
+const readTargetTitles = (record: Record<string, unknown>): string[] => {
+  const targetTitles = toStringList(record.targetTitles);
+
+  if (targetTitles.length > 0) {
+    return targetTitles;
+  }
+
+  return toStringList(record.buyerTitles);
 };
 
 export const readIcpChipValues = (

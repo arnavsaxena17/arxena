@@ -14,11 +14,9 @@ import {
 import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
-import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
 import { isWorkflowDelayAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/guards/is-workflow-delay-action.guard';
-import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
+import { scheduleResumeDelayedWorkflowJob } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
 import { WorkflowDelayActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-input.type';
-import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 
 @Injectable()
 export class DelayWorkflowAction implements WorkflowAction {
@@ -98,18 +96,15 @@ export class DelayWorkflowAction implements WorkflowAction {
       );
     }
 
-    await this.messageQueueService.add<ResumeDelayedWorkflowJobData>(
-      RESUME_DELAYED_WORKFLOW_JOB_NAME,
-      {
+    await scheduleResumeDelayedWorkflowJob({
+      delayedQueue: this.messageQueueService,
+      data: {
         workspaceId: runInfo.workspaceId,
         workflowRunId: runInfo.workflowRunId,
         stepId: currentStepId,
       },
-      {
-        ...buildRunWorkflowJobOptions(runInfo.workflowRunId),
-        delay: delayInMs,
-      },
-    );
+      delay: delayInMs,
+    });
 
     const scheduledAt = new Date(Date.now() + delayInMs).toISOString();
 

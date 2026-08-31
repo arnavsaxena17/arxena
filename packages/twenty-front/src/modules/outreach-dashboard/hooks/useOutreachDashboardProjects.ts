@@ -17,10 +17,10 @@ const parseIcpSegment = (icpSpec: string | null | undefined): string | null => {
   }
 
   try {
-    const parsed = JSON.parse(icpSpec) as { buyerTitles?: string[] };
+    const parsed = JSON.parse(icpSpec) as { targetTitles?: string[] };
 
-    if (Array.isArray(parsed.buyerTitles) && parsed.buyerTitles.length > 0) {
-      return parsed.buyerTitles.slice(0, 2).join(', ');
+    if (Array.isArray(parsed.targetTitles) && parsed.targetTitles.length > 0) {
+      return parsed.targetTitles.slice(0, 2).join(', ');
     }
   } catch {
     return null;

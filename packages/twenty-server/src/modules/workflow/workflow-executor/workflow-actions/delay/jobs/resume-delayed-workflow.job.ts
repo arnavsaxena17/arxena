@@ -16,10 +16,6 @@ import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/
 import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
 import { ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
 import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
-import {
-  WorkflowRunException,
-  WorkflowRunExceptionCode,
-} from 'src/modules/workflow/workflow-runner/exceptions/workflow-run.exception';
 import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
 import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
@@ -74,10 +70,8 @@ export class ResumeDelayedWorkflowJob {
         const stepInfo = workflowRun.state?.stepInfos[stepId];
 
         if (!step || stepInfo?.status !== StepStatus.PENDING) {
-          throw new WorkflowRunException(
-            'Step not found or is not pending',
-            WorkflowRunExceptionCode.INVALID_OPERATION,
-          );
+          // Stale timer fired after the step already advanced — no-op.
+          return;
         }
 
         const projectPaused = await this.isRelatedProjectPaused({
