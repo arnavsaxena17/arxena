@@ -151,8 +151,9 @@ Connection requests (`SEND_LINKEDIN_CONNECTION_REQUEST`) honor Project fields:
 | `sendTimezone` | `Asia/Kolkata` | IANA timezone for the window |
 | `sendWindowStart` | `08:00` | Local start (HH:mm) |
 | `sendWindowEnd` | `10:00` | Local end (HH:mm) |
+| `sendWindowDays` | `2,3,4` | Comma-separated weekday numbers (0=Sun … 6=Sat); default Tue–Thu |
 
-Allowed days are **Tue–Thu** only. Outside the window the Unipile step defers with `pendingReason: outreach_send_window` (same delayed-job resume path as account rate limits). Volume caps stay on the LinkedIn Unipile account limiter (not Project fields).
+Allowed days come from `sendWindowDays` (default **Tue–Thu**). Outside the window the Unipile step defers with `pendingReason: outreach_send_window` (same delayed-job resume path as account rate limits). Volume caps stay on the LinkedIn Unipile account limiter (not Project fields).
 
 **Multi-market ops:** use one GTM Project per geography so the window matches ICP locations:
 

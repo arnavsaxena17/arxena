@@ -52,6 +52,7 @@ type OutreachProjectRecord = ObjectRecord & {
   sendTimezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
+  sendWindowDays?: string | null;
   icpSpec?: string | null;
   experimentConfig?: string | null;
   updatedAt?: string;
@@ -247,6 +248,7 @@ export const useOutreachLiveWorkingSet = () => {
       sendTimezone: true,
       sendWindowStart: true,
       sendWindowEnd: true,
+      sendWindowDays: true,
       icpSpec: true,
       experimentConfig: true,
       updatedAt: true,
@@ -497,6 +499,7 @@ export const useOutreachLiveWorkingSet = () => {
       sendTimezone: 'Asia/Kolkata',
       sendWindowStart: '08:00',
       sendWindowEnd: '10:00',
+      sendWindowDays: '2,3,4',
       ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),
     });
 
@@ -684,6 +687,7 @@ export const useOutreachLiveWorkingSet = () => {
       sendTimezone: project?.sendTimezone ?? 'Asia/Kolkata',
       sendWindowStart: project?.sendWindowStart ?? '08:00',
       sendWindowEnd: project?.sendWindowEnd ?? '10:00',
+      sendWindowDays: project?.sendWindowDays ?? '2,3,4',
       whatsappConnected,
       icpSpec: effectiveIcp.icpSpec,
       isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
@@ -702,6 +706,7 @@ export const useOutreachLiveWorkingSet = () => {
       project?.outreachStatus,
       project?.outreachWorkflowId,
       project?.sendTimezone,
+      project?.sendWindowDays,
       project?.sendWindowEnd,
       project?.sendWindowStart,
       whatsappConnected,

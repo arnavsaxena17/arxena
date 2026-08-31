@@ -152,7 +152,6 @@ const OutreachHomePageContent = () => {
   const currentUser = useAtomStateValue(currentUserState);
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
   const tokenPair = useAtomStateValue(tokenPairState);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingIcp, setIsSavingIcp] = useState(false);
@@ -332,13 +331,7 @@ const OutreachHomePageContent = () => {
   };
 
   const handleCreateProject = async () => {
-    setIsCreatingProject(true);
-
-    try {
-      await createOutreachProject();
-    } finally {
-      setIsCreatingProject(false);
-    }
+    await createOutreachProject();
   };
 
   const handleRegenerateIcp = async () => {
@@ -408,6 +401,7 @@ const OutreachHomePageContent = () => {
     sendTimezone: string;
     sendWindowStart: string;
     sendWindowEnd: string;
+    sendWindowDays: string;
   }) => {
     if (!isDefined(activeProjectId)) {
       enqueueErrorSnackBar({
@@ -426,6 +420,7 @@ const OutreachHomePageContent = () => {
           sendTimezone: input.sendTimezone,
           sendWindowStart: input.sendWindowStart,
           sendWindowEnd: input.sendWindowEnd,
+          sendWindowDays: input.sendWindowDays,
         },
       });
       enqueueSuccessSnackBar({ message: 'Send schedule saved' });
@@ -608,8 +603,6 @@ const OutreachHomePageContent = () => {
           projectId={projectSettings.projectId}
           projectOptions={projectOptions}
           onSelectProjectId={setActiveProjectId}
-          onCreateProject={handleCreateProject}
-          isCreatingProject={isCreatingProject}
           outreachStatus={projectSettings.outreachStatus}
           linkedinConnected={linkedinConnected}
           onPauseOutreach={handlePauseOutreach}
@@ -675,8 +668,8 @@ const OutreachHomePageContent = () => {
             </StyledLoading>
           ) : !activeProjectId ? (
             <StyledEmpty>
-              Preparing a GTM project… If this persists, click{' '}
-              <strong>New project</strong>.
+              Preparing a GTM project… If this persists, use Menu → Add New
+              Project.
             </StyledEmpty>
           ) : isWorkflowTab ? (
             <StyledWorkflowContent>
@@ -710,6 +703,7 @@ const OutreachHomePageContent = () => {
                     sendTimezone={projectSettings.sendTimezone}
                     sendWindowStart={projectSettings.sendWindowStart}
                     sendWindowEnd={projectSettings.sendWindowEnd}
+                    sendWindowDays={projectSettings.sendWindowDays}
                     isSavingSendSchedule={isSavingSendSchedule}
                     onSaveSendSchedule={handleSaveSendSchedule}
                     outreachSendMode={projectSettings.outreachSendMode}

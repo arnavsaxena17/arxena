@@ -11,6 +11,7 @@ export type OutreachSendWindowConfig = {
   timezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
+  sendWindowDays?: string | null;
 };
 
 export type OutreachThrottleCheckInput = {
@@ -88,6 +89,7 @@ export class OutreachThrottleService {
         timezone: input.sendWindow.timezone,
         sendWindowStart: input.sendWindow.sendWindowStart,
         sendWindowEnd: input.sendWindow.sendWindowEnd,
+        sendWindowDays: input.sendWindow.sendWindowDays,
       });
 
       if (!windowResult.canSendNow) {

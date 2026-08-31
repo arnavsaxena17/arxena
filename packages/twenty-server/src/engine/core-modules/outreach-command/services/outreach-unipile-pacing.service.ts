@@ -21,6 +21,7 @@ type ProjectPacingRecord = ObjectLiteral & {
   sendTimezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
+  sendWindowDays?: string | null;
   outreachStatus?: string | null;
 };
 
@@ -94,11 +95,13 @@ export class OutreachUnipilePacingService {
             timezone: loaded.project.sendTimezone ?? 'Asia/Kolkata',
             sendWindowStart: loaded.project.sendWindowStart ?? '08:00',
             sendWindowEnd: loaded.project.sendWindowEnd ?? '10:00',
+            sendWindowDays: loaded.project.sendWindowDays ?? '2,3,4',
           }
         : {
             timezone: 'Asia/Kolkata',
             sendWindowStart: '08:00',
             sendWindowEnd: '10:00',
+            sendWindowDays: '2,3,4',
           },
     });
 

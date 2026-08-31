@@ -612,7 +612,7 @@ export const getOutreachCommandFieldsData = (
     objectName: 'project',
     field: {
       description:
-        'IANA timezone for LinkedIn connection send window (Tue–Thu local hours)',
+        'IANA timezone for LinkedIn connection send window local hours',
       icon: 'IconWorld',
       label: 'Send Timezone',
       name: 'sendTimezone',
@@ -644,6 +644,19 @@ export const getOutreachCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.project,
       type: 'TEXT',
       defaultValue: "'10:00'",
+    },
+  },
+  {
+    objectName: 'project',
+    field: {
+      description:
+        'Comma-separated weekday numbers (0=Sun … 6=Sat) when connection sends are allowed',
+      icon: 'IconCalendarWeek',
+      label: 'Send Window Days',
+      name: 'sendWindowDays',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'TEXT',
+      defaultValue: "'2,3,4'",
     },
   },
   {

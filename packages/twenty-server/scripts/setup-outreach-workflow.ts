@@ -1966,6 +1966,7 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
         sendTimezone: 'Asia/Kolkata',
         sendWindowStart: '08:00',
         sendWindowEnd: '10:00',
+        sendWindowDays: '2,3,4',
         // icpSpec: JSON.stringify({
           // std_function: ['talent acquisition', 'people'],
           // std_grade: ['leadership', 'mid'],

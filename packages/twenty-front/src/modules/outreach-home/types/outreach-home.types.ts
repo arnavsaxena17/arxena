@@ -94,6 +94,7 @@ export type OutreachProjectSettings = {
   sendTimezone: string;
   sendWindowStart: string;
   sendWindowEnd: string;
+  sendWindowDays: string;
   whatsappConnected: boolean;
   icpSpec: string | null;
   isIcpProjectOverride: boolean;

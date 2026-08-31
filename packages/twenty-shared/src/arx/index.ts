@@ -198,3 +198,12 @@ export {
   isWhatsappMessagingChannel,
   isLinkedinDirectMessagingChannel,
 } from './messagingChannel';
+export type { SendWindowWeekday } from './sendWindowDays';
+export {
+  DEFAULT_SEND_WINDOW_DAYS,
+  SEND_WINDOW_WEEKDAY_OPTIONS,
+  parseSendWindowDays,
+  formatSendWindowDays,
+  formatSendWindowDaysSummary,
+  areSendWindowDaysEqual,
+} from './sendWindowDays';

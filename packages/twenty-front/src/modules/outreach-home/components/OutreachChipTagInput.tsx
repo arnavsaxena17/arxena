@@ -4,12 +4,24 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { BaseChip } from '@/object-record/record-field/ui/form-types/components/BaseChip';
 
+const StyledChipContainer = styled.div<{ disabled?: boolean }>`
+  background: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  min-height: 36px;
+  opacity: ${({ disabled }) => (disabled === true ? 0.6 : 1)};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+
+  &:focus-within {
+    border-color: ${themeCssVariables.color.blue};
+  }
+`;
+
 const StyledRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1]};
-  min-height: 28px;
 `;
 
 const StyledAddInput = styled.input`
@@ -68,29 +80,31 @@ export const OutreachChipTagInput = ({
   };
 
   return (
-    <StyledRow>
-      {values.map((value) => (
-        <BaseChip
-          key={value}
-          label={value}
-          onRemove={
-            disabled
-              ? undefined
-              : (event) => {
-                  event.stopPropagation();
-                  onChange(values.filter((item) => item !== value));
-                }
-          }
+    <StyledChipContainer disabled={disabled}>
+      <StyledRow>
+        {values.map((value) => (
+          <BaseChip
+            key={value}
+            label={value}
+            onRemove={
+              disabled
+                ? undefined
+                : (event) => {
+                    event.stopPropagation();
+                    onChange(values.filter((item) => item !== value));
+                  }
+            }
+          />
+        ))}
+        <StyledAddInput
+          value={draft}
+          disabled={disabled}
+          placeholder={values.length === 0 ? placeholder : 'Add'}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={handleKeyDown}
         />
-      ))}
-      <StyledAddInput
-        value={draft}
-        disabled={disabled}
-        placeholder={values.length === 0 ? placeholder : 'Add'}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commitDraft}
-        onKeyDown={handleKeyDown}
-      />
-    </StyledRow>
+      </StyledRow>
+    </StyledChipContainer>
   );
 };

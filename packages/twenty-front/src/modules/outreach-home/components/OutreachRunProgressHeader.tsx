@@ -1,15 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { Button } from 'twenty-ui/input';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { isDefined } from 'twenty-shared/utils';
 
-import {
-  buildOutreachCommandDashboardPath,
-  getOutreachDashboardFallbackPath,
-  useCanQueryDashboardRecords,
-  useOutreachCommandDashboardPath,
-} from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
 import {
   type OutreachStatus,
   type OutreachProjectOption,
@@ -60,48 +53,11 @@ type OutreachRunProgressHeaderProps = {
   projectId: string | null;
   projectOptions: OutreachProjectOption[];
   onSelectProjectId: (projectId: string) => void;
-  onCreateProject: () => void;
-  isCreatingProject?: boolean;
   outreachStatus: OutreachStatus | null;
   linkedinConnected?: boolean;
   onPauseOutreach?: () => void;
   onResumeOutreach?: () => void;
   isUpdatingOutreachStatus?: boolean;
-};
-
-// Compact project switcher for the page header — identity lives in the select, not a second title.
-export const OutreachRunProgressHeader = (props: OutreachRunProgressHeaderProps) => {
-  const canQueryDashboard = useCanQueryDashboardRecords();
-
-  if (!canQueryDashboard) {
-    return (
-      <OutreachRunProgressHeaderView
-        {...props}
-        dashboardPath={getOutreachDashboardFallbackPath()}
-      />
-    );
-  }
-
-  return <OutreachRunProgressHeaderWithDashboardQuery {...props} />;
-};
-
-const OutreachRunProgressHeaderWithDashboardQuery = (
-  props: OutreachRunProgressHeaderProps,
-) => {
-  const { dashboard, dashboardPath } = useOutreachCommandDashboardPath();
-
-  return (
-    <OutreachRunProgressHeaderView
-      {...props}
-      dashboardPath={dashboardPath}
-      dashboardId={dashboard?.id}
-    />
-  );
-};
-
-type OutreachRunProgressHeaderViewProps = OutreachRunProgressHeaderProps & {
-  dashboardPath: string;
-  dashboardId?: string;
 };
 
 const resolveStatusChip = ({
@@ -126,30 +82,17 @@ const resolveStatusChip = ({
   return null;
 };
 
-const OutreachRunProgressHeaderView = ({
+// Compact project switcher for the page header — identity lives in the select, not a second title.
+export const OutreachRunProgressHeader = ({
   projectId,
   projectOptions,
   onSelectProjectId,
-  onCreateProject,
-  isCreatingProject = false,
   outreachStatus,
   linkedinConnected,
   onPauseOutreach,
   onResumeOutreach,
   isUpdatingOutreachStatus = false,
-  dashboardPath,
-  dashboardId,
-}: OutreachRunProgressHeaderViewProps) => {
-  const navigate = useNavigate();
-
-  const crmDashboardPath =
-    isDefined(dashboardId) && isDefined(projectId)
-      ? buildOutreachCommandDashboardPath({
-          dashboardId,
-          projectId,
-        })
-      : dashboardPath;
-
+}: OutreachRunProgressHeaderProps) => {
   const statusChip = resolveStatusChip({
     outreachStatus,
     linkedinConnected,
@@ -201,19 +144,6 @@ const OutreachRunProgressHeaderView = ({
           onClick={onResumeOutreach}
         />
       )}
-      <Button
-        title="New project"
-        variant="secondary"
-        size="small"
-        disabled={isCreatingProject}
-        onClick={onCreateProject}
-      />
-      <Button
-        title="CRM"
-        variant="secondary"
-        size="small"
-        onClick={() => navigate(crmDashboardPath)}
-      />
     </StyledActions>
   );
 };

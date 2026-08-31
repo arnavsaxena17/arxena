@@ -232,6 +232,7 @@ const simulateBootstrap = async (project: ResolvedOutreachProject) => {
     sendTimezone: 'Asia/Kolkata',
     sendWindowStart: '08:00',
     sendWindowEnd: '10:00',
+    sendWindowDays: '2,3,4',
   });
 
   console.log(`  bootstrap ICP → project ${project.id}`);

@@ -1,3 +1,8 @@
+import {
+  parseSendWindowDays,
+  type SendWindowWeekday,
+} from 'twenty-shared/arx';
+
 export type OutreachThrottleChannel = 'connect' | 'comment' | 'email' | 'message';
 
 export type OutreachThrottleCounters = {
@@ -58,6 +63,7 @@ export type OutreachSendWindowInput = {
   timezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
+  sendWindowDays?: string | null;
   // Test bypass: when set, always return now + this many ms
   delayMsOverride?: number | null;
 };
@@ -102,12 +108,17 @@ const getZonedParts = (
   };
 };
 
+const resolveAllowedWeekdays = (
+  sendWindowDays?: string | null,
+): Set<SendWindowWeekday> => new Set(parseSendWindowDays(sendWindowDays));
+
 // Default window: Tue–Thu 08:00–10:00 in project timezone (or UTC)
 export const computeNextSendWindow = ({
   now,
   timezone = 'UTC',
   sendWindowStart = '08:00',
   sendWindowEnd = '10:00',
+  sendWindowDays,
   delayMsOverride,
 }: OutreachSendWindowInput): OutreachSendWindowResult => {
   if (
@@ -127,7 +138,7 @@ export const computeNextSendWindow = ({
   const resolvedTimezone = timezone || 'UTC';
   const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 8 * 60;
   const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 10 * 60;
-  const allowedWeekdays = new Set([2, 3, 4]); // Tue Wed Thu
+  const allowedWeekdays = resolveAllowedWeekdays(sendWindowDays);
   const { weekday, minutes } = getZonedParts(now, resolvedTimezone);
 
   if (

@@ -210,6 +210,7 @@ const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFi
         sendTimezone
         sendWindowStart
         sendWindowEnd
+        sendWindowDays
         createdBy {
           source
           workspaceMemberId
@@ -284,6 +285,7 @@ const graphqlToFindManyProjectsOrgChart = `query FindManyProjects($filter: Proje
         sendTimezone
         sendWindowStart
         sendWindowEnd
+        sendWindowDays
         createdBy {
           source
           workspaceMemberId

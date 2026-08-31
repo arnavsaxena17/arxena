@@ -1097,6 +1097,13 @@ const PROJECT_FIELDS_TO_ENSURE: FieldToCreate[] = [
     icon: 'IconClockHour9',
     defaultValue: "'10:00'",
   },
+  {
+    name: 'sendWindowDays',
+    label: 'Send Window Days',
+    type: 'TEXT',
+    icon: 'IconCalendarWeek',
+    defaultValue: "'2,3,4'",
+  },
   { name: 'icpSpec', label: 'ICP Spec', type: 'TEXT', icon: 'IconJson' },
 
 ];
