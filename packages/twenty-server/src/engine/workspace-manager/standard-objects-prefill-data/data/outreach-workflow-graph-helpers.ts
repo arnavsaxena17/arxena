@@ -688,3 +688,23 @@ export const gtmWfDatabaseEventTrigger = ({
   },
   nextStepIds,
 });
+
+export const gtmWfManualTrigger = ({
+  name = 'Launch manually',
+  icon = 'IconUsersPlus',
+  nextStepIds,
+}: {
+  name?: string;
+  icon?: string;
+  nextStepIds: string[];
+}) => ({
+  name,
+  type: 'MANUAL',
+  position: { x: 0, y: 0 },
+  settings: {
+    outputSchema: {},
+    icon,
+    availability: { type: 'GLOBAL' },
+  },
+  nextStepIds,
+});

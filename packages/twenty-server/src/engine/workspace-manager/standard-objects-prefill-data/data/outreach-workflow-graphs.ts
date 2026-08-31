@@ -39,6 +39,7 @@ import {
   gtmWfIfElseStep,
   gtmWfMultiIfElseStep,
   gtmWfLogicFunctionStep,
+  gtmWfManualTrigger,
   gtmWfMemberAndProfileSteps,
   gtmWfMemberId,
   gtmWfProfileEmail,
@@ -51,6 +52,7 @@ import {
 const IDS = {
   searchPeople: '31ece1d2-e7d3-4af6-93e3-cfd08aacd81d',
   uploadProfiles: '046369f4-3fba-4fde-81bd-7a0a68ce73ce',
+  fetchAndSaveUpload: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
   searchCompanies: '6f42bcf3-9860-461e-9a90-26a513320895',
   upsertCompanies: '12ed9ad9-6f51-42d3-a038-ff4f2cabd15c',
   acceptFilter: 'cf89ad04-1bfd-4fcf-82d1-05fe1e364bc8',
@@ -348,6 +350,21 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
           people: `{{${IDS.searchPeople}.people}}`,
           projectId: `{{${IDS.searchPeople}.projectId}}`,
         },
+        sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+      }),
+    ],
+  },
+  {
+    name: 'Outreach — Fetch & Save People Profiles',
+    trigger: gtmWfManualTrigger({
+      nextStepIds: [IDS.fetchAndSaveUpload],
+    }),
+    steps: [
+      gtmWfLogicFunctionStep({
+        id: IDS.fetchAndSaveUpload,
+        name: 'Fetch & Save People Profiles',
+        logicFunctionId: '__LF_upload-profiles__',
+        logicFunctionInput: {},
         sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
       }),
     ],

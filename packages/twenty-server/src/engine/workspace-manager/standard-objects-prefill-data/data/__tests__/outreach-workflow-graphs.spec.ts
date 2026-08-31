@@ -31,6 +31,36 @@ const getTrigger = (graph: (typeof OUTREACH_WORKFLOW_GRAPH_TEMPLATES)[number]) =
   graph.trigger as DatabaseEventTrigger;
 
 describe('GTM outreach workflow graphs', () => {
+  it('seeds five outreach workflow templates', () => {
+    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(5);
+  });
+
+  it('keeps upload-profiles on Company Created → ICP People Search', () => {
+    const companySearch = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'Company Created → ICP People Search',
+    );
+    const steps = (companySearch?.steps ?? []) as GraphStep[];
+
+    expect(
+      steps.some((step) => step.name === 'Upload profiles'),
+    ).toBe(true);
+  });
+
+  it('seeds Fetch & Save as a manual upload-profiles workflow', () => {
+    const fetchAndSave = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'Outreach — Fetch & Save People Profiles',
+    );
+
+    expect(fetchAndSave).toBeDefined();
+    expect((fetchAndSave?.trigger as { type: string }).type).toBe('MANUAL');
+
+    const steps = (fetchAndSave?.steps ?? []) as GraphStep[];
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0]?.name).toBe('Fetch & Save People Profiles');
+    expect(steps[0]?.type).toBe('LOGIC_FUNCTION');
+  });
+
   it('uses a single candidate.updated workflow with field-scoped IF_ELSE routing', () => {
     const updatedGraphs = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
       (graph) =>

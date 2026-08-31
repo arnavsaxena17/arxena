@@ -72,6 +72,7 @@ import { RenameGtmFieldsToOutreachCommand } from 'src/database/commands/upgrade-
 import { AddWorkflowVersionExperimentStatusCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000077-add-workflow-version-experiment-status.command';
 import { RenameIcpSpecBuyerTitlesToTargetTitlesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000079-rename-icp-spec-buyer-titles-to-target-titles.command';
 import { RenamePerEnrolledPersonToPerEnrolledCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000080-rename-per-enrolled-person-to-per-enrolled-candidate.command';
+import { SyncOutreachWorkflowInventoryCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000081-sync-outreach-workflow-inventory.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -176,6 +177,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     AddWorkflowVersionExperimentStatusCommand,
     RenameIcpSpecBuyerTitlesToTargetTitlesCommand,
     RenamePerEnrolledPersonToPerEnrolledCandidateCommand,
+    SyncOutreachWorkflowInventoryCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

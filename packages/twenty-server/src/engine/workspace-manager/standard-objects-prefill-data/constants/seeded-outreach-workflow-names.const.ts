@@ -14,6 +14,12 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     role: 'Enroll-on-company' as const,
     trigger: 'company.created',
   },
+  fetchAndSaveProfiles: {
+    name: 'Outreach — Fetch & Save People Profiles',
+    slug: 'fetchAndSaveProfiles',
+    role: 'Manual enroll' as const,
+    trigger: 'MANUAL',
+  },
   perCandidate: {
     name: 'Outreach — Per Enrolled Candidate',
     slug: 'perCandidate',
@@ -29,11 +35,46 @@ export const SEEDED_OUTREACH_WORKFLOW = {
 } as const;
 
 const SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES: Record<string, string[]> = {
+  [SEEDED_OUTREACH_WORKFLOW.harvest.name]: ['GTM Harvest — LinkedIn Companies'],
+  [SEEDED_OUTREACH_WORKFLOW.companySearch.name]: [
+    'Company Created -> ICP People Search',
+  ],
+  [SEEDED_OUTREACH_WORKFLOW.fetchAndSaveProfiles.name]: [
+    'GTM Outreach - Fetch & Save People Profiles',
+  ],
   [SEEDED_OUTREACH_WORKFLOW.perCandidate.name]: [
     'Outreach — Per Enrolled Person',
+    'Outreach — Per Candidate',
     'GTM Outreach — Per Candidate',
   ],
+  [SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name]: [
+    'GTM Outreach — Candidate Updated',
+    'GTM Outreach — Candidate Updated - Connection Accepted',
+    'GTM Outreach — Connection Accepted',
+    'GTM Outreach — Reply',
+    'GTM Outreach — Negotiating',
+    'GTM Outreach — Deferred',
+    'GTM Outreach — Meeting Booked',
+    'Outreach — Reply',
+    'Outreach — Negotiating',
+    'Outreach — Deferred',
+    'Outreach — Meeting Booked',
+  ],
 };
+
+// Obsolete graphs removed during workspace upgrade (not seeded for new workspaces).
+export const OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE = [
+  'GTM Outreach — Per Candidate (Manual)',
+  'GTM Outreach — Connection Accepted',
+  'GTM Outreach — Reply',
+  'GTM Outreach — Negotiating',
+  'GTM Outreach — Deferred',
+  'GTM Outreach — Meeting Booked',
+  'Outreach — Reply',
+  'Outreach — Negotiating',
+  'Outreach — Deferred',
+  'Outreach — Meeting Booked',
+] as const;
 
 export type SeededOutreachWorkflowKey =
   keyof typeof SEEDED_OUTREACH_WORKFLOW;
@@ -68,4 +109,21 @@ export const resolveSeededOutreachWorkflowCanonicalName = (
   }
 
   return null;
+};
+
+export const getSeededOutreachWorkflowRenamePairs = (): Array<{
+  from: string;
+  to: string;
+}> => {
+  const pairs: Array<{ from: string; to: string }> = [];
+
+  for (const [canonicalName, aliases] of Object.entries(
+    SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES,
+  )) {
+    for (const alias of aliases) {
+      pairs.push({ from: alias, to: canonicalName });
+    }
+  }
+
+  return pairs;
 };
