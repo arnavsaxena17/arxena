@@ -5,6 +5,17 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
 import { type ResumeDelayedWorkflowJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/resume-delayed-workflow-job-data.type';
 
+export const RESUME_DELAYED_WORKFLOW_JOB_ID_SEPARATOR = '__';
+
+export const buildResumeDelayedWorkflowJobId = ({
+  workflowRunId,
+  stepId,
+}: {
+  workflowRunId: string;
+  stepId: string;
+}): string =>
+  `${workflowRunId}${RESUME_DELAYED_WORKFLOW_JOB_ID_SEPARATOR}${stepId}`;
+
 export const buildResumeDelayedWorkflowJobOptions = ({
   workflowRunId,
   stepId,
@@ -14,7 +25,7 @@ export const buildResumeDelayedWorkflowJobOptions = ({
   stepId: string;
   delay?: number;
 }): QueueJobOptions => ({
-  id: `${workflowRunId}:${stepId}`,
+  id: buildResumeDelayedWorkflowJobId({ workflowRunId, stepId }),
   allowDuplicatedPrefixes: true,
   delay,
 });

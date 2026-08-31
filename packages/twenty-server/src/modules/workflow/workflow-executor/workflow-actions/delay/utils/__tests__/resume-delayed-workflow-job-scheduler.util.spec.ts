@@ -20,7 +20,7 @@ describe('resume-delayed-workflow-job-scheduler', () => {
         delay: 5_000,
       }),
     ).toEqual({
-      id: 'run-1:step-1',
+      id: 'run-1__step-1',
       allowDuplicatedPrefixes: true,
       delay: 5_000,
     });
@@ -101,7 +101,7 @@ describe('resume-delayed-workflow-job-scheduler', () => {
         retryPendingStep: true,
       },
       expect.objectContaining({
-        id: 'run-1:step-1',
+        id: 'run-1__step-1',
         delay: 0,
       }),
     );
