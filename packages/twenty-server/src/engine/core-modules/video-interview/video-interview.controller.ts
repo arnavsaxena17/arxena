@@ -4,15 +4,10 @@ import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
-import { createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, getAttachmentDownloadUrl, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, updateOneVideoInterviewMutation } from 'twenty-shared';
-import { AttachmentProcessingService } from '../arx-chat/utils/attachment-processes';
-import { TranscriptionService } from './transcription.service';
-
-import { spawn } from 'child_process';
-import { id } from 'date-fns/locale';
-import { graphQltoUpdateOneCandidate } from 'twenty-shared';
+import { buildCandidateFlagsPatchUpdate, createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, getAttachmentDownloadUrl, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, graphQltoUpdateOneCandidate, updateOneVideoInterviewMutation } from 'twenty-shared';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
+import { TranscriptionService } from './transcription.service';
 
 interface GetInterviewDetailsResponse {
   recruiterProfile:any;
@@ -304,9 +299,9 @@ export class VideoInterviewController {
 
       const updateCandidateVariables = {
         idToUpdate: interviewData.candidate.id,
-        input: {
+        input: buildCandidateFlagsPatchUpdate(interviewData.candidate, {
           startVideoInterviewChatCompleted: true,
-        },
+        }),
       };
 
       const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({

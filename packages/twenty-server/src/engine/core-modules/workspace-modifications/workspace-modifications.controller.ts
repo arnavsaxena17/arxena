@@ -4,8 +4,6 @@ import {
   Controller,
   ForbiddenException,
   Get,
-  Headers,
-  HttpCode,
   HttpException,
   HttpStatus,
   Param,
@@ -14,36 +12,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
-import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
-import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
-import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
-import { WebSocketService } from 'src/modules/websocket/websocket.service';
-import {
-  CreateMetadataStructureJob,
-  type CreateMetadataStructureJobData,
-} from './jobs/create-metadata-structure.job';
-import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
-import { MetadataUpdateService } from './object-apis/services/metadata-update.service';
-import { WorkspaceBulkMetadataUpdateService } from './workspace-bulk-metadata-update.service';
+import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
+
 import { WorkspaceQueryService } from './workspace-modifications.service';
 
 @Controller('workspace-modifications')
 export class WorkspaceModificationsController {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly webSocketService: WebSocketService,
-    private readonly metadataUpdateService: MetadataUpdateService,
-    private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly environmentService: EnvironmentService,
-    private readonly workspaceBulkMetadataUpdateService: WorkspaceBulkMetadataUpdateService,
-    @InjectMessageQueue(MessageQueue.metadataStructureQueue)
-    private readonly metadataStructureQueue: MessageQueueService,
-  ) {
-    console.log('GraphQL URL configured as:', process.env.GRAPHQL_URL);
-  }
+    private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
+  ) {}
 
   @Get('workspace-keys')
   @UseGuards(JwtAuthGuard)
@@ -53,26 +33,6 @@ export class WorkspaceModificationsController {
         req,
       );
     return this.workspaceQueryService.getWorkspaceKeys(workspace.id);
-  }
-
-
-  @Get('fetch-all-current-objects')
-  @UseGuards(JwtAuthGuard)
-  async fetchAllCurrentObjects(@Req() req) {
-    console.log('getWorkspaceKeys');
-    const apiToken = req.headers.authorization.split(' ')[1];
-    const origin = req.headers['x-origin-domain'] || req.headers.origin;
-    // const existingObjectsResponse = await new CreateMetaDataStructure(this.workspaceQueryService).fetchAllCurrentObjects(apiToken);
-    const existingObjectsResponse = await new CreateMetaDataStructure(
-      this.workspaceQueryService,
-      this.staticGraphQLService,
-      this.environmentService,
-      this.webSocketService,
-    ).fetchObjectsNameIdMap(apiToken, origin);
-
-    console.log('existingObjectsResponse:', existingObjectsResponse);
-
-    return existingObjectsResponse;
   }
 
   @Get('workspace-keys/:keyName')
@@ -102,7 +62,7 @@ export class WorkspaceModificationsController {
       is_org_chart_enabled: string;
     },
   ) {
-    const user = (req as any).user;
+    const user = (req as { user?: { canImpersonate?: boolean } }).user;
     if (!user?.canImpersonate) {
       throw new ForbiddenException('Admin access required');
     }
@@ -149,97 +109,38 @@ export class WorkspaceModificationsController {
       keys,
     );
   }
+
   @Post('upgrade-to-engagement-workflows')
   @UseGuards(JwtAuthGuard)
-  async upgradeToEngagementWorkflows(
-    @Headers('authorization') authHeader: string,
-    @Req() req: Request,
-  ) {
-    const token = authHeader?.split(' ')[1];
-    const origin = (req.headers.origin as string) || '';
+  async upgradeToEngagementWorkflows(@Req() req: Request) {
     const { workspace } =
       await this.workspaceQueryService.accessTokenService.validateTokenByRequest(
         req,
       );
+
     await this.workspaceQueryService.updateWorkspaceKeys(workspace.id, {
       is_org_chart_enabled: 'false',
     });
+
     try {
-      const result = await this.metadataUpdateService.updateMetadata(
-        token,
-        origin,
+      await this.arxenaStandardApplicationService.synchronizeArxenaStandardApplicationOrThrow(
+        {
+          workspaceId: workspace.id,
+          isOrgChartEnabled: false,
+        },
       );
+
       return {
         success: true,
-        ...result,
+        message:
+          'Upgraded to Engagement Workflows and synced Arxena standard metadata',
       };
     } catch (error: unknown) {
       const message =
         error instanceof Error
           ? error.message
-          : 'Metadata update failed';
-      throw new HttpException(
-        { success: false, message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+          : 'Arxena standard metadata sync failed';
 
-  @Post('create-metadata-structure')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.ACCEPTED)
-  async createMetadataStructure(
-    @Headers('authorization') authHeader: string,
-    @Req() req: Request,
-  ) {
-    const token = authHeader?.split(' ')[1];
-    if (!token) {
-      throw new BadRequestException('Missing authorization token');
-    }
-    const origin = (req.headers.origin as string) || '';
-    try {
-      await this.metadataStructureQueue.add<CreateMetadataStructureJobData>(
-        CreateMetadataStructureJob.name,
-        { token, origin },
-        // Defer execution so SyncDriver does not run the job inline on the HTTP thread; BullMQ/PgBoss treat this as a short delay before the worker picks up the job.
-        { delayMs: 1 },
-      );
-      return {
-        success: true,
-        message: 'Metadata structure creation queued',
-      };
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Failed to queue metadata structure creation';
-      throw new HttpException(
-        { success: false, message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('update-metadata-structure')
-  @UseGuards(JwtAuthGuard)
-  async updateMetadataStructure(
-    @Headers('authorization') authHeader: string,
-    @Req() req: Request,
-  ) {
-    const token = authHeader.split(' ')[1];
-    const origin = req.headers.origin;
-    console.log('Updating metadata structure');
-    try {
-      const result = await this.metadataUpdateService.updateMetadata(
-        token,
-        origin || '',
-      );
-      return { success: true, ...result };
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Metadata structure update failed';
       throw new HttpException(
         { success: false, message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -249,27 +150,7 @@ export class WorkspaceModificationsController {
 
   @Get('user')
   @UseGuards(JwtAuthGuard)
-  async getUser(@Req() req) {
-    const user = req.user;
-
-    console.log('This is the user::', user);
-
-    return { user };
-  }
-
-  @Post('update-all-workspaces-metadata')
-  @UseGuards(JwtAuthGuard)
-  async updateAllWorkspacesMetadata(@Req() req: Request) {
-    const user = (req as { user?: { canImpersonate?: boolean } }).user;
-    if (!user?.canImpersonate) {
-      throw new ForbiddenException('Admin access required');
-    }
-    const originHeader = req.headers.origin;
-    const origin =
-      typeof originHeader === 'string' ? originHeader : undefined;
-    console.log('origin', origin);
-    return this.workspaceBulkMetadataUpdateService.updateAllWorkspacesMetadata(
-      origin,
-    );
+  async getUser(@Req() req: Request) {
+    return { user: req.user };
   }
 }

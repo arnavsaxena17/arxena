@@ -1,34 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { type ObjectRecordUpdateEvent } from 'twenty-shared/database-events';
+import {
+  detectChatControlStarts,
+} from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OnDatabaseBatchEvent } from 'src/engine/api/graphql/graphql-query-runner/decorators/on-database-batch-event.decorator';
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
-import {
-  CANDIDATE_CHAT_START_CONTROL_FIELDS,
-  UpdateChat,
-} from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
+import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
 
 type CandidateChatControlRecord = {
   id?: string;
-  startChat?: boolean | string | null;
-  startVideoInterviewChat?: boolean | string | null;
-  startMeetingSchedulingChat?: boolean | string | null;
-  stopChat?: boolean | string | null;
+  candidateFlags?: unknown;
 };
-
-const isChatControlOff = (value: unknown): boolean =>
-  value === false ||
-  value === null ||
-  value === undefined ||
-  value === 'false' ||
-  value === '';
-
-const isChatControlOn = (value: unknown): boolean =>
-  value === true || value === 'true';
 
 @Injectable()
 export class CandidateChatControlListener {
@@ -57,30 +44,23 @@ export class CandidateChatControlListener {
       }
 
       const updatedFields = event.properties?.updatedFields ?? [];
+      if (!updatedFields.includes('candidateFlags')) {
+        continue;
+      }
+
       const diff = event.properties?.diff ?? {};
+      const fieldDiff = diff.candidateFlags as
+        | { before?: unknown; after?: unknown }
+        | undefined;
+      const beforeValue =
+        fieldDiff?.before ?? event.properties?.before?.candidateFlags;
+      const afterValue =
+        fieldDiff?.after ?? event.properties?.after?.candidateFlags;
 
-      for (const chatControlType of CANDIDATE_CHAT_START_CONTROL_FIELDS) {
-        if (!updatedFields.includes(chatControlType)) {
-          continue;
-        }
+      const startedControls = detectChatControlStarts(beforeValue, afterValue);
 
-        const fieldDiff = diff[chatControlType as keyof typeof diff] as
-          | { before?: unknown; after?: unknown }
-          | undefined;
-        const beforeValue =
-          fieldDiff?.before ??
-          event.properties?.before?.[
-            chatControlType as keyof CandidateChatControlRecord
-          ];
-        const afterValue =
-          fieldDiff?.after ??
-          event.properties?.after?.[
-            chatControlType as keyof CandidateChatControlRecord
-          ];
-
-        if (isChatControlOff(beforeValue) && isChatControlOn(afterValue)) {
-          chatStartsToQueue.push({ candidateId, chatControlType });
-        }
+      for (const chatControlType of startedControls) {
+        chatStartsToQueue.push({ candidateId, chatControlType });
       }
     }
 

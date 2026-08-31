@@ -13,6 +13,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 import {
     CandidateNode,
     ChatControlsObjType,
+    getCandidateLastEngagementChatControl,
     Project,
     whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -130,7 +131,7 @@ export class ToolCallsProcessing {
     whatsappMessageType: '',
     candidateProfile: candidate,
     candidateFirstName: candidate?.name,
-    lastEngagementChatControl: candidate?.lastEngagementChatControl,
+    lastEngagementChatControl: getCandidateLastEngagementChatControl(candidate),
     phoneNumberFrom:
       phoneNumberFrom,
     phoneNumberTo: phoneNumberTo,
@@ -227,7 +228,7 @@ export class ToolCallsProcessing {
       candidateFirstName: candidate?.name,
       phoneNumberFrom:
         phoneNumberFrom,
-      lastEngagementChatControl: candidate?.lastEngagementChatControl,
+      lastEngagementChatControl: getCandidateLastEngagementChatControl(candidate),
       phoneNumberTo: phoneNumberTo,
       messages: [{ content: status }],
       messageType: status,

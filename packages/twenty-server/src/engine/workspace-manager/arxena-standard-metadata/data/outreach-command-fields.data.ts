@@ -523,6 +523,86 @@ export const getOutreachCommandFieldsData = (
     },
   },
   {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Outreach action timestamps (connection, touches, meeting) and derived speed metrics',
+      icon: 'IconClockHour4',
+      label: 'Outreach Speed Timestamps',
+      name: 'outreachSpeedTimestamps',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Days from candidate enrolled to first outbound contact',
+      icon: 'IconHourglass',
+      label: 'Days To First Contact',
+      name: 'daysToFirstContact',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Days from candidate enrolled to meeting booked',
+      icon: 'IconHourglassHigh',
+      label: 'Days To Meeting Booked',
+      name: 'daysToMeetingBooked',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Days from connection request sent to connection accepted',
+      icon: 'IconUserCheck',
+      label: 'Days From Connection To Accept',
+      name: 'daysFromConnectionToAccept',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Days from connection request sent to meeting booked',
+      icon: 'IconCalendarStats',
+      label: 'Days From Connection To Meeting',
+      name: 'daysFromConnectionToMeeting',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'NUMBER',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Time-to-first-contact histogram bucket',
+      icon: 'IconChartBar',
+      label: 'Time To First Contact Bucket',
+      name: 'timeToFirstContactBucket',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: OUTREACH_TIME_BUCKET_OPTIONS,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description: 'Time-to-meeting histogram bucket',
+      icon: 'IconChartBar',
+      label: 'Time To Meeting Bucket',
+      name: 'timeToMeetingBucket',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: OUTREACH_TIME_BUCKET_OPTIONS,
+    },
+  },
+  {
     objectName: 'person',
     field: {
       description: 'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',

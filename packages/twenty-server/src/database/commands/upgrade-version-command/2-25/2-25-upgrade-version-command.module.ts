@@ -74,6 +74,8 @@ import { RenameIcpSpecBuyerTitlesToTargetTitlesCommand } from 'src/database/comm
 import { RenamePerEnrolledPersonToPerEnrolledCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000080-rename-per-enrolled-person-to-per-enrolled-candidate.command';
 import { SyncOutreachWorkflowInventoryCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000081-sync-outreach-workflow-inventory.command';
 import { SyncOutreachProjectSendWindowDaysFieldCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000082-sync-gtm-project-send-window-days-field.command';
+import { SyncOutreachCandidateSpeedFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000083-sync-outreach-candidate-speed-fields.command';
+import { FoldCandidateFlagsIntoJsonCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000084-fold-candidate-flags-into-json.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -180,6 +182,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     RenamePerEnrolledPersonToPerEnrolledCandidateCommand,
     SyncOutreachWorkflowInventoryCommand,
     SyncOutreachProjectSendWindowDaysFieldCommand,
+    SyncOutreachCandidateSpeedFieldsCommand,
+    FoldCandidateFlagsIntoJsonCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

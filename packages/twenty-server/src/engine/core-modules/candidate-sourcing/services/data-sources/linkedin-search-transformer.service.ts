@@ -577,17 +577,19 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         // UI state fields
         status: 'No Status',
         candConversationStatus: 'No Conversation',
-        startChat: false,
-        stopChat: false,
-        startChatCompleted: false,
-        startVideoInterviewChat: false,
-        startVideoInterviewChatCompleted: false,
-        startMeetingSchedulingChat: false,
-        startMeetingSchedulingChatCompleted: false,
-        engagementStatus: false,
+        candidateFlags: {
+          startChat: false,
+          stopChat: false,
+          startChatCompleted: false,
+          startVideoInterviewChat: false,
+          startVideoInterviewChatCompleted: false,
+          startMeetingSchedulingChat: false,
+          startMeetingSchedulingChatCompleted: false,
+          engagementStatus: false,
+          lastEngagementChatControl: 'startChat',
+        },
         messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         chatCount: 0,
-        lastEngagementChatControl: 'startChat',
         
         // Relationship edges
         chatMessages: { edges: [] },

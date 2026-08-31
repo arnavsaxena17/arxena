@@ -6,6 +6,7 @@ import {
   CandidateNode,
   ChatControlsObjType,
   ChatHistoryItem,
+  getCandidateLastEngagementChatControl,
   Project,
   WhatsappMessageData,
   whatappUpdateMessageObjType
@@ -234,7 +235,7 @@ export class ExtSockWhatsappMessageProcessor {
       messages: [{ content: messageData.body || '' }],
       messageType: 'candidateMessage',
       messageObj: messageObj as ChatHistoryItem[],
-      lastEngagementChatControl: candidateNode.lastEngagementChatControl,
+      lastEngagementChatControl: getCandidateLastEngagementChatControl(candidateNode),
       whatsappDeliveryStatus: 'dispatched',
       typeOfMessage: candidateNode.messagingChannel || process.env.DEFAULT_WHATSAPP_CLIENT || 'baileys',
       externalMessageId: messageData.id,

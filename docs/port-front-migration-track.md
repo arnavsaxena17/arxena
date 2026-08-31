@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Arxena metadata single source of truth | Retired legacy GraphQL metadata seed/update (`CreateMetaDataStructure`, `MetadataUpdateService`, bulk admin sync, metadata-structure queue/jobs, Settings metadata buttons). Canonical catalog: `arxena-standard-metadata/data/*`; apply via workspace init + `workspace:sync-arxena-standard` + 2-25 workspace cmds. | `arxena-standard-metadata/data/*`, removed `object-apis/data/{fieldsData,objectsData,relationsData}.ts` |
 | Publish as experiment PG enum | `workflowVersion.status` SELECT + core enum lacked `EXPERIMENT`, so "Publish as experiment" died with `invalid input value for enum … "EXPERIMENT"`. Added the option to standard field metadata, core `WorkflowVersionStatus`, instance `ALTER TYPE`, workspace cmd `1785600000077`. Run `database:migrate` + `upgrade:2-25:add-workflow-version-experiment-status`. | `compute-workflow-version-standard-flat-field-metadata.util.ts`, `workflow-version.entity.ts`, `2-25-*-1785600000076/0077-*` |
 | Outreach-home Zod `workflowVersionId` null crash | `/outreach-home` always mounted `WorkflowRunRateLimitSnackBarEffect` on the latest run. `useWorkflowRun` threw when Zod required `workflowVersionId: string` but the FK is SET_NULL (deleted version). Schema now allows null; parse returns undefined instead of throwing. | `workflow-run-schema.ts`, `parseWorkflowRunRecord.ts`, `useWorkflowRun.ts` |
 | Outreach workflow SSE infinite loop | `useListenToEventsForQuery` re-subscribed every render because inline `operationSignature` objects changed identity → `requiredQueryListenersState` toggled → maximum update depth on Workflow tab. Key effect deps by `JSON.stringify(operationSignature)`. GTM cache fetch now rejects HTML bodies (502/504 pages) before `JSON.parse`. | `useListenToEventsForQuery.ts`, `parse-outreach-cache-response.ts`, `outreach-*-cache.ts` |
@@ -602,7 +603,7 @@ Tracked from current tree greps — fix then tick §7.
 | Emotion leftovers in ARX modules | **done** (no `@emotion/styled` in those paths) |
 | Hardcoded light palette in ARX dark mode | **partial** — fixed datatable HOT theme, AI Filtering form, WhatsApp/LinkedIn cards+signup, candidate-table chrome, chat drawer, video-interview shells (§2.12). Still open: remaining video-interview control knobs (`ControlsOverlay` white thumb), `orgchart/App.css`, some `TableColumns` score/link hex colors, QR `QrCodeWrapper` (keep white for scan contrast) |
 | Apollo React hooks from `@apollo/client` (v4) | **done** — only `CreditHistoryModal` had `useQuery` from `@apollo/client`; remapped to `@apollo/client/react` (§2.9) |
-| Attachment `authorId`/`type` + enrichment `fields` | **done** for shared queries + ARX create/read paths (§2.10); SQL index builders in `object-apis-creation.ts` still reference legacy `authorId`/`type` columns |
+| Attachment `authorId`/`type` + enrichment `fields` | **done** for shared queries + ARX create/read paths (§2.10); legacy SQL index builders removed with `object-apis-creation.ts` retirement |
 | Attachment FILES upload + morph FKs + URL reads | **done** — front UploadCV/AttachmentPanel/JD/AI/video + server hub + CV/WhatsApp/video/email paths; skill `attachment-files-field-migration`. Rebuild `twenty-shared` + restart nest. Transitional replicate may still write deprecated `fullPath` when legacy rows lack `file[]` |
 | Legacy attachment binaries + `/files/*` route | **open** — arxena: 28 rows `file=null` + `fullPath=attachment/<uuid>.*`; S3 keys missing under `workspace-635976bf…` and `workspace-fe44a968…`. Upstream removed path `/files/*` (only `/file/:folder/:id`). Front URL prefix fixed in AttachmentPanel; still need storage copy or re-upload + optional legacy route restore |
 | Workspace GraphQL `ID!` vs `UUID!` | **done** in `twenty-shared` queries/mutations (§2.10); rebuild + restart nest |
@@ -836,7 +837,7 @@ Not in `diff-filter=M`, but live next to core and matter for rebases:
 
 | Area | Examples |
 | --- | --- |
-| `workspace-manager/arxena-standard-metadata/**` | Seed objects/fields/relations |
+| `workspace-manager/arxena-standard-metadata/**` | **Canonical** seed objects/fields/relations (manifest sync + upgrade cmds) |
 | `environment/environment.service.ts` | Shim used by Arxena modules |
 | `billing/services/billing-stripe-catalog.service.ts` (+ command/constants) | Stripe catalog ensure |
 | `settings/admin-panel/graphql/**` | New admin queries/mutations |

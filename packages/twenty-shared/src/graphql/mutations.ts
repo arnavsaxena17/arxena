@@ -450,18 +450,11 @@ export const graphqlQueryToCreateOneNewChatMessage = `mutation CreateOneChatMess
 export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpdate: UUID!, $input: CandidateUpdateInput!) {
     updateCandidate(id: $idToUpdate, data: $input) {
       __typename
-      engagementStatus
+      candidateFlags
       whatsappProvider
       projectsId
       updatedAt
-      startChat
-      stopChat
       chatCount
-      startChatCompleted
-      startMeetingSchedulingChat
-      startMeetingSchedulingChatCompleted
-      startVideoInterviewChat
-      startVideoInterviewChatCompleted
       position
     }
   }`;

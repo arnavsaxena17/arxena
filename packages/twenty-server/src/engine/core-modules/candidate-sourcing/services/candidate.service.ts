@@ -6,7 +6,9 @@ import * as path from 'path';
 import {
   ArxenaCandidateNode,
   ArxenaPersonNode,
+  buildCandidateFlagsPatchUpdate,
   buildOtherFieldsFromUnmapped,
+  CANDIDATE_BOOLEAN_FLAG_KEYS,
   CandidatesEdge,
   collectOtherFieldKeys,
   CreateManyCandidates,
@@ -2017,10 +2019,13 @@ export class CandidateService {
       const snakeCaseFieldName = toSnakeCaseKey(fieldName);
       console.log('snakeCaseFieldName::', snakeCaseFieldName);
 
+      const candidateFlagFields = new Set<string>([
+        ...CANDIDATE_BOOLEAN_FLAG_KEYS,
+        'lastEngagementChatControl',
+      ]);
+
       const directFields = [
-        'remarks', 'engagementStatus', 'startChat', 'stopChat', 'startChatCompleted', 'status',
-        'startMeetingSchedulingChat', 'startMeetingSchedulingChatCompleted', 'hiringNaukriUrl',
-        'startVideoInterviewChat', 'startVideoInterviewChatCompleted', 'candConversationStatus',
+        'remarks', 'status', 'hiringNaukriUrl', 'candConversationStatus',
         'messagingChannel', 'linkedinUrl', 'email', 'jobTitle', 'jobCompanyName', 'mobilePhone',
         'phone', 'phoneNumber',
       ];
@@ -2107,6 +2112,32 @@ export class CandidateService {
         }
 
         return candidateResponse?.data?.data;
+      }
+
+      if (candidateFlagFields.has(fieldName)) {
+        const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          { filter: { id: { eq: candidateId } } },
+          apiToken,
+        );
+        const candidateNode = (
+          candidateResponse?.data?.data?.candidates as
+            | { edges: CandidatesEdge[] }
+            | undefined
+        )?.edges[0]?.node;
+
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId,
+            input: buildCandidateFlagsPatchUpdate(candidateNode, {
+              [fieldName]: formattedValue,
+            }),
+          },
+          apiToken,
+        );
+
+        return response?.data?.data;
       }
 
       // Custom fields are stored in candidate.otherFields

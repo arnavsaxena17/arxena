@@ -183,6 +183,32 @@ export {
   emptyInterviewData,
 } from './ArxChatTypes';
 export type { CandidateEngagementNode } from './candidate';
+export type {
+  CandidateBooleanFlagKey,
+  CandidateChatStartControlField,
+  CandidateFlags,
+  CandidateWithFlags,
+  CandidateFlagFilterOperator,
+  CandidateFlagFilterSpec,
+} from './candidateFlags';
+export {
+  CANDIDATE_BOOLEAN_FLAG_KEYS,
+  CANDIDATE_CHAT_START_CONTROL_FIELDS,
+  parseCandidateFlags,
+  resolveCandidateFlags,
+  getCandidateFlag,
+  getCandidateLastEngagementChatControl,
+  isCandidateFlagTrue,
+  mergeCandidateFlags,
+  buildCandidateFlagsUpdate,
+  buildCandidateFlagsPatchUpdate,
+  flattenCandidateFlags,
+  matchesCandidateFlagFilter,
+  matchesCandidateFlagFilters,
+  detectChatControlStarts,
+  getCandidateChatControlValue,
+  isChatControlCompleted,
+} from './candidateFlags';
 export type { MessagingChannelValue } from './messagingChannel';
 export {
   MessagingChannel,
@@ -198,6 +224,31 @@ export {
   isWhatsappMessagingChannel,
   isLinkedinDirectMessagingChannel,
 } from './messagingChannel';
+export type {
+  OutreachTimeBucket,
+  OutreachActionTimestampsEventKind,
+  OutreachSpeedEventKind,
+  OutreachActionTimestamps,
+  OutreachSpeedTimestamps,
+  OutreachSpeedFlatMetrics,
+} from './outreachSpeedTimestamps';
+export {
+  computeDaysBetween,
+  computeTimeBucket,
+  parseOutreachActionTimestamps,
+  parseOutreachSpeedTimestamps,
+  resolveOutreachFirstOutboundAt,
+  resolveOutreachLastOutboundAt,
+  resolveOutreachFirstInboundAt,
+  resolveOutreachLastInboundAt,
+  buildOutreachSpeedFlatMetrics,
+  applyOutreachActionTimestamps,
+  applyOutreachSpeedEvent,
+  buildCandidateActionTimestampsUpdate,
+  buildCandidateSpeedMetricsUpdate,
+  backfillOutreachActionTimestampsFromCandidate,
+  backfillOutreachSpeedFromCandidate,
+} from './outreachSpeedTimestamps';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {
   DEFAULT_SEND_WINDOW_DAYS,

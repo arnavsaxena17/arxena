@@ -1,4 +1,8 @@
-import { MessagingChannel, normalizeMessagingChannel } from 'twenty-shared/arx';
+import {
+  MessagingChannel,
+  normalizeMessagingChannel,
+  type OutreachActionTimestampsEventKind,
+} from 'twenty-shared/arx';
 
 export type OutreachCoverageBucket = 'ZERO' | 'ONE_TWO' | 'THREE_PLUS';
 
@@ -164,49 +168,32 @@ export const computeCoverageBucket = (
   return 'THREE_PLUS';
 };
 
-export const computeDaysBetween = (
-  fromIso: string | null | undefined,
-  toIso: string | null | undefined = new Date().toISOString(),
-): number | null => {
-  if (!fromIso || !toIso) {
-    return null;
+export {
+  computeDaysBetween,
+  computeTimeBucket,
+} from 'twenty-shared/arx';
+
+export const mapCandidateEventToOutreachActionTimestampsEvent = (
+  event: OutreachCandidateEventKind,
+): OutreachActionTimestampsEventKind | null => {
+  switch (event) {
+    case 'connection_sent':
+    case 'connection_accepted':
+    case 'comment_posted':
+    case 'outbound_message':
+    case 'inbound_reply':
+    case 'inbound_reply_flush':
+    case 'meeting_booked':
+    case 'meeting_held':
+      return event;
+    default:
+      return null;
   }
-
-  const fromMs = Date.parse(fromIso);
-  const toMs = Date.parse(toIso);
-
-  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs) {
-    return null;
-  }
-
-  return Math.round((toMs - fromMs) / (24 * 60 * 60 * 1000));
 };
 
-export const computeTimeBucket = (
-  days: number | null | undefined,
-): string | null => {
-  if (days === null || days === undefined || !Number.isFinite(days)) {
-    return null;
-  }
-
-  if (days < 1) {
-    return 'UNDER_1D';
-  }
-
-  if (days <= 3) {
-    return 'D1_3';
-  }
-
-  if (days <= 7) {
-    return 'D3_7';
-  }
-
-  if (days <= 14) {
-    return 'D7_14';
-  }
-
-  return 'OVER_14D';
-};
+/** @deprecated Use mapCandidateEventToOutreachActionTimestampsEvent */
+export const mapCandidateEventToOutreachSpeedEvent =
+  mapCandidateEventToOutreachActionTimestampsEvent;
 
 export const mapMessagingChannelToOutreachChannel = (
   messagingChannel: string | null | undefined,
@@ -348,8 +335,6 @@ export const buildCandidateEventUpdate = ({
     case 'connection_sent':
       return {
         outreachSequenceStage: 'CONNECTION_SENT',
-        lastOutboundAt: nowIso,
-        ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
         ...(outboundMessageKind
           ? { lastOutboundMessageKind: outboundMessageKind }
           : { lastOutboundMessageKind: 'CONNECT_NOTE' }),
@@ -373,8 +358,6 @@ export const buildCandidateEventUpdate = ({
     case 'comment_posted':
       return {
         outreachSequenceStage: 'COMMENTED',
-        lastOutboundAt: nowIso,
-        ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
       };
     case 'enrich_started':
       return {
@@ -395,21 +378,16 @@ export const buildCandidateEventUpdate = ({
 
       return {
         ...(outboundStage ? { outreachSequenceStage: outboundStage } : {}),
-        lastOutboundAt: nowIso,
-        ...(existingFirstOutboundAt ? {} : { firstOutboundAt: nowIso }),
         ...(outboundMessageKind
           ? { lastOutboundMessageKind: outboundMessageKind }
           : {}),
       };
     }
     case 'inbound_reply':
-      return {
-        lastInboundAt: nowIso,
-      };
+      return {};
     case 'inbound_reply_flush':
       return {
         outreachSequenceStage: classifiedOutreachStage ?? 'REPLIED',
-        lastInboundAt: nowIso,
         // First real inbound only — skip if already stamped (accept is separate).
         ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
           ? { convertedOnMessageKind: existingLastOutboundMessageKind }
@@ -418,7 +396,6 @@ export const buildCandidateEventUpdate = ({
     case 'meeting_booked':
       return {
         outreachSequenceStage: 'MEETING_BOOKED',
-        lastOutboundAt: nowIso,
         ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
           ? { convertedOnMessageKind: existingLastOutboundMessageKind }
           : {}),
@@ -426,7 +403,6 @@ export const buildCandidateEventUpdate = ({
     case 'meeting_held':
       return {
         outreachSequenceStage: 'MEETING_BOOKED',
-        lastInboundAt: nowIso,
       };
     case 'opportunity_created':
       return {

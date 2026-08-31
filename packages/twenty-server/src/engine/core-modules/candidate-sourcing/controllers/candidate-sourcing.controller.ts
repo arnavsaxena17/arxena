@@ -3044,15 +3044,17 @@ export class CandidateSourcingController {
       const sql = `
         SELECT
           c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
-          c."candConversationStatus", c."peopleId", c."startVideoInterviewChat", c.source, c.campaign,
-          c."projectsId", c.remarks, c."messagingChannel", c."engagementStatus", c."lastEngagementChatControl",
-          c."startVideoInterviewChat", c."startMeetingSchedulingChat", c."stopChat", c."uniqueStringKey",
-          c."startChat", c."chatCount", c."startChatCompleted", c."startMeetingSchedulingChatCompleted", c."startVideoInterviewChatCompleted",
-          c."otherFields",
+          c."candConversationStatus", c."peopleId", c.source, c.campaign,
+          c."projectsId", c.remarks, c."messagingChannel", c."candidateFlags", c."uniqueStringKey",
+          c."chatCount", c."otherFields",
           COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectsId', wm."projectsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as chatMessages
         FROM ${dataSourceSchema}."_candidate" c
         LEFT JOIN ${dataSourceSchema}."_chatMessage" wm ON c.id = wm."candidateId"
-        WHERE c."deletedAt" IS NULL AND c."stopChat" = false AND c."startChat" = true AND c."startVideoInterviewChatCompleted" IS NULL AND c."projectsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
+        WHERE c."deletedAt" IS NULL
+          AND COALESCE(c."candidateFlags"->>'stopChat', 'false') = 'false'
+          AND COALESCE(c."candidateFlags"->>'startChat', 'false') = 'true'
+          AND COALESCE(c."candidateFlags"->>'startVideoInterviewChatCompleted', 'false') != 'true'
+          AND c."projectsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
         GROUP BY c.id
         ORDER BY c."updatedAt" DESC
         LIMIT $2
@@ -3099,22 +3101,14 @@ export class CandidateSourcingController {
           jobsId: row.projectsId ?? row.jobsId,
           remarks: row.remarks,
           messagingChannel: row.messagingChannel,
-          engagementStatus: row.engagementStatus,
-          lastEngagementChatControl: row.lastEngagementChatControl,
-          startVideoInterviewChat: row.startVideoInterviewChat,
-          startMeetingSchedulingChat: row.startMeetingSchedulingChat,
-          stopChat: row.stopChat,
+          candidateFlags: row.candidateFlags,
           uniqueStringKey: row.uniqueStringKey,
           hiringNaukriUrl: row.hiring_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
           otherFields: parseRowOtherFields(row),
           chatMessages: { edges: (row.chatMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
-          startChat: row.startChat,
           chatCount: row.chatCount,
-          startChatCompleted: row.startChatCompleted,
-          startMeetingSchedulingChatCompleted: row.startMeetingSchedulingChatCompleted,
-          startVideoInterviewChatCompleted: row.startVideoInterviewChatCompleted,
         },
       }));
       const pageInfo = {

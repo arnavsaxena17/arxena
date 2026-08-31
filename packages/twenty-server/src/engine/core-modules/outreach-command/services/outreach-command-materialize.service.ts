@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
+import {
+  buildCandidateActionTimestampsUpdate,
+  resolveOutreachFirstOutboundAt,
+  resolveOutreachLastInboundAt,
+  resolveOutreachLastOutboundAt,
+} from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -10,6 +16,7 @@ import {
   computeCoverageBucket,
   computeDaysBetween,
   computeTimeBucket,
+  mapCandidateEventToOutreachActionTimestampsEvent,
   mapMessagingChannelToOutreachChannel,
   normalizeLinkedinUrl,
   resolveCompanyIdFromCandidate,
@@ -77,15 +84,41 @@ export class OutreachCommandMaterializeService {
           lastOutboundKind ?? messageKinds.lastOutboundMessageKind;
       }
 
+      const actionTimestampsEvent =
+        mapCandidateEventToOutreachActionTimestampsEvent(event);
+      const candidateSnapshot =
+        actionTimestampsEvent !== null
+          ? await this.fetchCandidateMaterializeSnapshot(candidateId, apiToken)
+          : null;
+      const resolvedFirstOutboundAt =
+        existingFirstOutboundAt ??
+        (candidateSnapshot
+          ? resolveOutreachFirstOutboundAt(
+              candidateSnapshot.outreachSpeedTimestamps,
+              candidateSnapshot.firstOutboundAt,
+            )
+          : null);
+
       const input = buildCandidateEventUpdate({
         event,
         messagingChannel,
-        existingFirstOutboundAt,
+        existingFirstOutboundAt: resolvedFirstOutboundAt,
         classifiedOutreachStage,
         outboundMessageKind,
         existingConvertedOnMessageKind: convertedOn,
         existingLastOutboundMessageKind: lastOutboundKind,
       });
+
+      if (actionTimestampsEvent !== null && candidateSnapshot) {
+        Object.assign(
+          input,
+          buildCandidateActionTimestampsUpdate({
+            existingTimestamps: candidateSnapshot.outreachSpeedTimestamps,
+            event: actionTimestampsEvent,
+            enrolledAt: candidateSnapshot.createdAt,
+          }),
+        );
+      }
 
       if (Object.keys(input).length > 0) {
         await this.staticGraphQLService.executeGraphQL(
@@ -331,7 +364,12 @@ export class OutreachCommandMaterializeService {
       const candidates = await this.fetchCompanyCandidates(companyId, apiToken);
       const peopleTargeted = candidates.length;
       const reachedCandidates = candidates.filter((candidate) =>
-        isDefined(candidate.firstOutboundAt),
+        isDefined(
+          resolveOutreachFirstOutboundAt(
+            candidate.outreachSpeedTimestamps,
+            candidate.firstOutboundAt,
+          ),
+        ),
       );
       const peopleReached = reachedCandidates.length;
       const channelsUsed = Array.from(
@@ -377,8 +415,18 @@ export class OutreachCommandMaterializeService {
         );
 
       const latestTouchMs = candidates.reduce((max, candidate) => {
-        const outbound = Date.parse(candidate.lastOutboundAt ?? '');
-        const inbound = Date.parse(candidate.lastInboundAt ?? '');
+        const outbound = Date.parse(
+          resolveOutreachLastOutboundAt(
+            candidate.outreachSpeedTimestamps,
+            candidate.lastOutboundAt,
+          ) ?? '',
+        );
+        const inbound = Date.parse(
+          resolveOutreachLastInboundAt(
+            candidate.outreachSpeedTimestamps,
+            candidate.lastInboundAt,
+          ) ?? '',
+        );
         const touch = Math.max(
           Number.isFinite(outbound) ? outbound : 0,
           Number.isFinite(inbound) ? inbound : 0,
@@ -397,7 +445,12 @@ export class OutreachCommandMaterializeService {
         outreachSequenceStage: worstCandidate?.outreachSequenceStage,
         daysSinceLastTouch,
         hasReply: candidates.some((candidate) =>
-          isDefined(candidate.lastInboundAt),
+          isDefined(
+            resolveOutreachLastInboundAt(
+              candidate.outreachSpeedTimestamps,
+              candidate.lastInboundAt,
+            ),
+          ),
         ),
       });
 
@@ -477,6 +530,50 @@ export class OutreachCommandMaterializeService {
       event: eventByTouch[touch],
       apiToken,
     });
+  }
+
+  private async fetchCandidateMaterializeSnapshot(
+    candidateId: string,
+    apiToken: string,
+  ): Promise<{
+    createdAt?: string;
+    outreachSpeedTimestamps?: unknown;
+    firstOutboundAt?: string | null;
+  } | null> {
+    try {
+      const response = (await this.staticGraphQLService.executeGraphQL(
+        `query CandidateSpeedSnapshot($filter: CandidateFilterInput) {
+          candidates(first: 1, filter: $filter) {
+            edges {
+              node {
+                id
+                createdAt
+                outreachSpeedTimestamps
+                firstOutboundAt
+              }
+            }
+          }
+        }`,
+        { filter: { id: { eq: candidateId } } },
+        apiToken,
+      )) as GraphqlEnvelope;
+
+      return (
+        (
+          response?.data?.data?.candidates as {
+            edges?: Array<{
+              node: {
+                createdAt?: string;
+                outreachSpeedTimestamps?: unknown;
+                firstOutboundAt?: string | null;
+              };
+            }>;
+          }
+        )?.edges?.[0]?.node ?? null
+      );
+    } catch {
+      return null;
+    }
   }
 
   private async fetchCandidateMessageKinds(
@@ -630,6 +727,7 @@ export class OutreachCommandMaterializeService {
       firstOutboundAt?: string | null;
       lastOutboundAt?: string | null;
       lastInboundAt?: string | null;
+      outreachSpeedTimestamps?: unknown;
       messagingChannel?: string | null;
       enrichStatus?: string | null;
       outreachSequenceStage?: string | null;
@@ -644,6 +742,7 @@ export class OutreachCommandMaterializeService {
               firstOutboundAt
               lastOutboundAt
               lastInboundAt
+              outreachSpeedTimestamps
               messagingChannel
               enrichStatus
               outreachSequenceStage
@@ -672,6 +771,7 @@ export class OutreachCommandMaterializeService {
         firstOutboundAt?: string | null;
         lastOutboundAt?: string | null;
         lastInboundAt?: string | null;
+        outreachSpeedTimestamps?: unknown;
         messagingChannel?: string | null;
         enrichStatus?: string | null;
         outreachSequenceStage?: string | null;

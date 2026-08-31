@@ -11,6 +11,7 @@ import {
     graphqlToFetchAllCandidateData,
     graphQlToFetchChatMessages,
     graphqlToFindManyProjects,
+    isCandidateFlagTrue,
     Project,
     MessageNode,
     PageInfo,
@@ -790,8 +791,8 @@ export class FilterCandidates {
     return candidateEdges
       .filter((edge: CandidatesEdge) => {
         const isActive = edge?.node?.projects?.isActive;
-        const hasStartChat = edge?.node?.startChat;
-        const isStopped = edge?.node?.stopChat;
+        const hasStartChat = isCandidateFlagTrue(edge?.node, 'startChat');
+        const isStopped = isCandidateFlagTrue(edge?.node, 'stopChat');
 
         console.log(
           `Filtering candidate ${edge?.node?.id}: isActive=${isActive}, hasStartChat=${hasStartChat}, isStopped=${isStopped}`,
@@ -851,9 +852,7 @@ export class FilterCandidates {
       },
       createdAt: activeJobCandidate?.createdAt,
       videoInterview: activeJobCandidate?.videoInterview,
-      engagementStatus: activeJobCandidate?.engagementStatus,
-      lastEngagementChatControl:
-        activeJobCandidate?.lastEngagementChatControl,
+      candidateFlags: activeJobCandidate?.candidateFlags,
       phoneNumber: {
         primaryPhoneNumber:
           resolvedPhone.length === 10 ? '91' + resolvedPhone : resolvedPhone,
@@ -867,11 +866,6 @@ export class FilterCandidates {
       },
       peopleId: personNode?.id || activeJobCandidate?.peopleId || '',
       input: userMessage?.messages[0]?.content,
-      startChat: activeJobCandidate?.startChat,
-      startMeetingSchedulingChat:
-        activeJobCandidate?.startMeetingSchedulingChat,
-      startVideoInterviewChat: activeJobCandidate?.startVideoInterviewChat,
-      stopChat: activeJobCandidate?.stopChat,
       otherFields: activeJobCandidate?.otherFields ?? {},
       chatMessages: activeJobCandidate?.chatMessages,
       status: activeJobCandidate?.status,

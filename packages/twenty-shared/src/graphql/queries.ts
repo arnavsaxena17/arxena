@@ -1196,9 +1196,9 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           id
           name
           position
-          stopChat
+          candidateFlags
           peopleId
-          startChat
+          candidateFlags
           chatCount
           status
           jobSpecificFields
@@ -1209,15 +1209,10 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           campaign
           jobCompanyName
           updatedAt
-          engagementStatus
+          candidateFlags
           messagingChannel
           candConversationStatus
-          startChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          lastEngagementChatControl
+          candidateFlags
           uniqueStringKey
           whatsappProvider
           hiringNaukriUrl {
@@ -1704,7 +1699,7 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                       }
                     }
                     whatsappProvider
-                    lastEngagementChatControl
+                    candidateFlags
                     candConversationStatus
                     projects {
                        name
@@ -1725,24 +1720,20 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                         descriptionOneliner
                       }
                     }
-                    engagementStatus
+                    candidateFlags
                     messagingChannel
                     whatsappProvider
-                    startVideoInterviewChat
-                    startChatCompleted
-                    startMeetingSchedulingChat
+                    candidateFlags
                     chatCount
-                    startMeetingSchedulingChatCompleted
-                    startVideoInterviewChat
-                    startVideoInterviewChatCompleted
+                    candidateFlags
                     remarks
                     phoneNumber{
                       primaryPhoneNumber
                     }
-                    startChat
+                    candidateFlags
                     status
                     updatedAt
-                    stopChat
+                    candidateFlags
                 }
             }
         }
@@ -1892,7 +1883,7 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
         phoneTo
         projectsId
         whatsappProvider
-        lastEngagementChatControl
+        candidateFlags
         candidate {
           name
           id
@@ -1900,14 +1891,10 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
           updatedAt
           source
           campaign
-          startChat
+          candidateFlags
           chatCount
           remarks
-          startChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
+          candidateFlags
           jobTitle
           jobCompanyName
         }
@@ -2117,9 +2104,9 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       id
       name
       position
-      stopChat
+      candidateFlags
       peopleId
-      startChat
+      candidateFlags
       remarks
       messagingChannel
       chatCount
@@ -2131,15 +2118,10 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       projectsId
       createdAt
       updatedAt
-      engagementStatus
+      candidateFlags
       messagingChannel
       candConversationStatus
-      startChatCompleted
-      startVideoInterviewChat
-      startVideoInterviewChatCompleted
-      startMeetingSchedulingChat
-      startMeetingSchedulingChatCompleted
-      lastEngagementChatControl
+      candidateFlags
       uniqueStringKey
       whatsappProvider
       hiringNaukriUrl {
@@ -2515,18 +2497,14 @@ export const graphqlToFetchAllCandidateData = `
           }
           candConversationStatus
           peopleId
-          startVideoInterviewChat
+          candidateFlags
           source
           campaign
           jobTitle
           jobCompanyName
           remarks
           messagingChannel
-          engagementStatus
-          lastEngagementChatControl
-          startVideoInterviewChat
-          startMeetingSchedulingChat
-          stopChat
+          candidateFlags
           uniqueStringKey
           attachments {
             edges {
@@ -2589,14 +2567,10 @@ export const graphqlToFetchAllCandidateData = `
             avatarUrl
             uniqueStringKey
           }
-          startChat
+          candidateFlags
           remarks
           chatCount
-          startChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
+          candidateFlags
           chatMessages {
             edges {
               node {
@@ -2665,7 +2639,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           }
           candConversationStatus
           peopleId
-          startVideoInterviewChat
+          candidateFlags
           source
           campaign
           jobCompanyName
@@ -2673,11 +2647,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           jobTitle
           remarks
           messagingChannel
-          engagementStatus
-          lastEngagementChatControl
-          startVideoInterviewChat
-          startMeetingSchedulingChat
-          stopChat
+          candidateFlags
           uniqueStringKey
           attachments {
             edges {
@@ -2733,14 +2703,10 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               }
             }
           }
-          startChat
+          candidateFlags
           remarks
           chatCount
-          startChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
+          candidateFlags
         }
       }
     }
@@ -2775,18 +2741,14 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           }
           candConversationStatus
           peopleId
-          startVideoInterviewChat
+          candidateFlags
           source
           campaign
           projectsId
           jobTitle
           remarks
           messagingChannel
-          engagementStatus
-          lastEngagementChatControl
-          startVideoInterviewChat
-          startMeetingSchedulingChat
-          stopChat
+          candidateFlags
           uniqueStringKey
           attachments {
             edges {
@@ -2823,14 +2785,10 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             primaryLinkLabel
           }
           otherFields
-          startChat
+          candidateFlags
           remarks
           chatCount
-          startChatCompleted
-          startMeetingSchedulingChat
-          startMeetingSchedulingChatCompleted
-          startVideoInterviewChat
-          startVideoInterviewChatCompleted
+          candidateFlags
         }
       }
     }
@@ -2977,19 +2935,14 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
     id
     avatarUrl
     }
-    startVideoInterviewChatCompleted
-    engagementStatus
-    stopChat
+    candidateFlags
     messagingChannel
     updatedAt
-    startChat
+    candidateFlags
     remarks
-    startChatCompleted
-    startMeetingSchedulingChat
+    candidateFlags
     chatCount
-    startMeetingSchedulingChatCompleted
-    startVideoInterviewChat
-    startVideoInterviewChatCompleted
+    candidateFlags
   }
 }
 `;
@@ -3033,7 +2986,7 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                     name
                     updatedAt
                     whatsappProvider
-                    lastEngagementChatControl
+                    candidateFlags
                     candConversationStatus
                     projects {
                        name
@@ -3050,16 +3003,11 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                         descriptionOneliner
                       }
                     }
-                    engagementStatus
-                    startChat
-                    startChatCompleted
-                    startMeetingSchedulingChat
+                    candidateFlags
                     chatCount
-                    startMeetingSchedulingChatCompleted
-                    startVideoInterviewChat
-                    startVideoInterviewChatCompleted
+                    candidateFlags
                     status
-                    stopChat
+                    candidateFlags
                 }
             }
         }

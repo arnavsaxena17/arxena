@@ -95,7 +95,7 @@ describe('outreach-command-materialize.util', () => {
     expect(mapOutboundStageForChannel('linkedin')).toBe('CONNECTION_SENT');
   });
 
-  it('builds candidate event updates', () => {
+  it('builds candidate event updates without flat touch timestamps', () => {
     expect(
       buildCandidateEventUpdate({
         event: 'connection_sent',
@@ -103,9 +103,14 @@ describe('outreach-command-materialize.util', () => {
       }),
     ).toMatchObject({
       outreachSequenceStage: 'CONNECTION_SENT',
-      firstOutboundAt: '2026-01-01T00:00:00.000Z',
       lastOutboundMessageKind: 'CONNECT_NOTE',
     });
+    expect(
+      buildCandidateEventUpdate({
+        event: 'connection_sent',
+        nowIso: '2026-01-01T00:00:00.000Z',
+      }),
+    ).not.toHaveProperty('firstOutboundAt');
 
     expect(
       buildCandidateEventUpdate({
@@ -117,9 +122,17 @@ describe('outreach-command-materialize.util', () => {
       }),
     ).toMatchObject({
       outreachSequenceStage: 'INMAIL_SENT',
-      lastOutboundAt: '2026-01-01T00:00:00.000Z',
       lastOutboundMessageKind: 'OPENER',
     });
+    expect(
+      buildCandidateEventUpdate({
+        event: 'outbound_message',
+        messagingChannel: 'linkedin-inmail',
+        nowIso: '2026-01-01T00:00:00.000Z',
+        existingFirstOutboundAt: '2025-12-01T00:00:00.000Z',
+        outboundMessageKind: 'OPENER',
+      }),
+    ).not.toHaveProperty('lastOutboundAt');
 
     expect(
       buildCandidateEventUpdate({
@@ -130,9 +143,16 @@ describe('outreach-command-materialize.util', () => {
       }),
     ).toMatchObject({
       outreachSequenceStage: 'DEFERRED',
-      lastInboundAt: '2026-01-01T00:00:00.000Z',
       convertedOnMessageKind: 'CONNECT_NOTE',
     });
+    expect(
+      buildCandidateEventUpdate({
+        event: 'inbound_reply_flush',
+        classifiedOutreachStage: 'DEFERRED',
+        nowIso: '2026-01-01T00:00:00.000Z',
+        existingLastOutboundMessageKind: 'CONNECT_NOTE',
+      }),
+    ).not.toHaveProperty('lastInboundAt');
   });
 
   it('computes attention reasons', () => {

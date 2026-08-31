@@ -382,45 +382,6 @@ export const Projects = () => {
     prevModalOpenRef.current = isArxUploadJDModalOpen;
   }, [isArxUploadJDModalOpen]);
 
-  useWebSocketEvent<{ step: string; message: string }>(
-    'metadata-structure-progress',
-    (data: { step: string; message: string }) => {
-      console.log('Projects component received WebSocket event:', data);
-      if (data?.message) {
-        let variant = SnackBarVariant.Info;
-        if (data.step === 'candidate-view-updated') {
-          variant = SnackBarVariant.Success;
-        }
-        if (data.step === 'metadata-structure-complete') {
-          variant = SnackBarVariant.Success;
-          enqueueVariantSnackBar(data.message, SnackBarVariant.Success);
-          console.log('Projects: Refetching data due to metadata-structure-complete event');
-          // Refetch jobs data instead of reloading the page
-          refetchJobsRef.current();
-          return;
-        }
-        enqueueVariantSnackBar(data.message, variant);
-      }
-
-      // Send acknowledgment back to server
-      if (socket?.connected) {
-        const ackData = {
-          event: 'metadata-structure-progress',
-          timestamp: new Date().toISOString(),
-          status: 'received',
-          step: data.step,
-          message: data.message,
-          userId: currentWorkspaceMember?.id
-        };
-        console.log('Sending metadata structure progress acknowledgment:', ackData);
-        socket.emit('notification_received', ackData);
-      } else {
-        console.error('Socket not connected, cannot send acknowledgment');
-      }
-    },
-    [socket, currentWorkspaceMember?.id]
-  );
-
   useWebSocketEvent<{ message: string; timestamp: string }>(
     'send_notification_to_recruiter',
     (data) => {

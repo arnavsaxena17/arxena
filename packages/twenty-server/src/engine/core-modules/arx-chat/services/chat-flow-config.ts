@@ -1,8 +1,13 @@
-// import * as allDataObjects from './data-model-objects';
 import {
   CandidateNode,
   ChatControlsObjType,
-  chatControlType
+  type CandidateFlagFilterSpec,
+  chatControlType,
+  getCandidateChatControlValue,
+  getCandidateFlag,
+  getCandidateLastEngagementChatControl,
+  isCandidateFlagTrue,
+  isChatControlCompleted,
 } from 'twenty-shared';
 
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
@@ -21,14 +26,14 @@ export interface ChatFlowConfig {
     apiToken: string,
     workspaceQueryService: WorkspaceQueryService,
   ) => Promise<void>;
-  chatFilters: () => Array<Record<string, any>>;
+  chatFilters: () => CandidateFlagFilterSpec[];
   isEligibleForEngagement: (candidate: CandidateNode) => boolean;
   statusUpdate?: {
     isWithinAllowedTime: () => boolean;
-    filter: Record<string, any>;
+    filter: CandidateFlagFilterSpec;
     orderBy?: Array<Record<string, any>>;
   };
-  filter: Record<string, any>;
+  filter: CandidateFlagFilterSpec;
   orderBy: Array<Record<string, any>>;
   templateConfig: {
     defaultTemplate: string;
@@ -55,7 +60,7 @@ export class ChatFlowConfigBuilder {
     }),
   };
 
-  private baseFilters = { stopChat: { eq: false } };
+  private baseFilters: CandidateFlagFilterSpec = { stopChat: { eq: false } };
 
   private getOrderNumber(
     type: chatControlType,
@@ -79,22 +84,21 @@ export class ChatFlowConfigBuilder {
 
   baseEngagementChecks = (
     candidate: CandidateNode,
-    chatControlType: chatControlType,
+    chatControlTypeValue: chatControlType,
     chatFlowOrder: chatControlType[],
   ) => {
-    console.log("These are the base engagement checks for candidate::", candidate.name, "for chatControlType::", chatControlType, "for chatFlowOrder::", chatFlowOrder);
+    console.log("These are the base engagement checks for candidate::", candidate.name, "for chatControlType::", chatControlTypeValue, "for chatFlowOrder::", chatFlowOrder);
     
     if (!candidate) {
       console.log("Candidate:: Unknown is not eligible for engagement because candidate is null");
       return false;
     }
     
-    // Add debug logging for candidate properties
     console.log("Candidate properties for", candidate.name, ":", {
       projects: candidate.projects,
       isActive: candidate.projects?.isActive,
-      startChat: candidate.startChat,
-      startChatCompleted: candidate.startChatCompleted,
+      startChat: isCandidateFlagTrue(candidate, 'startChat'),
+      startChatCompleted: isCandidateFlagTrue(candidate, 'startChatCompleted'),
       chatCount: candidate.chatCount,
       updatedAt: candidate.updatedAt
     });
@@ -105,42 +109,48 @@ export class ChatFlowConfigBuilder {
       return false;
     }
     
-    const order = this.getOrderNumber(chatControlType, chatFlowOrder);
+    const order = this.getOrderNumber(chatControlTypeValue, chatFlowOrder);
     const previousStages = this.getStagesByOrder(order, 'before', chatFlowOrder);
     const nextStages = this.getStagesByOrder(order, 'after', chatFlowOrder);
 
     const hasCompletedPreviousStages =
       previousStages.length === 0 ||
-      previousStages.every((stage) => candidate[`${stage}Completed`]);
+      previousStages.every((stage) =>
+        isChatControlCompleted(candidate, stage),
+      );
     if (!hasCompletedPreviousStages) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because hasCompletedPreviousStages is false");
       return false;
     }
     
-    const hasStartedNextStages = nextStages.some(
-      (stage) => candidate[stage] === true,
+    const hasStartedNextStages = nextStages.some((stage) =>
+      getCandidateChatControlValue(candidate, stage),
     );
     if (hasStartedNextStages) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because hasStartedNextStages is true");
       return false;
     }
     
-    const isCurrentStageStarted = candidate[chatControlType] === true;
+    const isCurrentStageStarted = getCandidateChatControlValue(
+      candidate,
+      chatControlTypeValue,
+    );
     if (!isCurrentStageStarted) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageStarted is false");
       return false;
     }
     
-    const isCurrentStageCompleted =
-      candidate[`${chatControlType}Completed`] === true;
+    const isCurrentStageCompleted = isChatControlCompleted(
+      candidate,
+      chatControlTypeValue,
+    );
     if (isCurrentStageCompleted) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageCompleted is true");
       return false;
     }
     
-    // Skip time check if this is the first message after startChat
     const isFirstMessageAfterStartChat = 
-      chatControlType === 'startChat' && 
+      chatControlTypeValue === 'startChat' && 
       candidate.chatCount === 1;
     console.log("isFirstMessageAfterStartChat::", isFirstMessageAfterStartChat);
     
@@ -175,56 +185,47 @@ export class ChatFlowConfigBuilder {
     return true;
   };
 
-  // getMostRecentMessageFromMessagesList(messagesList: MessageNode[]) {
-  //   let mostRecentMessageArr: ChatHistoryItem[] = [];
-
-  //   if (messagesList) {
-  //     messagesList.sort(
-  //       (a, b) =>
-  //         new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime(),
-  //     );
-  //     mostRecentMessageArr = messagesList[0]?.messageObj;
-  //   }
-
-  //   return mostRecentMessageArr;
-  // }
-
   createIsEligibleForEngagement = (
     candidate: CandidateNode,
-    chatControlType: chatControlType,
+    chatControlTypeValue: chatControlType,
     order: number,
     chatFlowOrder,
   ) => {
-    console.log("These are the eligibility checks for candidate::", candidate.name, "for chatControlType::", chatControlType, "for order::", order, "for chatFlowOrder::", chatFlowOrder);
+    console.log("These are the eligibility checks for candidate::", candidate.name, "for chatControlType::", chatControlTypeValue, "for order::", order, "for chatFlowOrder::", chatFlowOrder);
     
-    // Add debug logging for candidate properties at the start
     console.log("Candidate properties at start for", candidate.name, ":", {
-      engagementStatus: candidate.engagementStatus,
-      startChat: candidate.startChat,
-      startChatCompleted: candidate.startChatCompleted,
+      engagementStatus: isCandidateFlagTrue(candidate, 'engagementStatus'),
+      startChat: isCandidateFlagTrue(candidate, 'startChat'),
+      startChatCompleted: isCandidateFlagTrue(candidate, 'startChatCompleted'),
       chatCount: candidate.chatCount,
       updatedAt: candidate.updatedAt,
       projects: candidate.projects
     });
     
-    if (candidate.engagementStatus === false) {
+    if (!isCandidateFlagTrue(candidate, 'engagementStatus')) {
       console.log("Candidate::", candidate.name, "is not eligible for engagement because engagementStatus is false");
       return false;
     }
     console.log("Candidate::", candidate.name, "is eligible for engagement because engagementStatus is true");
-    const currentIndex = chatFlowOrder.indexOf(chatControlType);
+    const currentIndex = chatFlowOrder.indexOf(chatControlTypeValue);
 
     if (currentIndex === 0) {
       console.log("This is the currentIndex for candidate::", candidate.name, "is::", currentIndex);
-      const currentStageStarted = candidate[chatControlType];
+      const currentStageStarted = getCandidateChatControlValue(
+        candidate,
+        chatControlTypeValue,
+      );
       console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
-      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+      const currentStageCompleted = isChatControlCompleted(
+        candidate,
+        chatControlTypeValue,
+      );
       console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
       if (currentStageStarted && !currentStageCompleted) {
         console.log("Candidate::", candidate.name, "is eligible for engagement because currentStageStarted is true and currentStageCompleted is false");
         const isEligibleForEngagement = this.baseEngagementChecks(
           candidate,
-          chatControlType,
+          chatControlTypeValue,
           chatFlowOrder,
         )
         console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
@@ -238,17 +239,21 @@ export class ChatFlowConfigBuilder {
     }
     if (currentIndex > 0) {
       console.log("This is the currentIndex and it is greater than 0 for candidate::", candidate.name, "is::", currentIndex);
-      // Get all previous stages in the flow
       const previousStages = chatFlowOrder.slice(0, currentIndex);
       console.log("This is the previousStages for candidate::", candidate.name, "is::", previousStages);
-      // Check if ALL previous stages are completed
-      const allPreviousStagesCompleted = previousStages?.every(
-        (stage) => candidate[`${stage}Completed`] === true,
+      const allPreviousStagesCompleted = previousStages?.every((stage) =>
+        isChatControlCompleted(candidate, stage),
       );
       console.log("allPreviousStagesCompleted for candidate::", candidate.name, "is::", allPreviousStagesCompleted);
-      const currentStageStarted = candidate[chatControlType];
+      const currentStageStarted = getCandidateChatControlValue(
+        candidate,
+        chatControlTypeValue,
+      );
       console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
-      const currentStageCompleted = candidate[`${chatControlType}Completed`];
+      const currentStageCompleted = isChatControlCompleted(
+        candidate,
+        chatControlTypeValue,
+      );
       console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
       if (candidate.updatedAt) {
         console.log("candidate.updatedAt for candidate::", candidate.name, "is::", candidate.updatedAt);
@@ -268,7 +273,7 @@ export class ChatFlowConfigBuilder {
           TimeManagement.timeDifferentials
             .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
         console.log("waitingPeriodInMinutes for candidate::", candidate.name, "is::", waitingPeriodInMinutes);
-        const waitTime = waitingPeriodInMinutes * 60 * 1000; // convert to milliseconds
+        const waitTime = waitingPeriodInMinutes * 60 * 1000;
         console.log("waitTime for candidate::", candidate.name, "is::", waitTime);
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
         console.log("cutoffTime for candidate::", candidate.name, "is::", cutoffTime);
@@ -288,13 +293,13 @@ export class ChatFlowConfigBuilder {
         
         if (timeComparison && hasMultipleMessages) {
           console.log(
-            `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlType}, and last chat control is ${candidate.lastEngagementChatControl} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
+            `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlTypeValue}, and last chat control is ${getCandidateLastEngagementChatControl(candidate)} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
           );
           console.log("Candidate::", candidate.name, "is not eligible for engagement because waiting period not elapsed");
           return false;
         } else {
           console.log(
-            `Waiting period elapsed for candidate ${candidate.name} for ${chatControlType}`,
+            `Waiting period elapsed for candidate ${candidate.name} for ${chatControlTypeValue}`,
           );
           console.log("Candidate::", candidate.name, "is eligible for engagement because waiting period elapsed");
         }
@@ -314,7 +319,7 @@ export class ChatFlowConfigBuilder {
         console.log("currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
         const isEligibleForEngagement = this.baseEngagementChecks(
           candidate,
-          chatControlType,
+          chatControlTypeValue,
           chatFlowOrder,
         );
         console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
@@ -333,7 +338,8 @@ export class ChatFlowConfigBuilder {
 
       if (currentOrder === 1) {
         return (
-          candidate.startChat && candidate.chatMessages?.edges.length === 0
+          isCandidateFlagTrue(candidate, 'startChat') &&
+          candidate.chatMessages?.edges.length === 0
         );
       }
 
@@ -344,11 +350,11 @@ export class ChatFlowConfigBuilder {
       );
       const previousStage = previousStages[previousStages.length - 1];
       const baseConditions =
-        candidate.startChat &&
+        isCandidateFlagTrue(candidate, 'startChat') &&
         candidate.chatMessages?.edges.length > 0 &&
-        candidate.lastEngagementChatControl === previousStage;
-      const hasCompletedPreviousStages = previousStages.every(
-        (stage) => candidate[stage as keyof typeof candidate],
+        getCandidateLastEngagementChatControl(candidate) === previousStage;
+      const hasCompletedPreviousStages = previousStages.every((stage) =>
+        getCandidateChatControlValue(candidate, stage),
       );
 
       return baseConditions && hasCompletedPreviousStages;
@@ -358,34 +364,29 @@ export class ChatFlowConfigBuilder {
   private createChatFilters(
     config: {
       type: chatControlType;
-      filter: Record<string, any>;
+      filter: CandidateFlagFilterSpec;
     },
     chatFlowOrder: chatControlType[],
-  ) {
+  ): CandidateFlagFilterSpec[] {
     const currentIndex = chatFlowOrder.indexOf(config.type);
 
     if (currentIndex > 0) {
       const previousStage = chatFlowOrder[currentIndex - 1];
+      const completedKey =
+        `${previousStage}Completed` as keyof CandidateFlagFilterSpec;
+      const completedFilterKey =
+        `${config.type}Completed` as keyof CandidateFlagFilterSpec;
 
       return [
-        // First filter: Check for completed previous stage
         {
           stopChat: { eq: false },
-          [`${previousStage}Completed`]: { eq: true },
+          [completedKey]: { eq: true },
           [config.type]: { eq: true },
-          [`${config.type}Completed`]: { eq: false },
+          [completedFilterKey]: { eq: false },
         },
-        // For candidates who have started but not completed (with null)
         {
           stopChat: { eq: false },
-          [`${previousStage}Completed`]: { eq: true },
-          [config.type]: { eq: true },
-          [`${config.type}Completed`]: { is: 'NULL' },
-        },
-        // For candidates who haven't started
-        {
-          stopChat: { eq: false },
-          [`${previousStage}Completed`]: { eq: true },
+          [completedKey]: { eq: true },
           [config.type]: { eq: false },
         },
       ];
@@ -407,10 +408,9 @@ export class ChatFlowConfigBuilder {
         console.log("isWithinAllowedTime:: hours >= 8 && hours < 21 hours::", hours," :: ", hours >= 8 && hours < 21);
         return hours >= 8 && hours < 21;
       },
-      filter: {} as Record<string, any>,
+      filter: {} as CandidateFlagFilterSpec,
       orderBy: [] as Array<Record<string, any>>,
     };
-    // Get previous stage name
     const currentIndex = chatFlowOrder.indexOf(type);
     const previousStage =
       currentIndex > 0 ? chatFlowOrder[currentIndex - 1] : null;
@@ -433,9 +433,6 @@ export class ChatFlowConfigBuilder {
       return {
         ...baseStatusUpdate,
         filter: {
-          candConversationStatus: {
-            in: ['CONVERSATION_CLOSED_TO_BE_CONTACTED'],
-          },
           startChat: { eq: true },
           ...futureStageFilters,
         },
@@ -466,7 +463,10 @@ export class ChatFlowConfigBuilder {
     order: number,
     chatFlowOrder: chatControlType[],
   ): ChatFlowConfig {
-    const filter = { ...this.baseFilters, [type]: { eq: true } };
+    const filter: CandidateFlagFilterSpec = {
+      ...this.baseFilters,
+      [type]: { eq: true },
+    };
 
     return {
       order,
@@ -528,8 +528,6 @@ export class ChatFlowConfigBuilder {
   public getDefaultChatFlowOrder(): chatControlType[] {
     return [
       'startChat',
-      // 'startVideoInterviewChat',
-      // 'startMeetingSchedulingChat',
     ] as const;
   }
 

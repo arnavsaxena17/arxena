@@ -5,8 +5,10 @@ import { InsufficientCreditsEmail } from 'twenty-emails';
 import {
   allStatuses,
   AnswerMessageObj,
+  buildCandidateFlagsPatchUpdate,
   CandidateNode,
   CandidatesEdge,
+  CANDIDATE_CHAT_START_CONTROL_FIELDS as CANDIDATE_CHAT_START_CONTROL_FIELD_NAMES,
   chatMessageType,
   deleteOneChatMessage,
   getResolvedOtherFields,
@@ -42,11 +44,9 @@ import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 import type { UnipileSyncMessageItem } from '../whatsapp-unipile/whatsapp-unipile-sync.service';
 
-export const CANDIDATE_CHAT_START_CONTROL_FIELDS = new Set([
-  'startChat',
-  'startVideoInterviewChat',
-  'startMeetingSchedulingChat',
-]);
+export const CANDIDATE_CHAT_START_CONTROL_FIELDS = new Set(
+  CANDIDATE_CHAT_START_CONTROL_FIELD_NAMES,
+);
 
 @Injectable()
 export class UpdateChat {
@@ -113,7 +113,9 @@ export class UpdateChat {
       // Update the candidate's status to "Interview Completed"
       const updateCandidateVariables = {
         idToUpdate: candidateId,
-        input: { startMeetingSchedulingChatCompleted: true },
+        input: buildCandidateFlagsPatchUpdate(candidate, {
+          startMeetingSchedulingChatCompleted: true,
+        }),
       };
 
 
@@ -718,7 +720,12 @@ export class UpdateChat {
       ) {
         const updateCandidateVariables = {
           idToUpdate: result.candidateId,
-          input: { startChatCompleted: true },
+          input: buildCandidateFlagsPatchUpdate(
+            allCandidates.find(
+              (candidateItem) => candidateItem.id === result.candidateId,
+            ),
+            { startChatCompleted: true },
+          ),
         };
         const graphqlQueryObjForUpdationForCandidateStatus = JSON.stringify({
           query: graphQltoUpdateOneCandidate,
@@ -844,11 +851,11 @@ export class UpdateChat {
     console.log( 'Updating candidate engagement status to:', candidateEngagementStatus, 'for candidate id::', candidate?.id);
     const updateCandidateObjectVariables = {
       idToUpdate: candidate?.id,
-      input: {
+      input: buildCandidateFlagsPatchUpdate(candidate, {
         engagementStatus: candidateEngagementStatus,
         lastEngagementChatControl:
           whatappUpdateMessageObj.lastEngagementChatControl,
-      },
+      }),
     };
     try {
       const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
@@ -893,9 +900,20 @@ export class UpdateChat {
       ' at time :: ',
       new Date().toISOString(),
     );
+    const candidate = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      { filter: { id: { eq: candidateId } } },
+      apiToken,
+    );
+    const candidateNode = (
+      candidate?.data?.data?.candidates as { edges: CandidatesEdge[] } | undefined
+    )?.edges[0]?.node;
+
     const updateCandidateObjectVariables = {
       idToUpdate: candidateId,
-      input: { engagementStatus: false },
+      input: buildCandidateFlagsPatchUpdate(candidateNode, {
+        engagementStatus: false,
+      }),
     };
 
     try {

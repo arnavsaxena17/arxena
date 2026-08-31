@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { MessagingChannel } from 'twenty-shared/arx';
+import { MessagingChannel, resolveOutreachFirstOutboundAt } from 'twenty-shared/arx';
 import { isDefined, escapeForIlike } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
@@ -47,6 +47,7 @@ type CandidateRecord = ObjectLiteral & {
   linkedinUrl?: { primaryLinkUrl?: string } | null;
   phoneNumber?: { primaryPhoneNumber?: string } | null;
   firstOutboundAt?: string | null;
+  outreachSpeedTimestamps?: unknown;
   lastOutboundMessageKind?: string | null;
   convertedOnMessageKind?: string | null;
   linkedinFollowUpCount?: number | null;
@@ -180,7 +181,10 @@ export class OutreachMessagePersistService {
         event,
         apiToken,
         messagingChannel,
-        existingFirstOutboundAt: candidate?.firstOutboundAt,
+        existingFirstOutboundAt: resolveOutreachFirstOutboundAt(
+          candidate?.outreachSpeedTimestamps,
+          candidate?.firstOutboundAt,
+        ),
         outboundMessageKind,
         existingConvertedOnMessageKind: candidate?.convertedOnMessageKind,
         existingLastOutboundMessageKind: candidate?.lastOutboundMessageKind,

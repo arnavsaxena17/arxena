@@ -1,15 +1,22 @@
 import {
+  buildCandidateFlagsPatchUpdate,
   CandidateEdge,
   CandidateNode,
   ChatControlsObjType,
   chatControlType,
   ChatHistoryItem,
   getCandidateCustomField,
+  getCandidateChatControlValue,
+  getCandidateLastEngagementChatControl,
   getGraphqlToFindManyProjects,
   graphqlToFetchAllCandidateData,
   graphqlToFetchAllCandidateDataWithFieldValues,
   graphQlToFetchChatMessages,
   graphQltoUpdateOneCandidate,
+  isCandidateFlagTrue,
+  isChatControlCompleted,
+  matchesCandidateFlagFilter,
+  matchesCandidateFlagFilters,
   Project,
   ProjectEdge,
   MessageNode,
@@ -19,7 +26,10 @@ import {
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 
-import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
+import {
+  ChatFlowConfig,
+  ChatFlowConfigBuilder,
+} from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
@@ -40,36 +50,6 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { v4 as uuidv4 } from 'uuid';
 import { RecruiterProfileService } from '../recruiter-profile';
 import { FilterCandidates } from './filter-candidates';
-
-export interface ChatFlowConfig {
-  order: number;
-  type: chatControlType;
-  filterLogic: (candidate: CandidateNode) => boolean;
-  preProcessing?: (
-    candidates: CandidateNode[],
-    candidateJob: Project,
-    chatControl: ChatControlsObjType,
-    apiToken: string,
-    workspaceQueryService: WorkspaceQueryService,
-  ) => Promise<void>;
-  chatFilters: () => Array<Record<string, any>>;
-  isEligibleForEngagement: (candidate: CandidateNode) => boolean;
-  statusUpdate?: {
-    isWithinAllowedTime: () => boolean;
-    filter: Record<string, any>;
-    orderBy?: Array<Record<string, any>>;
-  };
-  filter: Record<string, any>;
-  orderBy: Array<Record<string, any>>;
-  templateConfig: {
-    defaultTemplate: string;
-    messageSetup: (isFirstMessage: boolean) => {
-      whatsappTemplate: string;
-      requiresSystemPrompt: boolean;
-      userContent: string;
-    };
-  };
-}
 
 @Injectable()
 export class CandidateEngagementArx {
@@ -638,9 +618,13 @@ export class CandidateEngagementArx {
       'to true for candidate::',
       candidateId,
     );
+    const candidate = await this.fetchCandidateById(candidateId, apiToken);
     const graphqlVariables = {
       idToUpdate: candidateId,
-      input: { [chatControl.chatControlType]: true, stopChat: false },
+      input: buildCandidateFlagsPatchUpdate(candidate, {
+        [chatControl.chatControlType]: true,
+        stopChat: false,
+      }),
     };
     const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
 
@@ -737,11 +721,14 @@ export class CandidateEngagementArx {
       const currentIndex = chatFlowOrder.indexOf(chatControl.chatControlType);
 
       if (currentIndex != 0) {
-        if ( candidate?.lastEngagementChatControl !== chatControl?.chatControlType ) {
+        if (
+          getCandidateLastEngagementChatControl(candidate) !==
+          chatControl?.chatControlType
+        ) {
           const waitTime = TimeManagement?.timeDifferentials?.timeDifferentialInMinutesBeforeStartingNextStageMessaging * 60 * 1000;
           const cutoffTime = new Date(Date.now() - waitTime).toISOString();
           if (new Date(candidate?.updatedAt).toISOString() > cutoffTime) {
-            console.log( `Stage transition waiting period not elapsed for candidate ${candidate?.name}, last engagement was ${candidate?.lastEngagementChatControl}, last udpated was ${candidate?.updatedAt} and cutoff time is ${cutoffTime}` );
+            console.log( `Stage transition waiting period not elapsed for candidate ${candidate?.name}, last engagement was ${getCandidateLastEngagementChatControl(candidate)}, last udpated was ${candidate?.updatedAt} and cutoff time is ${cutoffTime}` );
             return false;
           }
         } else {
@@ -815,72 +802,69 @@ export class CandidateEngagementArx {
 
 
   async fetchAllCandidatesWithAllChatControls(
-    chatControlType: chatControlType,
+    chatControlTypeValue: chatControlType,
     apiToken: string,
   ): Promise<CandidateNode[]> {
+    const flagFilters =
+      chatControlTypeValue === 'allStartedAndStoppedChats'
+        ? [
+            { stopChat: { eq: false }, startChat: { eq: true } },
+            { stopChat: { eq: true }, startChat: { eq: true } },
+          ]
+        : [];
 
-    let filters;
-    if (chatControlType === 'allStartedAndStoppedChats') {
-      filters = [
-        { stopChat: { eq: false }, startChat: { eq: true } },
-        { stopChat: { eq: true }, startChat: { eq: true } },
-      ];
-    }
     const allCandidates: CandidateNode[] = [];
     try {
       const timestamp = new Date().toISOString();
+      let lastCursor: string | null = null;
+      let hasNextPage = true;
 
-      for (const filter of filters) {
-        let lastCursor: string | null = null;
-        const timestampedFilter = {
-          ...filter,
-          updatedAt: { lte: timestamp },
-        };
-
-        let hasNextPage = true;
-
-        while (hasNextPage) {
-          // const graphqlQueryObj = JSON.stringify({
-          //   query: graphqlQueryObjToFetchAllCandidatesForChats,
-          //   variables: {
-          //     lastCursor,
-          //     limit: 400,
-          //     filter: timestampedFilter,
-          //     orderBy: [{ updatedAt: 'DESC' }],
-          //   },
-          // });
-
-
-          const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
+      while (hasNextPage) {
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          {
             lastCursor,
             limit: 400,
-            filter: timestampedFilter,
+            filter: { updatedAt: { lte: timestamp } },
             orderBy: [{ updatedAt: 'DESC' }],
-          }, apiToken);
+          },
+          apiToken,
+        );
 
         const candidates = response?.data?.data?.candidates as {
           edges: CandidateEdge[];
           pageInfo: PageInfo;
         } | undefined;
 
-          if (!candidates?.edges.length) break;
-          hasNextPage = candidates?.pageInfo?.hasNextPage || false;
-          const newCandidates = candidates?.edges
-            .map((edge: any) => edge.node)
-            .filter((candidate: CandidateNode) => {
-              const isNew = !allCandidates.some(
-                (existing) => existing.id === candidate.id,
-              );
-              const isRecent =
-                new Date(candidate.updatedAt) <= new Date(timestamp);
-              return isNew && isRecent;
-            });
-          allCandidates.push(...newCandidates);
-          if (!hasNextPage) break;
-          lastCursor = candidates?.pageInfo?.endCursor;
+        if (!candidates?.edges.length) {
+          break;
         }
+
+        hasNextPage = candidates?.pageInfo?.hasNextPage || false;
+        const newCandidates = candidates.edges
+          .map((edge) => edge.node)
+          .filter((candidate) => {
+            const isNew = !allCandidates.some(
+              (existing) => existing.id === candidate.id,
+            );
+            const isRecent =
+              new Date(candidate.updatedAt) <= new Date(timestamp);
+            const matchesFlags =
+              flagFilters.length === 0 ||
+              matchesCandidateFlagFilters(candidate, flagFilters);
+
+            return isNew && isRecent && matchesFlags;
+          });
+        allCandidates.push(...newCandidates);
+        if (!hasNextPage) {
+          break;
+        }
+        lastCursor = candidates?.pageInfo?.endCursor ?? null;
       }
-      console.log( `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}` );
+
+      console.log(
+        `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlTypeValue}`,
+      );
     } catch (error) {
       console.log('Error fetching candidates:', error);
     }
@@ -889,127 +873,130 @@ export class CandidateEngagementArx {
   }
 
   async fetchAllCandidatesWithSpecificChatControl(
-    chatControlType: chatControlType,
+    chatControlTypeValue: chatControlType,
     activeJobsIds: string[],
     chatFlowConfigObj: Record<string, ChatFlowConfig>,
     apiToken: string,
   ): Promise<CandidateNode[]> {
-    const config = chatFlowConfigObj[chatControlType];
+    const config = chatFlowConfigObj[chatControlTypeValue];
     if (!config || !config.chatFilters) {
-      console.log( `No configuration or filters found for chat control type: ${chatControlType}` );
+      console.log(
+        `No configuration or filters found for chat control type: ${chatControlTypeValue}`,
+      );
       return [];
     }
 
-    // If there are no active jobs, return empty array
     if (!activeJobsIds || activeJobsIds.length === 0) {
       console.log('No active jobs found, returning empty candidates array');
       return [];
     }
-    console.log("activeJobsIds::", activeJobsIds);
-    const filters = config.chatFilters();
+    console.log('activeJobsIds::', activeJobsIds);
+    const flagFilters = config.chatFilters();
     const allCandidates: CandidateNode[] = [];
     try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const timestamp = new Date().toISOString();
-    for (const filter of filters) {
-        let lastCursor: string | null = null;
-        const projectsIdFilter = {
-          or: [
-            { and: [
-              { projectsId: { in: activeJobsIds } },
-              { engagementStatus: { eq: true } },
-              { startChat: { eq: true } },
-              { stopChat: { eq: false }},
-              {or:[{startChatCompleted:{eq:false}},{startChatCompleted:{is:"NULL"}}]},
-            ] },
-            { and: [
-              { projectsId: { in: activeJobsIds } },
-              { engagementStatus: { eq: false } },
-              { startChat: { eq: true } },
-              { stopChat: { eq: false }},
-              { and: [
-                { updatedAt: { lte: timestamp } },
-                { updatedAt: { gte: new Date(new Date(timestamp).getTime() - 15 * 60 * 1000).toISOString() } },
-              ] },
-            ] },
+      let lastCursor: string | null = null;
+      let hasNextPage = true;
 
-
-
-              // { startChatCompleted: { eq: false }},
-            // { and: [
-            // ] },
-            // { and: [
-            //   { engagementStatus: { eq: false } },
-            //   { startChat: { eq: true } },
-            //   { stopChat: { eq: false }},
-            // ] },
-          // ] },
-        ],
-          // ...filter,
-        };
-        // console.log('projectsIdFilter::', projectsIdFilter);
-        const timestampedFilter = {
-          ...filter,
-          updatedAt: { lte: timestamp },
-        };
-
-
-        let hasNextPage = true;
-        while (hasNextPage) {
-          // const variables ={
-          //   ...timestampedFilter,
-          // }
-          // console.log("variables::", variables);
-          const variables = {
+      while (hasNextPage) {
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          {
             lastCursor,
             limit: 400,
-            filter: projectsIdFilter,
+            filter: {
+              projectsId: { in: activeJobsIds },
+              updatedAt: { lte: timestamp },
+            },
             orderBy: [{ updatedAt: 'DESC' }],
-          }
+          },
+          apiToken,
+        );
+        const candidates = response?.data?.data?.candidates as {
+          edges: CandidateEdge[];
+          pageInfo: PageInfo;
+        } | undefined;
 
-          const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, variables, apiToken);
-          const candidates = response?.data?.data?.candidates as {
-            edges: CandidateEdge[];
-            pageInfo: PageInfo;
-          } | undefined;
-          // console.log('candidates::', candidates?.edges[0]?.node.engagementStatus, candidates?.edges[0]?.node.startChat, candidates?.edges[0]?.node.stopChat);
-          if (response.data.errors) {
-            console.log( 'Errors in executeGraphQL:', response.data.errors, 'with workspace Id:', workspaceId );
-            break;
-          }
-          const edges = candidates?.edges || [];
-          hasNextPage = candidates?.pageInfo?.hasNextPage || false;
-          if (!edges.length) {
-            break;
-          }
-          console.log("All candidates::", allCandidates?.length, "for workspaceId::", workspaceId);
-          const newCandidates = edges
-            .map((edge: any) => edge.node)
-            .filter((candidate: CandidateNode) => {
-              const isNew = !allCandidates.some(
-                (existing) => existing.id === candidate.id,
-              );
-              const isRecent =
-                new Date(candidate.updatedAt) <= new Date(timestamp);
-              return isNew && isRecent;
-            });
-          allCandidates.push(...newCandidates);
-          console.log('newCandidates::', newCandidates.length, 'for workspaceId::', workspaceId);
-          console.log("Candidate names fetched::", allCandidates?.map((candidate) => candidate.name));
-          if (!hasNextPage) {
-            break;
-          }
-          lastCursor = candidates?.pageInfo?.endCursor || null;
+        if (response.data.errors) {
+          console.log(
+            'Errors in executeGraphQL:',
+            response.data.errors,
+            'with workspace Id:',
+            workspaceId,
+          );
+          break;
         }
+        const edges = candidates?.edges || [];
+        hasNextPage = candidates?.pageInfo?.hasNextPage || false;
+        if (!edges.length) {
+          break;
+        }
+        console.log(
+          'All candidates::',
+          allCandidates?.length,
+          'for workspaceId::',
+          workspaceId,
+        );
+        const newCandidates = edges
+          .map((edge) => edge.node)
+          .filter((candidate) => {
+            const isNew = !allCandidates.some(
+              (existing) => existing.id === candidate.id,
+            );
+            const isRecent =
+              new Date(candidate.updatedAt) <= new Date(timestamp);
+            const matchesEngagementWindow =
+              (isCandidateFlagTrue(candidate, 'engagementStatus') &&
+                isCandidateFlagTrue(candidate, 'startChat') &&
+                !isCandidateFlagTrue(candidate, 'stopChat') &&
+                (!isCandidateFlagTrue(candidate, 'startChatCompleted') ||
+                  candidate.candidateFlags?.startChatCompleted === false)) ||
+              (!isCandidateFlagTrue(candidate, 'engagementStatus') &&
+                isCandidateFlagTrue(candidate, 'startChat') &&
+                !isCandidateFlagTrue(candidate, 'stopChat') &&
+                new Date(candidate.updatedAt).toISOString() >=
+                  new Date(
+                    new Date(timestamp).getTime() - 15 * 60 * 1000,
+                  ).toISOString());
+            const matchesChatControl =
+              matchesCandidateFlagFilters(candidate, flagFilters);
+
+            return (
+              isNew &&
+              isRecent &&
+              matchesEngagementWindow &&
+              matchesChatControl
+            );
+          });
+        allCandidates.push(...newCandidates);
+        console.log(
+          'newCandidates::',
+          newCandidates.length,
+          'for workspaceId::',
+          workspaceId,
+        );
+        console.log(
+          'Candidate names fetched::',
+          allCandidates?.map((candidate) => candidate.name),
+        );
+        if (!hasNextPage) {
+          break;
+        }
+        lastCursor = candidates?.pageInfo?.endCursor || null;
       }
       console.log(
-        `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlType}`,
+        `Fetched ${allCandidates.length} fresh candidates at ${timestamp} for chatControlType ${chatControlTypeValue}`,
       );
     } catch (error) {
       console.error('Error fetching candidates:', error);
       console.error('Stack trace:', error.stack);
     }
-    console.log("Number of candidates fetched in fetchAllCandidatesWithSpecificChatControl::", allCandidates.length);
+    console.log(
+      'Number of candidates fetched in fetchAllCandidatesWithSpecificChatControl::',
+      allCandidates.length,
+    );
     return allCandidates;
   }
 
@@ -1032,8 +1019,14 @@ export class CandidateEngagementArx {
         for (let i = 0; i < chatFlowOrder.length - 1; i++) {
           const currentStage = chatFlowOrder[i];
           const nextStage = chatFlowOrder[i + 1];
-          const isCurrentStageCompleted = candidate[`${currentStage}Completed`];
-          const hasNextStageStarted = candidate[nextStage];
+          const isCurrentStageCompleted = isChatControlCompleted(
+            candidate,
+            currentStage,
+          );
+          const hasNextStageStarted = getCandidateChatControlValue(
+            candidate,
+            nextStage,
+          );
 
           if (isCurrentStageCompleted && !hasNextStageStarted) {
             await this.createChatControl(

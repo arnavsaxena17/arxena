@@ -11,6 +11,9 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import {
     ChatControlsObjType,
     chatControlType,
+    getCandidateChatControlValue,
+    isCandidateFlagTrue,
+    isChatControlCompleted,
 } from 'twenty-shared';
 import { Process } from '../../../message-queue/decorators/process.decorator';
 import { Processor } from '../../../message-queue/decorators/processor.decorator';
@@ -357,15 +360,15 @@ export class EngagedCandidateProcessor {
         }
 
         // Check if candidate is still eligible for engagement
-        if (candidate.stopChat) {
+        if (isCandidateFlagTrue(candidate, 'stopChat')) {
           this.logger.log(`Candidate ${candidateId} has stopChat enabled, not eligible for engagement`);
           return;
         }
 
-        // For incoming messages, we should process regardless of engagementStatus
-        // because incoming messages should trigger engagement processing
-        // For outgoing messages, check engagementStatus to prevent duplicate sends
-        if (!isIncomingMessage && !candidate.engagementStatus) {
+        if (
+          !isIncomingMessage &&
+          !isCandidateFlagTrue(candidate, 'engagementStatus')
+        ) {
           this.logger.log(`Candidate ${candidateId} has engagementStatus false and this is not an incoming message, not eligible for engagement`);
           return;
         }
@@ -513,21 +516,27 @@ export class EngagedCandidateProcessor {
 
   private determineActiveChatControl(candidate: any, chatFlowOrder: string[]): ChatControlsObjType | null {
     // Determine which chat control should be active based on candidate's current state
-    for (const chatControlType of chatFlowOrder) {
-      // Check if this stage is active but not completed
-      if (candidate[chatControlType] && !candidate[`${chatControlType}Completed`]) {
-        return { chatControlType: chatControlType as chatControlType };
+    for (const chatControlTypeValue of chatFlowOrder) {
+      if (
+        getCandidateChatControlValue(candidate, chatControlTypeValue) &&
+        !isChatControlCompleted(candidate, chatControlTypeValue)
+      ) {
+        return { chatControlType: chatControlTypeValue as chatControlType };
       }
     }
 
-    // If no specific stage is active, check for transitions
-    for (let i = 0; i < chatFlowOrder.length - 1; i++) {
-      const currentStage = chatFlowOrder[i];
-      const nextStage = chatFlowOrder[i + 1];
+    for (let index = 0; index < chatFlowOrder.length - 1; index++) {
+      const currentStage = chatFlowOrder[index];
+      const nextStage = chatFlowOrder[index + 1];
 
-      // Check if current stage is completed but next stage hasn't started
-      const isCurrentStageCompleted = candidate[`${currentStage}Completed`] === true;
-      const hasNextStageStarted = candidate[nextStage] === true;
+      const isCurrentStageCompleted = isChatControlCompleted(
+        candidate,
+        currentStage,
+      );
+      const hasNextStageStarted = getCandidateChatControlValue(
+        candidate,
+        nextStage,
+      );
 
       if (isCurrentStageCompleted && !hasNextStageStarted) {
         return { chatControlType: nextStage as chatControlType };

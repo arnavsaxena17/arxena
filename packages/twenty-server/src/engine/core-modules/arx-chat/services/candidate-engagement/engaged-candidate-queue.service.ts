@@ -14,6 +14,7 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   CandidateNode,
+  getCandidateLastEngagementChatControl,
   Project,
   chatMessageType,
   whatappUpdateMessageObjType
@@ -323,7 +324,9 @@ export class EngagedCandidateQueueService {
         ],
         messageType: replyObject.isFromMe ? 'botMessage' : 'candidateMessage',
         messageObj: mostRecentMessageObj,
-        lastEngagementChatControl: candidateProfileDataNodeObj?.lastEngagementChatControl,
+        lastEngagementChatControl: getCandidateLastEngagementChatControl(
+          candidateProfileDataNodeObj,
+        ),
         whatsappDeliveryStatus: replyObject.whatsappDeliveryStatus,
         externalMessageId: replyObject.externalMessageId,
         type: replyObject.type || 'text',

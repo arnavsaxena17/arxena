@@ -1,5 +1,5 @@
 /**
- * Workspace member profile field names (mirror workspace-modifications fieldsData).
+ * Workspace member profile field names (mirror arxena-standard-metadata fields-data).
  */
 export const WORKSPACE_MEMBER_PROFILE_FIELD_NAMES = {
   typeWorkspaceMember: 'typeWorkspaceMember',

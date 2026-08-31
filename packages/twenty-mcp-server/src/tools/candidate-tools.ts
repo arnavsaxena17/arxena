@@ -1,4 +1,5 @@
 import type { CandidateNode, Candidates, People } from 'twenty-shared/arx';
+import { isCandidateFlagTrue } from 'twenty-shared/arx';
 import {
   graphqlQueryToFindManyPeople,
   graphqlToAddNewCandidate,
@@ -73,7 +74,7 @@ export const candidateTools: McpTool[] = [
           id: c.id,
           name: c.name,
           status: c.status,
-          engagementStatus: c.engagementStatus,
+          engagementStatus: isCandidateFlagTrue(c, 'engagementStatus'),
           remarks: c.remarks,
           peopleId: c.peopleId,
           phone: c.people?.phones?.primaryPhoneNumber,
@@ -183,7 +184,7 @@ export const candidateTools: McpTool[] = [
         id: c.id,
         name: c.name,
         status: c.status,
-        engagementStatus: c.engagementStatus,
+        engagementStatus: isCandidateFlagTrue(c, 'engagementStatus'),
         remarks: c.remarks,
         peopleId: c.peopleId,
         projectId: c.projectsId,

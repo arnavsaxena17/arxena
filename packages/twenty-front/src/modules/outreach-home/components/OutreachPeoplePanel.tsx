@@ -89,9 +89,11 @@ const mapOutreachPersonToDataTableRow = (
     email: { primaryEmail: person.email || '' },
     candConversationStatus: '',
     status: person.stage,
-    engagementStatus: person.stage,
-    startChat: false,
-    stopChat: false,
+    candidateFlags: {
+      engagementStatus: Boolean(person.stage),
+      startChat: false,
+      stopChat: false,
+    },
     chatMessages: { edges: [] },
     emailMessages: { edges: [] },
     otherFields: {

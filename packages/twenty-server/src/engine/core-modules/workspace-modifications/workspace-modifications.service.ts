@@ -27,7 +27,6 @@ import { WorkspaceDataSourceService } from 'src/engine/workspace-datasource/work
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
-import { CreateMetaDataStructure } from './object-apis/object-apis-creation';
 
 const readTrimmedId = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
@@ -968,12 +967,4 @@ export class WorkspaceQueryService {
     }
   }
 
-  async createMetadataStructure(token: string, origin: string): Promise<void> {
-    await new CreateMetaDataStructure(
-      this,
-      this.staticGraphQLService,
-      this.environmentService,
-      this.webSocketService,
-    ).createMetadataStructure(token, origin);
-  }
 }

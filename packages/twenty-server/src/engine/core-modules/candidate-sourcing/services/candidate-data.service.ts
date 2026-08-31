@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+    flattenCandidateFlags,
     getAttachmentDownloadUrl,
     getResolvedOtherFields,
     graphqlToFetchAllCandidateDataWithFieldValues,
@@ -313,6 +314,8 @@ export class CandidateDataService {
           type: node.fileCategory as string | undefined,
         }));
 
+      const flattenedCandidate = flattenCandidateFlags(candidate);
+
       const baseData: CandidateData = {
         id: candidate.id,
         name: candidate.name || 'N/A',
@@ -322,16 +325,21 @@ export class CandidateDataService {
         jobTitle: jobTitleFromCandidate || 'N/A',
         chatCount: candidate.chatCount || 'N/A',
         hiringNaukriUrl: candidate.hiringNaukriUrl || 'N/A',
-        lastEngagementChatControl: candidate.lastEngagementChatControl || 'N/A',
+        lastEngagementChatControl:
+          flattenedCandidate.lastEngagementChatControl || 'N/A',
         resdexNaukriUrl: candidate.resdexNaukriUrl || 'N/A',
         source: candidate.source || 'N/A',
-        startChat: candidate.startChat || 'N/A',
-        startChatCompleted: candidate.startChatCompleted || 'N/A',
-        startMeetingSchedulingChat: candidate.startMeetingSchedulingChat || 'N/A',
-        startMeetingSchedulingChatCompleted: candidate.startMeetingSchedulingChatCompleted || 'N/A',
-        startVideoInterviewChat: candidate.startVideoInterviewChat || 'N/A',
-        startVideoInterviewChatCompleted: candidate.startVideoInterviewChatCompleted || 'N/A',
-        stopChat: candidate.stopChat || 'N/A',
+        startChat: flattenedCandidate.startChat || 'N/A',
+        startChatCompleted: flattenedCandidate.startChatCompleted || 'N/A',
+        startMeetingSchedulingChat:
+          flattenedCandidate.startMeetingSchedulingChat || 'N/A',
+        startMeetingSchedulingChatCompleted:
+          flattenedCandidate.startMeetingSchedulingChatCompleted || 'N/A',
+        startVideoInterviewChat:
+          flattenedCandidate.startVideoInterviewChat || 'N/A',
+        startVideoInterviewChatCompleted:
+          flattenedCandidate.startVideoInterviewChatCompleted || 'N/A',
+        stopChat: flattenedCandidate.stopChat || 'N/A',
         linkedinUrl: candidate.linkedinUrl || 'N/A',
         _attachments: attachments,
       };

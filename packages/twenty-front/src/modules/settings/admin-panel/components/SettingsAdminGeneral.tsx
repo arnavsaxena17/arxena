@@ -4,7 +4,6 @@ import { useApolloAdminClient } from '@/settings/admin-panel/apollo/hooks/useApo
 import { SettingsSectionSkeletonLoader } from '@/settings/components/SettingsSectionSkeletonLoader';
 import { SettingsAdminServerAdmins } from '@/settings/admin-panel/components/SettingsAdminServerAdmins';
 import { SettingsAdminVersionContainer } from '@/settings/admin-panel/components/SettingsAdminVersionContainer';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
 import { Table } from '@/ui/layout/table/components/Table';
 import { TableBody } from '@/ui/layout/table/components/TableBody';
@@ -21,15 +20,12 @@ import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
 
 import { currentUserState } from '@/auth/states/currentUserState';
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { Avatar } from 'twenty-ui/data-display';
-import { IconChevronRight, IconRefresh } from 'twenty-ui/icon';
-import { Button } from 'twenty-ui/input';
+import { IconChevronRight } from 'twenty-ui/icon';
 import { OverflowingTextWithTooltip } from 'twenty-ui/surfaces';
 import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import {
   AdminPanelRecentUsersDocument,
   AdminPanelTopWorkspacesDocument,
@@ -45,12 +41,6 @@ const StyledSearchInputContainer = styled.div`
   padding-bottom: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledButtonContainer = styled.div`
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
-  margin-top: ${themeCssVariables.spacing[2]};
-`;
-
 const RECENT_USERS_GRID_TEMPLATE_COLUMNS = '1fr 2fr 1fr 36px';
 const TOP_WORKSPACES_GRID_TEMPLATE_COLUMNS = '2fr 1fr 36px';
 
@@ -63,50 +53,11 @@ export const SettingsAdminGeneral = () => {
 
   const [workspaceSearchTerm, setWorkspaceSearchTerm] = useState('');
   const [debouncedWorkspaceSearchTerm] = useDebounce(workspaceSearchTerm, 300);
-  const [isUpdatingAllWorkspaces, setIsUpdatingAllWorkspaces] = useState(false);
 
   const currentUser = useAtomStateValue(currentUserState);
-  const tokenPair = useAtomStateValue(tokenPairState);
   const canAccessFullAdminPanel = currentUser?.canAccessFullAdminPanel;
   const canImpersonate = currentUser?.canImpersonate;
   const canManageFeatureFlags = useAtomStateValue(canManageFeatureFlagsState);
-  const { enqueueInfoSnackBar, enqueueErrorSnackBar } = useSnackBar();
-
-  const handleUpdateAllWorkspaces = async () => {
-    if (isUpdatingAllWorkspaces) {
-      return;
-    }
-    setIsUpdatingAllWorkspaces(true);
-
-    try {
-      const response = await fetch(
-        `${REACT_APP_SERVER_BASE_URL}/workspace-modifications/update-all-workspaces-metadata`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to update all workspaces metadata');
-      }
-
-      enqueueInfoSnackBar({
-        message: 'Started updating metadata structure for all workspaces',
-      });
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message:
-          error instanceof Error
-            ? `Failed to update all workspaces metadata: ${error.message}`
-            : 'Failed to update all workspaces metadata',
-      });
-    } finally {
-      setIsUpdatingAllWorkspaces(false);
-    }
-  };
 
   const { data: recentUsersData, loading: isLoadingUsers } = useQuery(
     AdminPanelRecentUsersDocument,
@@ -142,28 +93,6 @@ export const SettingsAdminGeneral = () => {
           </Section>
           <SettingsAdminServerAdmins />
         </>
-      )}
-
-      {canImpersonate && (
-        <Section>
-          <H2Title
-            title={t`Workspace metadata`}
-            description={t`Apply fields, objects, relations, and DB indices metadata across all workspaces that have API keys.`}
-          />
-          <StyledButtonContainer>
-            <Button
-              Icon={IconRefresh}
-              variant="secondary"
-              title={
-                isUpdatingAllWorkspaces
-                  ? t`Updating...`
-                  : t`Update All Workspaces Metadata`
-              }
-              onClick={handleUpdateAllWorkspaces}
-              disabled={isUpdatingAllWorkspaces}
-            />
-          </StyledButtonContainer>
-        </Section>
       )}
 
       {(canImpersonate || canAccessFullAdminPanel) && (

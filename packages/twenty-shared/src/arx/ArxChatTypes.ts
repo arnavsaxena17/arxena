@@ -1,4 +1,5 @@
 import type { OtherFieldsRecord } from '../utils/otherFields';
+import type { CandidateFlags } from './candidateFlags';
 // Lightweight stubs so twenty-shared does not depend on openai/anthropic SDKs
 type OpenAI = unknown;
 type Anthropic = unknown;
@@ -791,18 +792,14 @@ export interface UserProfile {
 
 export interface ArxenaCandidateNode {
   name: string;
-  engagementStatus: boolean;
+  candidateFlags?: CandidateFlags;
   jobTitle: string;
   jobCompanyName: string;
-  startChat: boolean;
   phoneNumber: { primaryPhoneNumber: string };
   email: { primaryEmail: any };
   campaign: string;
   source: string;
-  startVideoInterviewChat: boolean;
-  startMeetingSchedulingChat: boolean;
   uniqueStringKey: string;
-  stopChat: boolean;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
@@ -1127,8 +1124,14 @@ export const emptyCandidateProfileObj: CandidateNode = {
   chatCount: 0,
   input: '',
   candConversationStatus: '',
-  startChat: false,
-  stopChat: false,
+  candidateFlags: {
+    startChat: false,
+    stopChat: false,
+    engagementStatus: false,
+    startMeetingSchedulingChat: false,
+    startVideoInterviewChat: false,
+    lastEngagementChatControl: 'startChat',
+  },
   status: '',
   createdAt: '',
   attachments: {
@@ -1189,16 +1192,12 @@ export const emptyCandidateProfileObj: CandidateNode = {
       },
     ],
   },
-  engagementStatus: false,
   phoneNumber: {
     primaryPhoneNumber: '',
   },
   email: {
     primaryEmail: '',
   },
-  startMeetingSchedulingChat: false,
-  lastEngagementChatControl: 'startChat' as chatControlType,
-  startVideoInterviewChat: false,
   chatMessages: {
     edges: [
       {
@@ -1786,10 +1785,7 @@ export interface CandidateNode {
   messagingChannel?: string;
   attachments: any;
   id: string;
-  engagementStatus: boolean;
-  startVideoInterviewChat: boolean;
-  startMeetingSchedulingChat: boolean;
-  lastEngagementChatControl: chatControlType;
+  candidateFlags?: CandidateFlags | null;
   phoneNumber: {primaryPhoneNumber:string};
   email: {primaryEmail:string};
   chatCount: number;
@@ -1797,8 +1793,6 @@ export interface CandidateNode {
   createdAt: string | number | Date;
   input: string;
   candConversationStatus?: string;
-  startChat: boolean;
-  stopChat: boolean;
   status: string;
   chatMessages: ChatMessages;
   emailMessages: EmailMessages;
@@ -1807,9 +1801,6 @@ export interface CandidateNode {
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
   people: PersonNode;
-  startChatCompleted?: boolean;
-  startMeetingSchedulingChatCompleted?: boolean;
-  startVideoInterviewChatCompleted?: boolean;
   hiringNaukriUrl?: {"primaryLinkUrl":string};
   resdexNaukriUrl?: {"primaryLinkUrl":string};
   linkedinUrl?: {"primaryLinkUrl":string};

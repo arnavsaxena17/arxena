@@ -269,8 +269,13 @@ export const mapArxCandidateToCandidateNode = (candidate: {
   } = {
     name: `${firstName} ${lastName}`.trim() || "",
     projectsId: jobNode?.id,
-    engagementStatus: false,
-    startChat: false,
+    candidateFlags: {
+      engagementStatus: false,
+      startChat: false,
+      stopChat: false,
+      startVideoInterviewChat: false,
+      startMeetingSchedulingChat: false,
+    },
     phoneNumber: {
       primaryPhoneNumber: phoneData.primaryPhoneNumber,
       primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
@@ -281,9 +286,6 @@ export const mapArxCandidateToCandidateNode = (candidate: {
       primaryEmail: emailData.primaryEmail,
       additionalEmails: emailData.additionalEmails
     },
-    stopChat: false,
-    startVideoInterviewChat: false,
-    startMeetingSchedulingChat: false,
     uniqueStringKey: uniqueStringKey,
     hiringNaukriUrl: hiringLink,
     resdexNaukriUrl: resdexLink,

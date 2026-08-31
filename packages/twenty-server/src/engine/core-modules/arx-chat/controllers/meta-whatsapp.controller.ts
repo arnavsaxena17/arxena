@@ -10,6 +10,7 @@ import {
     sendWhatsappTemplateMessageObjectType,
     SendWhatsappUtilityMessageObjectType
 } from 'twenty-shared';
+import { getCandidateLastEngagementChatControl } from 'twenty-shared/arx';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
@@ -110,8 +111,7 @@ export class MetaWhatsappController {
 
       console.log('This is the mostRecentMessageArr:', mostRecentMessageArr);
       const chatControl = {
-        chatControlType:
-          personObj?.candidates?.edges[0]?.node?.lastEngagementChatControl,
+        chatControlType: getCandidateLastEngagementChatControl(candidateNode),
       };
 
       mostRecentMessageArr.push({

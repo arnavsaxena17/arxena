@@ -1,3 +1,5 @@
+import type { CandidateFlags } from './candidateFlags';
+
 export type CandidateEngagementNode = {
   id: string;
   name: string;
@@ -21,15 +23,8 @@ export type CandidateEngagementNode = {
       };
     }>;
   };
-  lastEngagementChatControl?: string;
+  candidateFlags?: CandidateFlags | null;
   updatedAt: string;
   whatsappProvider?: string;
   messagingChannel?: string;
-  startChat?: boolean;
-  stopChat?: boolean;
-  startChatCompleted?: boolean;
-  startVideoInterviewChat?: boolean;
-  startVideoInterviewChatCompleted?: boolean;
-  startMeetingSchedulingChat?: boolean;
-  startMeetingSchedulingChatCompleted?: boolean;
-}; 
+};
