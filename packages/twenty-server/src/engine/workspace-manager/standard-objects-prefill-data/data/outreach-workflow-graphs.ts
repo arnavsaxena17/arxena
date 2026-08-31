@@ -319,6 +319,29 @@ const followUpSteps = ({
     : []),
 ];
 
+// Outreach dashboard company fields (projectIds, outreachFunnelStage, peopleReached,
+// firstContactAt, coverageBucket) are materialized by OutreachCommandMaterializeService,
+// not by UPDATE_RECORD steps in these graphs.
+//
+// LinkedIn-first semantics:
+// - connection_sent = first outreach touch (peopleReached, funnel REACHED)
+// - connection_accepted = time to first contact (company.firstContactAt, Speed tab)
+//
+// | Workflow / step | Dashboard fields populated |
+// | --- | --- |
+// | Harvest upsert-companies LF | company.projectIds, outreachFunnelStage=ADDED |
+// | SEND_LINKEDIN_CONNECTION_REQUEST | connection_sent → peopleReached / REACHED |
+// | Unipile connection_accepted webhook | connection_accepted → firstContactAt |
+// | SEND_LINKEDIN_MESSAGE / INMAIL / WHATSAPP | outbound_message → company rollup |
+// | SEND_EMAIL (per-candidate run, fallback) | outbound_message → firstContactAt |
+// | CREATE_CALENDAR_EVENT | meeting_booked → company rollup |
+// | Unipile inbound reply flush (kind=outreach) | REPLIED / meeting → company rollup |
+// | UPDATE_RECORD stage markers | candidate.outreachSequenceStage only (no company rollup) |
+// | enrich-contact LF | candidate.enrichStatus only (no company rollup) |
+//
+// Candidate-only charts (outreachSequenceStage) work from UPDATE_RECORD alone.
+// Company funnel / coverage charts need the send/webhook materialize paths above.
+
 export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   name: string;
   trigger: Record<string, unknown>;

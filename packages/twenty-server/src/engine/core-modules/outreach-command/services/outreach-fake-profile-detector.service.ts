@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
-import { generateObject, type LanguageModel } from 'ai';
+import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
@@ -23,6 +23,10 @@ import {
   profilePublicIdentifier,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-fake-profile-investigation.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import {
+  AiSdkExecutionService,
+  runGenerateObject,
+} from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 const hasText = (value: string | null | undefined): value is string =>
@@ -72,6 +76,8 @@ export class OutreachFakeProfileDetectorService {
   constructor(
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
+    @Optional()
+    private readonly aiSdkExecutionService?: AiSdkExecutionService,
   ) {}
 
   async execute({
@@ -109,6 +115,7 @@ export class OutreachFakeProfileDetectorService {
           index,
           model: registeredModel.model,
           modelId: registeredModel.modelId,
+          workspaceId,
         }),
     );
 
@@ -148,23 +155,30 @@ export class OutreachFakeProfileDetectorService {
     index: number;
     model: LanguageModel;
     modelId: string;
+    workspaceId?: string;
   }): Promise<OutreachFakeProfileAssessment> {
     const name = profileDisplayName(input.profile);
     const publicIdentifier = profilePublicIdentifier(input.profile);
     const headline = profileHeadline(input.profile);
     const investigationBrief = buildFakeProfileInvestigationBrief(input.profile);
-
     try {
-      const { object } = await generateObject({
-        model: input.model,
-        schema: gtmFakeProfileLlmResultSchema,
-        system: OUTREACH_FAKE_PROFILE_DETECTOR_SYSTEM_PROMPT,
-        prompt: buildOutreachFakeProfileDetectorUserPrompt({
-          investigationBrief,
-          profileJson: compactProfileJson(input.profile),
-        }),
-        experimental_telemetry: AI_TELEMETRY_CONFIG,
-      });
+      const generationResult = await runGenerateObject(
+        this.aiSdkExecutionService,
+        {
+          workspaceId: input.workspaceId,
+          modelId: input.modelId,
+          options: {
+            model: input.model,
+            schema: gtmFakeProfileLlmResultSchema,
+            system: OUTREACH_FAKE_PROFILE_DETECTOR_SYSTEM_PROMPT,
+            prompt: buildOutreachFakeProfileDetectorUserPrompt({
+              investigationBrief,
+              profileJson: compactProfileJson(input.profile),
+            }),
+            experimental_telemetry: AI_TELEMETRY_CONFIG,
+          },
+        },
+      );
 
       return this.toAssessment({
         index: input.index,
@@ -172,7 +186,7 @@ export class OutreachFakeProfileDetectorService {
         name,
         publicIdentifier,
         headline,
-        llm: object,
+        llm: generationResult.object,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

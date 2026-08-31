@@ -238,6 +238,7 @@ export {
   parseOutreachActionTimestamps,
   parseOutreachSpeedTimestamps,
   resolveOutreachFirstOutboundAt,
+  resolveOutreachFirstContactAt,
   resolveOutreachLastOutboundAt,
   resolveOutreachFirstInboundAt,
   resolveOutreachLastInboundAt,

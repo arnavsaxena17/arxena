@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
-import { generateObject, type LanguageModel } from 'ai';
+import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
@@ -14,6 +14,10 @@ import {
 } from 'src/engine/core-modules/outreach-command/schemas/outreach-company-profile-llm.schema';
 import type { OutreachCollectedCompanyEnrichment } from 'src/engine/core-modules/outreach-command/utils/outreach-company-enrichment-source.types';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import {
+  AiSdkExecutionService,
+  runGenerateObject,
+} from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 const hasText = (value: string | null | undefined): value is string =>
@@ -26,6 +30,8 @@ export class OutreachCompanyProfileSummarizerService {
   constructor(
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
+    @Optional()
+    private readonly aiSdkExecutionService?: AiSdkExecutionService,
   ) {}
 
   async summarizeFromEnrichmentSources(input: {
@@ -58,27 +64,34 @@ export class OutreachCompanyProfileSummarizerService {
     }
 
     try {
-      const { object } = await generateObject({
-        model: registeredModel.model,
-        schema: gtmCompanyProfileLlmResultSchema,
-        system: OUTREACH_COMPANY_PROFILE_SUMMARIZER_SYSTEM_PROMPT,
-        prompt: buildOutreachCompanyProfileSummarizerUserPrompt({
-          domain: input.domain,
-          workspaceDisplayName: input.workspaceDisplayName,
-          linkedInSearchHit: enrichment.linkedInSearchHit,
-          linkedInCompanyProfile: enrichment.linkedInCompanyProfile,
-          wikidataCompany: enrichment.wikidataCompany,
-          companiesIndexWiki: enrichment.wikiCompany,
-          webSearchCompany: enrichment.webSearchCompany,
-        }),
-        experimental_telemetry: AI_TELEMETRY_CONFIG,
-      });
-
-      this.logger.log(
-        `LLM company profile summary domain=${input.domain} model=${registeredModel.modelId} name="${object.companyName}" industry="${object.industry}"`,
+      const generationResult = await runGenerateObject(
+        this.aiSdkExecutionService,
+        {
+          workspaceId: input.workspaceId,
+          modelId: registeredModel.modelId,
+          options: {
+            model: registeredModel.model,
+            schema: gtmCompanyProfileLlmResultSchema,
+            system: OUTREACH_COMPANY_PROFILE_SUMMARIZER_SYSTEM_PROMPT,
+            prompt: buildOutreachCompanyProfileSummarizerUserPrompt({
+              domain: input.domain,
+              workspaceDisplayName: input.workspaceDisplayName,
+              linkedInSearchHit: enrichment.linkedInSearchHit,
+              linkedInCompanyProfile: enrichment.linkedInCompanyProfile,
+              wikidataCompany: enrichment.wikidataCompany,
+              companiesIndexWiki: enrichment.wikiCompany,
+              webSearchCompany: enrichment.webSearchCompany,
+            }),
+            experimental_telemetry: AI_TELEMETRY_CONFIG,
+          },
+        },
       );
 
-      return object;
+      this.logger.log(
+        `LLM company profile summary domain=${input.domain} model=${registeredModel.modelId} name="${generationResult.object.companyName}" industry="${generationResult.object.industry}"`,
+      );
+
+      return generationResult.object;
     } catch (error) {
       this.logger.warn(
         `LLM company profile summary failed for domain=${input.domain} model=${registeredModel.modelId}: ${

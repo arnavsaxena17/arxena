@@ -10,22 +10,20 @@ import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import {
-  candidateStageImpliesOutbound,
+  appendProjectId,
+  parseProjectIds,
+} from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
+import {
   computeCoverageBucket,
   rollupOutreachFunnelStage,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
-import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
-import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
 
 type CandidateRow = ObjectLiteral & {
   id: string;
-  outreachSequenceStage?: string | null;
   firstOutboundAt?: string | Date | null;
-  lastOutboundAt?: string | Date | null;
-  updatedAt?: string | Date | null;
   outreachSpeedTimestamps?: unknown;
   projectsId?: string | null;
   peopleId?: string | null;
@@ -40,24 +38,10 @@ type CompanyRow = ObjectLiteral & {
   peopleTargeted?: number | null;
 };
 
-type ProjectRow = ObjectLiteral & {
-  id: string;
-  companyId?: string | null;
-};
-
 type PersonRow = ObjectLiteral & {
   id: string;
   companyId?: string | null;
 };
-
-const columnNames = (repository: {
-  metadata?: { columns?: Array<{ propertyName?: string }> };
-}): Set<string> =>
-  new Set(
-    (repository.metadata?.columns ?? [])
-      .map((column) => column.propertyName)
-      .filter((name): name is string => isNonEmptyString(name)),
-  );
 
 const toIso = (value: string | Date | null | undefined): string | null => {
   if (!value) {
@@ -73,18 +57,16 @@ const toIso = (value: string | Date | null | undefined): string | null => {
   return Number.isFinite(parsed) ? new Date(parsed).toISOString() : value;
 };
 
-@RegisteredWorkspaceCommand('2.25.0', 1785600000058)
+@RegisteredWorkspaceCommand('2.25.0', 1785600000085)
 @Command({
-  name: 'upgrade:2-25:backfill-gtm-command-rollups',
+  name: 'upgrade:2-25:re-backfill-outreach-company-rollups',
   description:
-    'Stamp candidate firstOutboundAt and company GTM funnel/first-contact rollups for existing outreach',
+    'Re-stamp company projectIds, funnel stage, and coverage rollups from linked outreach candidates (post GTM field rename)',
 })
-export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceCommandRunner {
+export class ReBackfillOutreachCompanyRollupsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-    private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
-    private readonly workspaceCacheService: WorkspaceCacheService,
   ) {
     super(workspaceIteratorService);
   }
@@ -96,17 +78,8 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
     const isDryRun = options.dryRun ?? false;
 
     this.logger.log(
-      `${isDryRun ? '[DRY RUN] ' : ''}Backfilling GTM Command rollups for workspace ${workspaceId}`,
+      `${isDryRun ? '[DRY RUN] ' : ''}Re-backfilling outreach company rollups for workspace ${workspaceId}`,
     );
-
-    if (!isDryRun) {
-      await this.arxenaStandardApplicationService.synchronizeArxenaStandardApplicationOrThrow(
-        { workspaceId },
-      );
-      await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
-        'flatPageLayoutMaps',
-      ]);
-    }
 
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -124,12 +97,6 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
             'company',
             { shouldBypassPermissionChecks: true },
           );
-        const projectRepository =
-          await this.globalWorkspaceOrmManager.getRepository<ProjectRow>(
-            workspaceId,
-            'project',
-            { shouldBypassPermissionChecks: true },
-          );
         const personRepository =
           await this.globalWorkspaceOrmManager.getRepository<PersonRow>(
             workspaceId,
@@ -137,89 +104,33 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
             { shouldBypassPermissionChecks: true },
           );
 
-        const candidateColumns = columnNames(candidateRepository);
-        const companyColumns = columnNames(companyRepository);
-
-        if (
-          !candidateColumns.has('outreachSequenceStage') ||
-          !candidateColumns.has('firstOutboundAt')
-        ) {
-          this.logger.warn(
-            `Skipping candidate firstOutboundAt backfill — fields missing in workspace ${workspaceId}`,
-          );
-
-          return;
-        }
-
-        const candidates = await candidateRepository.find({ take: 20_000 });
-        let stampedCandidates = 0;
-
-        for (const candidate of candidates) {
-          if (
-            !candidateStageImpliesOutbound(candidate.outreachSequenceStage) ||
-            isNonEmptyString(toIso(candidate.firstOutboundAt))
-          ) {
-            continue;
-          }
-
-          const stampedAt =
-            toIso(candidate.lastOutboundAt) ??
-            toIso(candidate.updatedAt) ??
-            new Date().toISOString();
-          const patch: Record<string, unknown> = {
-            firstOutboundAt: stampedAt,
-          };
-
-          if (
-            candidateColumns.has('lastOutboundAt') &&
-            !isNonEmptyString(toIso(candidate.lastOutboundAt))
-          ) {
-            patch.lastOutboundAt = stampedAt;
-          }
-
-          stampedCandidates += 1;
-
-          if (!isDryRun) {
-            await candidateRepository.update(candidate.id, patch);
-          }
-
-          Object.assign(candidate, patch);
-        }
-
-        if (
-          !companyColumns.has('projectIds') ||
-          !companyColumns.has('outreachFunnelStage')
-        ) {
-          this.logger.log(
-            `Stamped firstOutboundAt on ${stampedCandidates} candidates; company fields missing`,
-          );
-
-          return;
-        }
-
-        const [companies, projects, people] = await Promise.all([
+        const [candidates, companies, people] = await Promise.all([
+          candidateRepository.find({ take: 20_000 }),
           companyRepository.find({ take: 20_000 }),
-          projectRepository.find({ take: 20_000 }),
           personRepository.find({ take: 20_000 }),
         ]);
-        const projectById = new Map(
-          projects.map((project) => [project.id, project]),
-        );
-        const personById = new Map(people.map((person) => [person.id, person]));
-        const companyIdForCandidate = (candidate: CandidateRow): string | null =>
-          projectById.get(candidate.projectsId ?? '')?.companyId ??
-          personById.get(candidate.peopleId ?? '')?.companyId ??
-          null;
 
+        const personById = new Map(people.map((person) => [person.id, person]));
+        const companyById = new Map(companies.map((company) => [company.id, company]));
+        const projectIdsByCompany = new Map<string, Set<string>>();
         const reachedByCompany = new Map<string, string[]>();
         const firstContactByCompany = new Map<string, string[]>();
         const targetedByCompany = new Map<string, number>();
 
         for (const candidate of candidates) {
-          const companyId = companyIdForCandidate(candidate);
+          const companyId =
+            personById.get(candidate.peopleId ?? '')?.companyId ?? null;
 
           if (!isNonEmptyString(companyId)) {
             continue;
+          }
+
+          if (isNonEmptyString(candidate.projectsId)) {
+            const projectIds =
+              projectIdsByCompany.get(companyId) ?? new Set<string>();
+
+            projectIds.add(candidate.projectsId);
+            projectIdsByCompany.set(companyId, projectIds);
           }
 
           targetedByCompany.set(
@@ -233,10 +144,10 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
           );
 
           if (isNonEmptyString(firstOutboundAt)) {
-            const existing = reachedByCompany.get(companyId) ?? [];
+            const reachedAt = reachedByCompany.get(companyId) ?? [];
 
-            existing.push(firstOutboundAt);
-            reachedByCompany.set(companyId, existing);
+            reachedAt.push(firstOutboundAt);
+            reachedByCompany.set(companyId, reachedAt);
           }
 
           const firstContactAt = resolveOutreachFirstContactAt(
@@ -251,57 +162,67 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
           }
         }
 
+        const touchedCompanyIds = new Set([
+          ...projectIdsByCompany.keys(),
+          ...targetedByCompany.keys(),
+        ]);
+
         let stampedCompanies = 0;
 
-        for (const company of companies) {
-          const reachedAt = reachedByCompany.get(company.id) ?? [];
-          const peopleTargeted = targetedByCompany.get(company.id) ?? 0;
+        for (const companyId of touchedCompanyIds) {
+          const company = companyById.get(companyId);
 
-          if (peopleTargeted === 0 && reachedAt.length === 0) {
+          if (!company) {
             continue;
           }
 
+          const reachedAt = reachedByCompany.get(companyId) ?? [];
           const peopleReached = reachedAt.length;
+          const peopleTargeted = targetedByCompany.get(companyId) ?? 0;
           const firstContactAt =
             toIso(company.firstContactAt) ??
-            [...(firstContactByCompany.get(company.id) ?? [])].sort()[0] ??
+            [...(firstContactByCompany.get(companyId) ?? [])].sort()[0] ??
             null;
           const outreachFunnelStage = rollupOutreachFunnelStage({
             current: company.outreachFunnelStage ?? 'ADDED',
             event: peopleReached > 0 ? 'connection_sent' : 'enrich_started',
             peopleReached,
           });
+          const nextProjectIds = appendProjectId(
+            company.projectIds,
+            ...[...(projectIdsByCompany.get(companyId) ?? [])],
+          );
           const patch: Record<string, unknown> = {};
+
+          if (
+            JSON.stringify(parseProjectIds(company.projectIds).sort()) !==
+            JSON.stringify(nextProjectIds.sort())
+          ) {
+            patch.projectIds = nextProjectIds;
+          }
 
           if (company.outreachFunnelStage !== outreachFunnelStage) {
             patch.outreachFunnelStage = outreachFunnelStage;
           }
 
           if (
-            companyColumns.has('firstContactAt') &&
             !isNonEmptyString(toIso(company.firstContactAt)) &&
             isNonEmptyString(firstContactAt)
           ) {
             patch.firstContactAt = firstContactAt;
           }
 
-          if (
-            companyColumns.has('peopleReached') &&
-            (company.peopleReached ?? 0) !== peopleReached
-          ) {
+          if ((company.peopleReached ?? 0) !== peopleReached) {
             patch.peopleReached = peopleReached;
           }
 
-          if (
-            companyColumns.has('peopleTargeted') &&
-            (company.peopleTargeted ?? 0) !== peopleTargeted
-          ) {
+          if ((company.peopleTargeted ?? 0) !== peopleTargeted) {
             patch.peopleTargeted = peopleTargeted;
           }
 
-          if (companyColumns.has('coverageBucket')) {
-            patch.coverageBucket = computeCoverageBucket(peopleReached);
-          }
+          const coverageBucket = computeCoverageBucket(peopleReached);
+
+          patch.coverageBucket = coverageBucket;
 
           if (Object.keys(patch).length === 0) {
             continue;
@@ -315,7 +236,7 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
         }
 
         this.logger.log(
-          `Stamped firstOutboundAt on ${stampedCandidates} candidates and rollups on ${stampedCompanies} companies`,
+          `Re-backfilled rollups on ${stampedCompanies} of ${touchedCompanyIds.size} outreach-linked companies`,
         );
       },
       authContext,

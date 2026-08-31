@@ -1,6 +1,5 @@
 import { Body, Controller, Post, UseFilters, UseGuards } from '@nestjs/common';
 
-import { generateText } from 'ai';
 import { PermissionFlagType } from 'twenty-shared/constants';
 
 import { RestApiExceptionFilter } from 'src/engine/api/rest/rest-api-exception.filter';
@@ -11,11 +10,8 @@ import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorat
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import {
-  AiException,
-  AiExceptionCode,
-} from 'src/engine/metadata-modules/ai/ai.exception';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
+import { AiSdkExecutionService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiRestApiExceptionFilter } from 'src/engine/metadata-modules/ai/filters/ai-api-exception.filter';
 import { GenerateTextInput } from 'src/engine/metadata-modules/ai/ai-generate-text/dtos/generate-text.input';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
@@ -32,6 +28,7 @@ export class AiGenerateTextController {
   constructor(
     private readonly aiModelRegistryService: AiModelRegistryService,
     private readonly aiBillingService: AiBillingService,
+    private readonly aiSdkExecutionService: AiSdkExecutionService,
   ) {}
 
   @Post('generate-text')
@@ -63,38 +60,25 @@ export class AiGenerateTextController {
       registeredModel.modelId,
     );
 
-    let result: Awaited<ReturnType<typeof generateText>> | undefined;
-
-    try {
-      result = await generateText({
+    const result = await this.aiSdkExecutionService.generateText({
+      workspaceId: workspace.id,
+      modelId: registeredModel.modelId,
+      operationType: UsageOperationType.AI_WORKFLOW_TOKEN,
+      userWorkspaceId,
+      options: {
         model: registeredModel.model,
         system: body.systemPrompt,
         prompt: body.userPrompt,
         maxOutputTokens: modelConfig.maxOutputTokens,
-      });
+      },
+    });
 
-      return {
-        text: result.text,
-        usage: {
-          inputTokens: result.usage?.inputTokens ?? 0,
-          outputTokens: result.usage?.outputTokens ?? 0,
-        },
-      };
-    } finally {
-      if (result) {
-        void this.aiBillingService.calculateAndBillUsage(
-          registeredModel.modelId,
-          {
-            usage: result.usage,
-            cacheCreationTokens:
-              result.usage.inputTokenDetails?.cacheWriteTokens ?? 0,
-          },
-          workspace.id,
-          UsageOperationType.AI_WORKFLOW_TOKEN,
-          null,
-          userWorkspaceId,
-        );
-      }
-    }
+    return {
+      text: result.text,
+      usage: {
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+      },
+    };
   }
 }

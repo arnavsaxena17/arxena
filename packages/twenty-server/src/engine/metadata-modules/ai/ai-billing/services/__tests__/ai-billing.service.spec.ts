@@ -393,6 +393,42 @@ describe('AiBillingService', () => {
     });
   });
 
+  describe('billWorkflowAiSdkUsage', () => {
+    it('should no-op when workspaceId is missing', async () => {
+      await service.billWorkflowAiSdkUsage({
+        workspaceId: undefined,
+        modelId: 'gpt-4o',
+        usage: mockTokenUsage,
+      });
+
+      expect(
+        mockWorkspaceEventEmitter.emitCustomBatchEvent,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should emit AI_WORKFLOW_TOKEN usage for workflow SDK calls', async () => {
+      await service.billWorkflowAiSdkUsage({
+        workspaceId: 'workspace-1',
+        modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
+        usage: mockTokenUsage,
+      });
+
+      expect(
+        mockWorkspaceEventEmitter.emitCustomBatchEvent,
+      ).toHaveBeenCalledWith(
+        USAGE_RECORDED,
+        [
+          expect.objectContaining({
+            operationType: UsageOperationType.AI_WORKFLOW_TOKEN,
+            resourceContext: 'openrouter/deepseek/deepseek-v4-flash-0731',
+            unit: UsageUnit.TOKEN,
+          }),
+        ],
+        'workspace-1',
+      );
+    });
+  });
+
   describe('emitAiTokenUsageEvent', () => {
     it('attaches Ask AI metadata when provided', async () => {
       await service.emitAiTokenUsageEvent(

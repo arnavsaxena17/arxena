@@ -268,7 +268,8 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'company',
     field: {
-      description: 'First outbound contact timestamp',
+      description:
+        'First meaningful contact timestamp (LinkedIn connection accepted, or first email/InMail for fallback paths)',
       icon: 'IconClock',
       label: 'First Contact At',
       name: 'firstContactAt',

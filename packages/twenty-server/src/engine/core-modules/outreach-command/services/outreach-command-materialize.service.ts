@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import {
   buildCandidateActionTimestampsUpdate,
+  resolveOutreachFirstContactAt,
   resolveOutreachFirstOutboundAt,
   resolveOutreachLastInboundAt,
   resolveOutreachLastOutboundAt,
@@ -372,6 +373,25 @@ export class OutreachCommandMaterializeService {
         ),
       );
       const peopleReached = reachedCandidates.length;
+      const earliestCandidateFirstContactMs = candidates.reduce(
+        (earliest, candidate) => {
+          const contactAt = resolveOutreachFirstContactAt(
+            candidate.outreachSpeedTimestamps,
+          );
+          const contactMs = Date.parse(contactAt ?? '');
+
+          if (!Number.isFinite(contactMs)) {
+            return earliest;
+          }
+
+          return earliest === 0 ? contactMs : Math.min(earliest, contactMs);
+        },
+        0,
+      );
+      const aggregatedFirstContactAt =
+        earliestCandidateFirstContactMs > 0
+          ? new Date(earliestCandidateFirstContactMs).toISOString()
+          : null;
       const channelsUsed = Array.from(
         new Set(
           candidates
@@ -384,11 +404,11 @@ export class OutreachCommandMaterializeService {
 
       const firstContactAt =
         company.firstContactAt ??
-        (['outbound_message', 'connection_sent', 'comment_posted'].includes(
-          event,
-        )
+        (event === 'connection_accepted'
           ? nowIso
-          : company.firstContactAt);
+          : ['outbound_message', 'comment_posted'].includes(event)
+            ? nowIso
+            : aggregatedFirstContactAt ?? company.firstContactAt);
       const firstReplyAt =
         company.firstReplyAt ??
         (event === 'inbound_reply' ? nowIso : company.firstReplyAt);
@@ -486,7 +506,10 @@ export class OutreachCommandMaterializeService {
             timeToFirstContactBucket: computeTimeBucket(daysToFirstContact),
             timeToMeetingBucket: computeTimeBucket(daysToMeetingBooked),
             firstContactChannel:
-              company.firstContactChannel ?? firstContactChannel ?? null,
+              company.firstContactChannel ??
+              (event === 'connection_accepted'
+                ? 'LINKEDIN_CONNECT'
+                : firstContactChannel ?? null),
             outreachFunnelStage,
             attentionReason:
               event === 'inbound_reply' || event === 'meeting_booked'

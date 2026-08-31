@@ -11,7 +11,8 @@ describe('outreachSpeedTimestamps', () => {
   it('computes first-contact and meeting buckets from enrolled baseline', () => {
     const flatMetrics = buildOutreachSpeedFlatMetrics({
       enrolledAt: '2026-01-01T00:00:00.000Z',
-      connectionSentAt: '2026-01-03T00:00:00.000Z',
+      connectionSentAt: '2026-01-02T00:00:00.000Z',
+      connectionAcceptedAt: '2026-01-03T00:00:00.000Z',
       firstContactAt: '2026-01-03T00:00:00.000Z',
       meetingBookedAt: '2026-01-10T00:00:00.000Z',
     });
@@ -20,8 +21,8 @@ describe('outreachSpeedTimestamps', () => {
     expect(flatMetrics.timeToFirstContactBucket).toBe('D1_3');
     expect(flatMetrics.daysToMeetingBooked).toBe(9);
     expect(flatMetrics.timeToMeetingBucket).toBe('D7_14');
-    expect(flatMetrics.daysFromConnectionToAccept).toBeNull();
-    expect(flatMetrics.daysFromConnectionToMeeting).toBe(7);
+    expect(flatMetrics.daysFromConnectionToAccept).toBe(1);
+    expect(flatMetrics.daysFromConnectionToMeeting).toBe(8);
   });
 
   it('stamps outbound and inbound touch timestamps in JSON', () => {
@@ -34,6 +35,7 @@ describe('outreachSpeedTimestamps', () => {
 
     expect(afterOutbound.firstOutboundAt).toBe('2026-01-01T10:00:00.000Z');
     expect(afterOutbound.lastOutboundAt).toBe('2026-01-01T10:00:00.000Z');
+    expect(afterOutbound.firstContactAt).toBeNull();
 
     const afterInbound = applyOutreachActionTimestamps({
       existing: afterOutbound,
@@ -62,9 +64,11 @@ describe('outreachSpeedTimestamps', () => {
 
     expect(secondPass.connectionSentAt).toBe('2026-01-01T10:00:00.000Z');
     expect(secondPass.connectionAcceptedAt).toBe('2026-01-04T10:00:00.000Z');
+    expect(secondPass.firstContactAt).toBe('2026-01-04T10:00:00.000Z');
 
     const flatMetrics = buildOutreachSpeedFlatMetrics(secondPass);
 
+    expect(flatMetrics.daysToFirstContact).toBe(3);
     expect(flatMetrics.daysFromConnectionToAccept).toBe(3);
   });
 
@@ -85,6 +89,7 @@ describe('outreachSpeedTimestamps', () => {
     );
     expect(update.lastOutboundAt).toBe('2026-01-08T00:00:00.000Z');
     expect(update.firstOutboundAt).toBe('2026-01-02T00:00:00.000Z');
+    expect(update.daysToFirstContact).toBeNull();
     expect(update.daysFromConnectionToMeeting).toBe(6);
     expect(update.timeToMeetingBucket).toBe('D3_7');
   });
@@ -107,7 +112,7 @@ describe('outreachSpeedTimestamps', () => {
     expect(update.outreachSpeedTimestamps.meetingBookedAt).toBe(
       '2026-01-09T12:00:00.000Z',
     );
-    expect(update.daysToFirstContact).toBe(2);
+    expect(update.daysToFirstContact).toBeNull();
     expect(computeTimeBucket(update.daysToMeetingBooked)).toBe('D7_14');
   });
 

@@ -151,7 +151,8 @@ export class OutreachInboundReplyWindowService {
       })),
     });
 
-    if (kind === 'outreach') {
+    // Legacy buffered jobs used kind 'gtm' before InboundReplyWindowKind was narrowed.
+    if (kind === 'outreach' || kind === 'gtm') {
       let token = apiToken;
 
       if (!token) {

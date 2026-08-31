@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
-import { generateObject, type LanguageModel } from 'ai';
+import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
@@ -13,6 +13,10 @@ import {
   type IcpBootstrapLlmResult,
 } from 'src/engine/core-modules/outreach-command/schemas/outreach-icp-bootstrap-llm.schema';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import {
+  AiSdkExecutionService,
+  runGenerateObject,
+} from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 const hasText = (value: string | null | undefined): value is string =>
@@ -25,6 +29,8 @@ export class IcpBootstrapSummarizerService {
   constructor(
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
+    @Optional()
+    private readonly aiSdkExecutionService?: AiSdkExecutionService,
   ) {}
 
   async draftFromSellerCompany(input: {
@@ -47,26 +53,33 @@ export class IcpBootstrapSummarizerService {
     }
 
     try {
-      const { object } = await generateObject({
-        model: registeredModel.model,
-        schema: gtmIcpBootstrapLlmResultSchema,
-        system: ICP_BOOTSTRAP_SUMMARIZER_SYSTEM_PROMPT,
-        prompt: buildIcpBootstrapSummarizerUserPrompt({
-          domain: input.domain,
-          companyName: input.companyName,
-          industry: input.industry,
-          summary: input.summary,
-          employeeRange: input.employeeRange,
-          hq: input.hq,
-        }),
-        experimental_telemetry: AI_TELEMETRY_CONFIG,
-      });
-
-      this.logger.log(
-        `LLM ICP bootstrap domain=${input.domain} model=${registeredModel.modelId} titles=${object.targetTitles.length} locations=${object.locations.length}`,
+      const generationResult = await runGenerateObject(
+        this.aiSdkExecutionService,
+        {
+          workspaceId: input.workspaceId,
+          modelId: registeredModel.modelId,
+          options: {
+            model: registeredModel.model,
+            schema: gtmIcpBootstrapLlmResultSchema,
+            system: ICP_BOOTSTRAP_SUMMARIZER_SYSTEM_PROMPT,
+            prompt: buildIcpBootstrapSummarizerUserPrompt({
+              domain: input.domain,
+              companyName: input.companyName,
+              industry: input.industry,
+              summary: input.summary,
+              employeeRange: input.employeeRange,
+              hq: input.hq,
+            }),
+            experimental_telemetry: AI_TELEMETRY_CONFIG,
+          },
+        },
       );
 
-      return object;
+      this.logger.log(
+        `LLM ICP bootstrap domain=${input.domain} model=${registeredModel.modelId} titles=${generationResult.object.targetTitles.length} locations=${generationResult.object.locations.length}`,
+      );
+
+      return generationResult.object;
     } catch (error) {
       this.logger.warn(
         `LLM ICP bootstrap failed for domain=${input.domain} model=${registeredModel.modelId}: ${

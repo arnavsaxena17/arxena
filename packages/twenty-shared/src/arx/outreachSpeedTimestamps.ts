@@ -167,6 +167,17 @@ export const resolveOutreachLastOutboundAt = (
   flatFallback ??
   null;
 
+export const resolveOutreachFirstContactAt = (
+  timestamps: unknown,
+  flatFallback?: string | null,
+): string | null => {
+  const parsed = parseOutreachActionTimestamps(timestamps);
+
+  return (
+    parsed?.firstContactAt ?? parsed?.connectionAcceptedAt ?? flatFallback ?? null
+  );
+};
+
 export const resolveOutreachFirstInboundAt = (
   timestamps: unknown,
   flatFallback?: string | null,
@@ -188,8 +199,7 @@ export const buildOutreachSpeedFlatMetrics = (
 ): OutreachSpeedFlatMetrics => {
   const firstContactAt =
     timestamps.firstContactAt ??
-    timestamps.firstOutboundAt ??
-    timestamps.connectionSentAt ??
+    timestamps.connectionAcceptedAt ??
     null;
   const daysToFirstContact = computeDaysBetween(
     timestamps.enrolledAt,
@@ -265,12 +275,12 @@ export const applyOutreachActionTimestamps = ({
       return {
         ...next,
         connectionSentAt: next.connectionSentAt ?? nowIso,
-        firstContactAt: next.firstContactAt ?? nowIso,
       };
     case 'connection_accepted':
       return {
         ...next,
         connectionAcceptedAt: next.connectionAcceptedAt ?? nowIso,
+        firstContactAt: next.firstContactAt ?? nowIso,
       };
     case 'comment_posted':
     case 'outbound_message':
@@ -362,7 +372,9 @@ export const backfillOutreachActionTimestampsFromCandidate = ({
   const connectionSentAt =
     parsedExisting?.connectionSentAt ?? resolvedFirstOutboundAt ?? null;
   const firstContactAt =
-    parsedExisting?.firstContactAt ?? resolvedFirstOutboundAt ?? null;
+    parsedExisting?.firstContactAt ??
+    parsedExisting?.connectionAcceptedAt ??
+    null;
   const meetingBookedAt =
     parsedExisting?.meetingBookedAt ??
     (outreachSequenceStage === 'MEETING_BOOKED'

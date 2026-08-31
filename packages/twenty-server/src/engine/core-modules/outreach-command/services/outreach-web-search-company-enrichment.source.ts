@@ -1,8 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
-  generateObject,
-  generateText,
   Output,
   stepCountIs,
 } from 'ai';
@@ -24,6 +22,11 @@ import type {
   OutreachWebSearchCompanySnapshot,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-company-enrichment-source.types';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import {
+  AiSdkExecutionService,
+  runGenerateObject,
+  runGenerateText,
+} from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import {
   AiModelRegistryService,
   type RegisteredAiModel,
@@ -76,6 +79,8 @@ export class OutreachWebSearchCompanyEnrichmentSource
     private readonly aiModelRegistryService?: AiModelRegistryService,
     @Optional()
     private readonly nativeToolBinderService?: NativeToolBinderService,
+    @Optional()
+    private readonly aiSdkExecutionService?: AiSdkExecutionService,
   ) {}
 
   async enrich(
@@ -107,7 +112,11 @@ export class OutreachWebSearchCompanyEnrichmentSource
 
     try {
       const object = canUseNativeWebSearch
-        ? await this.generateWithNativeWebSearch(registeredModel, tools, input)
+        ? await this.generateWithNativeWebSearch(
+            registeredModel,
+            tools,
+            input,
+          )
         : await this.generateWithoutNativeWebSearch(registeredModel, input);
 
       if (!isDefined(object) || !hasText(object.companyName)) {
@@ -140,20 +149,24 @@ export class OutreachWebSearchCompanyEnrichmentSource
     tools: ReturnType<NativeToolBinderService['bind']>,
     input: OutreachCompanyEnrichmentSourceInput,
   ): Promise<OutreachWebSearchCompanyLlmResult | undefined> {
-    const result = await generateText({
-      model: registeredModel.model,
-      tools,
-      system: OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
-      prompt: buildOutreachWebSearchCompanyUserPrompt({
-        domain: input.domain,
-        workspaceDisplayName: input.workspaceDisplayName,
-        companyNameHint: input.hints?.companyName,
-      }),
-      output: Output.object({
-        schema: gtmWebSearchCompanyLlmResultSchema,
-      }),
-      stopWhen: stepCountIs(WEB_SEARCH_MAX_STEPS),
-      experimental_telemetry: AI_TELEMETRY_CONFIG,
+    const result = await runGenerateText(this.aiSdkExecutionService, {
+      workspaceId: input.workspaceId,
+      modelId: registeredModel.modelId,
+      options: {
+        model: registeredModel.model,
+        tools,
+        system: OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
+        prompt: buildOutreachWebSearchCompanyUserPrompt({
+          domain: input.domain,
+          workspaceDisplayName: input.workspaceDisplayName,
+          companyNameHint: input.hints?.companyName,
+        }),
+        output: Output.object({
+          schema: gtmWebSearchCompanyLlmResultSchema,
+        }),
+        stopWhen: stepCountIs(WEB_SEARCH_MAX_STEPS),
+        experimental_telemetry: AI_TELEMETRY_CONFIG,
+      },
     });
 
     return result.output;
@@ -163,19 +176,26 @@ export class OutreachWebSearchCompanyEnrichmentSource
     registeredModel: RegisteredAiModel,
     input: OutreachCompanyEnrichmentSourceInput,
   ): Promise<OutreachWebSearchCompanyLlmResult | undefined> {
-    const { object } = await generateObject({
-      model: registeredModel.model,
-      schema: gtmWebSearchCompanyLlmResultSchema,
-      system: OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
-      prompt: buildOutreachWebSearchCompanyUserPrompt({
-        domain: input.domain,
-        workspaceDisplayName: input.workspaceDisplayName,
-        companyNameHint: input.hints?.companyName,
-      }),
-      experimental_telemetry: AI_TELEMETRY_CONFIG,
-    });
+    const generationResult = await runGenerateObject(
+      this.aiSdkExecutionService,
+      {
+        workspaceId: input.workspaceId,
+        modelId: registeredModel.modelId,
+        options: {
+          model: registeredModel.model,
+          schema: gtmWebSearchCompanyLlmResultSchema,
+          system: OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
+          prompt: buildOutreachWebSearchCompanyUserPrompt({
+            domain: input.domain,
+            workspaceDisplayName: input.workspaceDisplayName,
+            companyNameHint: input.hints?.companyName,
+          }),
+          experimental_telemetry: AI_TELEMETRY_CONFIG,
+        },
+      },
+    );
 
-    return object;
+    return generationResult.object;
   }
 
   private async resolveWebSearchModel(input: {

@@ -1644,7 +1644,7 @@ export class IncomingWhatsappMessages {
             delayMinutes:
               candidateJob?.engagementProcessingDelayMinutes ?? 2,
             apiToken,
-            kind: isOutreachCandidate ? 'gtm' : 'recruiter',
+            kind: isOutreachCandidate ? 'outreach' : 'recruiter',
             channel,
             turn: {
               role: 'user',

@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
-import { generateObject, type LanguageModel } from 'ai';
+import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
@@ -22,6 +22,10 @@ import {
   keepSeniorPersonPerCompany,
 } from 'src/engine/core-modules/outreach-command/utils/keep-one-person-per-company.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
+import {
+  AiSdkExecutionService,
+  runGenerateObject,
+} from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 const hasText = (value: string | null | undefined): value is string =>
@@ -128,6 +132,8 @@ export class OutreachFilterProfilesService {
   constructor(
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
+    @Optional()
+    private readonly aiSdkExecutionService?: AiSdkExecutionService,
   ) {}
 
   async execute({
@@ -172,6 +178,7 @@ export class OutreachFilterProfilesService {
           prompt,
           model: registeredModel.model,
           modelId: registeredModel.modelId,
+          workspaceId,
         }),
     );
 
@@ -213,31 +220,39 @@ export class OutreachFilterProfilesService {
     prompt: string;
     model: LanguageModel;
     modelId: string;
+    workspaceId?: string;
   }): Promise<OutreachFilterProfilesAssessment> {
     const name = profileDisplayName(input.profile);
 
     try {
-      const { object } = await generateObject({
-        model: input.model,
-        schema: gtmFilterProfilesLlmResultSchema,
-        system: OUTREACH_FILTER_PROFILES_SYSTEM_PROMPT,
-        prompt: buildOutreachFilterProfilesUserPrompt({
-          criteria: input.prompt,
-          profileJson: compactProfileJson(input.profile),
-        }),
-        maxOutputTokens: FILTER_PROFILES_MAX_OUTPUT_TOKENS,
-        providerOptions: reasoningProviderOptionsForFilterProfiles(
-          input.modelId,
-        ),
-        experimental_repairText: repairGeneratedJsonObjectText,
-        experimental_telemetry: AI_TELEMETRY_CONFIG,
-      });
+      const generationResult = await runGenerateObject(
+        this.aiSdkExecutionService,
+        {
+          workspaceId: input.workspaceId,
+          modelId: input.modelId,
+          options: {
+            model: input.model,
+            schema: gtmFilterProfilesLlmResultSchema,
+            system: OUTREACH_FILTER_PROFILES_SYSTEM_PROMPT,
+            prompt: buildOutreachFilterProfilesUserPrompt({
+              criteria: input.prompt,
+              profileJson: compactProfileJson(input.profile),
+            }),
+            maxOutputTokens: FILTER_PROFILES_MAX_OUTPUT_TOKENS,
+            providerOptions: reasoningProviderOptionsForFilterProfiles(
+              input.modelId,
+            ),
+            experimental_repairText: repairGeneratedJsonObjectText,
+            experimental_telemetry: AI_TELEMETRY_CONFIG,
+          },
+        },
+      );
 
       return this.toAssessment({
         index: input.index,
         profile: input.profile,
         name,
-        llm: object,
+        llm: generationResult.object,
       });
     } catch (error) {
       const message = formatFilterProfilesLlmError(error);

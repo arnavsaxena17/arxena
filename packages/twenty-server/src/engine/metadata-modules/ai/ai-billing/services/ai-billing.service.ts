@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { type LanguageModelUsage } from 'ai';
+import { type LanguageModelUsage, type StepResult, type ToolSet } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import { NO_BILLING_SUBSCRIPTION } from 'src/engine/core-modules/billing/constants/no-billing-subscription.constant';
@@ -15,6 +15,7 @@ import { type UsageEvent } from 'src/engine/core-modules/usage/types/usage-event
 import { NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS } from 'src/engine/metadata-modules/ai/ai-billing/constants/native-web-search-cost-per-call-dollars';
 import { computeCostBreakdown } from 'src/engine/metadata-modules/ai/ai-billing/utils/compute-cost-breakdown.util';
 import { convertDollarsToBillingCredits } from 'src/engine/metadata-modules/ai/ai-billing/utils/convert-dollars-to-billing-credits.util';
+import { countNativeWebSearchCallsFromSteps } from 'src/engine/metadata-modules/ai/ai-billing/utils/count-native-web-search-calls-from-steps.util';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { type ModelId } from 'src/engine/metadata-modules/ai/ai-models/types/model-id.type';
 import { AiProviderCredentialsService } from 'src/engine/metadata-modules/ai/ai-provider-credentials/services/ai-provider-credentials.service';
@@ -146,6 +147,44 @@ export class AiBillingService {
       agentId,
       userWorkspaceId,
     );
+  }
+
+  async billWorkflowAiSdkUsage(params: {
+    workspaceId: string | undefined | null;
+    modelId: ModelId;
+    usage: LanguageModelUsage | undefined;
+    userWorkspaceId?: string | null;
+    steps?: StepResult<ToolSet>[];
+  }): Promise<void> {
+    const { workspaceId, modelId, usage, userWorkspaceId, steps } = params;
+
+    if (!isDefined(workspaceId) || !isDefined(usage)) {
+      return;
+    }
+
+    await this.calculateAndBillUsage(
+      modelId,
+      {
+        usage,
+        cacheCreationTokens: usage.inputTokenDetails?.cacheWriteTokens ?? 0,
+      },
+      workspaceId,
+      UsageOperationType.AI_WORKFLOW_TOKEN,
+      null,
+      userWorkspaceId ?? null,
+    );
+
+    if (isDefined(steps) && steps.length > 0) {
+      const nativeWebSearchCallCount =
+        countNativeWebSearchCallsFromSteps(steps);
+
+      void this.billNativeWebSearchUsage(
+        nativeWebSearchCallCount,
+        workspaceId,
+        modelId,
+        userWorkspaceId ?? null,
+      );
+    }
   }
 
   async decrementAndCheckAvailableCredits(

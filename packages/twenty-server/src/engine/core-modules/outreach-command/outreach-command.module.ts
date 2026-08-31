@@ -61,10 +61,12 @@ import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
+import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
 @Module({
   imports: [
+    AiBillingModule,
     GraphQLExecutionModule,
     AccountRateLimitModule,
     LogicFunctionExecutorModule,

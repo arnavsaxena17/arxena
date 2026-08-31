@@ -10,6 +10,7 @@ import { SendEmailWorkflowAction } from 'src/modules/workflow/workflow-executor/
 import { type WorkflowActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action-settings.type';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
+import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 jest.mock(
   'src/engine/core-modules/tool/tools/email-tool/utils/render-rich-text-to-html.util',
@@ -94,6 +95,10 @@ describe('SendEmailWorkflowAction', () => {
         {
           provide: getRepositoryToken(UserWorkspaceEntity),
           useValue: userWorkspaceRepository,
+        },
+        {
+          provide: WorkflowRunWorkspaceService,
+          useValue: { getWorkflowRunOrFail: jest.fn() },
         },
       ],
     }).compile();

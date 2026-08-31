@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
+import { AiSdkExecutionService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { AiProviderCredentialsModule } from 'src/engine/metadata-modules/ai/ai-provider-credentials/ai-provider-credentials.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
@@ -15,7 +16,7 @@ import { WorkspaceEventEmitterModule } from 'src/engine/workspace-event-emitter/
     WorkspaceCacheModule,
     AiProviderCredentialsModule,
   ],
-  providers: [AiBillingService],
-  exports: [AiBillingService],
+  providers: [AiBillingService, AiSdkExecutionService],
+  exports: [AiBillingService, AiSdkExecutionService],
 })
 export class AiBillingModule {}
