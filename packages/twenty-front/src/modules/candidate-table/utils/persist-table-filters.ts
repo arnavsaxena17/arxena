@@ -17,9 +17,12 @@ export const isBackendBackedDataTableProjectId = (
     return false;
   }
 
-  // GTM People embeds DataTable with a synthetic projectId for context-store
+  // Outreach People embeds DataTable with a synthetic projectId for context-store
   // scoping; it is not a CRM Project and must not hit candidate-sourcing APIs.
-  if (projectId.startsWith('gtm-people-')) {
+  if (
+    projectId.startsWith('gtm-people-') ||
+    projectId.startsWith('outreach-people-')
+  ) {
     return false;
   }
 
