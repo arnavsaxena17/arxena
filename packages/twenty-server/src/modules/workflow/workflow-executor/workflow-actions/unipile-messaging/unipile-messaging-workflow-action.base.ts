@@ -11,7 +11,7 @@ import {
   type OutreachTranscriptChannel,
 } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
-import { resolveOutreachOutboundMessageKind } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { resolveOutreachOutboundMessageKind, OUTREACH_SEND_WINDOW_PENDING_REASON } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { type OutreachThrottleChannel } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -173,7 +173,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
           workflowRunId: runInfo.workflowRunId,
           pendingReason:
             check.reason === 'outside_send_window'
-              ? 'outreach_send_window'
+              ? OUTREACH_SEND_WINDOW_PENDING_REASON
               : 'outreach_unipile_pacing',
         });
       }

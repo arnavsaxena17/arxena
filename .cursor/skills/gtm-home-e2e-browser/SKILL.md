@@ -153,7 +153,7 @@ Maps to Enroll + Live (not a separate “Start” control).
 2. People tab: select ≥1 row → **Enroll in outreach**.
 3. Workflow tab: Per Candidate bound; at least one run `RUNNING` / pending send.
 
-**PASS:** candidate `QUEUED` or `CONNECTION_SENT`; header Live; a workflow run exists for that candidate. Outside send window is still PASS if the run is pending `gtm_send_window`.
+**PASS:** candidate `QUEUED` or `CONNECTION_SENT`; header Live; a workflow run exists for that candidate. Outside send window is still PASS if the run is pending `outreach_send_window`.
 
 ### Step 5 — Pause campaign (`gtm-pause-campaign`)
 

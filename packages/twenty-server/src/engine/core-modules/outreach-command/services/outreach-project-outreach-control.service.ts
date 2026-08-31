@@ -11,6 +11,11 @@ import {
   CAPACITY_PENDING_REASONS,
   SEQUENCE_DELAY_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import {
+  normalizeWorkflowRunStepDeferralFields,
+  readWorkflowRunStepPendingReason,
+  readWorkflowRunStepScheduledAt,
+} from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
@@ -119,26 +124,28 @@ export class OutreachProjectOutreachControlService {
               continue;
             }
 
-            const pendingReason = stepInfo.pendingReason ?? '';
+            const pendingReason =
+              readWorkflowRunStepPendingReason(stepInfo) ?? '';
             const isSequenceDelay =
               pendingReason === SEQUENCE_DELAY_PENDING_REASON ||
               run.state?.flow?.steps?.find((step) => step.id === stepId)
                 ?.type === 'DELAY';
 
             if (isSequenceDelay) {
-              const scheduledAtMs = stepInfo.scheduledAt
-                ? new Date(stepInfo.scheduledAt).getTime()
+              const scheduledAt = readWorkflowRunStepScheduledAt(stepInfo);
+              const scheduledAtMs = scheduledAt
+                ? new Date(scheduledAt).getTime()
                 : now + (stepInfo.waitMs ?? 0);
               const remainingMs = Math.max(0, scheduledAtMs - now);
 
               await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
                 stepId,
                 stepInfo: {
-                  ...stepInfo,
+                  ...normalizeWorkflowRunStepDeferralFields(stepInfo),
                   status: StepStatus.PENDING,
                   pendingReason: OUTREACH_PROJECT_PAUSED_PENDING_REASON,
                   remainingMs,
-                  scheduledAt: stepInfo.scheduledAt,
+                  scheduledAt,
                   waitMs: remainingMs,
                 },
                 workspaceId,
@@ -155,7 +162,7 @@ export class OutreachProjectOutreachControlService {
               await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
                 stepId,
                 stepInfo: {
-                  ...stepInfo,
+                  ...normalizeWorkflowRunStepDeferralFields(stepInfo),
                   status: StepStatus.PENDING,
                   pendingReason: OUTREACH_PROJECT_PAUSED_PENDING_REASON,
                   waitMs: 0,
@@ -207,10 +214,14 @@ export class OutreachProjectOutreachControlService {
           const stepInfos = run.state?.stepInfos ?? {};
 
           for (const [stepId, stepInfo] of Object.entries(stepInfos)) {
-            if (
-              stepInfo.status !== StepStatus.PENDING ||
-              stepInfo.pendingReason !== OUTREACH_PROJECT_PAUSED_PENDING_REASON
-            ) {
+            if (stepInfo.status !== StepStatus.PENDING) {
+              continue;
+            }
+
+            const pendingReason =
+              readWorkflowRunStepPendingReason(stepInfo) ?? '';
+
+            if (!CAPACITY_PENDING_REASONS.has(pendingReason)) {
               continue;
             }
 

@@ -73,8 +73,26 @@ export const assignOutreachExperimentVariant = ({
   return bucket < split ? 'A' : 'B';
 };
 
+export const OUTREACH_SEND_WINDOW_PENDING_REASON = 'outreach_send_window';
+
+export const LEGACY_GTM_SEND_WINDOW_PENDING_REASON = 'gtm_send_window';
+
+export const normalizeOutreachPendingReason = (
+  pendingReason?: string | null,
+): string | undefined => {
+  if (!pendingReason?.trim()) {
+    return undefined;
+  }
+
+  if (pendingReason === LEGACY_GTM_SEND_WINDOW_PENDING_REASON) {
+    return OUTREACH_SEND_WINDOW_PENDING_REASON;
+  }
+
+  return pendingReason;
+};
+
 export const CAPACITY_PENDING_REASONS = new Set([
-  'outreach_send_window',
+  OUTREACH_SEND_WINDOW_PENDING_REASON,
   'outreach_unipile_pacing',
   'linkedin_rate_limit',
   'outreach_project_paused',

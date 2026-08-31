@@ -2,6 +2,10 @@ import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 
 import { LINKEDIN_RATE_LIMIT_PENDING_REASON } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import {
+  readWorkflowRunStepPendingReason,
+  readWorkflowRunStepScheduledAt,
+} from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
+import {
   WorkflowRunCurrentStepKind,
   WorkflowRunStatus,
   type WorkflowRunState,
@@ -31,48 +35,6 @@ const joinNames = (names: string[]): string | null => {
   const uniqueNames = names.filter((name) => name.length > 0);
 
   return uniqueNames.length > 0 ? uniqueNames.join(', ') : null;
-};
-
-const readPendingReason = (stepInfo: {
-  pendingReason?: string;
-  result?: unknown;
-}): string | undefined => {
-  if (typeof stepInfo.pendingReason === 'string') {
-    return stepInfo.pendingReason;
-  }
-
-  if (
-    stepInfo.result &&
-    typeof stepInfo.result === 'object' &&
-    'pendingReason' in stepInfo.result &&
-    typeof (stepInfo.result as { pendingReason?: unknown }).pendingReason ===
-      'string'
-  ) {
-    return (stepInfo.result as { pendingReason: string }).pendingReason;
-  }
-
-  return undefined;
-};
-
-const readScheduledAt = (stepInfo: {
-  scheduledAt?: string;
-  result?: unknown;
-}): string | undefined => {
-  if (typeof stepInfo.scheduledAt === 'string') {
-    return stepInfo.scheduledAt;
-  }
-
-  if (
-    stepInfo.result &&
-    typeof stepInfo.result === 'object' &&
-    'scheduledAt' in stepInfo.result &&
-    typeof (stepInfo.result as { scheduledAt?: unknown }).scheduledAt ===
-      'string'
-  ) {
-    return (stepInfo.result as { scheduledAt: string }).scheduledAt;
-  }
-
-  return undefined;
 };
 
 const resolvePendingKind = ({
@@ -139,7 +101,7 @@ export const computeWorkflowRunProgressFields = ({
     const kinds = pendingSteps.map((step) =>
       resolvePendingKind({
         stepType: step.type,
-        pendingReason: readPendingReason(stepInfos[step.id] ?? {}),
+        pendingReason: readWorkflowRunStepPendingReason(stepInfos[step.id] ?? {}),
       }),
     );
 
@@ -156,7 +118,7 @@ export const computeWorkflowRunProgressFields = ({
 
   const resumeAt =
     pendingSteps
-      .map((step) => readScheduledAt(stepInfos[step.id] ?? {}))
+      .map((step) => readWorkflowRunStepScheduledAt(stepInfos[step.id] ?? {}))
       .find((scheduledAt) => typeof scheduledAt === 'string') ?? null;
 
   return {

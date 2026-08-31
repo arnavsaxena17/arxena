@@ -301,9 +301,7 @@ export class WorkflowRunWorkspaceService {
           ...workflowRunToUpdate.state?.stepInfos,
           [stepId]: {
             ...workflowRunToUpdate.state?.stepInfos[stepId],
-            result: stepInfo?.result,
-            error: stepInfo?.error,
-            status: stepInfo.status,
+            ...stepInfo,
           },
         },
       },
