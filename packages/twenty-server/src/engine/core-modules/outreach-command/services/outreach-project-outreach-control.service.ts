@@ -26,6 +26,7 @@ import {
   cancelResumeDelayedWorkflowJobs,
   scheduleResumeDelayedWorkflowJob,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
+import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 type ProjectRecord = ObjectLiteral & {
@@ -66,6 +67,7 @@ export class OutreachProjectOutreachControlService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
+    private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
   ) {}
@@ -211,7 +213,28 @@ export class OutreachProjectOutreachControlService {
         let resumedRuns = 0;
 
         for (const run of runs) {
-          const stepInfos = run.state?.stepInfos ?? {};
+          try {
+            await this.outreachWorkflowRunFlowSyncService.syncRunToLatestPublishedVersion(
+              {
+                workspaceId,
+                workflowRunId: run.id,
+                projectId,
+              },
+            );
+          } catch (error) {
+            this.logger.warn(
+              `Failed to sync workflow run ${run.id} to latest version: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+
+          const freshRun =
+            await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
+              workflowRunId: run.id,
+              workspaceId,
+            });
+          const stepInfos = freshRun.state?.stepInfos ?? {};
 
           for (const [stepId, stepInfo] of Object.entries(stepInfos)) {
             if (stepInfo.status !== StepStatus.PENDING) {
@@ -228,7 +251,7 @@ export class OutreachProjectOutreachControlService {
             const isSequenceDelay =
               typeof stepInfo.remainingMs === 'number' &&
               stepInfo.remainingMs > 0 &&
-              run.state?.flow?.steps?.find((step) => step.id === stepId)
+              freshRun.state?.flow?.steps?.find((step) => step.id === stepId)
                 ?.type === 'DELAY';
 
             if (isSequenceDelay) {
@@ -247,14 +270,14 @@ export class OutreachProjectOutreachControlService {
                   remainingMs,
                 },
                 workspaceId,
-                workflowRunId: run.id,
+                workflowRunId: freshRun.id,
               });
 
               await scheduleResumeDelayedWorkflowJob({
                 delayedQueue: this.delayedQueue,
                 data: {
                   workspaceId,
-                  workflowRunId: run.id,
+                  workflowRunId: freshRun.id,
                   stepId,
                 },
                 delay: remainingMs,
@@ -269,7 +292,7 @@ export class OutreachProjectOutreachControlService {
               delayedQueue: this.delayedQueue,
               data: {
                 workspaceId,
-                workflowRunId: run.id,
+                workflowRunId: freshRun.id,
                 stepId,
                 retryPendingStep: true,
               },

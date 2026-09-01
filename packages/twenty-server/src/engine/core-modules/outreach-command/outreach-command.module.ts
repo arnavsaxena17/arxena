@@ -49,6 +49,7 @@ import { OutreachLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-mod
 import { OutreachThrottleService } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
+import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-wikidata-company-enrichment.source';
 import { OutreachWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-web-search-company-enrichment.source';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
@@ -62,6 +63,7 @@ import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-common.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
 @Module({
@@ -85,6 +87,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     forwardRef(() => CandidateSourcingModule),
     ContactEnrichmentModule,
     GoogleCalendarModule,
+    WorkflowCommonModule,
     WorkflowRunModule,
   ],
   controllers: [OutreachCommandController],
@@ -148,6 +151,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
     OutreachProjectOutreachControlService,
+    OutreachWorkflowRunFlowSyncService,
     OutreachInboundReplyWindowService,
   ],
   exports: [
@@ -174,6 +178,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
     OutreachProjectOutreachControlService,
+    OutreachWorkflowRunFlowSyncService,
     OutreachInboundReplyWindowService,
   ],
 })

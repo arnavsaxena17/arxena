@@ -1883,7 +1883,6 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
         phoneTo
         projectsId
         whatsappProvider
-        candidateFlags
         candidate {
           name
           id
