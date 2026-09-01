@@ -21,7 +21,14 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
-import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import {
+  WorkflowRunStatus,
+  type WorkflowRunWorkspaceEntity,
+} from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
+import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
+import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
+import { getRunnableStepIds } from 'src/modules/workflow/workflow-runner/utils/get-runnable-step-ids.util';
 import {
   cancelResumeDelayedWorkflowJobs,
   scheduleResumeDelayedWorkflowJob,
@@ -70,6 +77,8 @@ export class OutreachProjectOutreachControlService {
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.workflowQueue)
+    private readonly workflowQueue: MessageQueueService,
   ) {}
 
   async pauseProject({
@@ -189,7 +198,7 @@ export class OutreachProjectOutreachControlService {
   }: {
     workspaceId: string;
     projectId: string;
-  }): Promise<{ resumedRuns: number }> {
+  }): Promise<{ resumedRuns: number; kickedIdleRuns: number }> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -211,6 +220,7 @@ export class OutreachProjectOutreachControlService {
         });
 
         let resumedRuns = 0;
+        let kickedIdleRuns = 0;
 
         for (const run of runs) {
           try {
@@ -300,9 +310,18 @@ export class OutreachProjectOutreachControlService {
             });
             resumedRuns += 1;
           }
+
+          const didKickIdleRun = await this.kickIdleRunningWorkflowRun({
+            workspaceId,
+            workflowRun: freshRun,
+          });
+
+          if (didKickIdleRun) {
+            kickedIdleRuns += 1;
+          }
         }
 
-        return { resumedRuns };
+        return { resumedRuns, kickedIdleRuns };
       },
       authContext,
     );
@@ -518,5 +537,45 @@ export class OutreachProjectOutreachControlService {
     });
 
     return runs.filter((run) => isDefined(run));
+  }
+
+  private async kickIdleRunningWorkflowRun({
+    workspaceId,
+    workflowRun,
+  }: {
+    workspaceId: string;
+    workflowRun: WorkflowRunWorkspaceEntity;
+  }): Promise<boolean> {
+    const steps = workflowRun.state?.flow?.steps;
+
+    if (!isDefined(steps) || steps.length === 0) {
+      return false;
+    }
+
+    const stepInfos = workflowRun.state?.stepInfos ?? {};
+    const runnableStepIds = getRunnableStepIds({
+      steps,
+      stepInfos,
+    });
+
+    if (runnableStepIds.length === 0) {
+      return false;
+    }
+
+    await this.workflowQueue.add<RunWorkflowJobData>(
+      RUN_WORKFLOW_JOB_NAME,
+      {
+        workspaceId,
+        workflowRunId: workflowRun.id,
+        stepIdsToRetry: runnableStepIds,
+      },
+      buildRunWorkflowJobOptions(workflowRun.id),
+    );
+
+    this.logger.log(
+      `Kicked idle workflow run ${workflowRun.id} for steps: ${runnableStepIds.join(', ')}`,
+    );
+
+    return true;
   }
 }
