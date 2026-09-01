@@ -3,6 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { isDefined } from 'twenty-shared/utils';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
+import {
+  filterSearchSkillContent,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps-or-throw.util';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
@@ -27,7 +32,22 @@ export class SkillService {
     private readonly workspaceMigrationValidateBuildAndRunService: WorkspaceMigrationValidateBuildAndRunService,
     private readonly workspaceManyOrAllFlatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly applicationService: ApplicationService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
+
+  private applySearchSkillContentFilters(flatSkill: FlatSkill): FlatSkill {
+    if (flatSkill.name !== 'search') {
+      return flatSkill;
+    }
+
+    return {
+      ...flatSkill,
+      content: filterSearchSkillContent(
+        flatSkill.content,
+        resolveSearchToolsConfig(this.twentyConfigService),
+      ),
+    };
+  }
 
   async findAll(workspaceId: string): Promise<SkillDTO[]> {
     const { flatSkillMaps } =
@@ -240,6 +260,7 @@ export class SkillService {
     return Object.values(flatSkillMaps.byUniversalIdentifier)
       .filter(isDefined)
       .filter((flatSkill) => flatSkill.isActive)
+      .map((flatSkill) => this.applySearchSkillContentFilters(flatSkill))
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
@@ -263,7 +284,8 @@ export class SkillService {
       .filter(isDefined)
       .filter(
         (flatSkill) => names.includes(flatSkill.name) && flatSkill.isActive,
-      );
+      )
+      .map((flatSkill) => this.applySearchSkillContentFilters(flatSkill));
   }
 
   async activate(id: string, workspaceId: string): Promise<SkillDTO> {

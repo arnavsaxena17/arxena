@@ -8,6 +8,7 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { useStore } from 'jotai';
 import { isDefined } from 'twenty-shared/utils';
 import { type AgentChatThread } from '~/generated-metadata/graphql';
+import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
 
 export type UseAiChatThreadClickOptions = {
   resetNavigationStack?: boolean;
@@ -59,6 +60,10 @@ export const useAiChatThreadClick = (
           }
         : null,
     );
+
+    if (isCurrentPathAiChatPage()) {
+      return;
+    }
 
     openAskAiPage({
       resetNavigationStack,

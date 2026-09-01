@@ -18,6 +18,7 @@ export enum AppPath {
   BookCall = '/book-call',
 
   // Onboarded
+  AiChat = '/chat/:threadId?',
   WorkspaceSetup = '/workspace-setup',
   Index = '/',
   TasksPage = '/objects/tasks',

@@ -23,3 +23,15 @@ export const ARXENA_STANDARD_APPLICATION = {
   | 'sourcePath'
   | 'sourceType'
 >;
+
+export const CANDIDATE_ENRICHMENT_OBJECT_NAME_SINGULAR =
+  'candidateEnrichment' as const;
+
+// Inverse relations onto Arxena Standard hosts for AI filtering.
+export const CANDIDATE_ENRICHMENT_HOST_EXTENSION_FIELDS: Array<{
+  objectName: string;
+  fieldName: string;
+}> = [
+  { objectName: 'project', fieldName: 'candidateEnrichments' },
+  { objectName: 'workspaceMember', fieldName: 'candidateEnrichment' },
+];

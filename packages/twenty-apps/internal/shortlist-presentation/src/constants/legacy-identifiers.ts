@@ -30,9 +30,6 @@ export const CV_SENT_OBJECT_UNIVERSAL_IDENTIFIER =
 export const SCREENING_OBJECT_UNIVERSAL_IDENTIFIER =
   getLegacyObjectUniversalIdentifier('screening');
 
-export const CANDIDATE_ENRICHMENT_OBJECT_UNIVERSAL_IDENTIFIER =
-  getLegacyObjectUniversalIdentifier('candidateEnrichment');
-
 export const PHONE_CALL_OBJECT_UNIVERSAL_IDENTIFIER =
   getLegacyObjectUniversalIdentifier('phoneCall');
 

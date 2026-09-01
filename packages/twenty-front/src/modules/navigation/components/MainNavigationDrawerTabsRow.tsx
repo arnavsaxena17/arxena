@@ -152,7 +152,9 @@ export const MainNavigationDrawerTabsRow = ({
   );
   const [navigationDrawerActiveTab, setNavigationDrawerActiveTab] =
     useAtomState(navigationDrawerActiveTabState);
-  const { switchToNewChat } = useSwitchToNewAiChat();
+  const { switchToNewChat } = useSwitchToNewAiChat({
+    shouldOpenInFullPage: true,
+  });
   const setIsNavigationDrawerExpanded = useSetAtomState(
     isNavigationDrawerExpandedState,
   );

@@ -4,6 +4,11 @@ import { ToolCategory } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
 import {
+  getDisabledSearchToolNames,
+  isSearchToolEnabled,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
   type ArxenaToolPack,
@@ -105,9 +110,16 @@ export class ArxenaToolProvider implements ToolProvider {
   ): Promise<(ToolIndexEntry | ToolDescriptor)[]> {
     const includeSchemas = options?.includeSchemas ?? true;
     const packFilter = this.resolvePackFilter(options);
+    const searchToolsConfig = resolveSearchToolsConfig(
+      this.twentyConfigService,
+    );
+    const disabledSearchToolNames = new Set(
+      getDisabledSearchToolNames(searchToolsConfig),
+    );
     const catalogEntries = ARXENA_TOOL_CATALOG.filter(
       (entry) =>
         !ARXENA_INTERNAL_TOOL_NAMES.has(entry.name) &&
+        !disabledSearchToolNames.has(entry.name) &&
         (!isDefined(packFilter) || entry.pack === packFilter),
     );
 
@@ -164,6 +176,18 @@ export class ArxenaToolProvider implements ToolProvider {
     args: Record<string, unknown>,
     context: ToolProviderContext,
   ): Promise<ToolOutput> {
+    const searchToolsConfig = resolveSearchToolsConfig(
+      this.twentyConfigService,
+    );
+
+    if (!isSearchToolEnabled(toolName, searchToolsConfig)) {
+      return {
+        success: false,
+        message: `Tool "${toolName}" is not available`,
+        error: `Tool "${toolName}" is disabled by server configuration`,
+      };
+    }
+
     const apiToken = await this.resolveApiToken(context);
 
     if (!isDefined(apiToken)) {

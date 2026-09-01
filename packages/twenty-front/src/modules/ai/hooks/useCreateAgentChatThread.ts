@@ -18,6 +18,7 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 
 import { useMutation } from '@apollo/client/react';
 import { CreateChatThreadDocument } from '~/generated-metadata/graphql';
+import { useProjectAiChatThreadToUrl } from '@/ai/hooks/useProjectAiChatThreadToUrl';
 
 export const useCreateAgentChatThread = () => {
   const setCurrentAiChatThread = useSetAtomState(currentAiChatThreadState);
@@ -28,6 +29,7 @@ export const useCreateAgentChatThread = () => {
   );
   const store = useStore();
   const { addToDraft, applyChanges } = useUpdateMetadataStoreDraft();
+  const { projectAiChatThreadToUrl } = useProjectAiChatThreadToUrl();
 
   const [createChatThread] = useMutation(CreateChatThreadDocument, {
     onCompleted: (data) => {
@@ -81,6 +83,7 @@ export const useCreateAgentChatThread = () => {
 
       setCurrentAiChatThread(newThreadId);
       setAgentChatInput(newDraft);
+      projectAiChatThreadToUrl(newThreadId);
     },
     onError: () => {
       setIsCreatingChatThread(false);

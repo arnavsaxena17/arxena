@@ -8,8 +8,15 @@ import { useCallback } from 'react';
 import { SidePanelPages } from 'twenty-shared/types';
 import { IconSparkles } from 'twenty-ui/icon';
 import { v4 } from 'uuid';
+import { isCurrentPathAiChatPage } from '~/utils/isCurrentPathAiChatPage';
 
-export const useOpenAskAiPageInSidePanel = () => {
+type UseOpenAskAiPageInSidePanelParams = {
+  force?: boolean;
+};
+
+export const useOpenAskAiPageInSidePanel = ({
+  force = false,
+}: UseOpenAskAiPageInSidePanelParams = {}) => {
   const store = useStore();
   const { navigateSidePanelMenu } = useSidePanelMenu();
   const setHasAgentChatBeenOpened = useSetAtomState(
@@ -22,6 +29,10 @@ export const useOpenAskAiPageInSidePanel = () => {
     }: {
       resetNavigationStack?: boolean;
     } = {}) => {
+      if (!force && isCurrentPathAiChatPage()) {
+        return;
+      }
+
       const shouldReset =
         resetNavigationStack !== undefined
           ? resetNavigationStack
@@ -37,7 +48,7 @@ export const useOpenAskAiPageInSidePanel = () => {
         resetNavigationStack: shouldReset,
       });
     },
-    [navigateSidePanelMenu, setHasAgentChatBeenOpened, store],
+    [force, navigateSidePanelMenu, setHasAgentChatBeenOpened, store],
   );
 
   return {

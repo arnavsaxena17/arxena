@@ -7,6 +7,11 @@ import { type ActorMetadata, FieldActorSource } from 'twenty-shared/types';
 import { JSON_RPC_ERROR_CODE } from 'src/engine/api/mcp/constants/json-rpc-error-code.const';
 import { MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS } from 'src/engine/api/mcp/constants/mcp-closed-world-read-only-tool-annotations.const';
 import { MCP_EXCLUDED_TOOL_NAMES } from 'src/engine/api/mcp/constants/mcp-excluded-tool-names.const';
+import {
+  buildExcludedToolNamesSet,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { MCP_EXECUTE_TOOL_ANNOTATIONS } from 'src/engine/api/mcp/constants/mcp-execute-tool-annotations.const';
 import { MCP_OPEN_WORLD_READ_ONLY_TOOL_ANNOTATIONS } from 'src/engine/api/mcp/constants/mcp-open-world-read-only-tool-annotations.const';
 import { MCP_PROTOCOL_VERSION } from 'src/engine/api/mcp/constants/mcp-protocol-version.const';
@@ -98,6 +103,7 @@ export class McpProtocolService {
     private readonly mcpPromptService: McpPromptService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly workspaceCacheService: WorkspaceCacheService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async handleInitialize(
@@ -255,6 +261,10 @@ export class McpProtocolService {
       COMMON_PRELOAD_TOOLS,
       toolContext,
     );
+    const excludedToolNames = buildExcludedToolNamesSet(
+      MCP_EXCLUDED_TOOL_NAMES,
+      resolveSearchToolsConfig(this.twentyConfigService),
+    );
 
     return {
       ...annotatePreloadedMcpTools(preloadedTools),
@@ -262,14 +272,14 @@ export class McpProtocolService {
         ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
           userId: options?.userId,
           userWorkspaceId: options?.userWorkspaceId,
-          excludeTools: MCP_EXCLUDED_TOOL_NAMES,
+          excludeTools: excludedToolNames,
         }),
         inputSchema: zodSchema(getToolCatalogInputSchema),
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,
       [EXECUTE_TOOL_TOOL_NAME]: {
         ...createExecuteToolTool(this.toolRegistry, toolContext, {
-          excludeTools: MCP_EXCLUDED_TOOL_NAMES,
+          excludeTools: excludedToolNames,
         }),
         inputSchema: executeToolInputSchema,
         annotations: MCP_EXECUTE_TOOL_ANNOTATIONS,
@@ -304,7 +314,7 @@ export class McpProtocolService {
       } as McpAnnotatedTool,
       [LEARN_TOOLS_TOOL_NAME]: {
         ...createLearnToolsTool(this.toolRegistry, toolContext, {
-          excludeTools: MCP_EXCLUDED_TOOL_NAMES,
+          excludeTools: excludedToolNames,
         }),
         inputSchema: zodSchema(learnToolsInputSchema),
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,

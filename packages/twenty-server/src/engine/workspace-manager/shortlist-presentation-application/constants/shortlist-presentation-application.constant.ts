@@ -10,7 +10,7 @@ export const SHORTLIST_PRESENTATION_APPLICATION = {
   universalIdentifier: SHORTLIST_PRESENTATION_APPLICATION_UNIVERSAL_IDENTIFIER,
   name: SHORTLIST_PRESENTATION_APPLICATION_NAME,
   description:
-    'Candidate shortlist presentation: shortlist rows, CV Sent batches, screening, AI filters, and phone calls',
+    'Candidate shortlist presentation: shortlist rows, CV Sent batches, screening, and phone calls',
   version: '0.1.0',
   sourcePath: 'shortlist-presentation',
   sourceType: ApplicationRegistrationSourceType.LOCAL,
@@ -28,7 +28,6 @@ export const SHORTLIST_PRESENTATION_OBJECT_NAME_SINGULARS = [
   'shortlist',
   'cvSent',
   'screening',
-  'candidateEnrichment',
   'phoneCall',
 ] as const;
 
@@ -53,9 +52,7 @@ export const SHORTLIST_PRESENTATION_HOST_EXTENSION_FIELDS: Array<{
   { objectName: 'candidate', fieldName: 'screenings' },
   { objectName: 'project', fieldName: 'shortlists' },
   { objectName: 'project', fieldName: 'cvSents' },
-  { objectName: 'project', fieldName: 'candidateEnrichments' },
   { objectName: 'person', fieldName: 'phoneCall' },
-  { objectName: 'workspaceMember', fieldName: 'candidateEnrichment' },
 ];
 
 export const isShortlistPresentationObjectName = (

@@ -26,6 +26,9 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Search skill refactor (single `search` intent) | Merged search skill source files + `IS_SEARCH_*_ENABLED` env toggles (Apollo, index, Exa, Wikidata, find_candidate) filter Ask AI catalog/skill at runtime. Workspace cmd `1785600000087` syncs refactored markdown. | `search-tools-config.util.ts`, `contents/search-*.md`, `2-25-*-1785600000087-*`, `packages/twenty-server/.env` |
+| `candidateEnrichment` → Arxena Standard | AI filtering object moved out of optional Shortlist Presentation app into always-synced Arxena Standard (`project.candidateEnrichments`, `workspaceMember.candidateEnrichment` host relations included). Workspace cmd `1785600000086`. Removed candidate-enrichment defs from `twenty-apps/internal/shortlist-presentation`. | `arxena-standard-application.constant.ts`, `shortlist-presentation-application.constant.ts`, `objects-data.ts`, `2-25-*-1785600000086-*`, deleted `shortlist-presentation/src/**/candidate-enrichment*` |
+| Ask AI enlarged `/chat` page (Twenty upstream) | Full-page chat at `AppPath.AiChat` (`/chat/:threadId?`) with centered composer + suggested prompts; expand from side panel via `useOpenAiChatPage`; legacy `/workspace-setup` redirects to `/chat`; nav drawer "New chat" opens full page. | `pages/ai-chat/AiChatPage.tsx`, `AiChatPageHeader.tsx`, `useIsAiChatComposerCentered.ts`, `AiChatEditorSection.tsx`, `SidePanelExpandAiChatButton.tsx`, `useOpenAiChatPage.ts`, `useProjectAiChatThreadToUrl.ts` |
 | Outreach pause/resume step deferral fields | `updateWorkflowRunStepInfo` dropped `pendingReason`/`waitMs`/`scheduledAt`/`remainingMs`, breaking Pause→Resume reschedule; legacy `gtm_send_window` normalized to `outreach_send_window`; resume re-kicks all capacity waits (including orphaned send-window steps). BullMQ resume job id uses `runId__stepId` (no `:` — BullMQ rejects colons in custom ids). | `workflow-run.workspace-service.ts`, `read-workflow-run-step-pending-fields.util.ts`, `outreach-project-outreach-control.service.ts`, `resume-delayed-workflow-job-scheduler.util.ts` |
 | Arxena metadata single source of truth | Retired legacy GraphQL metadata seed/update (`CreateMetaDataStructure`, `MetadataUpdateService`, bulk admin sync, metadata-structure queue/jobs, Settings metadata buttons). Canonical catalog: `arxena-standard-metadata/data/*`; apply via workspace init + `workspace:sync-arxena-standard` + 2-25 workspace cmds. | `arxena-standard-metadata/data/*`, removed `object-apis/data/{fieldsData,objectsData,relationsData}.ts` |
 | Publish as experiment PG enum | `workflowVersion.status` SELECT + core enum lacked `EXPERIMENT`, so "Publish as experiment" died with `invalid input value for enum … "EXPERIMENT"`. Added the option to standard field metadata, core `WorkflowVersionStatus`, instance `ALTER TYPE`, workspace cmd `1785600000077`. Run `database:migrate` + `upgrade:2-25:add-workflow-version-experiment-status`. | `compute-workflow-version-standard-flat-field-metadata.util.ts`, `workflow-version.entity.ts`, `2-25-*-1785600000076/0077-*` |
@@ -453,6 +456,8 @@ CRM “Job” object became **Project**. Script: `node packages/twenty-utils/ren
 
 | Old | New |
 | --- | --- |
+| Enlarged Ask AI at `AppPath.WorkspaceSetup` (`/workspace-setup`) | `AppPath.AiChat` (`/chat/:threadId?`) via `AiChatPage`; legacy `/workspace-setup` redirects |
+| `SidePanelExpandAiChatButton` → `navigate(WorkspaceSetup)` | `useOpenAiChatPage({ threadId })` → `/chat` |
 | `AppPath.Jobs` | `AppPath.Projects` |
 | Jobs list route | `AppPath.Projects` → `@/candidate-table/Projects` |
 | Job detail route | `AppPath.Project` → `@/candidate-table/ProjectPage` |

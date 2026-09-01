@@ -2504,6 +2504,69 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include search_apollo_people in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_APOLLO_PEOPLE_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include search_apollo_companies in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_APOLLO_COMPANIES_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include search_people_index in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_PEOPLE_INDEX_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include find_candidate_in_arxena_internal in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_FIND_CANDIDATE_INTERNAL_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include exa_web_search / app_exa_web_search in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_EXA_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include search_companies_index in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_COMPANIES_INDEX_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include search_wikidata_companies in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_WIKIDATA_COMPANIES_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
     isSensitive: true,
     description: 'RapidAPI key for Apollo org search proxy',
     type: ConfigVariableType.STRING,

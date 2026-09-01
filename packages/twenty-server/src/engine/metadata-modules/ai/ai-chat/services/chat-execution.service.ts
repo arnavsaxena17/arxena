@@ -25,6 +25,11 @@ import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-op
 import { type CodeExecutionStreamEmitter } from 'src/engine/core-modules/tool-provider/interfaces/code-execution-stream-emitter.type';
 
 import { CodeInterpreterService } from 'src/engine/core-modules/code-interpreter/code-interpreter.service';
+import {
+  getDisabledSearchToolNames,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
@@ -128,6 +133,7 @@ export class ChatExecutionService {
     private readonly messagePruningService: MessagePruningService,
     private readonly metricsService: MetricsService,
     private readonly fileService: FileService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async streamChat({
@@ -194,15 +200,23 @@ export class ChatExecutionService {
       (entry) => entry.category === ToolCategory.EXTERNAL_MCP,
     ).length;
 
+    const searchToolsConfig = resolveSearchToolsConfig(this.twentyConfigService);
+    const disabledSearchToolNames = new Set(
+      getDisabledSearchToolNames(searchToolsConfig),
+    );
+    const preloadedToolNameList = AI_CHAT_TOOL_NAMES_TO_PRELOAD.filter(
+      (toolName) => !disabledSearchToolNames.has(toolName),
+    );
+
     this.logger.log(
       `[AI_CHAT] catalogs tools=${toolCatalog.length} skills=${skillCatalog.length} ` +
-        `schemas_preloaded=${AI_CHAT_TOOL_NAMES_TO_PRELOAD.length} ` +
+        `schemas_preloaded=${preloadedToolNameList.length} ` +
         `arxena=${arxenaCount} external_mcp=${externalMcpCount} ` +
         `skillNames=[${skillCatalog.map((skill) => skill.name).join(', ')}]`,
     );
 
     const preloadedTools = await this.toolRegistry.getToolsByName(
-      AI_CHAT_TOOL_NAMES_TO_PRELOAD,
+      preloadedToolNameList,
       toolContext,
       { compactOutput: true, spillLargeOutput: true },
     );
@@ -270,12 +284,19 @@ export class ChatExecutionService {
       [LEARN_TOOLS_TOOL_NAME]: createLearnToolsTool(
         this.toolRegistry,
         toolContext,
-        { spillLargeOutput: true },
+        {
+          spillLargeOutput: true,
+          excludeTools: disabledSearchToolNames,
+        },
       ),
       [EXECUTE_TOOL_TOOL_NAME]: createExecuteToolTool(
         this.toolRegistry,
         toolContext,
-        { compactOutput: true, spillLargeOutput: true },
+        {
+          compactOutput: true,
+          spillLargeOutput: true,
+          excludeTools: disabledSearchToolNames,
+        },
       ),
       [LOAD_SKILL_TOOL_NAME]: createLoadSkillTool(
         (skillNames) =>

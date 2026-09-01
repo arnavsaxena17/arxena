@@ -6,7 +6,6 @@ import { type ReactNode } from 'react';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
-import { shouldOpenAiChatAfterOnboardingState } from '@/onboarding/states/shouldOpenAiChatAfterOnboardingState';
 import {
   jotaiStore,
   resetJotaiStore,
@@ -21,32 +20,13 @@ i18n.activate(SOURCE_LOCALE);
 
 const defaultHomePagePath = '/objects/companies';
 
+jest.mock('twenty-shared/utils', () => ({
+  ...jest.requireActual('twenty-shared/utils'),
+  getAppPath: () => '/chat',
+}));
+
 jest.mock('@/navigation/hooks/useDefaultHomePagePath', () => ({
   useDefaultHomePagePath: () => ({ defaultHomePagePath }),
-}));
-
-jest.mock('@/ai/components/AiChatTab', () => {
-  const { useContext } = jest.requireActual('react');
-  const { AiChatMessageListPreambleContext } = jest.requireActual(
-    '@/ai/contexts/AiChatMessageListPreambleContext',
-  );
-  return {
-    AiChatTab: () => (
-      <div data-testid="ai-chat-tab">
-        {useContext(AiChatMessageListPreambleContext)}
-      </div>
-    ),
-  };
-});
-
-jest.mock('@/onboarding/components/WorkspaceSetupHeader', () => ({
-  WorkspaceSetupHeader: ({ title }: { title: string }) => (
-    <div data-testid="header-title">{title}</div>
-  ),
-}));
-
-jest.mock('@/onboarding/components/WorkspaceSetupChatPreamble', () => ({
-  WorkspaceSetupChatPreamble: () => <div data-testid="preamble" />,
 }));
 
 const mockNavigate = jest.fn();
@@ -79,35 +59,20 @@ describe('WorkspaceSetup', () => {
     mockNavigate.mockClear();
   });
 
-  it('should dress the chat for onboarding when the post-onboarding hint is set', () => {
+  it('should redirect to the enlarged chat page when the feature flag is enabled', () => {
     setOnboardingAiChatFeatureFlag(true);
-    jotaiStore.set(shouldOpenAiChatAfterOnboardingState.atom, true);
 
     const { getByTestId } = render(<WorkspaceSetup />, { wrapper: Wrapper });
 
-    expect(getByTestId('ai-chat-tab')).toBeInTheDocument();
-    expect(getByTestId('preamble')).toBeInTheDocument();
-    expect(getByTestId('header-title')).toHaveTextContent('Onboarding');
-  });
-
-  it('should render a plain chat when the post-onboarding hint is not set', () => {
-    setOnboardingAiChatFeatureFlag(true);
-
-    const { getByTestId, queryByTestId } = render(<WorkspaceSetup />, {
-      wrapper: Wrapper,
-    });
-
-    expect(getByTestId('ai-chat-tab')).toBeInTheDocument();
-    expect(queryByTestId('preamble')).not.toBeInTheDocument();
-    expect(getByTestId('header-title')).toHaveTextContent('Ask AI');
+    expect(getByTestId('navigate')).toBeInTheDocument();
+    expect(mockNavigate).toHaveBeenCalledWith('/chat');
   });
 
   it('should redirect home when the onboarding ai chat feature flag is disabled', () => {
     setOnboardingAiChatFeatureFlag(false);
 
-    const { queryByTestId } = render(<WorkspaceSetup />, { wrapper: Wrapper });
+    render(<WorkspaceSetup />, { wrapper: Wrapper });
 
-    expect(queryByTestId('ai-chat-tab')).not.toBeInTheDocument();
     expect(mockNavigate).toHaveBeenCalledWith(defaultHomePagePath);
   });
 });

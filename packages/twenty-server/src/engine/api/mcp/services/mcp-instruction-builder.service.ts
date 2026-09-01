@@ -4,6 +4,11 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { MCP_EXCLUDED_TOOL_NAMES } from 'src/engine/api/mcp/constants/mcp-excluded-tool-names.const';
 import {
+  buildExcludedToolNamesSet,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import {
   AgentActorContextService,
   type UserContext,
 } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-actor-context.service';
@@ -21,6 +26,7 @@ export class McpInstructionBuilderService {
   constructor(
     private readonly systemPromptBuilderService: SystemPromptBuilderService,
     private readonly agentActorContextService: AgentActorContextService,
+    private readonly twentyConfigService: TwentyConfigService,
   ) {}
 
   async buildInstructions({
@@ -54,7 +60,10 @@ export class McpInstructionBuilderService {
       userWorkspaceId,
       workspaceMemberId,
       userContext,
-      excludeTools: MCP_EXCLUDED_TOOL_NAMES,
+      excludeTools: buildExcludedToolNamesSet(
+        MCP_EXCLUDED_TOOL_NAMES,
+        resolveSearchToolsConfig(this.twentyConfigService),
+      ),
     });
   }
 }

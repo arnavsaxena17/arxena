@@ -5,6 +5,19 @@ import { type AllStandardSkillName } from 'src/engine/workspace-manager/twenty-s
 
 const skillContentCache = new Map<AllStandardSkillName, string>();
 
+const SEARCH_SKILL_CONTENT_PARTS = [
+  'search-preamble.md',
+  'search-companies.md',
+  'search-people.md',
+  'search-linkedin-harvest.md',
+] as const;
+
+const loadSearchSkillContent = (): string => {
+  return SEARCH_SKILL_CONTENT_PARTS.map((partFileName) =>
+    readFileSync(join(__dirname, 'contents', partFileName), 'utf-8'),
+  ).join('\n');
+};
+
 export const loadStandardSkillContent = (
   skillName: AllStandardSkillName,
 ): string => {
@@ -14,10 +27,13 @@ export const loadStandardSkillContent = (
     return cachedContent;
   }
 
-  const content = readFileSync(
-    join(__dirname, 'contents', `${skillName}.md`),
-    'utf-8',
-  );
+  const content =
+    skillName === 'search'
+      ? loadSearchSkillContent()
+      : readFileSync(
+          join(__dirname, 'contents', `${skillName}.md`),
+          'utf-8',
+        );
 
   skillContentCache.set(skillName, content);
 

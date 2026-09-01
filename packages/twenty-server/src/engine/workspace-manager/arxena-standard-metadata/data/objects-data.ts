@@ -278,9 +278,9 @@ const allObjects: ArxenaObjectDefinition[] = [
   },
 ];
 
-// Org-chart mode historically excluded shortlist-domain objects; those now
- // live in the optional Shortlist Presentation app and are always filtered
- // from Arxena Standard via isShortlistPresentationObjectName.
+// Org-chart mode historically excluded shortlist-domain objects; shortlist,
+ // cvSent, screening, and phoneCall live in the optional Shortlist Presentation
+ // app. candidateEnrichment stays on Arxena Standard for core AI filtering.
 const OBJECTS_TO_EXCLUDE: string[] = [];
 
 export const getObjectsToExclude = (isOrgChartEnabled?: boolean): string[] => {

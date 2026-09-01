@@ -39,6 +39,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { usePageChangeEffectNavigateLocation } from '~/hooks/usePageChangeEffectNavigateLocation';
 import { getPageLayoutIdForLocation } from '~/modules/app/utils/getPageLayoutIdForLocation';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
+import { isAiChatPath } from '~/utils/isAiChatPath';
 
 // TODO: break down into smaller functions and / or hooks
 //  - moved usePageChangeEffectNavigateLocation into dedicated hook
@@ -103,6 +104,10 @@ export const PageChangeEffect = () => {
       return;
     }
 
+    if (isAiChatPath(location.pathname)) {
+      return;
+    }
+
     const sidePanelIsAiChat = currentPage === SidePanelPages.AskAI;
 
     if (sidePanelIsAiChat) {
@@ -110,7 +115,7 @@ export const PageChangeEffect = () => {
     }
 
     closeSidePanelMenu();
-  }, [closeSidePanelMenu, store]);
+  }, [closeSidePanelMenu, location.pathname, store]);
 
   const { resetFocusStackToFocusItem } = useResetFocusStackToFocusItem();
 
@@ -161,7 +166,7 @@ export const PageChangeEffect = () => {
 
       if (
         store.get(shouldOpenAiChatAfterOnboardingState.atom) &&
-        pageChangeEffectNavigateLocation !== AppPath.WorkspaceSetup
+        !isAiChatPath(pageChangeEffectNavigateLocation)
       ) {
         store.set(shouldOpenAiChatAfterOnboardingState.atom, false);
       }

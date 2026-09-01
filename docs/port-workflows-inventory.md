@@ -22,6 +22,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `WorkspaceMcpServer` entity + `DownstreamMcpToolProvider`
 - [x] Settings → AI → MCP servers UI
 - [x] Soft-retire `/assistant` toward Ask AI — page is now a stub that opens side-panel Ask AI; removed `AssistantChatColumn` / MCP client chat / thread sidebar+results
+- [x] Enlarged Ask AI at `/chat/:threadId?` (Twenty upstream full-page chat) — centered composer, suggested prompts, expand/collapse handoff from side panel; `/workspace-setup` redirects to `/chat`
 - [x] Moved Handsontable details table into GTM as `GtmDetailsTable` (was `AssistantDetailsTable`)
 - [x] Removed Project `SearchPanel` / `SearchParametersForm` (+ parameter manager/renderers); Ask AI side panel remains
 - [x] Removed unused candidate-search `AIChatAssistant` / `CandidateSearchModal` / `FloatingAIChat`
