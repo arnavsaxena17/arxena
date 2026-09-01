@@ -15,6 +15,22 @@ Prefer this skill over `research` when sourcing target accounts or people.
 
 On Find (campaign tabs): never end after a chat-only table — persist with the upsert tools first. Do **not** Enroll until the user confirms Add to CRM / Enroll.
 
+## Ephemeral write contract (Find / Outreach tabs)
+
+After search on `/outreach-home`, **one** upsert before ending the turn:
+
+```
+execute_tool({
+  toolName: "upsert_outreach_target_people",  // or upsert_outreach_target_companies
+  arguments: { projectId, mode: "merge", people: [...] }  // JSON object — from browsing context
+})
+```
+
+- `projectId` from browsing context; ask once if missing — do not upsert without it.
+- **Never** call upsert from inside `code_interpreter`. Use interpreter only to build the array from spilled search files, then upsert via `execute_tool`.
+- **Never** `create_candidate` / `create_one_company` for Find — CRM writes only after user confirms Save to CRM / Enroll.
+- Bulk LinkedIn lists: paginate per **LinkedIn / Harvest** → one interpreter to map rows → one upsert. Do not print multi-KB JSON into chat or loop many interpreter calls.
+
 ## Plan → Learn → Execute
 
 1. `load_skills(["search"])`

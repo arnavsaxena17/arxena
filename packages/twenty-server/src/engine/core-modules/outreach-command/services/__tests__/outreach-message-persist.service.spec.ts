@@ -138,7 +138,7 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
       messages: [
         {
           id: '2kuKnBpZWZCaaV8MpRN_Zg',
-          text: 'Happy to connect — would love to share how we help GTM teams.',
+          text: 'Happy to connect.',
           timestamp: '2026-08-25T21:18:24.338Z',
           isSender: true,
         },

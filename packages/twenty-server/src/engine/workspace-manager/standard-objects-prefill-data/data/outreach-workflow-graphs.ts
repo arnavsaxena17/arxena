@@ -946,7 +946,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         settings: {
           input: {
             message:
-              'Happy to connect — would love to share how we help GTM teams.',
+              'Happy to connect',
             linkedinUrl: gtmWfFindField(
               IDS.queuedFind,
               'linkedinUrl.primaryLinkUrl',
@@ -971,7 +971,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         settings: {
           input: {
             message:
-              'Happy to connect — would love to share how we help GTM teams.',
+              'Happy to connect.',
             linkedinUrl: gtmWfFindField(
               IDS.queuedFind,
               'linkedinUrl.primaryLinkUrl',

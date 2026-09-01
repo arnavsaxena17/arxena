@@ -106,11 +106,21 @@ exa_web_search({
 <!-- search-exa-people-source-section:end -->
 ### Outreach ephemeral save (default on /outreach-home)
 
-1. Confirm browsing context has `projectId`.
-2. Search people (LinkedIn / Harvest / Apollo…).
-3. Map hits to the person shape expected by `upsert_outreach_target_people`.
-4. `upsert_outreach_target_people({ projectId, mode: "merge", people })`.
-5. Summarize. Do **not** create enrollment records until the user confirms.
+Follow **Ephemeral write contract** (preamble). Steps:
+
+1. Search → map hits → `execute_tool` upsert (mandatory before ending turn).
+2. Field map (LinkedIn `result.items[]` → upsert row):
+
+| Source | Upsert field |
+| --- | --- |
+| `name` or `first_name` + `last_name` | `name` |
+| `headline` or `current_positions[0].title` | `title` |
+| `current_positions[0].companyName` | `companyName` |
+| `public_profile_url` | `linkedinUrl` |
+| (default) | `stage: "queued"` |
+
+3. Spilled search output: one `code_interpreter` to parse all page files → `people[]`; then one `execute_tool` upsert. Never upsert from the sandbox.
+4. Summarize written count. Do **not** create enrollment records until the user confirms.
 
 ### CRM save (only when the user asks)
 

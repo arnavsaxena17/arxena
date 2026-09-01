@@ -676,7 +676,7 @@ const deployWorkflowB = async (workflowVersionId: string) => {
           workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_ID,
           linkedinProfileId: `{{${findCandidate.id}.first.linkedinProfileId}}`,
           linkedinUrl: `{{${findCandidate.id}.first.linkedinUrl.primaryLinkUrl}}`,
-          message: 'Happy to connect — would love to share how we help GTM teams.',
+          message: 'Happy to connect',
         },
         outputSchema: {},
         errorHandlingOptions: errorHandling,

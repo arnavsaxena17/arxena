@@ -30,7 +30,9 @@ learn_tools([
   "search_linkedin_parameters",
   "search_linkedin_people",
   "search_linkedin_companies",
+  "search_linkedin_from_url",
   "search_linkedin_continue",
+  "extract_json_paths",
   "list_linkedin_relations",
   "search_people_api",
   "list_people_data_sources",
@@ -180,8 +182,31 @@ Wrong (classic shape — Unipile returns `Expected union value`): flat `job_titl
 **Continue pagination**
 
 ```json
-{ "cursor": "<cursor from previous search_linkedin_* response>", "limit": 10 }
+{ "cursor": "<full cursor from spill file — see cursor rule below>", "limit": 25 }
 ```
+
+**Cursor rule (critical):** inline `preview.result.cursor` and hint text are **truncated**. Using them causes `api.Query.invalid_cursor`. Always read the full cursor from the last page’s spill file:
+
+```
+extract_json_paths({ "fileId": "<outputRef.fileId>", "paths": ["$.result.cursor"] })
+```
+
+If continue fails with `invalid_cursor`, re-extract from the spill file — do not substring the preview.
+
+**Spilled file path cheat sheet**
+
+| You have | Read items | Read cursor |
+| --- | --- | --- |
+| Spill file (`outputRef.fileId`) | `$.result.items[*]` via `code_interpreter` | `extract_json_paths` → `$.result.cursor` |
+| Inline tool result (not spilled) | use `preview.result.items` in the response | still prefer `extract_json_paths` on the spill file when `spilled: true` |
+
+**Sales Navigator saved people list** (`/sales/lists/people/{id}` — user says import / find / add leads):
+
+1. `search_linkedin_from_url({ url, limit: 25 })` — save `outputRef.fileId` as page 0.
+2. Loop: `extract_json_paths` → cursor from spill file → `search_linkedin_continue({ cursor, limit: 25 })` until all pages fetched (`paging.start + paging.page_count >= paging.total_count`).
+3. **One** `code_interpreter`: mount all page files, map each `result.items[]` → `{ name, title, companyName, linkedinUrl, stage: "queued" }` (see **People** field mapping).
+4. **One** `execute_tool({ toolName: "upsert_outreach_target_people", arguments: { projectId, mode: "merge", people } })`.
+5. Do not call `search_help_center` for this URL shape. Do not upsert from inside `code_interpreter`.
 
 **Recently added connections** — use `list_linkedin_relations` (not `search_linkedin_people`):
 
@@ -246,4 +271,4 @@ After `search_linkedin_parameters`, check that returned `title` roughly matches 
 - Do not invent facet IDs — always resolve via `search_linkedin_parameters`.
 - Call `generate_linkedin_query_set` only once per unique requirement.
 - For Sales Navigator people, use `role` / `{ include: [...] }` — never classic flat `job_title` or bare arrays.
-- On Outreach after people search: `upsert_outreach_target_people` (see **People** section) — do not enroll until user confirms.
+- On Outreach after people search: follow **Ephemeral write contract** (preamble) → `execute_tool` `upsert_outreach_target_people` — do not enroll until user confirms.
