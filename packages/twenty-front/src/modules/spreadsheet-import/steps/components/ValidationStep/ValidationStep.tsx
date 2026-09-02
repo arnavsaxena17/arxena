@@ -171,7 +171,7 @@ export const ValidationStep = ({
     enableUploadProgressSseWhileOpen,
   } = useSpreadsheetImportInternal();
 
-  const projectIdAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
 

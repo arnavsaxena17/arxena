@@ -370,7 +370,7 @@ type CandidateData = {
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useAtomState(tokenPairState);
   const [candidateData, setCandidateData] = useAtomState(candidateDataState);
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);

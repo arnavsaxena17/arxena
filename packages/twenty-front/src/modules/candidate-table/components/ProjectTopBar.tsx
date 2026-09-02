@@ -36,7 +36,7 @@ import {
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import {
     columnsSelector,
-    tableStateAtom,
+    tableState,
 } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -452,7 +452,7 @@ export const ProjectTopBar = memo(
     const [chatSearchQuery, setChatSearchQuery] = useAtomState(chatSearchQueryState);
     const searchResults = useAtomStateValue(searchResultsState);
     const searchMetadata = useAtomStateValue(searchMetadataState);
-    const tableStateAtom = useAtomStateValue(tableStateAtom);
+    const tableState = useAtomStateValue(tableStateAtom);
     const columns = useAtomStateValue(columnsSelector);
     const { enqueueErrorSnackBar } = useSnackBar();
 

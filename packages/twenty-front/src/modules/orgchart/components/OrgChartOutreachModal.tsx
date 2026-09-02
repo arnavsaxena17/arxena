@@ -165,8 +165,7 @@ export const OrgChartOutreachModal = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const projectIdAtom = useAtomStateValue(projectIdAtom);
-  const setProjectIdAtom = useSetAtomState(projectIdAtom);
+  const setProjectId = useSetAtomState(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const {
@@ -257,10 +256,10 @@ export const OrgChartOutreachModal = ({
     (projectId: string) => {
       setSelectedProjectId(projectId);
       if (projectId.trim()) {
-        setProjectIdAtom(projectId);
+        setProjectId(projectId);
       }
     },
-    [setProjectIdAtom],
+    [setProjectId],
   );
 
   const handleSubmit = useCallback(async () => {

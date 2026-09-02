@@ -49,7 +49,7 @@ const getResponseErrorMessage = async (response: Response) => {
 export const useArxFetchContactDetails = () => {
   const location = useLocation();
   const onProjectRoute = isProjectRoute(location.pathname);
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const tokenPair = useAtomStateValue(tokenPairState);
   const [pollingJobId, setPollingJobId] = useState<string | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(

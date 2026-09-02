@@ -11,7 +11,7 @@ import { useCallback, useState } from 'react';
 import * as XLSX from 'xlsx';
 
 export const ArxDownloadAsExcelCommand = () => {
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const { isConfirmed, handleCancel, handleConfirm } =
     useArxCommandConfirmationFlow(ARX_DOWNLOAD_EXCEL_MODAL_ID);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar } =

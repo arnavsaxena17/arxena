@@ -241,7 +241,7 @@ const ENTER_MOVES = { row: 1, col: 0 };
 export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ projectId, onImportCandidatesClick }, ref) => {
     const colorScheme = useThemeColorScheme();
     const tableRef = useRef<any>(null);
-    const tableStateAtom = useAtomStateValue(tableStateAtom);
+    const tableState = useAtomStateValue(tableStateAtom);
     const setTableStateAtom = useSetAtomState(tableStateAtom);
     const setFilteredCandidatesCount = useSetAtomState(filteredCandidatesCountState);
     const [tokenPair] = useAtomState(tokenPairState);

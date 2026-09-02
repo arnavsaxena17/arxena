@@ -102,13 +102,13 @@ const DataTable = lazy(() =>
 
 export const ProjectPage: React.FC = () => {
   debugLog(`ProjectPage rendering`);
-  const [projectIdAtom, setProjectIdAtom] = useAtomState(projectIdAtom);
+  const [projectId, setProjectId] = useAtomState(projectIdAtom);
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
   const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);
   const filteredCandidatesCount = useAtomStateValue(filteredCandidatesCountState);
   const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
   const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
@@ -509,7 +509,7 @@ export const ProjectPage: React.FC = () => {
         // Use requestAnimationFrame to ensure state reset completes before setting new projectId
         // This prevents DataTable from loading persisted results while old search results are still in state
         requestAnimationFrame(() => {
-          setProjectIdAtom(extractedProjectId);
+          setProjectId(extractedProjectId);
 
           // Refresh data after a small delay to ensure all state updates have propagated
           setTimeout(() => {
@@ -521,7 +521,7 @@ export const ProjectPage: React.FC = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, projectId]); // Removed resetJobStates and setProjectIdAtom from dependencies as they're stable
+  }, [location.pathname, projectId]); // Removed resetJobStates and setProjectId from dependencies as they're stable
 
   // Initialize enrichments when component mounts - only run once
   useEffect(() => {

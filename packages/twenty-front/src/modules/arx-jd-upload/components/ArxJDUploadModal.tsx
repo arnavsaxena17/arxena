@@ -35,12 +35,12 @@ export const ArxJDUploadModal = ({
   const setParsedJDInternalState = useSetParsedJDInternalState();
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const projectIdAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const [tokenPair] = useAtomState(tokenPairState);
   const { findManyAttachments } = useFindManyAttachments();
   const isEditMode = arxUploadJDModalMode === 'edit';
   const projectIdToFetch =
-    objectNameSingular === 'project' ? objectRecordId : currentProjectId;
+    objectNameSingular === 'project' ? objectRecordId : projectId;
 
   // Debug logging
   console.log('ArxJDUploadModal - arxUploadJDModalMode:', arxUploadJDModalMode, 'isEditMode:', isEditMode, 'projectIdToFetch:', projectIdToFetch);

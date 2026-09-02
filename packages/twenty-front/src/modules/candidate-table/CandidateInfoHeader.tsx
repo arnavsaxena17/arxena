@@ -228,7 +228,7 @@ export const CandidateInfoHeader = React.memo(({
   const [tokenPair] = useAtomState(tokenPairState);
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const currentProjectId = useAtomStateValue(currentProjectIdState);
   const navigate = useNavigate();
 

@@ -24,7 +24,7 @@ export const useParsedJDState = (): [
   const setParsedJDInternal = useSetAtomState(parsedJDInternalState);
   const arxUploadJDModalMode = useAtomStateValue(arxUploadJDModalModeState);
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
-  const projectIdAtom = useAtomStateValue(projectIdAtom);
+  const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState) as ProjectForParsedJDMerge[];
 
   const parsedJD = useMemo(

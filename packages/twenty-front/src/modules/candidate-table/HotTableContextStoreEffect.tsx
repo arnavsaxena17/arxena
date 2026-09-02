@@ -26,7 +26,7 @@ export const HotTableContextStoreEffect = ({
 }) => {
   const { objectMetadataItems } = useObjectMetadataItems();
   const { upsertRecordsInStore } = useUpsertRecordsInStore();
-  const tableStateAtom = useAtomStateValue(tableStateAtom);
+  const tableState = useAtomStateValue(tableStateAtom);
   const searchResults = useAtomStateValue(searchResultsState);
 
   const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
