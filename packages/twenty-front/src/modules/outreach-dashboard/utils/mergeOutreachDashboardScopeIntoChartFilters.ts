@@ -8,6 +8,7 @@ import { isDefined } from 'twenty-shared/utils';
 type OutreachDashboardScopeFieldRule = {
   fieldNames: string[];
   operand: ViewFilterOperand;
+  relationSubFieldName?: string;
 };
 
 const OUTREACH_DASHBOARD_SCOPE_RULES: Record<string, OutreachDashboardScopeFieldRule> = {
@@ -30,6 +31,11 @@ const OUTREACH_DASHBOARD_SCOPE_RULES: Record<string, OutreachDashboardScopeField
   whatsappMessage: {
     fieldNames: ['projectsId', 'projects', 'projectId', 'project'],
     operand: ViewFilterOperand.IS,
+  },
+  workflowRun: {
+    fieldNames: ['candidate'],
+    operand: ViewFilterOperand.IS,
+    relationSubFieldName: 'projectsId',
   },
 };
 
@@ -55,11 +61,13 @@ const buildScopeRecordFilter = ({
   projectId,
   objectNameSingular,
   operand,
+  relationSubFieldName,
 }: {
   field: FieldMetadataItem;
   projectId: string;
   objectNameSingular: string;
   operand: ViewFilterOperand;
+  relationSubFieldName?: string;
 }): RecordFilter => ({
   id: `outreach-dashboard-scope:${objectNameSingular}:${projectId}`,
   fieldMetadataId: field.id,
@@ -69,6 +77,9 @@ const buildScopeRecordFilter = ({
   operand,
   label: field.label,
   recordFilterGroupId: `outreach-dashboard-scope-group:${projectId}`,
+  ...(isDefined(relationSubFieldName)
+    ? { subFieldName: relationSubFieldName }
+    : {}),
 });
 
 const buildVariantRecordFilter = ({
@@ -117,6 +128,7 @@ export const mergeOutreachDashboardScopeIntoChartFilters = ({
           projectId,
           objectNameSingular: objectMetadataItem.nameSingular,
           operand: scopeRule.operand,
+          relationSubFieldName: scopeRule.relationSubFieldName,
         });
 
         if (!nextFilters.some((filter) => filter.id === scopeFilter.id)) {

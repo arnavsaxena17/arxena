@@ -134,13 +134,13 @@ export const OutreachSendWindowDayPicker = ({
           disabled={disabled}
           onClick={() => onChange([...WEEKDAY_PRESET])}
         />
-        <Button
+        {/* <Button
           title="Tue–Thu"
           variant="secondary"
           size="small"
           disabled={disabled}
           onClick={() => onChange([...TUE_THU_PRESET])}
-        />
+        /> */}
         <StyledSummary>
           {formatSendWindowDaysSummary(selectedDays)} selected
         </StyledSummary>

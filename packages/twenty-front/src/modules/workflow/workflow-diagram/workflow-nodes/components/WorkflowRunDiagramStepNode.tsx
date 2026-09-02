@@ -2,8 +2,8 @@ import { CommandMenuContext } from '@/command-menu-item/contexts/CommandMenuCont
 import { useSidePanelWorkflowNavigation } from '@/side-panel/pages/workflow/hooks/useSidePanelWorkflowNavigation';
 import { sidePanelNavigationStackState } from '@/side-panel/states/sidePanelNavigationStackState';
 import {
-  formatLinkedinRateLimitPendingSubtitle,
-  getLinkedinRateLimitQueuedEvent,
+  formatWorkflowPendingSubtitle,
+  getWorkflowPendingQueuedEvent,
 } from '@/unipile/utils/accountRateLimitError';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
@@ -132,7 +132,7 @@ export const WorkflowRunDiagramStepNode = ({
       : 0;
 
   const nodeLabel = useWorkflowNodeLabel(data);
-  const linkedinRateLimitQueuedEvent = getLinkedinRateLimitQueuedEvent(stepInfo);
+  const workflowPendingQueuedEvent = getWorkflowPendingQueuedEvent(stepInfo);
 
   const handleClick = () => {
     if (!isDefined(workflowVisualizerWorkflowId)) {
@@ -217,11 +217,9 @@ export const WorkflowRunDiagramStepNode = ({
             {data.name}
           </WorkflowNodeTitle>
           {data.runStatus === StepStatus.PENDING &&
-            isDefined(linkedinRateLimitQueuedEvent) && (
+            isDefined(workflowPendingQueuedEvent) && (
               <StyledNodeSubtitle>
-                {formatLinkedinRateLimitPendingSubtitle(
-                  linkedinRateLimitQueuedEvent,
-                )}
+                {formatWorkflowPendingSubtitle(workflowPendingQueuedEvent)}
               </StyledNodeSubtitle>
             )}
         </WorkflowNodeRightPart>

@@ -73,4 +73,44 @@ describe('buildOutreachDashboardPageLayout', () => {
       expect(new Set(titles).size).toBe(titles.length);
     }
   });
+
+  it('includes workflow control tab with run KPIs and record tables', () => {
+    const layout = buildOutreachDashboardPageLayout();
+    const workflowControl = layout.tabs?.find(
+      (tab) => tab.title === 'Workflow control',
+    );
+
+    expect(workflowControl).toBeDefined();
+
+    const titles = (workflowControl?.widgets ?? []).map((widget) => widget.title);
+
+    expect(titles).toEqual(
+      expect.arrayContaining([
+        'Active runs',
+        'Awaiting approval',
+        'In delay',
+        'Failed runs',
+        'Enrich failed',
+        'Stage C candidates by branch',
+        'Active runs by step kind',
+        'Active runs by current step',
+        'HITL approval queue',
+        'Active candidate workflow runs',
+        'Failed workflow runs',
+        'Stage C candidates',
+      ]),
+    );
+
+    const hitlTable = workflowControl?.widgets?.find(
+      (widget) => widget.title === 'HITL approval queue',
+    );
+
+    expect(hitlTable).toMatchObject({
+      type: 'RECORD_TABLE',
+      configuration: {
+        configurationType: 'RECORD_TABLE',
+        recordLimit: 50,
+      },
+    });
+  });
 });

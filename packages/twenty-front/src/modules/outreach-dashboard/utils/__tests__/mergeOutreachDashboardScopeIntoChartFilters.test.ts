@@ -62,6 +62,31 @@ describe('mergeOutreachDashboardScopeIntoChartFilters', () => {
     });
   });
 
+  it('scopes workflow runs through candidate.projectsId', () => {
+    const objectMetadataItem = buildObjectMetadataItem('workflowRun', [
+      {
+        id: 'candidate-field',
+        name: 'candidate',
+        label: 'Candidate',
+        type: FieldMetadataType.RELATION,
+        isActive: true,
+      },
+    ] as EnrichedObjectMetadataItem['fields']);
+
+    const merged = mergeOutreachDashboardScopeIntoChartFilters({
+      chartFilters: {},
+      objectMetadataItem,
+      projectId: 'project-1',
+    });
+
+    expect(merged.recordFilters?.[0]).toMatchObject({
+      fieldMetadataId: 'candidate-field',
+      operand: ViewFilterOperand.IS,
+      value: 'project-1',
+      subFieldName: 'projectsId',
+    });
+  });
+
   it('returns chart filters unchanged for unsupported objects', () => {
     const chartFilters = {
       recordFilters: [
@@ -85,6 +110,9 @@ describe('mergeOutreachDashboardScopeIntoChartFilters', () => {
         objectMetadataItem,
         projectId: 'project-1',
       }),
-    ).toEqual(chartFilters);
+    ).toEqual({
+      ...chartFilters,
+      recordFilterGroups: [],
+    });
   });
 });

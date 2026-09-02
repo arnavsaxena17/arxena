@@ -75,6 +75,7 @@ import { RenamePerEnrolledPersonToPerEnrolledCandidateCommand } from 'src/databa
 import { SyncOutreachWorkflowInventoryCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000081-sync-outreach-workflow-inventory.command';
 import { SyncOutreachProjectSendWindowDaysFieldCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000082-sync-gtm-project-send-window-days-field.command';
 import { SyncOutreachCandidateSpeedFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000083-sync-outreach-candidate-speed-fields.command';
+import { SyncOutreachWorkflowControlDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000088-sync-outreach-workflow-control-dashboard.command';
 import { FoldCandidateFlagsIntoJsonCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000084-fold-candidate-flags-into-json.command';
 import { ReBackfillOutreachCompanyRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000085-re-backfill-outreach-company-rollups.command';
 import { MoveCandidateEnrichmentToArxenaStandardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000086-move-candidate-enrichment-to-arxena-standard.command';
@@ -186,6 +187,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncOutreachWorkflowInventoryCommand,
     SyncOutreachProjectSendWindowDaysFieldCommand,
     SyncOutreachCandidateSpeedFieldsCommand,
+    SyncOutreachWorkflowControlDashboardCommand,
     FoldCandidateFlagsIntoJsonCommand,
     ReBackfillOutreachCompanyRollupsCommand,
     MoveCandidateEnrichmentToArxenaStandardCommand,

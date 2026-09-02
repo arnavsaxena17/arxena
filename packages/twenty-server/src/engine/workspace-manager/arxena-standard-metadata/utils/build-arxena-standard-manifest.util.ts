@@ -54,6 +54,7 @@ import {
   ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
 import { buildOutreachDashboardPageLayout } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-page-layout.util';
+import { buildOutreachDashboardViews } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-views.util';
 import { ASSISTANT_APPLICATION } from 'src/engine/workspace-manager/assistant-application/constants/assistant-application.constant';
 import { SHORTLIST_PRESENTATION_APPLICATION } from 'src/engine/workspace-manager/shortlist-presentation-application/constants/shortlist-presentation-application.constant';
 import { VIDEO_INTERVIEW_APPLICATION } from 'src/engine/workspace-manager/video-interview-application/constants/video-interview-application.constant';
@@ -800,6 +801,7 @@ const buildArxenaFamilyManifest = ({
   }
 
   if (owner === 'arxena-standard') {
+    views.push(...buildOutreachDashboardViews());
     pageLayouts.push(buildOutreachDashboardPageLayout());
   }
 

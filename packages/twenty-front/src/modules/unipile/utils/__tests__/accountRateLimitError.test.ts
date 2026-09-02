@@ -7,6 +7,9 @@ import {
   formatLinkedinRateLimitPendingSubtitle,
   formatRetryWaitLabel,
   formatRetryWaitLabelFromMs,
+  formatWorkflowPendingDisplay,
+  formatWorkflowPendingSubtitle,
+  getWorkflowPendingQueuedEvent,
   isAccountRateLimitErrorMessage,
   isLinkedinRateLimitPendingStep,
 } from '@/unipile/utils/accountRateLimitError';
@@ -138,5 +141,65 @@ describe('accountRateLimitError', () => {
     expect(display.message).toBe(
       'LinkedIn connection request is rate limited. This step will retry automatically in 4 minutes.',
     );
+  });
+
+  it('reads outreach send-window pending metadata', () => {
+    const queued = getWorkflowPendingQueuedEvent({
+      status: 'PENDING',
+      waitMs: 50_400_000,
+      scheduledAt: '2026-09-02T05:31:37.385Z',
+      pendingReason: 'outreach_send_window',
+      result: {
+        waitMs: 50_400_000,
+        scheduledAt: '2026-09-02T05:31:37.385Z',
+        pendingReason: 'outreach_send_window',
+        method: 'connection_request',
+      },
+    });
+
+    expect(queued).toEqual({
+      pendingReason: 'outreach_send_window',
+      waitMs: 50_400_000,
+      scheduledAt: '2026-09-02T05:31:37.385Z',
+      method: 'connection_request',
+    });
+  });
+
+  it('formats outreach send-window pending steps for workflow display', () => {
+    const toLocaleStringSpy = jest
+      .spyOn(Date.prototype, 'toLocaleString')
+      .mockReturnValue('Sep 2, 2026, 11:01 AM');
+
+    const nowMs = Date.parse('2026-09-02T05:22:00.000Z');
+    const event = {
+      pendingReason: 'outreach_send_window',
+      waitMs: 50_400_000,
+      scheduledAt: '2026-09-02T05:32:00.000Z',
+      method: 'connection_request',
+    };
+
+    expect(formatWorkflowPendingDisplay(event, nowMs)).toEqual({
+      message:
+        'LinkedIn connection request will run automatically in 10 minutes.',
+      reason: 'Outside send window',
+      retryIn: '10 minutes',
+      retryAt: 'Sep 2, 2026, 11:01 AM',
+    });
+    expect(formatWorkflowPendingSubtitle(event, nowMs)).toBe(
+      'Sending in 10 minutes · Sep 2, 2026, 11:01 AM',
+    );
+
+    toLocaleStringSpy.mockRestore();
+  });
+
+  it('maps legacy gtm_send_window to outreach_send_window', () => {
+    expect(
+      getWorkflowPendingQueuedEvent({
+        status: 'PENDING',
+        waitMs: 60_000,
+        scheduledAt: '2026-09-02T05:31:37.385Z',
+        pendingReason: 'gtm_send_window',
+      })?.pendingReason,
+    ).toBe('outreach_send_window');
   });
 });

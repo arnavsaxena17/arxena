@@ -20,6 +20,13 @@ import {
 } from 'twenty-shared/types';
 
 import { ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/engine/workspace-manager/arxena-standard-metadata/constants/arxena-standard-application.constant';
+import {
+  OUTREACH_ACTIVE_WORKFLOW_RUN_STATUSES,
+  OUTREACH_DASHBOARD_WORKFLOW_CONTROL_TAB_TITLE,
+  OUTREACH_DASHBOARD_WORKFLOW_CONTROL_VIEW_NAMES,
+  OUTREACH_STAGE_C_BRANCH_STAGES,
+} from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-workflow-control.constants';
+import { getOutreachDashboardWorkflowControlViewUniversalIdentifier } from 'src/engine/workspace-manager/arxena-standard-metadata/utils/build-outreach-dashboard-views.util';
 
 export const OUTREACH_DASHBOARD_TITLE = 'Outreach';
 
@@ -39,6 +46,12 @@ const CHAT_MESSAGE = getObjectUniversalIdentifier({
   applicationUniversalIdentifier: APP,
   nameSingular: 'whatsappMessage',
 });
+
+const WORKFLOW_RUN = STANDARD_OBJECTS.workflowRun.universalIdentifier;
+
+const workflowRunField = (
+  name: keyof typeof STANDARD_OBJECTS.workflowRun.fields,
+) => STANDARD_OBJECTS.workflowRun.fields[name].universalIdentifier;
 
 const arxenaField = (objectUniversalIdentifier: string, name: string) =>
   getFieldUniversalIdentifier({
@@ -92,6 +105,12 @@ const FIELDS = {
   sourcedFromOutreach: arxenaField(OPPORTUNITY, 'sourcedFromOutreach'),
   chatMessageId: arxenaField(CHAT_MESSAGE, 'id'),
   chatMessageCreatedAt: arxenaField(CHAT_MESSAGE, 'createdAt'),
+  lastOutboundAt: arxenaField(CANDIDATE, 'lastOutboundAt'),
+  workflowRunId: workflowRunField('id'),
+  workflowRunStatus: workflowRunField('status'),
+  workflowRunRelatedObjectName: workflowRunField('relatedObjectName'),
+  workflowRunCurrentStepName: workflowRunField('currentStepName'),
+  workflowRunCurrentStepKind: workflowRunField('currentStepKind'),
 };
 
 type GridPosition = {
@@ -194,6 +213,51 @@ const isNotEmptyFilter = ({
   };
 };
 
+type ChartFilterCondition = {
+  fieldMetadataUniversalIdentifier: string;
+  operand: string;
+  value: string;
+};
+
+const chartFilter = ({
+  widgetTitle,
+  recordFilters,
+}: {
+  widgetTitle: string;
+  recordFilters: ChartFilterCondition[];
+}): UniversalChartFilter => {
+  const groupId = computeDeterministicUuid({
+    entityNamespace: 'pageLayoutWidget',
+    value: `gtmCommandDashboard:filterGroup:${widgetTitle}`,
+    applicationUniversalIdentifier: APP,
+  });
+
+  return {
+    recordFilterGroups: [{ id: groupId, logicalOperator: 'AND' }],
+    recordFilters: recordFilters.map((recordFilter) => ({
+      ...recordFilter,
+      recordFilterGroupId: groupId,
+    })),
+  };
+};
+
+const activeCandidateWorkflowRunFilter = (widgetTitle: string) =>
+  chartFilter({
+    widgetTitle,
+    recordFilters: [
+      {
+        fieldMetadataUniversalIdentifier: FIELDS.workflowRunRelatedObjectName,
+        operand: 'CONTAINS',
+        value: 'candidate',
+      },
+      {
+        fieldMetadataUniversalIdentifier: FIELDS.workflowRunStatus,
+        operand: 'IS',
+        value: JSON.stringify([...OUTREACH_ACTIVE_WORKFLOW_RUN_STATUSES]),
+      },
+    ],
+  });
+
 const widget = ({
   tabUniversalIdentifier,
   title,
@@ -261,6 +325,7 @@ const bar = ({
   layout = 'HORIZONTAL',
   color = 'blue',
   aggregateOperation = AggregateOperations.COUNT,
+  filter,
 }: {
   tabUniversalIdentifier: string;
   title: string;
@@ -271,6 +336,7 @@ const bar = ({
   layout?: 'HORIZONTAL' | 'VERTICAL';
   color?: string;
   aggregateOperation?: AggregateOperations;
+  filter?: UniversalChartFilter;
 }) =>
   widget({
     tabUniversalIdentifier,
@@ -289,6 +355,7 @@ const bar = ({
       layout,
       ...chartBase,
       displayDataLabel: true,
+      ...(filter ? { filter } : {}),
     },
   });
 
@@ -300,6 +367,7 @@ const pie = ({
   groupByFieldMetadataUniversalIdentifier,
   gridPosition,
   color = 'orange',
+  filter,
 }: {
   tabUniversalIdentifier: string;
   title: string;
@@ -308,6 +376,7 @@ const pie = ({
   groupByFieldMetadataUniversalIdentifier: string;
   gridPosition: GridPosition;
   color?: string;
+  filter?: UniversalChartFilter;
 }) =>
   widget({
     tabUniversalIdentifier,
@@ -324,8 +393,38 @@ const pie = ({
       displayLegend: true,
       color,
       ...chartBase,
+      ...(filter ? { filter } : {}),
     },
   });
+
+const recordTable = ({
+  tabUniversalIdentifier,
+  title,
+  objectUniversalIdentifier,
+  viewUniversalIdentifier,
+  gridPosition,
+}: {
+  tabUniversalIdentifier: string;
+  title: string;
+  objectUniversalIdentifier: string;
+  viewUniversalIdentifier: string;
+  gridPosition: GridPosition;
+}): PageLayoutWidgetManifest => ({
+  universalIdentifier: getPageLayoutWidgetUniversalIdentifier({
+    applicationUniversalIdentifier: APP,
+    pageLayoutTabUniversalIdentifier: tabUniversalIdentifier,
+    title,
+  }),
+  title,
+  type: 'RECORD_TABLE',
+  objectUniversalIdentifier,
+  gridPosition,
+  configuration: {
+    configurationType: 'RECORD_TABLE',
+    viewId: viewUniversalIdentifier,
+    recordLimit: 50,
+  },
+});
 
 const line = ({
   tabUniversalIdentifier,
@@ -901,6 +1000,198 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             gridPosition: grid(9, 0, 6, 12),
             layout: 'HORIZONTAL',
             color: 'orange',
+          }),
+        ],
+      }),
+      tab({
+        pageLayoutUniversalIdentifier,
+        title: OUTREACH_DASHBOARD_WORKFLOW_CONTROL_TAB_TITLE,
+        position: 7,
+        icon: 'IconPlayerPlay',
+        widgets: (tabId) => [
+          aggregate({
+            tabUniversalIdentifier: tabId,
+            title: 'Active runs',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            gridPosition: grid(0, 0, 3, 3),
+            filter: activeCandidateWorkflowRunFilter('Active runs'),
+          }),
+          aggregate({
+            tabUniversalIdentifier: tabId,
+            title: 'Awaiting approval',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            gridPosition: grid(0, 3, 3, 3),
+            filter: chartFilter({
+              widgetTitle: 'Awaiting approval',
+              recordFilters: [
+                {
+                  fieldMetadataUniversalIdentifier:
+                    FIELDS.workflowRunRelatedObjectName,
+                  operand: 'CONTAINS',
+                  value: 'candidate',
+                },
+                {
+                  fieldMetadataUniversalIdentifier:
+                    FIELDS.workflowRunCurrentStepKind,
+                  operand: 'IS',
+                  value: JSON.stringify(['FORM']),
+                },
+                {
+                  fieldMetadataUniversalIdentifier: FIELDS.workflowRunStatus,
+                  operand: 'IS',
+                  value: JSON.stringify([...OUTREACH_ACTIVE_WORKFLOW_RUN_STATUSES]),
+                },
+              ],
+            }),
+          }),
+          aggregate({
+            tabUniversalIdentifier: tabId,
+            title: 'In delay',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            gridPosition: grid(0, 6, 3, 3),
+            filter: chartFilter({
+              widgetTitle: 'In delay',
+              recordFilters: [
+                {
+                  fieldMetadataUniversalIdentifier:
+                    FIELDS.workflowRunRelatedObjectName,
+                  operand: 'CONTAINS',
+                  value: 'candidate',
+                },
+                {
+                  fieldMetadataUniversalIdentifier:
+                    FIELDS.workflowRunCurrentStepKind,
+                  operand: 'IS',
+                  value: JSON.stringify(['DELAY']),
+                },
+                {
+                  fieldMetadataUniversalIdentifier: FIELDS.workflowRunStatus,
+                  operand: 'IS',
+                  value: JSON.stringify([...OUTREACH_ACTIVE_WORKFLOW_RUN_STATUSES]),
+                },
+              ],
+            }),
+          }),
+          aggregate({
+            tabUniversalIdentifier: tabId,
+            title: 'Failed runs',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            gridPosition: grid(0, 9, 3, 3),
+            filter: chartFilter({
+              widgetTitle: 'Failed runs',
+              recordFilters: [
+                {
+                  fieldMetadataUniversalIdentifier:
+                    FIELDS.workflowRunRelatedObjectName,
+                  operand: 'CONTAINS',
+                  value: 'candidate',
+                },
+                {
+                  fieldMetadataUniversalIdentifier: FIELDS.workflowRunStatus,
+                  operand: 'IS',
+                  value: JSON.stringify(['FAILED']),
+                },
+              ],
+            }),
+          }),
+          aggregate({
+            tabUniversalIdentifier: tabId,
+            title: 'Enrich failed',
+            objectUniversalIdentifier: CANDIDATE,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.candidateId,
+            gridPosition: grid(3, 0, 3, 3),
+            filter: selectIsFilter({
+              widgetTitle: 'Enrich failed',
+              fieldMetadataUniversalIdentifier: FIELDS.enrichStatus,
+              values: ['FAILED'],
+            }),
+          }),
+          bar({
+            tabUniversalIdentifier: tabId,
+            title: 'Stage C candidates by branch',
+            objectUniversalIdentifier: CANDIDATE,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.candidateId,
+            primaryAxisGroupByFieldMetadataUniversalIdentifier:
+              FIELDS.outreachSequenceStage,
+            gridPosition: grid(3, 3, 6, 5),
+            layout: 'HORIZONTAL',
+            color: 'purple',
+            filter: selectIsFilter({
+              widgetTitle: 'Stage C candidates by branch',
+              fieldMetadataUniversalIdentifier: FIELDS.outreachSequenceStage,
+              values: [...OUTREACH_STAGE_C_BRANCH_STAGES],
+            }),
+          }),
+          pie({
+            tabUniversalIdentifier: tabId,
+            title: 'Active runs by step kind',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            groupByFieldMetadataUniversalIdentifier:
+              FIELDS.workflowRunCurrentStepKind,
+            gridPosition: grid(3, 8, 6, 4),
+            color: 'blue',
+            filter: activeCandidateWorkflowRunFilter('Active runs by step kind'),
+          }),
+          bar({
+            tabUniversalIdentifier: tabId,
+            title: 'Active runs by current step',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            aggregateFieldMetadataUniversalIdentifier: FIELDS.workflowRunId,
+            primaryAxisGroupByFieldMetadataUniversalIdentifier:
+              FIELDS.workflowRunCurrentStepName,
+            gridPosition: grid(9, 0, 6, 12),
+            layout: 'HORIZONTAL',
+            color: 'turquoise',
+            filter: activeCandidateWorkflowRunFilter('Active runs by current step'),
+          }),
+          recordTable({
+            tabUniversalIdentifier: tabId,
+            title: 'HITL approval queue',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            viewUniversalIdentifier:
+              getOutreachDashboardWorkflowControlViewUniversalIdentifier(
+                OUTREACH_DASHBOARD_WORKFLOW_CONTROL_VIEW_NAMES.hitlApprovalQueue,
+                WORKFLOW_RUN,
+              ),
+            gridPosition: grid(15, 0, 8, 12),
+          }),
+          recordTable({
+            tabUniversalIdentifier: tabId,
+            title: 'Active candidate workflow runs',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            viewUniversalIdentifier:
+              getOutreachDashboardWorkflowControlViewUniversalIdentifier(
+                OUTREACH_DASHBOARD_WORKFLOW_CONTROL_VIEW_NAMES.activeCandidateWorkflowRuns,
+                WORKFLOW_RUN,
+              ),
+            gridPosition: grid(23, 0, 8, 12),
+          }),
+          recordTable({
+            tabUniversalIdentifier: tabId,
+            title: 'Failed workflow runs',
+            objectUniversalIdentifier: WORKFLOW_RUN,
+            viewUniversalIdentifier:
+              getOutreachDashboardWorkflowControlViewUniversalIdentifier(
+                OUTREACH_DASHBOARD_WORKFLOW_CONTROL_VIEW_NAMES.failedWorkflowRuns,
+                WORKFLOW_RUN,
+              ),
+            gridPosition: grid(31, 0, 8, 6),
+          }),
+          recordTable({
+            tabUniversalIdentifier: tabId,
+            title: 'Stage C candidates',
+            objectUniversalIdentifier: CANDIDATE,
+            viewUniversalIdentifier:
+              getOutreachDashboardWorkflowControlViewUniversalIdentifier(
+                OUTREACH_DASHBOARD_WORKFLOW_CONTROL_VIEW_NAMES.stageCCandidates,
+                CANDIDATE,
+              ),
+            gridPosition: grid(31, 6, 8, 6),
           }),
         ],
       }),

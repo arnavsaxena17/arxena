@@ -1,6 +1,7 @@
 import {
-  formatLinkedinRateLimitPendingDisplay,
-  getLinkedinRateLimitQueuedEvent,
+  formatWorkflowPendingDisplay,
+  formatWorkflowPendingSubtitle,
+  getWorkflowPendingQueuedEvent,
 } from '@/unipile/utils/accountRateLimitError';
 import { type WorkflowRunStepInfo } from 'twenty-shared/workflow';
 
@@ -9,10 +10,10 @@ export const getWorkflowRunStepInfoToDisplayAsOutput = ({
 }: {
   stepInfo: WorkflowRunStepInfo;
 }) => {
-  const queued = getLinkedinRateLimitQueuedEvent(stepInfo);
+  const queued = getWorkflowPendingQueuedEvent(stepInfo);
 
   if (queued) {
-    return formatLinkedinRateLimitPendingDisplay(queued);
+    return formatWorkflowPendingDisplay(queued);
   }
 
   const { status: _status, history: _history, ...infoToDisplay } = stepInfo;

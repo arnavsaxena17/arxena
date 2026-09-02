@@ -6,8 +6,49 @@ export const ACCOUNT_RATE_LIMIT_SNACKBAR_KEY_PREFIX =
 
 export const LINKEDIN_RATE_LIMIT_PENDING_REASON = 'linkedin_rate_limit';
 
+export const OUTREACH_SEND_WINDOW_PENDING_REASON = 'outreach_send_window';
+
+export const OUTREACH_UNIPILE_PACING_PENDING_REASON = 'outreach_unipile_pacing';
+
+export const OUTREACH_PROJECT_PAUSED_PENDING_REASON = 'outreach_project_paused';
+
+const LEGACY_GTM_SEND_WINDOW_PENDING_REASON = 'gtm_send_window';
+
+const WORKFLOW_CAPACITY_PENDING_REASONS = new Set([
+  LINKEDIN_RATE_LIMIT_PENDING_REASON,
+  OUTREACH_SEND_WINDOW_PENDING_REASON,
+  OUTREACH_UNIPILE_PACING_PENDING_REASON,
+  OUTREACH_PROJECT_PAUSED_PENDING_REASON,
+]);
+
+export const normalizeWorkflowPendingReason = (
+  pendingReason?: string,
+): string | undefined => {
+  if (!pendingReason?.trim()) {
+    return undefined;
+  }
+
+  if (pendingReason === LEGACY_GTM_SEND_WINDOW_PENDING_REASON) {
+    return OUTREACH_SEND_WINDOW_PENDING_REASON;
+  }
+
+  return pendingReason;
+};
+
 export type AccountRateLimitQueuedEvent = {
   waitMs: number;
+  scheduledAt?: string;
+  method?: string;
+};
+
+export type WorkflowPendingQueuedEvent = AccountRateLimitQueuedEvent & {
+  pendingReason: string;
+};
+
+type PendingStepFields = {
+  status?: unknown;
+  pendingReason?: string;
+  waitMs?: number;
   scheduledAt?: string;
   method?: string;
 };
@@ -64,9 +105,9 @@ export const collectAccountRateLimitErrorMessages = (
   return [...collected];
 };
 
-const readQueuedEventFromUnknown = (
+const readPendingStepFieldsFromUnknown = (
   value: unknown,
-): AccountRateLimitQueuedEvent | null => {
+): PendingStepFields | null => {
   if (!value || typeof value !== 'object') {
     return null;
   }
@@ -97,24 +138,12 @@ const readQueuedEventFromUnknown = (
         ? nestedResult.pendingReason
         : undefined;
 
-  if (pendingReason !== LINKEDIN_RATE_LIMIT_PENDING_REASON) {
-    return null;
-  }
-
-  if (record.status !== undefined && record.status !== 'PENDING') {
-    return null;
-  }
-
   const waitMs =
     typeof record.waitMs === 'number'
       ? record.waitMs
       : typeof nestedResult?.waitMs === 'number'
         ? nestedResult.waitMs
         : undefined;
-
-  if (!Number.isFinite(waitMs) || waitMs === undefined || waitMs <= 0) {
-    return null;
-  }
 
   const scheduledAt =
     typeof record.scheduledAt === 'string'
@@ -130,7 +159,87 @@ const readQueuedEventFromUnknown = (
         ? nestedResult.method
         : undefined;
 
-  return { waitMs, scheduledAt, ...(method ? { method } : {}) };
+  return {
+    status: record.status,
+    pendingReason,
+    waitMs,
+    scheduledAt,
+    method,
+  };
+};
+
+const hasSchedulableWait = ({
+  waitMs,
+  scheduledAt,
+}: PendingStepFields): boolean =>
+  (typeof scheduledAt === 'string' && scheduledAt.length > 0) ||
+  (typeof waitMs === 'number' && Number.isFinite(waitMs) && waitMs > 0);
+
+const isWorkflowCapacityPendingReason = (
+  pendingReason?: string,
+): pendingReason is string => {
+  const normalizedPendingReason =
+    normalizeWorkflowPendingReason(pendingReason);
+
+  return (
+    normalizedPendingReason !== undefined &&
+    WORKFLOW_CAPACITY_PENDING_REASONS.has(normalizedPendingReason)
+  );
+};
+
+export const getWorkflowPendingQueuedEvent = (
+  value: unknown,
+): WorkflowPendingQueuedEvent | null => {
+  const fields = readPendingStepFieldsFromUnknown(value);
+
+  if (!fields) {
+    return null;
+  }
+
+  const pendingReason = normalizeWorkflowPendingReason(fields.pendingReason);
+
+  if (!isWorkflowCapacityPendingReason(pendingReason)) {
+    return null;
+  }
+
+  if (fields.status !== undefined && fields.status !== 'PENDING') {
+    return null;
+  }
+
+  if (
+    pendingReason !== OUTREACH_PROJECT_PAUSED_PENDING_REASON &&
+    !hasSchedulableWait(fields)
+  ) {
+    return null;
+  }
+
+  const waitMs =
+    typeof fields.waitMs === 'number' && Number.isFinite(fields.waitMs)
+      ? fields.waitMs
+      : 0;
+
+  return {
+    pendingReason,
+    waitMs,
+    ...(fields.scheduledAt ? { scheduledAt: fields.scheduledAt } : {}),
+    ...(fields.method ? { method: fields.method } : {}),
+  };
+};
+
+const readQueuedEventFromUnknown = (
+  value: unknown,
+): AccountRateLimitQueuedEvent | null => {
+  const queuedEvent = getWorkflowPendingQueuedEvent(value);
+
+  if (queuedEvent?.pendingReason !== LINKEDIN_RATE_LIMIT_PENDING_REASON) {
+    return null;
+  }
+
+  return {
+    waitMs: queuedEvent.waitMs,
+    scheduledAt: queuedEvent.scheduledAt,
+    ...(queuedEvent.method ? { method: queuedEvent.method } : {}),
+  };
 };
 
 export const collectAccountRateLimitQueuedEvents = (
@@ -293,6 +402,107 @@ export const formatLinkedinRateLimitPendingSubtitle = (
   return display.retryAt
     ? `Retrying in ${display.retryIn} · ${display.retryAt}`
     : `Retrying in ${display.retryIn}`;
+};
+
+const WORKFLOW_PENDING_REASON_LABELS: Record<string, string> = {
+  [LINKEDIN_RATE_LIMIT_PENDING_REASON]: 'LinkedIn rate limit',
+  [OUTREACH_SEND_WINDOW_PENDING_REASON]: 'Outside send window',
+  [OUTREACH_UNIPILE_PACING_PENDING_REASON]: 'Outreach pacing',
+  [OUTREACH_PROJECT_PAUSED_PENDING_REASON]: 'Outreach paused',
+};
+
+const formatPendingActionLabel = (
+  event: WorkflowPendingQueuedEvent,
+): string => {
+  if (event.pendingReason === LINKEDIN_RATE_LIMIT_PENDING_REASON) {
+    return formatLinkedinRateLimitActionLabel(event.method);
+  }
+
+  return formatLinkedinRateLimitActionLabel(event.method) !== 'LinkedIn search'
+    ? formatLinkedinRateLimitActionLabel(event.method)
+    : 'This step';
+};
+
+const getWorkflowPendingRemainingMs = (
+  event: WorkflowPendingQueuedEvent,
+  nowMs: number,
+): number => {
+  const scheduledAtMs =
+    typeof event.scheduledAt === 'string'
+      ? new Date(event.scheduledAt).getTime()
+      : Number.NaN;
+
+  if (Number.isFinite(scheduledAtMs)) {
+    return Math.max(0, scheduledAtMs - nowMs);
+  }
+
+  return event.waitMs;
+};
+
+export const formatWorkflowPendingDisplay = (
+  event: WorkflowPendingQueuedEvent,
+  nowMs: number = Date.now(),
+): LinkedinRateLimitPendingDisplay => {
+  if (event.pendingReason === LINKEDIN_RATE_LIMIT_PENDING_REASON) {
+    return formatLinkedinRateLimitPendingDisplay(event, nowMs);
+  }
+
+  if (event.pendingReason === OUTREACH_PROJECT_PAUSED_PENDING_REASON) {
+    return {
+      message:
+        'Outreach is paused for this project. This step will resume when you unpause.',
+      reason: WORKFLOW_PENDING_REASON_LABELS[event.pendingReason],
+      retryIn: 'when resumed',
+    };
+  }
+
+  const remainingMs = getWorkflowPendingRemainingMs(event, nowMs);
+  const retryIn =
+    remainingMs <= 0 ? 'soon' : formatRetryWaitLabelFromMs(remainingMs);
+  const scheduledAtMs =
+    typeof event.scheduledAt === 'string'
+      ? new Date(event.scheduledAt).getTime()
+      : Number.NaN;
+  const retryAt =
+    typeof event.scheduledAt === 'string' && Number.isFinite(scheduledAtMs)
+      ? formatScheduledAtLabel(event.scheduledAt)
+      : undefined;
+  const actionLabel = formatPendingActionLabel(event);
+  const reason =
+    WORKFLOW_PENDING_REASON_LABELS[event.pendingReason] ?? 'Waiting';
+
+  return {
+    message:
+      remainingMs <= 0
+        ? `${actionLabel} will run soon.`
+        : `${actionLabel} will run automatically in ${retryIn}.`,
+    reason,
+    retryIn,
+    ...(retryAt ? { retryAt } : {}),
+  };
+};
+
+export const formatWorkflowPendingSubtitle = (
+  event: WorkflowPendingQueuedEvent,
+  nowMs: number = Date.now(),
+): string => {
+  if (event.pendingReason === OUTREACH_PROJECT_PAUSED_PENDING_REASON) {
+    return 'Waiting until outreach resumes';
+  }
+
+  if (event.pendingReason === LINKEDIN_RATE_LIMIT_PENDING_REASON) {
+    return formatLinkedinRateLimitPendingSubtitle(event, nowMs);
+  }
+
+  const display = formatWorkflowPendingDisplay(event, nowMs);
+
+  if (display.retryIn === 'soon') {
+    return 'Sending soon';
+  }
+
+  return display.retryAt
+    ? `Sending in ${display.retryIn} · ${display.retryAt}`
+    : `Sending in ${display.retryIn}`;
 };
 
 export const formatAccountRateLimitSnackBarMessage = (
