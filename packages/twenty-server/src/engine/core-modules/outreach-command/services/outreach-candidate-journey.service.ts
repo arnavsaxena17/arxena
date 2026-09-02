@@ -307,6 +307,7 @@ export class OutreachCandidateJourneyService {
                 existingSummary.currentStepKind !== 'FORM')
             ) {
               byCandidateId[run.candidateId] = {
+                status: run.status,
                 currentStepName: progress.currentStepName,
                 currentStepKind: progress.currentStepKind,
                 resumeAt: progress.resumeAt,

@@ -5,6 +5,10 @@ import {
     STATUS_LABELS,
 } from '@/candidate-table/constants/candidate-status-labels';
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
+import {
+  OUTREACH_STAGE_LABELS,
+  WORKFLOW_RUN_STATUS_LABELS,
+} from '@/outreach-home/constants/outreach-stages';
 import { styled } from '@linaria/react';
 import Handsontable from 'handsontable';
 import type { TransformedCandidateForTable } from 'twenty-shared/arx';
@@ -21,6 +25,8 @@ export type ProcessedDataItem = {
   remarks: string;
   status: string;
   candConversationStatus: string;
+  outreachSequenceStage?: string;
+  workflowRunStatus?: string;
   checkbox: boolean;
   startChat: boolean;
   startChatCompleted: boolean;
@@ -67,6 +73,8 @@ const MESSAGING_CHANNEL_COLUMN_WIDTH = 190;
 
 const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   candConversationStatus: 'Bot Status',
+  outreachSequenceStage: 'Outreach Stage',
+  workflowRunStatus: 'Run Status',
   cvAvailability: 'CV',
 };
 
@@ -614,8 +622,30 @@ export const TableColumns = ({
 
 
   const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
-    // First call the dropdown renderer to maintain dropdown functionality
-    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    const isDropdownStatus =
+      prop === 'status' || prop === 'candConversationStatus';
+
+    if (isDropdownStatus) {
+      Handsontable.renderers.DropdownRenderer(
+        instance,
+        td,
+        row,
+        column,
+        prop,
+        value,
+        cellProperties,
+      );
+    } else {
+      Handsontable.renderers.TextRenderer(
+        instance,
+        td,
+        row,
+        column,
+        prop,
+        value,
+        cellProperties,
+      );
+    }
 
     // Then update the displayed text to show the friendly label
     if (value) {
@@ -623,6 +653,10 @@ export const TableColumns = ({
         td.textContent = CANDIDATE_CONVERSATION_STATUS_LABELS[value];
       } else if (prop === 'status' && STATUS_LABELS[value]) {
         td.textContent = STATUS_LABELS[value];
+      } else if (prop === 'outreachSequenceStage' && OUTREACH_STAGE_LABELS[value]) {
+        td.textContent = OUTREACH_STAGE_LABELS[value];
+      } else if (prop === 'workflowRunStatus' && WORKFLOW_RUN_STATUS_LABELS[value]) {
+        td.textContent = WORKFLOW_RUN_STATUS_LABELS[value];
       }
     }
     return td;
@@ -665,24 +699,32 @@ export const TableColumns = ({
   console.log("AI filter fields found in data:", aiFilterFields);
   console.log("Total columns after enrichment fields:", columns.length);
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','candConversationStatus','status','email', 'phone', 'lastMessage', 'messagingChannel'];
+  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','status','candConversationStatus','outreachSequenceStage','workflowRunStatus','email', 'phone', 'lastMessage', 'messagingChannel'];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
-      const isStatusField = column === 'status' || column === 'candConversationStatus';
+      const isRecruiterStatusField =
+        column === 'status' || column === 'candConversationStatus';
+      const isOutreachStageField = column === 'outreachSequenceStage';
+      const isWorkflowRunStatusField = column === 'workflowRunStatus';
+      const isLabeledStatusField =
+        isRecruiterStatusField ||
+        isOutreachStageField ||
+        isWorkflowRunStatusField;
       const isMessagingChannelField = column === 'messagingChannel';
 
       columns.push({
         data: column,
         title: getColumnTitle(column),
         width: isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH : 150,
-        renderer: isStatusField ? statusRenderer :
+        renderer: isLabeledStatusField ? statusRenderer :
                  isMessagingChannelField ? messagingChannelRenderer :
                  simpleRenderer,
-        type: isStatusField || isMessagingChannelField ? 'dropdown' : 'text',
+        type: isRecruiterStatusField || isMessagingChannelField ? 'dropdown' : 'text',
         source: column === 'status' ? Object.values(STATUS_LABELS) as string[] :
                 column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
                 isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
-        editor: isStatusField || isMessagingChannelField ? 'dropdown' : undefined
+        editor: isRecruiterStatusField || isMessagingChannelField ? 'dropdown' : undefined,
+        readOnly: isOutreachStageField || isWorkflowRunStatusField,
       });
       allKeys.delete(column);
     }
@@ -724,6 +766,10 @@ export const TableColumns = ({
       const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
       const isChatField = chatColumns.includes(key);
       const isStatusField = key === 'candConversationStatus' || key === 'status';
+      const isOutreachStageField = key === 'outreachSequenceStage';
+      const isWorkflowRunStatusField = key === 'workflowRunStatus';
+      const isLabeledStatusField =
+        isStatusField || isOutreachStageField || isWorkflowRunStatusField;
       const isMessagingChannelField = key === 'messagingChannel';
       const isCvAvailabilityField = key === 'cvAvailability';
 
@@ -760,7 +806,7 @@ export const TableColumns = ({
         renderer = urlRenderer;
       } else if (finalShouldUseDateRenderer) {
         renderer = dateRenderer;
-      } else if (isStatusField) {
+      } else if (isLabeledStatusField) {
         renderer = statusRenderer;
       } else if (isMessagingChannelField) {
         renderer = messagingChannelRenderer;
@@ -792,7 +838,8 @@ export const TableColumns = ({
           isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS :
           isCvAvailabilityField ? [...CV_AVAILABILITY_OPTIONS] :
           undefined,
-        editor: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : undefined
+        editor: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : undefined,
+        readOnly: isOutreachStageField || isWorkflowRunStatusField,
       });
     });
 

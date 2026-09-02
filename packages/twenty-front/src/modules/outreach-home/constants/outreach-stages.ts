@@ -1,5 +1,55 @@
 import { type OutreachStage } from '@/outreach-home/types/outreach-home.types';
 
+export const OUTREACH_STAGE_LABELS: Record<string, string> = {
+  queued: 'Queued',
+  QUEUED: 'Queued',
+  needs_connection: 'Needs connection',
+  NEEDS_CONNECTION: 'Needs connection',
+  connection_sent: 'Connection sent',
+  CONNECTION_SENT: 'Connection sent',
+  connection_accepted: 'Connection accepted',
+  CONNECTION_ACCEPTED: 'Connection accepted',
+  connection_ignored: 'Connection ignored',
+  CONNECTION_IGNORED: 'Connection ignored',
+  profile_checked: 'Profile checked',
+  PROFILE_CHECKED: 'Profile checked',
+  warm_path: 'Warm path',
+  WARM_PATH: 'Warm path',
+  commented: 'Commented',
+  COMMENTED: 'Commented',
+  email_enriching: 'Enriching email',
+  EMAIL_ENRICHING: 'Enriching email',
+  email_sent: 'Email sent',
+  EMAIL_SENT: 'Email sent',
+  inmail_sent: 'InMail sent',
+  INMAIL_SENT: 'InMail sent',
+  whatsapp_sent: 'WhatsApp sent',
+  WHATSAPP_SENT: 'WhatsApp sent',
+  deferred: 'Deferred',
+  DEFERRED: 'Deferred',
+  stopped: 'Stopped',
+  STOPPED: 'Stopped',
+  replied: 'Replied',
+  REPLIED: 'Replied',
+  negotiating: 'Negotiating',
+  NEGOTIATING: 'Negotiating',
+  meeting_booked: 'Meeting booked',
+  MEETING_BOOKED: 'Meeting booked',
+  BOOKED: 'Meeting booked',
+  FAILED_ENRICH: 'Failed enrich',
+  FAILED_NO_REPLY: 'Failed no reply',
+};
+
+export const WORKFLOW_RUN_STATUS_LABELS: Record<string, string> = {
+  NOT_STARTED: 'Not started',
+  RUNNING: 'Running',
+  COMPLETED: 'Completed',
+  FAILED: 'Failed',
+  ENQUEUED: 'Enqueued',
+  STOPPING: 'Stopping',
+  STOPPED: 'Stopped',
+};
+
 export const OUTREACH_STAGES: Array<{
   id: OutreachStage;
   label: string;

@@ -16,7 +16,7 @@ export type OutreachStage =
   | 'negotiating'
   | 'meeting_booked';
 
-export type OutreachMainTab = 'setup' | 'companies' | 'people' | 'workflow';
+export type OutreachMainTab = 'companies' | 'people' | 'setup';
 
 export type OutreachSendMode = 'AUTO' | 'APPROVAL';
 
@@ -67,6 +67,12 @@ export type OutreachPersonRow = {
   linkedinUrl: string;
   warmPath: string;
   stage: OutreachStage;
+  /** ATS / recruiter pipeline status (NOT outreach sequence stage). */
+  recruiterStatus?: string;
+  /** Bot / conversation status (recruiter messaging). */
+  candConversationStatus?: string;
+  /** Active outreach workflow run status (RUNNING, STOPPED, …). */
+  workflowRunStatus?: string | null;
   email: string;
   connectionDegree?: number;
   personaPriorityScore?: number;

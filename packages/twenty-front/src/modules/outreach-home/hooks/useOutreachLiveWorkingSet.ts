@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
     buildDefaultOutreachConfig,
     resolveOutreachConfigExperimentConfigString,
+    resolveOutreachConfigIcpSpecString,
     resolveOutreachConfigInMailFallbackEnabled,
     resolveOutreachConfigMaxPersonasPerCompany,
     resolveOutreachConfigSendTimezone,
@@ -144,7 +145,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}`,
     )
     .join('|');
 
@@ -186,7 +187,7 @@ export const useOutreachLiveWorkingSet = () => {
       account.provider === ConnectedAccountProvider.IMAP_SMTP_CALDAV,
   );
 
-  const [activeTab, setActiveTab] = useState<OutreachMainTab>('setup');
+  const [activeTab, setActiveTab] = useState<OutreachMainTab>('people');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
     null,
   );
@@ -697,6 +698,9 @@ export const useOutreachLiveWorkingSet = () => {
           linkedinUrl,
           warmPath: '—',
           stage: mapCrmStageToOutreachStage(candidate.outreachSequenceStage),
+          recruiterStatus: candidate.status ?? undefined,
+          candConversationStatus: candidate.candConversationStatus ?? undefined,
+          workflowRunStatus: runSummary?.status ?? null,
           email: candidate.email?.primaryEmail ?? '',
           pendingChannel: candidate.pendingChannel ?? undefined,
           linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,

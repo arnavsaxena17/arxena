@@ -170,8 +170,14 @@ const mapOutreachPersonToDataTableRow = (
       : { primaryLinkUrl: '' },
     phoneNumber: { primaryPhoneNumber: '' },
     email: { primaryEmail: person.email || '' },
-    candConversationStatus: '',
-    status: person.stage,
+    // Recruiter ATS pipeline — keep empty for ephemeral (not-yet-enrolled) rows
+    status: person.recruiterStatus ?? '',
+    // Bot / conversation status (recruiter messaging)
+    candConversationStatus: person.candConversationStatus ?? '',
+    // Outreach sequence stage (workflow journey) — separate from recruiter status
+    outreachSequenceStage: person.stage,
+    // Active workflow run status (RUNNING / STOPPED / …)
+    workflowRunStatus: person.workflowRunStatus ?? '',
     candidateFlags: {
       engagementStatus: Boolean(person.stage),
       startChat: false,
@@ -181,7 +187,6 @@ const mapOutreachPersonToDataTableRow = (
     emailMessages: { edges: [] },
     otherFields: {
       warmPath: person.warmPath,
-      stage: person.stage,
       companyId: person.companyId,
       candidateId: person.candidateId,
       openOutreachJourneyTab: true,

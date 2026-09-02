@@ -1,5 +1,4 @@
 import { styled } from '@linaria/react';
-import { type ReactNode } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { type OutreachMainTab } from '@/outreach-home/types/outreach-home.types';
@@ -9,7 +8,6 @@ const StyledTabsRow = styled.div`
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   display: flex;
   gap: ${themeCssVariables.spacing[2]};
-  justify-content: space-between;
   min-height: 40px;
   padding: 0 ${themeCssVariables.spacing[4]};
 `;
@@ -18,14 +16,6 @@ const StyledTabs = styled.div`
   display: flex;
   gap: ${themeCssVariables.spacing[2]};
   min-width: 0;
-`;
-
-const StyledTrailing = styled.div`
-  align-items: center;
-  display: flex;
-  flex-shrink: 0;
-  gap: ${themeCssVariables.spacing[2]};
-  margin-left: auto;
 `;
 
 const StyledTab = styled.button<{ isActive: boolean }>`
@@ -46,10 +36,9 @@ const StyledTab = styled.button<{ isActive: boolean }>`
 `;
 
 const TABS: Array<{ id: OutreachMainTab; label: string }> = [
-  { id: 'setup', label: 'Setup' },
   { id: 'companies', label: 'Companies' },
   { id: 'people', label: 'People' },
-  { id: 'workflow', label: 'Workflow' },
+  { id: 'setup', label: 'Setup' },
 ];
 
 type OutreachMainTabsProps = {
@@ -57,7 +46,6 @@ type OutreachMainTabsProps = {
   companyCount: number;
   peopleCount: number;
   onChange: (tab: OutreachMainTab) => void;
-  trailing?: ReactNode;
 };
 
 export const OutreachMainTabs = ({
@@ -65,7 +53,6 @@ export const OutreachMainTabs = ({
   companyCount,
   peopleCount,
   onChange,
-  trailing,
 }: OutreachMainTabsProps) => {
   return (
     <StyledTabsRow>
@@ -93,9 +80,6 @@ export const OutreachMainTabs = ({
           );
         })}
       </StyledTabs>
-      {trailing !== undefined && trailing !== null && (
-        <StyledTrailing>{trailing}</StyledTrailing>
-      )}
     </StyledTabsRow>
   );
 };

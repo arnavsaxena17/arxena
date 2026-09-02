@@ -34,6 +34,7 @@ export type OutreachProjectJourneySummary = {
 };
 
 export type OutreachCandidateRunSummary = {
+  status: string | null;
   currentStepName: string | null;
   currentStepKind: string | null;
   resumeAt: string | null;

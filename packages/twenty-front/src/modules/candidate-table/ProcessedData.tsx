@@ -17,6 +17,13 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         remarks: flattenedCandidate?.remarks || '',
         status: flattenedCandidate?.status || 'No Status',
         candConversationStatus: flattenedCandidate?.candConversationStatus || 'No Conversation',
+        // CRM SELECT; not on older CandidateNode typings until twenty-shared rebuild
+        outreachSequenceStage:
+          (
+            flattenedCandidate as {
+              outreachSequenceStage?: string | null;
+            }
+          ).outreachSequenceStage || '',
         checkbox: selectedRowIds.includes(flattenedCandidate?.id || ''),
         startChat: flattenedCandidate?.startChat || false,
         startChatCompleted: flattenedCandidate?.startChatCompleted || false,

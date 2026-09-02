@@ -1794,6 +1794,7 @@ export interface CandidateNode {
   input: string;
   candConversationStatus?: string;
   status: string;
+  outreachSequenceStage?: string | null;
   chatMessages: ChatMessages;
   emailMessages: EmailMessages;
   projects: Project;

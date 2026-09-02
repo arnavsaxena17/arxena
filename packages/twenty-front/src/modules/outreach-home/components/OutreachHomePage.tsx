@@ -26,27 +26,21 @@ import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/Outrea
 import { OutreachPeoplePanel } from '@/outreach-home/components/OutreachPeoplePanel';
 import { OutreachRunProgressHeader } from '@/outreach-home/components/OutreachRunProgressHeader';
 import { OutreachSetupPanel } from '@/outreach-home/components/OutreachSetupPanel';
-import { OutreachWorkflowPanel } from '@/outreach-home/components/OutreachWorkflowPanel';
-import { OutreachWorkflowToolbar } from '@/outreach-home/components/OutreachWorkflowToolbar';
 import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
 import { useOutreachLiveWorkingSet } from '@/outreach-home/hooks/useOutreachLiveWorkingSet';
+import { useOutreachWorkflowEmbed } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
 import {
-    type OutreachWorkflowEmbedMode,
-    useOutreachWorkflowEmbed,
-} from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
-import {
-    buildOutreachContextPrompt,
-    isSameOutreachContext,
-    outreachContextState,
+  isSameOutreachContext,
+  outreachContextState,
 } from '@/outreach-home/states/outreachContextState';
 import {
-    buildFindCompaniesSendPrompt,
-    buildFindPeopleSendPrompt,
-    type OutreachSendMode,
+  buildFindCompaniesSendPrompt,
+  buildFindPeopleSendPrompt,
+  type OutreachSendMode,
 } from '@/outreach-home/types/outreach-home.types';
 import {
-    parseIcpSpec,
-    stringifyIcpSpec,
+  parseIcpSpec,
+  stringifyIcpSpec,
 } from '@/outreach-home/utils/outreach-effective-icp.util';
 import { regenerateOutreachWorkspaceProfile } from '@/outreach-home/utils/outreach-workspace-profile-regenerate';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
@@ -91,15 +85,6 @@ const StyledSetupWrap = styled.div`
   flex: 1;
   flex-direction: column;
   min-height: 0;
-`;
-
-const StyledWorkflowContent = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledLoading = styled.div`
@@ -153,7 +138,6 @@ const OutreachHomePageContent = () => {
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
   } = useOutreachLiveWorkingSet();
-  const isWorkflowTab = activeTab === 'workflow';
   const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
   const { openAskAiPage } = useOpenAskAiPageInSidePanel();
@@ -172,19 +156,7 @@ const OutreachHomePageContent = () => {
   const [isUpdatingOutreachStatus, setIsUpdatingOutreachStatus] =
     useState(false);
   const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
-  const [workflowMode, setWorkflowMode] =
-    useState<OutreachWorkflowEmbedMode>('definition');
-  const {
-    workflowId,
-    workflowRunId,
-    hasWorkflow,
-    hasWorkflowRun,
-    workflowsLoading,
-    runsLoading,
-    workflowOptions,
-    selectOutreachWorkflow,
-    isSelectingWorkflow,
-  } = useOutreachWorkflowEmbed({
+  const { workflowRunId } = useOutreachWorkflowEmbed({
     enabled: isDefined(activeProjectId),
   });
   const { isExtensionInstalled, isChecking: isExtensionChecking } =
@@ -224,12 +196,6 @@ const OutreachHomePageContent = () => {
       aiCreditsDisplay = undefined;
     }
   }
-
-  useEffect(() => {
-    if (workflowMode === 'run' && !hasWorkflowRun && hasWorkflow) {
-      setWorkflowMode('definition');
-    }
-  }, [hasWorkflow, hasWorkflowRun, workflowMode]);
 
   // Show Ask AI on Outreach entry (URL / reload), not only nav click.
   // Guard: opening the panel must not recreate this effect (max update depth).
@@ -620,30 +586,6 @@ const OutreachHomePageContent = () => {
     setActiveTab('people');
   };
 
-  const handleSelectOutreachWorkflow = async (nextWorkflowId: string) => {
-    await selectOutreachWorkflow(nextWorkflowId);
-    openAskAiPageWithPreprompt({
-      mode: 'PREFILL',
-      text: buildOutreachContextPrompt({
-        projectId: projectSettings.projectId,
-        projectName: projectSettings.projectName,
-        outreachWorkflowId: nextWorkflowId,
-        outreachSendMode: projectSettings.outreachSendMode,
-        selectedCompanyId,
-        selectedPersonId,
-        selectedCandidateStage:
-          people.find((person) => person.id === selectedPersonId)?.stage ??
-          null,
-        icpName: projectSettings.icpSpec,
-        icpSpecSummary: projectSettings.icpSpec,
-        linkedinConnected,
-        gmailConnected,
-        whatsappConnected,
-        phase: 'live',
-      }),
-    });
-  };
-
   return (
     <PageContainer>
       <PageHeader title="Outreach">
@@ -694,21 +636,6 @@ const OutreachHomePageContent = () => {
             companyCount={companies.length}
             peopleCount={people.length}
             onChange={setActiveTab}
-            trailing={
-              isWorkflowTab ? (
-                <OutreachWorkflowToolbar
-                  mode={workflowMode}
-                  onModeChange={setWorkflowMode}
-                  hasWorkflowRun={hasWorkflowRun}
-                  workflowId={workflowId}
-                  workflowOptions={workflowOptions}
-                  isSelectingWorkflow={isSelectingWorkflow}
-                  onSelectWorkflow={(nextWorkflowId) => {
-                    void handleSelectOutreachWorkflow(nextWorkflowId);
-                  }}
-                />
-              ) : undefined
-            }
           />
           {loading ? (
             <StyledLoading>
@@ -719,19 +646,6 @@ const OutreachHomePageContent = () => {
               Preparing a GTM project… If this persists, use Menu → Add New
               Project.
             </StyledEmpty>
-          ) : isWorkflowTab ? (
-            <StyledWorkflowContent>
-              <OutreachWorkflowPanel
-                isActive={true}
-                mode={workflowMode}
-                workflowId={workflowId}
-                workflowRunId={workflowRunId}
-                hasWorkflow={hasWorkflow}
-                hasWorkflowRun={hasWorkflowRun}
-                workflowsLoading={workflowsLoading}
-                runsLoading={runsLoading}
-              />
-            </StyledWorkflowContent>
           ) : activeTab === 'people' ? (
             <StyledToolbarTabContent>
               <OutreachPeoplePanel
