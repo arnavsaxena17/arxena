@@ -39,12 +39,12 @@ export const HotTableContextStoreEffect = ({
   );
 
   // Project-scoped HotTable instance
-  const setContextStoreCurrentObjectMetadataItemId =
+  const setTableContextStoreCurrentObjectMetadataItemId =
     useSetAtomComponentState(
       contextStoreCurrentObjectMetadataItemIdComponentState,
       tableId,
     );
-  const setContextStoreCurrentPageType = useSetAtomComponentState(
+  const setTableContextStoreCurrentPageType = useSetAtomComponentState(
     contextStoreCurrentPageTypeComponentState,
     tableId,
   );
