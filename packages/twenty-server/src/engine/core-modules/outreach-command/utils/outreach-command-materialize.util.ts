@@ -314,30 +314,19 @@ export const rollupOutreachFunnelStage = ({
 
 export const buildCandidateEventUpdate = ({
   event,
-  nowIso = new Date().toISOString(),
-  messagingChannel,
-  existingFirstOutboundAt,
   classifiedOutreachStage,
+  messagingChannel,
   outboundMessageKind,
-  existingConvertedOnMessageKind,
-  existingLastOutboundMessageKind,
 }: {
   event: OutreachCandidateEventKind;
-  nowIso?: string;
-  messagingChannel?: string | null;
-  existingFirstOutboundAt?: string | null;
   classifiedOutreachStage?: string | null;
+  messagingChannel?: string | null;
   outboundMessageKind?: string | null;
-  existingConvertedOnMessageKind?: string | null;
-  existingLastOutboundMessageKind?: string | null;
 }): Record<string, unknown> => {
   switch (event) {
     case 'connection_sent':
       return {
         outreachSequenceStage: 'CONNECTION_SENT',
-        ...(outboundMessageKind
-          ? { lastOutboundMessageKind: outboundMessageKind }
-          : { lastOutboundMessageKind: 'CONNECT_NOTE' }),
       };
     case 'connection_accepted':
       return {
@@ -378,9 +367,6 @@ export const buildCandidateEventUpdate = ({
 
       return {
         ...(outboundStage ? { outreachSequenceStage: outboundStage } : {}),
-        ...(outboundMessageKind
-          ? { lastOutboundMessageKind: outboundMessageKind }
-          : {}),
       };
     }
     case 'inbound_reply':
@@ -388,17 +374,10 @@ export const buildCandidateEventUpdate = ({
     case 'inbound_reply_flush':
       return {
         outreachSequenceStage: classifiedOutreachStage ?? 'REPLIED',
-        // First real inbound only — skip if already stamped (accept is separate).
-        ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
-          ? { convertedOnMessageKind: existingLastOutboundMessageKind }
-          : {}),
       };
     case 'meeting_booked':
       return {
         outreachSequenceStage: 'MEETING_BOOKED',
-        ...(!existingConvertedOnMessageKind && existingLastOutboundMessageKind
-          ? { convertedOnMessageKind: existingLastOutboundMessageKind }
-          : {}),
       };
     case 'meeting_held':
       return {

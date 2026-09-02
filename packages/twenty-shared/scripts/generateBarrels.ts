@@ -270,7 +270,10 @@ const EXCLUDED_DIRECTORIES = [
   '**/__stories__/**',
   '**/internal/**',
 ] as const;
-const EXCLUDED_FILES = ['**/get-function-input-schema.ts'] as const;
+const EXCLUDED_FILES = [
+  '**/get-function-input-schema.ts',
+  '**/outreachSpeedTimestamps.ts',
+] as const;
 const getTypeScriptFiles = (
   directoryPath: string,
   includeIndex: boolean = false,

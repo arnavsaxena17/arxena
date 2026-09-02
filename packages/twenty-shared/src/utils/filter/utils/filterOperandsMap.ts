@@ -63,6 +63,12 @@ export const FILTER_OPERANDS_MAP = {
   RAW_JSON: [
     ViewFilterOperand.CONTAINS,
     ViewFilterOperand.DOES_NOT_CONTAIN,
+    ViewFilterOperand.IS,
+    ViewFilterOperand.IS_NOT,
+    ViewFilterOperand.IS_EMPTY,
+    ViewFilterOperand.IS_NOT_EMPTY,
+    ViewFilterOperand.GREATER_THAN_OR_EQUAL,
+    ViewFilterOperand.LESS_THAN_OR_EQUAL,
     ...emptyOperands,
   ],
   FILES: [

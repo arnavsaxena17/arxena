@@ -1,4 +1,6 @@
-import { isDefined } from 'twenty-shared/utils';
+import { GraphQLFloat, GraphQLInt } from 'graphql';
+import { AggregateOperations, FieldMetadataType } from 'twenty-shared/types';
+import { isDefined, parseRawJsonPathAggregateFieldKey } from 'twenty-shared/utils';
 
 import { type GraphqlQuerySelectedFieldsResult } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query-selected-fields/graphql-selected-fields.parser';
 import {
@@ -30,14 +32,43 @@ export class GraphqlQuerySelectedFieldsAggregateParser {
     const availableAggregations: Record<string, AggregationField> =
       getAvailableAggregationsFromObjectFields(fields);
 
+    const rawJsonFieldNames = fields
+      .filter((field) => field.type === FieldMetadataType.RAW_JSON)
+      .map((field) => field.name);
+
     for (const selectedField of Object.keys(graphqlSelectedFields)) {
       const selectedAggregation = availableAggregations[selectedField];
 
-      if (!selectedAggregation) {
+      if (selectedAggregation) {
+        accumulator.aggregate[selectedField] = selectedAggregation;
         continue;
       }
 
-      accumulator.aggregate[selectedField] = selectedAggregation;
+      const rawJsonPathAggregation = parseRawJsonPathAggregateFieldKey({
+        aggregateFieldKey: selectedField,
+        rawJsonFieldNames,
+      });
+
+      if (!rawJsonPathAggregation) {
+        continue;
+      }
+
+      accumulator.aggregate[selectedField] = {
+        type:
+          rawJsonPathAggregation.aggregateOperation ===
+            AggregateOperations.COUNT_NOT_EMPTY ||
+          rawJsonPathAggregation.aggregateOperation ===
+            AggregateOperations.COUNT_EMPTY ||
+          rawJsonPathAggregation.aggregateOperation ===
+            AggregateOperations.COUNT_UNIQUE_VALUES
+            ? GraphQLInt
+            : GraphQLFloat,
+        description: `${rawJsonPathAggregation.aggregateOperation} on ${rawJsonPathAggregation.fromField}.${rawJsonPathAggregation.fromJsonPath}`,
+        fromField: rawJsonPathAggregation.fromField,
+        fromFieldType: rawJsonPathAggregation.fromFieldType,
+        fromJsonPath: rawJsonPathAggregation.fromJsonPath,
+        aggregateOperation: rawJsonPathAggregation.aggregateOperation,
+      };
     }
   }
 }

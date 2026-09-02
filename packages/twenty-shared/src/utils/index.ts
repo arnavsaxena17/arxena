@@ -94,11 +94,14 @@ export { parseEmailAddressList } from './email/parseEmailAddressList';
 export { CustomError } from './errors/CustomError';
 export { evalFromContext } from './evalFromContext';
 export { extractAndSanitizeObjectStringFields } from './extractAndSanitizeObjectStringFields';
+export { buildRawJsonPathAggregateFieldKey } from './fieldMetadata/buildRawJsonPathAggregateFieldKey';
 export { computeMorphRelationGqlFieldName } from './fieldMetadata/compute-morph-relation-gql-field-name';
 export {
   computeRelationGqlFieldJoinColumnName,
   computeMorphRelationGqlFieldJoinColumnName,
 } from './fieldMetadata/compute-relation-gql-field-join-column-name';
+export { getKnownRawJsonPathKeysForField } from './fieldMetadata/getKnownRawJsonPathKeysForField';
+export { isAllowedRawJsonPathKey } from './fieldMetadata/isAllowedRawJsonPathKey';
 export { isFieldMetadataArrayKind } from './fieldMetadata/isFieldMetadataArrayKind';
 export { isFieldMetadataDateKind } from './fieldMetadata/isFieldMetadataDateKind';
 export { isFieldMetadataEligibleForFieldsWidget } from './fieldMetadata/isFieldMetadataEligibleForFieldsWidget';
@@ -107,6 +110,9 @@ export { isFieldMetadataNumericKind } from './fieldMetadata/isFieldMetadataNumer
 export { isFieldMetadataSelectKind } from './fieldMetadata/isFieldMetadataSelectKind';
 export { isFieldMetadataSupportedInGroupBy } from './fieldMetadata/isFieldMetadataSupportedInGroupBy';
 export { isFieldMetadataTextKind } from './fieldMetadata/isFieldMetadataTextKind';
+export { isRawJsonDatePathKey } from './fieldMetadata/isRawJsonDatePathKey';
+export type { ParsedRawJsonPathAggregateFieldKey } from './fieldMetadata/parseRawJsonPathAggregateFieldKey';
+export { parseRawJsonPathAggregateFieldKey } from './fieldMetadata/parseRawJsonPathAggregateFieldKey';
 export { pickMorphGroupSurvivorOrThrow } from './fieldMetadata/pick-morph-group-survivor-or-throw';
 export { shouldExcludeFieldFromAgentToolSchema } from './fieldMetadata/shouldExcludeFieldFromAgentToolSchema';
 export { extractFolderPathFilenameAndTypeOrThrow } from './files/extractFolderPathFilenameAndTypeOrThrow.util';

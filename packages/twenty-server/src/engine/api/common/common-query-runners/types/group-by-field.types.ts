@@ -9,6 +9,7 @@ export type GroupByRegularField = {
   fieldMetadata: FlatFieldMetadata;
   subFieldName?: string;
   shouldUnnest?: boolean;
+  isRawJsonPath?: boolean;
 };
 
 export type GroupByDateField = {
@@ -17,6 +18,7 @@ export type GroupByDateField = {
   dateGranularity: ObjectRecordGroupByDateGranularity;
   weekStartDay?: FirstDayOfTheWeek;
   timeZone?: string;
+  isRawJsonPath?: boolean;
 };
 
 export type GroupByRelationField = {

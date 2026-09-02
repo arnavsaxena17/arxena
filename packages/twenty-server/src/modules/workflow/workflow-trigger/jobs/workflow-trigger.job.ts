@@ -6,7 +6,7 @@ import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
-import { parseOutreachExperimentConfig } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { readProjectExperimentConfig } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -34,6 +34,7 @@ type CandidateExperimentRecord = ObjectLiteral & {
 
 type ProjectExperimentRecord = ObjectLiteral & {
   id: string;
+  outreachConfig?: unknown;
   experimentConfig?: string | null;
 };
 
@@ -190,9 +191,7 @@ export class WorkflowTriggerJob {
       const project = await projectRepository.findOne({
         where: { id: candidate.projectsId },
       });
-      const experimentConfig = parseOutreachExperimentConfig(
-        project?.experimentConfig,
-      );
+      const experimentConfig = readProjectExperimentConfig(project ?? {});
 
       if (experimentConfig?.status !== 'running') {
         return controlVersionId;

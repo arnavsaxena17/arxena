@@ -8,6 +8,7 @@ import { type RatioAggregateConfig } from './ratio-aggregate-config.type';
 type BaseChartConfiguration = {
   aggregateFieldMetadataId: SerializedRelation;
   aggregateOperation: AggregateOperations;
+  aggregateSubFieldName?: string;
   displayDataLabel?: boolean;
   description?: string;
   color?: string;

@@ -1,5 +1,6 @@
 import { FieldMetadataType } from 'twenty-shared/types';
 import {
+  isAllowedRawJsonPathKey,
   isDefined,
   isFieldMetadataSupportedInGroupBy,
   isPlainObject,
@@ -115,6 +116,71 @@ const validateAndTransformCompositeGroupByDefinitionOrThrow = ({
   }
 };
 
+const validateAndTransformRawJsonGroupByDefinitionOrThrow = ({
+  fieldName,
+  fieldMetadata,
+  fieldGroupByDefinition,
+  groupByFields,
+}: {
+  fieldName: string;
+  fieldMetadata: FlatFieldMetadata;
+  fieldGroupByDefinition: Record<string, unknown>;
+  groupByFields: GroupByField[];
+}) => {
+  if (fieldMetadata.type !== FieldMetadataType.RAW_JSON) {
+    throw new CommonQueryRunnerException(
+      `Field "${fieldName}" does not support nested subfields in groupBy`,
+      CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+      { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+    );
+  }
+
+  validateSingleKeyForGroupByOrThrow({
+    groupByKeys: Object.keys(fieldGroupByDefinition),
+    errorMessage:
+      'You cannot provide multiple subfields in one GroupByInput, split them into multiple GroupByInput',
+  });
+
+  for (const subFieldName of Object.keys(fieldGroupByDefinition)) {
+    if (!isAllowedRawJsonPathKey(subFieldName)) {
+      throw new CommonQueryRunnerException(
+        `RAW_JSON subfield "${subFieldName}" is not supported in groupBy for "${fieldName}"`,
+        CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+        { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+      );
+    }
+
+    const subFieldGroupByDefinition = fieldGroupByDefinition[subFieldName];
+
+    if (isGroupByDateFieldDefinition(subFieldGroupByDefinition)) {
+      groupByFields.push({
+        fieldMetadata,
+        subFieldName,
+        isRawJsonPath: true,
+        dateGranularity: subFieldGroupByDefinition.granularity,
+        weekStartDay: subFieldGroupByDefinition.weekStartDay,
+        timeZone: subFieldGroupByDefinition.timeZone,
+      });
+
+      continue;
+    }
+
+    if (subFieldGroupByDefinition !== true) {
+      throw new CommonQueryRunnerException(
+        `RAW_JSON subfield "${subFieldName}" must be set to true or a date granularity object in groupBy for "${fieldName}"`,
+        CommonQueryRunnerExceptionCode.INVALID_QUERY_INPUT,
+        { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
+      );
+    }
+
+    groupByFields.push({
+      fieldMetadata,
+      subFieldName,
+      isRawJsonPath: true,
+    });
+  }
+};
+
 const validateAndTransformSingleGroupByFieldOrThrow = ({
   fieldNames,
   fieldName,
@@ -221,6 +287,17 @@ const validateAndTransformSingleGroupByFieldOrThrow = ({
   }
 
   if (isObjectFieldGroupByDefinition) {
+    if (fieldMetadata.type === FieldMetadataType.RAW_JSON) {
+      validateAndTransformRawJsonGroupByDefinitionOrThrow({
+        fieldName,
+        fieldMetadata,
+        fieldGroupByDefinition,
+        groupByFields,
+      });
+
+      return;
+    }
+
     validateAndTransformCompositeGroupByDefinitionOrThrow({
       fieldName,
       fieldMetadata,

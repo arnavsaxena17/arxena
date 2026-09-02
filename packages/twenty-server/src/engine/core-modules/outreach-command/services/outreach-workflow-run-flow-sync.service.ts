@@ -5,7 +5,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import {
-  parseOutreachExperimentConfig,
+  readProjectExperimentConfig,
   type OutreachExperimentWorkflowBinding,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -28,6 +28,7 @@ type CandidateExperimentRecord = ObjectLiteral & {
 
 type ProjectExperimentRecord = ObjectLiteral & {
   id: string;
+  outreachConfig?: unknown;
   experimentConfig?: string | null;
 };
 
@@ -199,9 +200,7 @@ export class OutreachWorkflowRunFlowSyncService {
     const project = await projectRepository.findOne({
       where: { id: projectId },
     });
-    const experimentConfig = parseOutreachExperimentConfig(
-      project?.experimentConfig,
-    );
+    const experimentConfig = readProjectExperimentConfig(project ?? {});
 
     if (experimentConfig?.status !== 'running') {
       return controlVersionId;

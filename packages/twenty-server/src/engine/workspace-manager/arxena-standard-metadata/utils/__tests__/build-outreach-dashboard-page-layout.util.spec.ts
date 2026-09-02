@@ -51,6 +51,7 @@ describe('buildOutreachDashboardPageLayout', () => {
     expect(connectionRequests?.configuration).toMatchObject({
       configurationType: 'AGGREGATE_CHART',
       aggregateOperation: 'COUNT_NOT_EMPTY',
+      aggregateSubFieldName: 'firstOutboundAt',
     });
     expect(companiesAdded?.configuration).toMatchObject({
       configurationType: 'LINE_CHART',
@@ -60,7 +61,33 @@ describe('buildOutreachDashboardPageLayout', () => {
     expect(firstContacts?.configuration).toMatchObject({
       configurationType: 'LINE_CHART',
       aggregateOperation: 'COUNT_NOT_EMPTY',
+      aggregateSubFieldName: 'firstContactAt',
+      primaryAxisGroupBySubFieldName: 'firstContactAt',
       displayDataLabel: true,
+    });
+  });
+
+  it('uses outreachAnalytics JSON paths on Speed tab widgets', () => {
+    const layout = buildOutreachDashboardPageLayout();
+    const speed = layout.tabs?.find((tab) => tab.title === 'Speed');
+
+    expect(speed).toBeDefined();
+
+    const timeToFirstContact = speed?.widgets?.find(
+      (widget) => widget.title === 'Time to first contact',
+    );
+    const avgDaysToFirstContact = speed?.widgets?.find(
+      (widget) => widget.title === 'Avg days → first contact',
+    );
+
+    expect(timeToFirstContact?.configuration).toMatchObject({
+      configurationType: 'BAR_CHART',
+      primaryAxisGroupBySubFieldName: 'timeToFirstContactBucket',
+    });
+    expect(avgDaysToFirstContact?.configuration).toMatchObject({
+      configurationType: 'AGGREGATE_CHART',
+      aggregateOperation: 'AVG',
+      aggregateSubFieldName: 'daysToFirstContact',
     });
   });
 

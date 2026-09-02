@@ -46,7 +46,7 @@ const CANDIDATE_FIELDS = {
   candConversationStatus: arxenaField(CANDIDATE, 'candConversationStatus'),
   linkedinFollowUpCount: arxenaField(CANDIDATE, 'linkedinFollowUpCount'),
   messagingChannel: arxenaField(CANDIDATE, 'messagingChannel'),
-  lastOutboundAt: arxenaField(CANDIDATE, 'lastOutboundAt'),
+  outreachAnalytics: arxenaField(CANDIDATE, 'outreachAnalytics'),
 };
 
 const WORKFLOW_RUN_FIELDS = {
@@ -320,8 +320,8 @@ export const buildOutreachDashboardViews = (): ViewManifest[] => [
         size: 140,
       },
       {
-        fieldMetadataUniversalIdentifier: CANDIDATE_FIELDS.lastOutboundAt,
-        size: 160,
+        fieldMetadataUniversalIdentifier: CANDIDATE_FIELDS.outreachAnalytics,
+        size: 200,
       },
     ],
     filters: [
@@ -335,10 +335,6 @@ export const buildOutreachDashboardViews = (): ViewManifest[] => [
       {
         fieldMetadataUniversalIdentifier: CANDIDATE_FIELDS.outreachSequenceStage,
         direction: ViewSortDirection.ASC,
-      },
-      {
-        fieldMetadataUniversalIdentifier: CANDIDATE_FIELDS.lastOutboundAt,
-        direction: ViewSortDirection.DESC,
       },
     ],
   }),

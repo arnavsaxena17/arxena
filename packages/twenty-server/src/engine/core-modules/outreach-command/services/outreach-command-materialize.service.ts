@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import {
-  buildCandidateActionTimestampsUpdate,
+  buildCandidateAnalyticsUpdate,
+  buildCompanyAnalyticsRollup,
+  parseOutreachAnalytics,
   resolveOutreachFirstContactAt,
   resolveOutreachFirstOutboundAt,
   resolveOutreachLastInboundAt,
@@ -15,8 +17,6 @@ import {
   buildCandidateEventUpdate,
   computeAttentionReason,
   computeCoverageBucket,
-  computeDaysBetween,
-  computeTimeBucket,
   mapCandidateEventToOutreachActionTimestampsEvent,
   mapMessagingChannelToOutreachChannel,
   normalizeLinkedinUrl,
@@ -47,7 +47,6 @@ export class OutreachCommandMaterializeService {
     event,
     apiToken,
     messagingChannel,
-    existingFirstOutboundAt,
     companyId,
     companyCreatedAt,
     classifiedOutreachStage,
@@ -59,7 +58,6 @@ export class OutreachCommandMaterializeService {
     event: OutreachCandidateEventKind;
     apiToken: string;
     messagingChannel?: string | null;
-    existingFirstOutboundAt?: string | null;
     companyId?: string | null;
     companyCreatedAt?: string | null;
     classifiedOutreachStage?: string | null;
@@ -68,8 +66,21 @@ export class OutreachCommandMaterializeService {
     existingLastOutboundMessageKind?: string | null;
   }): Promise<void> {
     try {
-      let convertedOn = existingConvertedOnMessageKind;
-      let lastOutboundKind = existingLastOutboundMessageKind;
+      const actionTimestampsEvent =
+        mapCandidateEventToOutreachActionTimestampsEvent(event);
+      const candidateSnapshot =
+        actionTimestampsEvent !== null
+          ? await this.fetchCandidateMaterializeSnapshot(candidateId, apiToken)
+          : null;
+
+      const snapshotAnalytics = parseOutreachAnalytics(
+        candidateSnapshot?.outreachAnalytics,
+      );
+      let convertedOn =
+        existingConvertedOnMessageKind ?? snapshotAnalytics?.convertedOnMessageKind;
+      let lastOutboundKind =
+        existingLastOutboundMessageKind ??
+        snapshotAnalytics?.lastOutboundMessageKind;
 
       if (
         (event === 'inbound_reply_flush' || event === 'meeting_booked') &&
@@ -85,38 +96,23 @@ export class OutreachCommandMaterializeService {
           lastOutboundKind ?? messageKinds.lastOutboundMessageKind;
       }
 
-      const actionTimestampsEvent =
-        mapCandidateEventToOutreachActionTimestampsEvent(event);
-      const candidateSnapshot =
-        actionTimestampsEvent !== null
-          ? await this.fetchCandidateMaterializeSnapshot(candidateId, apiToken)
-          : null;
-      const resolvedFirstOutboundAt =
-        existingFirstOutboundAt ??
-        (candidateSnapshot
-          ? resolveOutreachFirstOutboundAt(
-              candidateSnapshot.outreachSpeedTimestamps,
-              candidateSnapshot.firstOutboundAt,
-            )
-          : null);
-
       const input = buildCandidateEventUpdate({
         event,
         messagingChannel,
-        existingFirstOutboundAt: resolvedFirstOutboundAt,
         classifiedOutreachStage,
         outboundMessageKind,
-        existingConvertedOnMessageKind: convertedOn,
-        existingLastOutboundMessageKind: lastOutboundKind,
       });
 
       if (actionTimestampsEvent !== null && candidateSnapshot) {
         Object.assign(
           input,
-          buildCandidateActionTimestampsUpdate({
-            existingTimestamps: candidateSnapshot.outreachSpeedTimestamps,
+          buildCandidateAnalyticsUpdate({
+            existingAnalytics: candidateSnapshot.outreachAnalytics,
             event: actionTimestampsEvent,
             enrolledAt: candidateSnapshot.createdAt,
+            outboundMessageKind,
+            existingConvertedOnMessageKind: convertedOn,
+            existingLastOutboundMessageKind: lastOutboundKind,
           }),
         );
       }
@@ -158,7 +154,6 @@ export class OutreachCommandMaterializeService {
     candidateId,
     touch,
     apiToken,
-    existingFirstOutboundAt,
     companyId,
     companyCreatedAt,
     messagingChannel,
@@ -166,7 +161,6 @@ export class OutreachCommandMaterializeService {
     candidateId: string;
     touch: OutreachTouchKind;
     apiToken: string;
-    existingFirstOutboundAt?: string | null;
     companyId?: string | null;
     companyCreatedAt?: string | null;
     messagingChannel?: string | null;
@@ -182,7 +176,6 @@ export class OutreachCommandMaterializeService {
       candidateId,
       event: eventByTouch[touch],
       apiToken,
-      existingFirstOutboundAt,
       companyId,
       companyCreatedAt,
       messagingChannel,
@@ -362,21 +355,19 @@ export class OutreachCommandMaterializeService {
         return;
       }
 
+      const existingAnalytics = parseOutreachAnalytics(company.outreachAnalytics);
       const candidates = await this.fetchCompanyCandidates(companyId, apiToken);
       const peopleTargeted = candidates.length;
       const reachedCandidates = candidates.filter((candidate) =>
         isDefined(
-          resolveOutreachFirstOutboundAt(
-            candidate.outreachSpeedTimestamps,
-            candidate.firstOutboundAt,
-          ),
+          resolveOutreachFirstOutboundAt(candidate.outreachAnalytics),
         ),
       );
       const peopleReached = reachedCandidates.length;
       const earliestCandidateFirstContactMs = candidates.reduce(
         (earliest, candidate) => {
           const contactAt = resolveOutreachFirstContactAt(
-            candidate.outreachSpeedTimestamps,
+            candidate.outreachAnalytics,
           );
           const contactMs = Date.parse(contactAt ?? '');
 
@@ -403,49 +394,30 @@ export class OutreachCommandMaterializeService {
       );
 
       const firstContactAt =
-        company.firstContactAt ??
+        existingAnalytics?.firstContactAt ??
         (event === 'connection_accepted'
           ? nowIso
           : ['outbound_message', 'comment_posted'].includes(event)
             ? nowIso
-            : aggregatedFirstContactAt ?? company.firstContactAt);
+            : aggregatedFirstContactAt);
       const firstReplyAt =
-        company.firstReplyAt ??
-        (event === 'inbound_reply' ? nowIso : company.firstReplyAt);
+        existingAnalytics?.firstReplyAt ??
+        (event === 'inbound_reply' ? nowIso : null);
       const meetingBookedAt =
-        company.meetingBookedAt ??
+        existingAnalytics?.meetingBookedAt ??
         (event === 'meeting_booked' || event === 'meeting_held'
           ? nowIso
-          : company.meetingBookedAt);
+          : null);
       const meetingHeldAt =
-        company.meetingHeldAt ??
-        (event === 'meeting_held' ? nowIso : company.meetingHeldAt);
-
-      const daysToFirstContact =
-        company.daysToFirstContact ??
-        computeDaysBetween(
-          companyCreatedAt ?? company.createdAt,
-          firstContactAt,
-        );
-      const daysToMeetingBooked =
-        company.daysToMeetingBooked ??
-        computeDaysBetween(
-          companyCreatedAt ?? company.createdAt,
-          meetingBookedAt,
-        );
+        existingAnalytics?.meetingHeldAt ??
+        (event === 'meeting_held' ? nowIso : null);
 
       const latestTouchMs = candidates.reduce((max, candidate) => {
         const outbound = Date.parse(
-          resolveOutreachLastOutboundAt(
-            candidate.outreachSpeedTimestamps,
-            candidate.lastOutboundAt,
-          ) ?? '',
+          resolveOutreachLastOutboundAt(candidate.outreachAnalytics) ?? '',
         );
         const inbound = Date.parse(
-          resolveOutreachLastInboundAt(
-            candidate.outreachSpeedTimestamps,
-            candidate.lastInboundAt,
-          ) ?? '',
+          resolveOutreachLastInboundAt(candidate.outreachAnalytics) ?? '',
         );
         const touch = Math.max(
           Number.isFinite(outbound) ? outbound : 0,
@@ -465,12 +437,7 @@ export class OutreachCommandMaterializeService {
         outreachSequenceStage: worstCandidate?.outreachSequenceStage,
         daysSinceLastTouch,
         hasReply: candidates.some((candidate) =>
-          isDefined(
-            resolveOutreachLastInboundAt(
-              candidate.outreachSpeedTimestamps,
-              candidate.lastInboundAt,
-            ),
-          ),
+          isDefined(resolveOutreachLastInboundAt(candidate.outreachAnalytics)),
         ),
       });
 
@@ -480,6 +447,32 @@ export class OutreachCommandMaterializeService {
         peopleReached,
       });
 
+      const coverageBucket = computeCoverageBucket(peopleReached);
+      const coverageScore = Math.min(
+        100,
+        Math.round((peopleReached / Math.max(peopleTargeted || 1, 1)) * 100),
+      );
+      const resolvedFirstContactChannel =
+        existingAnalytics?.firstContactChannel ??
+        (event === 'connection_accepted'
+          ? 'LINKEDIN_CONNECT'
+          : firstContactChannel ?? null);
+
+      const analyticsUpdate = buildCompanyAnalyticsRollup({
+        existingAnalytics: company.outreachAnalytics,
+        companyCreatedAt: companyCreatedAt ?? company.createdAt,
+        peopleTargeted,
+        peopleReached,
+        coverageScore,
+        coverageBucket,
+        channelsUsed,
+        firstContactAt,
+        firstReplyAt,
+        meetingBookedAt,
+        meetingHeldAt,
+        firstContactChannel: resolvedFirstContactChannel,
+      });
+
       await this.staticGraphQLService.executeGraphQL(
         `mutation UpdateCompany($id: ID!, $data: CompanyUpdateInput!) {
           updateCompany(id: $id, data: $data) { id }
@@ -487,29 +480,7 @@ export class OutreachCommandMaterializeService {
         {
           id: companyId,
           data: {
-            peopleTargeted,
-            peopleReached,
-            coverageBucket: computeCoverageBucket(peopleReached),
-            coverageScore: Math.min(
-              100,
-              Math.round(
-                (peopleReached / Math.max(peopleTargeted || 1, 1)) * 100,
-              ),
-            ),
-            channelsUsed,
-            firstContactAt,
-            firstReplyAt,
-            meetingBookedAt,
-            meetingHeldAt,
-            daysToFirstContact,
-            daysToMeetingBooked,
-            timeToFirstContactBucket: computeTimeBucket(daysToFirstContact),
-            timeToMeetingBucket: computeTimeBucket(daysToMeetingBooked),
-            firstContactChannel:
-              company.firstContactChannel ??
-              (event === 'connection_accepted'
-                ? 'LINKEDIN_CONNECT'
-                : firstContactChannel ?? null),
+            ...analyticsUpdate,
             outreachFunnelStage,
             attentionReason:
               event === 'inbound_reply' || event === 'meeting_booked'
@@ -560,19 +531,17 @@ export class OutreachCommandMaterializeService {
     apiToken: string,
   ): Promise<{
     createdAt?: string;
-    outreachSpeedTimestamps?: unknown;
-    firstOutboundAt?: string | null;
+    outreachAnalytics?: unknown;
   } | null> {
     try {
       const response = (await this.staticGraphQLService.executeGraphQL(
-        `query CandidateSpeedSnapshot($filter: CandidateFilterInput) {
+        `query CandidateAnalyticsSnapshot($filter: CandidateFilterInput) {
           candidates(first: 1, filter: $filter) {
             edges {
               node {
                 id
                 createdAt
-                outreachSpeedTimestamps
-                firstOutboundAt
+                outreachAnalytics
               }
             }
           }
@@ -587,8 +556,7 @@ export class OutreachCommandMaterializeService {
             edges?: Array<{
               node: {
                 createdAt?: string;
-                outreachSpeedTimestamps?: unknown;
-                firstOutboundAt?: string | null;
+                outreachAnalytics?: unknown;
               };
             }>;
           }
@@ -613,8 +581,7 @@ export class OutreachCommandMaterializeService {
             edges {
               node {
                 id
-                lastOutboundMessageKind
-                convertedOnMessageKind
+                outreachAnalytics
               }
             }
           }
@@ -623,20 +590,17 @@ export class OutreachCommandMaterializeService {
         apiToken,
       )) as GraphqlEnvelope;
 
-      const node = (
-        response?.data?.data?.candidates as {
-          edges?: Array<{
-            node: {
-              lastOutboundMessageKind?: string | null;
-              convertedOnMessageKind?: string | null;
-            };
-          }>;
-        }
-      )?.edges?.[0]?.node;
+      const analytics = parseOutreachAnalytics(
+        (
+          response?.data?.data?.candidates as {
+            edges?: Array<{ node: { outreachAnalytics?: unknown } }>;
+          }
+        )?.edges?.[0]?.node?.outreachAnalytics,
+      );
 
       return {
-        lastOutboundMessageKind: node?.lastOutboundMessageKind ?? null,
-        convertedOnMessageKind: node?.convertedOnMessageKind ?? null,
+        lastOutboundMessageKind: analytics?.lastOutboundMessageKind ?? null,
+        convertedOnMessageKind: analytics?.convertedOnMessageKind ?? null,
       };
     } catch {
       return {
@@ -656,7 +620,6 @@ export class OutreachCommandMaterializeService {
           edges {
             node {
               id
-              firstOutboundAt
               messagingChannel
               projects { companyId company { id } }
               people { companyId company { id } }
@@ -683,16 +646,9 @@ export class OutreachCommandMaterializeService {
   ): Promise<{
     id: string;
     createdAt?: string;
-    peopleReached?: number;
-    firstContactAt?: string | null;
-    firstReplyAt?: string | null;
-    meetingBookedAt?: string | null;
-    meetingHeldAt?: string | null;
-    daysToFirstContact?: number | null;
-    daysToMeetingBooked?: number | null;
+    outreachAnalytics?: unknown;
     outreachFunnelStage?: string | null;
     attentionReason?: string | null;
-    firstContactChannel?: string | null;
   } | null> {
     const response = (await this.staticGraphQLService.executeGraphQL(
       `query Company($filter: CompanyFilterInput) {
@@ -701,16 +657,9 @@ export class OutreachCommandMaterializeService {
             node {
               id
               createdAt
-              peopleReached
-              firstContactAt
-              firstReplyAt
-              meetingBookedAt
-              meetingHeldAt
-              daysToFirstContact
-              daysToMeetingBooked
+              outreachAnalytics
               outreachFunnelStage
               attentionReason
-              firstContactChannel
             }
           }
         }
@@ -728,16 +677,9 @@ export class OutreachCommandMaterializeService {
     ) as {
       id: string;
       createdAt?: string;
-      peopleReached?: number;
-      firstContactAt?: string | null;
-      firstReplyAt?: string | null;
-      meetingBookedAt?: string | null;
-      meetingHeldAt?: string | null;
-      daysToFirstContact?: number | null;
-      daysToMeetingBooked?: number | null;
+      outreachAnalytics?: unknown;
       outreachFunnelStage?: string | null;
       attentionReason?: string | null;
-      firstContactChannel?: string | null;
     } | null;
   }
 
@@ -747,10 +689,7 @@ export class OutreachCommandMaterializeService {
   ): Promise<
     Array<{
       id: string;
-      firstOutboundAt?: string | null;
-      lastOutboundAt?: string | null;
-      lastInboundAt?: string | null;
-      outreachSpeedTimestamps?: unknown;
+      outreachAnalytics?: unknown;
       messagingChannel?: string | null;
       enrichStatus?: string | null;
       outreachSequenceStage?: string | null;
@@ -762,10 +701,7 @@ export class OutreachCommandMaterializeService {
           edges {
             node {
               id
-              firstOutboundAt
-              lastOutboundAt
-              lastInboundAt
-              outreachSpeedTimestamps
+              outreachAnalytics
               messagingChannel
               enrichStatus
               outreachSequenceStage
@@ -791,10 +727,7 @@ export class OutreachCommandMaterializeService {
         }
       )?.edges?.map((edge) => edge.node as {
         id: string;
-        firstOutboundAt?: string | null;
-        lastOutboundAt?: string | null;
-        lastInboundAt?: string | null;
-        outreachSpeedTimestamps?: unknown;
+        outreachAnalytics?: unknown;
         messagingChannel?: string | null;
         enrichStatus?: string | null;
         outreachSequenceStage?: string | null;
@@ -808,7 +741,6 @@ export const materializeCandidateTouchWithGraphQL = async ({
   candidateId,
   touch,
   apiToken,
-  existingFirstOutboundAt,
   companyId,
   companyCreatedAt,
   messagingChannel,
@@ -817,7 +749,6 @@ export const materializeCandidateTouchWithGraphQL = async ({
   candidateId: string;
   touch: OutreachTouchKind;
   apiToken: string;
-  existingFirstOutboundAt?: string | null;
   companyId?: string | null;
   companyCreatedAt?: string | null;
   messagingChannel?: string | null;
@@ -828,7 +759,6 @@ export const materializeCandidateTouchWithGraphQL = async ({
     candidateId,
     touch,
     apiToken,
-    existingFirstOutboundAt,
     companyId,
     companyCreatedAt,
     messagingChannel,
@@ -841,7 +771,6 @@ export const materializeCandidateEventWithGraphQL = async ({
   event,
   apiToken,
   messagingChannel,
-  existingFirstOutboundAt,
   companyId,
 }: {
   staticGraphQLService: StaticGraphQLService;
@@ -849,7 +778,6 @@ export const materializeCandidateEventWithGraphQL = async ({
   event: OutreachCandidateEventKind;
   apiToken: string;
   messagingChannel?: string | null;
-  existingFirstOutboundAt?: string | null;
   companyId?: string | null;
 }): Promise<void> => {
   const service = new OutreachCommandMaterializeService(staticGraphQLService);
@@ -859,7 +787,6 @@ export const materializeCandidateEventWithGraphQL = async ({
     event,
     apiToken,
     messagingChannel,
-    existingFirstOutboundAt,
     companyId,
   });
 };

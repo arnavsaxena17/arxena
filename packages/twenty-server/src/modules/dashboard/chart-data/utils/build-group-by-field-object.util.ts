@@ -3,6 +3,7 @@ import {
   GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE,
 } from 'twenty-shared/constants';
 import {
+  FieldMetadataType,
   FirstDayOfTheWeek,
   ObjectRecordGroupByDateGranularity,
 } from 'twenty-shared/types';
@@ -10,6 +11,7 @@ import {
   convertCalendarStartDayNonIsoNumberToFirstDayOfTheWeek,
   isDefined,
   isFieldMetadataDateKind,
+  isRawJsonDatePathKey,
 } from 'twenty-shared/utils';
 
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
@@ -139,6 +141,34 @@ export const buildGroupByFieldObject = ({
       throw new Error(
         `Composite field ${fieldMetadata.name} requires a subfield to be specified`,
       );
+    }
+
+    return {
+      [fieldMetadata.name]: {
+        [subFieldName]: true,
+      },
+    };
+  }
+
+  if (fieldMetadata.type === FieldMetadataType.RAW_JSON) {
+    if (!isDefined(subFieldName)) {
+      throw new Error(
+        `RAW_JSON field ${fieldMetadata.name} requires a subfield to be specified`,
+      );
+    }
+
+    if (isRawJsonDatePathKey(subFieldName)) {
+      const dateGroupByObject = buildDateGroupByObject({
+        dateGranularity,
+        firstDayOfTheWeek,
+        timeZone,
+      });
+
+      return {
+        [fieldMetadata.name]: {
+          [subFieldName]: dateGroupByObject,
+        },
+      };
     }
 
     return {

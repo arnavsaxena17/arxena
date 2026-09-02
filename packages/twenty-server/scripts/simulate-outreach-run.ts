@@ -31,6 +31,22 @@ type GraphQLResponse<T> = {
   errors?: Array<{ message: string }>;
 };
 
+const DEFAULT_OUTREACH_CONFIG = {
+  v: 1,
+  maxPersonasPerCompany: 2,
+  inMailFallbackEnabled: true,
+  sendTimezone: 'Asia/Kolkata',
+  sendWindowStart: '08:00',
+  sendWindowEnd: '10:00',
+  sendWindowDays: '2,3,4',
+  icpSpec: null as {
+    targetTitles: string[];
+    locations: string[];
+  } | null,
+  experimentConfig: null,
+  updatedAt: new Date().toISOString(),
+};
+
 const MOCKS = {
   icpSpec: {
     name: 'HR Tech buyers — Talent leaders',
@@ -70,6 +86,15 @@ const MOCKS = {
     recordingUrl: 'https://example.com/recording.mp4',
   },
 };
+
+const buildOutreachConfigFromIcpMock = () => ({
+  ...DEFAULT_OUTREACH_CONFIG,
+  icpSpec: {
+    targetTitles: MOCKS.icpSpec.targetTitles,
+    locations: MOCKS.icpSpec.geos,
+  },
+  updatedAt: new Date().toISOString(),
+});
 
 const graphqlRequest = async <T>(
   query: string,
@@ -113,7 +138,7 @@ const findProjects = async (projectId?: string) => {
         node: {
           id: string;
           name?: string;
-          icpSpec?: string | null;
+          outreachConfig?: unknown;
           outreachWorkflowId?: string | null;
         };
       }>;
@@ -125,7 +150,7 @@ const findProjects = async (projectId?: string) => {
           node {
             id
             name
-            icpSpec
+            outreachConfig
             outreachWorkflowId
           }
         }
@@ -225,14 +250,8 @@ const resolveOutreachProject = async (): Promise<ResolvedOutreachProject> => {
 const simulateBootstrap = async (project: ResolvedOutreachProject) => {
   await updateProject(project.id, {
     icpSegment: MOCKS.icpSpec.name,
-    icpSpec: JSON.stringify(MOCKS.icpSpec),
     outreachSendMode: 'APPROVAL',
-    maxPersonasPerCompany: 2,
-    inMailFallbackEnabled: true,
-    sendTimezone: 'Asia/Kolkata',
-    sendWindowStart: '08:00',
-    sendWindowEnd: '10:00',
-    sendWindowDays: '2,3,4',
+    outreachConfig: buildOutreachConfigFromIcpMock(),
   });
 
   console.log(`  bootstrap ICP → project ${project.id}`);

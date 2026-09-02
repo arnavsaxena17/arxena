@@ -12,8 +12,10 @@ import {
   getFilterTypeFromFieldType,
   isDefined,
   isFieldMetadataDateKind,
+  isRawJsonDatePathKey,
   parseToPlainDateOrThrow,
 } from 'twenty-shared/utils';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 type ChartFilter = {
   fieldName: string;
@@ -59,7 +61,16 @@ export const buildFilterFromChartBucket = ({
     return [];
   }
 
-  if (isFieldMetadataDateKind(fieldMetadataItem.type)) {
+  const isRawJsonDateGroupBy =
+    fieldMetadataItem.type === FieldMetadataType.RAW_JSON &&
+    isNonEmptyString(subFieldName) &&
+    isRawJsonDatePathKey(subFieldName);
+
+  const effectiveDateFieldType = isRawJsonDateGroupBy
+    ? FieldMetadataType.DATE_TIME
+    : fieldMetadataItem.type;
+
+  if (isFieldMetadataDateKind(fieldMetadataItem.type) || isRawJsonDateGroupBy) {
     if (isCyclicalDateGranularity(dateGranularity)) {
       return [];
     }
@@ -89,7 +100,7 @@ export const buildFilterFromChartBucket = ({
       return buildDateRangeFiltersForGranularity(
         parsedZonedDateTime,
         ObjectRecordGroupByDateGranularity.DAY,
-        fieldMetadataItem.type,
+        effectiveDateFieldType,
         fieldName,
         firstDayOfTheWeek,
       );
@@ -115,7 +126,7 @@ export const buildFilterFromChartBucket = ({
       return buildDateRangeFiltersForGranularity(
         parsedDateTime,
         dateGranularity,
-        fieldMetadataItem.type,
+        effectiveDateFieldType,
         fieldName,
         firstDayOfTheWeek,
       );

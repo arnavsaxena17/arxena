@@ -1,7 +1,7 @@
 import { MessagingChannel } from 'twenty-shared/arx';
 import { FieldActorSource } from 'twenty-shared/types';
 
-import { OutreachMessagePersistService } from '../outreach-outreach-message-persist.service';
+import { OutreachMessagePersistService } from '../outreach-message-persist.service';
 
 const SYSTEM_ACTOR = {
   source: FieldActorSource.SYSTEM,
@@ -35,7 +35,7 @@ describe('OutreachMessagePersistService.materializeCandidateEvent', () => {
     resolveOrMint.mockResolvedValue('api-token');
     candidateRepository.findOne.mockResolvedValue({
       id: 'cand-1',
-      firstOutboundAt: null,
+      outreachAnalytics: null,
     });
     globalWorkspaceOrmManager.getRepository.mockResolvedValue(
       candidateRepository,
@@ -45,10 +45,13 @@ describe('OutreachMessagePersistService.materializeCandidateEvent', () => {
     );
   });
 
-  it('stamps connection_sent without overwriting an existing firstOutboundAt', async () => {
+  it('passes existing analytics message kinds without overwriting them', async () => {
     candidateRepository.findOne.mockResolvedValue({
       id: 'cand-1',
-      firstOutboundAt: '2026-08-01T00:00:00.000Z',
+      outreachAnalytics: {
+        lastOutboundMessageKind: 'CONNECTION',
+        convertedOnMessageKind: 'FOLLOW_UP',
+      },
     });
 
     await service.materializeCandidateEvent({
@@ -63,11 +66,12 @@ describe('OutreachMessagePersistService.materializeCandidateEvent', () => {
       event: 'connection_sent',
       apiToken: 'api-token',
       messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
-      existingFirstOutboundAt: '2026-08-01T00:00:00.000Z',
+      existingConvertedOnMessageKind: 'FOLLOW_UP',
+      existingLastOutboundMessageKind: 'CONNECTION',
     });
   });
 
-  it('passes a null firstOutboundAt so the first send is stamped', async () => {
+  it('passes null analytics message kinds so the first send is stamped', async () => {
     await service.materializeCandidateEvent({
       workspaceId: 'ws-1',
       event: 'connection_sent',
@@ -79,7 +83,8 @@ describe('OutreachMessagePersistService.materializeCandidateEvent', () => {
       expect.objectContaining({
         candidateId: 'cand-1',
         event: 'connection_sent',
-        existingFirstOutboundAt: null,
+        existingConvertedOnMessageKind: undefined,
+        existingLastOutboundMessageKind: undefined,
       }),
     );
   });

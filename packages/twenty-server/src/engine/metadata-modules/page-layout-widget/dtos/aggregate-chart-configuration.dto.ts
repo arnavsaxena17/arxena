@@ -49,6 +49,11 @@ export class AggregateChartConfigurationDTO implements AggregateChartConfigurati
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
+  aggregateSubFieldName?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
   label?: string;
 
   @Field(() => Boolean, { nullable: true, defaultValue: false })

@@ -95,62 +95,67 @@ describe('outreach-command-materialize.util', () => {
     expect(mapOutboundStageForChannel('linkedin')).toBe('CONNECTION_SENT');
   });
 
-  it('builds candidate event updates without flat touch timestamps', () => {
+  it('builds candidate event updates with operational fields only', () => {
     expect(
       buildCandidateEventUpdate({
         event: 'connection_sent',
-        nowIso: '2026-01-01T00:00:00.000Z',
       }),
     ).toMatchObject({
       outreachSequenceStage: 'CONNECTION_SENT',
-      lastOutboundMessageKind: 'CONNECT_NOTE',
     });
     expect(
       buildCandidateEventUpdate({
         event: 'connection_sent',
-        nowIso: '2026-01-01T00:00:00.000Z',
       }),
     ).not.toHaveProperty('firstOutboundAt');
+    expect(
+      buildCandidateEventUpdate({
+        event: 'connection_sent',
+      }),
+    ).not.toHaveProperty('lastOutboundMessageKind');
 
     expect(
       buildCandidateEventUpdate({
         event: 'outbound_message',
         messagingChannel: 'linkedin-inmail',
-        nowIso: '2026-01-01T00:00:00.000Z',
-        existingFirstOutboundAt: '2025-12-01T00:00:00.000Z',
         outboundMessageKind: 'OPENER',
       }),
     ).toMatchObject({
       outreachSequenceStage: 'INMAIL_SENT',
-      lastOutboundMessageKind: 'OPENER',
     });
     expect(
       buildCandidateEventUpdate({
         event: 'outbound_message',
         messagingChannel: 'linkedin-inmail',
-        nowIso: '2026-01-01T00:00:00.000Z',
-        existingFirstOutboundAt: '2025-12-01T00:00:00.000Z',
         outboundMessageKind: 'OPENER',
       }),
     ).not.toHaveProperty('lastOutboundAt');
+    expect(
+      buildCandidateEventUpdate({
+        event: 'outbound_message',
+        messagingChannel: 'linkedin-inmail',
+        outboundMessageKind: 'OPENER',
+      }),
+    ).not.toHaveProperty('lastOutboundMessageKind');
 
     expect(
       buildCandidateEventUpdate({
         event: 'inbound_reply_flush',
         classifiedOutreachStage: 'DEFERRED',
-        nowIso: '2026-01-01T00:00:00.000Z',
-        existingLastOutboundMessageKind: 'CONNECT_NOTE',
       }),
     ).toMatchObject({
       outreachSequenceStage: 'DEFERRED',
-      convertedOnMessageKind: 'CONNECT_NOTE',
     });
     expect(
       buildCandidateEventUpdate({
         event: 'inbound_reply_flush',
         classifiedOutreachStage: 'DEFERRED',
-        nowIso: '2026-01-01T00:00:00.000Z',
-        existingLastOutboundMessageKind: 'CONNECT_NOTE',
+      }),
+    ).not.toHaveProperty('convertedOnMessageKind');
+    expect(
+      buildCandidateEventUpdate({
+        event: 'inbound_reply_flush',
+        classifiedOutreachStage: 'DEFERRED',
       }),
     ).not.toHaveProperty('lastInboundAt');
   });

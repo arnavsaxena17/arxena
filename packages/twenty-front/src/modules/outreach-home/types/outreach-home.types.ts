@@ -89,6 +89,7 @@ export type OutreachProjectSettings = {
   outreachWorkflowId: string | null;
   outreachStatus: OutreachStatus;
   outreachSendMode: OutreachSendMode;
+  outreachConfig: unknown;
   maxPersonasPerCompany: number;
   inMailFallbackEnabled: boolean;
   sendTimezone: string;
@@ -99,6 +100,23 @@ export type OutreachProjectSettings = {
   icpSpec: string | null;
   isIcpProjectOverride: boolean;
   experimentConfig: string | null;
+};
+
+export type OutreachProjectRecord = {
+  id: string;
+  name?: string | null;
+  outreachWorkflowId?: string | null;
+  outreachStatus?: string | null;
+  outreachSendMode?: string | null;
+  outreachConfig?: unknown;
+  maxPersonasPerCompany?: number | null;
+  inMailFallbackEnabled?: boolean | null;
+  sendTimezone?: string | null;
+  sendWindowStart?: string | null;
+  sendWindowEnd?: string | null;
+  sendWindowDays?: string | null;
+  icpSpec?: string | null;
+  experimentConfig?: string | null;
 };
 
 export type OutreachContext = {

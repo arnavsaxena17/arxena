@@ -18,11 +18,13 @@ export const isFieldMetadataSupportedInGroupBy = ({
   name,
   isSystem,
   relationType,
+  subFieldName,
 }: {
   type: FieldMetadataType;
   name: string;
   isSystem: boolean;
   relationType?: RelationType | null;
+  subFieldName?: string | null;
 }): boolean => {
   const isAlwaysGroupableSystemDateField =
     ALWAYS_GROUPABLE_SYSTEM_DATE_FIELD_NAMES.has(name) &&
@@ -40,6 +42,10 @@ export const isFieldMetadataSupportedInGroupBy = ({
     relationType === RelationType.ONE_TO_MANY
   ) {
     return false;
+  }
+
+  if (type === FieldMetadataType.RAW_JSON) {
+    return Boolean(subFieldName);
   }
 
   return !FIELD_METADATA_TYPES_NOT_SUPPORTED_IN_GROUP_BY.has(type);

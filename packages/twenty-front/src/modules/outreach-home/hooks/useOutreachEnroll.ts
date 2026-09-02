@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { resolveOutreachConfigMaxPersonasPerCompany } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
@@ -7,6 +8,7 @@ import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreach
 import {
   type OutreachCompanyRow,
   type OutreachPersonRow,
+  type OutreachProjectRecord,
 } from '@/outreach-home/types/outreach-home.types';
 import { applyMaxPersonasPerCompany } from '@/outreach-home/utils/outreach-persona-priority.util';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
@@ -16,10 +18,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
-type OutreachProjectRecord = ObjectRecord & {
-  outreachWorkflowId?: string | null;
-  maxPersonasPerCompany?: number | null;
-};
+type OutreachProjectQueryRecord = ObjectRecord & OutreachProjectRecord;
 
 export const useOutreachEnroll = () => {
   const { enqueueErrorSnackBar, enqueueSuccessSnackBar } = useSnackBar();
@@ -30,7 +29,7 @@ export const useOutreachEnroll = () => {
 
   const projectId = outreachContext.projectId;
 
-  const { records: projects } = useFindManyRecords<OutreachProjectRecord>({
+  const { records: projects } = useFindManyRecords<OutreachProjectQueryRecord>({
     objectNameSingular: 'project',
     filter: isDefined(projectId)
       ? {
@@ -42,7 +41,7 @@ export const useOutreachEnroll = () => {
     recordGqlFields: {
       id: true,
       outreachWorkflowId: true,
-      maxPersonasPerCompany: true,
+      outreachConfig: true,
     },
   });
 
@@ -72,7 +71,10 @@ export const useOutreachEnroll = () => {
       }
 
       const project = projects[0];
-      const maxPersonas = project?.maxPersonasPerCompany ?? 2;
+      const maxPersonas = resolveOutreachConfigMaxPersonasPerCompany(
+        project?.outreachConfig,
+        project?.maxPersonasPerCompany,
+      );
       const ranked = applyMaxPersonasPerCompany({
         people,
         maxPersonasPerCompany: maxPersonas,

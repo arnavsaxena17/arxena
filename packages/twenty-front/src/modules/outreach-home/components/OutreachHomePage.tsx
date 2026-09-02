@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { useStore } from 'jotai';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { buildProjectConfigUpdate } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -380,13 +381,39 @@ const OutreachHomePageContent = () => {
     setIsSavingIcp(true);
 
     try {
-      await persistSetupField({
-        isProjectOverride: projectSettings.isIcpProjectOverride,
-        updateOneRecordInput: {
-          icpSpec: normalizedIcpSpec,
-        },
-        successMessage: 'ICP saved',
-      });
+      const persistTarget = resolvePersistTarget(
+        projectSettings.isIcpProjectOverride,
+      );
+
+      if (
+        persistTarget === 'workspaceProfile' &&
+        isDefined(workspaceProfile?.id)
+      ) {
+        await updateOneRecord({
+          objectNameSingular: 'workspaceProfile',
+          idToUpdate: workspaceProfile.id,
+          updateOneRecordInput: {
+            icpSpec: normalizedIcpSpec,
+          },
+        });
+        enqueueSuccessSnackBar({ message: 'ICP saved' });
+        return;
+      }
+
+      if (persistTarget === 'project' && isDefined(activeProjectId)) {
+        await updateOneRecord({
+          objectNameSingular: 'project',
+          idToUpdate: activeProjectId,
+          updateOneRecordInput: buildProjectConfigUpdate({
+            existingConfig: projectSettings.outreachConfig,
+            patch: { icpSpec: parsedIcp },
+          }),
+        });
+        enqueueSuccessSnackBar({ message: 'ICP saved (this project)' });
+        return;
+      }
+
+      throw new Error('No workspace profile or GTM project to save to.');
     } catch (error) {
       enqueueErrorSnackBar({
         message:
@@ -417,10 +444,15 @@ const OutreachHomePageContent = () => {
         objectNameSingular: 'project',
         idToUpdate: activeProjectId,
         updateOneRecordInput: {
-          sendTimezone: input.sendTimezone,
-          sendWindowStart: input.sendWindowStart,
-          sendWindowEnd: input.sendWindowEnd,
-          sendWindowDays: input.sendWindowDays,
+          ...buildProjectConfigUpdate({
+            existingConfig: projectSettings.outreachConfig,
+            patch: {
+              sendTimezone: input.sendTimezone,
+              sendWindowStart: input.sendWindowStart,
+              sendWindowEnd: input.sendWindowEnd,
+              sendWindowDays: input.sendWindowDays,
+            },
+          }),
         },
       });
       enqueueSuccessSnackBar({ message: 'Send schedule saved' });
@@ -456,7 +488,12 @@ const OutreachHomePageContent = () => {
         idToUpdate: activeProjectId,
         updateOneRecordInput: {
           outreachSendMode: input.outreachSendMode,
-          maxPersonasPerCompany: input.maxPersonasPerCompany,
+          ...buildProjectConfigUpdate({
+            existingConfig: projectSettings.outreachConfig,
+            patch: {
+              maxPersonasPerCompany: input.maxPersonasPerCompany,
+            },
+          }),
         },
       });
       enqueueSuccessSnackBar({ message: 'Outreach policy saved' });

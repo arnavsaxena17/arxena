@@ -1,8 +1,10 @@
 import { ChartAggregateOperationSelectionDropdownContent } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartAggregateOperationSelectionDropdownContent';
+import { ChartGroupByFieldSelectionRawJsonFieldView } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartGroupByFieldSelectionRawJsonFieldView';
 import { usePageLayoutIdFromContextStore } from '@/side-panel/pages/page-layout/hooks/usePageLayoutIdFromContextStore';
 import { useWidgetInEditMode } from '@/side-panel/pages/page-layout/hooks/useWidgetInEditMode';
 import { isWidgetConfigurationOfType } from '@/side-panel/pages/page-layout/utils/isWidgetConfigurationOfType';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { isHiddenSystemField } from '@/object-metadata/utils/isHiddenSystemField';
 import { isFieldRelation } from '@/object-record/record-field/ui/types/guards/isFieldRelation';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
@@ -19,6 +21,7 @@ import { useState } from 'react';
 import { useIcons } from 'twenty-ui/icon';
 import { MenuItemSelect } from 'twenty-ui/navigation';
 import { filterBySearchQuery } from '~/utils/filterBySearchQuery';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const ChartFieldSelectionForAggregateOperationDropdownContent = () => {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
@@ -52,6 +55,16 @@ export const ChartFieldSelectionForAggregateOperationDropdownContent = () => {
     currentFieldMetadataId,
   );
 
+  const [selectedAggregateSubFieldName, setSelectedAggregateSubFieldName] =
+    useState<string | undefined>(
+      'aggregateSubFieldName' in configuration
+        ? configuration.aggregateSubFieldName ?? undefined
+        : undefined,
+    );
+
+  const [selectedRawJsonField, setSelectedRawJsonField] =
+    useState<FieldMetadataItem | null>(null);
+
   const sourceObjectMetadataItem = objectMetadataItems.find(
     (item) => item.id === widgetInEditMode?.objectMetadataId,
   );
@@ -78,7 +91,25 @@ export const ChartFieldSelectionForAggregateOperationDropdownContent = () => {
     return (
       <ChartAggregateOperationSelectionDropdownContent
         currentFieldMetadataId={selectedFieldMetadataId}
+        currentAggregateSubFieldName={selectedAggregateSubFieldName}
         setIsSubMenuOpen={setIsSubMenuOpen}
+      />
+    );
+  }
+
+  if (selectedRawJsonField) {
+    return (
+      <ChartGroupByFieldSelectionRawJsonFieldView
+        rawJsonField={selectedRawJsonField}
+        currentSubFieldName={selectedAggregateSubFieldName}
+        onBack={() => {
+          setSelectedRawJsonField(null);
+        }}
+        onSelectSubField={(subFieldName) => {
+          setSelectedAggregateSubFieldName(subFieldName);
+          setSelectedFieldMetadataId(selectedRawJsonField.id);
+          setIsSubMenuOpen(true);
+        }}
       />
     );
   }
@@ -106,6 +137,12 @@ export const ChartFieldSelectionForAggregateOperationDropdownContent = () => {
               key={fieldMetadataItem.id}
               itemId={fieldMetadataItem.id}
               onEnter={() => {
+                if (fieldMetadataItem.type === FieldMetadataType.RAW_JSON) {
+                  setSelectedRawJsonField(fieldMetadataItem);
+                  return;
+                }
+
+                setSelectedAggregateSubFieldName(undefined);
                 setIsSubMenuOpen(true);
                 setSelectedFieldMetadataId(fieldMetadataItem.id);
               }}
@@ -117,6 +154,12 @@ export const ChartFieldSelectionForAggregateOperationDropdownContent = () => {
                 LeftIcon={getIcon(fieldMetadataItem.icon)}
                 hasSubMenu={true}
                 onClick={() => {
+                  if (fieldMetadataItem.type === FieldMetadataType.RAW_JSON) {
+                    setSelectedRawJsonField(fieldMetadataItem);
+                    return;
+                  }
+
+                  setSelectedAggregateSubFieldName(undefined);
                   setIsSubMenuOpen(true);
                   setSelectedFieldMetadataId(fieldMetadataItem.id);
                 }}

@@ -222,161 +222,13 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'company',
     field: {
-      description: 'ICP people targeted on this account',
-      icon: 'IconUsers',
-      label: 'People Targeted',
-      name: 'peopleTargeted',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'People with at least one outbound touch',
-      icon: 'IconUserCheck',
-      label: 'People Reached',
-      name: 'peopleReached',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Coverage bucket for account coverage charts',
-      icon: 'IconChartPie',
-      label: 'Coverage Bucket',
-      name: 'coverageBucket',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'SELECT',
-      options: OUTREACH_COVERAGE_BUCKET_OPTIONS,
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Channels used against this account',
-      icon: 'IconMessage',
-      label: 'Channels Used',
-      name: 'channelsUsed',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'MULTI_SELECT',
-      options: OUTREACH_CHANNEL_OPTIONS,
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
       description:
-        'First meaningful contact timestamp (LinkedIn connection accepted, or first email/InMail for fallback paths)',
-      icon: 'IconClock',
-      label: 'First Contact At',
-      name: 'firstContactAt',
+        'Outreach analytics JSON: timestamps, coverage, channels, and derived metrics',
+      icon: 'IconChartDots',
+      label: 'Outreach Analytics',
+      name: 'outreachAnalytics',
       objectMetadataId: objectsNameIdMap.company,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'First inbound reply timestamp',
-      icon: 'IconMessageReply',
-      label: 'First Reply At',
-      name: 'firstReplyAt',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Meeting invite created from outreach',
-      icon: 'IconCalendarPlus',
-      label: 'Meeting Booked At',
-      name: 'meetingBookedAt',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Meeting marked held / completed',
-      icon: 'IconCalendarCheck',
-      label: 'Meeting Held At',
-      name: 'meetingHeldAt',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Days from company added to first contact',
-      icon: 'IconHourglass',
-      label: 'Days To First Contact',
-      name: 'daysToFirstContact',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Days from company added to meeting booked',
-      icon: 'IconHourglassHigh',
-      label: 'Days To Meeting Booked',
-      name: 'daysToMeetingBooked',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Time-to-first-contact histogram bucket',
-      icon: 'IconChartBar',
-      label: 'Time To First Contact Bucket',
-      name: 'timeToFirstContactBucket',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'SELECT',
-      options: OUTREACH_TIME_BUCKET_OPTIONS,
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Time-to-meeting histogram bucket',
-      icon: 'IconChartBar',
-      label: 'Time To Meeting Bucket',
-      name: 'timeToMeetingBucket',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'SELECT',
-      options: OUTREACH_TIME_BUCKET_OPTIONS,
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Channel of first outbound touch',
-      icon: 'IconSend',
-      label: 'First Contact Channel',
-      name: 'firstContactChannel',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'SELECT',
-      options: OUTREACH_CHANNEL_OPTIONS,
-    },
-  },
-  {
-    objectName: 'company',
-    field: {
-      description: 'Coverage score 0–100',
-      icon: 'IconPercentage',
-      label: 'Coverage Score',
-      name: 'coverageScore',
-      objectMetadataId: objectsNameIdMap.company,
-      type: 'NUMBER',
+      type: 'RAW_JSON',
     },
   },
   {
@@ -432,39 +284,6 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Last outbound touch timestamp',
-      icon: 'IconSend',
-      label: 'Last Outbound At',
-      name: 'lastOutboundAt',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Last inbound reply timestamp',
-      icon: 'IconMessageReply',
-      label: 'Last Inbound At',
-      name: 'lastInboundAt',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'First outbound touch timestamp',
-      icon: 'IconPlayerPlay',
-      label: 'First Outbound At',
-      name: 'firstOutboundAt',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'DATE_TIME',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
       description: 'Channel for pending outbound draft',
       icon: 'IconSend',
       label: 'Pending Channel',
@@ -501,106 +320,13 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Kind of the last outbound outreach message',
-      icon: 'IconMailForward',
-      label: 'Last Outbound Message Kind',
-      name: 'lastOutboundMessageKind',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: OUTREACH_OUTBOUND_MESSAGE_KIND_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
       description:
-        'Outbound message kind that produced the first real inbound reply',
-      icon: 'IconMailOpened',
-      label: 'Converted On Message Kind',
-      name: 'convertedOnMessageKind',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: OUTREACH_OUTBOUND_MESSAGE_KIND_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Outreach action timestamps (connection, touches, meeting) and derived speed metrics',
-      icon: 'IconClockHour4',
-      label: 'Outreach Speed Timestamps',
-      name: 'outreachSpeedTimestamps',
+        'Outreach analytics JSON: timestamps, speed metrics, and message attribution',
+      icon: 'IconChartDots',
+      label: 'Outreach Analytics',
+      name: 'outreachAnalytics',
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'RAW_JSON',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Days from candidate enrolled to first outbound contact',
-      icon: 'IconHourglass',
-      label: 'Days To First Contact',
-      name: 'daysToFirstContact',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Days from candidate enrolled to meeting booked',
-      icon: 'IconHourglassHigh',
-      label: 'Days To Meeting Booked',
-      name: 'daysToMeetingBooked',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Days from connection request sent to connection accepted',
-      icon: 'IconUserCheck',
-      label: 'Days From Connection To Accept',
-      name: 'daysFromConnectionToAccept',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Days from connection request sent to meeting booked',
-      icon: 'IconCalendarStats',
-      label: 'Days From Connection To Meeting',
-      name: 'daysFromConnectionToMeeting',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'NUMBER',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Time-to-first-contact histogram bucket',
-      icon: 'IconChartBar',
-      label: 'Time To First Contact Bucket',
-      name: 'timeToFirstContactBucket',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: OUTREACH_TIME_BUCKET_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description: 'Time-to-meeting histogram bucket',
-      icon: 'IconChartBar',
-      label: 'Time To Meeting Bucket',
-      name: 'timeToMeetingBucket',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: OUTREACH_TIME_BUCKET_OPTIONS,
     },
   },
   {
@@ -669,99 +395,14 @@ export const getOutreachCommandFieldsData = (
     objectName: 'project',
     field: {
       description:
-        'A/B experiment config JSON (status, split, name, workflow version ids)',
-      icon: 'IconFlask',
-      label: 'Experiment Config',
-      name: 'experimentConfig',
+        'Outreach project config JSON: send window, ICP override, personas cap, experiments',
+      icon: 'IconSettingsAutomation',
+      label: 'Outreach Config',
+      name: 'outreachConfig',
       objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
+      type: 'RAW_JSON',
     },
   },
-  {
-    objectName: 'project',
-    field: {
-      description: 'Max ICP personas to enroll per company',
-      icon: 'IconUsersGroup',
-      label: 'Max Personas Per Company',
-      name: 'maxPersonasPerCompany',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'NUMBER',
-      defaultValue: 2,
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description:
-        'IANA timezone for LinkedIn connection send window local hours',
-      icon: 'IconWorld',
-      label: 'Send Timezone',
-      name: 'sendTimezone',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-      // TEXT defaults must satisfy IsQuotedString
-      defaultValue: "'Asia/Kolkata'",
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description: 'Send window start (HH:mm) in sendTimezone',
-      icon: 'IconClockHour4',
-      label: 'Send Window Start',
-      name: 'sendWindowStart',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-      defaultValue: "'08:00'",
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description: 'Send window end (HH:mm) in sendTimezone',
-      icon: 'IconClockHour9',
-      label: 'Send Window End',
-      name: 'sendWindowEnd',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-      defaultValue: "'10:00'",
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description:
-        'Comma-separated weekday numbers (0=Sun … 6=Sat) when connection sends are allowed',
-      icon: 'IconCalendarWeek',
-      label: 'Send Window Days',
-      name: 'sendWindowDays',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-      defaultValue: "'2,3,4'",
-    },
-  },
-  {
-    objectName: 'project',
-    field: {
-      description: 'Optional project override ICP JSON (targetTitles and locations)',
-      icon: 'IconJson',
-      label: 'ICP Spec',
-      name: 'icpSpec',
-      objectMetadataId: objectsNameIdMap.project,
-      type: 'TEXT',
-    },
-  },
-  // {
-  //   objectName: 'project',
-  //   field: {
-  //     description: 'Compliance copy injected into LLM outreach prompts',
-  //     icon: 'IconScale',
-  //     label: 'Compliance Copy',
-  //     name: 'complianceCopy',
-  //     objectMetadataId: objectsNameIdMap.project,
-  //     type: 'TEXT',
-  //   },
-  // },
 
   // Opportunity — outreach attribution
   {

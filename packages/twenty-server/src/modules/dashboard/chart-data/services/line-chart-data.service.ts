@@ -153,6 +153,7 @@ export class LineChartDataService {
         groupByFieldMetadataId: configuration.primaryAxisGroupByFieldMetadataId,
         groupBySubFieldName: configuration.primaryAxisGroupBySubFieldName,
         aggregateFieldMetadataId: configuration.aggregateFieldMetadataId,
+        aggregateSubFieldName: configuration.aggregateSubFieldName,
         aggregateOperation: configuration.aggregateOperation,
         filter: configuration.filter,
         dateGranularity: configuration.primaryAxisDateGranularity,

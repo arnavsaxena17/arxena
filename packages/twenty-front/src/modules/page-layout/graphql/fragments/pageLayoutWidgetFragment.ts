@@ -39,6 +39,7 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
       ... on BarChartConfiguration {
         configurationType
         aggregateFieldMetadataId
+        aggregateSubFieldName
         aggregateOperation
         primaryAxisGroupByFieldMetadataId
         primaryAxisGroupBySubFieldName
@@ -69,6 +70,7 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
       ... on LineChartConfiguration {
         configurationType
         aggregateFieldMetadataId
+        aggregateSubFieldName
         aggregateOperation
         primaryAxisGroupByFieldMetadataId
         primaryAxisGroupBySubFieldName
@@ -99,6 +101,7 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
         configurationType
         groupByFieldMetadataId
         aggregateFieldMetadataId
+        aggregateSubFieldName
         aggregateOperation
         groupBySubFieldName
         dateGranularity
@@ -118,6 +121,7 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
       ... on AggregateChartConfiguration {
         configurationType
         aggregateFieldMetadataId
+        aggregateSubFieldName
         aggregateOperation
         label
         displayDataLabel

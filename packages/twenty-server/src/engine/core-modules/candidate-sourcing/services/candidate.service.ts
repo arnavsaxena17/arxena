@@ -36,7 +36,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/outreach-queued-enrollment.util';
 import {
   assignOutreachExperimentVariant,
-  parseOutreachExperimentConfig,
+  readProjectExperimentConfig,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
@@ -1626,8 +1626,11 @@ export class CandidateService {
           );
           const otherFields = buildOtherFieldsFromUnmapped(unmappedCandidateObject);
           const enrollOutreach = isOutreachSourcingEnrollment(origin, jobObject);
-          const experimentConfig = parseOutreachExperimentConfig(
-            (jobObject as { experimentConfig?: string | null }).experimentConfig,
+          const experimentConfig = readProjectExperimentConfig(
+            jobObject as {
+              outreachConfig?: unknown;
+              experimentConfig?: string | null;
+            },
           );
           const linkedinProfileIdForVariant =
             extractLinkedinProfileId(

@@ -147,6 +147,15 @@ export type ArrayFilter = {
 export type RawJsonFilter = {
   like?: string;
   is?: IsFilter;
+  path?: string;
+  eq?: string | number | boolean;
+  neq?: string | number | boolean;
+  in?: (string | number)[];
+  gt?: number;
+  gte?: number;
+  lt?: number;
+  lte?: number;
+  isEmpty?: boolean;
 };
 
 export type FilesFilter = {

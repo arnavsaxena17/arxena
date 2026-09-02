@@ -126,4 +126,15 @@ describe('isFieldMetadataSupportedInGroupBy', () => {
       }),
     ).toBe(true);
   });
+
+  it('returns true for RAW_JSON when subFieldName is provided', () => {
+    expect(
+      isFieldMetadataSupportedInGroupBy({
+        type: FieldMetadataType.RAW_JSON,
+        name: 'outreachSpeedTimestamps',
+        isSystem: false,
+        subFieldName: 'timeToFirstContactBucket',
+      }),
+    ).toBe(true);
+  });
 });

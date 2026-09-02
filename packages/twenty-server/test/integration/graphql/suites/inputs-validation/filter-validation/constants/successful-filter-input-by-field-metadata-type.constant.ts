@@ -937,6 +937,36 @@ export const successfulFilterInputByFieldMetadataType: {
         return JSON.stringify(record.rawJsonField).includes('test');
       },
     },
+    {
+      gqlFilterInput: {
+        rawJsonField: { path: 'status', eq: 'active' },
+      },
+      restFilterInput: 'rawJsonField[path]:status,rawJsonField[eq]:active',
+      validateFilter: (record: Record<string, any>) => {
+        return record.rawJsonField?.status === 'active';
+      },
+    },
+    {
+      gqlFilterInput: {
+        rawJsonField: { path: 'score', gte: 10 },
+      },
+      restFilterInput: 'rawJsonField[path]:score,rawJsonField[gte]:10',
+      validateFilter: (record: Record<string, any>) => {
+        return record.rawJsonField?.score >= 10;
+      },
+    },
+    {
+      gqlFilterInput: {
+        rawJsonField: { path: 'meetingBookedAt', isEmpty: true },
+      },
+      restFilterInput:
+        'rawJsonField[path]:meetingBookedAt,rawJsonField[isEmpty]:true',
+      validateFilter: (record: Record<string, any>) => {
+        const value = record.rawJsonField?.meetingBookedAt;
+
+        return value === null || value === undefined || value === '';
+      },
+    },
   ],
   [FieldMetadataType.ARRAY]: [
     {

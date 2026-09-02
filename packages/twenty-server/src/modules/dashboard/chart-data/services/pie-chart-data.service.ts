@@ -122,6 +122,7 @@ export class PieChartDataService {
         groupByFieldMetadataId: configuration.groupByFieldMetadataId,
         groupBySubFieldName: configuration.groupBySubFieldName,
         aggregateFieldMetadataId: configuration.aggregateFieldMetadataId,
+        aggregateSubFieldName: configuration.aggregateSubFieldName,
         aggregateOperation: configuration.aggregateOperation,
         filter: configuration.filter,
         dateGranularity: configuration.dateGranularity,

@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import {
+  applyOutreachAnalyticsEvent,
+  parseOutreachAnalytics,
+} from 'twenty-shared/arx';
+
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { TwentyORMGlobalManager } from 'src/engine/twenty-orm/twenty-orm-global.manager';
 import { CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
@@ -138,12 +143,17 @@ export class CalendlyBookingCompletedService {
         const meetingBookedAtIso = meetingScheduledAt.toISOString();
 
         await companyRepository.update(companyId, {
-          meetingBookedAt:
-            (company as { meetingBookedAt?: string | null } | null)
-              ?.meetingBookedAt ?? meetingBookedAtIso,
+          outreachAnalytics: applyOutreachAnalyticsEvent({
+            existing: parseOutreachAnalytics(
+              (company as { outreachAnalytics?: unknown } | null)
+                ?.outreachAnalytics,
+            ),
+            event: 'meeting_booked',
+            nowIso: meetingBookedAtIso,
+          }),
           outreachFunnelStage: 'MEETING_BOOKED',
         } as Partial<CompanyWorkspaceEntity> & {
-          meetingBookedAt: string;
+          outreachAnalytics: object;
           outreachFunnelStage: string;
         });
       } catch (error) {

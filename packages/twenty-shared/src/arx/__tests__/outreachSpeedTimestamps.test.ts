@@ -1,15 +1,15 @@
 import {
-  applyOutreachActionTimestamps,
-  backfillOutreachActionTimestampsFromCandidate,
-  buildCandidateActionTimestampsUpdate,
-  buildOutreachSpeedFlatMetrics,
+  applyOutreachAnalyticsEvent,
+  buildCandidateAnalyticsUpdate,
+  buildOutreachAnalyticsMetrics,
   computeTimeBucket,
+  mergeLegacyCandidateFieldsIntoAnalytics,
   resolveOutreachFirstOutboundAt,
-} from '../outreachSpeedTimestamps';
+} from '../outreachAnalytics';
 
-describe('outreachSpeedTimestamps', () => {
+describe('outreachAnalytics', () => {
   it('computes first-contact and meeting buckets from enrolled baseline', () => {
-    const flatMetrics = buildOutreachSpeedFlatMetrics({
+    const flatMetrics = buildOutreachAnalyticsMetrics({
       enrolledAt: '2026-01-01T00:00:00.000Z',
       connectionSentAt: '2026-01-02T00:00:00.000Z',
       connectionAcceptedAt: '2026-01-03T00:00:00.000Z',
@@ -26,7 +26,7 @@ describe('outreachSpeedTimestamps', () => {
   });
 
   it('stamps outbound and inbound touch timestamps in JSON', () => {
-    const afterOutbound = applyOutreachActionTimestamps({
+    const afterOutbound = applyOutreachAnalyticsEvent({
       existing: null,
       event: 'connection_sent',
       nowIso: '2026-01-01T10:00:00.000Z',
@@ -37,7 +37,7 @@ describe('outreachSpeedTimestamps', () => {
     expect(afterOutbound.lastOutboundAt).toBe('2026-01-01T10:00:00.000Z');
     expect(afterOutbound.firstContactAt).toBeNull();
 
-    const afterInbound = applyOutreachActionTimestamps({
+    const afterInbound = applyOutreachAnalyticsEvent({
       existing: afterOutbound,
       event: 'inbound_reply_flush',
       nowIso: '2026-01-02T10:00:00.000Z',
@@ -50,13 +50,13 @@ describe('outreachSpeedTimestamps', () => {
   });
 
   it('stamps connection accept without overwriting existing timestamps', () => {
-    const firstPass = applyOutreachActionTimestamps({
+    const firstPass = applyOutreachAnalyticsEvent({
       existing: null,
       event: 'connection_sent',
       nowIso: '2026-01-01T10:00:00.000Z',
       enrolledAt: '2026-01-01T00:00:00.000Z',
     });
-    const secondPass = applyOutreachActionTimestamps({
+    const secondPass = applyOutreachAnalyticsEvent({
       existing: firstPass,
       event: 'connection_accepted',
       nowIso: '2026-01-04T10:00:00.000Z',
@@ -66,15 +66,15 @@ describe('outreachSpeedTimestamps', () => {
     expect(secondPass.connectionAcceptedAt).toBe('2026-01-04T10:00:00.000Z');
     expect(secondPass.firstContactAt).toBe('2026-01-04T10:00:00.000Z');
 
-    const flatMetrics = buildOutreachSpeedFlatMetrics(secondPass);
+    const flatMetrics = buildOutreachAnalyticsMetrics(secondPass);
 
     expect(flatMetrics.daysToFirstContact).toBe(3);
     expect(flatMetrics.daysFromConnectionToAccept).toBe(3);
   });
 
-  it('builds candidate update payload with JSON and flat touch mirrors', () => {
-    const update = buildCandidateActionTimestampsUpdate({
-      existingTimestamps: {
+  it('builds candidate update payload with outreachAnalytics only', () => {
+    const update = buildCandidateAnalyticsUpdate({
+      existingAnalytics: {
         enrolledAt: '2026-01-01T00:00:00.000Z',
         connectionSentAt: '2026-01-02T00:00:00.000Z',
         firstOutboundAt: '2026-01-02T00:00:00.000Z',
@@ -84,18 +84,21 @@ describe('outreachSpeedTimestamps', () => {
       nowIso: '2026-01-08T00:00:00.000Z',
     });
 
-    expect(update.outreachSpeedTimestamps.meetingBookedAt).toBe(
-      '2026-01-08T00:00:00.000Z',
-    );
-    expect(update.lastOutboundAt).toBe('2026-01-08T00:00:00.000Z');
-    expect(update.firstOutboundAt).toBe('2026-01-02T00:00:00.000Z');
-    expect(update.daysToFirstContact).toBeNull();
-    expect(update.daysFromConnectionToMeeting).toBe(6);
-    expect(update.timeToMeetingBucket).toBe('D3_7');
+    expect(update).toEqual({
+      outreachAnalytics: expect.objectContaining({
+        meetingBookedAt: '2026-01-08T00:00:00.000Z',
+        firstOutboundAt: '2026-01-02T00:00:00.000Z',
+        lastOutboundAt: '2026-01-08T00:00:00.000Z',
+        daysFromConnectionToMeeting: 6,
+        timeToMeetingBucket: 'D3_7',
+      }),
+    });
+    expect(update).not.toHaveProperty('lastOutboundAt');
+    expect(update).not.toHaveProperty('outreachSpeedTimestamps');
   });
 
   it('backfills from legacy flat touch fields', () => {
-    const update = backfillOutreachActionTimestampsFromCandidate({
+    const analytics = mergeLegacyCandidateFieldsIntoAnalytics({
       createdAt: '2026-01-01T00:00:00.000Z',
       firstOutboundAt: '2026-01-02T12:00:00.000Z',
       lastOutboundAt: '2026-01-09T12:00:00.000Z',
@@ -103,17 +106,11 @@ describe('outreachSpeedTimestamps', () => {
       outreachSequenceStage: 'MEETING_BOOKED',
     });
 
-    expect(update.outreachSpeedTimestamps.connectionSentAt).toBe(
-      '2026-01-02T12:00:00.000Z',
-    );
-    expect(update.outreachSpeedTimestamps.lastInboundAt).toBe(
-      '2026-01-05T12:00:00.000Z',
-    );
-    expect(update.outreachSpeedTimestamps.meetingBookedAt).toBe(
-      '2026-01-09T12:00:00.000Z',
-    );
-    expect(update.daysToFirstContact).toBeNull();
-    expect(computeTimeBucket(update.daysToMeetingBooked)).toBe('D7_14');
+    expect(analytics.connectionSentAt).toBe('2026-01-02T12:00:00.000Z');
+    expect(analytics.lastInboundAt).toBe('2026-01-05T12:00:00.000Z');
+    expect(analytics.meetingBookedAt).toBe('2026-01-09T12:00:00.000Z');
+    expect(analytics.daysToFirstContact).toBeNull();
+    expect(computeTimeBucket(analytics.daysToMeetingBooked)).toBe('D7_14');
   });
 
   it('resolves first outbound from JSON before flat fallback', () => {

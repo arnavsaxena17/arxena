@@ -4,6 +4,10 @@ import { isDefined } from 'twenty-shared/utils';
 import { type AggregationField } from 'src/engine/api/graphql/workspace-schema-builder/utils/get-available-aggregations-from-object-fields.util';
 import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
 import { formatColumnNamesFromCompositeFieldAndSubfields } from 'src/engine/twenty-orm/utils/format-column-names-from-composite-field-and-subfield.util';
+import {
+  formatRawJsonPathNotEmptyExpression,
+  formatRawJsonPathNumericColumnExpression,
+} from 'src/engine/twenty-orm/utils/format-raw-json-path-column.util';
 
 export class ProcessAggregateHelper {
   public static addSelectedAggregatedFieldsQueriesToQueryBuilder = ({
@@ -95,6 +99,13 @@ export class ProcessAggregateHelper {
       return;
     }
 
+    if (isDefined(aggregatedField.fromJsonPath)) {
+      return ProcessAggregateHelper.getRawJsonPathAggregateExpression(
+        aggregatedField,
+        objectMetadataNameSingular,
+      );
+    }
+
     const columnNames = formatColumnNamesFromCompositeFieldAndSubfields(
       aggregatedField.fromField,
       aggregatedField.fromSubFields,
@@ -142,6 +153,50 @@ export class ProcessAggregateHelper {
       default: {
         return `${aggregatedField.aggregateOperation}("${objectMetadataNameSingular}"."${columnNameForNumericOperation}")`;
       }
+    }
+  };
+
+  private static getRawJsonPathAggregateExpression = (
+    aggregatedField: AggregationField,
+    objectMetadataNameSingular: string,
+  ): string | undefined => {
+    if (!isDefined(aggregatedField.fromJsonPath)) {
+      return;
+    }
+
+    const numericColumnExpression = formatRawJsonPathNumericColumnExpression({
+      objectNameSingular: objectMetadataNameSingular,
+      fieldName: aggregatedField.fromField,
+      jsonPath: aggregatedField.fromJsonPath,
+    });
+    const notEmptyExpression = formatRawJsonPathNotEmptyExpression({
+      objectNameSingular: objectMetadataNameSingular,
+      fieldName: aggregatedField.fromField,
+      jsonPath: aggregatedField.fromJsonPath,
+    });
+
+    switch (aggregatedField.aggregateOperation) {
+      case AggregateOperations.COUNT_EMPTY:
+        return `CASE WHEN COUNT(*) = 0 THEN NULL ELSE COUNT(*) - COUNT(CASE WHEN ${notEmptyExpression} THEN 1 END) END`;
+      case AggregateOperations.COUNT_NOT_EMPTY:
+        return `CASE WHEN COUNT(*) = 0 THEN NULL ELSE COUNT(CASE WHEN ${notEmptyExpression} THEN 1 END) END`;
+      case AggregateOperations.COUNT_UNIQUE_VALUES:
+        return `CASE WHEN COUNT(*) = 0 THEN NULL ELSE COUNT(DISTINCT CASE WHEN ${notEmptyExpression} THEN ${formatRawJsonPathColumnExpression({
+          objectNameSingular: objectMetadataNameSingular,
+          fieldName: aggregatedField.fromField,
+          jsonPath: aggregatedField.fromJsonPath,
+        })} END) END`;
+      case AggregateOperations.PERCENTAGE_EMPTY:
+        return `CASE WHEN COUNT(*) = 0 THEN NULL ELSE CAST(((COUNT(*) - COUNT(CASE WHEN ${notEmptyExpression} THEN 1 END))::decimal) / COUNT(*)) AS DECIMAL) END`;
+      case AggregateOperations.PERCENTAGE_NOT_EMPTY:
+        return `CASE WHEN COUNT(*) = 0 THEN NULL ELSE CAST((COUNT(CASE WHEN ${notEmptyExpression} THEN 1 END)::decimal / COUNT(*)) AS DECIMAL) END`;
+      case AggregateOperations.MIN:
+      case AggregateOperations.MAX:
+      case AggregateOperations.AVG:
+      case AggregateOperations.SUM:
+        return `${aggregatedField.aggregateOperation}(${numericColumnExpression})`;
+      default:
+        return;
     }
   };
 }

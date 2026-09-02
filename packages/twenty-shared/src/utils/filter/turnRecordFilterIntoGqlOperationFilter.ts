@@ -243,6 +243,59 @@ const buildDirectFieldGqlOperationFilter = ({
           );
       }
     case 'RAW_JSON':
+      if (isSubFieldFilter && isNonEmptyString(subFieldName)) {
+        switch (recordFilter.operand) {
+          case RecordFilterOperand.IS:
+            return {
+              [fieldMetadataItem.name]: {
+                path: subFieldName,
+                eq: recordFilter.value,
+              } as RawJsonFilter,
+            };
+          case RecordFilterOperand.IS_NOT:
+            return {
+              not: {
+                [fieldMetadataItem.name]: {
+                  path: subFieldName,
+                  eq: recordFilter.value,
+                } as RawJsonFilter,
+              },
+            };
+          case RecordFilterOperand.IS_EMPTY:
+            return {
+              [fieldMetadataItem.name]: {
+                path: subFieldName,
+                isEmpty: true,
+              } as RawJsonFilter,
+            };
+          case RecordFilterOperand.IS_NOT_EMPTY:
+            return {
+              [fieldMetadataItem.name]: {
+                path: subFieldName,
+                isEmpty: false,
+              } as RawJsonFilter,
+            };
+          case RecordFilterOperand.GREATER_THAN_OR_EQUAL:
+            return {
+              [fieldMetadataItem.name]: {
+                path: subFieldName,
+                gte: parseFloat(recordFilter.value),
+              } as RawJsonFilter,
+            };
+          case RecordFilterOperand.LESS_THAN_OR_EQUAL:
+            return {
+              [fieldMetadataItem.name]: {
+                path: subFieldName,
+                lte: parseFloat(recordFilter.value),
+              } as RawJsonFilter,
+            };
+          default:
+            throw new Error(
+              `Unknown operand ${recordFilter.operand} for ${filterType} / ${subFieldName} filter`,
+            );
+        }
+      }
+
       switch (recordFilter.operand) {
         case RecordFilterOperand.CONTAINS:
           return {

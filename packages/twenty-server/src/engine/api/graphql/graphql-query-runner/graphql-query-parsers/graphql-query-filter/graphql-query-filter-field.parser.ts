@@ -4,7 +4,7 @@ import {
   type ObjectLiteral,
   type WhereExpressionBuilder,
 } from 'typeorm';
-import { compositeTypeDefinitions, RelationType } from 'twenty-shared/types';
+import { compositeTypeDefinitions, RelationType, FieldMetadataType } from 'twenty-shared/types';
 import { capitalize, isDefined } from 'twenty-shared/utils';
 
 import { MAX_RELATION_FILTER_DEPTH } from 'src/engine/api/common/common-args-processors/filter-arg-processor/constants/max-relation-filter-depth.constant';
@@ -15,6 +15,8 @@ import {
 } from 'src/engine/api/graphql/graphql-query-runner/errors/graphql-query-runner.exception';
 import { addRelationJoinAliasToQueryBuilder } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/utils/add-relation-join-alias.util';
 import { computeWhereConditionParts } from 'src/engine/api/graphql/graphql-query-runner/utils/compute-where-condition-parts';
+import { computeRawJsonPathWhereConditionParts } from 'src/engine/api/graphql/graphql-query-runner/utils/compute-raw-json-path-where-condition-parts';
+import { getRawJsonPathFilterOperator } from 'src/engine/api/graphql/graphql-query-runner/utils/get-raw-json-path-filter-operator.util';
 import { type CompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/types/composite-field-metadata-type.type';
 import { isCompositeFieldMetadataType } from 'src/engine/metadata-modules/field-metadata/utils/is-composite-field-metadata-type.util';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
@@ -123,6 +125,29 @@ export class GraphqlQueryFilterFieldParser {
         useDirectTableReference,
       );
     }
+
+    if (
+      fieldMetadata.type === FieldMetadataType.RAW_JSON &&
+      isDefined(filterValue.path)
+    ) {
+      const { operator, value } = getRawJsonPathFilterOperator(filterValue);
+      const { sql, params } = computeRawJsonPathWhereConditionParts({
+        operator,
+        objectNameSingular,
+        fieldName: key,
+        jsonPath: filterValue.path,
+        value,
+      });
+
+      if (isFirst) {
+        queryBuilder.where(sql, params);
+      } else {
+        queryBuilder.andWhere(sql, params);
+      }
+
+      return;
+    }
+
     const [[operator, value]] = Object.entries(filterValue);
 
     if (

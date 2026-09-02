@@ -47,6 +47,11 @@ export class LineChartConfigurationDTO implements LineChartConfiguration {
   @IsNotEmpty()
   aggregateOperation: AggregateOperations;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  aggregateSubFieldName?: string;
+
   @Field(() => UUIDScalarType)
   @IsUUID()
   @IsNotEmpty()

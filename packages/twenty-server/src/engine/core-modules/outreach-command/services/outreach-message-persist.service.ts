@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { MessagingChannel, resolveOutreachFirstOutboundAt } from 'twenty-shared/arx';
+import { MessagingChannel, parseOutreachAnalytics } from 'twenty-shared/arx';
 import { isDefined, escapeForIlike } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
@@ -46,10 +46,7 @@ type CandidateRecord = ObjectLiteral & {
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string } | null;
   phoneNumber?: { primaryPhoneNumber?: string } | null;
-  firstOutboundAt?: string | null;
-  outreachSpeedTimestamps?: unknown;
-  lastOutboundMessageKind?: string | null;
-  convertedOnMessageKind?: string | null;
+  outreachAnalytics?: unknown;
   linkedinFollowUpCount?: number | null;
 };
 
@@ -176,18 +173,19 @@ export class OutreachMessagePersistService {
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
 
+      const candidateAnalytics = parseOutreachAnalytics(
+        candidate?.outreachAnalytics,
+      );
+
       await this.gtmCommandMaterializeService.applyCandidateEvent({
         candidateId: resolvedCandidateId,
         event,
         apiToken,
         messagingChannel,
-        existingFirstOutboundAt: resolveOutreachFirstOutboundAt(
-          candidate?.outreachSpeedTimestamps,
-          candidate?.firstOutboundAt,
-        ),
         outboundMessageKind,
-        existingConvertedOnMessageKind: candidate?.convertedOnMessageKind,
-        existingLastOutboundMessageKind: candidate?.lastOutboundMessageKind,
+        existingConvertedOnMessageKind: candidateAnalytics?.convertedOnMessageKind,
+        existingLastOutboundMessageKind:
+          candidateAnalytics?.lastOutboundMessageKind,
       });
     } catch (error) {
       this.logger.warn(

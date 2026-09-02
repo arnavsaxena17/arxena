@@ -7,6 +7,7 @@ import {
   GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE,
 } from 'twenty-shared/constants';
 import {
+  FieldMetadataType,
   FirstDayOfTheWeek,
   ObjectRecordGroupByDateGranularity,
 } from 'twenty-shared/types';
@@ -14,6 +15,7 @@ import {
   convertCalendarStartDayNonIsoNumberToFirstDayOfTheWeek,
   isDefined,
   isFieldMetadataDateKind,
+  isRawJsonDatePathKey,
 } from 'twenty-shared/utils';
 
 const GRAPH_DEFAULT_DATE_GRANULARITY = ObjectRecordGroupByDateGranularity.DAY;
@@ -110,6 +112,62 @@ export const buildGroupByFieldObject = ({
       throw new Error(
         `Composite field ${field.name} requires a subfield to be specified`,
       );
+    }
+
+    return {
+      [field.name]: {
+        [subFieldName]: true,
+      },
+    };
+  }
+
+  if (field.type === FieldMetadataType.RAW_JSON) {
+    if (!isDefined(subFieldName)) {
+      throw new Error(
+        `RAW_JSON field ${field.name} requires a subfield to be specified`,
+      );
+    }
+
+    if (isRawJsonDatePathKey(subFieldName)) {
+      const usedDateGranularity =
+        dateGranularity ?? GRAPH_DEFAULT_DATE_GRANULARITY;
+
+      const shouldHaveTimeZone =
+        GROUP_BY_DATE_GRANULARITY_THAT_REQUIRE_TIME_ZONE.includes(
+          usedDateGranularity,
+        );
+
+      const timeZoneIsNotProvided = !isDefined(timeZone);
+
+      const dateGroupByObject: Record<string, string> = {
+        granularity: usedDateGranularity,
+      };
+
+      if (shouldHaveTimeZone) {
+        if (timeZoneIsNotProvided) {
+          throw new Error(`Date order by should have a time zone.`);
+        }
+
+        dateGroupByObject.timeZone = timeZone;
+      }
+
+      if (
+        usedDateGranularity === ObjectRecordGroupByDateGranularity.WEEK &&
+        isDefined(firstDayOfTheWeek) &&
+        firstDayOfTheWeek !== CalendarStartDay.SYSTEM
+      ) {
+        dateGroupByObject.weekStartDay =
+          convertCalendarStartDayNonIsoNumberToFirstDayOfTheWeek(
+            firstDayOfTheWeek,
+            FirstDayOfTheWeek.MONDAY,
+          );
+      }
+
+      return {
+        [field.name]: {
+          [subFieldName]: dateGroupByObject,
+        },
+      };
     }
 
     return {

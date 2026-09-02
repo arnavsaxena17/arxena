@@ -1,19 +1,32 @@
 import { AggregateOperations, FieldMetadataType } from 'twenty-shared/types';
-import { capitalize } from 'twenty-shared/utils';
+import { buildRawJsonPathAggregateFieldKey, capitalize, isDefined } from 'twenty-shared/utils';
 
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 
 type BuildAggregateFieldKeyParams = {
   aggregateOperation: AggregateOperations;
   aggregateFieldMetadata: FlatFieldMetadata;
+  aggregateSubFieldName?: string | null;
 };
 
 export const buildAggregateFieldKey = ({
   aggregateOperation,
   aggregateFieldMetadata,
+  aggregateSubFieldName,
 }: BuildAggregateFieldKeyParams): string => {
   const fieldName = aggregateFieldMetadata.name;
   const fieldType = aggregateFieldMetadata.type;
+
+  if (
+    fieldType === FieldMetadataType.RAW_JSON &&
+    isDefined(aggregateSubFieldName)
+  ) {
+    return buildRawJsonPathAggregateFieldKey({
+      aggregateOperation,
+      fieldName,
+      jsonPath: aggregateSubFieldName,
+    });
+  }
 
   switch (aggregateOperation) {
     case AggregateOperations.COUNT:

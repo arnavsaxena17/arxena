@@ -1,5 +1,10 @@
 import { createHash } from 'crypto';
 
+import {
+  buildProjectConfigUpdate,
+  resolveOutreachConfigExperimentConfigString,
+} from 'twenty-shared/arx';
+
 export type OutreachExperimentVariant = 'A' | 'B';
 
 export type OutreachExperimentWorkflowBinding = {
@@ -59,6 +64,33 @@ export const stringifyOutreachExperimentConfig = (
  * Deterministic A/B assignment. Same profile id always lands in the same bucket
  * for a given split (default 50/50).
  */
+export const readProjectExperimentConfig = (project: {
+  outreachConfig?: unknown;
+  experimentConfig?: string | null;
+}): OutreachExperimentConfig | null =>
+  parseOutreachExperimentConfig(
+    resolveOutreachConfigExperimentConfigString(
+      project.outreachConfig,
+      project.experimentConfig,
+    ),
+  );
+
+export const buildProjectExperimentConfigUpdate = (
+  project: { outreachConfig?: unknown },
+  config: OutreachExperimentConfig,
+): { outreachConfig: ReturnType<typeof buildProjectConfigUpdate>['outreachConfig'] } =>
+  buildProjectConfigUpdate({
+    existingConfig: project.outreachConfig,
+    patch: {
+      experimentConfig: {
+        status: config.status,
+        split: config.split,
+        ...(config.name ? { name: config.name } : {}),
+        ...(config.workflows ? { workflows: config.workflows } : {}),
+      },
+    },
+  });
+
 export const assignOutreachExperimentVariant = ({
   seed,
   split = 0.5,

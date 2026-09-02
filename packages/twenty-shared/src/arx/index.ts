@@ -228,13 +228,15 @@ export type {
   OutreachTimeBucket,
   OutreachActionTimestampsEventKind,
   OutreachSpeedEventKind,
+  OutreachAnalytics,
   OutreachActionTimestamps,
   OutreachSpeedTimestamps,
   OutreachSpeedFlatMetrics,
-} from './outreachSpeedTimestamps';
+} from './outreachAnalytics';
 export {
   computeDaysBetween,
   computeTimeBucket,
+  parseOutreachAnalytics,
   parseOutreachActionTimestamps,
   parseOutreachSpeedTimestamps,
   resolveOutreachFirstOutboundAt,
@@ -242,14 +244,43 @@ export {
   resolveOutreachFirstContactAt,
   resolveOutreachFirstInboundAt,
   resolveOutreachLastInboundAt,
+  resolveOutreachMeetingBookedAt,
+  buildOutreachAnalyticsMetrics,
   buildOutreachSpeedFlatMetrics,
+  applyOutreachAnalyticsEvent,
   applyOutreachActionTimestamps,
   applyOutreachSpeedEvent,
+  buildCandidateAnalyticsUpdate,
   buildCandidateActionTimestampsUpdate,
   buildCandidateSpeedMetricsUpdate,
+  mergeLegacyCandidateFieldsIntoAnalytics,
   backfillOutreachActionTimestampsFromCandidate,
   backfillOutreachSpeedFromCandidate,
-} from './outreachSpeedTimestamps';
+  mergeLegacyCompanyFieldsIntoAnalytics,
+  buildCompanyAnalyticsRollup,
+} from './outreachAnalytics';
+export type {
+  OutreachProjectIcpSpec,
+  OutreachConfigExperiment,
+  OutreachConfig,
+} from './outreachConfig';
+export {
+  DEFAULT_OUTREACH_CONFIG_VALUES,
+  parseOutreachConfig,
+  stringifyOutreachProjectIcpSpec,
+  resolveOutreachConfigMaxPersonasPerCompany,
+  resolveOutreachConfigInMailFallbackEnabled,
+  resolveOutreachConfigSendTimezone,
+  resolveOutreachConfigSendWindowStart,
+  resolveOutreachConfigSendWindowEnd,
+  resolveOutreachConfigSendWindowDays,
+  resolveOutreachConfigIcpSpecString,
+  resolveOutreachConfigExperimentConfigString,
+  mergeLegacyProjectFieldsIntoConfig,
+  applyOutreachConfigPatch,
+  buildProjectConfigUpdate,
+  buildDefaultOutreachConfig,
+} from './outreachConfig';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {
   DEFAULT_SEND_WINDOW_DAYS,

@@ -49,6 +49,11 @@ export class BarChartConfigurationDTO implements BarChartConfiguration {
   @IsNotEmpty()
   aggregateOperation: AggregateOperations;
 
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  aggregateSubFieldName?: string;
+
   @Field(() => UUIDScalarType)
   @IsUUID()
   @IsNotEmpty()

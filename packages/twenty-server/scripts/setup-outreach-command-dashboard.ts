@@ -1063,49 +1063,11 @@ const PROJECT_FIELDS_TO_ENSURE: FieldToCreate[] = [
     ],
   },
   {
-    name: 'maxPersonasPerCompany',
-    label: 'Max Personas Per Company',
-    type: 'NUMBER',
-    icon: 'IconUsersGroup',
-    defaultValue: 2,
+    name: 'outreachConfig',
+    label: 'Outreach Config',
+    type: 'RAW_JSON',
+    icon: 'IconSettingsAutomation',
   },
-  {
-    name: 'inMailFallbackEnabled',
-    label: 'InMail Fallback Enabled',
-    type: 'BOOLEAN',
-    icon: 'IconMailForward',
-    defaultValue: false,
-  },
-  {
-    name: 'sendTimezone',
-    label: 'Send Timezone',
-    type: 'TEXT',
-    icon: 'IconWorld',
-    defaultValue: "'Asia/Kolkata'",
-  },
-  {
-    name: 'sendWindowStart',
-    label: 'Send Window Start',
-    type: 'TEXT',
-    icon: 'IconClockHour4',
-    defaultValue: "'08:00'",
-  },
-  {
-    name: 'sendWindowEnd',
-    label: 'Send Window End',
-    type: 'TEXT',
-    icon: 'IconClockHour9',
-    defaultValue: "'10:00'",
-  },
-  {
-    name: 'sendWindowDays',
-    label: 'Send Window Days',
-    type: 'TEXT',
-    icon: 'IconCalendarWeek',
-    defaultValue: "'2,3,4'",
-  },
-  { name: 'icpSpec', label: 'ICP Spec', type: 'TEXT', icon: 'IconJson' },
-
 ];
 
 const PERSON_FIELDS_TO_ENSURE: FieldToCreate[] = [

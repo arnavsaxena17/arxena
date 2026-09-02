@@ -1961,19 +1961,18 @@ const bindProjectOutreachWorkflow = async (workflowBId: string) => {
       data: {
         outreachWorkflowId: workflowBId,
         outreachSendMode: 'APPROVAL',
-        maxPersonasPerCompany: 2,
-        inMailFallbackEnabled: false,
-        sendTimezone: 'Asia/Kolkata',
-        sendWindowStart: '08:00',
-        sendWindowEnd: '10:00',
-        sendWindowDays: '2,3,4',
-        // icpSpec: JSON.stringify({
-          // std_function: ['talent acquisition', 'people'],
-          // std_grade: ['leadership', 'mid'],
-          // targetTitles: ['Head of Talent', 'VP People'],
-        // }),
-        // complianceCopy:
-        //   'Stop if not interested or unsubscribe. Do not pressure. Respect OOO.',
+        outreachConfig: {
+          v: 1,
+          maxPersonasPerCompany: 2,
+          inMailFallbackEnabled: false,
+          sendTimezone: 'Asia/Kolkata',
+          sendWindowStart: '08:00',
+          sendWindowEnd: '10:00',
+          sendWindowDays: '2,3,4',
+          icpSpec: null,
+          experimentConfig: null,
+          updatedAt: new Date().toISOString(),
+        },
       },
     },
   );

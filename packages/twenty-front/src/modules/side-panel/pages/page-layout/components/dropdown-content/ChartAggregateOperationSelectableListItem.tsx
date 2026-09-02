@@ -25,10 +25,12 @@ export const ChartAggregateOperationSelectableListItem = ({
   operation,
   label,
   currentFieldMetadataId,
+  currentAggregateSubFieldName,
 }: {
   operation: AggregateChartOperation;
   label: string;
   currentFieldMetadataId: string;
+  currentAggregateSubFieldName?: string;
 }) => {
   const { pageLayoutId } = usePageLayoutIdFromContextStore();
   const { widgetInEditMode } = useWidgetInEditMode(pageLayoutId);
@@ -72,6 +74,7 @@ export const ChartAggregateOperationSelectableListItem = ({
     updateCurrentWidgetConfig({
       configToUpdate: {
         aggregateFieldMetadataId: currentFieldMetadataId,
+        aggregateSubFieldName: currentAggregateSubFieldName ?? null,
         aggregateOperation,
         ratioAggregateConfig: null,
       },

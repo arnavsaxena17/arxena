@@ -15,6 +15,7 @@ export type AggregationField = {
   fromFieldType: FieldMetadataType;
   fromSubFields?: string[];
   subFieldForNumericOperation?: string;
+  fromJsonPath?: string;
   aggregateOperation: AggregateOperations;
 };
 

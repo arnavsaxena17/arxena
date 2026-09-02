@@ -14,6 +14,10 @@ import { type ObjectRecordFilter } from 'src/engine/api/graphql/workspace-query-
 import { MAX_RELATION_FILTER_DEPTH } from 'src/engine/api/common/common-args-processors/filter-arg-processor/constants/max-relation-filter-depth.constant';
 import { validateAndTransformOperatorAndValue } from 'src/engine/api/common/common-args-processors/filter-arg-processor/utils/validate-and-transform-operator-and-value.util';
 import {
+  isRawJsonPathFilter,
+  validateAndTransformRawJsonPathFilterOrThrow,
+} from 'src/engine/api/common/common-args-processors/filter-arg-processor/utils/validate-and-transform-raw-json-path-filter-or-throw.util';
+import {
   CommonQueryRunnerException,
   CommonQueryRunnerExceptionCode,
 } from 'src/engine/api/common/common-query-runners/errors/common-query-runner.exception';
@@ -303,6 +307,17 @@ export class FilterArgProcessorService {
       return this.validateAndTransformCompositeFieldFilter(
         fieldMetadata,
         filterValue,
+      );
+    }
+
+    if (
+      fieldMetadata.type === FieldMetadataType.RAW_JSON &&
+      isRawJsonPathFilter(filterValue)
+    ) {
+      return validateAndTransformRawJsonPathFilterOrThrow(
+        key,
+        filterValue,
+        fieldMetadata,
       );
     }
 

@@ -8,8 +8,8 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import {
-  parseOutreachExperimentConfig,
-  stringifyOutreachExperimentConfig,
+  buildProjectExperimentConfigUpdate,
+  readProjectExperimentConfig,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { CommandMenuItemService } from 'src/engine/metadata-modules/command-menu-item/command-menu-item.service';
@@ -386,6 +386,7 @@ export class WorkflowTriggerWorkspaceService {
           ObjectLiteral & {
             id: string;
             outreachWorkflowId?: string | null;
+            outreachConfig?: unknown;
             experimentConfig?: string | null;
           }
         >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
@@ -396,7 +397,7 @@ export class WorkflowTriggerWorkspaceService {
       });
 
       for (const project of projects) {
-        const existing = parseOutreachExperimentConfig(project.experimentConfig);
+        const existing = readProjectExperimentConfig(project);
         const nextConfig = {
           status: 'running' as const,
           split: existing?.split ?? 0.5,
@@ -411,9 +412,10 @@ export class WorkflowTriggerWorkspaceService {
           },
         };
 
-        await projectRepository.update(project.id, {
-          experimentConfig: stringifyOutreachExperimentConfig(nextConfig),
-        });
+        await projectRepository.update(
+          project.id,
+          buildProjectExperimentConfigUpdate(project, nextConfig),
+        );
       }
     } catch (error) {
       this.logger.warn(

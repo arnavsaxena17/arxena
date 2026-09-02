@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
@@ -38,6 +39,7 @@ type ProjectRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   projectIds?: string | null;
+  outreachConfig?: unknown;
   icpSpec?: string | null;
   maxPersonasPerCompany?: number | null;
 };
@@ -245,7 +247,10 @@ export class SearchPeopleForCompanyService {
     }
 
     const icp = parseIcpSpec(
-      context.project.icpSpec || context.workspaceProfile?.icpSpec,
+      resolveOutreachConfigIcpSpecString(
+        context.project.outreachConfig,
+        context.project.icpSpec,
+      ) || context.workspaceProfile?.icpSpec,
     );
     const targetTitle = input.jobTitle?.trim() || icp.targetTitles[0];
     const locations = icp.locations;

@@ -27,9 +27,11 @@ import { filterBySearchQuery } from '~/utils/filterBySearchQuery';
 
 export const ChartAggregateOperationSelectionDropdownContent = ({
   currentFieldMetadataId,
+  currentAggregateSubFieldName,
   setIsSubMenuOpen,
 }: {
   currentFieldMetadataId: string;
+  currentAggregateSubFieldName?: string;
   setIsSubMenuOpen: (isSubMenuOpen: boolean) => void;
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -159,6 +161,7 @@ export const ChartAggregateOperationSelectionDropdownContent = ({
                 operation={item.operation}
                 label={item.label}
                 currentFieldMetadataId={currentFieldMetadataId}
+                currentAggregateSubFieldName={currentAggregateSubFieldName}
               />
             ),
           )}

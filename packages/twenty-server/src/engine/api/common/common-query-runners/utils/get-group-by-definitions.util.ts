@@ -5,6 +5,10 @@ import { isGroupByDateField } from 'src/engine/api/common/common-query-runners/u
 import { isGroupByRelationField } from 'src/engine/api/common/common-query-runners/utils/is-group-by-relation-field.util';
 import { formatColumnNameAsAlias } from 'src/engine/api/common/common-query-runners/utils/remove-quote.util';
 import { formatColumnNamesFromCompositeFieldAndSubfields } from 'src/engine/twenty-orm/utils/format-column-names-from-composite-field-and-subfield.util';
+import {
+  formatRawJsonPathColumnExpression,
+  formatRawJsonPathDateTimeColumnExpression,
+} from 'src/engine/twenty-orm/utils/format-raw-json-path-column.util';
 
 export const getGroupByDefinitions = ({
   groupByFields,
@@ -17,7 +21,24 @@ export const getGroupByDefinitions = ({
     let columnName: string;
     let columnNameWithQuotes: string;
 
-    if (isGroupByRelationField(groupByField)) {
+    if (
+      'isRawJsonPath' in groupByField &&
+      groupByField.isRawJsonPath === true &&
+      isDefined(groupByField.subFieldName)
+    ) {
+      columnNameWithQuotes = isGroupByDateField(groupByField)
+        ? formatRawJsonPathDateTimeColumnExpression({
+            objectNameSingular: objectMetadataNameSingular,
+            fieldName: groupByField.fieldMetadata.name,
+            jsonPath: groupByField.subFieldName,
+          })
+        : formatRawJsonPathColumnExpression({
+            objectNameSingular: objectMetadataNameSingular,
+            fieldName: groupByField.fieldMetadata.name,
+            jsonPath: groupByField.subFieldName,
+          });
+      columnName = groupByField.subFieldName;
+    } else if (isGroupByRelationField(groupByField)) {
       const joinAlias = groupByField.fieldMetadata.name;
       const nestedColumnName = formatColumnNamesFromCompositeFieldAndSubfields(
         groupByField.nestedFieldMetadata.name,

@@ -4,6 +4,7 @@ import { CalendarStartDay } from 'twenty-shared/constants';
 import {
   AggregateOperations,
   type ChartFilter,
+  FieldMetadataType,
   ObjectRecordGroupByDateGranularity,
   OrderByWithGroupBy,
 } from 'twenty-shared/types';
@@ -11,6 +12,7 @@ import {
   isDefined,
   isFieldMetadataArrayKind,
   isFieldMetadataDateKind,
+  isRawJsonDatePathKey,
 } from 'twenty-shared/utils';
 
 import { ObjectRecordGroupBy } from 'src/engine/api/graphql/workspace-query-builder/interfaces/object-record.interface';
@@ -50,6 +52,7 @@ type ExecuteGroupByQueryParams = {
   groupByFieldMetadataId: string;
   groupBySubFieldName?: string | null;
   aggregateFieldMetadataId: string;
+  aggregateSubFieldName?: string | null;
   aggregateOperation: AggregateOperations;
   filter?: ChartFilter;
   dateGranularity?: ObjectRecordGroupByDateGranularity;
@@ -79,6 +82,7 @@ export class ChartDataQueryService {
     groupByFieldMetadataId,
     groupBySubFieldName,
     aggregateFieldMetadataId,
+    aggregateSubFieldName,
     aggregateOperation,
     filter,
     dateGranularity,
@@ -124,8 +128,13 @@ export class ChartDataQueryService {
       flatFieldMetadataMaps,
     });
 
+    const isPrimaryRawJsonDatePath =
+      primaryGroupByField.type === FieldMetadataType.RAW_JSON &&
+      isDefined(groupBySubFieldName) &&
+      isRawJsonDatePathKey(groupBySubFieldName);
+
     const shouldApplyPrimaryDateGranularity =
-      isPrimaryFieldDate || isPrimaryNestedDate;
+      isPrimaryFieldDate || isPrimaryNestedDate || isPrimaryRawJsonDatePath;
 
     const shouldSplitMultiValueFields = splitMultiValueFields ?? true;
 
@@ -184,8 +193,15 @@ export class ChartDataQueryService {
         flatFieldMetadataMaps,
       });
 
+      const isSecondaryRawJsonDatePath =
+        secondaryGroupByField.type === FieldMetadataType.RAW_JSON &&
+        isDefined(secondaryGroupBySubFieldName) &&
+        isRawJsonDatePathKey(secondaryGroupBySubFieldName);
+
       const shouldApplySecondaryDateGranularity =
-        isSecondaryFieldDate || isSecondaryNestedDate;
+        isSecondaryFieldDate ||
+        isSecondaryNestedDate ||
+        isSecondaryRawJsonDatePath;
 
       const shouldUnnestSecondary =
         shouldSplitMultiValueFields &&
@@ -238,6 +254,7 @@ export class ChartDataQueryService {
     const aggregateFieldKey = buildAggregateFieldKey({
       aggregateOperation,
       aggregateFieldMetadata: aggregateField,
+      aggregateSubFieldName,
     });
 
     const selectedFields = {

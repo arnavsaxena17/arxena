@@ -65,47 +65,19 @@ const FIELDS = {
   companyCreatedAt: STANDARD_OBJECTS.company.fields.createdAt.universalIdentifier,
   projectIds: arxenaField(COMPANY, 'projectIds'),
   outreachFunnelStage: arxenaField(COMPANY, 'outreachFunnelStage'),
-  peopleTargeted: arxenaField(COMPANY, 'peopleTargeted'),
-  peopleReached: arxenaField(COMPANY, 'peopleReached'),
-  coverageBucket: arxenaField(COMPANY, 'coverageBucket'),
-  firstContactAt: arxenaField(COMPANY, 'firstContactAt'),
-  firstContactChannel: arxenaField(COMPANY, 'firstContactChannel'),
-  timeToFirstContactBucket: arxenaField(COMPANY, 'timeToFirstContactBucket'),
-  timeToMeetingBucket: arxenaField(COMPANY, 'timeToMeetingBucket'),
-  daysToFirstContact: arxenaField(COMPANY, 'daysToFirstContact'),
-  daysToMeetingBooked: arxenaField(COMPANY, 'daysToMeetingBooked'),
-  meetingBookedAt: arxenaField(COMPANY, 'meetingBookedAt'),
-  meetingHeldAt: arxenaField(COMPANY, 'meetingHeldAt'),
+  companyOutreachAnalytics: arxenaField(COMPANY, 'outreachAnalytics'),
+  candidateOutreachAnalytics: arxenaField(CANDIDATE, 'outreachAnalytics'),
   candidateId: arxenaField(CANDIDATE, 'id'),
   outreachSequenceStage: arxenaField(CANDIDATE, 'outreachSequenceStage'),
-  firstOutboundAt: arxenaField(CANDIDATE, 'firstOutboundAt'),
   enrichStatus: arxenaField(CANDIDATE, 'enrichStatus'),
   candConversationStatus: arxenaField(CANDIDATE, 'candConversationStatus'),
   messagingChannel: arxenaField(CANDIDATE, 'messagingChannel'),
   linkedinFollowUpCount: arxenaField(CANDIDATE, 'linkedinFollowUpCount'),
   experimentVariant: arxenaField(CANDIDATE, 'experimentVariant'),
-  convertedOnMessageKind: arxenaField(CANDIDATE, 'convertedOnMessageKind'),
-  lastOutboundMessageKind: arxenaField(CANDIDATE, 'lastOutboundMessageKind'),
-  candidateTimeToFirstContactBucket: arxenaField(
-    CANDIDATE,
-    'timeToFirstContactBucket',
-  ),
-  candidateTimeToMeetingBucket: arxenaField(CANDIDATE, 'timeToMeetingBucket'),
-  candidateDaysToFirstContact: arxenaField(CANDIDATE, 'daysToFirstContact'),
-  candidateDaysToMeetingBooked: arxenaField(CANDIDATE, 'daysToMeetingBooked'),
-  candidateDaysFromConnectionToAccept: arxenaField(
-    CANDIDATE,
-    'daysFromConnectionToAccept',
-  ),
-  candidateDaysFromConnectionToMeeting: arxenaField(
-    CANDIDATE,
-    'daysFromConnectionToMeeting',
-  ),
   opportunityId: STANDARD_OBJECTS.opportunity.fields.id.universalIdentifier,
   sourcedFromOutreach: arxenaField(OPPORTUNITY, 'sourcedFromOutreach'),
   chatMessageId: arxenaField(CHAT_MESSAGE, 'id'),
   chatMessageCreatedAt: arxenaField(CHAT_MESSAGE, 'createdAt'),
-  lastOutboundAt: arxenaField(CANDIDATE, 'lastOutboundAt'),
   workflowRunId: workflowRunField('id'),
   workflowRunStatus: workflowRunField('status'),
   workflowRunRelatedObjectName: workflowRunField('relatedObjectName'),
@@ -290,6 +262,7 @@ const aggregate = ({
   aggregateFieldMetadataUniversalIdentifier,
   gridPosition,
   aggregateOperation = AggregateOperations.COUNT,
+  aggregateSubFieldName,
   filter,
 }: {
   tabUniversalIdentifier: string;
@@ -298,6 +271,7 @@ const aggregate = ({
   aggregateFieldMetadataUniversalIdentifier: string;
   gridPosition: GridPosition;
   aggregateOperation?: AggregateOperations;
+  aggregateSubFieldName?: string;
   filter?: UniversalChartFilter;
 }) =>
   widget({
@@ -311,6 +285,7 @@ const aggregate = ({
       aggregateOperation,
       ...chartBase,
       prefix: '',
+      ...(aggregateSubFieldName ? { aggregateSubFieldName } : {}),
       ...(filter ? { filter } : {}),
     },
   });
@@ -325,6 +300,8 @@ const bar = ({
   layout = 'HORIZONTAL',
   color = 'blue',
   aggregateOperation = AggregateOperations.COUNT,
+  aggregateSubFieldName,
+  primaryAxisGroupBySubFieldName,
   filter,
 }: {
   tabUniversalIdentifier: string;
@@ -336,6 +313,8 @@ const bar = ({
   layout?: 'HORIZONTAL' | 'VERTICAL';
   color?: string;
   aggregateOperation?: AggregateOperations;
+  aggregateSubFieldName?: string;
+  primaryAxisGroupBySubFieldName?: string;
   filter?: UniversalChartFilter;
 }) =>
   widget({
@@ -355,6 +334,10 @@ const bar = ({
       layout,
       ...chartBase,
       displayDataLabel: true,
+      ...(aggregateSubFieldName ? { aggregateSubFieldName } : {}),
+      ...(primaryAxisGroupBySubFieldName
+        ? { primaryAxisGroupBySubFieldName }
+        : {}),
       ...(filter ? { filter } : {}),
     },
   });
@@ -367,6 +350,7 @@ const pie = ({
   groupByFieldMetadataUniversalIdentifier,
   gridPosition,
   color = 'orange',
+  groupBySubFieldName,
   filter,
 }: {
   tabUniversalIdentifier: string;
@@ -376,6 +360,7 @@ const pie = ({
   groupByFieldMetadataUniversalIdentifier: string;
   gridPosition: GridPosition;
   color?: string;
+  groupBySubFieldName?: string;
   filter?: UniversalChartFilter;
 }) =>
   widget({
@@ -393,6 +378,7 @@ const pie = ({
       displayLegend: true,
       color,
       ...chartBase,
+      ...(groupBySubFieldName ? { groupBySubFieldName } : {}),
       ...(filter ? { filter } : {}),
     },
   });
@@ -435,6 +421,8 @@ const line = ({
   gridPosition,
   color = 'blue',
   aggregateOperation = AggregateOperations.COUNT,
+  aggregateSubFieldName,
+  primaryAxisGroupBySubFieldName,
   filter,
 }: {
   tabUniversalIdentifier: string;
@@ -445,6 +433,8 @@ const line = ({
   gridPosition: GridPosition;
   color?: string;
   aggregateOperation?: AggregateOperations;
+  aggregateSubFieldName?: string;
+  primaryAxisGroupBySubFieldName?: string;
   filter?: UniversalChartFilter;
 }) =>
   widget({
@@ -464,6 +454,10 @@ const line = ({
       color,
       ...chartBase,
       displayDataLabel: true,
+      ...(aggregateSubFieldName ? { aggregateSubFieldName } : {}),
+      ...(primaryAxisGroupBySubFieldName
+        ? { primaryAxisGroupBySubFieldName }
+        : {}),
       ...(filter ? { filter } : {}),
     },
   });
@@ -542,7 +536,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Connection requests sent',
             objectUniversalIdentifier: CANDIDATE,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.firstOutboundAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'firstOutboundAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 6, 3, 3),
           }),
@@ -550,7 +546,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Meetings booked',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.meetingBookedAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'meetingBookedAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 9, 3, 3),
           }),
@@ -595,10 +593,13 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'First contacts (weekly)',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.firstContactAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'firstContactAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
-              FIELDS.firstContactAt,
+              FIELDS.companyOutreachAnalytics,
+            primaryAxisGroupBySubFieldName: 'firstContactAt',
             gridPosition: grid(9, 6, 5, 6),
             color: 'purple',
             filter: isNotEmptyFilter({
@@ -619,7 +620,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Coverage buckets',
             objectUniversalIdentifier: COMPANY,
             aggregateFieldMetadataUniversalIdentifier: FIELDS.companyId,
-            groupByFieldMetadataUniversalIdentifier: FIELDS.coverageBucket,
+            groupByFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            groupBySubFieldName: 'coverageBucket',
             gridPosition: grid(0, 0, 6, 6),
             color: 'blue',
           }),
@@ -627,7 +630,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Avg people targeted',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.peopleTargeted,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'peopleTargeted',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(0, 6, 3, 3),
           }),
@@ -635,7 +640,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Avg people reached',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.peopleReached,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'peopleReached',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(0, 9, 3, 3),
           }),
@@ -643,7 +650,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'People reached by funnel stage',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.peopleReached,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'peopleReached',
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
               FIELDS.outreachFunnelStage,
             gridPosition: grid(3, 6, 6, 6),
@@ -712,7 +721,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'First contact channel (companies)',
             objectUniversalIdentifier: COMPANY,
             aggregateFieldMetadataUniversalIdentifier: FIELDS.companyId,
-            groupByFieldMetadataUniversalIdentifier: FIELDS.firstContactChannel,
+            groupByFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            groupBySubFieldName: 'firstContactChannel',
             gridPosition: grid(0, 6, 6, 6),
             color: 'green',
           }),
@@ -751,7 +762,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier: FIELDS.candidateId,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
-              FIELDS.candidateTimeToFirstContactBucket,
+              FIELDS.candidateOutreachAnalytics,
+            primaryAxisGroupBySubFieldName: 'timeToFirstContactBucket',
             gridPosition: grid(0, 0, 6, 6),
             layout: 'VERTICAL',
             color: 'blue',
@@ -762,7 +774,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier: FIELDS.candidateId,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
-              FIELDS.candidateTimeToMeetingBucket,
+              FIELDS.candidateOutreachAnalytics,
+            primaryAxisGroupBySubFieldName: 'timeToMeetingBucket',
             gridPosition: grid(0, 6, 6, 6),
             layout: 'VERTICAL',
             color: 'purple',
@@ -772,7 +785,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Avg days → first contact',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.candidateDaysToFirstContact,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'daysToFirstContact',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(6, 0, 4, 3),
           }),
@@ -781,7 +795,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Avg days → meeting',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.candidateDaysToMeetingBooked,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'daysToMeetingBooked',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(6, 3, 4, 3),
           }),
@@ -790,7 +805,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Avg days → connection accept',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.candidateDaysFromConnectionToAccept,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'daysFromConnectionToAccept',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(6, 6, 4, 3),
           }),
@@ -799,7 +815,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Avg days → connection to meeting',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.candidateDaysFromConnectionToMeeting,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'daysFromConnectionToMeeting',
             aggregateOperation: AggregateOperations.AVG,
             gridPosition: grid(6, 9, 4, 3),
           }),
@@ -815,7 +832,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Meetings booked',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.meetingBookedAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'meetingBookedAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 0, 3, 4),
           }),
@@ -823,7 +842,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Meetings held',
             objectUniversalIdentifier: COMPANY,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.meetingHeldAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.companyOutreachAnalytics,
+            aggregateSubFieldName: 'meetingHeldAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 4, 3, 4),
           }),
@@ -920,7 +941,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Sent A',
             objectUniversalIdentifier: CANDIDATE,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.firstOutboundAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'firstOutboundAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 4, 3, 2),
             filter: selectIsFilter({
@@ -933,7 +956,9 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             tabUniversalIdentifier: tabId,
             title: 'Sent B',
             objectUniversalIdentifier: CANDIDATE,
-            aggregateFieldMetadataUniversalIdentifier: FIELDS.firstOutboundAt,
+            aggregateFieldMetadataUniversalIdentifier:
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'firstOutboundAt',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 6, 3, 2),
             filter: selectIsFilter({
@@ -947,7 +972,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Converted A',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.convertedOnMessageKind,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'convertedOnMessageKind',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 8, 3, 2),
             filter: selectIsFilter({
@@ -961,7 +987,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             title: 'Converted B',
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier:
-              FIELDS.convertedOnMessageKind,
+              FIELDS.candidateOutreachAnalytics,
+            aggregateSubFieldName: 'convertedOnMessageKind',
             aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
             gridPosition: grid(0, 10, 3, 2),
             filter: selectIsFilter({
@@ -996,7 +1023,8 @@ export const buildOutreachDashboardPageLayout = (): PageLayoutManifest => {
             objectUniversalIdentifier: CANDIDATE,
             aggregateFieldMetadataUniversalIdentifier: FIELDS.candidateId,
             primaryAxisGroupByFieldMetadataUniversalIdentifier:
-              FIELDS.convertedOnMessageKind,
+              FIELDS.candidateOutreachAnalytics,
+            primaryAxisGroupBySubFieldName: 'convertedOnMessageKind',
             gridPosition: grid(9, 0, 6, 12),
             layout: 'HORIZONTAL',
             color: 'orange',

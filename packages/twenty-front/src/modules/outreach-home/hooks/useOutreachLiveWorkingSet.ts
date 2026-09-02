@@ -1,6 +1,16 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import {
+  buildDefaultOutreachConfig,
+  resolveOutreachConfigExperimentConfigString,
+  resolveOutreachConfigInMailFallbackEnabled,
+  resolveOutreachConfigMaxPersonasPerCompany,
+  resolveOutreachConfigSendTimezone,
+  resolveOutreachConfigSendWindowDays,
+  resolveOutreachConfigSendWindowEnd,
+  resolveOutreachConfigSendWindowStart,
+} from 'twenty-shared/arx';
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -22,6 +32,7 @@ import {
     type OutreachMainTab,
     type OutreachPersonRow,
     type OutreachProjectOption,
+    type OutreachProjectRecord as OutreachProjectRecordFields,
     type OutreachProjectSettings,
     type OutreachSendMode,
     type OutreachStatus,
@@ -42,21 +53,10 @@ import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
 
-type OutreachProjectRecord = ObjectRecord & {
-  name?: string;
-  outreachWorkflowId?: string | null;
-  outreachStatus?: string | null;
-  outreachSendMode?: string | null;
-  maxPersonasPerCompany?: number | null;
-  inMailFallbackEnabled?: boolean | null;
-  sendTimezone?: string | null;
-  sendWindowStart?: string | null;
-  sendWindowEnd?: string | null;
-  sendWindowDays?: string | null;
-  icpSpec?: string | null;
-  experimentConfig?: string | null;
-  updatedAt?: string;
-};
+type OutreachProjectRecord = ObjectRecord &
+  OutreachProjectRecordFields & {
+    updatedAt?: string;
+  };
 
 type OutreachCandidateRecord = ObjectRecord & {
   name?: string;
@@ -89,7 +89,9 @@ const normalizeExperimentVariant = (
 
 const isOutreachProject = (project: OutreachProjectRecord): boolean =>
   isNonEmptyString(project.outreachWorkflowId) ||
-  isNonEmptyString(project.icpSpec) ||
+  isNonEmptyString(
+    resolveOutreachConfigIcpSpecString(project.outreachConfig, project.icpSpec),
+  ) ||
   isOutreachProjectName(project.name);
 
 const dedupeCompaniesById = (companies: OutreachCompanyRow[]): OutreachCompanyRow[] => {
@@ -243,14 +245,7 @@ export const useOutreachLiveWorkingSet = () => {
       outreachWorkflowId: true,
       outreachStatus: true,
       outreachSendMode: true,
-      maxPersonasPerCompany: true,
-      inMailFallbackEnabled: true,
-      sendTimezone: true,
-      sendWindowStart: true,
-      sendWindowEnd: true,
-      sendWindowDays: true,
-      icpSpec: true,
-      experimentConfig: true,
+      outreachConfig: true,
       updatedAt: true,
     },
   });
@@ -494,12 +489,7 @@ export const useOutreachLiveWorkingSet = () => {
       name: `${OUTREACH_PROJECT_NAME_PREFIX} · ${new Date().toLocaleString()}`,
       isActive: true,
       outreachSendMode: 'APPROVAL',
-      maxPersonasPerCompany: 2,
-      inMailFallbackEnabled: false,
-      sendTimezone: 'Asia/Kolkata',
-      sendWindowStart: '08:00',
-      sendWindowEnd: '10:00',
-      sendWindowDays: '2,3,4',
+      outreachConfig: buildDefaultOutreachConfig(),
       ...(isDefined(outreachWorkflowId) ? { outreachWorkflowId } : {}),
     });
 
@@ -682,33 +672,37 @@ export const useOutreachLiveWorkingSet = () => {
       outreachStatus: normalizeOutreachStatus(project?.outreachStatus),
       outreachSendMode:
         (project?.outreachSendMode as OutreachSendMode | null) ?? 'APPROVAL',
-      maxPersonasPerCompany: project?.maxPersonasPerCompany ?? 2,
-      inMailFallbackEnabled: project?.inMailFallbackEnabled ?? false,
-      sendTimezone: project?.sendTimezone ?? 'Asia/Kolkata',
-      sendWindowStart: project?.sendWindowStart ?? '08:00',
-      sendWindowEnd: project?.sendWindowEnd ?? '10:00',
-      sendWindowDays: project?.sendWindowDays ?? '2,3,4',
+      outreachConfig: project?.outreachConfig ?? null,
+      maxPersonasPerCompany: resolveOutreachConfigMaxPersonasPerCompany(
+        project?.outreachConfig,
+      ),
+      inMailFallbackEnabled: resolveOutreachConfigInMailFallbackEnabled(
+        project?.outreachConfig,
+      ),
+      sendTimezone: resolveOutreachConfigSendTimezone(project?.outreachConfig),
+      sendWindowStart: resolveOutreachConfigSendWindowStart(
+        project?.outreachConfig,
+      ),
+      sendWindowEnd: resolveOutreachConfigSendWindowEnd(project?.outreachConfig),
+      sendWindowDays: resolveOutreachConfigSendWindowDays(
+        project?.outreachConfig,
+      ),
       whatsappConnected,
       icpSpec: effectiveIcp.icpSpec,
       isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
-      experimentConfig: project?.experimentConfig ?? null,
+      experimentConfig: resolveOutreachConfigExperimentConfigString(
+        project?.outreachConfig,
+      ),
     }),
     [
       effectiveIcp.icpSpec,
       effectiveIcp.isIcpProjectOverride,
-      project?.experimentConfig,
       project?.id,
-      project?.icpSpec,
-      project?.inMailFallbackEnabled,
-      project?.maxPersonasPerCompany,
       project?.name,
+      project?.outreachConfig,
       project?.outreachSendMode,
       project?.outreachStatus,
       project?.outreachWorkflowId,
-      project?.sendTimezone,
-      project?.sendWindowDays,
-      project?.sendWindowEnd,
-      project?.sendWindowStart,
       whatsappConnected,
     ],
   );

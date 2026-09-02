@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  resolveOutreachConfigSendTimezone,
+  resolveOutreachConfigSendWindowDays,
+  resolveOutreachConfigSendWindowEnd,
+  resolveOutreachConfigSendWindowStart,
+} from 'twenty-shared/arx';
+
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined, escapeForIlike } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
@@ -18,6 +25,7 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 
 type ProjectPacingRecord = ObjectLiteral & {
   id: string;
+  outreachConfig?: unknown;
   sendTimezone?: string | null;
   sendWindowStart?: string | null;
   sendWindowEnd?: string | null;
@@ -92,10 +100,22 @@ export class OutreachUnipilePacingService {
       outreachStatus: loaded.project?.outreachStatus ?? 'LIVE',
       sendWindow: loaded.project
         ? {
-            timezone: loaded.project.sendTimezone ?? 'Asia/Kolkata',
-            sendWindowStart: loaded.project.sendWindowStart ?? '08:00',
-            sendWindowEnd: loaded.project.sendWindowEnd ?? '10:00',
-            sendWindowDays: loaded.project.sendWindowDays ?? '2,3,4',
+            timezone: resolveOutreachConfigSendTimezone(
+              loaded.project.outreachConfig,
+              loaded.project.sendTimezone,
+            ),
+            sendWindowStart: resolveOutreachConfigSendWindowStart(
+              loaded.project.outreachConfig,
+              loaded.project.sendWindowStart,
+            ),
+            sendWindowEnd: resolveOutreachConfigSendWindowEnd(
+              loaded.project.outreachConfig,
+              loaded.project.sendWindowEnd,
+            ),
+            sendWindowDays: resolveOutreachConfigSendWindowDays(
+              loaded.project.outreachConfig,
+              loaded.project.sendWindowDays,
+            ),
           }
         : {
             timezone: 'Asia/Kolkata',

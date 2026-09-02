@@ -49,14 +49,21 @@ describe('outreach-effective-icp.util', () => {
     });
   });
 
-  it('uses project ICP when set', () => {
+  it('uses project outreachConfig ICP when set', () => {
     const projectIcp = JSON.stringify({
       targetTitles: ['Head of Talent'],
       locations: ['UK'],
     });
 
     const effective = resolveEffectiveIcp({
-      project: { icpSpec: projectIcp },
+      project: {
+        outreachConfig: {
+          icpSpec: {
+            targetTitles: ['Head of Talent'],
+            locations: ['UK'],
+          },
+        },
+      },
       workspaceProfile: {
         icpSpec: JSON.stringify({
           targetTitles: ['VP People'],
@@ -70,6 +77,7 @@ describe('outreach-effective-icp.util', () => {
       targetTitles: ['Head of Talent'],
       locations: ['UK'],
     });
+    expect(effective.icpSpec).toBe(projectIcp);
   });
 
   it('parses icpSpec, migrates geos, and drops leftover keys', () => {

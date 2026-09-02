@@ -6,6 +6,7 @@ import { isFieldMorphRelation } from '@/object-record/record-field/ui/types/guar
 import { isFieldRelation } from '@/object-record/record-field/ui/types/guards/isFieldRelation';
 import { ChartGroupByFieldSelectionCompositeFieldView } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartGroupByFieldSelectionCompositeFieldView';
 import { ChartGroupByFieldSelectionMorphRelationFieldView } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartGroupByFieldSelectionMorphRelationFieldView';
+import { ChartGroupByFieldSelectionRawJsonFieldView } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartGroupByFieldSelectionRawJsonFieldView';
 import { ChartGroupByFieldSelectionRelationFieldView } from '@/side-panel/pages/page-layout/components/dropdown-content/ChartGroupByFieldSelectionRelationFieldView';
 import { usePageLayoutIdFromContextStore } from '@/side-panel/pages/page-layout/hooks/usePageLayoutIdFromContextStore';
 import { useUpdateCurrentWidgetConfig } from '@/side-panel/pages/page-layout/hooks/useUpdateCurrentWidgetConfig';
@@ -30,7 +31,7 @@ import {
 } from 'twenty-shared/utils';
 import { useIcons } from 'twenty-ui/icon';
 import { MenuItemSelect } from 'twenty-ui/navigation';
-import { RelationType } from '~/generated-metadata/graphql';
+import { FieldMetadataType, RelationType } from '~/generated-metadata/graphql';
 import { filterBySearchQuery } from '~/utils/filterBySearchQuery';
 
 type ChartGroupByFieldSelectionDropdownContentBaseProps<
@@ -55,6 +56,9 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
     useState<FieldMetadataItem | null>(null);
 
   const [selectedMorphField, setSelectedMorphField] =
+    useState<FieldMetadataItem | null>(null);
+
+  const [selectedRawJsonField, setSelectedRawJsonField] =
     useState<FieldMetadataItem | null>(null);
 
   const { objectMetadataItems } = useObjectMetadataItems();
@@ -97,6 +101,9 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
         }
         if (isFieldRelation(field)) {
           return field.relation?.type === RelationType.MANY_TO_ONE;
+        }
+        if (field.type === FieldMetadataType.RAW_JSON) {
+          return true;
         }
         return isFieldMetadataSupportedInGroupBy({
           type: field.type,
@@ -142,6 +149,11 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
       return;
     }
 
+    if (fieldMetadataItem.type === FieldMetadataType.RAW_JSON) {
+      setSelectedRawJsonField(fieldMetadataItem);
+      return;
+    }
+
     updateCurrentWidgetConfig({
       configToUpdate: buildChartGroupByFieldConfigUpdate({
         configuration,
@@ -181,6 +193,29 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
 
   const handleBackFromMorph = () => {
     setSelectedMorphField(null);
+  };
+
+  const handleBackFromRawJson = () => {
+    setSelectedRawJsonField(null);
+  };
+
+  const handleSelectRawJsonSubField = (subFieldName: string) => {
+    if (!isDefined(selectedRawJsonField)) {
+      return;
+    }
+
+    updateCurrentWidgetConfig({
+      configToUpdate: buildChartGroupByFieldConfigUpdate({
+        configuration,
+        fieldMetadataIdKey,
+        subFieldNameKey,
+        fieldId: selectedRawJsonField.id,
+        subFieldName,
+        objectMetadataItem: sourceObjectMetadataItem,
+        objectMetadataItems,
+      }),
+    });
+    closeDropdown();
   };
 
   const handleSelectMorphTargetSubField = ({
@@ -323,6 +358,17 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
     );
   }
 
+  if (isDefined(selectedRawJsonField)) {
+    return (
+      <ChartGroupByFieldSelectionRawJsonFieldView
+        rawJsonField={selectedRawJsonField}
+        currentSubFieldName={currentSubFieldName}
+        onBack={handleBackFromRawJson}
+        onSelectSubField={handleSelectRawJsonSubField}
+      />
+    );
+  }
+
   return (
     <>
       <DropdownMenuSearchInput
@@ -364,6 +410,7 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
                   !isCompositeFieldType(fieldMetadataItem.type) &&
                   !isFieldRelation(fieldMetadataItem) &&
                   !isFieldMorphRelation(fieldMetadataItem) &&
+                  fieldMetadataItem.type !== FieldMetadataType.RAW_JSON &&
                   currentGroupByFieldMetadataId === fieldMetadataItem.id
                 }
                 focused={selectedItemId === fieldMetadataItem.id}
@@ -371,7 +418,8 @@ export const ChartGroupByFieldSelectionDropdownContentBase = <
                 hasSubMenu={
                   isCompositeFieldType(fieldMetadataItem.type) ||
                   isFieldRelation(fieldMetadataItem) ||
-                  isFieldMorphRelation(fieldMetadataItem)
+                  isFieldMorphRelation(fieldMetadataItem) ||
+                  fieldMetadataItem.type === FieldMetadataType.RAW_JSON
                 }
                 onClick={() => {
                   handleSelectField(fieldMetadataItem);

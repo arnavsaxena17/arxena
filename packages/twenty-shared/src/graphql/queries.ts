@@ -205,12 +205,7 @@ const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFi
         outreachWorkflowId
         outreachSendMode
         outreachStatus
-        experimentConfig
-        maxPersonasPerCompany
-        sendTimezone
-        sendWindowStart
-        sendWindowEnd
-        sendWindowDays
+        outreachConfig
         createdBy {
           source
           workspaceMemberId
@@ -280,12 +275,7 @@ const graphqlToFindManyProjectsOrgChart = `query FindManyProjects($filter: Proje
         outreachWorkflowId
         outreachSendMode
         outreachStatus
-        experimentConfig
-        maxPersonasPerCompany
-        sendTimezone
-        sendWindowStart
-        sendWindowEnd
-        sendWindowDays
+        outreachConfig
         createdBy {
           source
           workspaceMemberId

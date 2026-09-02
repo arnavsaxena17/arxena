@@ -27,7 +27,13 @@ export const getGroupByExpression = ({
   groupByField: GroupByField;
   columnNameWithQuotes: string;
 }) => {
+  const isRawJsonDateGroupByField =
+    'isRawJsonPath' in groupByField &&
+    groupByField.isRawJsonPath === true &&
+    isGroupByDateField(groupByField);
+
   if (
+    !isRawJsonDateGroupByField &&
     !(isGroupByDateField(groupByField) || isGroupByRelationField(groupByField))
   ) {
     if ('shouldUnnest' in groupByField && groupByField.shouldUnnest) {

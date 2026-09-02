@@ -1,9 +1,11 @@
 import { isNonEmptyString } from '@sniptt/guards';
+import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 
 import { type IcpSpec } from '@/outreach-home/types/outreach-home.types';
 
 export type IcpProfileSource = {
   icpSpec?: string | null;
+  outreachConfig?: unknown;
 };
 
 const toStringList = (value: unknown): string[] => {
@@ -87,8 +89,12 @@ export const resolveEffectiveIcp = ({
   parsedIcp: IcpSpec | null;
   isIcpProjectOverride: boolean;
 } => {
-  const icpSpecResolution = resolveInheritedTextField(
+  const projectIcpSpec = resolveOutreachConfigIcpSpecString(
+    project?.outreachConfig,
     project?.icpSpec,
+  );
+  const icpSpecResolution = resolveInheritedTextField(
+    projectIcpSpec,
     workspaceProfile?.icpSpec,
   );
   const parsedIcp = parseIcpSpec(icpSpecResolution.value);

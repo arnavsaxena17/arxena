@@ -61,6 +61,22 @@ Once the user has confirmed the plan, your job is to deliver the dashboard in th
 - **Never omit subFieldName for relation fields** — grouping by ID is almost never useful
 - **IMPORTANT**: Check the target field's type from get_field_metadata. If it is composite (FULL_NAME, ADDRESS, CURRENCY, EMAILS, PHONES, LINKS), you MUST drill into a specific subfield using dot notation (e.g. "name.firstName", "address.addressCity", "emails.primaryEmail").
 
+## RAW_JSON path syntax
+
+Use JSON sub-keys on `RAW_JSON` fields instead of flattening every metric into its own column.
+
+- Group by scalar path: field `outreachSpeedTimestamps` + subFieldName `timeToFirstContactBucket`
+  - GraphQL groupBy shape: `{ outreachSpeedTimestamps: { timeToFirstContactBucket: true } }`
+  - Widget config: `primaryAxisGroupBySubFieldName: "timeToFirstContactBucket"` (or `groupBySubFieldName` on pie charts)
+- Group by ISO timestamp path: subFieldName `firstContactAt` + date granularity (keys ending in `At` / `On` are treated as dates)
+- Aggregate on JSON path: set `aggregateSubFieldName` alongside `aggregateFieldMetadataId`
+  - AVG on `daysToFirstContact` → aggregate field `outreachSpeedTimestamps`, subFieldName `daysToFirstContact`, operation `AVG`
+  - COUNT_NOT_EMPTY on `meetingBookedAt` → same field, subFieldName `meetingBookedAt`, operation `COUNT_NOT_EMPTY`
+- Filter on JSON path: use `fieldName` `outreachSpeedTimestamps.timeToFirstContactBucket` with normal operands (`IS`, `IS_NOT`, numeric compares, etc.)
+- Path keys must match `/^[a-zA-Z][a-zA-Z0-9_]*$/` (no dots/nesting in v1)
+
+Known outreach keys on `outreachSpeedTimestamps`: `timeToFirstContactBucket`, `daysToFirstContact`, `meetingBookedAt`, `firstContactAt`, `daysToMeetingBooked`, `daysFromConnectionToAccept`, `daysFromConnectionToMeeting`.
+
 ## User Language Notes
 
 - "X axis" / "categories" → primaryAxisGroupByFieldMetadataId
