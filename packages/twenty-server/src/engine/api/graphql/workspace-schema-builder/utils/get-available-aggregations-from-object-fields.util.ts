@@ -3,7 +3,13 @@ import { GraphQLISODateTime } from '@nestjs/graphql';
 import { GraphQLFloat, GraphQLInt, type GraphQLScalarType } from 'graphql';
 import { FIELD_FOR_TOTAL_COUNT_AGGREGATE_OPERATION } from 'twenty-shared/constants';
 import { AggregateOperations, FieldMetadataType } from 'twenty-shared/types';
-import { capitalize, isFieldMetadataDateKind } from 'twenty-shared/utils';
+import {
+  buildRawJsonPathAggregateFieldKey,
+  capitalize,
+  getKnownRawJsonPathKeysForField,
+  isFieldMetadataDateKind,
+  isRawJsonNumericPathKey,
+} from 'twenty-shared/utils';
 
 import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
 import { getSubfieldsForAggregateOperation } from 'src/engine/twenty-orm/utils/get-subfields-for-aggregate-operation.util';
@@ -17,6 +23,119 @@ export type AggregationField = {
   subFieldForNumericOperation?: string;
   fromJsonPath?: string;
   aggregateOperation: AggregateOperations;
+};
+
+const addRawJsonPathAggregations = ({
+  acc,
+  field,
+}: {
+  acc: Record<string, AggregationField>;
+  field: FlatFieldMetadata;
+}) => {
+  const jsonPaths = getKnownRawJsonPathKeysForField(field.name);
+
+  if (!jsonPaths) {
+    return;
+  }
+
+  for (const jsonPath of jsonPaths) {
+    const countEmptyKey = buildRawJsonPathAggregateFieldKey({
+      aggregateOperation: AggregateOperations.COUNT_EMPTY,
+      fieldName: field.name,
+      jsonPath,
+    });
+    const countNotEmptyKey = buildRawJsonPathAggregateFieldKey({
+      aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
+      fieldName: field.name,
+      jsonPath,
+    });
+    const countUniqueValuesKey = buildRawJsonPathAggregateFieldKey({
+      aggregateOperation: AggregateOperations.COUNT_UNIQUE_VALUES,
+      fieldName: field.name,
+      jsonPath,
+    });
+    const percentageEmptyKey = buildRawJsonPathAggregateFieldKey({
+      aggregateOperation: AggregateOperations.PERCENTAGE_EMPTY,
+      fieldName: field.name,
+      jsonPath,
+    });
+    const percentageNotEmptyKey = buildRawJsonPathAggregateFieldKey({
+      aggregateOperation: AggregateOperations.PERCENTAGE_NOT_EMPTY,
+      fieldName: field.name,
+      jsonPath,
+    });
+
+    acc[countEmptyKey] = {
+      type: GraphQLInt,
+      description: `Number of empty values for ${field.name}.${jsonPath}`,
+      fromField: field.name,
+      fromFieldType: FieldMetadataType.RAW_JSON,
+      fromJsonPath: jsonPath,
+      aggregateOperation: AggregateOperations.COUNT_EMPTY,
+    };
+
+    acc[countNotEmptyKey] = {
+      type: GraphQLInt,
+      description: `Number of non-empty values for ${field.name}.${jsonPath}`,
+      fromField: field.name,
+      fromFieldType: FieldMetadataType.RAW_JSON,
+      fromJsonPath: jsonPath,
+      aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
+    };
+
+    acc[countUniqueValuesKey] = {
+      type: GraphQLInt,
+      description: `Number of unique values for ${field.name}.${jsonPath}`,
+      fromField: field.name,
+      fromFieldType: FieldMetadataType.RAW_JSON,
+      fromJsonPath: jsonPath,
+      aggregateOperation: AggregateOperations.COUNT_UNIQUE_VALUES,
+    };
+
+    acc[percentageEmptyKey] = {
+      type: GraphQLFloat,
+      description: `Percentage of empty values for ${field.name}.${jsonPath}`,
+      fromField: field.name,
+      fromFieldType: FieldMetadataType.RAW_JSON,
+      fromJsonPath: jsonPath,
+      aggregateOperation: AggregateOperations.PERCENTAGE_EMPTY,
+    };
+
+    acc[percentageNotEmptyKey] = {
+      type: GraphQLFloat,
+      description: `Percentage of non-empty values for ${field.name}.${jsonPath}`,
+      fromField: field.name,
+      fromFieldType: FieldMetadataType.RAW_JSON,
+      fromJsonPath: jsonPath,
+      aggregateOperation: AggregateOperations.PERCENTAGE_NOT_EMPTY,
+    };
+
+    if (!isRawJsonNumericPathKey(jsonPath)) {
+      continue;
+    }
+
+    for (const aggregateOperation of [
+      AggregateOperations.MIN,
+      AggregateOperations.MAX,
+      AggregateOperations.AVG,
+      AggregateOperations.SUM,
+    ] as const) {
+      const aggregateFieldKey = buildRawJsonPathAggregateFieldKey({
+        aggregateOperation,
+        fieldName: field.name,
+        jsonPath,
+      });
+
+      acc[aggregateFieldKey] = {
+        type: GraphQLFloat,
+        description: `${aggregateOperation} of ${field.name}.${jsonPath}`,
+        fromField: field.name,
+        fromFieldType: FieldMetadataType.RAW_JSON,
+        fromJsonPath: jsonPath,
+        aggregateOperation,
+      };
+    }
+  }
 };
 
 export const getAvailableAggregationsFromObjectFields = (
@@ -185,6 +304,9 @@ export const getAvailableAggregationsFromObjectFields = (
             fromFieldType: field.type,
             aggregateOperation: AggregateOperations.AVG,
           };
+          break;
+        case FieldMetadataType.RAW_JSON:
+          addRawJsonPathAggregations({ acc, field });
           break;
       }
 

@@ -7,6 +7,7 @@ import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/use
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { useIcons } from 'twenty-ui/icon';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export const useRecordFilterField = (recordFilterId: string) => {
   const currentRecordFilters = useAtomComponentStateValue(
@@ -30,7 +31,7 @@ export const useRecordFilterField = (recordFilterId: string) => {
     ? getIcon(fieldMetadataItem?.icon)
     : undefined;
 
-  const subFieldLabel =
+  const compositeSubFieldLabel =
     isDefined(fieldMetadataItem) &&
     isCompositeFieldType(fieldMetadataItem.type) &&
     isNonEmptyString(recordFilter?.subFieldName) &&
@@ -40,6 +41,17 @@ export const useRecordFilterField = (recordFilterId: string) => {
           recordFilter.subFieldName,
         )
       : '';
+
+  const rawJsonPathLabel =
+    isDefined(fieldMetadataItem) &&
+    fieldMetadataItem.type === FieldMetadataType.RAW_JSON &&
+    isNonEmptyString(recordFilter?.subFieldName)
+      ? recordFilter.subFieldName
+      : '';
+
+  const subFieldLabel = isNonEmptyString(compositeSubFieldLabel)
+    ? compositeSubFieldLabel
+    : rawJsonPathLabel;
 
   const fieldLabel = fieldMetadataItem?.label ?? '';
 

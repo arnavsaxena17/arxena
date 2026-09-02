@@ -37,8 +37,13 @@ const StyledCodeEditorContainer = styled.div`
 `;
 
 const StyledJsonTreeContainer = styled.div`
+  box-sizing: border-box;
   padding: ${themeCssVariables.spacing[2]};
-  width: min-content;
+  width: 100%;
+
+  ul {
+    min-width: 0;
+  }
 `;
 
 export const RawJsonFieldInput = () => {

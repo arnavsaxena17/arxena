@@ -111,6 +111,7 @@ export { isFieldMetadataSelectKind } from './fieldMetadata/isFieldMetadataSelect
 export { isFieldMetadataSupportedInGroupBy } from './fieldMetadata/isFieldMetadataSupportedInGroupBy';
 export { isFieldMetadataTextKind } from './fieldMetadata/isFieldMetadataTextKind';
 export { isRawJsonDatePathKey } from './fieldMetadata/isRawJsonDatePathKey';
+export { isRawJsonNumericPathKey } from './fieldMetadata/isRawJsonNumericPathKey';
 export type { ParsedRawJsonPathAggregateFieldKey } from './fieldMetadata/parseRawJsonPathAggregateFieldKey';
 export { parseRawJsonPathAggregateFieldKey } from './fieldMetadata/parseRawJsonPathAggregateFieldKey';
 export { pickMorphGroupSurvivorOrThrow } from './fieldMetadata/pick-morph-group-survivor-or-throw';

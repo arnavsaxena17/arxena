@@ -15,7 +15,10 @@ import { t } from '@lingui/core/macro';
 import { useContext } from 'react';
 import { FIELD_FOR_TOTAL_COUNT_AGGREGATE_OPERATION } from 'twenty-shared/constants';
 import { findById, isDefined } from 'twenty-shared/utils';
-import { type AggregateChartConfiguration } from '~/generated-metadata/graphql';
+import {
+  type AggregateChartConfiguration,
+  FieldMetadataType,
+} from '~/generated-metadata/graphql';
 import { dateLocaleState } from '~/localization/states/dateLocaleState';
 
 export const useGraphWidgetAggregateQuery = ({
@@ -34,6 +37,13 @@ export const useGraphWidgetAggregateQuery = ({
   const aggregateOperation = configuration.aggregateOperation;
   const ratioConfig = configuration.ratioAggregateConfig;
   const isRatioQuery = isDefined(ratioConfig);
+  const aggregateSubFieldName = configuration.aggregateSubFieldName;
+  const isRawJsonPathAggregate =
+    aggregateField.type === FieldMetadataType.RAW_JSON &&
+    isDefined(aggregateSubFieldName);
+  const aggregateLookupKey = isRawJsonPathAggregate
+    ? `${aggregateField.name}.${aggregateSubFieldName}`
+    : aggregateField.name;
 
   const ratioField = isRatioQuery
     ? objectMetadataItem.fields.find(
@@ -56,7 +66,7 @@ export const useGraphWidgetAggregateQuery = ({
   const { data, loading, error } = useAggregateRecords({
     objectNameSingular: objectMetadataItem.nameSingular,
     recordGqlFieldsAggregate: {
-      [aggregateField.name]: [extendedAggregateOperation],
+      [aggregateLookupKey]: [extendedAggregateOperation],
     },
     filter: gqlOperationFilter,
     skip: isRatioQuery,
@@ -148,6 +158,7 @@ export const useGraphWidgetAggregateQuery = ({
   }
 
   const aggregateRawValue =
+    data[aggregateLookupKey]?.[aggregateOperation] ??
     data[aggregateFieldMetadataItem.name]?.[aggregateOperation];
 
   const aggregateDisplayLabel = getRecordAggregateDisplayLabel({

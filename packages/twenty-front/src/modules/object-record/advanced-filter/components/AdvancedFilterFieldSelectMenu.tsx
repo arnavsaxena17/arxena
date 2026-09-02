@@ -16,10 +16,12 @@ import { AdvancedFilterContext } from '@/object-record/advanced-filter/states/co
 import { ObjectFilterDropdownFilterSelectMenuItem } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownFilterSelectMenuItem';
 import { fieldMetadataItemIdUsedInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/fieldMetadataItemIdUsedInDropdownComponentState';
 import { objectFilterDropdownIsSelectingCompositeFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingCompositeFieldComponentState';
+import { objectFilterDropdownIsSelectingRawJsonPathComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRawJsonPathComponentState';
 import { objectFilterDropdownIsSelectingRelationTargetFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRelationTargetFieldComponentState';
 import { objectFilterDropdownSubMenuFieldTypeComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownSubMenuFieldTypeComponentState';
 import { isCompositeFilterableFieldType } from '@/object-record/object-filter-dropdown/utils/isCompositeFilterableFieldType';
 import { isManyToOneRelationField } from '@/object-metadata/utils/isManyToOneRelationField';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { visibleRecordFieldsComponentSelector } from '@/object-record/record-field/states/visibleRecordFieldsComponentSelector';
 import { useFilterableFieldMetadataItems } from '@/object-record/record-filter/hooks/useFilterableFieldMetadataItems';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
@@ -107,6 +109,11 @@ export const AdvancedFilterFieldSelectMenu = ({
       objectFilterDropdownIsSelectingRelationTargetFieldComponentState,
     );
 
+  const [, setObjectFilterDropdownIsSelectingRawJsonPath] =
+    useAtomComponentState(
+      objectFilterDropdownIsSelectingRawJsonPathComponentState,
+    );
+
   const setFieldMetadataItemIdUsedInDropdown = useSetAtomComponentState(
     fieldMetadataItemIdUsedInDropdownComponentState,
   );
@@ -140,6 +147,12 @@ export const AdvancedFilterFieldSelectMenu = ({
     if (isRelationTraversalField) {
       setFieldMetadataItemIdUsedInDropdown(selectedFieldMetadataItem.id);
       setObjectFilterDropdownIsSelectingRelationTargetField(true);
+      return;
+    }
+
+    if (selectedFieldMetadataItem.type === FieldMetadataType.RAW_JSON) {
+      setFieldMetadataItemIdUsedInDropdown(selectedFieldMetadataItem.id);
+      setObjectFilterDropdownIsSelectingRawJsonPath(true);
       return;
     }
 

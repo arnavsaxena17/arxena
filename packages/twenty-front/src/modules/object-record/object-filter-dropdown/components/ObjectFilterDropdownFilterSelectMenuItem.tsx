@@ -7,6 +7,7 @@ import { isSelectedItemIdComponentFamilyState } from '@/ui/layout/selectable-lis
 import { useAtomComponentFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilyStateValue';
 import { useIcons } from 'twenty-ui/icon';
 import { MenuItem } from 'twenty-ui/navigation';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 export type ObjectFilterDropdownFilterSelectMenuItemProps = {
   fieldMetadataItemToSelect: FieldMetadataItem;
@@ -30,7 +31,8 @@ export const ObjectFilterDropdownFilterSelectMenuItem = ({
 
   const shouldShowSubMenu =
     isCompositeFieldType(fieldMetadataItemToSelect.type) ||
-    isManyToOneRelationField(fieldMetadataItemToSelect);
+    isManyToOneRelationField(fieldMetadataItemToSelect) ||
+    fieldMetadataItemToSelect.type === FieldMetadataType.RAW_JSON;
 
   const handleClick = () => {
     resetSelectedItem();

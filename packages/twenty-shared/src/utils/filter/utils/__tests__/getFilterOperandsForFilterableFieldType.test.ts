@@ -54,4 +54,42 @@ describe('getFilterOperandsForFilterableFieldType', () => {
       ...emptyOperands,
     ]);
   });
+
+  it('should return equality operands for RAW_JSON date path', () => {
+    expect(
+      getFilterOperandsForFilterableFieldType({
+        filterType: 'RAW_JSON',
+        subFieldName: 'updatedAt',
+      }),
+    ).toEqual([
+      ViewFilterOperand.IS,
+      ViewFilterOperand.IS_NOT,
+      ...emptyOperands,
+    ]);
+  });
+
+  it('should return numeric operands for RAW_JSON numeric path', () => {
+    expect(
+      getFilterOperandsForFilterableFieldType({
+        filterType: 'RAW_JSON',
+        subFieldName: 'daysToFirstContact',
+      }),
+    ).toEqual([
+      ViewFilterOperand.IS,
+      ViewFilterOperand.IS_NOT,
+      ViewFilterOperand.GREATER_THAN_OR_EQUAL,
+      ViewFilterOperand.LESS_THAN_OR_EQUAL,
+      ...emptyOperands,
+    ]);
+  });
+
+  it('should return whole-field operands for RAW_JSON without subFieldName', () => {
+    expect(
+      getFilterOperandsForFilterableFieldType({ filterType: 'RAW_JSON' }),
+    ).toEqual([
+      ViewFilterOperand.CONTAINS,
+      ViewFilterOperand.DOES_NOT_CONTAIN,
+      ...emptyOperands,
+    ]);
+  });
 });

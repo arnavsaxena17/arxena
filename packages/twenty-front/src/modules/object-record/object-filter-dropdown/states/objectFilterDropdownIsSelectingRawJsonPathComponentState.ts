@@ -1,10 +1,9 @@
 import { ObjectFilterDropdownComponentInstanceContext } from '@/object-record/object-filter-dropdown/states/contexts/ObjectFilterDropdownComponentInstanceContext';
 import { createAtomComponentState } from '@/ui/utilities/state/jotai/utils/createAtomComponentState';
 
-// Composite sub-field names or RAW_JSON path keys
-export const subFieldNameUsedInDropdownComponentState =
-  createAtomComponentState<string | null | undefined>({
-    key: 'subFieldNameUsedInDropdownComponentState',
-    defaultValue: null,
+export const objectFilterDropdownIsSelectingRawJsonPathComponentState =
+  createAtomComponentState<boolean>({
+    key: 'objectFilterDropdownIsSelectingRawJsonPathComponentState',
+    defaultValue: false,
     componentInstanceContext: ObjectFilterDropdownComponentInstanceContext,
   });

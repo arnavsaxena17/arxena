@@ -4,7 +4,13 @@ import { AggregateOperations } from '@/object-record/record-table/constants/Aggr
 import { DateAggregateOperations } from '@/object-record/record-table/constants/DateAggregateOperations';
 import { type ExtendedAggregateOperations } from '@/object-record/record-table/types/ExtendedAggregateOperations';
 import { FIELD_FOR_TOTAL_COUNT_AGGREGATE_OPERATION } from 'twenty-shared/constants';
-import { capitalize, isFieldMetadataDateKind } from 'twenty-shared/utils';
+import {
+  buildRawJsonPathAggregateFieldKey,
+  capitalize,
+  getKnownRawJsonPathKeysForField,
+  isFieldMetadataDateKind,
+  isRawJsonNumericPathKey,
+} from 'twenty-shared/utils';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
 type NameForAggregation = {
@@ -13,6 +19,83 @@ type NameForAggregation = {
 
 type Aggregations = {
   [key: string]: NameForAggregation;
+};
+
+const addRawJsonPathAggregations = ({
+  aggregations,
+  fieldName,
+}: {
+  aggregations: Aggregations;
+  fieldName: string;
+}) => {
+  const jsonPaths = getKnownRawJsonPathKeysForField(fieldName);
+
+  if (!jsonPaths) {
+    return;
+  }
+
+  for (const jsonPath of jsonPaths) {
+    const pathKey = `${fieldName}.${jsonPath}`;
+
+    aggregations[pathKey] = {
+      [AggregateOperations.COUNT_UNIQUE_VALUES]:
+        buildRawJsonPathAggregateFieldKey({
+          aggregateOperation: AggregateOperations.COUNT_UNIQUE_VALUES,
+          fieldName,
+          jsonPath,
+        }),
+      [AggregateOperations.COUNT_EMPTY]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.COUNT_EMPTY,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.COUNT_NOT_EMPTY]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.COUNT_NOT_EMPTY,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.PERCENTAGE_EMPTY]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.PERCENTAGE_EMPTY,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.PERCENTAGE_NOT_EMPTY]:
+        buildRawJsonPathAggregateFieldKey({
+          aggregateOperation: AggregateOperations.PERCENTAGE_NOT_EMPTY,
+          fieldName,
+          jsonPath,
+        }),
+      [AggregateOperations.COUNT]: 'totalCount',
+    };
+
+    if (!isRawJsonNumericPathKey(jsonPath)) {
+      continue;
+    }
+
+    aggregations[pathKey] = {
+      ...aggregations[pathKey],
+      [AggregateOperations.MIN]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.MIN,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.MAX]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.MAX,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.AVG]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.AVG,
+        fieldName,
+        jsonPath,
+      }),
+      [AggregateOperations.SUM]: buildRawJsonPathAggregateFieldKey({
+        aggregateOperation: AggregateOperations.SUM,
+        fieldName,
+        jsonPath,
+      }),
+    };
+  }
 };
 
 export const getAvailableAggregationsFromObjectFields = (
@@ -74,6 +157,13 @@ export const getAvailableAggregationsFromObjectFields = (
           [DateAggregateOperations.EARLIEST]: `min${capitalize(field.name)}`,
           [DateAggregateOperations.LATEST]: `max${capitalize(field.name)}`,
         };
+      }
+
+      if (field.type === FieldMetadataType.RAW_JSON) {
+        addRawJsonPathAggregations({
+          aggregations: acc,
+          fieldName: field.name,
+        });
       }
 
       if (acc[field.name] === undefined) {

@@ -10,14 +10,13 @@ import { useUpsertRecordFilter } from '@/object-record/record-filter/hooks/useUp
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
 import { getRecordFilterOperands } from '@/object-record/record-filter/utils/getRecordFilterOperands';
-import { type CompositeFieldSubFieldName } from '@/settings/data-model/types/CompositeFieldSubFieldName';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { getFilterTypeFromFieldType, isDefined } from 'twenty-shared/utils';
 
 type ApplyAdvancedFilterCompositeSubFieldParams = {
   sourceFieldMetadataItem: FieldMetadataItem;
-  subFieldName: CompositeFieldSubFieldName | null;
+  subFieldName: string | null;
   recordFilterId: string;
 };
 

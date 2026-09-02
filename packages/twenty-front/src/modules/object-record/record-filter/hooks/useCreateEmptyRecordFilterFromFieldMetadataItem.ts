@@ -3,7 +3,11 @@ import { useGetInitialFilterValue } from '@/object-record/object-filter-dropdown
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
 import { getDefaultSubFieldNameForCompositeFilterableFieldType } from '@/object-record/record-filter/utils/getDefaultSubFieldNameForCompositeFilterableFieldType';
 import { getRecordFilterOperands } from '@/object-record/record-filter/utils/getRecordFilterOperands';
-import { getFilterTypeFromFieldType } from 'twenty-shared/utils';
+import {
+  getFilterTypeFromFieldType,
+  getKnownRawJsonPathKeysForField,
+} from 'twenty-shared/utils';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { v4 } from 'uuid';
 
 export const useCreateEmptyRecordFilterFromFieldMetadataItem = () => {
@@ -14,14 +18,19 @@ export const useCreateEmptyRecordFilterFromFieldMetadataItem = () => {
   ) => {
     const filterType = getFilterTypeFromFieldType(fieldMetadataItem.type);
 
+    // Default RAW_JSON filters to the first known path so the chip opens
+    // as a field-value filter instead of whole-blob Contains.
+    const defaultSubFieldName =
+      fieldMetadataItem.type === FieldMetadataType.RAW_JSON
+        ? (getKnownRawJsonPathKeysForField(fieldMetadataItem.name)?.[0] ?? null)
+        : getDefaultSubFieldNameForCompositeFilterableFieldType(filterType);
+
     const availableOperandsForFilter = getRecordFilterOperands({
       filterType,
+      subFieldName: defaultSubFieldName,
     });
 
     const defaultOperand = availableOperandsForFilter[0];
-
-    const defaultSubFieldName =
-      getDefaultSubFieldNameForCompositeFilterableFieldType(filterType);
 
     const { displayValue, value } = getInitialFilterValue(
       filterType,

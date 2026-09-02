@@ -209,12 +209,23 @@ const validateAndTransformSingleGroupByFieldOrThrow = ({
     ? fieldMetadata.settings.relationType
     : null;
 
+  const fieldGroupByDefinition = fieldNames[fieldName];
+  const isObjectFieldGroupByDefinition = isPlainObject(fieldGroupByDefinition);
+
+  // RAW_JSON is only groupable via a known JSON path (subFieldName)
+  const rawJsonGroupBySubFieldName =
+    fieldMetadata.type === FieldMetadataType.RAW_JSON &&
+    isObjectFieldGroupByDefinition
+      ? Object.keys(fieldGroupByDefinition).find((key) => key !== 'unnest')
+      : undefined;
+
   if (
     !isFieldMetadataSupportedInGroupBy({
       type: fieldMetadata.type,
       name: fieldMetadata.name,
       isSystem: fieldMetadata.isSystem,
       relationType,
+      subFieldName: rawJsonGroupBySubFieldName,
     })
   ) {
     throw new CommonQueryRunnerException(
@@ -223,9 +234,6 @@ const validateAndTransformSingleGroupByFieldOrThrow = ({
       { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
     );
   }
-
-  const fieldGroupByDefinition = fieldNames[fieldName];
-  const isObjectFieldGroupByDefinition = isPlainObject(fieldGroupByDefinition);
   const isGroupByRelationField =
     isMorphOrRelationFlatFieldMetadata(fieldMetadata) &&
     isObjectFieldGroupByDefinition &&

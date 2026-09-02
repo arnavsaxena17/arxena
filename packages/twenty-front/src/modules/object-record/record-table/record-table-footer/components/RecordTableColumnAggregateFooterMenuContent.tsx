@@ -81,7 +81,8 @@ export const RecordTableColumnAggregateFooterMenuContent = () => {
             hasSubMenu
           />
         )}
-        {nonStandardAvailableAggregateOperation.length > 0 ? (
+        {nonStandardAvailableAggregateOperation.length > 0 &&
+        fieldMetadataType !== FieldMetadataType.RAW_JSON ? (
           <MenuItem
             onClick={() => {
               onContentChange('moreAggregateOperationOptions');

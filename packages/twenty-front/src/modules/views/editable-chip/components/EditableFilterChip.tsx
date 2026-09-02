@@ -33,7 +33,7 @@ export const EditableFilterChip = ({
 
   const recordFilterSubFieldName = recordFilter.subFieldName;
 
-  const subFieldLabel =
+  const compositeSubFieldLabel =
     isCompositeFieldType(fieldMetadataItem.type) &&
     fieldMetadataItem.type !== FieldMetadataType.ACTOR &&
     isNonEmptyString(recordFilterSubFieldName) &&
@@ -43,6 +43,16 @@ export const EditableFilterChip = ({
           recordFilterSubFieldName,
         )
       : '';
+
+  const rawJsonPathLabel =
+    fieldMetadataItem.type === FieldMetadataType.RAW_JSON &&
+    isNonEmptyString(recordFilterSubFieldName)
+      ? recordFilterSubFieldName
+      : '';
+
+  const subFieldLabel = isNonEmptyString(compositeSubFieldLabel)
+    ? compositeSubFieldLabel
+    : rawJsonPathLabel;
 
   const fieldNameLabel = isNonEmptyString(subFieldLabel)
     ? `${recordFilter.label} / ${subFieldLabel}`

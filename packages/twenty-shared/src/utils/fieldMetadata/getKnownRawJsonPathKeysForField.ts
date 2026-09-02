@@ -44,6 +44,8 @@ const OUTREACH_CONFIG_JSON_PATH_KEYS = [
 const KNOWN_RAW_JSON_PATH_KEYS_BY_FIELD_NAME: Record<string, readonly string[]> =
   {
     outreachSpeedTimestamps: OUTREACH_ANALYTICS_CANDIDATE_JSON_PATH_KEYS,
+    // Candidate and company both use outreachAnalytics; company keys are a
+    // superset of candidate keys, so one list covers both objects.
     outreachAnalytics: OUTREACH_ANALYTICS_COMPANY_JSON_PATH_KEYS,
     outreachConfig: OUTREACH_CONFIG_JSON_PATH_KEYS,
   };

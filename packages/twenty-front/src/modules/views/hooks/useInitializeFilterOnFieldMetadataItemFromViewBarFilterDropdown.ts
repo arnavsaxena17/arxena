@@ -6,6 +6,7 @@ import { objectFilterDropdownCurrentRecordFilterComponentState } from '@/object-
 import { objectFilterDropdownFilterIsSelectedComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownFilterIsSelectedComponentState';
 import { objectFilterDropdownSearchInputComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownSearchInputComponentState';
 import { selectedOperandInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/selectedOperandInDropdownComponentState';
+import { subFieldNameUsedInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/subFieldNameUsedInDropdownComponentState';
 import { currentRecordFiltersComponentState } from '@/object-record/record-filter/states/currentRecordFiltersComponentState';
 import { type RecordFilter } from '@/object-record/record-filter/types/RecordFilter';
 import { findDuplicateRecordFilterInNonAdvancedRecordFilters } from '@/object-record/record-filter/utils/findDuplicateRecordFilterInNonAdvancedRecordFilters';
@@ -18,7 +19,12 @@ import { ViewBarFilterDropdownIds } from '@/views/constants/ViewBarFilterDropdow
 
 import { useStore } from 'jotai';
 import { useCallback } from 'react';
-import { getFilterTypeFromFieldType, isDefined } from 'twenty-shared/utils';
+import {
+  getFilterTypeFromFieldType,
+  getKnownRawJsonPathKeysForField,
+  isDefined,
+} from 'twenty-shared/utils';
+import { FieldMetadataType } from '~/generated-metadata/graphql';
 import { v4 } from 'uuid';
 
 export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
@@ -51,6 +57,11 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
         objectFilterDropdownSearchInputComponentState,
       );
 
+    const subFieldNameUsedInDropdownCallbackState =
+      useAtomComponentStateCallbackState(
+        subFieldNameUsedInDropdownComponentState,
+      );
+
     const { upsertObjectFilterDropdownCurrentFilter } =
       useUpsertObjectFilterDropdownCurrentFilter();
 
@@ -73,6 +84,12 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
 
           const filterType = getFilterTypeFromFieldType(fieldMetadataItem.type);
 
+          const defaultSubFieldName =
+            fieldMetadataItem.type === FieldMetadataType.RAW_JSON
+              ? (getKnownRawJsonPathKeysForField(fieldMetadataItem.name)?.[0] ??
+                null)
+              : null;
+
           if (filterType === 'RELATION' || filterType === 'SELECT') {
             pushFocusItemToFocusStack({
               focusId: ViewBarFilterDropdownIds.MAIN,
@@ -90,14 +107,21 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
 
           store.set(objectFilterDropdownSearchInputCallbackState, '');
 
+          store.set(
+            subFieldNameUsedInDropdownCallbackState,
+            defaultSubFieldName,
+          );
+
           const defaultOperand = getRecordFilterOperands({
             filterType,
+            subFieldName: defaultSubFieldName,
           })[0];
 
           const duplicateFilterInCurrentRecordFilters =
             findDuplicateRecordFilterInNonAdvancedRecordFilters({
               recordFilters: currentRecordFilters,
               fieldMetadataItemId: fieldMetadataItem.id,
+              subFieldName: defaultSubFieldName,
             });
 
           const filterIsAlreadyInCurrentRecordFilters = isDefined(
@@ -114,16 +138,25 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
               selectedOperandInDropdownCallbackState,
               duplicateFilterInCurrentRecordFilters.operand,
             );
+
+            store.set(
+              subFieldNameUsedInDropdownCallbackState,
+              duplicateFilterInCurrentRecordFilters.subFieldName ?? null,
+            );
           } else {
             store.set(selectedOperandInDropdownCallbackState, defaultOperand);
 
-            if (filterType === 'DATE' || filterType === 'DATE_TIME') {
+            if (
+              filterType === 'DATE' ||
+              filterType === 'DATE_TIME' ||
+              filterType === 'RAW_JSON'
+            ) {
               const { displayValue, value } = getInitialFilterValue(
                 filterType,
                 defaultOperand,
               );
 
-              const initialDateRecordFilter: RecordFilter = {
+              const initialRecordFilter: RecordFilter = {
                 id: v4(),
                 fieldMetadataId: fieldMetadataItem.id,
                 operand: defaultOperand,
@@ -131,13 +164,14 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
                 label: fieldMetadataItem.label,
                 type: filterType,
                 value,
+                subFieldName: defaultSubFieldName,
               };
 
-              upsertObjectFilterDropdownCurrentFilter(initialDateRecordFilter);
+              upsertObjectFilterDropdownCurrentFilter(initialRecordFilter);
 
               store.set(
                 objectFilterDropdownCurrentRecordFilterCallbackState,
-                initialDateRecordFilter,
+                initialRecordFilter,
               );
             }
           }
@@ -148,6 +182,7 @@ export const useInitializeFilterOnFieldMetadataItemFromViewBarFilterDropdown =
           currentRecordFiltersCallbackState,
           objectFilterDropdownFilterIsSelectedCallbackState,
           objectFilterDropdownSearchInputCallbackState,
+          subFieldNameUsedInDropdownCallbackState,
           pushFocusItemToFocusStack,
           objectFilterDropdownCurrentRecordFilterCallbackState,
           selectedOperandInDropdownCallbackState,

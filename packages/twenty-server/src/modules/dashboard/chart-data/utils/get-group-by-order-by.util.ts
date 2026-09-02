@@ -19,6 +19,7 @@ export const getGroupByOrderBy = ({
   groupBySubFieldName,
   aggregateOperation,
   aggregateFieldMetadata,
+  aggregateSubFieldName,
   dateGranularity,
   flatObjectMetadataMaps,
   flatFieldMetadataMaps,
@@ -28,6 +29,7 @@ export const getGroupByOrderBy = ({
   groupBySubFieldName?: string | null;
   aggregateOperation?: AggregateOperations;
   aggregateFieldMetadata?: FlatFieldMetadata;
+  aggregateSubFieldName?: string | null;
   dateGranularity?: ObjectRecordGroupByDateGranularity;
   flatObjectMetadataMaps: FlatEntityMaps<FlatObjectMetadata>;
   flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
@@ -57,6 +59,7 @@ export const getGroupByOrderBy = ({
       const aggregateFieldKey = buildAggregateFieldKey({
         aggregateOperation,
         aggregateFieldMetadata,
+        aggregateSubFieldName,
       });
 
       return [

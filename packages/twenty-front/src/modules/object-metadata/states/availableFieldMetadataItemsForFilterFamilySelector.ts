@@ -3,9 +3,7 @@ import { objectMetadataItemsWithFieldsSelector } from '@/object-metadata/states/
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { getFilterFilterableFieldMetadataItems } from '@/object-metadata/utils/getFilterFilterableFieldMetadataItems';
 import { createAtomFamilySelector } from '@/ui/utilities/state/jotai/utils/createAtomFamilySelector';
-import { checkIfFeatureFlagIsEnabledOnWorkspace } from '@/workspace/utils/checkIfFeatureFlagIsEnabledOnWorkspace';
 import { isDefined } from 'twenty-shared/utils';
-import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 export const availableFieldMetadataItemsForFilterFamilySelector =
   createAtomFamilySelector<
@@ -16,7 +14,11 @@ export const availableFieldMetadataItemsForFilterFamilySelector =
     get:
       ({ objectMetadataItemId }: { objectMetadataItemId: string }) =>
       ({ get }) => {
-        const currentWorkspace = get(currentWorkspaceState);
+        // Keep workspace read so this selector invalidates with workspace
+        // changes (feature flags / readable fields), even though JSON path
+        // filters are always enabled for Arxena outreach analytics.
+        get(currentWorkspaceState);
+
         const objectMetadataItems = get(objectMetadataItemsWithFieldsSelector);
 
         const objectMetadataItem = objectMetadataItems.find(
@@ -26,14 +28,9 @@ export const availableFieldMetadataItemsForFilterFamilySelector =
           return [];
         }
 
-        const isJsonFeatureFlagEnabled = checkIfFeatureFlagIsEnabledOnWorkspace(
-          FeatureFlagKey.IS_JSON_FILTER_ENABLED,
-          currentWorkspace,
-        );
-
         const filterFilterableFieldMetadataItems =
           getFilterFilterableFieldMetadataItems({
-            isJsonFilterEnabled: isJsonFeatureFlagEnabled,
+            isJsonFilterEnabled: true,
           });
 
         return objectMetadataItem.readableFields.filter(

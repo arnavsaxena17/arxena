@@ -18,6 +18,7 @@ import {
   type GroupByRegularField,
 } from 'src/engine/api/common/common-query-runners/types/group-by-field.types';
 import { getGroupByOrderExpression } from 'src/engine/api/common/common-query-runners/utils/get-group-by-order-expression.util';
+import { isGroupByDateField } from 'src/engine/api/common/common-query-runners/utils/is-group-by-date-field.util';
 import { getObjectAlias } from 'src/engine/api/common/common-query-runners/utils/get-object-alias-for-group-by.util';
 import { convertOrderByToFindOptionsOrder } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query-order/utils/convert-order-by-to-find-options-order';
 import { getOptionalOrderByCasting } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query-order/utils/get-optional-order-by-casting.util';
@@ -39,6 +40,10 @@ import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-module
 import { isMorphOrRelationFlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/is-morph-or-relation-flat-field-metadata.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 import { formatColumnNamesFromCompositeFieldAndSubfields } from 'src/engine/twenty-orm/utils/format-column-names-from-composite-field-and-subfield.util';
+import {
+  formatRawJsonPathColumnExpression,
+  formatRawJsonPathDateTimeColumnExpression,
+} from 'src/engine/twenty-orm/utils/format-raw-json-path-column.util';
 
 import { type OrderByClause } from './types/order-by-condition.type';
 
@@ -402,7 +407,24 @@ export class GraphqlQueryOrderGroupByParser {
       return null;
     }
 
-    const columnNameWithQuotes = `"${this.objectAlias}"."${fieldMetadata.name}"`;
+    const isRawJsonPathGroupBy =
+      'isRawJsonPath' in groupByField &&
+      groupByField.isRawJsonPath === true &&
+      isDefined(groupByField.subFieldName);
+
+    const columnNameWithQuotes = isRawJsonPathGroupBy
+      ? isGroupByDateField(groupByField)
+        ? formatRawJsonPathDateTimeColumnExpression({
+            objectNameSingular: this.objectAlias,
+            fieldName: fieldMetadata.name,
+            jsonPath: groupByField.subFieldName,
+          })
+        : formatRawJsonPathColumnExpression({
+            objectNameSingular: this.objectAlias,
+            fieldName: fieldMetadata.name,
+            jsonPath: groupByField.subFieldName,
+          })
+      : `"${this.objectAlias}"."${fieldMetadata.name}"`;
 
     const expression = getGroupByOrderExpression({
       groupByField,

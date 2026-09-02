@@ -1,7 +1,9 @@
 import { AdvancedFilterCompositeSubFieldSelectMenu } from '@/object-record/advanced-filter/components/AdvancedFilterCompositeSubFieldSelectMenu';
 import { AdvancedFilterFieldSelectMenu } from '@/object-record/advanced-filter/components/AdvancedFilterFieldSelectMenu';
+import { AdvancedFilterRawJsonPathSelectMenu } from '@/object-record/advanced-filter/components/AdvancedFilterRawJsonPathSelectMenu';
 import { AdvancedFilterRelationTargetFieldSelectMenu } from '@/object-record/advanced-filter/components/AdvancedFilterRelationTargetFieldSelectMenu';
 import { objectFilterDropdownIsSelectingCompositeFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingCompositeFieldComponentState';
+import { objectFilterDropdownIsSelectingRawJsonPathComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRawJsonPathComponentState';
 import { objectFilterDropdownIsSelectingRelationTargetFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRelationTargetFieldComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 
@@ -22,6 +24,11 @@ export const AdvancedFilterFieldSelectDropdownContent = ({
       objectFilterDropdownIsSelectingRelationTargetFieldComponentState,
     );
 
+  const objectFilterDropdownIsSelectingRawJsonPath =
+    useAtomComponentStateValue(
+      objectFilterDropdownIsSelectingRawJsonPathComponentState,
+    );
+
   if (objectFilterDropdownIsSelectingRelationTargetField) {
     return (
       <AdvancedFilterRelationTargetFieldSelectMenu
@@ -35,6 +42,12 @@ export const AdvancedFilterFieldSelectDropdownContent = ({
       <AdvancedFilterCompositeSubFieldSelectMenu
         recordFilterId={recordFilterId}
       />
+    );
+  }
+
+  if (objectFilterDropdownIsSelectingRawJsonPath) {
+    return (
+      <AdvancedFilterRawJsonPathSelectMenu recordFilterId={recordFilterId} />
     );
   }
 

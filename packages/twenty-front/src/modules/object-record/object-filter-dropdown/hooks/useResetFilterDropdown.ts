@@ -5,6 +5,7 @@ import { objectFilterDropdownAnyFieldSearchIsSelectedComponentState } from '@/ob
 import { objectFilterDropdownCurrentRecordFilterComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownCurrentRecordFilterComponentState';
 import { objectFilterDropdownFilterIsSelectedComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownFilterIsSelectedComponentState';
 import { objectFilterDropdownIsSelectingCompositeFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingCompositeFieldComponentState';
+import { objectFilterDropdownIsSelectingRawJsonPathComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRawJsonPathComponentState';
 import { objectFilterDropdownIsSelectingRelationTargetFieldComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownIsSelectingRelationTargetFieldComponentState';
 import { objectFilterDropdownSearchInputComponentState } from '@/object-record/object-filter-dropdown/states/objectFilterDropdownSearchInputComponentState';
 import { selectedOperandInDropdownComponentState } from '@/object-record/object-filter-dropdown/states/selectedOperandInDropdownComponentState';
@@ -52,6 +53,12 @@ export const useResetFilterDropdown = (componentInstanceId?: string) => {
       componentInstanceId,
     );
 
+  const objectFilterDropdownIsSelectingRawJsonPath =
+    useAtomComponentStateCallbackState(
+      objectFilterDropdownIsSelectingRawJsonPathComponentState,
+      componentInstanceId,
+    );
+
   const objectFilterDropdownCurrentRecordFilter =
     useAtomComponentStateCallbackState(
       objectFilterDropdownCurrentRecordFilterComponentState,
@@ -64,6 +71,7 @@ export const useResetFilterDropdown = (componentInstanceId?: string) => {
     store.set(objectFilterDropdownFilterIsSelected, false);
     store.set(objectFilterDropdownIsSelectingCompositeField, false);
     store.set(objectFilterDropdownIsSelectingRelationTargetField, false);
+    store.set(objectFilterDropdownIsSelectingRawJsonPath, false);
     store.set(fieldMetadataItemIdUsedInDropdown, null);
     store.set(objectFilterDropdownCurrentRecordFilter, null);
     store.set(objectFilterDropdownAnyFieldSearchIsSelected, false);
@@ -73,6 +81,7 @@ export const useResetFilterDropdown = (componentInstanceId?: string) => {
     objectFilterDropdownFilterIsSelected,
     objectFilterDropdownIsSelectingCompositeField,
     objectFilterDropdownIsSelectingRelationTargetField,
+    objectFilterDropdownIsSelectingRawJsonPath,
     fieldMetadataItemIdUsedInDropdown,
     objectFilterDropdownCurrentRecordFilter,
     objectFilterDropdownAnyFieldSearchIsSelected,

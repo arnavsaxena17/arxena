@@ -1,5 +1,7 @@
-import { type CompositeFieldSubFieldName } from '@/settings/data-model/types/CompositeFieldSubFieldName';
-import type { FilterableAndTSVectorFieldType, ViewFilterOperand } from 'twenty-shared/types';
+import type {
+  FilterableAndTSVectorFieldType,
+  ViewFilterOperand,
+} from 'twenty-shared/types';
 import type { FILTER_OPERANDS_MAP } from 'twenty-shared/utils';
 
 // RLS-specific: references a workspace member field for dynamic "Me" comparisons
@@ -20,7 +22,8 @@ export type RecordFilter = {
   operand: ViewFilterOperand;
   positionInRecordFilterGroup?: number | null;
   label: string;
-  subFieldName?: CompositeFieldSubFieldName | null | undefined;
+  // Composite sub-field names or RAW_JSON path keys
+  subFieldName?: string | null | undefined;
   relationTargetFieldMetadataId?: string | null;
   rlsDynamicValue?: RLSDynamicValue | null;
 };
