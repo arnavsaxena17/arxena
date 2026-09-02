@@ -19,7 +19,7 @@ import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconRoute, IconUser } from 'twenty-ui/icon';
+import { IconArrowsSplit2, IconFileText, IconMessage, IconTimelineEvent, IconUser } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
@@ -409,7 +409,7 @@ export const CandidateChatDrawer = React.memo(() => {
     {
       id: 'journey',
       title: 'Journey',
-      Icon: IconRoute,
+      Icon: IconTimelineEvent,
     },
     {
       id: 'chat',
