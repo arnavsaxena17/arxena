@@ -357,6 +357,15 @@ export const afterSelectionEnd = (
         // Defer so Handsontable updateSettings can finish. Opening the side
         // panel synchronously retriggers afterSelectionEnd and max update depth.
         window.setTimeout(() => {
+          if (
+            selectedRow?.otherFields &&
+            typeof selectedRow.otherFields === 'object' &&
+            (selectedRow.otherFields as { openOutreachJourneyTab?: boolean })
+              .openOutreachJourneyTab
+          ) {
+            localStorage.setItem('candidate-chat-default-tab', 'journey');
+          }
+
           openRightDrawer(RightDrawerPages.CandidateChat, {
             title: `Chat with ${selectedRow.fullName || selectedRow.name || 'Candidate'}`,
             Icon: IconMessage,

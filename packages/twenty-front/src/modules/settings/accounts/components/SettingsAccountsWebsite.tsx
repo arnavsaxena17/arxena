@@ -34,23 +34,23 @@ const StyledPre = styled.pre`
 `;
 
 const StyledRow = styled.div`
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[2]};
-  align-items: center;
   margin-bottom: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledTable = styled.table`
-  width: 100%;
   border-collapse: collapse;
   font-size: ${themeCssVariables.font.size.sm};
+  width: 100%;
 
   th,
   td {
-    text-align: left;
-    padding: ${themeCssVariables.spacing[2]};
     border-bottom: 1px solid ${themeCssVariables.border.color.light};
+    padding: ${themeCssVariables.spacing[2]};
+    text-align: left;
     vertical-align: top;
   }
 

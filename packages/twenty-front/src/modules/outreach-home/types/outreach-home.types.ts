@@ -2,6 +2,7 @@ export type OutreachStage =
   | 'queued'
   | 'needs_connection'
   | 'connection_sent'
+  | 'connection_accepted'
   | 'connection_ignored'
   | 'profile_checked'
   | 'warm_path'
@@ -73,6 +74,10 @@ export type OutreachPersonRow = {
   pendingChannel?: string;
   candidateId?: string;
   experimentVariant?: 'A' | 'B' | null;
+  nextStepLabel?: string;
+  linkedinFollowUpCount?: number;
+  outreachResumeAt?: string | null;
+  needsApproval?: boolean;
 };
 
 export type OutreachProjectOption = {

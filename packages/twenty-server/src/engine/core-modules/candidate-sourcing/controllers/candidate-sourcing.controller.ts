@@ -1075,30 +1075,23 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {
     const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ;
-    const hasApiToken = !!apiToken;
     let projects = [];
-    try {
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const workspaceKeys =
-        await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
-      const isOrgChartEnabled = resolveIsOrgChartEnabledFromWorkspace(
-        workspaceKeys?.is_org_chart_enabled,
-      );
-      const query = getGraphqlToFindManyProjects(isOrgChartEnabled);
 
-      const responseFromGetAllProjects =
-        await this.staticGraphQLService.executeGraphQL(
-          query,
-          { limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
+    if (!apiToken) {
+      return { projects, jobs: projects };
+    }
+
+    try {
+      projects =
+        await this.candidateWorkspaceGraphQLService.fetchAllProjectEdgesForNav(
           apiToken,
         );
-      projects = responseFromGetAllProjects?.data?.data?.projects?.edges || [];
       console.log('Number of projects in get all projects:', projects.length);
     } catch (error) {
       console.error('Error fetching projects in get all projects:', error);
       projects = [];
     }
+
     return { projects, jobs: projects };
   }
 

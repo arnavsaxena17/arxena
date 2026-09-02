@@ -4,7 +4,10 @@ import {
   buildOutreachAnalyticsMetrics,
   computeTimeBucket,
   mergeLegacyCandidateFieldsIntoAnalytics,
+  patchOutreachAnalyticsDeferredResume,
   resolveOutreachFirstOutboundAt,
+  resolveOutreachResumeAt,
+  resolveOutreachStageBeforeDefer,
 } from '../outreachAnalytics';
 
 describe('outreachAnalytics', () => {
@@ -95,6 +98,29 @@ describe('outreachAnalytics', () => {
     });
     expect(update).not.toHaveProperty('lastOutboundAt');
     expect(update).not.toHaveProperty('outreachSpeedTimestamps');
+  });
+
+  it('stores deferred resume fields inside outreachAnalytics and preserves them on events', () => {
+    const deferred = patchOutreachAnalyticsDeferredResume({
+      existingAnalytics: {
+        enrolledAt: '2026-01-01T00:00:00.000Z',
+      },
+      resumeAt: '2026-12-15T09:00:00.000Z',
+      stageBeforeDefer: 'REPLIED',
+      nowIso: '2026-09-02T12:00:00.000Z',
+    });
+
+    expect(resolveOutreachResumeAt(deferred)).toBe('2026-12-15T09:00:00.000Z');
+    expect(resolveOutreachStageBeforeDefer(deferred)).toBe('REPLIED');
+
+    const afterEvent = applyOutreachAnalyticsEvent({
+      existing: deferred,
+      event: 'inbound_reply_flush',
+      nowIso: '2026-09-02T12:05:00.000Z',
+    });
+
+    expect(afterEvent.resumeAt).toBe('2026-12-15T09:00:00.000Z');
+    expect(afterEvent.stageBeforeDefer).toBe('REPLIED');
   });
 
   it('backfills from legacy flat touch fields', () => {

@@ -35,7 +35,7 @@ export const ArxJDUploadModal = ({
   const setParsedJDInternalState = useSetParsedJDInternalState();
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const currentProjectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
   const [tokenPair] = useAtomState(tokenPairState);
   const { findManyAttachments } = useFindManyAttachments();
   const isEditMode = arxUploadJDModalMode === 'edit';

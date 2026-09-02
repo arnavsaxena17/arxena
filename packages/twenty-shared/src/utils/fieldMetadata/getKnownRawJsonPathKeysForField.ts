@@ -17,6 +17,8 @@ const OUTREACH_ANALYTICS_CANDIDATE_JSON_PATH_KEYS = [
   'daysFromConnectionToMeeting',
   'lastOutboundMessageKind',
   'convertedOnMessageKind',
+  'resumeAt',
+  'stageBeforeDefer',
 ] as const;
 
 const OUTREACH_ANALYTICS_COMPANY_JSON_PATH_KEYS = [

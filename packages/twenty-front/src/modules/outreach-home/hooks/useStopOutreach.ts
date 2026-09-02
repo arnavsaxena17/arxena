@@ -16,8 +16,13 @@ export const useStopOutreach = () => {
   const projectId = outreachContext.projectId;
 
   const stopOutreachForCandidates = useCallback(
-    async (candidateIds: string[]) => {
-      if (!isDefined(projectId)) {
+    async (
+      candidateIds: string[],
+      projectIdOverride?: string | null,
+    ) => {
+      const resolvedProjectId = projectIdOverride ?? projectId;
+
+      if (!isDefined(resolvedProjectId)) {
         enqueueErrorSnackBar({
           message: 'Select a project before stopping outreach',
         });
@@ -47,7 +52,7 @@ export const useStopOutreach = () => {
 
       try {
         const response = await fetch(
-          `${REACT_APP_SERVER_BASE_URL}/outreach-command/projects/${projectId}/candidates/stop`,
+          `${REACT_APP_SERVER_BASE_URL}/outreach-command/projects/${resolvedProjectId}/candidates/stop`,
           {
             method: 'POST',
             headers: {

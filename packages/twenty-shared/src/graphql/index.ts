@@ -69,6 +69,7 @@ export {
   isOrgChartEnabledEnv,
   resolveIsOrgChartEnabledFromWorkspace,
   getGraphqlToFindManyProjects,
+  graphqlToFindManyProjectsForNav,
   graphqlToFindManyProjects,
   getGraphqlToFindManyProjectsWithPrompts,
   graphqlToFindManyProjectsWithPrompts,

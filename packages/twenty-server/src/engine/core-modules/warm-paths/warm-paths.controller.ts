@@ -1,12 +1,16 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Post,
   Req,
   UnauthorizedException,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
+import {
+  isWarmPathsEnabledEnv,
+} from 'twenty-shared/arx';
 import {
   IsBoolean,
   IsNumber,
@@ -67,6 +71,10 @@ export class WarmPathsController {
     const workspaceMemberId = request.workspaceMemberId?.trim() ?? '';
     if (!workspaceMemberId) {
       throw new UnauthorizedException('Workspace member required');
+    }
+
+    if (!isWarmPathsEnabledEnv) {
+      throw new ForbiddenException('Warm paths not enabled');
     }
 
     return this.warmPathResolverService.resolve({

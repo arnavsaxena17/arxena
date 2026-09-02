@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -49,7 +49,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewModule,
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
-    OutreachCommandModule,
+    // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
+    forwardRef(() => OutreachCommandModule),
   ],
   providers: [
     HttpTool,

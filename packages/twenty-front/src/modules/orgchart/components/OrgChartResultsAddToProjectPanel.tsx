@@ -125,7 +125,7 @@ export const OrgChartResultsAddToProjectPanel = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const currentProjectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const {

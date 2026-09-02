@@ -16,11 +16,18 @@ type OrgChartWarmPathSummaryProps = {
 export const OrgChartWarmPathSummary = ({
   linkedinUrl,
 }: OrgChartWarmPathSummaryProps) => {
-  const { data, isLoading, error, hasLinkedinUrl, resolve } =
-    useWarmPathResolve({ linkedinUrl });
+  const {
+    data,
+    isLoading,
+    error,
+    hasLinkedinUrl,
+    isWarmPathsEnabled,
+    resolve,
+  } = useWarmPathResolve({ linkedinUrl });
 
   useEffect(() => {
     if (
+      isWarmPathsEnabled === true &&
       hasLinkedinUrl === true &&
       data === null &&
       isLoading === false &&
@@ -28,10 +35,18 @@ export const OrgChartWarmPathSummary = ({
     ) {
       void resolve();
     }
-  }, [hasLinkedinUrl, data, isLoading, error, resolve]);
+  }, [isWarmPathsEnabled, hasLinkedinUrl, data, isLoading, error, resolve]);
 
   if (hasLinkedinUrl !== true) {
     return null;
+  }
+
+  if (isWarmPathsEnabled !== true) {
+    return (
+      <StyledWarmPathMeta data-testid="orgchart-warm-path-disabled">
+        Warm paths not enabled
+      </StyledWarmPathMeta>
+    );
   }
 
   if (isLoading === true && data === null) {

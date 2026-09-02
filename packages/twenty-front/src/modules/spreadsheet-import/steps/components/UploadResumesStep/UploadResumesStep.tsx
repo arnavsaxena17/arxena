@@ -115,7 +115,7 @@ export const UploadResumesStep = ({
     new Set(files.map((_, index) => index)),
   );
 
-  const projectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const currentProject = projects.find(
     (project) => project.id === projectId,

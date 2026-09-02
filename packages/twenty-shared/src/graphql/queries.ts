@@ -201,7 +201,6 @@ const graphqlToFindManyProjectsFull = `query FindManyProjects($filter: ProjectFi
         id
         recruiterId
         createdAt
-        icpSpec
         outreachWorkflowId
         outreachSendMode
         outreachStatus
@@ -271,7 +270,6 @@ const graphqlToFindManyProjectsOrgChart = `query FindManyProjects($filter: Proje
         id
         recruiterId
         createdAt
-        icpSpec
         outreachWorkflowId
         outreachSendMode
         outreachStatus
@@ -324,6 +322,45 @@ export function resolveIsOrgChartEnabledFromWorkspace(
 export function getGraphqlToFindManyProjects(isOrgChartEnabled: boolean): string {
   return isOrgChartEnabled ? graphqlToFindManyProjectsOrgChart : graphqlToFindManyProjectsFull;
 }
+
+// Navigation / project list — only fields present on all ARX workspaces (no icpSpec,
+// outreach-only columns, or org-chart extras that break older workspace schemas).
+export const graphqlToFindManyProjectsForNav = `query FindManyProjectsForNav($filter: ProjectFilterInput, $orderBy: [ProjectOrderByInput], $lastCursor: String, $limit: Int) {
+  projects(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
+    edges {
+      node {
+        __typename
+        id
+        name
+        isActive
+        createdAt
+        updatedAt
+        jobLocation
+        jobCode
+        arxenaSiteId
+        pathPosition
+        position
+        createdBy {
+          source
+          workspaceMemberId
+          name
+          context
+          __typename
+        }
+      }
+      cursor
+      __typename
+    }
+    pageInfo {
+      hasNextPage
+      startCursor
+      endCursor
+      __typename
+    }
+    totalCount
+    __typename
+  }
+}`;
 
 export const graphqlToFindManyProjects = isOrgChartEnabledEnv
   ? graphqlToFindManyProjectsOrgChart
@@ -2636,6 +2673,11 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           jobTitle
           remarks
           messagingChannel
+          outreachSequenceStage
+          pendingChannel
+          linkedinFollowUpCount
+          outreachAnalytics
+          experimentVariant
           candidateFlags
           uniqueStringKey
           attachments {

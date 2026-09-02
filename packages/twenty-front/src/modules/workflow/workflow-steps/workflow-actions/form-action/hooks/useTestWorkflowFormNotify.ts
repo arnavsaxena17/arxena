@@ -31,11 +31,11 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
   const apolloCoreClient = useApolloCoreClient();
   const [isSending, setIsSending] = useState(false);
   const pollTimeoutAtRef = useRef<number | null>(null);
-  const testData = useAtomFamilyStateValue(
+  const workflowFormNotifyTestData = useAtomFamilyStateValue(
     workflowFormNotifyTestDataFamilyState,
     actionId,
   );
-  const setTestData = useSetAtomFamilyState(
+  const setWorkflowFormNotifyTestData = useSetAtomFamilyState(
     workflowFormNotifyTestDataFamilyState,
     actionId,
   );

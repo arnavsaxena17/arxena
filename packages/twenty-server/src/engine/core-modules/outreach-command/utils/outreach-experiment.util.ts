@@ -128,6 +128,7 @@ export const CAPACITY_PENDING_REASONS = new Set([
   'outreach_unipile_pacing',
   'linkedin_rate_limit',
   'outreach_project_paused',
+  'outreach_candidate_paused',
 ]);
 
 export const SEQUENCE_DELAY_PENDING_REASON = 'outreach_sequence_delay';

@@ -13,7 +13,12 @@ import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/s
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
-import { type OutreachCompanyRow, type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
+import { OUTREACH_STAGES } from '@/outreach-home/constants/outreach-stages';
+import {
+  type OutreachCompanyRow,
+  type OutreachPersonRow,
+  type OutreachStage,
+} from '@/outreach-home/types/outreach-home.types';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
@@ -58,6 +63,25 @@ const StyledHint = styled.div`
   font-size: ${themeCssVariables.font.size.sm};
 `;
 
+const StyledFilters = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledFilterChip = styled.button<{ isActive: boolean }>`
+  background: ${({ isActive }) =>
+    isActive
+      ? themeCssVariables.background.quaternary
+      : themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.pill};
+  color: ${themeCssVariables.font.color.secondary};
+  cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
+`;
+
 const mapOutreachPersonToDataTableRow = (
   person: OutreachPersonRow,
 ): Record<string, unknown> => {
@@ -77,7 +101,9 @@ const mapOutreachPersonToDataTableRow = (
     firstName: nameParts[0] ?? '',
     lastName: nameParts.slice(1).join(' '),
     jobTitle: person.title,
-    headline: `${person.title} at ${person.companyName}`,
+    headline: person.nextStepLabel
+      ? `${person.title} · Next: ${person.nextStepLabel}`
+      : `${person.title} at ${person.companyName}`,
     company: person.companyName,
     jobCompanyName: person.companyName,
     location: '',
@@ -101,6 +127,9 @@ const mapOutreachPersonToDataTableRow = (
       stage: person.stage,
       companyId: person.companyId,
       candidateId: person.candidateId,
+      openOutreachJourneyTab: true,
+      nextStep: person.nextStepLabel ?? '',
+      pendingChannel: person.pendingChannel ?? '',
       ...(person.experimentVariant
         ? { experimentVariant: person.experimentVariant }
         : {}),
@@ -151,6 +180,9 @@ export const OutreachPeoplePanel = ({
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
+  const [stageFilter, setStageFilter] = useState<OutreachStage | 'all' | 'needs_approval'>(
+    'all',
+  );
 
   const companiesByWorkingSetId = useMemo(() => {
     const map: Record<string, OutreachCompanyRow> = {};
@@ -162,13 +194,21 @@ export const OutreachPeoplePanel = ({
     return map;
   }, [companies]);
 
-  const filteredPeople = useMemo(
-    () =>
-      selectedCompanyId
-        ? people.filter((person) => person.companyId === selectedCompanyId)
-        : people,
-    [people, selectedCompanyId],
-  );
+  const filteredPeople = useMemo(() => {
+    const byCompany = selectedCompanyId
+      ? people.filter((person) => person.companyId === selectedCompanyId)
+      : people;
+
+    if (stageFilter === 'all') {
+      return byCompany;
+    }
+
+    if (stageFilter === 'needs_approval') {
+      return byCompany.filter((person) => person.needsApproval === true);
+    }
+
+    return byCompany.filter((person) => person.stage === stageFilter);
+  }, [people, selectedCompanyId, stageFilter]);
 
   const tableRows = useMemo(
     () => filteredPeople.map(mapOutreachPersonToDataTableRow),
@@ -275,7 +315,8 @@ export const OutreachPeoplePanel = ({
   }
 
   const deferredCandidateId = selectedPeople.find(
-    (person) => person.stage === 'deferred' && person.candidateId,
+    (person) =>
+      person.stage === 'deferred' && isDefined(person.candidateId),
   )?.candidateId;
 
   const stoppableCandidateIds = selectedPeople
@@ -287,8 +328,38 @@ export const OutreachPeoplePanel = ({
       <StyledHint>
         Working list for this Project, merged with enrolled people. Select
         rows, then Add to CRM / Enroll — Ask AI must not create enrollment
-        records until you confirm.
+        records until you confirm. Click a name to open the Journey tab.
       </StyledHint>
+      <StyledFilters>
+        <StyledFilterChip
+          type="button"
+          isActive={stageFilter === 'all'}
+          onClick={() => setStageFilter('all')}
+        >
+          All stages
+        </StyledFilterChip>
+        <StyledFilterChip
+          type="button"
+          isActive={stageFilter === 'needs_approval'}
+          onClick={() => setStageFilter('needs_approval')}
+        >
+          Needs approval
+        </StyledFilterChip>
+        {OUTREACH_STAGES.filter((stage) =>
+          ['queued', 'connection_sent', 'connection_accepted', 'replied', 'deferred', 'stopped'].includes(
+            stage.id,
+          ),
+        ).map((stage) => (
+          <StyledFilterChip
+            key={stage.id}
+            type="button"
+            isActive={stageFilter === stage.id}
+            onClick={() => setStageFilter(stage.id)}
+          >
+            {stage.label}
+          </StyledFilterChip>
+        ))}
+      </StyledFilters>
       <StyledActions>
         <Button
           title={

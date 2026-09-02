@@ -1,4 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { isWarmPathsEnabledState } from '@/candidate-table/states/isWarmPathsEnabledState';
 import { resolveWarmPaths } from '@/candidate-table/services/warm-paths-api.service';
 import type { WarmPathResolveResponse } from '@/candidate-table/types/warm-path.types';
 import {
@@ -16,6 +17,7 @@ export type UseWarmPathResolveResult = {
   error: string | null;
   linkedinUrl: string | null;
   hasLinkedinUrl: boolean;
+  isWarmPathsEnabled: boolean;
   resolve: () => Promise<void>;
 };
 
@@ -23,6 +25,7 @@ export const useWarmPathResolve = (
   candidateData: unknown,
 ): UseWarmPathResolveResult => {
   const tokenPair = useAtomStateValue(tokenPairState);
+  const isWarmPathsEnabled = useAtomStateValue(isWarmPathsEnabledState);
   const [data, setData] = useState<WarmPathResolveResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +42,12 @@ export const useWarmPathResolve = (
   const resolve = useCallback(async () => {
     const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
     const baseUrl = REACT_APP_SERVER_BASE_URL;
+
+    if (!isWarmPathsEnabled) {
+      setData(null);
+      setError(null);
+      return;
+    }
 
     if (!hasLinkedinUrl) {
       setError('Add a LinkedIn profile URL to find warm paths.');
@@ -71,7 +80,12 @@ export const useWarmPathResolve = (
     } finally {
       setIsLoading(false);
     }
-  }, [hasLinkedinUrl, linkedinUrl, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+  }, [
+    hasLinkedinUrl,
+    isWarmPathsEnabled,
+    linkedinUrl,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+  ]);
 
   return {
     data,
@@ -79,6 +93,7 @@ export const useWarmPathResolve = (
     error,
     linkedinUrl: linkedinUrl || null,
     hasLinkedinUrl,
+    isWarmPathsEnabled,
     resolve,
   };
 };

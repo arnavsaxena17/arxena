@@ -26,7 +26,7 @@ export const useArxCandidateRecordsFromHeadlessContext = ({
 }: UseArxCandidateRecordsFromHeadlessContextParams = {}) => {
   const location = useLocation();
   const onProjectRoute = isProjectRoute(location.pathname);
-  const tableState = useAtomStateValue(tableStateAtom);
+  const tableStateAtom = useAtomStateValue(tableStateAtom);
   const searchResults = useAtomStateValue(searchResultsState);
 
   const { objectMetadataItem, selectedRecords, graphqlFilter } =

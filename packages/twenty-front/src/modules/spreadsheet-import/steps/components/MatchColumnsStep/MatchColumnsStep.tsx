@@ -93,7 +93,7 @@ export const MatchColumnsStep = ({
   );
 
   const { matchColumnsStepHook } = useSpreadsheetImportInternal();
-  const projectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const currentProject = useMemo(
     () => projects.find((project) => project.id === projectId) ?? null,

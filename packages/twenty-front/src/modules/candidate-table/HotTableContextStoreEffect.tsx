@@ -26,7 +26,7 @@ export const HotTableContextStoreEffect = ({
 }) => {
   const { objectMetadataItems } = useObjectMetadataItems();
   const { upsertRecordsInStore } = useUpsertRecordsInStore();
-  const tableState = useAtomStateValue(tableStateAtom);
+  const tableStateAtom = useAtomStateValue(tableStateAtom);
   const searchResults = useAtomStateValue(searchResultsState);
 
   const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
@@ -39,12 +39,12 @@ export const HotTableContextStoreEffect = ({
   );
 
   // Project-scoped HotTable instance
-  const setTableContextStoreCurrentObjectMetadataItemId =
+  const setContextStoreCurrentObjectMetadataItemId =
     useSetAtomComponentState(
       contextStoreCurrentObjectMetadataItemIdComponentState,
       tableId,
     );
-  const setTableContextStoreCurrentPageType = useSetAtomComponentState(
+  const setContextStoreCurrentPageType = useSetAtomComponentState(
     contextStoreCurrentPageTypeComponentState,
     tableId,
   );

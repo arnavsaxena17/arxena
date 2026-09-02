@@ -26,6 +26,11 @@ import {
     OUTREACH_WORKFLOW_B_NAME,
     isOutreachProjectName,
 } from '@/outreach-home/constants/outreach-command.constants';
+import {
+  resolveOutreachJourneyStageLabel,
+  resolveOutreachNextStepLabel,
+} from '@/outreach-home/utils/resolveOutreachJourneyLabels';
+import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
 import {
     type OutreachCompanyRow,
@@ -40,10 +45,15 @@ import {
     type WorkspaceProfileRecord,
 } from '@/outreach-home/types/outreach-home.types';
 import {
+    fetchOutreachProjectCandidates,
+    resolveCandidateOutreachResumeAt,
+    type OutreachProjectCandidateRecord,
+} from '@/outreach-home/utils/fetch-outreach-project-candidates';
+import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
+import {
     fetchOutreachCompaniesCache,
     persistOutreachCompaniesCache,
 } from '@/outreach-home/utils/outreach-companies-cache';
-import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
     fetchOutreachPeopleCache,
     persistOutreachPeopleCache,
@@ -58,19 +68,7 @@ type OutreachProjectRecord = ObjectRecord &
     updatedAt?: string;
   };
 
-type OutreachCandidateRecord = ObjectRecord & {
-  name?: string;
-  jobTitle?: string | null;
-  jobCompanyName?: string | null;
-  campaign?: string | null;
-  projectsId?: string | null;
-  outreachSequenceStage?: string | null;
-  pendingChannel?: string | null;
-  experimentVariant?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
-  email?: { primaryEmail?: string } | null;
-  peopleId?: string | null;
-};
+type OutreachCandidateRecord = OutreachProjectCandidateRecord;
 
 const normalizeOutreachStatus = (
   value: string | null | undefined,
@@ -199,6 +197,10 @@ export const useOutreachLiveWorkingSet = () => {
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [ephemeralPeople, setEphemeralPeople] = useState<OutreachPersonRow[]>([]);
   const [peopleCacheLoading, setPeopleCacheLoading] = useState(false);
+  const [projectCandidates, setProjectCandidates] = useState<
+    OutreachCandidateRecord[]
+  >([]);
+  const [projectCandidatesLoading, setProjectCandidatesLoading] = useState(false);
   const [peopleCacheReady, setPeopleCacheReady] = useState(
     () => !isNonEmptyString(projectIdFromQuery),
   );
@@ -300,6 +302,10 @@ export const useOutreachLiveWorkingSet = () => {
   );
 
   const scopeKey = project?.id ?? null;
+
+  const { summary: journeySummary } = useOutreachProjectJourneySummary(
+    activeProjectId,
+  );
 
   // Ephemeral companies from Redis (per projectId) — not CRM membership.
   // Poll so Ask AI upserts appear on the Companies tab without a full reload.
@@ -444,35 +450,39 @@ export const useOutreachLiveWorkingSet = () => {
     [accessToken, activeProjectId],
   );
 
-  const candidateFilter = useMemo(() => {
-    if (!isDefined(scopeKey)) {
-      return undefined;
+  // Paginated REST fetch — same source as candidate table (no 100-record cap).
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isDefined(scopeKey) || !isDefined(accessToken)) {
+      setProjectCandidates([]);
+
+      return;
     }
 
-    return { projectsId: { eq: scopeKey } };
-  }, [scopeKey]);
+    setProjectCandidatesLoading(true);
 
-  const { records: candidateRecords, loading: candidatesLoading } =
-    useFindManyRecords<OutreachCandidateRecord>({
-      objectNameSingular: 'candidate',
-      filter: candidateFilter,
-      limit: 100,
-      skip: !isDefined(scopeKey),
-      recordGqlFields: {
-        id: true,
-        name: true,
-        jobTitle: true,
-        jobCompanyName: true,
-        campaign: true,
-        projectsId: true,
-        outreachSequenceStage: true,
-        pendingChannel: true,
-        experimentVariant: true,
-        linkedinUrl: true,
-        email: true,
-        peopleId: true,
-      },
-    });
+    fetchOutreachProjectCandidates(scopeKey, accessToken)
+      .then((candidates) => {
+        if (!cancelled) {
+          setProjectCandidates(candidates);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProjectCandidates([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setProjectCandidatesLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, scopeKey]);
 
   const createOutreachProject = useCallback(async () => {
     let outreachWorkflowId = defaultOutreachWorkflows[0]?.id ?? null;
@@ -604,11 +614,32 @@ export const useOutreachLiveWorkingSet = () => {
 
   const crmPeople: OutreachPersonRow[] = useMemo(
     () =>
-      candidateRecords.map((candidate) => {
+      projectCandidates.map((candidate) => {
         const linkedinUrl =
           candidate.linkedinUrl?.primaryLinkUrl ??
           candidate.linkedinUrl?.primaryLinkLabel ??
           '';
+
+        const runSummary =
+          journeySummary?.byCandidateId?.[candidate.id] ?? null;
+        const outreachResumeAt = resolveCandidateOutreachResumeAt(candidate);
+
+        const nextStepLabel = runSummary
+          ? resolveOutreachNextStepLabel({
+              currentStepName: runSummary.currentStepName,
+              currentStepKind: runSummary.currentStepKind,
+              resumeAt: runSummary.resumeAt,
+              pendingReason: runSummary.pendingReason,
+            })
+          : candidate.pendingChannel
+            ? `Pending ${candidate.pendingChannel}`
+            : outreachResumeAt
+              ? `Snoozed until ${new Date(outreachResumeAt).toLocaleDateString()}`
+              : resolveOutreachJourneyStageLabel({
+                  outreachSequenceStage:
+                    candidate.outreachSequenceStage ?? 'QUEUED',
+                  linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
+                });
 
         return {
           id: candidate.peopleId ?? candidate.id,
@@ -622,12 +653,16 @@ export const useOutreachLiveWorkingSet = () => {
           stage: mapCrmStageToOutreachStage(candidate.outreachSequenceStage),
           email: candidate.email?.primaryEmail ?? '',
           pendingChannel: candidate.pendingChannel ?? undefined,
+          linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
+          outreachResumeAt,
+          nextStepLabel,
+          needsApproval: runSummary?.needsApproval ?? false,
           experimentVariant: normalizeExperimentVariant(
             candidate.experimentVariant,
           ),
         };
       }),
-    [candidateRecords],
+    [journeySummary?.byCandidateId, projectCandidates],
   );
 
   const crmPeopleSignature = outreachPersonSignature(crmPeople);
@@ -726,7 +761,7 @@ export const useOutreachLiveWorkingSet = () => {
   };
 
   const peopleLoading =
-    !peopleCacheReady || peopleCacheLoading || candidatesLoading;
+    !peopleCacheReady || peopleCacheLoading || projectCandidatesLoading;
 
   return {
     loading:

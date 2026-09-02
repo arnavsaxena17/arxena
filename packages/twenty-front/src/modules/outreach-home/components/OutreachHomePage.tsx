@@ -23,6 +23,7 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { OutreachCompaniesPanel } from '@/outreach-home/components/OutreachCompaniesPanel';
 import { OutreachMainTabs } from '@/outreach-home/components/OutreachMainTabs';
 import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/OutreachNeedsConnectionBanner';
+import { OutreachKpiStrip } from '@/outreach-home/components/OutreachKpiStrip';
 import { OutreachPeoplePanel } from '@/outreach-home/components/OutreachPeoplePanel';
 import { OutreachRunProgressHeader } from '@/outreach-home/components/OutreachRunProgressHeader';
 import { OutreachSetupPanel } from '@/outreach-home/components/OutreachSetupPanel';
@@ -760,15 +761,18 @@ const OutreachHomePageContent = () => {
                 />
               )}
               {activeTab === 'people' && (
-                <OutreachPeoplePanel
-                  people={people}
-                  companies={companies}
-                  selectedCompanyId={selectedCompanyId}
-                  selectedPersonId={selectedPersonId}
-                  onSelectPersonId={setSelectedPersonId}
-                  tableInstanceId={peopleTableInstanceId}
-                  isLoading={peopleLoading}
-                />
+                <>
+                  <OutreachKpiStrip projectId={activeProjectId} />
+                  <OutreachPeoplePanel
+                    people={people}
+                    companies={companies}
+                    selectedCompanyId={selectedCompanyId}
+                    selectedPersonId={selectedPersonId}
+                    onSelectPersonId={setSelectedPersonId}
+                    tableInstanceId={peopleTableInstanceId}
+                    isLoading={peopleLoading}
+                  />
+                </>
               )}
             </StyledContent>
           )}

@@ -93,11 +93,11 @@ export const WorkflowFormNotifyTestVariableInput = ({
   action,
   readonly,
 }: WorkflowFormNotifyTestVariableInputProps) => {
-  const testData = useAtomFamilyStateValue(
+  const workflowFormNotifyTestData = useAtomFamilyStateValue(
     workflowFormNotifyTestDataFamilyState,
     action.id,
   );
-  const setTestData = useSetAtomFamilyState(
+  const setWorkflowFormNotifyTestData = useSetAtomFamilyState(
     workflowFormNotifyTestDataFamilyState,
     action.id,
   );

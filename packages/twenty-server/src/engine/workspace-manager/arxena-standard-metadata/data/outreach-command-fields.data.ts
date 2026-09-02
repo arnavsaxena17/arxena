@@ -321,7 +321,7 @@ export const getOutreachCommandFieldsData = (
     objectName: 'candidate',
     field: {
       description:
-        'Outreach analytics JSON: timestamps, speed metrics, and message attribution',
+        'Outreach analytics JSON: timestamps, speed metrics, message attribution, and deferred resume (resumeAt / stageBeforeDefer)',
       icon: 'IconChartDots',
       label: 'Outreach Analytics',
       name: 'outreachAnalytics',

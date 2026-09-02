@@ -1,4 +1,8 @@
-import { tokenPairState } from '@/auth/states/tokenPairState';
+import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import { CandidateOutreachJourneyTab, resolveJourneyHeaderLabels } from '@/candidate-table/CandidateOutreachJourneyTab';
+import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
+import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { findSelectedTableRow, isUUID, resolveChatLookupIds } from '@/candidate-table/HotHooks';
 import { candidateDataState, processedDataSelector, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
@@ -15,7 +19,7 @@ import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconUser } from 'twenty-ui/icon';
+import { IconArrowsSplit2, IconFileText, IconMessage, IconRoute, IconUser } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
@@ -366,7 +370,7 @@ type CandidateData = {
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useAtomState(tokenPairState);
   const [candidateData, setCandidateData] = useAtomState(candidateDataState);
-  const tableState = useAtomStateValue(tableStateAtom);
+  const tableStateAtom = useAtomStateValue(tableStateAtom);
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
   const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
@@ -377,10 +381,10 @@ export const CandidateChatDrawer = React.memo(() => {
 
 
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isChatLoading, setIsChatLoading] = useState(true);
+  const [isCandidateDataLoading, setIsCandidateDataLoading] = useState(true);
+  const [chatError, setChatError] = useState<string | null>(null);
   const [candidateName, setCandidateName] = useState<string>('Candidate');
-  const prevCandidateIdRef = useRef<string | null>(null);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -402,6 +406,11 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Memoize tabs array to prevent recreation on every render
   const tabs = useMemo(() => [
+    {
+      id: 'journey',
+      title: 'Journey',
+      Icon: IconRoute,
+    },
     {
       id: 'chat',
       title: 'Chat',
@@ -437,6 +446,58 @@ export const CandidateChatDrawer = React.memo(() => {
     [selectedCandidateId, selectedTableRow],
   );
 
+  const outreachContext = useAtomStateValue(outreachContextState);
+  const currentProjectId = useAtomStateValue(currentProjectIdState);
+
+  const outreachProjectId = useMemo(() => {
+    return (
+      outreachContext.projectId ??
+      currentProjectId ??
+      (typeof candidateData?.projectsId === 'string'
+        ? candidateData.projectsId
+        : null)
+    );
+  }, [
+    candidateData?.projectsId,
+    currentProjectId,
+    outreachContext.projectId,
+  ]);
+
+  const enrolledCandidateId = useMemo(() => {
+    return chatLookupIds.candidateId && isUUID(chatLookupIds.candidateId)
+      ? chatLookupIds.candidateId
+      : typeof selectedTableRow?.otherFields === 'object' &&
+          selectedTableRow.otherFields !== null &&
+          typeof (selectedTableRow.otherFields as { candidateId?: unknown })
+            .candidateId === 'string'
+        ? (selectedTableRow.otherFields as { candidateId: string }).candidateId
+        : typeof selectedTableRow?.candidateId === 'string'
+          ? selectedTableRow.candidateId
+          : null;
+  }, [chatLookupIds.candidateId, selectedTableRow]);
+
+  const {
+    journey: outreachJourney,
+    isLoading: isOutreachJourneyLoading,
+    isActionLoading: isOutreachActionLoading,
+    pauseJourney,
+    resumeJourney,
+    snoozeJourney,
+    skipDelayStep,
+    approveFormStep,
+  } = useCandidateOutreachJourney({
+    projectId: outreachProjectId,
+    candidateId: enrolledCandidateId,
+    enabled: Boolean(outreachProjectId && enrolledCandidateId),
+  });
+
+  const { stopOutreachForCandidates } = useStopOutreach();
+
+  const outreachHeaderLabels = useMemo(
+    () => resolveJourneyHeaderLabels(outreachJourney),
+    [outreachJourney],
+  );
+
   // Get personId from the selected table row first (GTM people rows), then candidateData
   const personId = useMemo(() => {
     return chatLookupIds.personId || candidateData?.peopleId || candidateData?.personId || null;
@@ -456,17 +517,17 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Scroll to bottom when messages change or when loading completes
   useEffect(() => {
-    if (!isLoading && activeTabId === 'chat') {
+    if (!isChatLoading && activeTabId === 'chat') {
       scrollToBottom();
     }
-  }, [messageHistory, isLoading, activeTabId, scrollToBottom]);
+  }, [messageHistory, isChatLoading, activeTabId, scrollToBottom]);
 
   // Also scroll to bottom when switching to chat tab
   useEffect(() => {
-    if (activeTabId === 'chat' && !isLoading) {
+    if (activeTabId === 'chat' && !isChatLoading) {
       scrollToBottom();
     }
-  }, [activeTabId, isLoading, scrollToBottom]);
+  }, [activeTabId, isChatLoading, scrollToBottom]);
 
   const showSnackbar = useCallback(
     (message: string, type: 'success' | 'error') => {
@@ -484,10 +545,14 @@ export const CandidateChatDrawer = React.memo(() => {
     return templatePreviews[templateName] || 'Template preview not available';
   }, [templatePreviews]);
 
-  const fetchMessages = React.useCallback(async () => {
+  const fetchMessages = React.useCallback(async (options?: { background?: boolean }) => {
+    const isBackgroundRefresh = options?.background === true;
+
     if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       console.log('Missing selectedCandidateId or token, skipping fetch');
-      setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsChatLoading(false);
+      }
       return;
     }
 
@@ -497,8 +562,14 @@ export const CandidateChatDrawer = React.memo(() => {
       (!lookupPersonId || !isUUID(lookupPersonId))
     ) {
       console.log(`Skipping fetch messages for candidate ${selectedCandidateId} - no valid UUID found (candidateId: ${candidateId}, personId: ${lookupPersonId})`);
-      setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsChatLoading(false);
+      }
       return;
+    }
+
+    if (!isBackgroundRefresh) {
+      setIsChatLoading(true);
     }
 
     try {
@@ -529,10 +600,14 @@ export const CandidateChatDrawer = React.memo(() => {
       });
     } catch (error) {
       console.error('Error fetching chat messages:', error);
-      setError('Failed to load chat messages');
-      setMessageHistory([]);
+      if (!isBackgroundRefresh) {
+        setChatError('Failed to load chat messages');
+        setMessageHistory([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsChatLoading(false);
+      }
     }
   }, [chatLookupIds, selectedCandidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
 
@@ -542,7 +617,7 @@ export const CandidateChatDrawer = React.memo(() => {
       clearTimeout(fetchMessagesTimeoutRef.current);
     }
     fetchMessagesTimeoutRef.current = setTimeout(() => {
-      fetchMessages();
+      void fetchMessages({ background: true });
     }, 1000); // Debounce by 1 second
   }, [fetchMessages]);
 
@@ -574,7 +649,9 @@ export const CandidateChatDrawer = React.memo(() => {
     [setCandidateData],
   );
 
-  const fetchCandidateData = React.useCallback(async () => {
+  const fetchCandidateData = React.useCallback(async (options?: { background?: boolean }) => {
+    const isBackgroundRefresh = options?.background === true;
+
     if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
       return;
     }
@@ -584,12 +661,17 @@ export const CandidateChatDrawer = React.memo(() => {
 
     if (!shouldFetchCandidate) {
       applyTableRowAsCandidateData(selectedTableRow);
-      setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsCandidateDataLoading(false);
+      }
       return;
     }
 
+    if (!isBackgroundRefresh) {
+      setIsCandidateDataLoading(true);
+    }
+
     try {
-      setIsLoading(true);
       const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/graphql`, {
         method: 'POST',
         headers: {
@@ -635,7 +717,9 @@ export const CandidateChatDrawer = React.memo(() => {
       console.error('Error fetching candidate data:', error);
       applyTableRowAsCandidateData(selectedTableRow);
     } finally {
-      setIsLoading(false);
+      if (!isBackgroundRefresh) {
+        setIsCandidateDataLoading(false);
+      }
     }
   }, [
     applyTableRowAsCandidateData,
@@ -651,14 +735,18 @@ export const CandidateChatDrawer = React.memo(() => {
   useEffect(() => {
     if (!selectedCandidateId) return;
 
+    setIsChatLoading(true);
+    setIsCandidateDataLoading(true);
+    setChatError(null);
+
     // Initial fetch
-    fetchMessages();
-    fetchCandidateData();
+    void fetchMessages();
+    void fetchCandidateData();
 
     // Set up polling interval with longer interval to reduce load
     pollingIntervalRef.current = setInterval(() => {
       debouncedFetchMessages();
-      fetchCandidateData();
+      void fetchCandidateData({ background: true });
     }, 30000); // Poll every 30 seconds instead of 10
 
     // Cleanup interval on unmount or when selectedCandidateId changes
@@ -680,7 +768,7 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv')) {
+      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv' || defaultTab === 'journey')) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -931,10 +1019,10 @@ export const CandidateChatDrawer = React.memo(() => {
           )}
         </ChatStatusBar>
       )}
-      {isLoading ? (
+      {isChatLoading ? (
         <div>Loading chat history... for {selectedCandidateId}</div>
-      ) : error ? (
-        <div>{error}</div>
+      ) : chatError ? (
+        <div>{chatError}</div>
       ) : messageHistory.length === 0 ? (
         <div id = "candidate-chat-no-messages" data-candidate-id={selectedCandidateId} data-person-id={personId}>No chat messages found for {candidateName}</div>
       ) : (
@@ -1002,7 +1090,7 @@ export const CandidateChatDrawer = React.memo(() => {
   const renderProfileTab = () => (
     <CandidateProfileTab
       candidateData={candidateData}
-      isLoading={isLoading}
+      isLoading={isCandidateDataLoading}
     />
   );
 
@@ -1078,23 +1166,50 @@ export const CandidateChatDrawer = React.memo(() => {
 
   return (
     <StyledContainer>
-      <CandidateInfoHeader candidateData={candidateData} />
+      <CandidateInfoHeader
+        candidateData={candidateData}
+        outreachStageLabel={outreachHeaderLabels.outreachStageLabel}
+        outreachNextStepLabel={outreachHeaderLabels.outreachNextStepLabel}
+        pendingChannel={outreachHeaderLabels.pendingChannel}
+      />
       <TabContainer>
         <TabList
           componentInstanceId={tabListId}
           tabs={tabs}
-          loading={isLoading}
+          behaveAsLinks={false}
+          isInSidePanel={true}
         />
       </TabContainer>
       <TabContent>
         {!selectedCandidateId ? (
           <div style={{padding: '20px'}}>No candidate selected</div>
-        ) : isLoading ? (
-          <div style={{padding: '20px'}}>Loading chat...</div>
-        ) : error ? (
-          <div style={{padding: '20px'}}>Error: {error}</div>
         ) : (
           <>
+            {activeTabId === 'journey' && enrolledCandidateId ? (
+              <CandidateOutreachJourneyTab
+                journey={outreachJourney}
+                isLoading={isOutreachJourneyLoading}
+                isActionLoading={isOutreachActionLoading}
+                onPause={() => void pauseJourney()}
+                onResume={() => void resumeJourney()}
+                onStop={() =>
+                  void stopOutreachForCandidates(
+                    [enrolledCandidateId],
+                    outreachProjectId,
+                  )
+                }
+                onSnooze={(resumeAt) => void snoozeJourney(resumeAt)}
+                onSkipDelay={(workflowRunId, stepId) =>
+                  void skipDelayStep(workflowRunId, stepId)
+                }
+                onApproveForm={(input) => void approveFormStep(input)}
+              />
+            ) : null}
+            {activeTabId === 'journey' && !enrolledCandidateId ? (
+              <div style={{ padding: '20px' }}>
+                Enroll this person in outreach to manage their journey.
+              </div>
+            ) : null}
             {activeTabId === 'chat' && renderChatTab()}
             {activeTabId === 'profile' && renderProfileTab()}
             {activeTabId === 'warm-path' && renderWarmPathTab()}

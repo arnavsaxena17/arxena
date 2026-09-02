@@ -13,7 +13,7 @@ import type { ContextResultItem } from '../../types';
 import { OrgChartOutreachModal } from '../OrgChartOutreachModal';
 
 const ProjectIdProbe = () => {
-  const projectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
   return <div data-testid="job-id-probe">{projectId}</div>;
 };
 

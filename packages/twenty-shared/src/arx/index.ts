@@ -245,6 +245,9 @@ export {
   resolveOutreachFirstInboundAt,
   resolveOutreachLastInboundAt,
   resolveOutreachMeetingBookedAt,
+  resolveOutreachResumeAt,
+  resolveOutreachStageBeforeDefer,
+  patchOutreachAnalyticsDeferredResume,
   buildOutreachAnalyticsMetrics,
   buildOutreachSpeedFlatMetrics,
   applyOutreachAnalyticsEvent,
@@ -290,3 +293,7 @@ export {
   formatSendWindowDaysSummary,
   areSendWindowDaysEqual,
 } from './sendWindowDays';
+export {
+  isWarmPathsEnabledEnv,
+  resolveIsWarmPathsEnabledFromWorkspace,
+} from './warmPaths';

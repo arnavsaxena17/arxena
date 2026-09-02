@@ -39,6 +39,8 @@ export type OutreachThrottleCheckResult = {
 };
 
 export const OUTREACH_PROJECT_PAUSED_PENDING_REASON = 'outreach_project_paused';
+export const OUTREACH_CANDIDATE_PAUSED_PENDING_REASON =
+  'outreach_candidate_paused';
 
 const SEND_WINDOW_CHANNELS = new Set<OutreachThrottleChannel>(['connect']);
 

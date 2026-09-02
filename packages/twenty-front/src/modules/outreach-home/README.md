@@ -62,18 +62,35 @@ OUTREACH_DELAY_MS=1000 OUTREACH_SIMULATE_MODE=full OUTREACH_PROJECT_ID=<uuid> AP
 ## Shell actions
 
 - **Companies tab** — ephemeral Redis list per `projectId` (not CRM membership)
-- **People tab** — ephemeral Redis list per `projectId` (merged with enrolled CRM Candidates)
+- **People tab** — ephemeral Redis list per `projectId` (merged with enrolled CRM Candidates); stage filters; next-step from active workflow runs; row name opens Journey tab
+- **KPI strip** (People) — enrolled / by stage / needs approval / due this week + link to Outreach dashboard
 - **Add selected to CRM** (People) — upsert Company + Person + Candidate under Project
 - **Enroll in outreach** — Candidate at `QUEUED` (Workflow B); also upserts Company when ephemeral company is known
 - **Promote deferred** — Deferred → Queued when under persona cap
 - **Needs connection** — live LinkedIn Unipile / Gmail / WhatsApp flags → Settings → Accounts
+
+## Journey tab (CandidateChatDrawer)
+
+Opened from Outreach People (name click sets Journey as default tab). Aggregates Stage B + Stage C runs for one enrolled candidate:
+
+| Control | API |
+| --- | --- |
+| Read journey | `GET /outreach-command/projects/:projectId/candidates/:candidateId/journey` |
+| Pause / resume | `POST .../pause` · `POST .../resume` |
+| Snooze until date | `POST .../snooze` `{ resumeAt }` → sets `outreachAnalytics.resumeAt` + schedules deferred wake-up |
+| Skip delay | `POST .../skip-step` |
+| Approve / reject FORM | `POST .../approve-form` `{ approve, editedBody }` |
+| Stop | existing `POST .../candidates/stop` |
+
+Deferred auto wake-up: inbound classifier persists `outreachAnalytics.resumeAt` from `extractedTimeHint` (and `stageBeforeDefer`); hourly cron + delayed job stamp stage back to `stageBeforeDefer`.
 
 ## Human gates
 
 | Control | Where |
 | --- | --- |
 | ICP approve | Ask AI `gtm-icp-onboarding` → Project `icpSpec` |
-| Send APPROVAL vs AUTO | Project `outreachSendMode`; FORM in Workflow B |
+| Send APPROVAL vs AUTO | Project `outreachSendMode`; FORM in Workflow B / Journey tab |
+| Per-candidate pause / snooze | Journey tab |
 | Stop / DNC | Person flags; Candidate `STOPPED` |
 | Caps / windows | Project + `OutreachThrottleService` |
 | Warm path / InMail | Workflow B branches |

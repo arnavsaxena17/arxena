@@ -35,9 +35,9 @@ const StyledContent = styled.div`
 `;
 
 const StyledActions = styled.div`
+  align-items: center;
   display: flex;
   flex-shrink: 0;
-  align-items: center;
 `;
 
 export const InformationBanner = ({

@@ -21,6 +21,11 @@ export const OUTREACH_STAGES: Array<{
     description: 'LinkedIn connection request',
   },
   {
+    id: 'connection_accepted',
+    label: 'Connection accepted',
+    description: 'LinkedIn connection accepted',
+  },
+  {
     id: 'connection_ignored',
     label: 'Connection ignored',
     description: 'Connection request ignored — fallback to email / InMail',
@@ -92,6 +97,8 @@ export const mapCrmStageToOutreachStage = (
       return 'needs_connection';
     case 'CONNECTION_SENT':
       return 'connection_sent';
+    case 'CONNECTION_ACCEPTED':
+      return 'connection_accepted';
     case 'CONNECTION_IGNORED':
       return 'connection_ignored';
     case 'PROFILE_CHECKED':
@@ -111,8 +118,7 @@ export const mapCrmStageToOutreachStage = (
     case 'STOPPED':
       return 'stopped';
     case 'REPLIED':
-    case 'CONNECTION_ACCEPTED':
-      return normalized === 'CONNECTION_ACCEPTED' ? 'profile_checked' : 'replied';
+      return 'replied';
     case 'NEGOTIATING':
       return 'negotiating';
     case 'MEETING_BOOKED':

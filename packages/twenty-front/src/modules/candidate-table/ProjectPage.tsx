@@ -102,13 +102,13 @@ const DataTable = lazy(() =>
 
 export const ProjectPage: React.FC = () => {
   debugLog(`ProjectPage rendering`);
-  const [projectId, setProjectIdAtom] = useAtomState(projectIdAtom);
+  const [projectIdAtom, setProjectIdAtom] = useAtomState(projectIdAtom);
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
   const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const filteredCount = useAtomStateValue(filteredCandidatesCountState);
+  const filteredCandidatesCount = useAtomStateValue(filteredCandidatesCountState);
   const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
-  const tableState = useAtomStateValue(tableStateAtom);
+  const tableStateAtom = useAtomStateValue(tableStateAtom);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
   const chatSearchQuery = useAtomStateValue(chatSearchQueryState);

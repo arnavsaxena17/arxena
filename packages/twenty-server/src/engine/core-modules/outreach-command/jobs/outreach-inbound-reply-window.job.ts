@@ -24,6 +24,11 @@ import { Process } from 'src/engine/core-modules/message-queue/decorators/proces
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import {
+  OUTREACH_DEFERRED_RESUME_JOB_NAME,
+  type OutreachDeferredResumeJobData,
+} from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume.service';
+import { parseOutreachResumeAtFromHint } from 'src/engine/core-modules/outreach-command/utils/parse-outreach-resume-at.util';
 import type { EngagedCandidateJobData } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-processor.job';
 
 @Injectable()
@@ -179,7 +184,30 @@ export class OutreachInboundReplyWindowService {
           event,
           apiToken: token,
           classifiedOutreachStage: classification.stage,
+          extractedTimeHint: classification.extractedTimeHint,
         });
+
+        if (
+          classification.stage === 'DEFERRED' &&
+          classification.extractedTimeHint
+        ) {
+          const resumeAtIso = parseOutreachResumeAtFromHint(
+            classification.extractedTimeHint,
+          );
+          const resumeAtMs = resumeAtIso ? Date.parse(resumeAtIso) : NaN;
+          const delayMs =
+            Number.isFinite(resumeAtMs) && resumeAtMs > Date.now()
+              ? resumeAtMs - Date.now()
+              : 0;
+
+          if (delayMs > 0) {
+            await this.delayedQueue.add<OutreachDeferredResumeJobData>(
+              OUTREACH_DEFERRED_RESUME_JOB_NAME,
+              { workspaceId, candidateId },
+              { delay: delayMs },
+            );
+          }
+        }
       }
     } else if (apiToken) {
       await this.engagedCandidateQueue.add<EngagedCandidateJobData>(

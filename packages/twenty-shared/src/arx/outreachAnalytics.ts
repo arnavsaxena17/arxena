@@ -49,6 +49,9 @@ export type OutreachAnalytics = {
   channelsUsed?: string[] | null;
   lastOutboundMessageKind?: string | null;
   convertedOnMessageKind?: string | null;
+  // Deferred / snooze journey controls (not separate Candidate columns)
+  resumeAt?: string | null;
+  stageBeforeDefer?: string | null;
   updatedAt?: string | null;
 };
 
@@ -231,6 +234,8 @@ export const parseOutreachAnalytics = (
       : null,
     lastOutboundMessageKind: readString(record, 'lastOutboundMessageKind'),
     convertedOnMessageKind: readString(record, 'convertedOnMessageKind'),
+    resumeAt: readIso(record, 'resumeAt'),
+    stageBeforeDefer: readString(record, 'stageBeforeDefer'),
     updatedAt: readIso(record, 'updatedAt'),
   };
 };
@@ -255,6 +260,7 @@ const OUTREACH_ANALYTICS_ISO_FIELD_KEYS = [
   'firstReplyAt',
   'meetingBookedAt',
   'meetingHeldAt',
+  'resumeAt',
   'updatedAt',
 ] as const;
 
@@ -316,6 +322,44 @@ export const resolveOutreachMeetingBookedAt = (
   flatFallback?: string | null,
 ): string | null =>
   resolveFromAnalytics(analytics, 'meetingBookedAt', flatFallback);
+
+export const resolveOutreachResumeAt = (
+  analytics: unknown,
+): string | null => resolveFromAnalytics(analytics, 'resumeAt');
+
+export const resolveOutreachStageBeforeDefer = (
+  analytics: unknown,
+): string | null => {
+  const parsed = parseOutreachAnalytics(analytics);
+
+  return parsed?.stageBeforeDefer ?? null;
+};
+
+export const patchOutreachAnalyticsDeferredResume = ({
+  existingAnalytics,
+  resumeAt,
+  stageBeforeDefer,
+  clearResume = false,
+  nowIso = new Date().toISOString(),
+}: {
+  existingAnalytics: unknown;
+  resumeAt?: string | null;
+  stageBeforeDefer?: string | null;
+  clearResume?: boolean;
+  nowIso?: string;
+}): OutreachAnalytics => {
+  const existing = parseOutreachAnalytics(existingAnalytics);
+
+  return {
+    v: 1,
+    ...(existing ?? {}),
+    resumeAt: clearResume ? null : (resumeAt ?? existing?.resumeAt ?? null),
+    stageBeforeDefer: clearResume
+      ? null
+      : (stageBeforeDefer ?? existing?.stageBeforeDefer ?? null),
+    updatedAt: nowIso,
+  };
+};
 
 export const buildOutreachAnalyticsMetrics = (
   analytics: Omit<OutreachAnalytics, 'v'>,
@@ -390,6 +434,8 @@ export const applyOutreachAnalyticsEvent = ({
       null,
     convertedOnMessageKind:
       existing?.convertedOnMessageKind ?? existingConvertedOnMessageKind ?? null,
+    resumeAt: existing?.resumeAt ?? null,
+    stageBeforeDefer: existing?.stageBeforeDefer ?? null,
     updatedAt: nowIso,
   };
 

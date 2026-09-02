@@ -29,6 +29,7 @@ import {
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
+import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('outreach-command')
@@ -48,6 +49,7 @@ export class OutreachCommandController {
     private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
     private readonly gtmProjectOutreachControlService: OutreachProjectOutreachControlService,
+    private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
   ) {}
 
   @Get('cache/companies')
@@ -640,6 +642,185 @@ export class OutreachCommandController {
         error instanceof Error
           ? error.message
           : `Failed to ${action} GTM project outreach`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('projects/:projectId/journey-summary')
+  async getProjectJourneySummary(
+    @Param('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.getProjectSummary({
+        workspaceId,
+        projectId,
+      }),
+    );
+  }
+
+  @Get('projects/:projectId/candidates/:candidateId/journey')
+  async getCandidateJourney(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) => {
+      const journey = await this.outreachCandidateJourneyService.getJourney({
+        workspaceId,
+        projectId,
+        candidateId,
+      });
+
+      if (!journey) {
+        throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
+      }
+
+      return journey;
+    });
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/pause')
+  async pauseCandidateJourney(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.pauseCandidate({
+        workspaceId,
+        projectId,
+        candidateId,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/resume')
+  async resumeCandidateJourney(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.resumeCandidate({
+        workspaceId,
+        projectId,
+        candidateId,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/snooze')
+  async snoozeCandidateJourney(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Body() body: { resumeAt?: string },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.resumeAt) {
+      throw new HttpException('resumeAt is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.snoozeCandidate({
+        workspaceId,
+        projectId,
+        candidateId,
+        resumeAt: body.resumeAt,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/skip-step')
+  async skipCandidateDelayStep(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Body() body: { workflowRunId?: string; stepId?: string },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.workflowRunId || !body?.stepId) {
+      throw new HttpException(
+        'workflowRunId and stepId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.skipDelayStep({
+        workspaceId,
+        projectId,
+        candidateId,
+        workflowRunId: body.workflowRunId,
+        stepId: body.stepId,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/approve-form')
+  async approveCandidateFormStep(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Body()
+    body: {
+      workflowRunId?: string;
+      stepId?: string;
+      response?: object;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.workflowRunId || !body?.stepId || !body?.response) {
+      throw new HttpException(
+        'workflowRunId, stepId, and response are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.approveFormStep({
+        workspaceId,
+        projectId,
+        candidateId,
+        workflowRunId: body.workflowRunId,
+        stepId: body.stepId,
+        response: body.response,
+      }),
+    );
+  }
+
+  private async withOutreachAuth<T>(
+    {
+      projectId,
+      request,
+    }: {
+      projectId: string;
+      request: { headers?: { authorization?: string } };
+    },
+    handler: (workspaceId: string) => Promise<T>,
+  ): Promise<T> {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!projectId) {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      return await handler(workspaceId);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Outreach journey request failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Outreach journey request failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

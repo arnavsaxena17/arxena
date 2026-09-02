@@ -452,7 +452,7 @@ export const ProjectTopBar = memo(
     const [chatSearchQuery, setChatSearchQuery] = useAtomState(chatSearchQueryState);
     const searchResults = useAtomStateValue(searchResultsState);
     const searchMetadata = useAtomStateValue(searchMetadataState);
-    const tableState = useAtomStateValue(tableStateAtom);
+    const tableStateAtom = useAtomStateValue(tableStateAtom);
     const columns = useAtomStateValue(columnsSelector);
     const { enqueueErrorSnackBar } = useSnackBar();
 

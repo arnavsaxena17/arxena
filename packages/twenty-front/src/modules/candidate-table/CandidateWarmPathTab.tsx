@@ -204,14 +204,44 @@ export const CandidateWarmPathTab = ({
   candidateData,
   isActive,
 }: CandidateWarmPathTabProps) => {
-  const { data, isLoading, error, hasLinkedinUrl, linkedinUrl, resolve } =
-    useWarmPathResolve(candidateData);
+  const {
+    data,
+    isLoading,
+    error,
+    hasLinkedinUrl,
+    linkedinUrl,
+    isWarmPathsEnabled,
+    resolve,
+  } = useWarmPathResolve(candidateData);
 
   useEffect(() => {
-    if (isActive && hasLinkedinUrl && !data && !isLoading && !error) {
+    if (
+      isActive &&
+      isWarmPathsEnabled &&
+      hasLinkedinUrl &&
+      !data &&
+      !isLoading &&
+      !error
+    ) {
       void resolve();
     }
-  }, [isActive, hasLinkedinUrl, data, isLoading, error, resolve]);
+  }, [
+    isActive,
+    isWarmPathsEnabled,
+    hasLinkedinUrl,
+    data,
+    isLoading,
+    error,
+    resolve,
+  ]);
+
+  if (!isWarmPathsEnabled) {
+    return (
+      <StyledEmpty data-testid="candidate-warm-path-disabled">
+        Warm paths not enabled
+      </StyledEmpty>
+    );
+  }
 
   if (!hasLinkedinUrl) {
     return (

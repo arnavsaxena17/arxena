@@ -49,6 +49,10 @@ import { OutreachLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-mod
 import { OutreachThrottleService } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
+import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
+import { OutreachDeferredResumeCronService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume-cron.service';
+import { OutreachDeferredResumeService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume.service';
+import { OutreachDeferredResumeJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-deferred-resume.job';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-wikidata-company-enrichment.source';
 import { OutreachWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-web-search-company-enrichment.source';
@@ -65,6 +69,8 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-common.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
+// WorkflowRunnerModule is not imported here: it pulls ToolModule → OutreachCommand (cycle).
+// Journey service resolves WorkflowRunnerWorkspaceService via ModuleRef instead.
 
 @Module({
   imports: [
@@ -151,6 +157,10 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
     OutreachProjectOutreachControlService,
+    OutreachCandidateJourneyService,
+    OutreachDeferredResumeService,
+    OutreachDeferredResumeJob,
+    OutreachDeferredResumeCronService,
     OutreachWorkflowRunFlowSyncService,
     OutreachInboundReplyWindowService,
   ],
@@ -178,6 +188,8 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
     OutreachProjectOutreachControlService,
+    OutreachCandidateJourneyService,
+    OutreachDeferredResumeService,
     OutreachWorkflowRunFlowSyncService,
     OutreachInboundReplyWindowService,
   ],

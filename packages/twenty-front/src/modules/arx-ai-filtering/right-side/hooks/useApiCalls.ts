@@ -19,7 +19,7 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
 
   const currentProjectId = useAtomStateValue(currentProjectIdState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const tableState = useAtomStateValue<TableState>(tableStateAtom);
+  const tableStateAtom = useAtomStateValue<TableState>(tableStateAtom);
 
   const getSelectedOrAllRecordIds = () => {
     return tableState?.selectedRowIds?.length > 0

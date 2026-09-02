@@ -186,10 +186,16 @@ const StyledLinkIcon = styled(IconExternalLink)`
 
 type CandidateInfoHeaderProps = {
   candidateData?: any;
+  outreachStageLabel?: string | null;
+  outreachNextStepLabel?: string | null;
+  pendingChannel?: string | null;
 };
 
 // Custom comparison function for React.memo to prevent re-renders when candidateData hasn't actually changed
-const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: CandidateInfoHeaderProps) => {
+const arePropsEqual = (
+  prevProps: CandidateInfoHeaderProps,
+  nextProps: CandidateInfoHeaderProps,
+) => {
   const prevData = prevProps.candidateData;
   const nextData = nextProps.candidateData;
 
@@ -205,16 +211,24 @@ const arePropsEqual = (prevProps: CandidateInfoHeaderProps, nextProps: Candidate
     prevData.name === nextData.name &&
     prevData.status === nextData.status &&
     prevData.candConversationStatus === nextData.candConversationStatus &&
-    prevData.updatedAt === nextData.updatedAt
+    prevData.updatedAt === nextData.updatedAt &&
+    prevProps.outreachStageLabel === nextProps.outreachStageLabel &&
+    prevProps.outreachNextStepLabel === nextProps.outreachNextStepLabel &&
+    prevProps.pendingChannel === nextProps.pendingChannel
   );
 };
 
-export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateData }: CandidateInfoHeaderProps) => {
+export const CandidateInfoHeader = React.memo(({
+  candidateData: propCandidateData,
+  outreachStageLabel,
+  outreachNextStepLabel,
+  pendingChannel,
+}: CandidateInfoHeaderProps) => {
   const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
   const [tokenPair] = useAtomState(tokenPairState);
   const processedData = useAtomStateValue(processedDataSelector);
   const searchResults = useAtomStateValue(searchResultsState);
-  const tableState = useAtomStateValue(tableStateAtom);
+  const tableStateAtom = useAtomStateValue(tableStateAtom);
   const currentProjectId = useAtomStateValue(currentProjectIdState);
   const navigate = useNavigate();
 
@@ -443,6 +457,15 @@ export const CandidateInfoHeader = React.memo(({ candidateData: propCandidateDat
               text={typeof candidateData.candConversationStatus === 'string' ? (CANDIDATE_CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus) : ''}
             />
           )}
+          {outreachStageLabel ? (
+            <Status color="blue" text={outreachStageLabel} />
+          ) : null}
+          {outreachNextStepLabel ? (
+            <Status color="sky" text={outreachNextStepLabel} />
+          ) : null}
+          {pendingChannel ? (
+            <Status color="purple" text={`Pending: ${pendingChannel}`} />
+          ) : null}
         </div>
       </StyledTopRow>
 

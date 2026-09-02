@@ -26,6 +26,7 @@ import {
   type OutreachChannel,
   type OutreachTouchKind,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { buildDeferredResumeFields } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume.service';
 
 type GraphqlEnvelope = {
   data?: {
@@ -50,6 +51,7 @@ export class OutreachCommandMaterializeService {
     companyId,
     companyCreatedAt,
     classifiedOutreachStage,
+    extractedTimeHint,
     outboundMessageKind,
     existingConvertedOnMessageKind,
     existingLastOutboundMessageKind,
@@ -61,6 +63,7 @@ export class OutreachCommandMaterializeService {
     companyId?: string | null;
     companyCreatedAt?: string | null;
     classifiedOutreachStage?: string | null;
+    extractedTimeHint?: string | null;
     outboundMessageKind?: string | null;
     existingConvertedOnMessageKind?: string | null;
     existingLastOutboundMessageKind?: string | null;
@@ -103,11 +106,26 @@ export class OutreachCommandMaterializeService {
         outboundMessageKind,
       });
 
+      if (event === 'inbound_reply_flush' && classifiedOutreachStage) {
+        Object.assign(
+          input,
+          buildDeferredResumeFields({
+            classifiedStage: classifiedOutreachStage,
+            extractedTimeHint: extractedTimeHint ?? undefined,
+            currentStage: candidateSnapshot?.outreachSequenceStage,
+            existingAnalytics: candidateSnapshot?.outreachAnalytics,
+          }),
+        );
+      }
+
       if (actionTimestampsEvent !== null && candidateSnapshot) {
         Object.assign(
           input,
           buildCandidateAnalyticsUpdate({
-            existingAnalytics: candidateSnapshot.outreachAnalytics,
+            // Prefer deferred-patched analytics so resumeAt / stageBeforeDefer survive
+            existingAnalytics:
+              (input as { outreachAnalytics?: unknown }).outreachAnalytics ??
+              candidateSnapshot.outreachAnalytics,
             event: actionTimestampsEvent,
             enrolledAt: candidateSnapshot.createdAt,
             outboundMessageKind,

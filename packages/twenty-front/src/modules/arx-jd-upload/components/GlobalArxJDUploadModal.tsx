@@ -12,7 +12,7 @@ export const GlobalArxJDUploadModal = () => {
     isArxUploadJDModalOpenState,
   );
   const arxUploadJDModalMode = useAtomStateValue(arxUploadJDModalModeState);
-  const projectId = useAtomStateValue(projectIdAtom);
+  const projectIdAtom = useAtomStateValue(projectIdAtom);
 
   if (!isArxUploadJDModalOpen) {
     return null;

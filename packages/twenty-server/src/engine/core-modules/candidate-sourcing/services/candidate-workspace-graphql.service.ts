@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
     FindManyVideoInterviewModels,
     getGraphqlToFindManyProjects,
+    graphqlToFindManyProjectsForNav,
     Project,
     PageInfo,
     resolveIsOrgChartEnabledFromWorkspace,
@@ -18,7 +19,49 @@ export class CandidateWorkspaceGraphQLService {
     private readonly staticGraphQLService: StaticGraphQLService,
   ) {}
 
+  async fetchAllProjectEdgesForNav(apiToken: string): Promise<Array<{ node: Project; cursor?: string }>> {
+    const allEdges: Array<{ node: Project; cursor?: string }> = [];
+    let lastCursor: string | null = null;
+    let hasNextPage = true;
 
+    while (hasNextPage) {
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyProjectsForNav,
+        {
+          limit: 100,
+          orderBy: [{ createdAt: 'DescNullsFirst' }],
+          ...(lastCursor ? { lastCursor } : {}),
+        },
+        apiToken,
+      );
+
+      const projectsConnection = response?.data?.data?.projects as {
+        edges: Array<{ node: Project; cursor?: string }>;
+        pageInfo: PageInfo;
+      } | undefined;
+
+      const pageEdges = projectsConnection?.edges ?? [];
+
+      if (pageEdges.length === 0) {
+        break;
+      }
+
+      allEdges.push(...pageEdges);
+      hasNextPage = projectsConnection?.pageInfo?.hasNextPage ?? false;
+
+      if (!hasNextPage) {
+        break;
+      }
+
+      lastCursor = projectsConnection?.pageInfo?.endCursor ?? null;
+
+      if (!lastCursor) {
+        break;
+      }
+    }
+
+    return allEdges;
+  }
 
   async getVideoInterviewModels(apiToken: string): Promise<any[]> {
     try {
