@@ -809,13 +809,11 @@ export const useOutreachLiveWorkingSet = () => {
   const peopleLoading =
     !peopleCacheReady || peopleCacheLoading || projectCandidatesLoading;
 
+  // Page shell loading only — do not include people/companies poll flags.
+  // Those flip every 5s and would unmount People/Companies tabs (DataTable remount loop).
   return {
     loading:
-      projectsLoading ||
-      workspaceProfilesLoading ||
-      isResolvingProject ||
-      companiesLoading ||
-      peopleLoading,
+      projectsLoading || workspaceProfilesLoading || isResolvingProject,
     peopleLoading,
     companiesLoading,
     workspaceCompany,

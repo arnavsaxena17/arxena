@@ -365,11 +365,17 @@ export const OutreachPeoplePanel = ({
       return tableRows as never[];
     });
 
-    setTableStateAtom((previous) => ({
-      ...previous,
-      rawData: [],
-      isLoading: false,
-    }));
+    setTableStateAtom((previous) => {
+      if (previous.rawData.length === 0 && previous.isLoading === false) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        rawData: [],
+        isLoading: false,
+      };
+    });
     setIsTableDataReady(true);
   }, [setSearchResults, setTableStateAtom, tableRows]);
 

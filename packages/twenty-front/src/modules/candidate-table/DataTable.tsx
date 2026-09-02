@@ -1075,11 +1075,17 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       applyGeneratedSortsRef.current = applyGeneratedSorts;
     }, [refreshData, applyGeneratedSorts]);
 
-    // Register functions only once on mount/unmount
+    // Register functions only once on mount/unmount.
+    // Wrap in () => value so jotai does not treat the function as an updater
+    // (which would call applyGeneratedSorts(null) and store undefined).
     useEffect(() => {
       console.log('DataTable: Registering functions in global state');
-      setDataTableRefreshFunction(() => (specificIds?: string[]) => refreshDataRef.current(specificIds));
-      setDataTableApplySortsFunction((sorts: any) => applyGeneratedSortsRef.current(sorts));
+      setDataTableRefreshFunction(
+        () => (specificIds?: string[]) => refreshDataRef.current(specificIds),
+      );
+      setDataTableApplySortsFunction(
+        () => (sorts: any) => applyGeneratedSortsRef.current(sorts),
+      );
       return () => {
         console.log('DataTable: Cleaning up global state functions');
         setDataTableRefreshFunction(null);

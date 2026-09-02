@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Hide People tab ID columns | Exclude `uniqueStringKey`, `peopleId`, `candidateId`, `__isFetched` from Handsontable column discovery (data kept for row lookups). | `TableColumns.tsx` `excludedFields` |
 | Outreach People tab toolbar | Reused `ProjectTopBar` on People (search, stage chips, Refresh, CRM/Enroll/Stop icons); KPI under bar; fixed-bottom `HotTableActionMenu`; fill-height `TableContainer`. `ProjectTopBar` search no longer gated to `/project/` only; added `centerComponent` + `searchPlaceholder`. Companies tab mirrored (search, status chips, Refresh, fill-height table). | `OutreachPeoplePanel.tsx`, `OutreachCompaniesPanel.tsx`, `OutreachHomePage.tsx`, `ProjectTopBar.tsx`, `useOutreachLiveWorkingSet.ts` (`refreshPeopleWorkingSet`, `refreshCompaniesWorkingSet`) |
 | Candidate Workflow runs embed | Drawer Workflow runs tab embeds the live run diagram (`OutreachWorkflowRunDiagramEmbed`) with a Select to switch active runs. | `CandidateWorkflowRunsTab.tsx` |
 | OrgChart `currentProjectId` undefined | Add-to-project / outreach modals used `currentProjectId` without reading `projectIdAtom` (likely dropped during TDZ rename cleanup). Restored `useAtomStateValue(projectIdAtom)`. | `OrgChartAddToProjectModal.tsx`, `OrgChartResultsAddToProjectPanel.tsx`, `OrgChartOutreachModal.tsx` |
