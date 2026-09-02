@@ -1,6 +1,7 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { CandidateOutreachJourneyTab, resolveJourneyHeaderLabels } from '@/candidate-table/CandidateOutreachJourneyTab';
+import { CandidateWorkflowRunsTab } from '@/candidate-table/CandidateWorkflowRunsTab';
 import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
@@ -20,7 +21,7 @@ import dayjs from 'dayjs';
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconTimelineEvent, IconUser } from 'twenty-ui/icon';
+import { IconArrowsSplit2, IconFileText, IconMessage, IconSettingsAutomation, IconTimelineEvent, IconUser } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
@@ -411,6 +412,11 @@ export const CandidateChatDrawer = React.memo(() => {
       id: 'journey',
       title: 'Journey',
       Icon: IconTimelineEvent,
+    },
+    {
+      id: 'workflow-runs',
+      title: 'Workflow runs',
+      Icon: IconSettingsAutomation,
     },
     {
       id: 'chat',
@@ -1209,6 +1215,17 @@ export const CandidateChatDrawer = React.memo(() => {
             {activeTabId === 'journey' && !enrolledCandidateId ? (
               <div style={{ padding: '20px' }}>
                 Enroll this person in outreach to manage their journey.
+              </div>
+            ) : null}
+            {activeTabId === 'workflow-runs' && enrolledCandidateId ? (
+              <CandidateWorkflowRunsTab
+                activeRuns={outreachJourney?.activeRuns ?? []}
+                isLoading={isOutreachJourneyLoading}
+              />
+            ) : null}
+            {activeTabId === 'workflow-runs' && !enrolledCandidateId ? (
+              <div style={{ padding: '20px' }}>
+                Enroll this person in outreach to see their workflow runs.
               </div>
             ) : null}
             {activeTabId === 'chat' && renderChatTab()}

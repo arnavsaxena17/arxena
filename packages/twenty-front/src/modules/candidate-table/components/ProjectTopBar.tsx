@@ -36,7 +36,7 @@ import {
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import {
     columnsSelector,
-    tableState,
+    tableStateAtom,
 } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -47,10 +47,13 @@ type ProjectTopBarProps = {
   leftComponent?: ReactNode;
   rightComponent?: ReactNode;
   bottomComponent?: ReactNode;
+  // Custom chips/content in the center filter row (e.g. outreach stage filters)
+  centerComponent?: ReactNode;
   showRefetch?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   showSearch?: boolean;
+  searchPlaceholder?: string;
   onSearch?: (query: string) => void;
   showJobStatusToggle?: boolean;
   isJobActive?: boolean;
@@ -408,10 +411,12 @@ export const ProjectTopBar = memo(
     leftComponent,
     rightComponent,
     bottomComponent,
+    centerComponent,
     showRefetch = true,
     onRefresh,
     isRefreshing = false,
     showSearch = true,
+    searchPlaceholder = 'Search candidates...',
     onSearch,
     showJobStatusToggle = true,
     isJobActive = true,
@@ -538,14 +543,14 @@ export const ProjectTopBar = memo(
         <StyledTopBar>
           <StyledInlineSection>
             {leftComponent}
-            {isProjectPage && showSearch && (
+            {showSearch && (
               <StyledSearchContainer>
                 <StyledIconContainer>
                   <IconSearch size={12} />
                 </StyledIconContainer>
                 <StyledSearchInput
                   type="text"
-                  placeholder="Search candidates..."
+                  placeholder={searchPlaceholder}
                   value={chatSearchQuery}
                   onChange={handleSearchChange}
                 />
@@ -567,6 +572,7 @@ export const ProjectTopBar = memo(
           </StyledInlineSection>
 
           <StyledFilterSection>
+            {centerComponent}
             {activeFilterChips}
             {isProjectPage &&
               showFilterChips &&

@@ -641,7 +641,7 @@ export const ProjectPage: React.FC = () => {
   debugLog("ProjectPage rendering with projectId:", projectId);
   debugLog("ProjectPage rendering with recordIndexContextValue:", recordIndexContextValue);
   debugLog("Current job found:", currentJob);
-  debugLog("Filtered count:", filteredCount);
+  debugLog("Filtered count:", filteredCandidatesCount);
   debugLog("Selected status:", selectedConversationStatus);
   debugLog("Search query:", chatSearchQuery);
 
@@ -672,7 +672,7 @@ export const ProjectPage: React.FC = () => {
                       ? `${tableState.selectedRowIds.length} selected • `
                       : ''
                   }${
-                    filteredCount !== totalCount ? `Filtered: ${filteredCount} • ` : ''
+                    filteredCandidatesCount !== totalCount ? `Filtered: ${filteredCandidatesCount} • ` : ''
                   }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
             }
             Icon={IconCheckbox}

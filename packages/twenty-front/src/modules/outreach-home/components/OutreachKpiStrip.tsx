@@ -5,6 +5,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { useOutreachCommandDashboardPath } from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
+import { type OutreachProjectJourneySummary } from '@/outreach-home/types/outreach-journey.types';
 
 const StyledStrip = styled.div`
   align-items: center;
@@ -29,12 +30,25 @@ const StyledLink = styled(Link)`
 `;
 
 type OutreachKpiStripProps = {
-  projectId: string | null | undefined;
+  projectId?: string | null;
+  summary?: OutreachProjectJourneySummary | null;
+  isLoading?: boolean;
 };
 
-export const OutreachKpiStrip = ({ projectId }: OutreachKpiStripProps) => {
-  const { summary, isLoading } = useOutreachProjectJourneySummary(projectId);
+export const OutreachKpiStrip = ({
+  projectId,
+  summary: summaryFromProps,
+  isLoading: isLoadingFromProps,
+}: OutreachKpiStripProps) => {
+  const isControlled = summaryFromProps !== undefined;
+  const { summary: fetchedSummary, isLoading: fetchedLoading } =
+    useOutreachProjectJourneySummary(isControlled ? null : projectId);
   const dashboardPath = useOutreachCommandDashboardPath();
+
+  const summary = isControlled ? summaryFromProps : fetchedSummary;
+  const isLoading = isControlled
+    ? (isLoadingFromProps ?? false)
+    : fetchedLoading;
 
   if (isLoading || !summary) {
     return null;

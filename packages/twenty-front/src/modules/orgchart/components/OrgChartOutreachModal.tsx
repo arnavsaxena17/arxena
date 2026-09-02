@@ -165,6 +165,7 @@ export const OrgChartOutreachModal = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
+  const currentProjectId = useAtomStateValue(projectIdAtom);
   const setProjectId = useSetAtomState(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();

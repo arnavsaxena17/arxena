@@ -35,7 +35,7 @@ const readNonEmptyString = (value: unknown): string | undefined => {
 export const RelatedRecordFieldDisplay = () => {
   const { recordId, disableChipClick, triggerEvent, maxWidth } =
     useContext(FieldContext);
-  const recordStore = useAtomFamilyStateValue(recordStoreFamilyState, recordId);
+  const record = useAtomFamilyStateValue(recordStoreFamilyState, recordId);
 
   const relatedRecordId = readNonEmptyString(record?.relatedRecordId);
   const relatedObjectName = readNonEmptyString(record?.relatedObjectName);

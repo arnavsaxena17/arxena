@@ -23,7 +23,6 @@ import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { OutreachCompaniesPanel } from '@/outreach-home/components/OutreachCompaniesPanel';
 import { OutreachMainTabs } from '@/outreach-home/components/OutreachMainTabs';
 import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/OutreachNeedsConnectionBanner';
-import { OutreachKpiStrip } from '@/outreach-home/components/OutreachKpiStrip';
 import { OutreachPeoplePanel } from '@/outreach-home/components/OutreachPeoplePanel';
 import { OutreachRunProgressHeader } from '@/outreach-home/components/OutreachRunProgressHeader';
 import { OutreachSetupPanel } from '@/outreach-home/components/OutreachSetupPanel';
@@ -79,6 +78,14 @@ const StyledContent = styled.div`
   padding: ${themeCssVariables.spacing[4]};
 `;
 
+const StyledToolbarTabContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+`;
+
 const StyledSetupWrap = styled.div`
   display: flex;
   flex: 1;
@@ -120,6 +127,7 @@ const OutreachHomePageContent = () => {
   const {
     loading,
     peopleLoading,
+    companiesLoading,
     workspaceCompany,
     workspaceProfile,
     refetchWorkspaceProfiles,
@@ -142,6 +150,8 @@ const OutreachHomePageContent = () => {
     selectedPersonId,
     setSelectedPersonId,
     peopleTableInstanceId,
+    refreshPeopleWorkingSet,
+    refreshCompaniesWorkingSet,
   } = useOutreachLiveWorkingSet();
   const isWorkflowTab = activeTab === 'workflow';
   const isSetupTab = activeTab === 'setup';
@@ -722,6 +732,30 @@ const OutreachHomePageContent = () => {
                 runsLoading={runsLoading}
               />
             </StyledWorkflowContent>
+          ) : activeTab === 'people' ? (
+            <StyledToolbarTabContent>
+              <OutreachPeoplePanel
+                people={people}
+                companies={companies}
+                projectId={activeProjectId}
+                selectedCompanyId={selectedCompanyId}
+                selectedPersonId={selectedPersonId}
+                onSelectPersonId={setSelectedPersonId}
+                tableInstanceId={peopleTableInstanceId}
+                isLoading={peopleLoading}
+                onRefresh={refreshPeopleWorkingSet}
+              />
+            </StyledToolbarTabContent>
+          ) : activeTab === 'companies' ? (
+            <StyledToolbarTabContent>
+              <OutreachCompaniesPanel
+                companies={companies}
+                selectedCompanyId={selectedCompanyId}
+                onSelectCompanyId={setSelectedCompanyId}
+                isLoading={companiesLoading}
+                onRefresh={refreshCompaniesWorkingSet}
+              />
+            </StyledToolbarTabContent>
           ) : (
             <StyledContent>
               {isSetupTab && (
@@ -752,27 +786,6 @@ const OutreachHomePageContent = () => {
                     onFindPeople={handleFindPeople}
                   />
                 </StyledSetupWrap>
-              )}
-              {activeTab === 'companies' && (
-                <OutreachCompaniesPanel
-                  companies={companies}
-                  selectedCompanyId={selectedCompanyId}
-                  onSelectCompanyId={setSelectedCompanyId}
-                />
-              )}
-              {activeTab === 'people' && (
-                <>
-                  <OutreachKpiStrip projectId={activeProjectId} />
-                  <OutreachPeoplePanel
-                    people={people}
-                    companies={companies}
-                    selectedCompanyId={selectedCompanyId}
-                    selectedPersonId={selectedPersonId}
-                    onSelectPersonId={setSelectedPersonId}
-                    tableInstanceId={peopleTableInstanceId}
-                    isLoading={peopleLoading}
-                  />
-                </>
               )}
             </StyledContent>
           )}

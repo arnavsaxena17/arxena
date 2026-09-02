@@ -2,14 +2,14 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  buildDefaultOutreachConfig,
-  resolveOutreachConfigExperimentConfigString,
-  resolveOutreachConfigInMailFallbackEnabled,
-  resolveOutreachConfigMaxPersonasPerCompany,
-  resolveOutreachConfigSendTimezone,
-  resolveOutreachConfigSendWindowDays,
-  resolveOutreachConfigSendWindowEnd,
-  resolveOutreachConfigSendWindowStart,
+    buildDefaultOutreachConfig,
+    resolveOutreachConfigExperimentConfigString,
+    resolveOutreachConfigInMailFallbackEnabled,
+    resolveOutreachConfigMaxPersonasPerCompany,
+    resolveOutreachConfigSendTimezone,
+    resolveOutreachConfigSendWindowDays,
+    resolveOutreachConfigSendWindowEnd,
+    resolveOutreachConfigSendWindowStart,
 } from 'twenty-shared/arx';
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -26,12 +26,8 @@ import {
     OUTREACH_WORKFLOW_B_NAME,
     isOutreachProjectName,
 } from '@/outreach-home/constants/outreach-command.constants';
-import {
-  resolveOutreachJourneyStageLabel,
-  resolveOutreachNextStepLabel,
-} from '@/outreach-home/utils/resolveOutreachJourneyLabels';
-import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
+import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import {
     type OutreachCompanyRow,
     type OutreachMainTab,
@@ -49,15 +45,19 @@ import {
     resolveCandidateOutreachResumeAt,
     type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
-import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
     fetchOutreachCompaniesCache,
     persistOutreachCompaniesCache,
 } from '@/outreach-home/utils/outreach-companies-cache';
+import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
     fetchOutreachPeopleCache,
     persistOutreachPeopleCache,
 } from '@/outreach-home/utils/outreach-people-cache';
+import {
+    resolveOutreachJourneyStageLabel,
+    resolveOutreachNextStepLabel,
+} from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -303,51 +303,67 @@ export const useOutreachLiveWorkingSet = () => {
 
   const scopeKey = project?.id ?? null;
 
-  const { summary: journeySummary } = useOutreachProjectJourneySummary(
-    activeProjectId,
-  );
+  const { summary: journeySummary, refetch: refetchJourneySummary } =
+    useOutreachProjectJourneySummary(activeProjectId);
 
   // Ephemeral companies from Redis (per projectId) — not CRM membership.
   // Poll so Ask AI upserts appear on the Companies tab without a full reload.
-  useEffect(() => {
-    let cancelled = false;
+  const companiesCacheRequestIdRef = useRef(0);
 
+  const refreshCompaniesCache = useCallback(async () => {
     if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
       setEphemeralCompanies([]);
 
       return;
     }
 
-    const refreshCompanies = () => {
-      fetchOutreachCompaniesCache(activeProjectId, accessToken)
-        .then((companies) => {
-          if (cancelled) {
-            return;
-          }
-
-          setEphemeralCompanies((previous) =>
-            outreachCompanySignature(previous) === outreachCompanySignature(companies)
-              ? previous
-              : companies,
-          );
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setCompaniesLoading(false);
-          }
-        });
-    };
-
+    const requestId = ++companiesCacheRequestIdRef.current;
     setCompaniesLoading(true);
-    refreshCompanies();
 
-    const pollIntervalId = window.setInterval(refreshCompanies, 5000);
+    try {
+      const companies = await fetchOutreachCompaniesCache(
+        activeProjectId,
+        accessToken,
+      );
+
+      if (requestId !== companiesCacheRequestIdRef.current) {
+        return;
+      }
+
+      setEphemeralCompanies((previous) =>
+        outreachCompanySignature(previous) === outreachCompanySignature(companies)
+          ? previous
+          : companies,
+      );
+    } finally {
+      if (requestId === companiesCacheRequestIdRef.current) {
+        setCompaniesLoading(false);
+      }
+    }
+  }, [accessToken, activeProjectId]);
+
+  useEffect(() => {
+    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+      setEphemeralCompanies([]);
+
+      return;
+    }
+
+    void refreshCompaniesCache();
+
+    const pollIntervalId = window.setInterval(() => {
+      void refreshCompaniesCache();
+    }, 5000);
 
     return () => {
-      cancelled = true;
+      companiesCacheRequestIdRef.current += 1;
       window.clearInterval(pollIntervalId);
     };
-  }, [accessToken, activeProjectId]);
+  }, [accessToken, activeProjectId, refreshCompaniesCache]);
+
+  const refreshCompaniesWorkingSet = useCallback(async () => {
+    await refreshCompaniesCache();
+  }, [refreshCompaniesCache]);
 
   // Ephemeral people from Redis (per projectId) — not CRM Candidates until enroll.
   useLayoutEffect(() => {
@@ -360,9 +376,10 @@ export const useOutreachLiveWorkingSet = () => {
     setPeopleCacheReady(false);
   }, [accessToken, activeProjectId]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const peopleCacheRequestIdRef = useRef(0);
+  const projectCandidatesRequestIdRef = useRef(0);
 
+  const refreshPeopleCache = useCallback(async () => {
     if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
       setEphemeralPeople([]);
       setPeopleCacheReady(true);
@@ -370,49 +387,63 @@ export const useOutreachLiveWorkingSet = () => {
       return;
     }
 
-    const refreshPeople = () => {
-      fetchOutreachPeopleCache(activeProjectId, accessToken)
-        .then((people) => {
-          if (cancelled) {
-            return;
-          }
-
-          const nextPeople = people.map((person) => ({
-            ...person,
-            stage: mapCrmStageToOutreachStage(person.stage),
-            warmPath: person.warmPath || '—',
-            email: person.email || '',
-            companyId: person.companyId || '',
-            companyName: person.companyName || '',
-            title: person.title || '',
-            linkedinUrl: person.linkedinUrl || '',
-            candidateId: undefined,
-          }));
-
-          setEphemeralPeople((previous) =>
-            outreachPersonSignature(previous) === outreachPersonSignature(nextPeople)
-              ? previous
-              : nextPeople,
-          );
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setPeopleCacheLoading(false);
-            setPeopleCacheReady(true);
-          }
-        });
-    };
-
+    const requestId = ++peopleCacheRequestIdRef.current;
     setPeopleCacheLoading(true);
-    refreshPeople();
 
-    const pollIntervalId = window.setInterval(refreshPeople, 5000);
+    try {
+      const people = await fetchOutreachPeopleCache(
+        activeProjectId,
+        accessToken,
+      );
+
+      if (requestId !== peopleCacheRequestIdRef.current) {
+        return;
+      }
+
+      const nextPeople = people.map((person) => ({
+        ...person,
+        stage: mapCrmStageToOutreachStage(person.stage),
+        warmPath: person.warmPath || '—',
+        email: person.email || '',
+        companyId: person.companyId || '',
+        companyName: person.companyName || '',
+        title: person.title || '',
+        linkedinUrl: person.linkedinUrl || '',
+        candidateId: undefined,
+      }));
+
+      setEphemeralPeople((previous) =>
+        outreachPersonSignature(previous) === outreachPersonSignature(nextPeople)
+          ? previous
+          : nextPeople,
+      );
+    } finally {
+      if (requestId === peopleCacheRequestIdRef.current) {
+        setPeopleCacheLoading(false);
+        setPeopleCacheReady(true);
+      }
+    }
+  }, [accessToken, activeProjectId]);
+
+  useEffect(() => {
+    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+      setEphemeralPeople([]);
+      setPeopleCacheReady(true);
+
+      return;
+    }
+
+    void refreshPeopleCache();
+
+    const pollIntervalId = window.setInterval(() => {
+      void refreshPeopleCache();
+    }, 5000);
 
     return () => {
-      cancelled = true;
+      peopleCacheRequestIdRef.current += 1;
       window.clearInterval(pollIntervalId);
     };
-  }, [accessToken, activeProjectId]);
+  }, [accessToken, activeProjectId, refreshPeopleCache]);
 
   const setCompanies = useCallback(
     async (companies: OutreachCompanyRow[]) => {
@@ -451,38 +482,53 @@ export const useOutreachLiveWorkingSet = () => {
   );
 
   // Paginated REST fetch — same source as candidate table (no 100-record cap).
-  useEffect(() => {
-    let cancelled = false;
-
+  const refreshProjectCandidates = useCallback(async () => {
     if (!isDefined(scopeKey) || !isDefined(accessToken)) {
       setProjectCandidates([]);
 
       return;
     }
 
+    const requestId = ++projectCandidatesRequestIdRef.current;
     setProjectCandidatesLoading(true);
 
-    fetchOutreachProjectCandidates(scopeKey, accessToken)
-      .then((candidates) => {
-        if (!cancelled) {
-          setProjectCandidates(candidates);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setProjectCandidates([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setProjectCandidatesLoading(false);
-        }
-      });
+    try {
+      const candidates = await fetchOutreachProjectCandidates(
+        scopeKey,
+        accessToken,
+      );
+
+      if (requestId !== projectCandidatesRequestIdRef.current) {
+        return;
+      }
+
+      setProjectCandidates(candidates);
+    } catch {
+      if (requestId === projectCandidatesRequestIdRef.current) {
+        setProjectCandidates([]);
+      }
+    } finally {
+      if (requestId === projectCandidatesRequestIdRef.current) {
+        setProjectCandidatesLoading(false);
+      }
+    }
+  }, [accessToken, scopeKey]);
+
+  useEffect(() => {
+    void refreshProjectCandidates();
 
     return () => {
-      cancelled = true;
+      projectCandidatesRequestIdRef.current += 1;
     };
-  }, [accessToken, scopeKey]);
+  }, [refreshProjectCandidates]);
+
+  const refreshPeopleWorkingSet = useCallback(async () => {
+    await Promise.all([
+      refreshPeopleCache(),
+      refreshProjectCandidates(),
+      refetchJourneySummary(),
+    ]);
+  }, [refreshPeopleCache, refreshProjectCandidates, refetchJourneySummary]);
 
   const createOutreachProject = useCallback(async () => {
     let outreachWorkflowId = defaultOutreachWorkflows[0]?.id ?? null;
@@ -771,6 +817,7 @@ export const useOutreachLiveWorkingSet = () => {
       companiesLoading ||
       peopleLoading,
     peopleLoading,
+    companiesLoading,
     workspaceCompany,
     workspaceProfile,
     refetchWorkspaceProfiles,
@@ -785,6 +832,8 @@ export const useOutreachLiveWorkingSet = () => {
     setCompanies,
     appendCompanies,
     setPeople,
+    refreshPeopleWorkingSet,
+    refreshCompaniesWorkingSet,
     parsedIcp,
     isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
     linkedinConnected,

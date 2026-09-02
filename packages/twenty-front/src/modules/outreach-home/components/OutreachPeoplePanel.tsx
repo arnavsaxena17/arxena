@@ -1,24 +1,47 @@
 import { styled } from '@linaria/react';
-import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+    Suspense,
+    lazy,
+    useCallback,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useMemo,
+    useState,
+} from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
-import { Button } from 'twenty-ui/input';
+import {
+    type IconComponent,
+    IconArrowUp,
+    IconDatabase,
+    IconPlayerStop,
+    IconUserPlus,
+} from 'twenty-ui/icon';
+import { IconButton } from 'twenty-ui/input';
+import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
+import { TableContainer } from '@/candidate-table/components/styled';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
+import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { OutreachKpiStrip } from '@/outreach-home/components/OutreachKpiStrip';
+import { OUTREACH_STAGES } from '@/outreach-home/constants/outreach-stages';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
+import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
-import { OUTREACH_STAGES } from '@/outreach-home/constants/outreach-stages';
 import {
-  type OutreachCompanyRow,
-  type OutreachPersonRow,
-  type OutreachStage,
+    type OutreachCompanyRow,
+    type OutreachPersonRow,
+    type OutreachStage,
 } from '@/outreach-home/types/outreach-home.types';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
@@ -31,9 +54,9 @@ const DataTable = lazy(() =>
 const StyledPanel = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[3]};
   height: 100%;
   min-height: 0;
+  position: relative;
 `;
 
 const StyledEmpty = styled.div`
@@ -43,44 +66,78 @@ const StyledEmpty = styled.div`
   padding: ${themeCssVariables.spacing[4]};
 `;
 
-const StyledActions = styled.div`
+const StyledLoading = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
+  justify-content: center;
+  min-height: 240px;
+  padding: ${themeCssVariables.spacing[6]};
 `;
 
-const StyledTableWrapper = styled.div`
+const StyledStageFilters = styled.div`
   align-items: center;
   display: flex;
-  flex: 1;
-  justify-content: center;
-  min-height: 420px;
-  position: relative;
-`;
-
-const StyledHint = styled.div`
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.sm};
-`;
-
-const StyledFilters = styled.div`
-  display: flex;
   flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[2]};
+  gap: ${themeCssVariables.spacing[1]};
+  min-width: 0;
 `;
 
-const StyledFilterChip = styled.button<{ isActive: boolean }>`
+const StyledStageChip = styled.button<{ isActive: boolean }>`
   background: ${({ isActive }) =>
     isActive
       ? themeCssVariables.background.quaternary
       : themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.pill};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.secondary};
   cursor: pointer;
-  font-size: ${themeCssVariables.font.size.sm};
+  font-size: ${themeCssVariables.font.size.xs};
+  height: 24px;
   padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
+  white-space: nowrap;
+
+  &:hover {
+    border-color: ${themeCssVariables.border.color.medium};
+    color: ${themeCssVariables.font.color.primary};
+  }
 `;
+
+const StyledActionIcons = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledTooltipAnchor = styled.div`
+  display: inline-block;
+  position: relative;
+`;
+
+const StyledBottomActionMenu = styled.div`
+  background-color: ${themeCssVariables.background.primary};
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
+`;
+
+const StyledKpiBottom = styled.div`
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  padding: ${`${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]}`};
+`;
+
+const STAGE_FILTER_IDS = [
+  'queued',
+  'connection_sent',
+  'connection_accepted',
+  'replied',
+  'deferred',
+  'stopped',
+] as const;
 
 const mapOutreachPersonToDataTableRow = (
   person: OutreachPersonRow,
@@ -143,46 +200,95 @@ const mapOutreachPersonToDataTableRow = (
   };
 };
 
-const StyledLoading = styled.div`
-  align-items: center;
-  color: ${themeCssVariables.font.color.secondary};
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[2]};
-  justify-content: center;
-  min-height: 240px;
-  padding: ${themeCssVariables.spacing[6]};
-`;
+const TooltipIconButton = ({
+  title,
+  Icon,
+  onClick,
+  disabled,
+}: {
+  title: string;
+  Icon: IconComponent;
+  onClick?: () => void;
+  disabled?: boolean;
+}) => {
+  const tooltipId = `outreach-people-action-${useId().replace(/:/g, '')}`;
+
+  return (
+    <>
+      <StyledTooltipAnchor id={tooltipId}>
+        <IconButton
+          Icon={Icon}
+          variant="secondary"
+          size="small"
+          accent="default"
+          ariaLabel={title}
+          onClick={onClick}
+          disabled={disabled}
+        />
+      </StyledTooltipAnchor>
+      <AppTooltip
+        anchorSelect={`#${tooltipId}`}
+        content={title}
+        place="top"
+        delay={TooltipDelay.shortDelay}
+        noArrow={false}
+        positionStrategy="fixed"
+      />
+    </>
+  );
+};
 
 type OutreachPeoplePanelProps = {
   people: OutreachPersonRow[];
   companies: OutreachCompanyRow[];
+  projectId: string | null | undefined;
   selectedCompanyId: string | null;
   selectedPersonId: string | null;
   onSelectPersonId: (personId: string | null) => void;
   tableInstanceId: string;
   isLoading?: boolean;
+  onRefresh?: () => Promise<void>;
 };
 
 export const OutreachPeoplePanel = ({
   people,
   companies,
+  projectId,
   selectedCompanyId,
   selectedPersonId,
   onSelectPersonId,
   tableInstanceId,
   isLoading = false,
+  onRefresh,
 }: OutreachPeoplePanelProps) => {
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
+  const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const [isTableDataReady, setIsTableDataReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { isPersisting, addPeopleToCrm } = useAddOutreachRecordsToCrm();
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
-  const [stageFilter, setStageFilter] = useState<OutreachStage | 'all' | 'needs_approval'>(
-    'all',
-  );
+  const {
+    summary: journeySummary,
+    isLoading: isJourneySummaryLoading,
+    refetch: refetchJourneySummary,
+  } = useOutreachProjectJourneySummary(projectId);
+  const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
+  const [stageFilter, setStageFilter] = useState<
+    OutreachStage | 'all' | 'needs_approval'
+  >('all');
+
+  useEffect(() => {
+    setChatSearchQuery('');
+    setSearchQuery('');
+
+    return () => {
+      setChatSearchQuery('');
+    };
+  }, [setChatSearchQuery, tableInstanceId]);
 
   const companiesByWorkingSetId = useMemo(() => {
     const map: Record<string, OutreachCompanyRow> = {};
@@ -195,20 +301,34 @@ export const OutreachPeoplePanel = ({
   }, [companies]);
 
   const filteredPeople = useMemo(() => {
-    const byCompany = selectedCompanyId
-      ? people.filter((person) => person.companyId === selectedCompanyId)
-      : people;
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    if (stageFilter === 'all') {
-      return byCompany;
-    }
+    return people.filter((person) => {
+      if (
+        isDefined(selectedCompanyId) &&
+        person.companyId !== selectedCompanyId
+      ) {
+        return false;
+      }
 
-    if (stageFilter === 'needs_approval') {
-      return byCompany.filter((person) => person.needsApproval === true);
-    }
+      if (stageFilter === 'needs_approval') {
+        if (person.needsApproval !== true) {
+          return false;
+        }
+      } else if (stageFilter !== 'all' && person.stage !== stageFilter) {
+        return false;
+      }
 
-    return byCompany.filter((person) => person.stage === stageFilter);
-  }, [people, selectedCompanyId, stageFilter]);
+      if (normalizedQuery.length === 0) {
+        return true;
+      }
+
+      const haystack =
+        `${person.name} ${person.title} ${person.companyName}`.toLowerCase();
+
+      return haystack.includes(normalizedQuery);
+    });
+  }, [people, searchQuery, selectedCompanyId, stageFilter]);
 
   const tableRows = useMemo(
     () => filteredPeople.map(mapOutreachPersonToDataTableRow),
@@ -294,26 +414,6 @@ export const OutreachPeoplePanel = ({
     return [];
   }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
 
-  if (isLoading && filteredPeople.length === 0) {
-    return (
-      <StyledLoading>
-        <Loader />
-        Loading people…
-      </StyledLoading>
-    );
-  }
-
-  if (filteredPeople.length === 0) {
-    return (
-      <StyledEmpty>
-        No target people in this project yet. Use Setup → Find people (Ask AI)
-        to discover target roles from your ICP at companies on this project.
-        They stay on the People tab until you Add to CRM or Enroll, which creates
-        Company and Person records (plus enrollment) under this Project.
-      </StyledEmpty>
-    );
-  }
-
   const deferredCandidateId = selectedPeople.find(
     (person) =>
       person.stage === 'deferred' && isDefined(person.candidateId),
@@ -323,109 +423,196 @@ export const OutreachPeoplePanel = ({
     .map((person) => person.candidateId)
     .filter((candidateId): candidateId is string => isDefined(candidateId));
 
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      await Promise.all([
+        onRefresh?.() ?? Promise.resolve(),
+        refetchJourneySummary(),
+      ]);
+      enqueueSuccessSnackBar({ message: 'People list refreshed' });
+    } catch {
+      enqueueErrorSnackBar({ message: 'Failed to refresh people list' });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    enqueueErrorSnackBar,
+    enqueueSuccessSnackBar,
+    isRefreshing,
+    onRefresh,
+    refetchJourneySummary,
+  ]);
+
+  const handleClearFilters = useCallback(() => {
+    setStageFilter('all');
+    setSearchQuery('');
+    setChatSearchQuery('');
+  }, [setChatSearchQuery]);
+
+  const stageFilterChips = (
+    <StyledStageFilters>
+      <StyledStageChip
+        type="button"
+        isActive={stageFilter === 'all'}
+        onClick={() => setStageFilter('all')}
+      >
+        All stages
+      </StyledStageChip>
+      <StyledStageChip
+        type="button"
+        isActive={stageFilter === 'needs_approval'}
+        onClick={() => setStageFilter('needs_approval')}
+      >
+        Needs approval
+      </StyledStageChip>
+      {OUTREACH_STAGES.filter((stage) =>
+        STAGE_FILTER_IDS.includes(
+          stage.id as (typeof STAGE_FILTER_IDS)[number],
+        ),
+      ).map((stage) => (
+        <StyledStageChip
+          key={stage.id}
+          type="button"
+          isActive={stageFilter === stage.id}
+          onClick={() => setStageFilter(stage.id)}
+        >
+          {stage.label}
+        </StyledStageChip>
+      ))}
+    </StyledStageFilters>
+  );
+
+  const outreachActionIcons = (
+    <StyledActionIcons>
+      <TooltipIconButton
+        title={
+          selectedPeople.length > 0
+            ? `Add selected to CRM (${selectedPeople.length})`
+            : 'Add selected to CRM'
+        }
+        Icon={IconDatabase}
+        disabled={selectedPeople.length === 0 || isPersisting}
+        onClick={() =>
+          addPeopleToCrm({
+            people: selectedPeople,
+            companiesByWorkingSetId,
+          })
+        }
+      />
+      <TooltipIconButton
+        title={
+          selectedPeople.length > 0
+            ? `Enroll in outreach (${selectedPeople.length})`
+            : 'Enroll in outreach'
+        }
+        Icon={IconUserPlus}
+        disabled={selectedPeople.length === 0 || isPersisting}
+        onClick={() =>
+          enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
+        }
+      />
+      <TooltipIconButton
+        title={
+          stoppableCandidateIds.length > 0
+            ? `Stop outreach (${stoppableCandidateIds.length})`
+            : 'Stop outreach'
+        }
+        Icon={IconPlayerStop}
+        disabled={stoppableCandidateIds.length === 0 || isStopping}
+        onClick={() => {
+          void stopOutreachForCandidates(stoppableCandidateIds);
+        }}
+      />
+      {isDefined(deferredCandidateId) && (
+        <TooltipIconButton
+          title="Promote deferred"
+          Icon={IconArrowUp}
+          onClick={() => promoteDeferredCandidate(deferredCandidateId)}
+        />
+      )}
+    </StyledActionIcons>
+  );
+
+  if (isLoading && people.length === 0) {
+    return (
+      <StyledLoading>
+        <Loader />
+        Loading people…
+      </StyledLoading>
+    );
+  }
+
   return (
     <StyledPanel>
-      <StyledHint>
-        Working list for this Project, merged with enrolled people. Select
-        rows, then Add to CRM / Enroll — Ask AI must not create enrollment
-        records until you confirm. Click a name to open the Journey tab.
-      </StyledHint>
-      <StyledFilters>
-        <StyledFilterChip
-          type="button"
-          isActive={stageFilter === 'all'}
-          onClick={() => setStageFilter('all')}
+      <ProjectTopBar
+        showSearch={true}
+        searchPlaceholder="Search people..."
+        onSearch={setSearchQuery}
+        showRefetch={true}
+        onRefresh={() => {
+          void handleRefresh();
+        }}
+        isRefreshing={isRefreshing}
+        showClearAll={true}
+        onClearAll={handleClearFilters}
+        showJobStatusToggle={false}
+        showFilterChips={false}
+        showRedirectToObject={false}
+        showImportCandidates={false}
+        showStatistics={false}
+        showAddJob={false}
+        showEnrichment={false}
+        showSorting={false}
+        showValidateJobData={false}
+        showBatchActions={false}
+        centerComponent={stageFilterChips}
+        rightComponent={outreachActionIcons}
+        bottomComponent={
+          <StyledKpiBottom>
+            <OutreachKpiStrip
+              summary={journeySummary}
+              isLoading={isJourneySummaryLoading}
+            />
+          </StyledKpiBottom>
+        }
+      />
+
+      {people.length === 0 ? (
+        <StyledEmpty>
+          No target people in this project yet. Use Setup → Find people (Ask AI)
+          to discover target roles from your ICP at companies on this project.
+          They stay on the People tab until you Add to CRM or Enroll, which
+          creates Company and Person records (plus enrollment) under this
+          Project.
+        </StyledEmpty>
+      ) : filteredPeople.length === 0 ? (
+        <StyledEmpty>
+          No people match the current search or stage filter.
+        </StyledEmpty>
+      ) : (
+        <ContextStoreComponentInstanceContext.Provider
+          value={{ instanceId: tableInstanceId }}
         >
-          All stages
-        </StyledFilterChip>
-        <StyledFilterChip
-          type="button"
-          isActive={stageFilter === 'needs_approval'}
-          onClick={() => setStageFilter('needs_approval')}
-        >
-          Needs approval
-        </StyledFilterChip>
-        {OUTREACH_STAGES.filter((stage) =>
-          ['queued', 'connection_sent', 'connection_accepted', 'replied', 'deferred', 'stopped'].includes(
-            stage.id,
-          ),
-        ).map((stage) => (
-          <StyledFilterChip
-            key={stage.id}
-            type="button"
-            isActive={stageFilter === stage.id}
-            onClick={() => setStageFilter(stage.id)}
-          >
-            {stage.label}
-          </StyledFilterChip>
-        ))}
-      </StyledFilters>
-      <StyledActions>
-        <Button
-          title={
-            selectedPeople.length > 0
-              ? `Add selected to CRM (${selectedPeople.length})`
-              : 'Add selected to CRM'
-          }
-          size="small"
-          variant="secondary"
-          disabled={selectedPeople.length === 0 || isPersisting}
-          onClick={() =>
-            addPeopleToCrm({
-              people: selectedPeople,
-              companiesByWorkingSetId,
-            })
-          }
-        />
-        <Button
-          title={
-            selectedPeople.length > 0
-              ? `Enroll in outreach (${selectedPeople.length})`
-              : 'Enroll in outreach'
-          }
-          size="small"
-          variant="primary"
-          disabled={selectedPeople.length === 0 || isPersisting}
-          onClick={() =>
-            enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
-          }
-        />
-        <Button
-          title={
-            stoppableCandidateIds.length > 0
-              ? `Stop outreach (${stoppableCandidateIds.length})`
-              : 'Stop outreach'
-          }
-          size="small"
-          variant="secondary"
-          disabled={stoppableCandidateIds.length === 0 || isStopping}
-          onClick={() => {
-            void stopOutreachForCandidates(stoppableCandidateIds);
-          }}
-        />
-        {deferredCandidateId && (
-          <Button
-            title="Promote deferred"
-            size="small"
-            variant="secondary"
-            onClick={() => promoteDeferredCandidate(deferredCandidateId)}
-          />
-        )}
-      </StyledActions>
-      <ContextStoreComponentInstanceContext.Provider
-        value={{ instanceId: tableInstanceId }}
-      >
-        <HotTableActionMenu tableId={tableInstanceId} />
-      </ContextStoreComponentInstanceContext.Provider>
-      <StyledTableWrapper>
-        {isTableDataReady ? (
-          <Suspense fallback={<Loader />}>
-            <DataTable projectId={tableInstanceId} />
-          </Suspense>
-        ) : (
-          <Loader />
-        )}
-      </StyledTableWrapper>
+          <TableContainer>
+            {isTableDataReady ? (
+              <Suspense fallback={<Loader />}>
+                <DataTable projectId={tableInstanceId} />
+              </Suspense>
+            ) : (
+              <Loader />
+            )}
+          </TableContainer>
+          <StyledBottomActionMenu>
+            <HotTableActionMenu tableId={tableInstanceId} />
+          </StyledBottomActionMenu>
+        </ContextStoreComponentInstanceContext.Provider>
+      )}
     </StyledPanel>
   );
 };

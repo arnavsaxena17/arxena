@@ -198,7 +198,7 @@ export const ArxEnrichRightSideContainer: React.FC<ArxEnrichRightSideContainerPr
   } = useSnackBar();
   const setRefreshTableDataTrigger = useSetAtomState(refreshTableDataTriggerState);
   const currentProjectId = useAtomStateValue(currentProjectIdState);
-  const tableStateAtom = useAtomStateValue<TableState>(tableStateAtom);
+  const tableState = useAtomStateValue<TableState>(tableStateAtom);
   // Use SSE data from props (passed from modal level)
   const enrichmentProgress = propAiFilteringProgress ?? propEnrichmentProgress;
   const isConnected = propIsConnected || false;

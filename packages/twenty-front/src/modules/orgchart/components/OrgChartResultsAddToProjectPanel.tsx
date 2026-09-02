@@ -11,7 +11,7 @@ import { Button } from 'twenty-ui';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
-import { projectsState } from '@/candidate-table/states/states';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
@@ -125,6 +125,7 @@ export const OrgChartResultsAddToProjectPanel = ({
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
+  const currentProjectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
   const {
