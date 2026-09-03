@@ -205,6 +205,53 @@ export class OrgchartLinkedInQueryRouterService {
     );
   }
 
+  private isPureFunctionRootPythonInput(input: PythonQueryInput): boolean {
+    return (
+      (input.function_root?.length ?? 0) > 0 &&
+      (input.functions?.length ?? 0) === 0 &&
+      (input.grades?.length ?? 0) === 0 &&
+      (input.raw_job_titles?.length ?? 0) === 0
+    );
+  }
+
+  // Blank-grade std_function_root row: entire function, any seniority.
+  private async lookupManualFunctionRootSearchTerms(
+    functionRoot: string,
+  ): Promise<{ keywords?: string; jobTitle?: string } | null> {
+    if (!hasMeaningfulOrgChartFunctionRootFilter(functionRoot)) {
+      return null;
+    }
+
+    try {
+      const manualResult =
+        await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+          kind: 'std_function_root',
+          label: functionRoot.trim(),
+          stdGrade: '',
+        });
+      const manualRow = manualResult?.items?.[0];
+      const keywords = manualRow?.keywords?.trim() || undefined;
+      const jobTitle = manualRow?.boolean_query?.trim() || undefined;
+      if (!keywords && !jobTitle) {
+        return null;
+      }
+      this.logger.log(
+        `Orgchart router: using manual boolean query for functionRoot="${functionRoot}" keywords="${keywords ?? ''}" jobTitle="${jobTitle ?? ''}"`,
+      );
+      return {
+        keywords,
+        jobTitle: keywords ? undefined : jobTitle,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Orgchart router: manual boolean query lookup for functionRoot="${functionRoot}" failed, falling back to auto-OR: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
   /**
    * Builds people strategies from pre-resolved LinkedIn facet IDs (super impose autocomplete).
    */
@@ -276,42 +323,13 @@ export class OrgchartLinkedInQueryRouterService {
       hasMeaningfulOrgChartFunctionRootFilter(args.functionRoot) &&
       !precomputedKeywords
     ) {
-      // First try the curated manual boolean query for this std_function_root
-      // with blank grade (= all-grades row), which covers the entire function
-      // irrespective of seniority — ideal for org chart function-root fetches.
-      let resolvedViaManual = false;
-      try {
-        const manualResult =
-          await this.titleTaxonomyRemoteService.getManualBooleanQueries({
-            kind: 'std_function_root',
-            label: args.functionRoot.trim(),
-            stdGrade: '',
-          });
-        const manualRow = manualResult?.items?.[0];
-        if (manualRow) {
-          const manualKeywords = manualRow.keywords?.trim() || undefined;
-          const manualJobTitle = manualRow.boolean_query?.trim() || undefined;
-          if (manualKeywords || manualJobTitle) {
-            functionRootKeywords = manualKeywords;
-            if (!functionRootKeywords) {
-              functionRootJobTitle = manualJobTitle;
-            }
-            resolvedViaManual = true;
-            this.logger.log(
-              `Orgchart router: using manual boolean query for functionRoot="${args.functionRoot}" keywords="${manualKeywords ?? ''}" jobTitle="${manualJobTitle ?? ''}"`,
-            );
-          }
-        }
-      } catch (error) {
-        this.logger.warn(
-          `Orgchart router: manual boolean query lookup for functionRoot="${args.functionRoot}" failed, falling back to auto-OR: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-      }
-
-      // Fall back to auto-generated OR query from python query-set generator
-      if (!resolvedViaManual) {
+      const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+        args.functionRoot,
+      );
+      if (manualTerms) {
+        functionRootKeywords = manualTerms.keywords;
+        functionRootJobTitle = manualTerms.jobTitle;
+      } else {
         try {
           const generated =
             await this.pythonQueryGenerationService.generateSearchParameters(
@@ -566,6 +584,44 @@ export class OrgchartLinkedInQueryRouterService {
         stdGrade,
         selectedNodeStdScopes,
       });
+
+      // Estimate and search both hit this path when LinkedIn company IDs are
+      // not pre-resolved. Prefer the blank-grade manual query over auto-OR.
+      if (this.isPureFunctionRootPythonInput(pythonInput)) {
+        const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+          functionRoot,
+        );
+        if (manualTerms) {
+          const countryForLocation =
+            normalizeLlmNullishString(country) ?? '';
+          const strategies = this.buildStrategiesFromSingleSearchQuery({
+            query: {
+              keywords: manualTerms.keywords ?? null,
+              job_title: manualTerms.jobTitle ?? null,
+              company: effectiveCompanyNames,
+              location:
+                countryForLocation.length > 0 &&
+                countryForLocation.toLowerCase() !== 'global'
+                  ? [countryForLocation]
+                  : null,
+              years_of_experience: null,
+            },
+            searchType,
+            requirement,
+          });
+          return {
+            strategies,
+            parsedJobDescription: createMinimalParsedJobDescription({
+              jobTitle: primaryCompanyName
+                ? `Role at ${primaryCompanyName}`
+                : 'Employee',
+              company: primaryCompanyName,
+              location: country,
+            }),
+          };
+        }
+      }
+
       const unresolved =
         await this.pythonQueryGenerationService.generateSearchParameters(
           pythonInput,

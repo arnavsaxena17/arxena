@@ -73,7 +73,10 @@ describe('OrgchartLinkedInQueryRouterService', () => {
     >
   >;
   let titleTaxonomyRemoteService: jest.Mocked<
-    Pick<TitleTaxonomyRemoteService, 'searchKeywordsFromQuery'>
+    Pick<
+      TitleTaxonomyRemoteService,
+      'searchKeywordsFromQuery' | 'getManualBooleanQueries'
+    >
   >;
   let service: OrgchartLinkedInQueryRouterService;
 
@@ -99,6 +102,7 @@ describe('OrgchartLinkedInQueryRouterService', () => {
     };
     titleTaxonomyRemoteService = {
       searchKeywordsFromQuery: jest.fn().mockResolvedValue(null),
+      getManualBooleanQueries: jest.fn().mockResolvedValue(null),
     };
     service = new OrgchartLinkedInQueryRouterService(
       linkedinQueryGenerationService as unknown as LinkedinQueryGenerationService,
@@ -367,6 +371,48 @@ describe('OrgchartLinkedInQueryRouterService', () => {
         .calls[0][0] as PythonQueryInput;
       expect(callArg.grades).toEqual([{ name: 'leadership', exclude: false }]);
       expect(callArg.company_names).toEqual([COMPANY]);
+    });
+
+    it('function_grade without job titles: uses blank-grade manual boolean query', async () => {
+      titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+        items: [
+          {
+            kind: 'std_function_root',
+            label: 'sales',
+            std_grade: '',
+            boolean_query: '(sales OR "business development")',
+            keywords: '(sales OR "business development")',
+          },
+        ],
+      });
+
+      const params = await service.buildGeneratedSearchParametersForOrgchart({
+        rawQuery: REQUIREMENT,
+        cleanedQuery: REQUIREMENT,
+        requirement: REQUIREMENT,
+        searchType: 'classic',
+        mode: 'function_grade',
+        primaryCompanyName: COMPANY,
+        country: '',
+        functionRoot: 'sales',
+        isAllPeopleInCompanyMode: false,
+        apiToken: API_TOKEN,
+        queryGenerator: 'python',
+      });
+
+      expect(
+        titleTaxonomyRemoteService.getManualBooleanQueries,
+      ).toHaveBeenCalledWith({
+        kind: 'std_function_root',
+        label: 'sales',
+        stdGrade: '',
+      });
+      expect(
+        pythonQueryGenerationService.generateSearchParameters,
+      ).not.toHaveBeenCalled();
+      expect(params.classicPeopleSearch?.keywords).toBe(
+        '(sales OR "business development")',
+      );
     });
 
     it('function_grade: Python receives function_root and job titles', async () => {

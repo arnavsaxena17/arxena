@@ -5,13 +5,16 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
   const pythonQueryGenerationService = {
     generateSearchParameters: jest.fn(),
   } as unknown as jest.Mocked<PythonQueryGenerationService>;
+  const titleTaxonomyRemoteService = {
+    getManualBooleanQueries: jest.fn().mockResolvedValue(null),
+  };
 
   const service = new OrgchartLinkedInQueryRouterService(
     {} as never,
     pythonQueryGenerationService,
     {} as never,
     {} as never,
-    {} as never,
+    titleTaxonomyRemoteService as never,
   );
 
   beforeEach(() => {
@@ -69,22 +72,17 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
   });
 
   it('includes function-root keywords on pre-resolved sales navigator strategy', async () => {
-    pythonQueryGenerationService.generateSearchParameters.mockResolvedValue({
-      salesNavigatorPeopleSearchStrategies: [
+    titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+      items: [
         {
-          id: 'linkedin-query-sales-nav-1',
-          label: 'Sales',
-          description: 'Sales',
-          strategyText: 'Sales',
-          originalUserQuery: 'Find people at Acme',
-          clarificationQuestions: null,
-          clarificationAnswers: null,
-          parameters: {
-            keywords: 'sales OR business development',
-          },
+          kind: 'std_function_root',
+          label: 'sales',
+          std_grade: '',
+          boolean_query: '(sales OR "business development")',
+          keywords: '(sales OR "business development")',
         },
       ],
-    } as never);
+    });
 
     const { strategies } = await service.buildOrgchartLinkedInStrategies({
       rawQuery: 'Find people',
@@ -99,18 +97,16 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
       linkedinCompanyIds: ['1441'],
     });
 
-    expect(pythonQueryGenerationService.generateSearchParameters).toHaveBeenCalledWith(
-      {
-        function_root: [{ name: 'sales', exclude: false }],
-        company_names: ['Acme'],
-      },
-      'sales_navigator',
-      'Find people at Acme',
-    );
+    expect(titleTaxonomyRemoteService.getManualBooleanQueries).toHaveBeenCalledWith({
+      kind: 'std_function_root',
+      label: 'sales',
+      stdGrade: '',
+    });
+    expect(pythonQueryGenerationService.generateSearchParameters).not.toHaveBeenCalled();
     expect(strategies.length).toBeGreaterThan(0);
     const parameters = strategies[0]?.parameters as Record<string, unknown>;
     expect(parameters.company).toEqual({ include: ['1441'] });
-    expect(parameters.keywords).toBe('sales OR business development');
+    expect(parameters.keywords).toBe('(sales OR "business development")');
   });
 
   it('uses pre-computed linkedinKeywords without calling Python', async () => {
