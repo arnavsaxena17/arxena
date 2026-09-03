@@ -126,7 +126,7 @@ export interface ColumnDefinition {
 export interface WhatsappMessageData {
   id: string;
   body: string;
-  
+
   type: string;
   from: string;
   linkedin_url?: string;
@@ -525,11 +525,16 @@ interface Experience {
   company: ExperienceCompany;
   startDate: string | null;
   endDate: string | null;
-  /**
-   * Whether this experience entry represents a current role.
-   * Optional so existing data remains valid.
-   */
+  // Whether this experience entry represents a current role.
+  // Optional so existing data remains valid.
   isCurrent?: boolean;
+  // Role / about text from Sales Navigator current_positions.description
+  description?: string | null;
+  location?: string | null;
+  companyId?: string | null;
+  industry?: string[] | string | null;
+  tenureAtRole?: { years?: number; months?: number } | null;
+  tenureAtCompany?: { years?: number; months?: number } | null;
 }
 
 interface TotalYearsExperience {
@@ -577,7 +582,7 @@ export type TransformedCandidateForTable = Omit<
   // DataTable UI-specific fields
   __isFetched?: boolean;
   tempId?: string;
-  
+
   // Handsontable-compatible field overrides (wrap strings in objects for consistency)
   phoneNumber: { primaryPhoneNumber: string };
   email: { primaryEmail: string };
@@ -585,7 +590,7 @@ export type TransformedCandidateForTable = Omit<
   hiringNaukriUrl?: { primaryLinkUrl: string };
   resdexNaukriUrl?: { primaryLinkUrl: string };
   displayPicture?: { primaryLinkUrl: string };
-  
+
   // UI state fields
   candConversationStatus: string;
   status: string;
@@ -600,7 +605,7 @@ export type TransformedCandidateForTable = Omit<
   messagingChannel: string;
   chatCount: number;
   lastEngagementChatControl: any;
-  
+
   // Relationship edges
   chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
@@ -612,7 +617,7 @@ export type TransformedCandidateForTable = Omit<
   whatsappProvider: string;
   input: string;
   remarks?: string;
-  
+
   // LinkedIn-specific display fields
   name: string;
   headline?: string;
@@ -623,14 +628,14 @@ export type TransformedCandidateForTable = Omit<
   sharedConnectionsCount?: number;
   followersCount?: number;
   keywordsMatch?: string;
-  
+
   // Relevance scoring fields
   relevanceScore?: number; // 0-1 relevance score
   relevanceLabel?: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
   matchReasons?: string[];
   mismatchReasons?: string[];
   educationMatch?: boolean | null; // Whether the candidate's education matches the query requirements
-  
+
   // Naming aliases for backwards compatibility
   jobTitle: string;
   company: string;
@@ -659,7 +664,7 @@ export interface UserProfile {
   jobCompanyWebsite: string | null;
   profileTitle: string;
   profileUrl: string;
-  
+
   // Location information
   locationRegion: string | null;
   locationLocality: string | null;
@@ -667,13 +672,13 @@ export interface UserProfile {
   locationCountry: string | null;
   country: string | null;
   locations: Location[];
-  
-  
+
+
   // Social profiles
   linkedinUrl: string;
   facebookUrl: string | null;
   twitterUrl: string | null;
-  
+
   // Experience and salary
   inferredSalary: number | null;
   inferredYearsExperience: number | null;
@@ -681,25 +686,25 @@ export interface UserProfile {
   industries: Industry[];
   experience: Experience[];
   experienceStats: ExperienceStats;
-  
+
   // Education
   education: Education[];
   educationCoursePg: any;
   educationInstituteUg: string;
   educationCourseUg: string;
-  
+
   // Skills and interests
   skills: string | null;
   keySkills: string;
   interests: string[];
-  
+
   // Personal information
   birthDateFuzzy: string | null;
   birthDate: string | null;
   gender: string | null;
   maritalStatus?: string | null;
   homeTown?: string | null;
-  
+
   // Project application specific
   noticePeriod: string;
   resumeHeadline?: string | null;
@@ -709,7 +714,7 @@ export interface UserProfile {
   avatarUrl?: string;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string } | null;
   resumeDownloadUrl?: string | null;
-  
+
   // LinkedIn specific fields (consolidated)
   linkedinSummary?: string | null;
   linkedinConnections?: number | string | null;
@@ -721,7 +726,7 @@ export interface UserProfile {
   linkedinSocialProfile?: string | null;
   linkedinJobTitle?: string | null;
   linkedinSpecificData?: Record<string, any> | null;
-  
+
   // Additional profile data
   certifications?: Array<{
     name: string | null;
@@ -731,7 +736,7 @@ export interface UserProfile {
     is_primary: boolean;
   }>;
   languages?: string[] | null;
-  
+
   // Metadata
   lastSeen: {
     source: string | null;
@@ -749,12 +754,12 @@ export interface UserProfile {
   uploadId: string;
   uniqueStringKey: string;
   tables: string[];
-  
+
   // Standardization fields
   stdFunction: string;
   stdGrade: string;
   stdFunctionRoot: string;
-  
+
   // Contact information
   phoneNumbers?: string[];
   phoneNumber?: string;
@@ -1789,7 +1794,7 @@ export interface CandidateNode {
   phoneNumber: {primaryPhoneNumber:string};
   email: {primaryEmail:string};
   chatCount: number;
-  
+
   createdAt: string | number | Date;
   input: string;
   candConversationStatus?: string;

@@ -48,6 +48,11 @@ export const mapUploadProfileToLinkedinSearchRow = (
     'profile_picture_url',
     'avatarUrl',
   ]);
+  const profilePictureUrlLarge = readString(person, [
+    'profile_picture_url_large',
+    'profilePictureUrlLarge',
+  ]);
+  const summary = readString(person, ['summary', 'linkedinSummary', 'about']);
   const firstName = readString(person, ['firstName', 'first_name']);
   const lastName = readString(person, ['lastName', 'last_name']);
   const name =
@@ -83,6 +88,16 @@ export const mapUploadProfileToLinkedinSearchRow = (
     : Array.isArray(person.currentPositions)
       ? person.currentPositions
       : [];
+  const networkDistance = readString(person, [
+    'network_distance',
+    'networkDistance',
+  ]);
+  const premium =
+    typeof person.premium === 'boolean'
+      ? person.premium
+      : typeof person.isPremium === 'boolean'
+        ? person.isPremium
+        : undefined;
 
   return {
     ...person,
@@ -105,6 +120,12 @@ export const mapUploadProfileToLinkedinSearchRow = (
     profilePictureUrl,
     profile_picture_url: profilePictureUrl,
     displayPicture: profilePictureUrl,
+    ...(profilePictureUrlLarge
+      ? { profile_picture_url_large: profilePictureUrlLarge }
+      : {}),
+    ...(summary ? { summary, linkedinSummary: summary } : {}),
+    ...(networkDistance ? { network_distance: networkDistance } : {}),
+    ...(premium !== undefined ? { premium } : {}),
     ...(resolvedCompanyId ? { companyId: resolvedCompanyId } : {}),
     ...(jobCompanyId
       ? { jobCompanyId }

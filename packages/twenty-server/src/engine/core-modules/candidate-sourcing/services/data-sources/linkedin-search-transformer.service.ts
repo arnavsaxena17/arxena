@@ -18,7 +18,7 @@ export type TransformedCandidateForTable = Omit<
   // DataTable UI-specific fields
   __isFetched?: boolean;
   tempId?: string;
-  
+
   // Handsontable-compatible field overrides (wrap strings in objects for consistency)
   phoneNumber: string;
   email: string;
@@ -26,7 +26,7 @@ export type TransformedCandidateForTable = Omit<
   hiringNaukriUrl?: string;
   resdexNaukriUrl?: string;
   displayPicture?: string;
-  
+
   // UI state fields
   candConversationStatus: string;
   status: string;
@@ -41,7 +41,7 @@ export type TransformedCandidateForTable = Omit<
   messagingChannel: string;
   chatCount: number;
   lastEngagementChatControl: any;
-  
+
   // Relationship edges
   chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
@@ -53,7 +53,7 @@ export type TransformedCandidateForTable = Omit<
   whatsappProvider: string;
   input: string;
   remarks?: string;
-  
+
   // LinkedIn-specific display fields
   name: string;
   headline?: string;
@@ -66,13 +66,13 @@ export type TransformedCandidateForTable = Omit<
   followersCount?: number;
   connectionsCount?: number;
   keywordsMatch?: string;
-  
+
   // Relevance scoring fields
   relevanceScore?: number; // 0-1 relevance score
   relevanceLabel?: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
   matchReasons?: string[];
   mismatchReasons?: string[];
-  
+
   // Naming aliases for backwards compatibility
   jobTitle: string;
   company: string;
@@ -106,6 +106,7 @@ type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
   jobTitle?: string;
   company?: string;
   jobCompanyName?: string;
+  summary?: string | null;
 };
 
 @Injectable()
@@ -113,7 +114,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   constructor(dataProcessingUtils: DataProcessingUtils) {
     super(dataProcessingUtils);
   }
-  
+
   getDataSourceIdentifier(): string {
     return 'linkedin_search';
   }
@@ -125,14 +126,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // Cast to LinkedInPeopleSearchResult since this transformer handles people search results
     const peopleData = candidateData as LinkedInPeopleSearchResult;
     const userProfile = this.createBaseUserProfile(peopleData, context);
-    
+
     // Process LinkedIn-specific data
     this.processLinkedInProfileData(peopleData, userProfile);
     this.processLinkedInContactData(peopleData, userProfile);
     this.processLinkedInExperienceData(peopleData, userProfile, context);
     this.processLinkedInEducationData(peopleData, userProfile);
     this.processLinkedInSkillsData(peopleData, userProfile);
-    
+
     // Ensure uniqueStringKey is properly generated after all data is processed
     this.ensureUniqueStringKey(userProfile, peopleData);
     return userProfile;
@@ -155,6 +156,13 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
     if (candidateData.headline) {
       userProfile.linkedinHeadline = candidateData.headline;
+    }
+
+    const summary =
+      candidateData.summary ||
+      (candidateData as { linkedinSummary?: string }).linkedinSummary;
+    if (summary) {
+      userProfile.linkedinSummary = summary;
     }
 
     if (candidateData.location) {
@@ -184,12 +192,27 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       userProfile.profileUrl = userProfile.linkedinUrl;
     }
 
-    if (candidateData.profile_picture_url) {
-      userProfile.displayPicture = candidateData.profile_picture_url;
-    } else if (candidateData.profilePictureUrl) {
-      userProfile.displayPicture = candidateData.profilePictureUrl;
-    } else if (typeof candidateData.displayPicture === 'string') {
-      userProfile.displayPicture = candidateData.displayPicture;
+    const profilePictureUrl =
+      candidateData.profile_picture_url ||
+      candidateData.profilePictureUrl ||
+      (typeof candidateData.displayPicture === 'string'
+        ? candidateData.displayPicture
+        : undefined);
+    const profilePictureUrlLarge =
+      candidateData.profile_picture_url_large ||
+      (
+        candidateData as {
+          linkedinSpecificData?: { profilePictureUrlLarge?: string };
+        }
+      ).linkedinSpecificData?.profilePictureUrlLarge ||
+      undefined;
+
+    if (profilePictureUrl) {
+      userProfile.displayPicture = profilePictureUrl;
+      userProfile.profilePictureUrl = profilePictureUrl;
+    } else if (profilePictureUrlLarge) {
+      userProfile.displayPicture = profilePictureUrlLarge;
+      userProfile.profilePictureUrl = profilePictureUrlLarge;
     }
 
     const jobCompanyId =
@@ -214,15 +237,32 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         candidateData.companyId.trim();
     }
 
-    // Store LinkedIn-specific data in linkedinSpecificData
-    if (candidateData.network_distance || candidateData.premium || candidateData.open_profile) {
-      userProfile.linkedinSpecificData = {
-        ...userProfile.linkedinSpecificData,
-        networkDistance: candidateData.network_distance,
-        isPremium: candidateData.premium,
-        isOpenProfile: candidateData.open_profile,
-      };
-    }
+    // Persist Unipile / Sales Nav identity + picture variants for org-chart / otherFields
+    userProfile.linkedinSpecificData = {
+      ...userProfile.linkedinSpecificData,
+      ...(candidateData.id
+        ? { unipileSearchId: String(candidateData.id) }
+        : {}),
+      ...(candidateData.member_urn
+        ? { memberUrn: candidateData.member_urn }
+        : {}),
+      ...(candidateData.public_identifier
+        ? { publicIdentifier: candidateData.public_identifier }
+        : {}),
+      ...(candidateData.network_distance
+        ? { networkDistance: candidateData.network_distance }
+        : {}),
+      ...(candidateData.premium !== undefined
+        ? { isPremium: candidateData.premium }
+        : {}),
+      ...(candidateData.open_profile !== undefined
+        ? { isOpenProfile: candidateData.open_profile }
+        : {}),
+      ...(profilePictureUrl ? { profilePictureUrl } : {}),
+      ...(profilePictureUrlLarge
+        ? { profilePictureUrlLarge }
+        : {}),
+    };
 
     // Add job process event
     this.addProjectProcessEvent(userProfile, 'linkedin_profile_processed', {
@@ -316,16 +356,20 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           ...userProfile.linkedinSpecificData,
           currentJobDescription: currentPosition.description,
           currentJobStartDate: currentPosition.start
-            ? `${currentPosition.start.year}-${String(currentPosition.start.month).padStart(2, '0')}-01`
+            ? `${currentPosition.start.year}-${String(currentPosition.start.month ?? 1).padStart(2, '0')}-01`
             : null,
-          tenureAtCompany: currentPosition.tenure_at_company?.years,
-          tenureAtRole: currentPosition.tenure_at_role?.years,
+          // Keep full tenure objects (years + months); Sales Nav often has months-only
+          tenureAtCompany: currentPosition.tenure_at_company ?? null,
+          tenureAtRole: currentPosition.tenure_at_role ?? null,
+          currentCompanyIndustry: currentPosition.industry ?? null,
+          currentPositions: candidateData.current_positions,
         };
 
         this.addProjectProcessEvent(userProfile, 'current_position_processed', {
           company: currentPosition.company,
           role: currentPosition.role,
-          tenure: currentPosition.tenure_at_company?.years,
+          tenureAtCompany: currentPosition.tenure_at_company,
+          tenureAtRole: currentPosition.tenure_at_role,
         });
       }
     } else {
@@ -349,7 +393,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         if (candidateData.headline.includes(' at ') || candidateData.headline.includes(' AT ')) {
           let jobTitleFromHeadline: string | undefined;
           let companyFromHeadline: string | undefined;
-          
+
           if (candidateData.headline.includes(' at ')) {
             const parts = candidateData.headline.split(' at ');
             jobTitleFromHeadline = parts[0]?.trim();
@@ -359,12 +403,12 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
             jobTitleFromHeadline = parts[0]?.trim();
             companyFromHeadline = parts.slice(1).join(' AT ').trim();
           }
-          
+
           if (jobTitleFromHeadline) {
             userProfile.jobTitle = jobTitleFromHeadline;
             userProfile.profileTitle = jobTitleFromHeadline;
           }
-          
+
           if (companyFromHeadline) {
             userProfile.jobCompanyName = companyFromHeadline;
           }
@@ -384,6 +428,12 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       startDate: string | null;
       endDate: string | null;
       isCurrent?: boolean;
+      description?: string | null;
+      location?: string | null;
+      company_id?: string | null;
+      industry?: string[] | string | null;
+      tenure_at_role?: { years?: number; months?: number } | null;
+      tenure_at_company?: { years?: number; months?: number } | null;
     }> = [];
 
     // Current positions (if any) are marked as isCurrent: true
@@ -403,6 +453,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           startDate,
           endDate,
           isCurrent: true,
+          description: currentPosition.description ?? null,
+          location: currentPosition.location ?? null,
+          company_id: currentPosition.company_id
+            ? String(currentPosition.company_id)
+            : null,
+          industry: currentPosition.industry ?? null,
+          tenure_at_role: currentPosition.tenure_at_role ?? null,
+          tenure_at_company: currentPosition.tenure_at_company ?? null,
         });
       }
     }
@@ -424,6 +482,8 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           startDate,
           endDate,
           isCurrent: false,
+          company_id: exp.company_id ? String(exp.company_id) : null,
+          industry: exp.industry ?? null,
         });
       }
     }
@@ -478,9 +538,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     if (!userProfile.uniqueStringKey || userProfile.uniqueStringKey === '') {
       const fullName = userProfile.fullName || candidateData.name || '';
       const companyName = userProfile.jobCompanyName || '';
-      
+
       console.log(`Regenerating uniqueStringKey for LinkedIn search result: fullName="${fullName}", companyName="${companyName}"`);
-      
+
       userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
         {
           name: fullName,
@@ -488,7 +548,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         },
         'linkedin_search'
       );
-      
+
       console.log(`Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`);
     }
   }
@@ -516,7 +576,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         peopleResult.id !== undefined && peopleResult.id !== null
           ? String(peopleResult.id)
           : '';
-      
+
       // Create base UserProfile using the standard transformation
       const context: TransformationContext = {
         projectId,
@@ -529,9 +589,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         targetCompanyIds: options?.targetCompanyIds,
         targetCompanySlug: options?.targetCompanySlug,
       };
-      
+
       const userProfile = this.transformToUserProfile(result, context);
-      
+
       // Extend with DataTable UI-specific fields
       const currentPosition = this.pickCurrentPosition(peopleResult, {
         companyName: options?.targetCompanyName,
@@ -557,11 +617,11 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
       const transformedCandidate: TransformedCandidateForTable = {
         ...userProfile,
-        
+
         // DataTable UI fields
         __isFetched: true,
         tempId: peopleResult.id,
-        
+
         // Override string fields for Handsontable compatibility
         phoneNumber: userProfile.phoneNumber || '',
         email: userProfile.emailAddress || '',
@@ -572,8 +632,11 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           '',
         hiringNaukriUrl: userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
         resdexNaukriUrl: '',
-        displayPicture: peopleResult.profile_picture_url || '',
-        
+        displayPicture:
+          peopleResult.profile_picture_url ||
+          peopleResult.profile_picture_url_large ||
+          '',
+
         // UI state fields
         status: 'No Status',
         candConversationStatus: 'No Conversation',
@@ -590,7 +653,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         },
         messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         chatCount: 0,
-        
+
         // Relationship edges
         chatMessages: { edges: [] },
         emailMessages: { edges: [] },
@@ -602,11 +665,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         whatsappProvider: 'application03',
         input: '',
         remarks: '',
-        
+
         // LinkedIn-specific display fields
         name: peopleResult.name || userProfile.fullName || 'Unknown',
         headline: peopleResult.headline || userProfile.linkedinHeadline || '',
-        profilePictureUrl: peopleResult.profile_picture_url || '',
+        profilePictureUrl:
+          peopleResult.profile_picture_url ||
+          peopleResult.profile_picture_url_large ||
+          '',
         networkDistance: peopleResult.network_distance || 'UNKNOWN',
         premium: peopleResult.premium || false,
         verified: peopleResult.verified || false,
@@ -615,7 +681,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         followersCount: peopleResult.followers_count,
         connectionsCount: peopleResult.connections_count,
         keywordsMatch: peopleResult.keywords_match || '',
-        
+
         // Naming aliases for DataTable compatibility
         jobTitle: resolvedJobTitle,
         company: resolvedCompany,
@@ -624,6 +690,16 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         updatedAt: timestamp,
         createdAt: timestamp,
       };
+      // Keep summary + large picture on the table row so upload-profiles / otherFields retain them
+      if (peopleResult.summary) {
+        transformedCandidate.linkedinSummary = peopleResult.summary;
+      }
+      if (peopleResult.profile_picture_url_large) {
+        transformedCandidate.linkedinSpecificData = {
+          ...transformedCandidate.linkedinSpecificData,
+          profilePictureUrlLarge: peopleResult.profile_picture_url_large,
+        };
+      }
       return transformedCandidate;
     });
   }
@@ -633,14 +709,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
    */
   private extractJobTitleFromHeadline(headline?: string): string | null {
     if (!headline) return null;
-    
+
     const patterns = [
       /^([^|]+)/,
       /^([^-]+)/,
       /^([^at]+)/,
       /^([^@]+)/,
     ];
-    
+
     for (const pattern of patterns) {
       const match = headline.match(pattern);
       if (match && match[1]) {
@@ -650,7 +726,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         }
       }
     }
-    
+
     return headline.length > 100 ? headline.substring(0, 100) + '...' : headline;
   }
 
@@ -659,14 +735,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
    */
   private extractCompanyFromHeadline(headline?: string): string | null {
     if (!headline) return null;
-    
+
     const patterns = [
       /at\s+([^|]+)/i,
       /@\s+([^|]+)/i,
       /\|\s*([^|]+)/,
       /-\s*([^-]+)$/,
     ];
-    
+
     for (const pattern of patterns) {
       const match = headline.match(pattern);
       if (match && match[1]) {
@@ -676,7 +752,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         }
       }
     }
-    
+
     return null;
   }
 
@@ -715,20 +791,20 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       if (filters.hasProfilePicture && !candidate.profilePictureUrl) {
         return false;
       }
-      
+
       if (filters.isPremium !== undefined && candidate.premium !== filters.isPremium) {
         return false;
       }
-      
+
       if (filters.isVerified !== undefined && candidate.verified !== filters.isVerified) {
         return false;
       }
-      
-      if (filters.minSharedConnections !== undefined && 
+
+      if (filters.minSharedConnections !== undefined &&
           (candidate.sharedConnectionsCount || 0) < filters.minSharedConnections) {
         return false;
       }
-      
+
       return true;
     });
   }

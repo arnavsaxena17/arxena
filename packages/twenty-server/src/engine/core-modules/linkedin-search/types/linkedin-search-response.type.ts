@@ -220,7 +220,7 @@ export interface LinkedInVideoMeetingAttachment {
   time_range: number | null;
 }
 
-export type LinkedInAttachment = 
+export type LinkedInAttachment =
   | LinkedInImageAttachment
   | LinkedInVideoAttachment
   | LinkedInAudioAttachment
@@ -287,6 +287,8 @@ export interface LinkedInPeopleSearchResult {
   industry: string | null;
   keywords_match: string;
   headline: string;
+  /** Sales Navigator / Unipile people search about-section text */
+  summary?: string | null;
   connections_count: number;
   followers_count: number;
   pending_invitation: boolean;
@@ -374,7 +376,7 @@ export interface LinkedInJobSearchResult {
   company: LinkedInCompany | null;
 }
 
-export type LinkedInSearchResult = 
+export type LinkedInSearchResult =
   | LinkedInPeopleSearchResult
   | LinkedInCompanySearchResult
   | LinkedInPostSearchResult

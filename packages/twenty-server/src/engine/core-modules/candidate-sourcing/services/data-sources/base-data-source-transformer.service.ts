@@ -29,7 +29,7 @@ export abstract class BaseDataSourceTransformerService {
     context: TransformationContext
   ): UserProfile {
     // Use existing uniqueStringKey if available, otherwise generate one
-    const uniqueStringKey = candidateData.uniqueStringKey || 
+    const uniqueStringKey = candidateData.uniqueStringKey ||
       this.dataProcessingUtils.generateUniqueStringKey(
         candidateData,
         context.dataSource
@@ -128,13 +128,13 @@ export abstract class BaseDataSourceTransformerService {
         userProfile.emailAddress = cleanedEmails[0] || '';
       }
     }
-    const phoneInput = candidateData.phone_numbers || 
+    const phoneInput = candidateData.phone_numbers ||
                       candidateData['Phone Number'] ||
-                      candidateData.phone || 
-                      candidateData.phoneNumber || 
+                      candidateData.phone ||
+                      candidateData.phoneNumber ||
                       candidateData.phone_number ||
                       candidateData.phoneNumberValue;
-    
+
     if (phoneInput) {
       const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
       if (cleanedPhones.length > 0) {
@@ -146,7 +146,7 @@ export abstract class BaseDataSourceTransformerService {
 
   protected processProfileData(candidateData: any, userProfile: UserProfile, dataSource: string): void {
     const profileUrl = candidateData.profileUrl || '';
-    
+
     if (profileUrl) {
       userProfile.profileUrl = profileUrl;
     }
@@ -158,7 +158,7 @@ export abstract class BaseDataSourceTransformerService {
   protected processLocationData(candidateData: any, userProfile: UserProfile): void {
     const locationData = candidateData.location || candidateData.currentLocation || '';
     const cleanLocation = this.dataProcessingUtils.cleanLocation(locationData);
-    
+
     if (cleanLocation) {
       userProfile.locationName = cleanLocation;
       userProfile.locations = [{
@@ -209,17 +209,41 @@ export abstract class BaseDataSourceTransformerService {
             ? exp.isCurrent
             : this.inferIsCurrentFromDates(startDate, endDate, index);
 
+        const companyId =
+          exp.companyId ||
+          exp.company_id ||
+          (typeof exp.company === 'object' ? exp.company?.id : null) ||
+          null;
+        const description =
+          exp.description || exp.roleDescription || exp.role_description || null;
+        const location = exp.location || exp.locationName || null;
+        const industry = exp.industry ?? null;
+        const tenureAtRole = exp.tenureAtRole || exp.tenure_at_role || null;
+        const tenureAtCompany =
+          exp.tenureAtCompany || exp.tenure_at_company || null;
+
         return {
           company: {
             name: exp.company?.name || exp.companyName || exp.company || '',
           },
           title: {
-            name: exp.title || exp.designation || exp.role || '',
+            name:
+              exp.title?.name ||
+              exp.title ||
+              exp.designation ||
+              exp.role ||
+              '',
           },
           startDate,
           endDate,
           // Only include isCurrent when we can infer it to avoid noisy data
           ...(typeof isCurrent === 'boolean' ? { isCurrent } : {}),
+          ...(description ? { description } : {}),
+          ...(location ? { location } : {}),
+          ...(companyId ? { companyId: String(companyId) } : {}),
+          ...(industry ? { industry } : {}),
+          ...(tenureAtRole ? { tenureAtRole } : {}),
+          ...(tenureAtCompany ? { tenureAtCompany } : {}),
         };
       });
 
@@ -255,7 +279,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processEducationData(candidateData: any, userProfile: UserProfile): void {
     const educationData = candidateData.education || candidateData.educationDetails || '';
-    
+
     if (educationData && Array.isArray(educationData)) {
       userProfile.education = educationData.map((edu, index) => ({
         institute: {
@@ -280,20 +304,20 @@ export abstract class BaseDataSourceTransformerService {
    * Extract full name from various candidate data formats
    */
   protected extractFullName(candidateData: any): string {
-    let fullName = candidateData.name || 
-                   candidateData.jsUserName || 
-                   candidateData.full_name || 
+    let fullName = candidateData.name ||
+                   candidateData.jsUserName ||
+                   candidateData.full_name ||
                    candidateData.fullName || '';
     if (!fullName) {
-      const firstName = candidateData['First Name (name)'] || 
-                       candidateData.firstName || 
-                       candidateData.first_name || 
+      const firstName = candidateData['First Name (name)'] ||
+                       candidateData.firstName ||
+                       candidateData.first_name ||
                        candidateData['First Name'] || '';
-      const lastName = candidateData['Last Name (name)'] || 
-                      candidateData.lastName || 
-                      candidateData.last_name || 
+      const lastName = candidateData['Last Name (name)'] ||
+                      candidateData.lastName ||
+                      candidateData.last_name ||
                       candidateData['Last Name'] || '';
-      
+
       // Only construct full name if we have at least one non-empty name component
       if (firstName.trim() || lastName.trim()) {
         fullName = `${firstName} ${lastName}`.trim();
@@ -321,22 +345,22 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected calculateExperienceStats(userProfile: UserProfile): void {
     const experience = userProfile.experience;
-    
+
     if (!experience || experience.length === 0) {
       return;
     }
 
     // Calculate total experience in years (simplified)
     const totalYears = experience.length * 2; // Rough estimate
-    
+
     userProfile.experienceStats = {
-      totalYearsExperience: { 
-        years: totalYears, 
-        months: null 
+      totalYearsExperience: {
+        years: totalYears,
+        months: null
       },
-      currentSalary: { 
-        type: null, 
-        ctc: null 
+      currentSalary: {
+        type: null,
+        ctc: null
       }
     };
 
@@ -347,11 +371,11 @@ export abstract class BaseDataSourceTransformerService {
    * Process salary information - simplified
    */
   protected processSalaryData(candidateData: any, userProfile: UserProfile): void {
-    const salaryData = candidateData.salary || 
-                      candidateData.currentSalary || 
+    const salaryData = candidateData.salary ||
+                      candidateData.currentSalary ||
                       candidateData.annual_salary ||
                       candidateData.ctc;
-    
+
     if (salaryData) {
       const salaryNumber = this.dataProcessingUtils.extractSalaryNumber(salaryData);
       userProfile.inferredSalary = salaryNumber || null;
@@ -379,14 +403,14 @@ export abstract class BaseDataSourceTransformerService {
    * Set basic job information - utility method
    */
   protected setJobInfo(candidateData: any, userProfile: UserProfile): void {
-    const jobTitle = candidateData.jobTitle || 
-                    candidateData.current_designation || 
+    const jobTitle = candidateData.jobTitle ||
+                    candidateData.current_designation ||
                     candidateData.headline ||
                     candidateData.title;
-    
+
     const companyName = candidateData.jobCompanyName ||
-                       candidateData.job_company_name || 
-                       candidateData.company_name || 
+                       candidateData.job_company_name ||
+                       candidateData.company_name ||
                        candidateData.current_company ||
                        candidateData.currentCompany;
 

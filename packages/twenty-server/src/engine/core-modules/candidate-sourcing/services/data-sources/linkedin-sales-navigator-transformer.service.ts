@@ -18,7 +18,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     context: TransformationContext
   ): UserProfile {
     const userProfile = this.createBaseUserProfile(candidateData, context);
-    
+
     // Use simplified base methods
     this.processNameData(candidateData, userProfile);
     this.processContactData(candidateData, userProfile);
@@ -26,19 +26,19 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     this.processSkillsData(candidateData, userProfile);
     this.processEducationData(candidateData, userProfile);
     this.processIndustryData(candidateData, userProfile);
-    
+
     // Process LinkedIn Sales Navigator-specific data
     this.processSalesNavigatorProfileData(candidateData, userProfile);
     this.processSalesNavigatorExperienceData(candidateData, userProfile);
     this.processSalesNavigatorSpecificData(candidateData, userProfile);
-    
+
     return userProfile;
   }
 
   private processSalesNavigatorProfileData(candidateData: any, userProfile: UserProfile): void {
     // Process LinkedIn profile URL - Sales Navigator uses different URL format
     let linkedinUrl = candidateData.public_linkedin_url || candidateData.linkedinUrl || '';
-    
+
     // If we have entityUrn, extract the Sales Navigator lead ID
     if (!linkedinUrl && candidateData.entityUrn) {
       // Format: urn:li:fs_salesProfile:(ACwAABktyNIBoTQjoDJhoT0784oiXlq7u_Tofu4,NAME_SEARCH,8Dtl)
@@ -50,7 +50,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         }
       }
     }
-    
+
     if (linkedinUrl) {
       userProfile.linkedinUrl = linkedinUrl;
       userProfile.profileUrl = linkedinUrl;
@@ -61,12 +61,28 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
   }
 
   private processSalesNavigatorExperienceData(candidateData: any, userProfile: UserProfile): void {
-    const experience = candidateData.experience || candidateData.positions || candidateData.workExperience;
-    
+    const experience =
+      candidateData.experience ||
+      candidateData.positions ||
+      candidateData.workExperience ||
+      candidateData.current_positions;
+
     if (experience && Array.isArray(experience)) {
       userProfile.experience = experience.map((exp, index) => {
         const company = exp.company || exp.companyName || exp.organization;
-        
+        const startDate =
+          exp.startDate ||
+          exp.start_date ||
+          (exp.start
+            ? `${exp.start.year}-${String(exp.start.month ?? 1).padStart(2, '0')}-01`
+            : null);
+        const endDate =
+          exp.endDate ||
+          exp.end_date ||
+          (exp.end
+            ? `${exp.end.year}-${String(exp.end.month ?? 1).padStart(2, '0')}-01`
+            : null);
+
         return {
           company: {
             name: typeof company === 'object' ? company.name : company,
@@ -74,18 +90,34 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
           title: {
             name: exp.title || exp.position || exp.role || '',
           },
-          startDate: exp.startDate || exp.start_date || null,
-          endDate: exp.endDate || exp.end_date || null,
+          startDate,
+          endDate,
+          ...(index === 0 || exp.isCurrent === true ? { isCurrent: true } : {}),
+          ...(exp.description ? { description: exp.description } : {}),
+          ...(exp.location ? { location: exp.location } : {}),
+          ...(exp.company_id
+            ? { companyId: String(exp.company_id) }
+            : {}),
+          ...(exp.industry ? { industry: exp.industry } : {}),
+          ...(exp.tenure_at_role
+            ? { tenureAtRole: exp.tenure_at_role }
+            : {}),
+          ...(exp.tenure_at_company
+            ? { tenureAtCompany: exp.tenure_at_company }
+            : {}),
         };
       });
-      
+
       // Calculate experience statistics
       this.calculateExperienceStats(userProfile);
-      
+
       // Set current company information
       if (userProfile.experience.length > 0) {
         const currentJob = userProfile.experience[0];
         userProfile.jobCompanyName = currentJob.company.name;
+        if (currentJob.title?.name) {
+          userProfile.jobTitle = currentJob.title.name;
+        }
       }
     }
   }
@@ -95,13 +127,13 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     if (candidateData.summary || candidateData.about) {
       userProfile.linkedinSummary = candidateData.summary || candidateData.about;
     }
-    
+
     // Process headline - specific to Sales Navigator data structure
     const headline = candidateData.profile_headline || candidateData.job_title || candidateData.headline;
     if (headline) {
       userProfile.linkedinHeadline = headline;
     }
-    
+
     // Extract company from headline if it contains " at "
     // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
     if (typeof headline === 'string' && (headline.includes(' at ') || headline.includes(' AT '))) {
@@ -115,29 +147,29 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         userProfile.jobCompanyName = companyFromHeadline.trim();
       }
     }
-    
+
     // Process various Sales Navigator fields
     if (candidateData.full_name || candidateData.fullName || candidateData.name) {
       userProfile.fullName = candidateData.full_name || candidateData.fullName || candidateData.name;
     }
-    
+
     if (candidateData.company_name || candidateData.companyName) {
       userProfile.jobCompanyName = candidateData.company_name || candidateData.companyName || '';
     }
-    
+
     if (candidateData.profile_location || candidateData.location) {
       userProfile.locationName = candidateData.profile_location || candidateData.location || '';
     }
-    
+
     if (candidateData.company_industry || candidateData.industry) {
       userProfile.industry = candidateData.company_industry || candidateData.industry || '';
     }
-    
+
     // Process connection degree
     if (candidateData.connection_degree || candidateData.degree) {
       userProfile.linkedinConnections = candidateData.connection_degree || candidateData.degree;
     }
-    
+
     // Process spotlight badges
     if (candidateData.spotlight_badges && Array.isArray(candidateData.spotlight_badges)) {
       userProfile.linkedinSpecificData = {
@@ -145,7 +177,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         spotlightBadges: candidateData.spotlight_badges
       };
     }
-    
+
     // Process premium status
     if (candidateData.premium !== undefined) {
       userProfile.linkedinSpecificData = {
@@ -153,7 +185,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         premium: candidateData.premium
       };
     }
-    
+
     // Process tracking information
     if (candidateData.tracking_id || candidateData.trackingId) {
       userProfile.linkedinSpecificData = {
@@ -161,7 +193,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         trackingId: candidateData.tracking_id || candidateData.trackingId
       };
     }
-    
+
     // Process URNs
     if (candidateData.object_urn || candidateData.objectUrn) {
       userProfile.linkedinSpecificData = {
@@ -169,26 +201,26 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         objectUrn: candidateData.object_urn || candidateData.objectUrn
       };
     }
-    
+
     if (candidateData.entity_urn || candidateData.entityUrn) {
       userProfile.linkedinSpecificData = {
         ...userProfile.linkedinSpecificData,
         entityUrn: candidateData.entity_urn || candidateData.entityUrn
       };
     }
-    
+
     // Process creation particulars
     const creationData = {
       created: Date.now(),
       creation_source: 'linkedin_sales_navigator',
       data_sources: ['linkedin_sales_navigator'],
     };
-    
+
     userProfile.creationParticulars = creationData;
-    
+
     // Process social profiles - LinkedIn specific
     let linkedinUrl = candidateData?.public_linkedin_url || candidateData?.linkedinUrl || '';
-    
+
     // If we have entityUrn, extract the Sales Navigator lead ID
     if (!linkedinUrl && candidateData.entityUrn) {
       // Format: urn:li:fs_salesProfile:(ACwAABktyNIBoTQjoDJhoT0784oiXlq7u_Tofu4,NAME_SEARCH,8Dtl)
@@ -200,11 +232,11 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
         }
       }
     }
-    
+
     if (linkedinUrl) {
       userProfile.linkedinUrl = linkedinUrl;
     }
-    
+
     // Process certifications
     if (candidateData.certifications && Array.isArray(candidateData.certifications)) {
       const certifications = candidateData.certifications.map((cert, index) => ({
@@ -216,23 +248,66 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
       }));
       userProfile.certifications = certifications;
     }
-    
+
     // Process languages
     if (candidateData.languages && Array.isArray(candidateData.languages)) {
       userProfile.languages = candidateData.languages;
     }
-    
-    // Set profile picture
-    if (candidateData.profile_picture || candidateData.profilePicture || candidateData.photo) {
-      userProfile.displayPicture = candidateData.profile_picture || candidateData.profilePicture || candidateData.photo;
+
+    // Set profile picture (Unipile uses profile_picture_url / _large)
+    if (
+      candidateData.profile_picture ||
+      candidateData.profilePicture ||
+      candidateData.photo ||
+      candidateData.profile_picture_url ||
+      candidateData.profile_picture_url_large
+    ) {
+      userProfile.displayPicture =
+        candidateData.profile_picture ||
+        candidateData.profilePicture ||
+        candidateData.photo ||
+        candidateData.profile_picture_url ||
+        candidateData.profile_picture_url_large;
     }
-    
+
+    if (candidateData.profile_picture_url_large) {
+      userProfile.linkedinSpecificData = {
+        ...userProfile.linkedinSpecificData,
+        profilePictureUrlLarge: candidateData.profile_picture_url_large,
+      };
+    }
+
+    if (candidateData.public_profile_url) {
+      userProfile.linkedinUrl = candidateData.public_profile_url;
+      userProfile.profileUrl = candidateData.public_profile_url;
+    }
+
+    if (candidateData.network_distance) {
+      userProfile.linkedinSpecificData = {
+        ...userProfile.linkedinSpecificData,
+        networkDistance: candidateData.network_distance,
+      };
+    }
+
+    if (candidateData.current_positions) {
+      userProfile.linkedinSpecificData = {
+        ...userProfile.linkedinSpecificData,
+        currentPositions: candidateData.current_positions,
+        currentJobDescription:
+          candidateData.current_positions?.[0]?.description ?? null,
+        tenureAtCompany:
+          candidateData.current_positions?.[0]?.tenure_at_company ?? null,
+        tenureAtRole:
+          candidateData.current_positions?.[0]?.tenure_at_role ?? null,
+      };
+    }
+
     // Handle job title variations from Sales Navigator
     const jobTitle = candidateData.job_title || candidateData.profile_headline || candidateData.headline;
     if (jobTitle && jobTitle !== candidateData.profile_headline) {
       userProfile.jobTitle = jobTitle;
     }
-    
+
     // Process additional Sales Navigator specific fields
     const salesNavigatorSpecificFields = [
       'positions',
@@ -245,14 +320,14 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
       'object_urn',
       'entity_urn'
     ];
-    
+
     const salesNavigatorSpecificData: Record<string, any> = {};
     salesNavigatorSpecificFields.forEach(field => {
       if (candidateData[field]) {
         salesNavigatorSpecificData[field] = candidateData[field];
       }
     });
-    
+
     if (Object.keys(salesNavigatorSpecificData).length > 0) {
       userProfile.linkedinSpecificData = {
         ...userProfile.linkedinSpecificData,

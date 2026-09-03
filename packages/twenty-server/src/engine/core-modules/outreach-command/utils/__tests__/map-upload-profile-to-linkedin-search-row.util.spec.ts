@@ -15,6 +15,10 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
         linkedinProfileId: 'lindawindham',
         peopleId: 'ACwAAABcZlcB',
         profilePictureUrl: 'https://media.licdn.com/dms/image/linda.jpg',
+        summary: 'About Linda',
+        profile_picture_url_large: 'https://media.licdn.com/dms/image/linda-lg.jpg',
+        network_distance: 'DISTANCE_2',
+        premium: true,
       },
       '3616d8a1-0219-408a-a6e9-75105117be4e',
     );
@@ -25,6 +29,8 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
         profile_url: 'https://www.linkedin.com/in/lindawindham',
         public_identifier: 'lindawindham',
         profile_picture_url: 'https://media.licdn.com/dms/image/linda.jpg',
+        profile_picture_url_large:
+          'https://media.licdn.com/dms/image/linda-lg.jpg',
         displayPicture: 'https://media.licdn.com/dms/image/linda.jpg',
         first_name: 'Linda',
         last_name: 'Windham',
@@ -32,6 +38,10 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
         jobCompanyName: 'Korn Ferry',
         companyId: '3616d8a1-0219-408a-a6e9-75105117be4e',
         jobCompanyId: '3616d8a1-0219-408a-a6e9-75105117be4e',
+        summary: 'About Linda',
+        linkedinSummary: 'About Linda',
+        network_distance: 'DISTANCE_2',
+        premium: true,
         current_positions: [
           {
             company: 'Korn Ferry',

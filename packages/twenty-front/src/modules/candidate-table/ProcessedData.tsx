@@ -35,7 +35,7 @@ export const ProcessedData = ({ rawData, selectedRowIds }: { rawData: CandidateN
         messagingChannel: flattenedCandidate?.messagingChannel || '',
         resdexNaukriUrl: flattenedCandidate?.resdexNaukriUrl?.primaryLinkUrl?.includes('resdex.naukri.com') ? flattenedCandidate?.resdexNaukriUrl?.primaryLinkUrl : '',
         hiringNaukriUrl: flattenedCandidate?.hiringNaukriUrl?.primaryLinkUrl?.includes('hiring.naukri.com') ? flattenedCandidate?.hiringNaukriUrl?.primaryLinkUrl : '',
-        linkedinUrl: flattenedCandidate?.linkedinUrl?.primaryLinkUrl && isLinkedInUrl(flattenedCandidate.linkedinUrl.primaryLinkUrl) ? 
+        linkedinUrl: flattenedCandidate?.linkedinUrl?.primaryLinkUrl && isLinkedInUrl(flattenedCandidate.linkedinUrl.primaryLinkUrl) ?
           reconstructLinkedInUrlForDisplay(flattenedCandidate.linkedinUrl.primaryLinkUrl) : '',
         lastMessage: (() => {
           const edges = [...(flattenedCandidate?.chatMessages?.edges || [])].sort(

@@ -1,22 +1,23 @@
 import { styled } from '@linaria/react';
 import {
-    Suspense,
-    lazy,
-    useCallback,
-    useEffect,
-    useId,
-    useLayoutEffect,
-    useMemo,
-    useState,
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useState,
 } from 'react';
+import { Link } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import {
-    type IconComponent,
-    IconArrowUp,
-    IconDatabase,
-    IconPlayerStop,
-    IconUserPlus,
+  type IconComponent,
+  IconArrowUp,
+  IconDatabase,
+  IconPlayerStop,
+  IconUserPlus,
 } from 'twenty-ui/icon';
 import { IconButton } from 'twenty-ui/input';
 import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
@@ -30,16 +31,16 @@ import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQuerySt
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
-import { OutreachKpiStrip } from '@/outreach-home/components/OutreachKpiStrip';
 import { OUTREACH_STAGES } from '@/outreach-home/constants/outreach-stages';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
+import { useOutreachCommandDashboardPath } from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import {
-    type OutreachCompanyRow,
-    type OutreachPersonRow,
-    type OutreachStage,
+  type OutreachCompanyRow,
+  type OutreachPersonRow,
+  type OutreachStage,
 } from '@/outreach-home/types/outreach-home.types';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
@@ -105,6 +106,25 @@ const StyledStageChip = styled.button<{ isActive: boolean }>`
   }
 `;
 
+const StyledMetaChip = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
+  white-space: nowrap;
+`;
+
+const StyledDashboardLink = styled(Link)`
+  color: ${themeCssVariables.color.blue};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const StyledActionIcons = styled.div`
   align-items: center;
   display: flex;
@@ -125,11 +145,6 @@ const StyledBottomActionMenu = styled.div`
   z-index: 1000;
 `;
 
-const StyledKpiBottom = styled.div`
-  border-top: 1px solid ${themeCssVariables.border.color.light};
-  padding: ${`${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]}`};
-`;
-
 const STAGE_FILTER_IDS = [
   'queued',
   'connection_sent',
@@ -138,6 +153,9 @@ const STAGE_FILTER_IDS = [
   'deferred',
   'stopped',
 ] as const;
+
+const formatChipLabel = (label: string, count: number | null): string =>
+  isDefined(count) ? `${label} (${count})` : label;
 
 const mapOutreachPersonToDataTableRow = (
   person: OutreachPersonRow,
@@ -158,9 +176,7 @@ const mapOutreachPersonToDataTableRow = (
     firstName: nameParts[0] ?? '',
     lastName: nameParts.slice(1).join(' '),
     jobTitle: person.title,
-    headline: person.nextStepLabel
-      ? `${person.title} · Next: ${person.nextStepLabel}`
-      : `${person.title} at ${person.companyName}`,
+    headline: person.title,
     company: person.companyName,
     jobCompanyName: person.companyName,
     location: '',
@@ -281,10 +297,35 @@ export const OutreachPeoplePanel = ({
     isLoading: isJourneySummaryLoading,
     refetch: refetchJourneySummary,
   } = useOutreachProjectJourneySummary(projectId);
+  const { dashboardPath } = useOutreachCommandDashboardPath();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const [stageFilter, setStageFilter] = useState<
     OutreachStage | 'all' | 'needs_approval'
   >('all');
+
+  const stageCounts = useMemo(() => {
+    if (isJourneySummaryLoading || !isDefined(journeySummary)) {
+      return null;
+    }
+
+    return {
+      all: journeySummary.totalEnrolled,
+      needs_approval: journeySummary.needsApproval,
+      dueThisWeek: journeySummary.dueThisWeek,
+      byStage: journeySummary.byStage,
+    };
+  }, [isJourneySummaryLoading, journeySummary]);
+
+  const getStageCount = useCallback(
+    (stageId: string): number | null => {
+      if (!isDefined(stageCounts)) {
+        return null;
+      }
+
+      return stageCounts.byStage[stageId.toUpperCase()] ?? 0;
+    },
+    [stageCounts],
+  );
 
   useEffect(() => {
     setChatSearchQuery('');
@@ -473,14 +514,17 @@ export const OutreachPeoplePanel = ({
         isActive={stageFilter === 'all'}
         onClick={() => setStageFilter('all')}
       >
-        All stages
+        {formatChipLabel('All stages', stageCounts?.all ?? null)}
       </StyledStageChip>
       <StyledStageChip
         type="button"
         isActive={stageFilter === 'needs_approval'}
         onClick={() => setStageFilter('needs_approval')}
       >
-        Needs approval
+        {formatChipLabel(
+          'Needs approval',
+          stageCounts?.needs_approval ?? null,
+        )}
       </StyledStageChip>
       {OUTREACH_STAGES.filter((stage) =>
         STAGE_FILTER_IDS.includes(
@@ -493,9 +537,17 @@ export const OutreachPeoplePanel = ({
           isActive={stageFilter === stage.id}
           onClick={() => setStageFilter(stage.id)}
         >
-          {stage.label}
+          {formatChipLabel(stage.label, getStageCount(stage.id))}
         </StyledStageChip>
       ))}
+      {isDefined(stageCounts) && (
+        <StyledMetaChip>{stageCounts.dueThisWeek} due this week</StyledMetaChip>
+      )}
+      {isDefined(dashboardPath) && (
+        <StyledDashboardLink to={dashboardPath}>
+          Open Outreach dashboard
+        </StyledDashboardLink>
+      )}
     </StyledStageFilters>
   );
 
@@ -584,14 +636,6 @@ export const OutreachPeoplePanel = ({
         showBatchActions={false}
         centerComponent={stageFilterChips}
         rightComponent={outreachActionIcons}
-        bottomComponent={
-          <StyledKpiBottom>
-            <OutreachKpiStrip
-              summary={journeySummary}
-              isLoading={isJourneySummaryLoading}
-            />
-          </StyledKpiBottom>
-        }
       />
 
       {people.length === 0 ? (
