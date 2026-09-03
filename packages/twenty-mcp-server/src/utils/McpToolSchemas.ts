@@ -374,6 +374,31 @@ export const LIST_TAXONOMY_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] 
   { key: 'title', type: 'string', description: 'Optional job title to classify', required: false },
 ] as const;
 
+export const LIST_TAXONOMY_SLICE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  {
+    key: 'function_root',
+    type: 'string',
+    description: 'Function root to fetch child std_function labels for (e.g. technology, finance)',
+    required: true,
+  },
+] as const;
+
+export const CLASSIFY_TAXONOMY_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  {
+    key: 'profile',
+    type: 'string',
+    description:
+      'Caller-formatted profile text (Name, Title, Company, Summary, Current Experience). Max 5000 tokens. Prefer this over jobTitle when you have a full profile.',
+    required: false,
+  },
+  {
+    key: 'jobTitle',
+    type: 'string',
+    description: 'Job title only. Use profile instead when formatted profile text is available.',
+    required: false,
+  },
+] as const;
+
 // ==================== LinkedIn Search Tools ====================
 
 /** Descriptor for expand_companies tool input. */

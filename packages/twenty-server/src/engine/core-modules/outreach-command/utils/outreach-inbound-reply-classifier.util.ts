@@ -1,39 +1,24 @@
-export const OUTREACH_INBOUND_INTENTS = [
-  'unsubscribe',
-  'not_now',
-  'interested',
-  'times_proposed',
-  'book',
-  'question',
-] as const;
+import {
+  OUTREACH_INBOUND_INTENT_TO_CONVERSATION_STAGE,
+  OUTREACH_INBOUND_INTENT_TO_SEQUENCE_STAGE,
+  OUTREACH_INBOUND_INTENTS,
+  type OutreachConversationStage,
+  type OutreachInboundIntent,
+} from 'twenty-shared/arx';
 
-export type OutreachInboundIntent = (typeof OUTREACH_INBOUND_INTENTS)[number];
+export const OUTREACH_INBOUND_INTENTS_LIST = OUTREACH_INBOUND_INTENTS;
 
-export type OutreachClassifiedOutreachStage =
-  | 'STOPPED'
-  | 'DEFERRED'
-  | 'NEGOTIATING'
-  | 'REPLIED'
-  | 'MEETING_BOOKED';
+export type { OutreachInboundIntent };
+
+export type OutreachClassifiedSequenceStage = 'STOPPED' | 'REPLIED';
 
 export type OutreachInboundReplyClassification = {
   intent: OutreachInboundIntent;
-  stage: OutreachClassifiedOutreachStage;
+  stage: OutreachClassifiedSequenceStage;
+  conversationStage: OutreachConversationStage;
   confidence: number;
   reasoning: string;
   extractedTimeHint: string;
-};
-
-export const OUTREACH_INBOUND_INTENT_TO_STAGE: Record<
-  OutreachInboundIntent,
-  OutreachClassifiedOutreachStage
-> = {
-  unsubscribe: 'STOPPED',
-  not_now: 'DEFERRED',
-  interested: 'NEGOTIATING',
-  times_proposed: 'REPLIED',
-  book: 'MEETING_BOOKED',
-  question: 'REPLIED',
 };
 
 const STOP_PHRASES = [
@@ -103,78 +88,90 @@ const INTEREST_PHRASES = [
 const includesAny = (haystack: string, needles: string[]): boolean =>
   needles.some((needle) => haystack.includes(needle));
 
+const classificationFromResolvedIntent = ({
+  intent,
+  confidence,
+  reasoning,
+  extractedTimeHint,
+}: {
+  intent: OutreachInboundIntent;
+  confidence: number;
+  reasoning: string;
+  extractedTimeHint: string;
+}): OutreachInboundReplyClassification => ({
+  intent,
+  stage: OUTREACH_INBOUND_INTENT_TO_SEQUENCE_STAGE[intent],
+  conversationStage: OUTREACH_INBOUND_INTENT_TO_CONVERSATION_STAGE[intent],
+  confidence,
+  reasoning,
+  extractedTimeHint,
+});
+
 export const classifyInboundReplyFallback = (
   inboundText: string,
 ): OutreachInboundReplyClassification => {
   const text = inboundText.trim().toLowerCase();
 
   if (!text) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'question',
-      stage: 'REPLIED',
       confidence: 0.4,
       reasoning: 'Empty inbound burst; default to reply drafting.',
       extractedTimeHint: '',
-    };
+    });
   }
 
   if (includesAny(text, STOP_PHRASES)) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'unsubscribe',
-      stage: 'STOPPED',
       confidence: 0.75,
       reasoning: 'Opt-out language in inbound burst.',
       extractedTimeHint: '',
-    };
+    });
   }
 
   if (includesAny(text, BOOK_PHRASES)) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'book',
-      stage: 'MEETING_BOOKED',
       confidence: 0.7,
       reasoning: 'Explicit booking / invite confirmation.',
       extractedTimeHint: inboundText.trim().slice(0, 280),
-    };
+    });
   }
 
   if (includesAny(text, DEFER_PHRASES)) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'not_now',
-      stage: 'DEFERRED',
       confidence: 0.7,
       reasoning: 'Asked to pause or follow up later.',
       extractedTimeHint: '',
-    };
+    });
   }
 
   if (includesAny(text, TIME_PHRASES) && /\d/.test(text)) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'times_proposed',
-      stage: 'REPLIED',
       confidence: 0.65,
       reasoning: 'Proposed a time window; confirm via reply graph.',
       extractedTimeHint: inboundText.trim().slice(0, 280),
-    };
+    });
   }
 
   if (includesAny(text, INTEREST_PHRASES)) {
-    return {
+    return classificationFromResolvedIntent({
       intent: 'interested',
-      stage: 'NEGOTIATING',
       confidence: 0.65,
       reasoning: 'Positive interest without a booked slot.',
       extractedTimeHint: '',
-    };
+    });
   }
 
-  return {
+  return classificationFromResolvedIntent({
     intent: 'question',
-    stage: 'REPLIED',
     confidence: 0.5,
     reasoning: 'No stronger intent; treat as a question / open reply.',
     extractedTimeHint: '',
-  };
+  });
 };
 
 export const classificationFromIntent = ({
@@ -188,15 +185,16 @@ export const classificationFromIntent = ({
   reasoning?: string;
   extractedTimeHint?: string;
 }): OutreachInboundReplyClassification => {
-  const normalized = OUTREACH_INBOUND_INTENTS.includes(intent as OutreachInboundIntent)
+  const normalized = OUTREACH_INBOUND_INTENTS.includes(
+    intent as OutreachInboundIntent,
+  )
     ? (intent as OutreachInboundIntent)
     : 'question';
 
-  return {
+  return classificationFromResolvedIntent({
     intent: normalized,
-    stage: OUTREACH_INBOUND_INTENT_TO_STAGE[normalized],
     confidence: Math.min(1, Math.max(0, confidence ?? 0.5)),
     reasoning: reasoning?.trim() || 'Model classification.',
     extractedTimeHint: extractedTimeHint?.trim() ?? '',
-  };
+  });
 };

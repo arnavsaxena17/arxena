@@ -67,8 +67,10 @@ export class OutreachInboundReplyWindowService {
     turn?: InboundBufferedTurn;
     chatId?: string;
   }): Promise<void> {
-    const minutes = clampInboundWindowDelayMinutes(delayMinutes);
-    const ttlMs = inboundWindowTtlMs(minutes);
+    // Explicit 0 = flush ASAP (mock / operator inject); otherwise clamp to 1–60.
+    const minutes =
+      delayMinutes === 0 ? 0 : clampInboundWindowDelayMinutes(delayMinutes);
+    const ttlMs = inboundWindowTtlMs(Math.max(minutes, 1));
     const generationKey = this.generationKey(workspaceId, candidateId);
     const turnsKey = this.turnsKey(workspaceId, candidateId);
     const previous = (await this.cache.get<number>(generationKey)) ?? 0;
@@ -138,7 +140,7 @@ export class OutreachInboundReplyWindowService {
       this.logger.warn(
         `Inbound flush skipped empty burst for ${candidateId}`,
       );
-      await this.clearWindow(workspaceId, candidateId);
+      await this.clearInboundWindow(workspaceId, candidateId);
 
       return;
     }
@@ -184,11 +186,12 @@ export class OutreachInboundReplyWindowService {
           event,
           apiToken: token,
           classifiedOutreachStage: classification.stage,
+          classifiedConversationStage: classification.conversationStage,
           extractedTimeHint: classification.extractedTimeHint,
         });
 
         if (
-          classification.stage === 'DEFERRED' &&
+          classification.conversationStage === 'SNOOZED' &&
           classification.extractedTimeHint
         ) {
           const resumeAtIso = parseOutreachResumeAtFromHint(
@@ -227,10 +230,10 @@ export class OutreachInboundReplyWindowService {
       );
     }
 
-    await this.clearWindow(workspaceId, candidateId);
+    await this.clearInboundWindow(workspaceId, candidateId);
   }
 
-  private async clearWindow(
+  async clearInboundWindow(
     workspaceId: string,
     candidateId: string,
   ): Promise<void> {

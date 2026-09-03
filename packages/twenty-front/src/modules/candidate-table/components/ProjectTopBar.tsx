@@ -88,14 +88,15 @@ type ProjectTopBarProps = {
 };
 
 const StyledContainer = styled.div`
+  background: ${themeCssVariables.background.primary};
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   margin-left: ${themeCssVariables.spacing[2]};
   position: relative;
-  /* Above page header (20), below right drawer (30) so tooltips are visible */
-  z-index: 25;
+  /* Above table clones (10), below side panel overlay (21) */
+  z-index: 11;
 `;
 
 const StyledTopBar = styled.div`
@@ -110,15 +111,32 @@ const StyledTopBar = styled.div`
   justify-content: space-between;
   min-height: 48px;
   padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  position: relative;
   z-index: 1;
 `;
 
 const StyledInlineSection = styled.div`
   align-items: center;
+  background: ${themeCssVariables.background.primary};
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1]};
   min-width: 0;
+  position: relative;
+  z-index: 1;
+`;
+
+const StyledLeftSection = styled(StyledInlineSection)`
+  @media (max-width: 768px) {
+    order: 1;
+  }
+`;
+
+const StyledRightSection = styled(StyledInlineSection)`
+  @media (max-width: 768px) {
+    margin-left: auto;
+    order: 2;
+  }
 `;
 
 const StyledFilterSection = styled.div`
@@ -129,6 +147,14 @@ const StyledFilterSection = styled.div`
   gap: ${themeCssVariables.spacing[1]};
   max-width: 100%;
   min-width: 0;
+  position: relative;
+  z-index: 0;
+
+  @media (max-width: 768px) {
+    flex: 1 1 100%;
+    order: 3;
+    width: 100%;
+  }
 `;
 
 const StyledSearchContainer = styled.div`
@@ -541,7 +567,7 @@ export const ProjectTopBar = memo(
     return (
       <StyledContainer className={className}>
         <StyledTopBar>
-          <StyledInlineSection>
+          <StyledLeftSection>
             {leftComponent}
             {showSearch && (
               <StyledSearchContainer>
@@ -569,7 +595,7 @@ export const ProjectTopBar = memo(
                 />
               </StyledJobStatusToggle>
             )}
-          </StyledInlineSection>
+          </StyledLeftSection>
 
           <StyledFilterSection>
             {centerComponent}
@@ -590,7 +616,7 @@ export const ProjectTopBar = memo(
             )}
           </StyledFilterSection>
 
-          <StyledInlineSection>
+          <StyledRightSection>
             {showRefetch && (
               <TooltipIconButton
                 title="Refresh"
@@ -741,7 +767,7 @@ export const ProjectTopBar = memo(
             )}
 
             {rightComponent}
-          </StyledInlineSection>
+          </StyledRightSection>
         </StyledTopBar>
         {bottomComponent}
       </StyledContainer>

@@ -284,6 +284,18 @@ export {
   buildProjectConfigUpdate,
   buildDefaultOutreachConfig,
 } from './outreachConfig';
+export type {
+  OutreachConversationStage,
+  OutreachInboundIntent,
+} from './outreachConversationStage';
+export {
+  OUTREACH_CONVERSATION_STAGES,
+  OUTREACH_CONVERSATION_STAGE_LABELS,
+  OUTREACH_INBOUND_INTENTS,
+  OUTREACH_INBOUND_INTENT_TO_CONVERSATION_STAGE,
+  OUTREACH_INBOUND_INTENT_TO_SEQUENCE_STAGE,
+  isOutreachConversationStage,
+} from './outreachConversationStage';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {
   DEFAULT_SEND_WINDOW_DAYS,

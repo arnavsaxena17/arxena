@@ -19,12 +19,14 @@ import {
   TAXONOMY_FUNCTION_ROOT_CONSTANTS,
   TAXONOMY_GRADE_CATEGORY_CONSTANTS,
   TAXONOMY_GRADE_LEVEL_CONSTANTS,
+  toTaxonomyConstantLabel,
   type TaxonomyConstantsResponse,
 } from './constants/taxonomy-constants';
 import type { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import type { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import type { PeopleSearchDto } from './dto/people-search.dto';
 import type { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
+import type { TaxonomyClassifyLlmDto } from './dto/taxonomy-classify-llm.dto';
 import type { TaxonomyManualBooleanQueriesDto } from './dto/taxonomy-manual-boolean-queries.dto';
 import type {
   DataSourcesStatusResponse,
@@ -32,8 +34,11 @@ import type {
   PeopleSearchByTaxonomyResponse,
   PeopleSearchResponse,
   TaxonomyBooleanStringsResponse,
-  TaxonomyManualBooleanQueriesResponse,
+  TaxonomyClassifyLlmResponse,
   TaxonomyItem,
+  TaxonomyLlmClassification,
+  TaxonomyManualBooleanQueriesResponse,
+  TaxonomySliceResponse,
   TaxonomyTreeResponse,
 } from './people-api.types';
 import {
@@ -124,12 +129,30 @@ export class PeopleApiService {
     };
   }
 
-  getTaxonomyConstants(): TaxonomyConstantsResponse {
+  async getTaxonomyConstants(): Promise<TaxonomyConstantsResponse> {
+    const rootsResult =
+      await this.titleTaxonomyRemoteService.getFunctionRoots();
+    const roots = Array.isArray(rootsResult) ? rootsResult : [];
+    const liveFunctionRoots = roots
+      .map((root) => (root.id || root.name || root.label || '').trim())
+      .filter((id) => id.length > 0)
+      .map((id) => {
+        const normalized = id.toLowerCase();
+        return {
+          id: normalized,
+          label: toTaxonomyConstantLabel(normalized),
+          description: `Department family: ${normalized}.`,
+        };
+      });
+
     return {
       status: 'ok',
       gradeLevels: TAXONOMY_GRADE_LEVEL_CONSTANTS,
       gradeCategories: TAXONOMY_GRADE_CATEGORY_CONSTANTS,
-      functionRoots: TAXONOMY_FUNCTION_ROOT_CONSTANTS,
+      functionRoots:
+        liveFunctionRoots.length > 0
+          ? liveFunctionRoots
+          : TAXONOMY_FUNCTION_ROOT_CONSTANTS,
     };
   }
 
@@ -196,6 +219,80 @@ export class PeopleApiService {
       return { status: 'ok', items: result };
     }
     return { status: 'ok', item: result };
+  }
+
+  async getTaxonomySlice(functionRoot: string): Promise<TaxonomySliceResponse> {
+    const trimmed = functionRoot.trim();
+    if (!trimmed) {
+      throw new HttpException(
+        'function_root is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result =
+      await this.titleTaxonomyRemoteService.getTaxonomySlice(trimmed);
+    if (!result) {
+      throw new HttpException(
+        'Title taxonomy service is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    return {
+      status: 'ok',
+      function_root: result.function_root || trimmed,
+      functions: Array.isArray(result.functions) ? result.functions : [],
+      grades: Array.isArray(result.grades) ? result.grades : [],
+    };
+  }
+
+  async classifyLlm(
+    body: TaxonomyClassifyLlmDto,
+  ): Promise<TaxonomyClassifyLlmResponse> {
+    const jobTitles = body.job_titles;
+    const profiles = body.profiles;
+
+    if (jobTitles !== undefined && profiles !== undefined) {
+      throw new HttpException(
+        'Provide either job_titles or profiles, not both',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.titleTaxonomyRemoteService.classifyLlm({
+      jobTitles,
+      profiles,
+    });
+    if (!result) {
+      throw new HttpException(
+        'LLM classifier is unavailable',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const classifications = Array.isArray(result.classifications)
+      ? result.classifications.map(
+          (row): TaxonomyLlmClassification => ({
+            title: row.title,
+            profile: row.profile ?? null,
+            job_title_normalized: row.job_title_normalized,
+            function_root: row.function_root || 'unclassified',
+            std_function_root:
+              row.std_function_root || row.function_root || 'unclassified',
+            std_function: row.std_function || 'unclassified',
+            std_grade: row.std_grade || 'unclassified',
+            std_grade_category: row.std_grade_category || 'unclassified',
+            grade_level: row.grade_level || 'unclassified',
+            function_root_confidence: row.function_root_confidence ?? 0,
+            std_function_confidence: row.std_function_confidence ?? 0,
+            std_grade_confidence: row.std_grade_confidence ?? 0,
+            source: 'llm',
+          }),
+        )
+      : [];
+
+    return { status: 'ok', classifications };
   }
 
   async searchPeople(

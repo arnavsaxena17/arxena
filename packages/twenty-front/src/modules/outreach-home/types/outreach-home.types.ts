@@ -10,11 +10,15 @@ export type OutreachStage =
   | 'email_enriching'
   | 'email_sent'
   | 'inmail_sent'
+  | 'whatsapp_sent'
+  | 'waiting_reply'
   | 'deferred'
   | 'stopped'
   | 'replied'
   | 'negotiating'
-  | 'meeting_booked';
+  | 'meeting_booked'
+  | 'failed_no_reply'
+  | 'failed_enrich';
 
 export type OutreachMainTab = 'companies' | 'people' | 'setup';
 
@@ -81,9 +85,16 @@ export type OutreachPersonRow = {
   candidateId?: string;
   experimentVariant?: 'A' | 'B' | null;
   nextStepLabel?: string;
+  nextRetryAt?: string | null;
   linkedinFollowUpCount?: number;
   outreachResumeAt?: string | null;
   needsApproval?: boolean;
+  messagesExchanged?: string;
+  outreachConversationStage?: string;
+  lastInboundCopy?: string;
+  lastInboundAt?: string | null;
+  lastOutboundAt?: string | null;
+  replyAfterTouch?: string;
 };
 
 export type OutreachProjectOption = {

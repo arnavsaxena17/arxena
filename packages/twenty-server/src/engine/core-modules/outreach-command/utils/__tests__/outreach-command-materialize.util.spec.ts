@@ -141,23 +141,30 @@ describe('outreach-command-materialize.util', () => {
     expect(
       buildCandidateEventUpdate({
         event: 'inbound_reply_flush',
-        classifiedOutreachStage: 'DEFERRED',
+        classifiedOutreachStage: 'REPLIED',
+        classifiedConversationStage: 'SNOOZED',
       }),
     ).toMatchObject({
-      outreachSequenceStage: 'DEFERRED',
+      outreachSequenceStage: 'REPLIED',
+      outreachConversationStage: 'SNOOZED',
     });
     expect(
       buildCandidateEventUpdate({
         event: 'inbound_reply_flush',
-        classifiedOutreachStage: 'DEFERRED',
+        classifiedOutreachStage: 'STOPPED',
+        classifiedConversationStage: 'NOT_INTERESTED',
       }),
-    ).not.toHaveProperty('convertedOnMessageKind');
+    ).toMatchObject({
+      outreachSequenceStage: 'STOPPED',
+      outreachConversationStage: 'NOT_INTERESTED',
+    });
     expect(
       buildCandidateEventUpdate({
         event: 'inbound_reply_flush',
-        classifiedOutreachStage: 'DEFERRED',
+        classifiedOutreachStage: 'REPLIED',
+        classifiedConversationStage: 'SNOOZED',
       }),
-    ).not.toHaveProperty('lastInboundAt');
+    ).not.toHaveProperty('convertedOnMessageKind');
   });
 
   it('computes attention reasons', () => {

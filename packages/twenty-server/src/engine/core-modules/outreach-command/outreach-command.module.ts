@@ -8,6 +8,7 @@ import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { OutreachCommandController } from 'src/engine/core-modules/outreach-command/controllers/outreach-command.controller';
+import { OutreachMockController } from 'src/engine/core-modules/outreach-command/controllers/outreach-mock.controller';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { OutreachWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job';
@@ -43,7 +44,9 @@ import {
 import { OutreachCompanyProfileSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-company-profile-summarizer.service';
 import { IcpBootstrapSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-icp-bootstrap-summarizer.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { OutreachMockLifecycleService } from 'src/engine/core-modules/outreach-command/services/outreach-mock-lifecycle.service';
 import { OutreachInboundReplyClassifierService } from 'src/engine/core-modules/outreach-command/services/outreach-inbound-reply-classifier.service';
+import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { OutreachLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-linkedin-pool-company-enrichment.source';
 import { OutreachThrottleService } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
@@ -69,6 +72,7 @@ import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/go
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-common.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
+import { WebSocketModule } from 'src/modules/websocket/websocket.module';
 // WorkflowRunnerModule is not imported here: it pulls ToolModule → OutreachCommand (cycle).
 // Journey service resolves WorkflowRunnerWorkspaceService via ModuleRef instead.
 
@@ -95,12 +99,15 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     GoogleCalendarModule,
     WorkflowCommonModule,
     WorkflowRunModule,
+    WebSocketModule,
   ],
-  controllers: [OutreachCommandController],
+  controllers: [OutreachCommandController, OutreachMockController],
   providers: [
     OutreachCommandMaterializeService,
+    OutreachMockLifecycleService,
     OutreachInboundReplyClassifierService,
     OutreachThrottleService,
+    OutreachCacheRealtimeService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
     CompaniesEsService,

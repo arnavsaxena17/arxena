@@ -27,6 +27,7 @@ import { ExpandJobTitlesDto } from './dto/expand-job-titles.dto';
 import { PeopleSearchByTaxonomyDto } from './dto/people-search-by-taxonomy.dto';
 import { PeopleSearchDto } from './dto/people-search.dto';
 import { TaxonomyBooleanStringsDto } from './dto/taxonomy-boolean-strings.dto';
+import { TaxonomyClassifyLlmDto } from './dto/taxonomy-classify-llm.dto';
 import { TaxonomyManualBooleanQueriesDto } from './dto/taxonomy-manual-boolean-queries.dto';
 import { PeopleApiService } from './people-api.service';
 
@@ -120,6 +121,41 @@ export class PeopleApiController {
     await this.throttleTaxonomyBrowse(request);
 
     return this.peopleApiService.getGrades(gradeLevel, title);
+  }
+
+  @Get('taxonomy/slice')
+  @UseGuards(JwtAuthGuard)
+  async getTaxonomySlice(
+    @Req() request: Request,
+    @Query('function_root') functionRoot?: string,
+  ) {
+    await this.throttleTaxonomyBrowse(request);
+
+    return this.peopleApiService.getTaxonomySlice(functionRoot ?? '');
+  }
+
+  @Post('taxonomy/classify-llm')
+  @UseGuards(JwtAuthGuard)
+  async classifyLlm(
+    @Req() request: Request,
+    @Body(PEOPLE_API_BODY_VALIDATION_PIPE) body: TaxonomyClassifyLlmDto,
+  ) {
+    try {
+      await this.throttleTaxonomyBrowse(request);
+
+      return await this.peopleApiService.classifyLlm(body);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error('People API taxonomy classify-llm failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Taxonomy LLM classify failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('taxonomy/boolean-strings')

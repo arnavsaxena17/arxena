@@ -1897,6 +1897,7 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
         name
         typeOfMessage
         candidateId
+        personId
         updatedAt
         position
         whatsappDeliveryStatus
@@ -2609,6 +2610,8 @@ export const graphqlToFetchAllCandidateData = `
                 recruiterId
                 message
                 candidateId
+                personId
+                typeOfMessage
                 projectsId
                 position
                 phoneTo
@@ -2674,6 +2677,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           remarks
           messagingChannel
           outreachSequenceStage
+          outreachConversationStage
           pendingChannel
           linkedinFollowUpCount
           outreachAnalytics
@@ -2727,6 +2731,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 recruiterId
                 message
                 candidateId
+                personId
+                typeOfMessage
                 projectsId
                 position
                 phoneTo

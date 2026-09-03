@@ -1,15 +1,20 @@
 import { styled } from '@linaria/react';
 import { useMemo, useState } from 'react';
+import {
+  OUTREACH_CONVERSATION_STAGE_LABELS,
+  OUTREACH_CONVERSATION_STAGES,
+} from 'twenty-shared/arx';
 import { Loader } from 'twenty-ui/feedback';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OUTREACH_JOURNEY_TIMELINE_STAGES } from '@/outreach-home/constants/outreach-journey-stages';
+import { type CandidateOutreachJourney } from '@/outreach-home/types/outreach-journey.types';
 import {
   resolveOutreachJourneyStageLabel,
-  resolveOutreachNextStepLabel,
+  resolveOutreachNextRetryLabel,
+  resolveOutreachPendingStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
-import { type CandidateOutreachJourney } from '@/outreach-home/types/outreach-journey.types';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -92,6 +97,11 @@ const StyledSnoozeRow = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
+const StyledSelect = styled.select`
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]};
+`;
+
 type CandidateOutreachJourneyTabProps = {
   journey: CandidateOutreachJourney | null;
   isLoading: boolean;
@@ -100,6 +110,10 @@ type CandidateOutreachJourneyTabProps = {
   onResume: () => void;
   onStop: () => void;
   onSnooze: (resumeAt: string) => void;
+  onUpdateOperatorControls: (input: {
+    outreachConversationStage?: string;
+    resumeAt?: string | null;
+  }) => void;
   onSkipDelay: (workflowRunId: string, stepId: string) => void;
   onApproveForm: (input: {
     workflowRunId: string;
@@ -117,11 +131,15 @@ export const CandidateOutreachJourneyTab = ({
   onResume,
   onStop,
   onSnooze,
+  onUpdateOperatorControls,
   onSkipDelay,
   onApproveForm,
 }: CandidateOutreachJourneyTabProps) => {
   const [editedDraft, setEditedDraft] = useState('');
   const [snoozeDate, setSnoozeDate] = useState('');
+  const [conversationStage, setConversationStage] = useState<string | null>(
+    null,
+  );
 
   const primaryRun = journey?.activeRuns[0] ?? null;
   const hasFormPending = primaryRun?.currentStepKind === 'FORM';
@@ -138,13 +156,24 @@ export const CandidateOutreachJourneyTab = ({
     });
   }, [hasFormPending, journey]);
 
-  const nextStepLabel = useMemo(() => {
+  const pendingStepLabel = useMemo(() => {
     if (!primaryRun) {
       return 'No active workflow run';
     }
 
-    return resolveOutreachNextStepLabel({
+    return resolveOutreachPendingStepLabel({
       currentStepName: primaryRun.currentStepName,
+      currentStepKind: primaryRun.currentStepKind,
+      pendingReason: primaryRun.pendingReason,
+    });
+  }, [primaryRun]);
+
+  const nextRetryLabel = useMemo(() => {
+    if (!primaryRun) {
+      return null;
+    }
+
+    return resolveOutreachNextRetryLabel({
       currentStepKind: primaryRun.currentStepKind,
       resumeAt: primaryRun.resumeAt,
       pendingReason: primaryRun.pendingReason,
@@ -198,7 +227,7 @@ export const CandidateOutreachJourneyTab = ({
         <StyledMuted>Current: {stageLabel}</StyledMuted>
         {journey.outreachResumeAt ? (
           <StyledMuted>
-            Snoozed until {new Date(journey.outreachResumeAt).toLocaleString()}
+            Next follow-up {new Date(journey.outreachResumeAt).toLocaleString()}
           </StyledMuted>
         ) : null}
       </StyledSection>
@@ -207,7 +236,10 @@ export const CandidateOutreachJourneyTab = ({
         <StyledSectionTitle>Active step</StyledSectionTitle>
         <StyledCard>
           <StyledMuted>{primaryRun?.workflowName ?? 'No active run'}</StyledMuted>
-          <strong>{nextStepLabel}</strong>
+          <strong>{pendingStepLabel}</strong>
+          {nextRetryLabel ? (
+            <StyledMuted>Next retry {nextRetryLabel}</StyledMuted>
+          ) : null}
           {journey.pendingChannel ? (
             <StyledMuted>Channel: {journey.pendingChannel}</StyledMuted>
           ) : null}
@@ -298,10 +330,51 @@ export const CandidateOutreachJourneyTab = ({
           ) : null}
         </StyledActions>
         <StyledSnoozeRow>
+          <StyledSelect
+            value={
+              conversationStage ?? journey.outreachConversationStage ?? 'NONE'
+            }
+            onChange={(event) => setConversationStage(event.target.value)}
+          >
+            {OUTREACH_CONVERSATION_STAGES.map((stage) => (
+              <option key={stage} value={stage}>
+                {OUTREACH_CONVERSATION_STAGE_LABELS[stage]}
+              </option>
+            ))}
+          </StyledSelect>
+          <Button
+            title="Save stage"
+            variant="secondary"
+            disabled={isActionLoading}
+            onClick={() =>
+              onUpdateOperatorControls({
+                outreachConversationStage:
+                  conversationStage ??
+                  journey.outreachConversationStage ??
+                  'NONE',
+              })
+            }
+          />
+        </StyledSnoozeRow>
+        <StyledSnoozeRow>
           <input
             type="datetime-local"
             value={snoozeDate}
             onChange={(event) => setSnoozeDate(event.target.value)}
+          />
+          <Button
+            title="Set next follow-up"
+            variant="secondary"
+            disabled={isActionLoading || !snoozeDate}
+            onClick={() => {
+              if (!snoozeDate) {
+                return;
+              }
+
+              onUpdateOperatorControls({
+                resumeAt: new Date(snoozeDate).toISOString(),
+              });
+            }}
           />
           <Button
             title="Snooze until"
@@ -316,6 +389,18 @@ export const CandidateOutreachJourneyTab = ({
             }}
           />
         </StyledSnoozeRow>
+        <StyledActions>
+          <Button
+            title="Mark not interested"
+            variant="secondary"
+            disabled={isActionLoading}
+            onClick={() =>
+              onUpdateOperatorControls({
+                outreachConversationStage: 'NOT_INTERESTED',
+              })
+            }
+          />
+        </StyledActions>
       </StyledSection>
     </StyledContainer>
   );
@@ -336,8 +421,14 @@ export const resolveJourneyHeaderLabels = (
         })
       : null,
     outreachNextStepLabel: primaryRun
-      ? resolveOutreachNextStepLabel({
+      ? resolveOutreachPendingStepLabel({
           currentStepName: primaryRun.currentStepName,
+          currentStepKind: primaryRun.currentStepKind,
+          pendingReason: primaryRun.pendingReason,
+        })
+      : null,
+    outreachNextRetryLabel: primaryRun
+      ? resolveOutreachNextRetryLabel({
           currentStepKind: primaryRun.currentStepKind,
           resumeAt: primaryRun.resumeAt,
           pendingReason: primaryRun.pendingReason,

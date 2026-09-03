@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
@@ -10,6 +12,7 @@ import {
   type SendLinkedinMessageToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-message-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import { loadUnipileChatAttachments } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/load-unipile-chat-attachments.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
@@ -27,6 +30,7 @@ export class SendLinkedinMessageTool implements Tool {
   constructor(
     private readonly fileService: FileService,
     private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   description =
@@ -61,6 +65,31 @@ export class SendLinkedinMessageTool implements Tool {
     }
 
     try {
+      const isMockUnipileEnabled =
+        await this.featureFlagService.isFeatureEnabled(
+          FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+          context.workspaceId,
+        );
+
+      if (isMockUnipileEnabled) {
+        this.logger.log(
+          `IS_OUTREACH_MOCK_UNIPILE_ENABLED: skipping Unipile message send for ${linkedinProfileId}`,
+        );
+
+        return {
+          success: true,
+          message: 'LinkedIn message sent successfully',
+          result: {
+            mock: true,
+            unipileAccountId,
+            linkedinProfileId,
+            body,
+            attachmentCount: 0,
+            response: { id: OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID },
+          },
+        };
+      }
+
       const attachments = await loadUnipileChatAttachments({
         files: input.files,
         workspaceId: context.workspaceId,

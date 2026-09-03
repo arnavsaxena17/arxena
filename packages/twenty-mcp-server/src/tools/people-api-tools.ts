@@ -1,5 +1,7 @@
 import {
+  CLASSIFY_TAXONOMY_PROFILE_INPUT_DESCRIPTOR,
   LIST_TAXONOMY_INPUT_DESCRIPTOR,
+  LIST_TAXONOMY_SLICE_INPUT_DESCRIPTOR,
   SEARCH_PEOPLE_API_INPUT_DESCRIPTOR,
   SEARCH_PEOPLE_BY_JOB_TITLE_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
@@ -224,6 +226,68 @@ export const peopleApiTools: McpTool[] = [
         'people-api',
         'taxonomy/grades',
         Object.keys(query).length > 0 ? query : undefined,
+      );
+    },
+  },
+  {
+    definition: {
+      name: 'list_taxonomy_slice',
+      title: 'List taxonomy slice',
+      description:
+        'Auth-gated labels for one std_function_root (child functions plus std_grade list). Use before DIY two-step classification. Prefer classify_taxonomy_profile to classify a person.',
+      annotations: { readOnlyHint: true },
+      inputSchema: descriptorToInputSchema(LIST_TAXONOMY_SLICE_INPUT_DESCRIPTOR),
+    },
+    handler: async (args, config) => {
+      if (!hasNonEmptyString(args.function_root)) {
+        throw new Error('function_root is required.');
+      }
+
+      return callRestAPIGet(
+        config.baseUrl,
+        config.apiToken,
+        'people-api',
+        'taxonomy/slice',
+        { function_root: args.function_root.trim() },
+      );
+    },
+  },
+  {
+    definition: {
+      name: 'classify_taxonomy_profile',
+      title: 'Classify taxonomy profile',
+      description:
+        'Classify a formatted profile blob or a job title into std_function_root, std_function, std_grade, and std_grade_category. Prefer search_people_api with naturalLanguage when you also need to find people.',
+      annotations: { readOnlyHint: true },
+      inputSchema: descriptorToInputSchema(
+        CLASSIFY_TAXONOMY_PROFILE_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const profile = hasNonEmptyString(args.profile)
+        ? args.profile.trim()
+        : '';
+      const jobTitle = hasNonEmptyString(args.jobTitle)
+        ? args.jobTitle.trim()
+        : '';
+
+      if (profile && jobTitle) {
+        throw new Error('Provide either profile or jobTitle, not both.');
+      }
+      if (!profile && !jobTitle) {
+        throw new Error('profile or jobTitle is required.');
+      }
+
+      const body = profile
+        ? { profiles: [profile] }
+        : { job_titles: [jobTitle] };
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'people-api',
+        'taxonomy/classify-llm',
+        body,
       );
     },
   },

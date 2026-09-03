@@ -29,6 +29,7 @@ export type OutreachSequenceStage =
   | 'INMAIL_SENT'
   | 'WHATSAPP_SENT'
   | 'REPLIED'
+  | 'WAITING_REPLY'
   | 'NEGOTIATING'
   | 'MEETING_BOOKED'
   | 'DEFERRED'
@@ -74,6 +75,8 @@ export const OUTREACH_ACTIVE_OUTREACH_STAGES: OutreachSequenceStage[] = [
   'EMAIL_SENT',
   'INMAIL_SENT',
   'WHATSAPP_SENT',
+  'REPLIED',
+  'WAITING_REPLY',
   'NEGOTIATING',
 ];
 
@@ -98,6 +101,7 @@ export const OUTREACH_STAGES_THAT_IMPLY_OUTBOUND: readonly OutreachSequenceStage
     'INMAIL_SENT',
     'WHATSAPP_SENT',
     'REPLIED',
+    'WAITING_REPLY',
     'NEGOTIATING',
     'MEETING_BOOKED',
     'FAILED_ENRICH',
@@ -315,11 +319,13 @@ export const rollupOutreachFunnelStage = ({
 export const buildCandidateEventUpdate = ({
   event,
   classifiedOutreachStage,
+  classifiedConversationStage,
   messagingChannel,
   outboundMessageKind,
 }: {
   event: OutreachCandidateEventKind;
   classifiedOutreachStage?: string | null;
+  classifiedConversationStage?: string | null;
   messagingChannel?: string | null;
   outboundMessageKind?: string | null;
 }): Record<string, unknown> => {
@@ -371,21 +377,28 @@ export const buildCandidateEventUpdate = ({
     }
     case 'inbound_reply':
       return {};
-    case 'inbound_reply_flush':
+    case 'inbound_reply_flush': {
+      const sequenceStage =
+        classifiedOutreachStage === 'STOPPED' ? 'STOPPED' : 'REPLIED';
+
       return {
-        outreachSequenceStage: classifiedOutreachStage ?? 'REPLIED',
+        outreachSequenceStage: sequenceStage,
+        ...(classifiedConversationStage
+          ? { outreachConversationStage: classifiedConversationStage }
+          : {}),
       };
+    }
     case 'meeting_booked':
       return {
-        outreachSequenceStage: 'MEETING_BOOKED',
+        outreachConversationStage: 'MEETING_BOOKED',
       };
     case 'meeting_held':
       return {
-        outreachSequenceStage: 'MEETING_BOOKED',
+        outreachConversationStage: 'MEETING_BOOKED',
       };
     case 'opportunity_created':
       return {
-        outreachSequenceStage: 'MEETING_BOOKED',
+        outreachConversationStage: 'MEETING_BOOKED',
       };
     default:
       return {};
@@ -452,10 +465,14 @@ export const computeAttentionReason = ({
     return 'ENRICH_MISS';
   }
 
+  if (outreachSequenceStage === 'FAILED_NO_REPLY') {
+    return 'NO_REPLY';
+  }
+
   if (
     !hasReply &&
     (daysSinceLastTouch ?? 0) >= 7 &&
-    outreachSequenceStage !== 'MEETING_BOOKED' &&
+    outreachSequenceStage !== 'WAITING_REPLY' &&
     outreachSequenceStage !== 'REPLIED'
   ) {
     return 'NO_REPLY';
@@ -463,7 +480,7 @@ export const computeAttentionReason = ({
 
   if (
     (daysSinceLastTouch ?? 0) >= 5 &&
-    !['MEETING_BOOKED', 'REPLIED', 'NEGOTIATING'].includes(
+    !['WAITING_REPLY', 'REPLIED', 'CONNECTION_ACCEPTED'].includes(
       outreachSequenceStage ?? '',
     )
   ) {

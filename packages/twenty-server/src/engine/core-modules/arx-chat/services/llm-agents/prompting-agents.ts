@@ -1,3 +1,5 @@
+import { isNonEmptyString } from '@sniptt/guards';
+import { z } from 'zod';
 import {
     allStatusesArray,
     CandidateNode,
@@ -5,7 +7,6 @@ import {
     Project,
     statusesArray
 } from 'twenty-shared';
-import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
@@ -203,6 +204,51 @@ export class PromptingAgents {
     candidateJob: Project,
     apiToken: string,
   ) {
+    const isOutreachSalesChat =
+      isNonEmptyString(candidate.outreachSequenceStage) ||
+      isNonEmptyString(candidateJob.outreachWorkflowId);
+
+    const recruiterProfile = await new RecruiterProfileService(
+      this.staticGraphQLService,
+    ).getRecruiterProfileByJob(candidateJob, apiToken);
+
+    if (!recruiterProfile) {
+      throw new Error('Recruiter profile not found for job');
+    }
+
+    const nameProcessor = new NameProcessor();
+    nameProcessor.processName(candidate.name);
+    const candidateWithProcessedName = {
+      ...candidate,
+      firstName: nameProcessor.masterDataJson.first_name,
+      lastName: nameProcessor.masterDataJson.last_name,
+    };
+
+    if (isOutreachSalesChat) {
+      const SYSTEM_PROMPT_STRINGIFIED = await this.getPromptByProjectIdAndName(
+        candidateJob.id,
+        'OUTREACH_SALES_CHAT_PROMPT',
+        apiToken,
+      );
+      const SYSTEM_PROMPT = this.replaceTemplateVariables(
+        SYSTEM_PROMPT_STRINGIFIED,
+        {
+          candidate: candidateWithProcessedName,
+          recruiterProfile,
+          jobProfile: candidate?.projects,
+          candidate_conversation_summary:
+            this.buildOutreachConversationSummary(candidate),
+        },
+      );
+
+      console.log(
+        'Generated getStartChatPrompt sales prompt:',
+        SYSTEM_PROMPT,
+      );
+
+      return SYSTEM_PROMPT;
+    }
+
     let receiveCV;
 
     receiveCV = `If they have shared their interest after going through the JD, ask the candidate to share a copy of their updated CV prior to the meeting.
@@ -247,21 +293,6 @@ export class PromptingAgents {
     mannerOfAskingQuestions =
       'Ask these questions in a single message and ask the candidate to answer each of them.';
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
-    }
-
-
-    // Process candidate name using NameProcessor
-    const nameProcessor = new NameProcessor();
-    const processedName = nameProcessor.processName(candidate.name);
-    const candidateWithProcessedName = {
-      ...candidate,
-      firstName: nameProcessor.masterDataJson.first_name,
-      lastName: nameProcessor.masterDataJson.last_name
-    };
-
     const dayText = this.getCallAvailabilityDayText();
     const variables = {
       candidate: candidateWithProcessedName,
@@ -294,6 +325,26 @@ ${firstChatMessage}`;
     console.log('Generated getStartChatPrompt prompt:', SYSTEM_PROMPT_WITH_FORMATTING);
 
     return SYSTEM_PROMPT_WITH_FORMATTING;
+  }
+
+  private buildOutreachConversationSummary(candidate: CandidateNode): string {
+    const edges = candidate.chatMessages?.edges ?? [];
+    const lines = edges
+      .map((edge) => {
+        const node = edge?.node;
+        const message = node?.message?.trim();
+
+        if (!isNonEmptyString(message)) {
+          return null;
+        }
+
+        const sender = node?.name ?? 'Message';
+
+        return `${sender}: ${message}`;
+      })
+      .filter(isNonEmptyString);
+
+    return lines.slice(-12).join('\n');
   }
 
   private getCallAvailabilityDayText(): 'today' | 'tomorrow' {

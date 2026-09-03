@@ -3684,6 +3684,12 @@ export class CandidateSourcingController {
       if (!hasNextPage) break;
       lastCursor = candidates.pageInfo?.endCursor;
     }
+
+    await new FilterCandidates(
+      this.workspaceQueryService,
+      this.staticGraphQLService,
+    ).hydrateChatMessagesForCandidates(allCandidates, apiToken);
+
     return allCandidates;
   }
 }

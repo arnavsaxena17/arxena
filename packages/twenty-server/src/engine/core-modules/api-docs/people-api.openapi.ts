@@ -738,6 +738,68 @@ export const buildPeopleApiOpenApiDocument = (
           ],
         },
       },
+      TaxonomySliceResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          function_root: { type: 'string', example: 'technology' },
+          functions: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyItem' },
+          },
+          grades: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyItem' },
+          },
+        },
+        required: ['status', 'function_root', 'functions', 'grades'],
+      },
+      TaxonomyLlmClassification: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          profile: { type: 'string', nullable: true },
+          job_title_normalized: { type: 'string' },
+          function_root: { type: 'string' },
+          std_function_root: { type: 'string' },
+          std_function: { type: 'string' },
+          std_grade: { type: 'string' },
+          std_grade_category: { type: 'string' },
+          grade_level: { type: 'string' },
+          function_root_confidence: { type: 'number' },
+          std_function_confidence: { type: 'number' },
+          std_grade_confidence: { type: 'number' },
+          source: { type: 'string', enum: ['llm'] },
+        },
+      },
+      TaxonomyClassifyLlmRequest: {
+        type: 'object',
+        properties: {
+          job_titles: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 200,
+          },
+          profiles: {
+            type: 'array',
+            items: { type: 'string' },
+            maxItems: 200,
+            description:
+              'Caller-formatted profile text blobs (max 5000 tokens each).',
+          },
+        },
+      },
+      TaxonomyClassifyLlmResponse: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ok'] },
+          classifications: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/TaxonomyLlmClassification' },
+          },
+        },
+        required: ['status', 'classifications'],
+      },
       WorkspaceCreditsResponse: {
         type: 'object',
         properties: {
@@ -1036,6 +1098,84 @@ export const buildPeopleApiOpenApiDocument = (
               },
             },
           },
+        },
+      },
+    },
+    '/people-api/taxonomy/slice': {
+      get: {
+        tags: ['Taxonomy'],
+        summary: 'Fetch taxonomy slice for a function root',
+        description:
+          'Auth-gated labels-only slice: child functions for one root plus std_grade labels. No Boolean operators.',
+        operationId: 'getTaxonomySlice',
+        parameters: [
+          {
+            name: 'function_root',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', example: 'technology' },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Taxonomy slice',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/TaxonomySliceResponse' },
+              },
+            },
+          },
+          '400': { description: 'function_root is required' },
+          '401': { description: 'Unauthorized' },
+          '503': { description: 'Title taxonomy service unavailable' },
+        },
+      },
+    },
+    '/people-api/taxonomy/classify-llm': {
+      post: {
+        tags: ['Taxonomy'],
+        summary: 'LLM-classify titles or formatted profiles',
+        description:
+          'Auth-gated. Classify job titles or caller-formatted profile text into std_function_root, std_function, std_grade, and mapped std_grade_category. Prefer people/search with naturalLanguage when you also need people. Boolean classify remains the search default.',
+        operationId: 'classifyTaxonomyLlm',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/TaxonomyClassifyLlmRequest',
+              },
+              examples: {
+                titles: {
+                  summary: 'Titles',
+                  value: { job_titles: ['Senior Software Engineer'] },
+                },
+                profiles: {
+                  summary: 'Formatted profile text',
+                  value: {
+                    profiles: [
+                      'Name: Clare Ralston\nTitle: Creative Operations Consultant\nCompany: British Airways',
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'LLM classifications',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/TaxonomyClassifyLlmResponse',
+                },
+              },
+            },
+          },
+          '400': { description: 'Invalid request' },
+          '401': { description: 'Unauthorized' },
+          '503': { description: 'LLM classifier unavailable' },
         },
       },
     },

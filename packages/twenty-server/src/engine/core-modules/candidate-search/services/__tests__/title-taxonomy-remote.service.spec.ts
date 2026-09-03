@@ -34,8 +34,9 @@ describe('TitleTaxonomyRemoteService', () => {
     const profiles = Array.from({ length: 125 }, (_, index) => ({
       jobTitle: `Title ${index}`,
     }));
-    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(
-      async (_url, init) => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (_url, init) => {
         const body = JSON.parse(String(init?.body ?? '{}')) as {
           profiles?: Array<{ job_title: string }>;
         };
@@ -55,8 +56,7 @@ describe('TitleTaxonomyRemoteService', () => {
             confidence: 0.5,
           })),
         });
-      },
-    );
+      });
 
     const result = await service.classifyProfiles(profiles);
 
@@ -73,8 +73,9 @@ describe('TitleTaxonomyRemoteService', () => {
         jobTitle: `Title ${index}`,
       }),
     );
-    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(
-      async (_url, init) => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (_url, init) => {
         const body = JSON.parse(String(init?.body ?? '{}')) as {
           profiles?: Array<{ job_title: string }>;
         };
@@ -94,8 +95,7 @@ describe('TitleTaxonomyRemoteService', () => {
             confidence: 0.5,
           })),
         });
-      },
-    );
+      });
 
     const result = await service.classifyProfiles(profiles);
 
@@ -118,8 +118,9 @@ describe('TitleTaxonomyRemoteService', () => {
 
   it('chunks classifyTitles at the Python 200-item cap', async () => {
     const titles = Array.from({ length: 201 }, (_, index) => `Title ${index}`);
-    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(
-      async (_url, init) => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (_url, init) => {
         const body = JSON.parse(String(init?.body ?? '{}')) as {
           titles?: string[];
         };
@@ -139,8 +140,7 @@ describe('TitleTaxonomyRemoteService', () => {
             confidence: 0.5,
           })),
         });
-      },
-    );
+      });
 
     const result = await service.classifyTitles(titles);
 
@@ -180,5 +180,78 @@ describe('TitleTaxonomyRemoteService', () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  it('fetches a taxonomy slice by function_root', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(200, {
+        function_root: 'technology',
+        functions: [{ id: 'software', label: 'software' }],
+        grades: [{ id: 'director', label: 'director' }],
+      }),
+    );
+
+    const result = await service.getTaxonomySlice('technology');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://taxonomy.test/api/title-taxonomy/slice?function_root=technology',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(result?.function_root).toBe('technology');
+    expect(result?.functions?.[0].id).toBe('software');
+  });
+
+  it('posts job_titles to the LLM classifier', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(200, {
+        classifications: [
+          {
+            title: 'CTO',
+            function_root: 'technology',
+            std_function: 'information technology',
+            source: 'llm',
+          },
+        ],
+      }),
+    );
+
+    const result = await service.classifyLlm({ jobTitles: ['CTO'] });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://taxonomy.test/api/llm-classifier/classify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ job_titles: ['CTO'] }),
+      }),
+    );
+    expect(result?.classifications?.[0].function_root).toBe('technology');
+  });
+
+  it('posts formatted profiles to the LLM classifier', async () => {
+    const profile =
+      'Name: Clare Ralston\nTitle: Creative Operations Consultant\n';
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+      jsonResponse(200, {
+        classifications: [
+          {
+            title: 'Creative Operations Consultant',
+            profile,
+            function_root: 'operations',
+            source: 'llm',
+          },
+        ],
+      }),
+    );
+
+    const result = await service.classifyLlm({ profiles: [profile] });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://taxonomy.test/api/llm-classifier/classify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ profiles: [profile] }),
+      }),
+    );
+    expect(result?.classifications?.[0].profile).toBe(profile);
   });
 });

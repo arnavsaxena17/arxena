@@ -43,16 +43,17 @@ const createPassthroughCompanyScopeResolver = (): PeopleCompanyScopeResolver =>
     ),
   }) as unknown as PeopleCompanyScopeResolver;
 
-const createPassthroughLocationScopeResolver = (): PeopleLocationScopeResolver =>
-  ({
-    resolve: jest.fn(
-      async (input: { location?: string; country?: string }) => ({
-        raw: input.location,
-        linkedinLocationName: input.location,
-        resolvedVia: input.location ? 'unresolved' : 'omitted',
-      }),
-    ),
-  }) as unknown as PeopleLocationScopeResolver;
+const createPassthroughLocationScopeResolver =
+  (): PeopleLocationScopeResolver =>
+    ({
+      resolve: jest.fn(
+        async (input: { location?: string; country?: string }) => ({
+          raw: input.location,
+          linkedinLocationName: input.location,
+          resolvedVia: input.location ? 'unresolved' : 'omitted',
+        }),
+      ),
+    }) as unknown as PeopleLocationScopeResolver;
 
 const createIndexDataSourceResolver = (): PeopleSearchDataSourceResolver =>
   ({
@@ -506,8 +507,12 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
         stdGrade: 'leadership',
       }),
     );
-    expect(peopleEsService.searchPeople.mock.calls[0][0].stdFunction).toBeUndefined();
-    expect(peopleEsService.searchPeople.mock.calls[0][0].stdFunctionRoot).toBeUndefined();
+    expect(
+      peopleEsService.searchPeople.mock.calls[0][0].stdFunction,
+    ).toBeUndefined();
+    expect(
+      peopleEsService.searchPeople.mock.calls[0][0].stdFunctionRoot,
+    ).toBeUndefined();
     expect(result.resolved).toMatchObject({
       jobTitle: 'CEO',
       stdFunction: 'unclassified',
@@ -674,9 +679,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
   });
 
   it('uses classifyProfiles when hits include experience history', async () => {
-    (
-      peopleLinkedInSourcingService.search as jest.Mock
-    ).mockResolvedValueOnce({
+    (peopleLinkedInSourcingService.search as jest.Mock).mockResolvedValueOnce({
       dataSource: 'unipile',
       keywords: 'engineer OR engineering',
       appliedFilters: {
@@ -740,9 +743,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
   });
 
   it('sends Unipile current_positions and work_experience to classifyProfiles', async () => {
-    (
-      peopleLinkedInSourcingService.search as jest.Mock
-    ).mockResolvedValueOnce({
+    (peopleLinkedInSourcingService.search as jest.Mock).mockResolvedValueOnce({
       dataSource: 'unipile',
       keywords: null,
       appliedFilters: { functionIds: [], seniorities: [] },
@@ -819,9 +820,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
   });
 
   it('classifies the current_position whose company_id matches, not current_positions[0]', async () => {
-    (
-      peopleLinkedInSourcingService.search as jest.Mock
-    ).mockResolvedValueOnce({
+    (peopleLinkedInSourcingService.search as jest.Mock).mockResolvedValueOnce({
       dataSource: 'unipile',
       keywords: null,
       appliedFilters: { functionIds: [], seniorities: [] },
@@ -922,9 +921,7 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
   });
 
   it('drops people whose current roles are at another company before taxonomy classify', async () => {
-    (
-      peopleLinkedInSourcingService.search as jest.Mock
-    ).mockResolvedValueOnce({
+    (peopleLinkedInSourcingService.search as jest.Mock).mockResolvedValueOnce({
       dataSource: 'unipile',
       keywords: null,
       appliedFilters: { functionIds: [], seniorities: [] },
@@ -1207,7 +1204,9 @@ describe('PeopleApiService.searchPeople searchUrl', () => {
     {} as ApolloIoRestService,
     {} as PdlPersonOrgMovementService,
     {} as ContactOutPeopleSearchService,
-    { isConfigured: jest.fn().mockReturnValue(true) } as unknown as HarvestLinkedinService,
+    {
+      isConfigured: jest.fn().mockReturnValue(true),
+    } as unknown as HarvestLinkedinService,
     peopleLinkedInSourcingService,
     createPassthroughCompanyScopeResolver(),
     createPassthroughLocationScopeResolver(),
@@ -1258,7 +1257,10 @@ describe('PeopleApiService.getManualBooleanQueries', () => {
   } as unknown as TitleTaxonomyRemoteService;
 
   const service = new PeopleApiService(
-    { isEnabled: jest.fn(), searchPeople: jest.fn() } as unknown as PeopleEsService,
+    {
+      isEnabled: jest.fn(),
+      searchPeople: jest.fn(),
+    } as unknown as PeopleEsService,
     titleTaxonomyRemoteService,
     {} as ApolloIoRestService,
     {} as PdlPersonOrgMovementService,
@@ -1335,5 +1337,150 @@ describe('PeopleApiService.getManualBooleanQueries', () => {
     await expect(
       service.getManualBooleanQueries({ stdFunction: 'sales' }),
     ).rejects.toMatchObject({ status: HttpStatus.SERVICE_UNAVAILABLE });
+  });
+});
+
+describe('PeopleApiService taxonomy LLM and slice', () => {
+  const titleTaxonomyRemoteService = {
+    getFunctionRoots: jest.fn(),
+    getTaxonomySlice: jest.fn(),
+    classifyLlm: jest.fn(),
+  } as unknown as TitleTaxonomyRemoteService;
+
+  const service = new PeopleApiService(
+    {
+      isEnabled: jest.fn().mockReturnValue(true),
+    } as unknown as PeopleEsService,
+    titleTaxonomyRemoteService,
+    {} as ApolloIoRestService,
+    {} as PdlPersonOrgMovementService,
+    {} as ContactOutPeopleSearchService,
+    { isConfigured: jest.fn() } as unknown as HarvestLinkedinService,
+    {
+      isUnipileConfigured: jest.fn(),
+    } as unknown as PeopleLinkedInSourcingService,
+    createPassthroughCompanyScopeResolver(),
+    createPassthroughLocationScopeResolver(),
+    createNaturalLanguageParser(),
+    createIndexDataSourceResolver(),
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('uses live function roots for taxonomy constants', async () => {
+    (
+      titleTaxonomyRemoteService.getFunctionRoots as jest.Mock
+    ).mockResolvedValue([
+      {
+        id: 'technology',
+        label: 'technology',
+        name: 'technology',
+        parent_id: null,
+        level: 1,
+      },
+      {
+        id: 'customer support',
+        label: 'customer support',
+        name: 'customer support',
+        parent_id: null,
+        level: 1,
+      },
+    ]);
+
+    const result = await service.getTaxonomyConstants();
+
+    expect(result.functionRoots.map((root) => root.id)).toEqual([
+      'technology',
+      'customer support',
+    ]);
+    expect(result.functionRoots[1].label).toBe('Customer Support');
+  });
+
+  it('returns a taxonomy slice for a function root', async () => {
+    (
+      titleTaxonomyRemoteService.getTaxonomySlice as jest.Mock
+    ).mockResolvedValue({
+      function_root: 'technology',
+      functions: [
+        {
+          id: 'software',
+          label: 'software',
+          name: 'software',
+          parent_id: 'technology',
+          level: 2,
+        },
+      ],
+      grades: [
+        {
+          id: 'director',
+          label: 'director',
+          name: 'director',
+          parent_id: 'leadership',
+          level: 'leadership',
+        },
+      ],
+    });
+
+    const result = await service.getTaxonomySlice('technology');
+
+    expect(titleTaxonomyRemoteService.getTaxonomySlice).toHaveBeenCalledWith(
+      'technology',
+    );
+    expect(result.status).toBe('ok');
+    expect(result.functions[0].id).toBe('software');
+  });
+
+  it('rejects classify-llm when both job_titles and profiles are sent', async () => {
+    await expect(
+      service.classifyLlm({
+        job_titles: ['CTO'],
+        profiles: ['Name: A\nTitle: CTO'],
+      }),
+    ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+  });
+
+  it('proxies LLM classifications', async () => {
+    (titleTaxonomyRemoteService.classifyLlm as jest.Mock).mockResolvedValue({
+      classifications: [
+        {
+          title: 'CTO',
+          function_root: 'technology',
+          std_function: 'information technology',
+          std_grade: 'cxo',
+          std_grade_category: 'senior',
+          grade_level: 'leadership',
+          function_root_confidence: 0.9,
+          std_function_confidence: 0.8,
+          std_grade_confidence: 0.7,
+          source: 'llm',
+        },
+      ],
+    });
+
+    const result = await service.classifyLlm({ job_titles: ['CTO'] });
+
+    expect(titleTaxonomyRemoteService.classifyLlm).toHaveBeenCalledWith({
+      jobTitles: ['CTO'],
+      profiles: undefined,
+    });
+    expect(result.classifications[0].std_function_root).toBe('technology');
+    expect(result.classifications[0].std_function).toBe(
+      'information technology',
+    );
+  });
+
+  it('falls back to hardcoded function roots when live list is empty', async () => {
+    (
+      titleTaxonomyRemoteService.getFunctionRoots as jest.Mock
+    ).mockResolvedValue([]);
+
+    const result = await service.getTaxonomyConstants();
+
+    expect(result.functionRoots.length).toBeGreaterThan(0);
+    expect(result.functionRoots.map((root) => root.id)).toEqual(
+      expect.arrayContaining(['engineering']),
+    );
   });
 });

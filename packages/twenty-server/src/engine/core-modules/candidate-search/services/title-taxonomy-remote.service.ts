@@ -35,6 +35,33 @@ export type TitleTaxonomySearchKeywordsResponse = {
   search_query_set?: unknown;
 };
 
+export type TitleTaxonomySliceResponse = {
+  function_root?: string;
+  functions?: TitleTaxonomyItem[];
+  grades?: TitleTaxonomyItem[];
+};
+
+export type TitleTaxonomyLlmClassification = {
+  title?: string;
+  profile?: string | null;
+  job_title_normalized?: string;
+  function_root?: string;
+  std_function_root?: string;
+  std_function?: string;
+  std_grade?: string;
+  std_grade_category?: string;
+  grade_level?: string;
+  function_root_confidence?: number;
+  std_function_confidence?: number;
+  std_grade_confidence?: number;
+  source?: string;
+};
+
+export type TitleTaxonomyClassifyLlmResponse = {
+  classifications?: TitleTaxonomyLlmClassification[];
+  error?: string;
+};
+
 export type TitleTaxonomyClassifyResponse = {
   title: string;
   normalized_title: string;
@@ -73,6 +100,9 @@ export const TITLE_TAXONOMY_CLASSIFY_TITLES_MAX = 200;
 
 /** Must stay in sync with arxena-site `/api/title-taxonomy/classify-profiles`. */
 export const TITLE_TAXONOMY_CLASSIFY_PROFILES_MAX = 500;
+
+/** Must stay in sync with arxena-site `/api/llm-classifier/classify`. */
+export const TITLE_TAXONOMY_CLASSIFY_LLM_MAX = 200;
 
 const chunkArray = <T>(items: T[], size: number): T[][] => {
   if (items.length === 0) {
@@ -137,7 +167,9 @@ export class TitleTaxonomyRemoteService {
     }
   }
 
-  async getFunctionRoots(title?: string): Promise<TitleTaxonomyItem[] | TitleTaxonomyItem | null> {
+  async getFunctionRoots(
+    title?: string,
+  ): Promise<TitleTaxonomyItem[] | TitleTaxonomyItem | null> {
     const json = await this.fetchTitleTaxonomyJson<
       { items?: TitleTaxonomyItem[] } | TitleTaxonomyItem
     >('/api/title-taxonomy/function-roots', { title });
@@ -256,7 +288,9 @@ export class TitleTaxonomyRemoteService {
     }
   }
 
-  private mapExperienceForPython(experience?: TitleTaxonomyProfileExperience[]) {
+  private mapExperienceForPython(
+    experience?: TitleTaxonomyProfileExperience[],
+  ) {
     return (experience ?? []).map((entry) => {
       const rawTitle = entry.title;
       const title =
@@ -431,6 +465,62 @@ export class TitleTaxonomyRemoteService {
     } catch (error) {
       this.logger.warn(
         `Title taxonomy search-keywords failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  async getTaxonomySlice(
+    functionRoot: string,
+  ): Promise<TitleTaxonomySliceResponse | null> {
+    return this.fetchTitleTaxonomyJson<TitleTaxonomySliceResponse>(
+      '/api/title-taxonomy/slice',
+      { function_root: functionRoot },
+    );
+  }
+
+  async classifyLlm(input: {
+    jobTitles?: string[];
+    profiles?: string[];
+  }): Promise<TitleTaxonomyClassifyLlmResponse | null> {
+    if (
+      (input.jobTitles?.length ?? 0) > TITLE_TAXONOMY_CLASSIFY_LLM_MAX ||
+      (input.profiles?.length ?? 0) > TITLE_TAXONOMY_CLASSIFY_LLM_MAX
+    ) {
+      this.logger.warn(
+        `LLM classifier classify rejected: more than ${TITLE_TAXONOMY_CLASSIFY_LLM_MAX} items`,
+      );
+      return null;
+    }
+
+    const url = `${this.getBaseUrl()}/api/llm-classifier/classify`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...(input.jobTitles !== undefined
+            ? { job_titles: input.jobTitles }
+            : {}),
+          ...(input.profiles !== undefined ? { profiles: input.profiles } : {}),
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        this.logger.warn(
+          `LLM classifier classify returned ${response.status}: ${text}`,
+        );
+        return null;
+      }
+      return (await response.json()) as TitleTaxonomyClassifyLlmResponse;
+    } catch (error) {
+      this.logger.warn(
+        `LLM classifier classify failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
       return null;
     }

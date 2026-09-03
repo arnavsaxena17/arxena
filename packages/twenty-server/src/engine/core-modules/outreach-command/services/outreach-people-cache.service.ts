@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 
 const OUTREACH_PEOPLE_CACHE_TTL_SECONDS = 3 * 30 * 24 * 60 * 60; // 3 months
 const MAX_PEOPLE_PER_PROJECT = 500;
@@ -35,6 +36,7 @@ export class OutreachPeopleCacheService {
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache: CacheStorageService,
+    private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
   ) {}
 
   cacheKey(workspaceId: string, projectId: string): string {
@@ -85,6 +87,11 @@ export class OutreachPeopleCacheService {
       payload,
       OUTREACH_PEOPLE_CACHE_TTL_SECONDS,
     );
+
+    this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
+      projectId,
+      'people',
+    );
   }
 
   async delete(workspaceId: string, projectId: string): Promise<void> {
@@ -93,5 +100,9 @@ export class OutreachPeopleCacheService {
     }
 
     await this.cache.del(this.cacheKey(workspaceId, projectId));
+    this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
+      projectId,
+      'people',
+    );
   }
 }

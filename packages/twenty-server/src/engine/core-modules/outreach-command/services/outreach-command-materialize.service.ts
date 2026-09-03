@@ -51,6 +51,7 @@ export class OutreachCommandMaterializeService {
     companyId,
     companyCreatedAt,
     classifiedOutreachStage,
+    classifiedConversationStage,
     extractedTimeHint,
     outboundMessageKind,
     existingConvertedOnMessageKind,
@@ -63,6 +64,7 @@ export class OutreachCommandMaterializeService {
     companyId?: string | null;
     companyCreatedAt?: string | null;
     classifiedOutreachStage?: string | null;
+    classifiedConversationStage?: string | null;
     extractedTimeHint?: string | null;
     outboundMessageKind?: string | null;
     existingConvertedOnMessageKind?: string | null;
@@ -103,14 +105,15 @@ export class OutreachCommandMaterializeService {
         event,
         messagingChannel,
         classifiedOutreachStage,
+        classifiedConversationStage,
         outboundMessageKind,
       });
 
-      if (event === 'inbound_reply_flush' && classifiedOutreachStage) {
+      if (event === 'inbound_reply_flush' && classifiedConversationStage) {
         Object.assign(
           input,
           buildDeferredResumeFields({
-            classifiedStage: classifiedOutreachStage,
+            classifiedConversationStage,
             extractedTimeHint: extractedTimeHint ?? undefined,
             currentStage: candidateSnapshot?.outreachSequenceStage,
             existingAnalytics: candidateSnapshot?.outreachAnalytics,

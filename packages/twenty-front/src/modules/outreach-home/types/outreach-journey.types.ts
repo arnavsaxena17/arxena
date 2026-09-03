@@ -16,6 +16,7 @@ export type CandidateOutreachJourney = {
   candidateId: string;
   projectId: string;
   outreachSequenceStage: string;
+  outreachConversationStage: string;
   linkedinFollowUpCount: number;
   pendingChannel: string | null;
   outreachResumeAt: string | null;
@@ -27,6 +28,7 @@ export type CandidateOutreachJourney = {
 export type OutreachProjectJourneySummary = {
   totalEnrolled: number;
   byStage: Record<string, number>;
+  byConversationStage: Record<string, number>;
   needsApproval: number;
   dueThisWeek: number;
   snoozed: number;

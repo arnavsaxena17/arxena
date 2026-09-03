@@ -161,3 +161,31 @@ export type TaxonomyTreeResponse = {
   gradeLevels: TaxonomyConstantItem[];
   functionRoots: TaxonomyTreeRootNode[];
 };
+
+export type TaxonomySliceResponse = {
+  status: 'ok';
+  function_root: string;
+  functions: TaxonomyItem[];
+  grades: TaxonomyItem[];
+};
+
+export type TaxonomyLlmClassification = {
+  title?: string;
+  profile?: string | null;
+  job_title_normalized?: string;
+  function_root: string;
+  std_function_root: string;
+  std_function: string;
+  std_grade: string;
+  std_grade_category: string;
+  grade_level: string;
+  function_root_confidence: number;
+  std_function_confidence: number;
+  std_grade_confidence: number;
+  source: 'llm';
+};
+
+export type TaxonomyClassifyLlmResponse = {
+  status: 'ok';
+  classifications: TaxonomyLlmClassification[];
+};

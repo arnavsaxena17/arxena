@@ -3,6 +3,7 @@ import { ModuleRef } from '@nestjs/core';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import {
+  isOutreachConversationStage,
   patchOutreachAnalyticsDeferredResume,
   resolveOutreachResumeAt,
   resolveOutreachStageBeforeDefer,
@@ -53,6 +54,7 @@ import { getRunnableStepIds } from 'src/modules/workflow/workflow-runner/utils/g
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
+import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import {
   cancelResumeDelayedWorkflowJobs,
   scheduleResumeDelayedWorkflowJob,
@@ -62,6 +64,7 @@ type CandidateRecord = ObjectLiteral & {
   id: string;
   projectsId?: string | null;
   outreachSequenceStage?: string | null;
+  outreachConversationStage?: string | null;
   linkedinFollowUpCount?: number | null;
   pendingChannel?: string | null;
   outreachAnalytics?: unknown;
@@ -135,6 +138,7 @@ export class OutreachCandidateJourneyService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
+    private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
     @InjectMessageQueue(MessageQueue.workflowQueue)
@@ -208,16 +212,18 @@ export class OutreachCandidateJourneyService {
           select: {
             id: true,
             outreachSequenceStage: true,
+            outreachConversationStage: true,
             outreachAnalytics: true,
           },
           take: 5000,
         });
 
         const byStage: Record<string, number> = {};
+        const byConversationStage: Record<string, number> = {};
         const byCandidateId: Record<string, OutreachCandidateRunSummary> = {};
         let needsApproval = 0;
-        let dueThisWeek = 0;
         let snoozed = 0;
+        const dueCandidateIds = new Set<string>();
 
         const weekFromNow = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
@@ -227,16 +233,25 @@ export class OutreachCandidateJourneyService {
           ).toUpperCase();
           byStage[stage] = (byStage[stage] ?? 0) + 1;
 
+          const conversationStage = (
+            candidate.outreachConversationStage ?? 'NONE'
+          ).toUpperCase();
+          byConversationStage[conversationStage] =
+            (byConversationStage[conversationStage] ?? 0) + 1;
+
           const resumeAtIso = resolveOutreachResumeAt(
             candidate.outreachAnalytics,
           );
 
-          if (stage === 'DEFERRED' && isDefined(resumeAtIso)) {
+          if (conversationStage === 'SNOOZED') {
             snoozed += 1;
+          }
+
+          if (isDefined(resumeAtIso)) {
             const resumeMs = new Date(resumeAtIso).getTime();
 
             if (Number.isFinite(resumeMs) && resumeMs <= weekFromNow) {
-              dueThisWeek += 1;
+              dueCandidateIds.add(candidate.id);
             }
           }
         }
@@ -294,7 +309,7 @@ export class OutreachCandidateJourneyService {
               const resumeMs = new Date(progress.resumeAt).getTime();
 
               if (Number.isFinite(resumeMs) && resumeMs <= weekFromNow) {
-                dueThisWeek += 1;
+                dueCandidateIds.add(run.candidateId);
               }
             }
 
@@ -321,8 +336,9 @@ export class OutreachCandidateJourneyService {
         return {
           totalEnrolled: candidates.length,
           byStage,
+          byConversationStage,
           needsApproval,
-          dueThisWeek,
+          dueThisWeek: dueCandidateIds.size,
           snoozed,
           byCandidateId,
         };
@@ -512,7 +528,7 @@ export class OutreachCandidateJourneyService {
             : resolveOutreachStageBeforeDefer(candidate.outreachAnalytics);
 
         await candidateRepository.update(candidateId, {
-          outreachSequenceStage: 'DEFERRED',
+          outreachConversationStage: 'SNOOZED',
           outreachAnalytics: patchOutreachAnalyticsDeferredResume({
             existingAnalytics: candidate.outreachAnalytics,
             resumeAt: resumeAtDate.toISOString(),
@@ -551,6 +567,103 @@ export class OutreachCandidateJourneyService {
         }
 
         return { updatedRuns };
+      },
+      authContext,
+    );
+  }
+
+  async updateOperatorControls({
+    workspaceId,
+    projectId,
+    candidateId,
+    outreachConversationStage,
+    resumeAt,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    candidateId: string;
+    outreachConversationStage?: string;
+    resumeAt?: string | null;
+  }): Promise<{ ok: boolean }> {
+    if (
+      isDefined(outreachConversationStage) &&
+      !isOutreachConversationStage(outreachConversationStage)
+    ) {
+      throw new Error('Invalid outreach conversation stage');
+    }
+
+    const shouldStopSequence =
+      outreachConversationStage === 'NOT_INTERESTED';
+
+    if (shouldStopSequence) {
+      await this.outreachProjectOutreachControlService.stopCandidates({
+        workspaceId,
+        projectId,
+        candidateIds: [candidateId],
+      });
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+    const resumeAtDate = isNonEmptyString(resumeAt)
+      ? new Date(resumeAt)
+      : null;
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const candidate = await this.getCandidateOrFail({
+          workspaceId,
+          projectId,
+          candidateId,
+        });
+
+        if (!candidate) {
+          return { ok: false };
+        }
+
+        const patch: Record<string, unknown> = {};
+
+        if (isDefined(outreachConversationStage)) {
+          patch.outreachConversationStage = outreachConversationStage;
+        }
+
+        if (resumeAt === null) {
+          patch.outreachAnalytics = patchOutreachAnalyticsDeferredResume({
+            existingAnalytics: candidate.outreachAnalytics,
+            clearResume: true,
+          });
+        } else if (resumeAtDate && Number.isFinite(resumeAtDate.getTime())) {
+          patch.outreachAnalytics = patchOutreachAnalyticsDeferredResume({
+            existingAnalytics: candidate.outreachAnalytics,
+            resumeAt: resumeAtDate.toISOString(),
+          });
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await candidateRepository.update(candidateId, patch);
+        }
+
+        const nextConversationStage =
+          outreachConversationStage ?? candidate.outreachConversationStage;
+        const delayMs = resumeAtDate
+          ? Math.max(0, resumeAtDate.getTime() - Date.now())
+          : 0;
+
+        if (nextConversationStage === 'SNOOZED' && delayMs > 0) {
+          await this.delayedQueue.add<OutreachDeferredResumeJobData>(
+            OUTREACH_DEFERRED_RESUME_JOB_NAME,
+            { workspaceId, candidateId },
+            { delay: delayMs },
+          );
+        }
+
+        return { ok: true };
       },
       authContext,
     );
@@ -745,6 +858,9 @@ export class OutreachCandidateJourneyService {
       projectId,
       outreachSequenceStage: (
         candidate.outreachSequenceStage ?? 'QUEUED'
+      ).toUpperCase(),
+      outreachConversationStage: (
+        candidate.outreachConversationStage ?? 'NONE'
       ).toUpperCase(),
       linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
       pendingChannel: candidate.pendingChannel ?? null,

@@ -31,7 +31,6 @@ import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQuerySt
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
-import { OUTREACH_STAGES } from '@/outreach-home/constants/outreach-stages';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachCommandDashboardPath } from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
@@ -40,7 +39,6 @@ import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import {
   type OutreachCompanyRow,
   type OutreachPersonRow,
-  type OutreachStage,
 } from '@/outreach-home/types/outreach-home.types';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
@@ -106,13 +104,6 @@ const StyledStageChip = styled.button<{ isActive: boolean }>`
   }
 `;
 
-const StyledMetaChip = styled.span`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.xs};
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
-  white-space: nowrap;
-`;
-
 const StyledDashboardLink = styled(Link)`
   color: ${themeCssVariables.color.blue};
   font-size: ${themeCssVariables.font.size.xs};
@@ -145,20 +136,41 @@ const StyledBottomActionMenu = styled.div`
   z-index: 1000;
 `;
 
-const STAGE_FILTER_IDS = [
-  'queued',
-  'connection_sent',
-  'connection_accepted',
-  'replied',
-  'deferred',
-  'stopped',
+const PEOPLE_QUEUE_CHIPS = [
+  { id: 'queued', label: 'To send' },
+  { id: 'connection_sent', label: 'Connect sent' },
+  { id: 'awaiting_reply', label: 'Awaiting reply' },
+  { id: 'needs_approval', label: 'Needs approval' },
+  { id: 'intent', label: 'Intent' },
+  { id: 'follow_up_due', label: 'Follow-up due' },
+  { id: 'meeting_booked', label: 'Meeting booked' },
+  { id: 'not_interested', label: 'Not interested' },
+  { id: 'snoozed', label: 'Snoozed' },
+  { id: 'stopped', label: 'Stopped' },
 ] as const;
+
+type OutreachPeopleQueueFilter =
+  | (typeof PEOPLE_QUEUE_CHIPS)[number]['id']
+  | 'all';
+
+const FOLLOW_UP_DUE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const formatChipLabel = (label: string, count: number | null): string =>
   isDefined(count) ? `${label} (${count})` : label;
 
+const isFollowUpDue = (resumeAt: string | null | undefined): boolean => {
+  if (!isDefined(resumeAt)) {
+    return false;
+  }
+
+  const resumeMs = new Date(resumeAt).getTime();
+
+  return Number.isFinite(resumeMs) && resumeMs <= Date.now() + FOLLOW_UP_DUE_MS;
+};
+
 const mapOutreachPersonToDataTableRow = (
   person: OutreachPersonRow,
+  projectId: string | null | undefined,
 ): Record<string, unknown> => {
   const nameParts = person.name.trim().split(/\s+/);
   const linkedinUrl = person.linkedinUrl.startsWith('http')
@@ -171,6 +183,8 @@ const mapOutreachPersonToDataTableRow = (
     id: person.id,
     tempId: person.id,
     __isFetched: true,
+    isOutreachHomeRow: true,
+    outreachProjectId: projectId ?? '',
     fullName: person.name,
     name: person.name,
     firstName: nameParts[0] ?? '',
@@ -186,14 +200,19 @@ const mapOutreachPersonToDataTableRow = (
       : { primaryLinkUrl: '' },
     phoneNumber: { primaryPhoneNumber: '' },
     email: { primaryEmail: person.email || '' },
-    // Recruiter ATS pipeline — keep empty for ephemeral (not-yet-enrolled) rows
-    status: person.recruiterStatus ?? '',
-    // Bot / conversation status (recruiter messaging)
-    candConversationStatus: person.candConversationStatus ?? '',
-    // Outreach sequence stage (workflow journey) — separate from recruiter status
+    status: '',
+    candConversationStatus: '',
     outreachSequenceStage: person.stage,
-    // Active workflow run status (RUNNING / STOPPED / …)
+    outreachConversationStage: person.outreachConversationStage ?? 'NONE',
     workflowRunStatus: person.workflowRunStatus ?? '',
+    nextStep: person.nextStepLabel ?? '',
+    nextRetry: person.nextRetryAt ?? '',
+    needsApproval: person.needsApproval === true,
+    replyAfterTouch: person.replyAfterTouch ?? '',
+    lastMessage: person.lastInboundCopy ?? '',
+    lastInboundAt: person.lastInboundAt ?? '',
+    lastOutboundAt: person.lastOutboundAt ?? '',
+    nextFollowUp: person.outreachResumeAt ?? '',
     candidateFlags: {
       engagementStatus: Boolean(person.stage),
       startChat: false,
@@ -206,7 +225,6 @@ const mapOutreachPersonToDataTableRow = (
       companyId: person.companyId,
       candidateId: person.candidateId,
       openOutreachJourneyTab: true,
-      nextStep: person.nextStepLabel ?? '',
       pendingChannel: person.pendingChannel ?? '',
       ...(person.experimentVariant
         ? { experimentVariant: person.experimentVariant }
@@ -218,6 +236,7 @@ const mapOutreachPersonToDataTableRow = (
     candidateId: person.candidateId,
     updatedAt: '',
     createdAt: '',
+    messagesExchanged: person.messagesExchanged ?? '',
   };
 };
 
@@ -299,30 +318,41 @@ export const OutreachPeoplePanel = ({
   } = useOutreachProjectJourneySummary(projectId);
   const { dashboardPath } = useOutreachCommandDashboardPath();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
-  const [stageFilter, setStageFilter] = useState<
-    OutreachStage | 'all' | 'needs_approval'
-  >('all');
+  const [stageFilter, setStageFilter] =
+    useState<OutreachPeopleQueueFilter>('all');
 
   const stageCounts = useMemo(() => {
     if (isJourneySummaryLoading || !isDefined(journeySummary)) {
       return null;
     }
 
+    const byStage = journeySummary.byStage;
+    const byConversation = journeySummary.byConversationStage ?? {};
+
     return {
       all: journeySummary.totalEnrolled,
+      queued: byStage.QUEUED ?? 0,
+      connection_sent: byStage.CONNECTION_SENT ?? 0,
+      awaiting_reply:
+        (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0),
       needs_approval: journeySummary.needsApproval,
+      intent: byConversation.INTENT ?? 0,
+      follow_up_due: journeySummary.dueThisWeek,
+      meeting_booked: byConversation.MEETING_BOOKED ?? 0,
+      not_interested: byConversation.NOT_INTERESTED ?? 0,
+      snoozed: journeySummary.snoozed,
+      stopped: byStage.STOPPED ?? 0,
       dueThisWeek: journeySummary.dueThisWeek,
-      byStage: journeySummary.byStage,
     };
   }, [isJourneySummaryLoading, journeySummary]);
 
-  const getStageCount = useCallback(
-    (stageId: string): number | null => {
-      if (!isDefined(stageCounts)) {
-        return null;
+  const getQueueCount = useCallback(
+    (filterId: OutreachPeopleQueueFilter): number | null => {
+      if (!isDefined(stageCounts) || filterId === 'all') {
+        return stageCounts?.all ?? null;
       }
 
-      return stageCounts.byStage[stageId.toUpperCase()] ?? 0;
+      return stageCounts[filterId] ?? 0;
     },
     [stageCounts],
   );
@@ -361,6 +391,33 @@ export const OutreachPeoplePanel = ({
         if (person.needsApproval !== true) {
           return false;
         }
+      } else if (stageFilter === 'awaiting_reply') {
+        if (
+          person.stage !== 'connection_accepted' &&
+          person.stage !== 'waiting_reply'
+        ) {
+          return false;
+        }
+      } else if (stageFilter === 'intent') {
+        if (person.outreachConversationStage !== 'INTENT') {
+          return false;
+        }
+      } else if (stageFilter === 'follow_up_due') {
+        if (!isFollowUpDue(person.outreachResumeAt)) {
+          return false;
+        }
+      } else if (stageFilter === 'meeting_booked') {
+        if (person.outreachConversationStage !== 'MEETING_BOOKED') {
+          return false;
+        }
+      } else if (stageFilter === 'not_interested') {
+        if (person.outreachConversationStage !== 'NOT_INTERESTED') {
+          return false;
+        }
+      } else if (stageFilter === 'snoozed') {
+        if (person.outreachConversationStage !== 'SNOOZED') {
+          return false;
+        }
       } else if (stageFilter !== 'all' && person.stage !== stageFilter) {
         return false;
       }
@@ -377,8 +434,11 @@ export const OutreachPeoplePanel = ({
   }, [people, searchQuery, selectedCompanyId, stageFilter]);
 
   const tableRows = useMemo(
-    () => filteredPeople.map(mapOutreachPersonToDataTableRow),
-    [filteredPeople],
+    () =>
+      filteredPeople.map((person) =>
+        mapOutreachPersonToDataTableRow(person, projectId),
+      ),
+    [filteredPeople, projectId],
   );
 
   useLayoutEffect(() => {
@@ -514,35 +574,18 @@ export const OutreachPeoplePanel = ({
         isActive={stageFilter === 'all'}
         onClick={() => setStageFilter('all')}
       >
-        {formatChipLabel('All stages', stageCounts?.all ?? null)}
+        {formatChipLabel('All stages', getQueueCount('all'))}
       </StyledStageChip>
-      <StyledStageChip
-        type="button"
-        isActive={stageFilter === 'needs_approval'}
-        onClick={() => setStageFilter('needs_approval')}
-      >
-        {formatChipLabel(
-          'Needs approval',
-          stageCounts?.needs_approval ?? null,
-        )}
-      </StyledStageChip>
-      {OUTREACH_STAGES.filter((stage) =>
-        STAGE_FILTER_IDS.includes(
-          stage.id as (typeof STAGE_FILTER_IDS)[number],
-        ),
-      ).map((stage) => (
+      {PEOPLE_QUEUE_CHIPS.map((chip) => (
         <StyledStageChip
-          key={stage.id}
+          key={chip.id}
           type="button"
-          isActive={stageFilter === stage.id}
-          onClick={() => setStageFilter(stage.id)}
+          isActive={stageFilter === chip.id}
+          onClick={() => setStageFilter(chip.id)}
         >
-          {formatChipLabel(stage.label, getStageCount(stage.id))}
+          {formatChipLabel(chip.label, getQueueCount(chip.id))}
         </StyledStageChip>
       ))}
-      {isDefined(stageCounts) && (
-        <StyledMetaChip>{stageCounts.dueThisWeek} due this week</StyledMetaChip>
-      )}
       {isDefined(dashboardPath) && (
         <StyledDashboardLink to={dashboardPath}>
           Open Outreach dashboard

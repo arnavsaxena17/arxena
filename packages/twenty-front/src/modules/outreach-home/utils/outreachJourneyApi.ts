@@ -101,6 +101,28 @@ export const snoozeCandidateOutreachJourney = async ({
   return response.data;
 };
 
+export const updateOutreachOperatorControls = async ({
+  projectId,
+  candidateId,
+  outreachConversationStage,
+  resumeAt,
+  accessToken,
+}: {
+  projectId: string;
+  candidateId: string;
+  outreachConversationStage?: string;
+  resumeAt?: string | null;
+  accessToken: string;
+}): Promise<{ ok: boolean }> => {
+  const response = await axios.post<{ ok: boolean }>(
+    `${REACT_APP_SERVER_BASE_URL}/outreach-command/projects/${projectId}/candidates/${candidateId}/operator-controls`,
+    { outreachConversationStage, resumeAt },
+    { headers: outreachJourneyHeaders(accessToken) },
+  );
+
+  return response.data;
+};
+
 export const skipCandidateOutreachDelayStep = async ({
   projectId,
   candidateId,

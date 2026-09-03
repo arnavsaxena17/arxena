@@ -8,6 +8,7 @@ import {
   resumeCandidateOutreachJourney,
   skipCandidateOutreachDelayStep,
   snoozeCandidateOutreachJourney,
+  updateOutreachOperatorControls,
 } from '@/outreach-home/utils/outreachJourneyApi';
 import { type CandidateOutreachJourney } from '@/outreach-home/types/outreach-journey.types';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -141,6 +142,31 @@ export const useCandidateOutreachJourney = ({
     [accessToken, candidateId, projectId, runAction],
   );
 
+  const updateOperatorControls = useCallback(
+    async ({
+      outreachConversationStage,
+      resumeAt,
+    }: {
+      outreachConversationStage?: string;
+      resumeAt?: string | null;
+    }) => {
+      if (!projectId || !candidateId || !accessToken) {
+        return;
+      }
+
+      await runAction(async () => {
+        await updateOutreachOperatorControls({
+          projectId,
+          candidateId,
+          outreachConversationStage,
+          resumeAt,
+          accessToken,
+        });
+      }, 'Outreach updated');
+    },
+    [accessToken, candidateId, projectId, runAction],
+  );
+
   const skipDelayStep = useCallback(
     async (workflowRunId: string, stepId: string) => {
       if (!projectId || !candidateId || !accessToken) {
@@ -198,6 +224,7 @@ export const useCandidateOutreachJourney = ({
     pauseJourney,
     resumeJourney,
     snoozeJourney,
+    updateOperatorControls,
     skipDelayStep,
     approveFormStep,
   };

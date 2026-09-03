@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
   SendLinkedinConnectionRequestToolInputZodSchema,
@@ -10,6 +12,7 @@ import {
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-connection-request-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { candidateStageImpliesConnectionRequestSent } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,
@@ -26,6 +29,7 @@ export class SendLinkedinConnectionRequestTool implements Tool {
 
   constructor(
     private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   description =
@@ -73,6 +77,30 @@ export class SendLinkedinConnectionRequestTool implements Tool {
           success: false,
           message: 'Failed to send LinkedIn connection request',
           error: alreadySentError,
+        };
+      }
+
+      const isMockUnipileEnabled =
+        await this.featureFlagService.isFeatureEnabled(
+          FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+          context.workspaceId,
+        );
+
+      if (isMockUnipileEnabled) {
+        this.logger.log(
+          `IS_OUTREACH_MOCK_UNIPILE_ENABLED: skipping Unipile connection request for ${linkedinProfileId}`,
+        );
+
+        return {
+          success: true,
+          message: 'LinkedIn connection request sent successfully',
+          result: {
+            mock: true,
+            unipileAccountId,
+            linkedinProfileId,
+            message,
+            response: { id: OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID },
+          },
         };
       }
 

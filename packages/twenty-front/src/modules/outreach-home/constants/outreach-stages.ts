@@ -37,7 +37,13 @@ export const OUTREACH_STAGE_LABELS: Record<string, string> = {
   MEETING_BOOKED: 'Meeting booked',
   BOOKED: 'Meeting booked',
   FAILED_ENRICH: 'Failed enrich',
+  failed_enrich: 'Failed enrich',
   FAILED_NO_REPLY: 'Failed no reply',
+  failed_no_reply: 'Failed no reply',
+  WAITING_REPLY: 'Waiting for reply',
+  waiting_reply: 'Waiting for reply',
+  WHATSAPP_SENT: 'WhatsApp sent',
+  whatsapp_sent: 'WhatsApp sent',
 };
 
 export const WORKFLOW_RUN_STATUS_LABELS: Record<string, string> = {
@@ -111,6 +117,16 @@ export const OUTREACH_STAGES: Array<{
     description: 'Paid InMail fallback after connect ignore',
   },
   {
+    id: 'whatsapp_sent',
+    label: 'WhatsApp sent',
+    description: 'WhatsApp follow-up sent',
+  },
+  {
+    id: 'waiting_reply',
+    label: 'Waiting for reply',
+    description: 'We replied; waiting on them',
+  },
+  {
     id: 'deferred',
     label: 'Deferred',
     description: 'Below max personas per company — promote to enroll',
@@ -134,6 +150,16 @@ export const OUTREACH_STAGES: Array<{
     id: 'meeting_booked',
     label: 'Meeting booked',
     description: 'Calendar invites sent to both sides',
+  },
+  {
+    id: 'failed_no_reply',
+    label: 'Failed no reply',
+    description: 'No reply after follow-ups',
+  },
+  {
+    id: 'failed_enrich',
+    label: 'Failed enrich',
+    description: 'Email enrichment failed',
   },
 ];
 
@@ -163,6 +189,10 @@ export const mapCrmStageToOutreachStage = (
       return 'email_sent';
     case 'INMAIL_SENT':
       return 'inmail_sent';
+    case 'WHATSAPP_SENT':
+      return 'whatsapp_sent';
+    case 'WAITING_REPLY':
+      return 'waiting_reply';
     case 'DEFERRED':
       return 'deferred';
     case 'STOPPED':
@@ -174,6 +204,10 @@ export const mapCrmStageToOutreachStage = (
     case 'MEETING_BOOKED':
     case 'BOOKED':
       return 'meeting_booked';
+    case 'FAILED_NO_REPLY':
+      return 'failed_no_reply';
+    case 'FAILED_ENRICH':
+      return 'failed_enrich';
     case 'QUEUED':
     default:
       return 'queued';

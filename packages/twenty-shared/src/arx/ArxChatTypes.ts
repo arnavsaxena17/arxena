@@ -814,6 +814,7 @@ export interface ArxenaCandidateNode {
   peopleId: string;
   linkedinProfileId?: string;
   outreachSequenceStage?: string;
+  outreachConversationStage?: string;
   messagingChannel: string;
   otherFields?: Record<string, unknown>;
 }
@@ -1685,6 +1686,7 @@ export interface MessageNode {
   recruiterId: string;
   message: string;
   candidateId: string;
+  personId?: string;
   projectsId: string;
   position: number;
   messageType: string;
@@ -1696,6 +1698,7 @@ export interface MessageNode {
   phoneFrom: string;
   messageObj: any;
   whatsappDeliveryStatus: string;
+  typeOfMessage?: string | null;
   cursor?: string;
 }
 
@@ -1800,6 +1803,7 @@ export interface CandidateNode {
   candConversationStatus?: string;
   status: string;
   outreachSequenceStage?: string | null;
+  outreachConversationStage?: string | null;
   chatMessages: ChatMessages;
   emailMessages: EmailMessages;
   projects: Project;
@@ -1932,6 +1936,7 @@ export interface Project {
   salaryBracket?: string;
   yearsOfExperience?: string;
   description?: string;
+  outreachWorkflowId?: string | null;
 }
 
 interface Entry {

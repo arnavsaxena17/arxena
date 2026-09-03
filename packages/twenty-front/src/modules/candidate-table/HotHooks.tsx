@@ -2,9 +2,14 @@ import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPage
 import { IconMessage } from "twenty-ui/icon";
 import axios from 'axios';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
+import { updateOutreachOperatorControls } from '@/outreach-home/utils/outreachJourneyApi';
 
 export type SetAtomState<T> = (update: T | ((previous: T) => T)) => void;
-import type { CandidateNode } from 'twenty-shared/arx';
+import {
+  type CandidateNode,
+  isOutreachConversationStage,
+  OUTREACH_CONVERSATION_STAGE_LABELS,
+} from 'twenty-shared/arx';
 import { mergeOtherFields, toSnakeCaseKey } from 'twenty-shared/utils';
 // import { Change } from './states/tableStateAtom';
 
@@ -488,6 +493,24 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
   setSelectedCandidateId(nextSelectedIds[0] ?? null);
 };
 
+const resolveOutreachConversationStageValue = (
+  value: unknown,
+): string => {
+  if (typeof value !== 'string' || value.length === 0) {
+    return 'NONE';
+  }
+
+  if (isOutreachConversationStage(value)) {
+    return value;
+  }
+
+  const match = Object.entries(OUTREACH_CONVERSATION_STAGE_LABELS).find(
+    ([, label]) => label === value,
+  );
+
+  return match?.[0] ?? value;
+};
+
 const DIRECT_TABLE_FIELDS = new Set([
   'id',
   'personId',
@@ -510,6 +533,8 @@ const DIRECT_TABLE_FIELDS = new Set([
   'hiringNaukriUrl',
   'linkedinUrl',
   'lastMessage',
+  'messagesExchanged',
+  'outreachConversationStage',
   'hasCv',
 ]);
 
@@ -681,6 +706,25 @@ const processBackendUpdate = async (
       throw new Error('No valid token available');
     }
 
+    if (
+      prop === 'outreachConversationStage' &&
+      typeof rowData.outreachProjectId === 'string' &&
+      rowData.outreachProjectId.length > 0
+    ) {
+      const enrolledCandidateId =
+        typeof rowData.candidateId === 'string' && isUUID(rowData.candidateId)
+          ? rowData.candidateId
+          : candidateId;
+
+      await updateOutreachOperatorControls({
+        projectId: rowData.outreachProjectId,
+        candidateId: enrolledCandidateId,
+        outreachConversationStage: resolveOutreachConversationStageValue(newValue),
+        accessToken: latestToken,
+      });
+      return;
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${latestToken}` },
@@ -787,8 +831,13 @@ export const afterChange = async (
     const isSavedCandidate = !!rowData.personId;
     console.log(`Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`);
 
+    const nextValue =
+      prop === 'outreachConversationStage'
+        ? resolveOutreachConversationStageValue(newValue)
+        : newValue;
+
     // Update UI immediately (optimistic update)
-    updateTableState(rowData, prop, newValue, setTableState, hot);
+    updateTableState(rowData, prop, nextValue, setTableState, hot);
 
     // Only queue backend updates for saved candidates
     if (isSavedCandidate) {
@@ -801,7 +850,7 @@ export const afterChange = async (
         row: visualRow,
         prop,
         oldValue,
-        newValue,
+        newValue: nextValue,
         rowData,
         endpoint,
         isDirectField

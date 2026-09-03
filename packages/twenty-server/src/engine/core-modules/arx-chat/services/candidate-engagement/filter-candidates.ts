@@ -25,11 +25,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 import {
+  assignChatMessagesToCandidates,
+  chunkStrings,
+  type CandidateChatHydrationTarget,
+} from 'src/engine/core-modules/arx-chat/utils/assign-chat-messages-to-candidates.util';
+import { expandLinkedinTranscriptRows } from 'src/engine/core-modules/arx-chat/utils/expand-linkedin-chat-turns.util';
+import {
   MessagingChannel,
   messagingChannelEquals,
   toMessagingChannelTransportKey,
 } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
-import { expandLinkedinTranscriptRows } from 'src/engine/core-modules/arx-chat/utils/expand-linkedin-chat-turns.util';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -274,6 +279,69 @@ export class FilterCandidates {
     );
 
     return expandLinkedinTranscriptRows(deduped);
+  }
+
+  async hydrateChatMessagesForCandidates(
+    candidates: CandidateChatHydrationTarget[],
+    apiToken: string,
+  ): Promise<void> {
+    if (candidates.length === 0) {
+      return;
+    }
+
+    const candidateIds = [
+      ...new Set(
+        candidates
+          .map((candidate) => candidate.id)
+          .filter((candidateId): candidateId is string =>
+            Boolean(candidateId),
+          ),
+      ),
+    ];
+    const peopleIds = [
+      ...new Set(
+        candidates
+          .map((candidate) => candidate.peopleId)
+          .filter((peopleId): peopleId is string =>
+            typeof peopleId === 'string' && peopleId.length > 0,
+          ),
+      ),
+    ];
+
+    const messages: MessageNode[] = [];
+
+    for (const candidateIdChunk of chunkStrings(candidateIds, 100)) {
+      try {
+        const page = await this.paginateChatMessages(
+          { candidateId: { in: candidateIdChunk } },
+          apiToken,
+        );
+        messages.push(...page);
+      } catch (error) {
+        console.warn('chatMessages candidateId batch lookup failed:', error);
+      }
+    }
+
+    for (const personIdChunk of chunkStrings(peopleIds, 100)) {
+      try {
+        const page = await this.paginateChatMessages(
+          { personId: { in: personIdChunk } },
+          apiToken,
+        );
+        messages.push(...page);
+      } catch (error) {
+        console.warn('chatMessages personId batch lookup failed:', error);
+      }
+    }
+
+    const deduped = this.dedupeChatMessagesById(messages);
+
+    // Keep nested GraphQL chatMessages when the batch lookup returned nothing
+    if (deduped.length === 0) {
+      return;
+    }
+
+    assignChatMessagesToCandidates(candidates, deduped);
   }
 
   private async resolveChatMessagesLookupIds(

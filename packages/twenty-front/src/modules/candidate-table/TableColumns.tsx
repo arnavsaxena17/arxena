@@ -11,7 +11,10 @@ import {
 } from '@/outreach-home/constants/outreach-stages';
 import { styled } from '@linaria/react';
 import Handsontable from 'handsontable';
-import type { TransformedCandidateForTable } from 'twenty-shared/arx';
+import {
+  OUTREACH_CONVERSATION_STAGE_LABELS,
+  type TransformedCandidateForTable,
+} from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
 
@@ -26,6 +29,7 @@ export type ProcessedDataItem = {
   status: string;
   candConversationStatus: string;
   outreachSequenceStage?: string;
+  outreachConversationStage?: string;
   workflowRunStatus?: string;
   checkbox: boolean;
   startChat: boolean;
@@ -39,6 +43,7 @@ export type ProcessedDataItem = {
   hiringNaukriUrl: string;
   linkedinUrl: string;
   lastMessage: string;
+  messagesExchanged: string;
   hasCv: boolean;
   [key: string]: any; // For dynamic enrichment fields
 };
@@ -64,18 +69,29 @@ type ColumnRenderer = (
 ) => HTMLTableCellElement;
 
 const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
-const excludedFields = ['id', 'checkbox', 'people','attachments','emailMessages','chatMessages','videoInterview','tempId','_isFetched','__isFetched','whatsappProvider','location','company','campaign','name','profileUrl', 'uniqueId','uniqueStringKey','peopleId','candidateId','hasCv','fullName','title','firstName','lastName','jobName','dataSources','education','emailAddresses','experienceStats','jobProcessEvents','jobs','lastSeen','linkedinSpecificData','otherFields','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles'];
+const excludedFields = ['id', 'checkbox', 'people','attachments','emailMessages','chatMessages','videoInterview','tempId','_isFetched','__isFetched','whatsappProvider','location','company','campaign','name','profileUrl', 'uniqueId','uniqueStringKey','peopleId','candidateId','hasCv','fullName','title','firstName','lastName','jobName','dataSources','education','emailAddresses','experienceStats','jobProcessEvents','jobs','lastSeen','linkedinSpecificData','otherFields','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','isOutreachHomeRow','outreachProjectId'];
 
 const CV_AVAILABILITY_OPTIONS = ['CV Available', 'CV Not found'] as const;
 
 /** Fits longest option (whatsapp-unipile) on one line with dropdown padding */
 const MESSAGING_CHANNEL_COLUMN_WIDTH = 190;
+const MESSAGES_EXCHANGED_COLUMN_WIDTH = 280;
 
 const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   candConversationStatus: 'Bot Status',
   outreachSequenceStage: 'Outreach Stage',
+  outreachConversationStage: 'Conversation Stage',
   workflowRunStatus: 'Run Status',
   cvAvailability: 'CV',
+  messagesExchanged: 'Messages exchanged',
+  lastMessage: 'Last inbound',
+  lastInboundAt: 'Last inbound at',
+  lastOutboundAt: 'Last outbound at',
+  replyAfterTouch: 'Reply after',
+  nextFollowUp: 'Next follow-up',
+  nextStep: 'Next step',
+  nextRetry: 'Next retry',
+  needsApproval: 'Needs approval',
 };
 
 const getColumnTitle = (key: string) =>
@@ -108,12 +124,51 @@ const isScalarTableCellValue = (value: unknown): boolean => {
 const columnHasOnlyScalarValues = (columnName: string, processedData: CandidateDataItem[]): boolean =>
   processedData.every((item) => isScalarTableCellValue(item[columnName]));
 
+const RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH = [
+  'status',
+  'candConversationStatus',
+  'startChat',
+  'startChatCompleted',
+  'stopChat',
+];
+
+const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
+  'lastMessage',
+  'lastInboundAt',
+  'lastOutboundAt',
+  'replyAfterTouch',
+  'outreachConversationStage',
+  'nextFollowUp',
+  'needsApproval',
+  'nextStep',
+  'nextRetry',
+  'outreachSequenceStage',
+];
+
 // Function to check if a column has all empty or 'N/A' values
 const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[]): boolean => {
   if (!processedData.length) return true;
 
+  const isOutreachHomeTable = processedData.some(
+    (item) => item.isOutreachHomeRow === true,
+  );
+
+  if (
+    isOutreachHomeTable &&
+    RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH.includes(columnName)
+  ) {
+    return true;
+  }
+
+  if (
+    isOutreachHomeTable &&
+    OUTREACH_HOME_ALWAYS_SHOW_COLUMNS.includes(columnName)
+  ) {
+    return false;
+  }
+
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'cvAvailability', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel'];
+  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'cvAvailability', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel', 'messagesExchanged'];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
@@ -305,6 +360,30 @@ export const TableColumns = ({
       div.title = value.join('\n'); // Show full list on hover
     } else {
       div.textContent = 'N/A';
+      div.style.color = '#9ca3af';
+    }
+
+    td.appendChild(div);
+    return td;
+  };
+
+  const messagesExchangedRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
+    td.innerHTML = '';
+    const div = document.createElement('div');
+    Object.assign(div.style, truncatedCellStyle);
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      div.textContent = value.replace(/\n/g, ' · ');
+      div.title = value;
+    } else {
+      div.textContent = '—';
       div.style.color = '#9ca3af';
     }
 
@@ -623,7 +702,9 @@ export const TableColumns = ({
 
   const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
     const isDropdownStatus =
-      prop === 'status' || prop === 'candConversationStatus';
+      prop === 'status' ||
+      prop === 'candConversationStatus' ||
+      prop === 'outreachConversationStage';
 
     if (isDropdownStatus) {
       Handsontable.renderers.DropdownRenderer(
@@ -647,7 +728,6 @@ export const TableColumns = ({
       );
     }
 
-    // Then update the displayed text to show the friendly label
     if (value) {
       if (prop === 'candConversationStatus' && CANDIDATE_CONVERSATION_STATUS_LABELS[value]) {
         td.textContent = CANDIDATE_CONVERSATION_STATUS_LABELS[value];
@@ -655,10 +735,75 @@ export const TableColumns = ({
         td.textContent = STATUS_LABELS[value];
       } else if (prop === 'outreachSequenceStage' && OUTREACH_STAGE_LABELS[value]) {
         td.textContent = OUTREACH_STAGE_LABELS[value];
+      } else if (
+        prop === 'outreachConversationStage' &&
+        OUTREACH_CONVERSATION_STAGE_LABELS[
+          value as keyof typeof OUTREACH_CONVERSATION_STAGE_LABELS
+        ]
+      ) {
+        td.textContent =
+          OUTREACH_CONVERSATION_STAGE_LABELS[
+            value as keyof typeof OUTREACH_CONVERSATION_STAGE_LABELS
+          ];
       } else if (prop === 'workflowRunStatus' && WORKFLOW_RUN_STATUS_LABELS[value]) {
         td.textContent = WORKFLOW_RUN_STATUS_LABELS[value];
       }
     }
+    return td;
+  };
+
+  const nextFollowUpRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
+    Handsontable.renderers.TextRenderer(
+      instance,
+      td,
+      row,
+      column,
+      prop,
+      value,
+      cellProperties,
+    );
+
+    if (typeof value === 'string' && value.length > 0) {
+      const parsed = new Date(value);
+
+      if (!Number.isNaN(parsed.getTime())) {
+        td.textContent = parsed.toLocaleString();
+
+        if (parsed.getTime() < Date.now()) {
+          td.style.color = themeCssVariables.color.red;
+        }
+      }
+    }
+
+    return td;
+  };
+
+  const needsApprovalRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
+    Handsontable.renderers.TextRenderer(
+      instance,
+      td,
+      row,
+      column,
+      prop,
+      value === true ? 'Needs approval' : '',
+      cellProperties,
+    );
     return td;
   };
 
@@ -699,32 +844,75 @@ export const TableColumns = ({
   console.log("AI filter fields found in data:", aiFilterFields);
   console.log("Total columns after enrichment fields:", columns.length);
 
-  const commonColumns = ['jobTitle','jobCompanyName','locationName','remarks','status','candConversationStatus','outreachSequenceStage','workflowRunStatus','email', 'phone', 'lastMessage', 'messagingChannel'];
+  const commonColumns = [
+    'jobTitle',
+    'jobCompanyName',
+    'locationName',
+    'remarks',
+    'status',
+    'candConversationStatus',
+    'outreachSequenceStage',
+    'outreachConversationStage',
+    'workflowRunStatus',
+    'nextStep',
+    'nextRetry',
+    'needsApproval',
+    'replyAfterTouch',
+    'lastMessage',
+    'lastInboundAt',
+    'lastOutboundAt',
+    'nextFollowUp',
+    'messagesExchanged',
+    'email',
+    'phone',
+    'messagingChannel',
+  ];
   commonColumns.forEach(column => {
     if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
       const isRecruiterStatusField =
         column === 'status' || column === 'candConversationStatus';
       const isOutreachStageField = column === 'outreachSequenceStage';
+      const isConversationStageField = column === 'outreachConversationStage';
       const isWorkflowRunStatusField = column === 'workflowRunStatus';
       const isLabeledStatusField =
         isRecruiterStatusField ||
         isOutreachStageField ||
+        isConversationStageField ||
         isWorkflowRunStatusField;
       const isMessagingChannelField = column === 'messagingChannel';
+      const isMessagesExchangedField = column === 'messagesExchanged';
+      const isNextFollowUpField = column === 'nextFollowUp';
+      const isNextRetryField = column === 'nextRetry';
+      const isNeedsApprovalField = column === 'needsApproval';
+      const isOutreachDateField =
+        column === 'lastInboundAt' || column === 'lastOutboundAt';
 
       columns.push({
         data: column,
         title: getColumnTitle(column),
-        width: isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH : 150,
+        width: isMessagingChannelField
+          ? MESSAGING_CHANNEL_COLUMN_WIDTH
+          : isMessagesExchangedField
+            ? MESSAGES_EXCHANGED_COLUMN_WIDTH
+            : isConversationStageField || isNextRetryField
+              ? 180
+              : column === 'nextStep'
+                ? 220
+                : 150,
         renderer: isLabeledStatusField ? statusRenderer :
                  isMessagingChannelField ? messagingChannelRenderer :
+                 isMessagesExchangedField ? messagesExchangedRenderer :
+                 isNextFollowUpField || isNextRetryField ? nextFollowUpRenderer :
+                 isNeedsApprovalField ? needsApprovalRenderer :
+                 isOutreachDateField ? dateRenderer :
                  simpleRenderer,
-        type: isRecruiterStatusField || isMessagingChannelField ? 'dropdown' : 'text',
+        type: isRecruiterStatusField || isMessagingChannelField || isConversationStageField ? 'dropdown' : 'text',
         source: column === 'status' ? Object.values(STATUS_LABELS) as string[] :
                 column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
+                isConversationStageField ? Object.values(OUTREACH_CONVERSATION_STAGE_LABELS) :
                 isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
-        editor: isRecruiterStatusField || isMessagingChannelField ? 'dropdown' : undefined,
-        readOnly: isOutreachStageField || isWorkflowRunStatusField,
+        editor: isRecruiterStatusField || isMessagingChannelField || isConversationStageField ? 'dropdown' : undefined,
+        readOnly: isOutreachStageField || isWorkflowRunStatusField || isMessagesExchangedField || isNextFollowUpField || isNextRetryField || isNeedsApprovalField || isOutreachDateField || column === 'nextStep' || column === 'replyAfterTouch' || column === 'lastMessage',
       });
       allKeys.delete(column);
     }
@@ -772,6 +960,7 @@ export const TableColumns = ({
         isStatusField || isOutreachStageField || isWorkflowRunStatusField;
       const isMessagingChannelField = key === 'messagingChannel';
       const isCvAvailabilityField = key === 'cvAvailability';
+      const isMessagesExchangedField = key === 'messagesExchanged';
 
       // Relevance score fields
       const isRelevanceScoreField = key === 'relevanceScore';
@@ -818,6 +1007,8 @@ export const TableColumns = ({
         renderer = relevanceLabelRenderer;
       } else if (isArrayField) {
         renderer = arrayRenderer;
+      } else if (isMessagesExchangedField) {
+        renderer = messagesExchangedRenderer;
       }
 
       columns.push({
@@ -828,6 +1019,7 @@ export const TableColumns = ({
                isRelevanceLabelField ? 140 :
                isArrayField ? 200 :
                isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH :
+               isMessagesExchangedField ? MESSAGES_EXCHANGED_COLUMN_WIDTH :
                isCvAvailabilityField ? 160 :
                smallFields.includes(key) ? 40 : 150,
         renderer: renderer,
@@ -839,7 +1031,7 @@ export const TableColumns = ({
           isCvAvailabilityField ? [...CV_AVAILABILITY_OPTIONS] :
           undefined,
         editor: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : undefined,
-        readOnly: isOutreachStageField || isWorkflowRunStatusField,
+        readOnly: isOutreachStageField || isWorkflowRunStatusField || isMessagesExchangedField,
       });
     });
 

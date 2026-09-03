@@ -6,8 +6,8 @@ Live working-set UI for the post-signup outreach loop. CRM-committed metrics liv
 
 | Layer | Role |
 | --- | --- |
-| **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/companies`) — Ask AI / discovery working set |
-| **Ephemeral people** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/people`) via `upsert_outreach_target_people` — Ask AI search hits until user confirms CRM |
+| **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/companies`) — Ask AI / discovery working set. Writes emit `outreach-cache-updated` on `/general-socket` (`outreach-project-{projectId}` room) so the Companies tab refreshes without polling. |
+| **Ephemeral people** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/people`) via `upsert_outreach_target_people` — Ask AI search hits until user confirms CRM. Same socket event refreshes the People tab. |
 | **Candidate** | Per-project outreach spine (`projectsId` = Project.id); Workflow B/C trigger unit |
 | **Company (CRM)** | Shared account — created **only when** people are enrolled / added to CRM |
 | **Person** | Cross-project memory (DNC, degree, etc.) |

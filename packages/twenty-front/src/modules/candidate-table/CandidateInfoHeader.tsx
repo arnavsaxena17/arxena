@@ -188,6 +188,7 @@ type CandidateInfoHeaderProps = {
   candidateData?: any;
   outreachStageLabel?: string | null;
   outreachNextStepLabel?: string | null;
+  outreachNextRetryLabel?: string | null;
   pendingChannel?: string | null;
 };
 
@@ -214,6 +215,7 @@ const arePropsEqual = (
     prevData.updatedAt === nextData.updatedAt &&
     prevProps.outreachStageLabel === nextProps.outreachStageLabel &&
     prevProps.outreachNextStepLabel === nextProps.outreachNextStepLabel &&
+    prevProps.outreachNextRetryLabel === nextProps.outreachNextRetryLabel &&
     prevProps.pendingChannel === nextProps.pendingChannel
   );
 };
@@ -222,6 +224,7 @@ export const CandidateInfoHeader = React.memo(({
   candidateData: propCandidateData,
   outreachStageLabel,
   outreachNextStepLabel,
+  outreachNextRetryLabel,
   pendingChannel,
 }: CandidateInfoHeaderProps) => {
   const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
@@ -462,6 +465,9 @@ export const CandidateInfoHeader = React.memo(({
           ) : null}
           {outreachNextStepLabel ? (
             <Status color="sky" text={outreachNextStepLabel} />
+          ) : null}
+          {outreachNextRetryLabel ? (
+            <Status color="orange" text={`Retry ${outreachNextRetryLabel}`} />
           ) : null}
           {pendingChannel ? (
             <Status color="purple" text={`Pending: ${pendingChannel}`} />

@@ -30,6 +30,8 @@ const toTitleCaseLabel = (value: string): string =>
     )
     .join(' ');
 
+export const toTaxonomyConstantLabel = toTitleCaseLabel;
+
 // Apollo-style public nouns only — flat lists, one-line definitions, no trees.
 export const TAXONOMY_GRADE_LEVEL_CONSTANTS: TaxonomyConstantItem[] = [
   {

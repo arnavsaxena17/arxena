@@ -87,7 +87,7 @@ describe('GTM outreach workflow graphs', () => {
       }
     ).input.branches;
 
-    expect(branches).toHaveLength(6);
+    expect(branches).toHaveLength(3);
     expect(branches.filter((branch) => !branch.filterGroupId)).toHaveLength(1);
 
     const stepFilters = (
@@ -113,20 +113,27 @@ describe('GTM outreach workflow graphs', () => {
           type: 'SELECT',
           value: JSON.stringify(['REPLIED']),
         }),
+      ]),
+    );
+    expect(stepFilters).toHaveLength(2);
+    expect(stepFilters).not.toEqual(
+      expect.arrayContaining([
         expect.objectContaining({
-          type: 'SELECT',
           value: JSON.stringify(['NEGOTIATING']),
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          value: JSON.stringify(['DEFERRED']),
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          value: JSON.stringify(['MEETING_BOOKED']),
         }),
       ]),
     );
+
+    const updatedSteps = updatedGraphs[0].steps as GraphStep[];
+    const byName = (name: string) =>
+      updatedSteps.find((step) => step.name === name);
+
+    expect(byName('Draft sales reply')).toBeDefined();
+    expect(byName('Mark WAITING_REPLY')).toBeDefined();
+    expect(byName('Wait 3 days for inbound reply')).toBeDefined();
+    expect(byName('Mark FAILED_NO_REPLY')).toBeDefined();
+    expect(byName('Draft negotiating reply')).toBeUndefined();
+    expect(byName('Draft deferral ack')).toBeUndefined();
   });
 
   it('keeps harvest Search LinkedIn companies query and keywords blank', () => {

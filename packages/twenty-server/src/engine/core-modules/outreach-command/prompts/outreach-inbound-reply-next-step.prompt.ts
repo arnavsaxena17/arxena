@@ -1,14 +1,14 @@
 export const OUTREACH_INBOUND_REPLY_CLASSIFIER_SYSTEM_PROMPT = `You classify the RECIPIENT's latest inbound burst in an outbound outreach sequence (LinkedIn / WhatsApp / email). You do not draft a reply.
 
-Pick exactly one intent. This stamps outreachSequenceStage and selects the next workflow.
+Pick exactly one intent. This stamps outreachConversationStage (operator outcome). Sequence cadence is REPLIED for any inbound except unsubscribe → STOPPED.
 
-intents → stage → next workflow:
-- unsubscribe → STOPPED → no send. Opt-out, never contact, stop, remove me, not interested in being messaged.
-- not_now → DEFERRED → polite deferral ack, then pause. Busy, later, next quarter, circle back, not a priority now.
-- interested → NEGOTIATING → advance toward a meeting. Positive, wants to learn more, no time committed yet.
-- times_proposed → REPLIED → confirm / counter with available calendar slots. They offered windows or asked "when works?".
-- book → MEETING_BOOKED → HITL calendar invite. They accepted a specific slot or asked to send the invite.
-- question → REPLIED → answer the question, rapport, light meeting ask. Default if unclear.
+intents → conversation stage:
+- unsubscribe → NOT_INTERESTED. Opt-out, never contact, stop, remove me, not interested in being messaged. Sequence STOPPED.
+- not_now → SNOOZED. Busy, later, next quarter, circle back, not a priority now.
+- interested → INTENT. Positive, wants to learn more, no time committed yet.
+- times_proposed → FOLLOW_UP_MEETING. They offered windows or asked "when works?".
+- book → MEETING_BOOKED. They accepted a specific slot or asked to send the invite.
+- question → ACKNOWLEDGEMENT. Default if unclear.
 
 Rules:
 - Classify the recipient only, not our prior outbound.
@@ -32,6 +32,35 @@ export const buildOutreachInboundReplyClassifierUserPrompt = ({
     priorTurns?.trim() || '(none)',
     '',
     'Return JSON: { "intent", "confidence", "reasoning", "extractedTimeHint" }',
+  ].join('\n');
+
+export const buildOutreachSalesChatDraftPrompt = ({
+  name,
+  title,
+  transcript,
+  slots,
+  conversationStage,
+}: {
+  name: string;
+  title: string;
+  transcript: string;
+  slots: string;
+  conversationStage: string;
+}): string =>
+  [
+    'You are a sales outreach assistant on LinkedIn. Draft the next outbound message only.',
+    'Do not re-classify. Do not share a job description or ask recruiting screening questions.',
+    'Stay short. Rapport first. Meeting is a light close, not a calendar dump.',
+    'If they asked to stop, return JSON { "message": "#DONTRESPOND#" }.',
+    'If they asked to pause / later, thank them, confirm you will pause, do not pitch.',
+    'If they showed intent, acknowledge and offer at most two injected slots toward a 20–30 min intro.',
+    `If they proposed times, confirm or counter using ONLY these available slots: ${slots}`,
+    'Never invent times. If no slot fits, say you will send options — do not guess.',
+    `Conversation stage: ${conversationStage}`,
+    `Name: ${name}`,
+    `Title: ${title}`,
+    `Transcript: ${transcript}`,
+    'Return JSON only: { "message": "<body>" }',
   ].join('\n');
 
 export const buildOutreachRepliedDraftPrompt = ({

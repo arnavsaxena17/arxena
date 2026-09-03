@@ -2,6 +2,8 @@ import {
   MessagingChannel,
   MESSAGING_CHANNEL_LABELS,
   MESSAGING_CHANNEL_SELECT_VALUES,
+  OUTREACH_CONVERSATION_STAGE_LABELS,
+  OUTREACH_CONVERSATION_STAGES,
 } from 'twenty-shared/arx';
 
 import { type ArxenaFieldWithObject } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
@@ -110,6 +112,7 @@ export const OUTREACH_SEQUENCE_STAGE_OPTIONS = [
   selectOption('INMAIL_SENT', 'InMail sent', 'sky', 9),
   selectOption('WHATSAPP_SENT', 'WhatsApp sent', 'green', 10),
   selectOption('REPLIED', 'Replied', 'turquoise', 11),
+  selectOption('WAITING_REPLY', 'Waiting for reply', 'sky', 19),
   selectOption('NEGOTIATING', 'Negotiating', 'purple', 12),
   selectOption('MEETING_BOOKED', 'Meeting booked', 'green', 13),
   selectOption('DEFERRED', 'Deferred', 'gray', 14),
@@ -117,6 +120,26 @@ export const OUTREACH_SEQUENCE_STAGE_OPTIONS = [
   selectOption('FAILED_ENRICH', 'Failed enrich', 'red', 16),
   selectOption('FAILED_NO_REPLY', 'Failed no reply', 'red', 17),
 ];
+
+const CONVERSATION_STAGE_COLORS: Record<string, string> = {
+  NONE: 'gray',
+  ACKNOWLEDGEMENT: 'sky',
+  INTENT: 'turquoise',
+  FOLLOW_UP_MEETING: 'orange',
+  MEETING_BOOKED: 'green',
+  NOT_INTERESTED: 'red',
+  SNOOZED: 'gray',
+};
+
+export const OUTREACH_CONVERSATION_STAGE_OPTIONS = OUTREACH_CONVERSATION_STAGES.map(
+  (value, position) =>
+    selectOption(
+      value,
+      OUTREACH_CONVERSATION_STAGE_LABELS[value],
+      CONVERSATION_STAGE_COLORS[value] ?? 'gray',
+      position,
+    ),
+);
 
 export const OUTREACH_ENRICH_STATUS_OPTIONS = [
   selectOption('NOT_STARTED', 'Not started', 'gray', 0),
@@ -255,6 +278,20 @@ export const getOutreachCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'SELECT',
       options: OUTREACH_SEQUENCE_STAGE_OPTIONS,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Operator conversation outcome (intent, meeting, not interested) separate from sequence cadence',
+      icon: 'IconMessage',
+      label: 'Outreach Conversation Stage',
+      name: 'outreachConversationStage',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: OUTREACH_CONVERSATION_STAGE_OPTIONS,
+      defaultValue: "'NONE'",
     },
   },
   {

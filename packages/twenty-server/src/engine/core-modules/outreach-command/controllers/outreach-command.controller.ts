@@ -12,6 +12,9 @@ import {
   Req,
 } from '@nestjs/common';
 
+import { isOutreachConversationStage } from 'twenty-shared/arx';
+import { isDefined } from 'twenty-shared/utils';
+
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
@@ -753,6 +756,48 @@ export class OutreachCommandController {
         candidateId,
         workflowRunId: body.workflowRunId,
         stepId: body.stepId,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/operator-controls')
+  async updateCandidateOperatorControls(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Body()
+    body: {
+      outreachConversationStage?: string;
+      resumeAt?: string | null;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (
+      isDefined(body?.outreachConversationStage) &&
+      !isOutreachConversationStage(body.outreachConversationStage)
+    ) {
+      throw new HttpException(
+        'Invalid outreach conversation stage',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (
+      !isDefined(body?.outreachConversationStage) &&
+      body?.resumeAt === undefined
+    ) {
+      throw new HttpException(
+        'outreachConversationStage or resumeAt is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachCandidateJourneyService.updateOperatorControls({
+        workspaceId,
+        projectId,
+        candidateId,
+        outreachConversationStage: body.outreachConversationStage,
+        resumeAt: body.resumeAt,
       }),
     );
   }

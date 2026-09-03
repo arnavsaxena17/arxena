@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 import {
   ARXENA_TOOL_CATALOG,
   ARXENA_TOOL_NAMES,
@@ -14,9 +17,26 @@ describe('Arxena tool catalog', () => {
     expect(ARXENA_TOOL_CATALOG.length).toBeGreaterThan(50);
     expect(ARXENA_TOOL_NAMES.has('get_org_chart')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('list_linkedin_relations')).toBe(true);
-    expect(ARXENA_TOOL_NAMES.has('generate_linkedin_query_agent1')).toBe(
-      false,
+    expect(ARXENA_TOOL_NAMES.has('classify_taxonomy_profile')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('list_taxonomy_slice')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('generate_linkedin_query_agent1')).toBe(false);
+  });
+
+  it('registers classify_taxonomy_profile with profile or jobTitle', () => {
+    const source = readFileSync(
+      join(
+        __dirname,
+        '../../../../../../twenty-mcp-server/src/tools/people-api-tools.ts',
+      ),
+      'utf8',
     );
+
+    expect(source).toContain("name: 'classify_taxonomy_profile'");
+    expect(source).toContain("name: 'list_taxonomy_slice'");
+    expect(source).toContain('args.profile');
+    expect(source).toContain('args.jobTitle');
+    expect(source).toContain('taxonomy/classify-llm');
+    expect(source).toContain('taxonomy/slice');
   });
 });
 

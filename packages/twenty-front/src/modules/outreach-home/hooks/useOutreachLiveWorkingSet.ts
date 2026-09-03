@@ -18,6 +18,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
+import { formatLastInboundMessage, formatMessagesExchanged, resolveLastInboundChat } from '@/candidate-table/utils/formatMessagesExchanged';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -28,6 +29,7 @@ import {
     isOutreachProjectName,
 } from '@/outreach-home/constants/outreach-command.constants';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
+import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import {
     type OutreachCompanyRow,
@@ -43,6 +45,9 @@ import {
 } from '@/outreach-home/types/outreach-home.types';
 import {
     fetchOutreachProjectCandidates,
+    formatReplyAfterTouch,
+    resolveCandidateLastInboundAt,
+    resolveCandidateLastOutboundAt,
     resolveCandidateOutreachResumeAt,
     type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
@@ -57,7 +62,8 @@ import {
 } from '@/outreach-home/utils/outreach-people-cache';
 import {
     resolveOutreachJourneyStageLabel,
-    resolveOutreachNextStepLabel,
+    resolveOutreachNextRetryAt,
+    resolveOutreachPendingStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -145,7 +151,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}`,
     )
     .join('|');
 
@@ -308,40 +314,48 @@ export const useOutreachLiveWorkingSet = () => {
     useOutreachProjectJourneySummary(activeProjectId);
 
   // Ephemeral companies from Redis (per projectId) — not CRM membership.
-  // Poll so Ask AI upserts appear on the Companies tab without a full reload.
+  // Ask AI upserts push outreach-cache-updated on /general-socket; no interval poll.
   const companiesCacheRequestIdRef = useRef(0);
 
-  const refreshCompaniesCache = useCallback(async () => {
-    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
-      setEphemeralCompanies([]);
+  const refreshCompaniesCache = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+        setEphemeralCompanies([]);
 
-      return;
-    }
-
-    const requestId = ++companiesCacheRequestIdRef.current;
-    setCompaniesLoading(true);
-
-    try {
-      const companies = await fetchOutreachCompaniesCache(
-        activeProjectId,
-        accessToken,
-      );
-
-      if (requestId !== companiesCacheRequestIdRef.current) {
         return;
       }
 
-      setEphemeralCompanies((previous) =>
-        outreachCompanySignature(previous) === outreachCompanySignature(companies)
-          ? previous
-          : companies,
-      );
-    } finally {
-      if (requestId === companiesCacheRequestIdRef.current) {
-        setCompaniesLoading(false);
+      const requestId = ++companiesCacheRequestIdRef.current;
+      const isSilent = options?.silent === true;
+
+      if (!isSilent) {
+        setCompaniesLoading(true);
       }
-    }
-  }, [accessToken, activeProjectId]);
+
+      try {
+        const companies = await fetchOutreachCompaniesCache(
+          activeProjectId,
+          accessToken,
+        );
+
+        if (requestId !== companiesCacheRequestIdRef.current) {
+          return;
+        }
+
+        setEphemeralCompanies((previous) =>
+          outreachCompanySignature(previous) ===
+          outreachCompanySignature(companies)
+            ? previous
+            : companies,
+        );
+      } finally {
+        if (requestId === companiesCacheRequestIdRef.current) {
+          setCompaniesLoading(false);
+        }
+      }
+    },
+    [accessToken, activeProjectId],
+  );
 
   useEffect(() => {
     if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
@@ -352,13 +366,8 @@ export const useOutreachLiveWorkingSet = () => {
 
     void refreshCompaniesCache();
 
-    const pollIntervalId = window.setInterval(() => {
-      void refreshCompaniesCache();
-    }, 5000);
-
     return () => {
       companiesCacheRequestIdRef.current += 1;
-      window.clearInterval(pollIntervalId);
     };
   }, [accessToken, activeProjectId, refreshCompaniesCache]);
 
@@ -380,51 +389,59 @@ export const useOutreachLiveWorkingSet = () => {
   const peopleCacheRequestIdRef = useRef(0);
   const projectCandidatesRequestIdRef = useRef(0);
 
-  const refreshPeopleCache = useCallback(async () => {
-    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
-      setEphemeralPeople([]);
-      setPeopleCacheReady(true);
+  const refreshPeopleCache = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+        setEphemeralPeople([]);
+        setPeopleCacheReady(true);
 
-      return;
-    }
-
-    const requestId = ++peopleCacheRequestIdRef.current;
-    setPeopleCacheLoading(true);
-
-    try {
-      const people = await fetchOutreachPeopleCache(
-        activeProjectId,
-        accessToken,
-      );
-
-      if (requestId !== peopleCacheRequestIdRef.current) {
         return;
       }
 
-      const nextPeople = people.map((person) => ({
-        ...person,
-        stage: mapCrmStageToOutreachStage(person.stage),
-        warmPath: person.warmPath || '—',
-        email: person.email || '',
-        companyId: person.companyId || '',
-        companyName: person.companyName || '',
-        title: person.title || '',
-        linkedinUrl: person.linkedinUrl || '',
-        candidateId: undefined,
-      }));
+      const requestId = ++peopleCacheRequestIdRef.current;
+      const isSilent = options?.silent === true;
 
-      setEphemeralPeople((previous) =>
-        outreachPersonSignature(previous) === outreachPersonSignature(nextPeople)
-          ? previous
-          : nextPeople,
-      );
-    } finally {
-      if (requestId === peopleCacheRequestIdRef.current) {
-        setPeopleCacheLoading(false);
-        setPeopleCacheReady(true);
+      if (!isSilent) {
+        setPeopleCacheLoading(true);
       }
-    }
-  }, [accessToken, activeProjectId]);
+
+      try {
+        const people = await fetchOutreachPeopleCache(
+          activeProjectId,
+          accessToken,
+        );
+
+        if (requestId !== peopleCacheRequestIdRef.current) {
+          return;
+        }
+
+        const nextPeople = people.map((person) => ({
+          ...person,
+          stage: mapCrmStageToOutreachStage(person.stage),
+          warmPath: person.warmPath || '—',
+          email: person.email || '',
+          companyId: person.companyId || '',
+          companyName: person.companyName || '',
+          title: person.title || '',
+          linkedinUrl: person.linkedinUrl || '',
+          candidateId: undefined,
+        }));
+
+        setEphemeralPeople((previous) =>
+          outreachPersonSignature(previous) ===
+          outreachPersonSignature(nextPeople)
+            ? previous
+            : nextPeople,
+        );
+      } finally {
+        if (requestId === peopleCacheRequestIdRef.current) {
+          setPeopleCacheLoading(false);
+          setPeopleCacheReady(true);
+        }
+      }
+    },
+    [accessToken, activeProjectId],
+  );
 
   useEffect(() => {
     if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
@@ -436,15 +453,24 @@ export const useOutreachLiveWorkingSet = () => {
 
     void refreshPeopleCache();
 
-    const pollIntervalId = window.setInterval(() => {
-      void refreshPeopleCache();
-    }, 5000);
-
     return () => {
       peopleCacheRequestIdRef.current += 1;
-      window.clearInterval(pollIntervalId);
     };
   }, [accessToken, activeProjectId, refreshPeopleCache]);
+
+  const handlePeopleCacheSocketUpdate = useCallback(() => {
+    void refreshPeopleCache({ silent: true });
+  }, [refreshPeopleCache]);
+
+  const handleCompaniesCacheSocketUpdate = useCallback(() => {
+    void refreshCompaniesCache({ silent: true });
+  }, [refreshCompaniesCache]);
+
+  useOutreachCacheSocket({
+    projectId: activeProjectId,
+    onPeopleUpdated: handlePeopleCacheSocketUpdate,
+    onCompaniesUpdated: handleCompaniesCacheSocketUpdate,
+  });
 
   const setCompanies = useCallback(
     async (companies: OutreachCompanyRow[]) => {
@@ -672,10 +698,9 @@ export const useOutreachLiveWorkingSet = () => {
         const outreachResumeAt = resolveCandidateOutreachResumeAt(candidate);
 
         const nextStepLabel = runSummary
-          ? resolveOutreachNextStepLabel({
+          ? resolveOutreachPendingStepLabel({
               currentStepName: runSummary.currentStepName,
               currentStepKind: runSummary.currentStepKind,
-              resumeAt: runSummary.resumeAt,
               pendingReason: runSummary.pendingReason,
             })
           : candidate.pendingChannel
@@ -687,6 +712,13 @@ export const useOutreachLiveWorkingSet = () => {
                     candidate.outreachSequenceStage ?? 'QUEUED',
                   linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
                 });
+        const nextRetryAt = runSummary
+          ? resolveOutreachNextRetryAt({
+              currentStepKind: runSummary.currentStepKind,
+              resumeAt: runSummary.resumeAt,
+              pendingReason: runSummary.pendingReason,
+            })
+          : null;
 
         return {
           id: candidate.peopleId ?? candidate.id,
@@ -706,10 +738,21 @@ export const useOutreachLiveWorkingSet = () => {
           linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
           outreachResumeAt,
           nextStepLabel,
+          nextRetryAt,
           needsApproval: runSummary?.needsApproval ?? false,
           experimentVariant: normalizeExperimentVariant(
             candidate.experimentVariant,
           ),
+          messagesExchanged: formatMessagesExchanged(candidate.chatMessages),
+          outreachConversationStage:
+            candidate.outreachConversationStage ?? 'NONE',
+          lastInboundCopy: formatLastInboundMessage(candidate.chatMessages),
+          lastInboundAt:
+            resolveCandidateLastInboundAt(candidate) ??
+            resolveLastInboundChat(candidate.chatMessages)?.createdAt ??
+            null,
+          lastOutboundAt: resolveCandidateLastOutboundAt(candidate),
+          replyAfterTouch: formatReplyAfterTouch(candidate),
         };
       }),
     [journeySummary?.byCandidateId, projectCandidates],
@@ -813,8 +856,8 @@ export const useOutreachLiveWorkingSet = () => {
   const peopleLoading =
     !peopleCacheReady || peopleCacheLoading || projectCandidatesLoading;
 
-  // Page shell loading only — do not include people/companies poll flags.
-  // Those flip every 5s and would unmount People/Companies tabs (DataTable remount loop).
+  // Page shell loading only — do not include people/companies fetch flags.
+  // Socket-driven cache refreshes are silent so they cannot remount People/Companies tabs.
   return {
     loading:
       projectsLoading || workspaceProfilesLoading || isResolvingProject,

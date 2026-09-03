@@ -19,6 +19,8 @@ describe('buildPeopleApiOpenApiDocument', () => {
         '/people-api/taxonomy/function-roots',
         '/people-api/taxonomy/functions',
         '/people-api/taxonomy/grades',
+        '/people-api/taxonomy/slice',
+        '/people-api/taxonomy/classify-llm',
         '/people-api/taxonomy/boolean-strings',
         '/people-api/taxonomy/manual-boolean-queries',
         '/people-api/titles/expand',
@@ -65,9 +67,11 @@ describe('buildPeopleApiOpenApiDocument', () => {
     ).toBeUndefined();
     expect(
       (
-        searchRequest.properties as {
-          limit?: { maximum?: number };
-        } | undefined
+        searchRequest.properties as
+          | {
+              limit?: { maximum?: number };
+            }
+          | undefined
       )?.limit?.maximum,
     ).toBe(500);
     expect(
@@ -88,11 +92,13 @@ describe('buildPeopleApiOpenApiDocument', () => {
     expect(searchRequest.properties?.candidateSource).toBeUndefined();
     expect(searchRequest.properties?.dataSource).toBeDefined();
     expect(
-      (searchRequest.properties?.dataSource as { enum?: string[]; default?: string })
-        ?.enum,
-    ).toEqual(
-      expect.arrayContaining(['auto', 'index', 'unipile', 'pool']),
-    );
+      (
+        searchRequest.properties?.dataSource as {
+          enum?: string[];
+          default?: string;
+        }
+      )?.enum,
+    ).toEqual(expect.arrayContaining(['auto', 'index', 'unipile', 'pool']));
     expect(
       (searchRequest.properties?.dataSource as { default?: string }).default,
     ).toBe('auto');
@@ -117,6 +123,19 @@ describe('buildPeopleApiOpenApiDocument', () => {
       limit: 10,
     });
     expect(jsonBody?.examples).toBeUndefined();
+
+    const classifyLlmRequest = doc.components?.schemas
+      ?.TaxonomyClassifyLlmRequest as {
+      properties?: {
+        job_titles?: { maxItems?: number };
+        profiles?: { maxItems?: number; description?: string };
+      };
+    };
+    expect(classifyLlmRequest.properties?.job_titles?.maxItems).toBe(200);
+    expect(classifyLlmRequest.properties?.profiles?.maxItems).toBe(200);
+    expect(classifyLlmRequest.properties?.profiles?.description).toMatch(
+      /formatted profile/i,
+    );
 
     console.log('[people-api.openapi] paths', paths);
   });

@@ -522,6 +522,20 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'List Taxonomy Grades (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
+    name: 'list_taxonomy_slice',
+    pack: 'prospecting',
+    label: 'List Taxonomy Slice',
+    description:
+      'List child std_function labels for one root plus std_grade nouns (prospecting pack).',
+  },
+  {
+    name: 'classify_taxonomy_profile',
+    pack: 'prospecting',
+    label: 'Classify Taxonomy Profile',
+    description:
+      'Classify a formatted profile or job title into std function/grade labels (prospecting pack). Prefer search_people_api with naturalLanguage to find people.',
+  },
+  {
     name: 'find_person_in_arxena_internal',
     pack: 'accounts',
     label: 'Find Person In Arxena Internal',

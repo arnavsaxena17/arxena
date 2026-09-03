@@ -492,6 +492,7 @@ export const CandidateChatDrawer = React.memo(() => {
     snoozeJourney,
     skipDelayStep,
     approveFormStep,
+    updateOperatorControls,
   } = useCandidateOutreachJourney({
     projectId: outreachProjectId,
     candidateId: enrolledCandidateId,
@@ -1177,6 +1178,7 @@ export const CandidateChatDrawer = React.memo(() => {
         candidateData={candidateData}
         outreachStageLabel={outreachHeaderLabels.outreachStageLabel}
         outreachNextStepLabel={outreachHeaderLabels.outreachNextStepLabel}
+        outreachNextRetryLabel={outreachHeaderLabels.outreachNextRetryLabel}
         pendingChannel={outreachHeaderLabels.pendingChannel}
       />
       <TabContainer>
@@ -1206,6 +1208,9 @@ export const CandidateChatDrawer = React.memo(() => {
                   )
                 }
                 onSnooze={(resumeAt) => void snoozeJourney(resumeAt)}
+                onUpdateOperatorControls={(input) =>
+                  void updateOperatorControls(input)
+                }
                 onSkipDelay={(workflowRunId, stepId) =>
                   void skipDelayStep(workflowRunId, stepId)
                 }

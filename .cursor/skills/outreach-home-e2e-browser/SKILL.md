@@ -75,7 +75,7 @@ logged-in session if `/outreach-home` already renders.
 | Layer | Companies | People |
 | --- | --- | --- |
 | Ephemeral | Redis `upsert_outreach_target_companies` | Redis `upsert_outreach_target_people` |
-| UI | Companies tab (poll ~5s) | People tab (poll + merge CRM) |
+| UI | Companies tab (socket refresh) | People tab (socket refresh + merge CRM) |
 | CRM | Only on enroll / Add to CRM | Only on enroll / Add to CRM |
 
 Do **not** expect `create_candidate` during discovery. Agent must call the

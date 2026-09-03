@@ -4,7 +4,6 @@ export function resolveOutreachJourneyStageLabel({
   outreachSequenceStage,
   linkedinFollowUpCount,
   hasFormPending,
-  isPersonaDeferred,
 }: {
   outreachSequenceStage: string;
   linkedinFollowUpCount?: number;
@@ -17,10 +16,16 @@ export function resolveOutreachJourneyStageLabel({
     return 'Follow-up with action / reminder';
   }
 
+  if (stage === 'WAITING_REPLY') {
+    return 'Waiting for reply';
+  }
+
+  if (stage === 'FAILED_NO_REPLY') {
+    return 'Failed no reply';
+  }
+
   if (stage === 'DEFERRED') {
-    return isPersonaDeferred === true
-      ? 'Waiting for slot'
-      : 'Snoozed by candidate';
+    return 'Waiting for slot';
   }
 
   if (stage === 'CONNECTION_ACCEPTED') {

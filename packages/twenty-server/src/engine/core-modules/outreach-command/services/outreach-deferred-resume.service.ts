@@ -25,6 +25,7 @@ type CandidateRecord = ObjectLiteral & {
   id: string;
   projectsId?: string | null;
   outreachSequenceStage?: string | null;
+  outreachConversationStage?: string | null;
   outreachAnalytics?: unknown;
 };
 
@@ -55,9 +56,10 @@ export class OutreachDeferredResumeService {
 
         const now = new Date();
         const dueCandidates = await candidateRepository.find({
-          where: {
-            outreachSequenceStage: 'DEFERRED',
-          },
+          where: [
+            { outreachSequenceStage: 'DEFERRED' },
+            { outreachConversationStage: 'SNOOZED' },
+          ],
           take: 500,
         });
 
@@ -76,21 +78,13 @@ export class OutreachDeferredResumeService {
             continue;
           }
 
-          const nextStage =
-            resolveOutreachStageBeforeDefer(candidate.outreachAnalytics) ??
-            'CONNECTION_ACCEPTED';
+          const resumePatch = buildOutreachSnoozeResumePatch(candidate);
 
-          await candidateRepository.update(candidate.id, {
-            outreachSequenceStage: nextStage,
-            outreachAnalytics: patchOutreachAnalyticsDeferredResume({
-              existingAnalytics: candidate.outreachAnalytics,
-              clearResume: true,
-            }),
-          });
+          await candidateRepository.update(candidate.id, resumePatch);
 
           resumed += 1;
           this.logger.log(
-            `Resumed deferred candidate ${candidate.id} → ${nextStage}`,
+            `Resumed deferred candidate ${candidate.id}`,
           );
         }
 
@@ -124,36 +118,27 @@ export class OutreachDeferredResumeService {
           where: { id: candidateId },
         });
 
-        if (!candidate || candidate.outreachSequenceStage !== 'DEFERRED') {
+        if (
+          !candidate ||
+          (candidate.outreachSequenceStage !== 'DEFERRED' &&
+            candidate.outreachConversationStage !== 'SNOOZED')
+        ) {
           return;
         }
 
-        const nextStage =
-          resolveOutreachStageBeforeDefer(candidate.outreachAnalytics) ??
-          'CONNECTION_ACCEPTED';
-
-        const outreachAnalytics = patchOutreachAnalyticsDeferredResume({
-          existingAnalytics: candidate.outreachAnalytics,
-          clearResume: true,
-        });
+        const resumePatch = buildOutreachSnoozeResumePatch(candidate);
 
         if (apiToken) {
           await this.staticGraphQLService.executeGraphQL(
             graphQltoUpdateOneCandidate,
             {
               idToUpdate: candidateId,
-              input: {
-                outreachSequenceStage: nextStage,
-                outreachAnalytics,
-              },
+              input: resumePatch,
             },
             apiToken,
           );
         } else {
-          await candidateRepository.update(candidateId, {
-            outreachSequenceStage: nextStage,
-            outreachAnalytics,
-          });
+          await candidateRepository.update(candidateId, resumePatch);
         }
       },
       authContext,
@@ -179,18 +164,43 @@ export class OutreachDeferredResumeService {
   }
 }
 
+const buildOutreachSnoozeResumePatch = (
+  candidate: CandidateRecord,
+): Record<string, unknown> => {
+  const outreachAnalytics = patchOutreachAnalyticsDeferredResume({
+    existingAnalytics: candidate.outreachAnalytics,
+    clearResume: true,
+  });
+
+  if (candidate.outreachConversationStage === 'SNOOZED') {
+    return {
+      outreachConversationStage: 'NONE',
+      outreachAnalytics,
+    };
+  }
+
+  const nextStage =
+    resolveOutreachStageBeforeDefer(candidate.outreachAnalytics) ??
+    'CONNECTION_ACCEPTED';
+
+  return {
+    outreachSequenceStage: nextStage,
+    outreachAnalytics,
+  };
+};
+
 export const buildDeferredResumeFields = ({
-  classifiedStage,
+  classifiedConversationStage,
   extractedTimeHint,
   currentStage,
   existingAnalytics,
 }: {
-  classifiedStage: string;
+  classifiedConversationStage: string;
   extractedTimeHint?: string;
   currentStage?: string | null;
   existingAnalytics?: unknown;
 }): Record<string, unknown> => {
-  if (classifiedStage.toUpperCase() !== 'DEFERRED') {
+  if (classifiedConversationStage.toUpperCase() !== 'SNOOZED') {
     return {};
   }
 
