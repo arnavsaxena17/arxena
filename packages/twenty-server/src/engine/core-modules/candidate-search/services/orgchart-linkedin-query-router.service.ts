@@ -276,48 +276,85 @@ export class OrgchartLinkedInQueryRouterService {
       hasMeaningfulOrgChartFunctionRootFilter(args.functionRoot) &&
       !precomputedKeywords
     ) {
+      // First try the curated manual boolean query for this std_function_root
+      // with blank grade (= all-grades row), which covers the entire function
+      // irrespective of seniority — ideal for org chart function-root fetches.
+      let resolvedViaManual = false;
       try {
-        const generated =
-          await this.pythonQueryGenerationService.generateSearchParameters(
-            {
-              function_root: [
-                { name: args.functionRoot.trim(), exclude: false },
-              ],
-              company_names: args.primaryCompanyName
-                ? [args.primaryCompanyName]
-                : [],
-            },
-            args.searchType,
-            args.requirement,
-          );
-        const classicKeywords =
-          generated.classicPeopleSearch?.keywords?.trim() || undefined;
-        const strategyKeywords =
-          generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
-            ?.keywords;
-        const salesNavKeywords =
-          typeof strategyKeywords === 'string'
-            ? strategyKeywords.trim()
-            : undefined;
-        const classicPeopleSearch = generated.classicPeopleSearch as
-          | { job_title?: string }
-          | undefined;
-        const jobTitleClause = wrapJobTitleAsOrClause(
-          classicPeopleSearch?.job_title ??
-            generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
-              ?.role?.include?.[0] ??
-            null,
-        );
-        functionRootKeywords = classicKeywords || salesNavKeywords;
-        if (!functionRootKeywords) {
-          functionRootJobTitle = jobTitleClause;
+        const manualResult =
+          await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+            kind: 'std_function_root',
+            label: args.functionRoot.trim(),
+            stdGrade: '',
+          });
+        const manualRow = manualResult?.items?.[0];
+        if (manualRow) {
+          const manualKeywords = manualRow.keywords?.trim() || undefined;
+          const manualJobTitle = manualRow.boolean_query?.trim() || undefined;
+          if (manualKeywords || manualJobTitle) {
+            functionRootKeywords = manualKeywords;
+            if (!functionRootKeywords) {
+              functionRootJobTitle = manualJobTitle;
+            }
+            resolvedViaManual = true;
+            this.logger.log(
+              `Orgchart router: using manual boolean query for functionRoot="${args.functionRoot}" keywords="${manualKeywords ?? ''}" jobTitle="${manualJobTitle ?? ''}"`,
+            );
+          }
         }
       } catch (error) {
         this.logger.warn(
-          `Orgchart router: function-root keyword generation for pre-resolved facets failed: ${
+          `Orgchart router: manual boolean query lookup for functionRoot="${args.functionRoot}" failed, falling back to auto-OR: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );
+      }
+
+      // Fall back to auto-generated OR query from python query-set generator
+      if (!resolvedViaManual) {
+        try {
+          const generated =
+            await this.pythonQueryGenerationService.generateSearchParameters(
+              {
+                function_root: [
+                  { name: args.functionRoot.trim(), exclude: false },
+                ],
+                company_names: args.primaryCompanyName
+                  ? [args.primaryCompanyName]
+                  : [],
+              },
+              args.searchType,
+              args.requirement,
+            );
+          const classicKeywords =
+            generated.classicPeopleSearch?.keywords?.trim() || undefined;
+          const strategyKeywords =
+            generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
+              ?.keywords;
+          const salesNavKeywords =
+            typeof strategyKeywords === 'string'
+              ? strategyKeywords.trim()
+              : undefined;
+          const classicPeopleSearch = generated.classicPeopleSearch as
+            | { job_title?: string }
+            | undefined;
+          const jobTitleClause = wrapJobTitleAsOrClause(
+            classicPeopleSearch?.job_title ??
+              generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters
+                ?.role?.include?.[0] ??
+              null,
+          );
+          functionRootKeywords = classicKeywords || salesNavKeywords;
+          if (!functionRootKeywords) {
+            functionRootJobTitle = jobTitleClause;
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Orgchart router: function-root keyword generation for pre-resolved facets failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     }
 
