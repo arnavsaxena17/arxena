@@ -135,11 +135,13 @@ export class SyncOutreachConversationStageAndWorkflowCCommand extends Provisione
       return;
     }
 
+    // Cast to text: PG rejects enum literals that are not on the type even in
+    // WHERE IN (...), which breaks workspaces that never had LEAD_LOST/IRRELEVANT
     await this.coreDataSource.query(
       `
         UPDATE "${schemaName}"."${CANDIDATE_TABLE_NAME}"
         SET "outreachConversationStage" = 'NOT_INTERESTED'
-        WHERE "outreachConversationStage" IN ('LEAD_LOST', 'IRRELEVANT')
+        WHERE "outreachConversationStage"::text IN ('LEAD_LOST', 'IRRELEVANT')
           AND "deletedAt" IS NULL
       `,
     );

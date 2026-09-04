@@ -1,7 +1,7 @@
 import * as go from 'gojs';
 import {
   computeOrgChartGradeBandYs,
-  resolveNodeGradeTiers,
+  resolveNodeGradeTier,
   type OrgChartGradeTier,
 } from 'twenty-shared/utils';
 
@@ -12,6 +12,7 @@ const ALIGNABLE_GRADE_TIERS: OrgChartGradeTier[] = [
 ];
 
 const ALIGNMENT_EPSILON_PX = 1;
+const MIXED_DEPTH_THRESHOLD_PX = 24;
 
 type GradeLayoutNode = {
   node: go.Node;
@@ -25,7 +26,7 @@ const readNodeTier = (
   if (!data) {
     return null;
   }
-  return resolveNodeGradeTiers({
+  return resolveNodeGradeTier({
     std_grade:
       typeof data.std_grade === 'string' ? data.std_grade : undefined,
     std_grade_category:
@@ -135,9 +136,75 @@ export const alignTreeNodesByGradeTier = (layout: go.TreeLayout): void => {
   }
 };
 
+const collectTreeChildLinks = (parent: go.Node): go.Link[] => {
+  const links: go.Link[] = [];
+  const iterator = parent.findTreeChildrenLinks();
+  while (iterator.next()) {
+    links.push(iterator.value);
+  }
+  return links;
+};
+
+// TreeLayout's child bus sits near the shallow children. After grade shifts,
+// that bus cuts through deeper nodes — move it just under the parent instead.
+export const rerouteMixedDepthTreeLinks = (layout: go.TreeLayout): void => {
+  const diagram = layout.diagram;
+  if (!diagram) {
+    return;
+  }
+
+  const busOffsetPx = Math.max(8, Math.min(layout.layerSpacing, 24));
+
+  diagram.nodes.each((parent) => {
+    const childLinks = collectTreeChildLinks(parent);
+    if (childLinks.length < 2) {
+      return;
+    }
+
+    let minChildTopY = Number.POSITIVE_INFINITY;
+    let maxChildTopY = Number.NEGATIVE_INFINITY;
+    const routedChildren: Array<{ link: go.Link; childTop: go.Point }> = [];
+
+    for (const link of childLinks) {
+      const child = link.toNode;
+      if (!child || !child.location.isReal()) {
+        continue;
+      }
+      const childTop = child.getDocumentPoint(go.Spot.Top);
+      minChildTopY = Math.min(minChildTopY, childTop.y);
+      maxChildTopY = Math.max(maxChildTopY, childTop.y);
+      routedChildren.push({ link, childTop });
+    }
+
+    if (
+      routedChildren.length < 2 ||
+      maxChildTopY - minChildTopY < MIXED_DEPTH_THRESHOLD_PX
+    ) {
+      return;
+    }
+
+    const parentBottom = parent.getDocumentPoint(go.Spot.Bottom);
+    const busY = parentBottom.y + busOffsetPx;
+
+    for (const { link, childTop } of routedChildren) {
+      const points = new go.List<go.Point>();
+      points.add(parentBottom.copy());
+      points.add(new go.Point(parentBottom.x, busY));
+      points.add(new go.Point(childTop.x, busY));
+      points.add(childTop.copy());
+      link.points = points;
+    }
+  });
+};
+
 export class GradeAlignedTreeLayout extends go.TreeLayout {
   override commitNodes(): void {
     super.commitNodes();
     alignTreeNodesByGradeTier(this);
+  }
+
+  override commitLinks(): void {
+    super.commitLinks();
+    rerouteMixedDepthTreeLinks(this);
   }
 }

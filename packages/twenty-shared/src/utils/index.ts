@@ -262,6 +262,7 @@ export {
 } from './linkedinUnipileSearchPageLimit';
 export { getAppPath } from './navigation/getAppPath';
 export { getSettingsPath } from './navigation/getSettingsPath';
+export { computeOrgChartGradeBandYs } from './orgchart/computeOrgChartGradeBandYs';
 export type {
   OrgChartGradeTier,
   OrgChartGradeVisibility,
@@ -270,12 +271,11 @@ export type {
 export {
   DEFAULT_ORG_CHART_GRADE_VISIBILITY,
   hasActiveOrgChartGradeFilter,
+  resolveNodeGradeTier,
   hasMeaningfulOrgChartCountryFilter,
   hasMeaningfulOrgChartFunctionRootFilter,
   filterOrgChartNodeDataArray,
-  resolveNodeGradeTier,
 } from './orgchart/filterOrgChartNodeDataArray';
-export { computeOrgChartGradeBandYs } from './orgchart/computeOrgChartGradeBandYs';
 export { getProxiedImageUrl } from './orgchart/getProxiedImageUrl';
 export { isValidLinkedInProfileUrl } from './orgchart/isValidLinkedInProfileUrl';
 export type {
