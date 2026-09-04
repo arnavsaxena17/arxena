@@ -141,6 +141,7 @@ const PEOPLE_QUEUE_CHIPS = [
   { id: 'connection_sent', label: 'Connect sent' },
   { id: 'awaiting_reply', label: 'Awaiting reply' },
   { id: 'needs_approval', label: 'Needs approval' },
+  { id: 'workflow_failed', label: 'Workflow failed' },
   { id: 'intent', label: 'Intent' },
   { id: 'follow_up_due', label: 'Follow-up due' },
   { id: 'meeting_booked', label: 'Meeting booked' },
@@ -336,6 +337,7 @@ export const OutreachPeoplePanel = ({
       awaiting_reply:
         (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0),
       needs_approval: journeySummary.needsApproval,
+      workflow_failed: journeySummary.workflowFailed ?? 0,
       intent: byConversation.INTENT ?? 0,
       follow_up_due: journeySummary.dueThisWeek,
       meeting_booked: byConversation.MEETING_BOOKED ?? 0,
@@ -389,6 +391,10 @@ export const OutreachPeoplePanel = ({
 
       if (stageFilter === 'needs_approval') {
         if (person.needsApproval !== true) {
+          return false;
+        }
+      } else if (stageFilter === 'workflow_failed') {
+        if (person.workflowRunStatus !== 'FAILED') {
           return false;
         }
       } else if (stageFilter === 'awaiting_reply') {
@@ -527,8 +533,7 @@ export const OutreachPeoplePanel = ({
   }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
 
   const deferredCandidateId = selectedPeople.find(
-    (person) =>
-      person.stage === 'deferred' && isDefined(person.candidateId),
+    (person) => person.stage === 'deferred' && isDefined(person.candidateId),
   )?.candidateId;
 
   const stoppableCandidateIds = selectedPeople

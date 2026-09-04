@@ -75,4 +75,16 @@ describe('resolveOutreachJourneyLabels', () => {
       }),
     ).toBe('Needs approval');
   });
+
+  it('should surface failed workflow step errors', () => {
+    expect(
+      resolveOutreachPendingStepLabel({
+        currentStepName: 'Fetch LinkedIn messages',
+        currentStepKind: 'FAILED',
+        pendingReason: null,
+        errorMessage: 'Attendee not found',
+        status: 'FAILED',
+      }),
+    ).toBe('Fetch LinkedIn messages · Attendee not found');
+  });
 });

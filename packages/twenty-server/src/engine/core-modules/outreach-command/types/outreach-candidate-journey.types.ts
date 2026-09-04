@@ -10,6 +10,7 @@ export type CandidateOutreachJourneyActiveRun = {
   pendingFormStepId: string | null;
   draftPreview: string | null;
   upcomingSteps: string | null;
+  errorMessage: string | null;
 };
 
 export type CandidateOutreachJourneyStageHistoryEntry = {
@@ -27,6 +28,7 @@ export type CandidateOutreachJourney = {
   outreachResumeAt: string | null;
   outreachPaused: boolean;
   activeRuns: CandidateOutreachJourneyActiveRun[];
+  lastFailedRun: CandidateOutreachJourneyActiveRun | null;
   stageHistory: CandidateOutreachJourneyStageHistoryEntry[];
 };
 
@@ -37,6 +39,7 @@ export type OutreachProjectJourneySummary = {
   needsApproval: number;
   dueThisWeek: number;
   snoozed: number;
+  workflowFailed: number;
   byCandidateId: Record<string, OutreachCandidateRunSummary>;
 };
 
@@ -47,4 +50,5 @@ export type OutreachCandidateRunSummary = {
   resumeAt: string | null;
   pendingReason: string | null;
   needsApproval: boolean;
+  errorMessage: string | null;
 };

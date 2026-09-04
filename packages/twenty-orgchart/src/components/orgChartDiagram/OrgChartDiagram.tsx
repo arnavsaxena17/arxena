@@ -67,6 +67,7 @@ export const OrgChartDiagram = forwardRef<
       nodeCapabilitiesHoverCompanyName,
       m7kqContactMode = false,
       showLinkedInUrlOnNodes = false,
+      gradeAlignedLayout = false,
       onLockedContactChannelClick,
       colorScheme = 'light',
     },
@@ -130,6 +131,7 @@ export const OrgChartDiagram = forwardRef<
         showNodeCapabilitiesHoverHint,
         m7kqContactMode,
         showLinkedInUrlOnNodes,
+        gradeAlignedLayout,
         colorScheme,
       });
     }, [
@@ -138,6 +140,7 @@ export const OrgChartDiagram = forwardRef<
       showNodeCapabilitiesHoverHint,
       m7kqContactMode,
       showLinkedInUrlOnNodes,
+      gradeAlignedLayout,
       colorScheme,
     ]);
 

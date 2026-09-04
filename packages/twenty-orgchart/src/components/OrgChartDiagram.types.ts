@@ -73,6 +73,11 @@ export type OrgChartDiagramProps = {
    * (truncated) in addition to opening it on click.
    */
   showLinkedInUrlOnNodes?: boolean;
+  /**
+   * When true, managers/teams that hang under a higher parent are spaced onto
+   * grade bands with longer orthogonal drops. Default is the compact TreeLayout.
+   */
+  gradeAlignedLayout?: boolean;
   /** Clicks on greyed contact icons in m7kq mode — e.g. show upgrade snackbar. */
   onLockedContactChannelClick?: (
     node: OrgChartNodeData,

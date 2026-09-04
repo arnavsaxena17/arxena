@@ -3,7 +3,29 @@ import * as go from 'gojs';
 import type { OrgChartDiagramProps } from '../OrgChartDiagram.types';
 import { PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS } from './constants';
 import { buildOrgChartBackgroundContextMenu } from './contextMenus';
-import { GradeAlignedTreeLayout } from './gradeAlignedTreeLayout';
+import {
+  GradeAlignedTreeLayout,
+  compareTreeVertexByGradeTier,
+} from './gradeAlignedTreeLayout';
+
+const createDefaultTreeLayout = ($: typeof go.GraphObject.make): go.TreeLayout =>
+  $(go.TreeLayout, {
+    angle: 90,
+    layerSpacing: 35,
+    arrangement: go.TreeLayout.ArrangementHorizontal,
+  });
+
+const createGradeAlignedTreeLayout = (
+  $: typeof go.GraphObject.make,
+): GradeAlignedTreeLayout =>
+  $(GradeAlignedTreeLayout, {
+    angle: 90,
+    layerSpacing: 45,
+    nodeSpacing: 30,
+    arrangement: go.TreeLayout.ArrangementHorizontal,
+    sorting: go.TreeSorting.Ascending,
+    comparer: compareTreeVertexByGradeTier,
+  });
 
 export const initOrgChartDiagram = ({
   createNodeTemplate,
@@ -11,6 +33,7 @@ export const initOrgChartDiagram = ({
   showNodeCapabilitiesHoverHint,
   m7kqContactMode,
   showLinkedInUrlOnNodes = false,
+  gradeAlignedLayout = false,
   colorScheme = 'light',
 }: {
   createNodeTemplate: () => go.Node;
@@ -18,6 +41,7 @@ export const initOrgChartDiagram = ({
   showNodeCapabilitiesHoverHint: boolean;
   m7kqContactMode: boolean;
   showLinkedInUrlOnNodes?: boolean;
+  gradeAlignedLayout?: boolean;
   colorScheme?: OrgChartDiagramProps['colorScheme'];
 }): go.Diagram => {
   const $ = go.GraphObject.make;
@@ -37,14 +61,9 @@ export const initOrgChartDiagram = ({
       'undoManager.isEnabled': true,
       initialContentAlignment: go.Spot.Default,
       validCycle: go.Diagram.CycleDestinationTree,
-      layout: $(
-        GradeAlignedTreeLayout,
-        {
-          angle: 90,
-          layerSpacing: 35,
-          arrangement: go.TreeLayout.ArrangementHorizontal,
-        },
-      ),
+      layout: gradeAlignedLayout
+        ? createGradeAlignedTreeLayout($)
+        : createDefaultTreeLayout($),
       model: $(
         go.TreeModel,
         {
@@ -81,7 +100,7 @@ export const initOrgChartDiagram = ({
     '#094AB2',
   ];
 
-  const layout = diagram.layout as GradeAlignedTreeLayout;
+  const layout = diagram.layout as go.TreeLayout;
   const baseCommitNodes = layout.commitNodes.bind(layout);
 
   layout.commitNodes = function commitNodesWithLevelColors() {

@@ -31,6 +31,7 @@ import {
   SEQUENCE_DELAY_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { parseOutreachResumeAtFromHint } from 'src/engine/core-modules/outreach-command/utils/parse-outreach-resume-at.util';
+import { buildFailedRunSummaryFields } from 'src/engine/core-modules/outreach-command/utils/extract-workflow-run-failed-step.util';
 import {
   normalizeWorkflowRunStepDeferralFields,
   readWorkflowRunStepPendingReason,
@@ -178,11 +179,19 @@ export class OutreachCandidateJourneyService {
           workspaceId,
           candidateId,
         });
+        const lastFailedRun =
+          activeRuns.length === 0
+            ? await this.findLatestFailedRunForCandidate({
+                workspaceId,
+                candidateId,
+              })
+            : null;
 
         return this.buildJourneyResponse({
           candidate,
           projectId,
           activeRuns,
+          lastFailedRun,
         });
       },
       authContext,
@@ -293,9 +302,9 @@ export class OutreachCandidateJourneyService {
               null;
 
             const pendingReason = pendingStepId
-              ? readWorkflowRunStepPendingReason(
+              ? (readWorkflowRunStepPendingReason(
                   run.state?.stepInfos?.[pendingStepId] ?? {},
-                ) ?? null
+                ) ?? null)
               : null;
 
             const runNeedsApproval =
@@ -328,10 +337,52 @@ export class OutreachCandidateJourneyService {
                 resumeAt: progress.resumeAt,
                 pendingReason,
                 needsApproval: runNeedsApproval,
+                errorMessage: null,
+              };
+            }
+          }
+
+          const candidatesWithoutActiveRun = candidateIds.filter(
+            (candidateId) => !isDefined(byCandidateId[candidateId]),
+          );
+
+          if (candidatesWithoutActiveRun.length > 0) {
+            const failedRuns = await workflowRunRepository.find({
+              where: {
+                candidateId: In(candidatesWithoutActiveRun),
+                status: WorkflowRunStatus.FAILED,
+              },
+              order: { createdAt: 'DESC' },
+              take: 5000,
+            });
+
+            for (const run of failedRuns) {
+              if (!isNonEmptyString(run.candidateId)) {
+                continue;
+              }
+
+              if (isDefined(byCandidateId[run.candidateId])) {
+                continue;
+              }
+
+              const failedFields = buildFailedRunSummaryFields(run);
+
+              byCandidateId[run.candidateId] = {
+                status: run.status,
+                currentStepName: failedFields.currentStepName,
+                currentStepKind: failedFields.currentStepKind,
+                resumeAt: null,
+                pendingReason: null,
+                needsApproval: false,
+                errorMessage: failedFields.errorMessage,
               };
             }
           }
         }
+
+        const workflowFailed = Object.values(byCandidateId).filter(
+          (summary) => summary.status === WorkflowRunStatus.FAILED,
+        ).length;
 
         return {
           totalEnrolled: candidates.length,
@@ -340,6 +391,7 @@ export class OutreachCandidateJourneyService {
           needsApproval,
           dueThisWeek: dueCandidateIds.size,
           snoozed,
+          workflowFailed,
           byCandidateId,
         };
       },
@@ -592,8 +644,7 @@ export class OutreachCandidateJourneyService {
       throw new Error('Invalid outreach conversation stage');
     }
 
-    const shouldStopSequence =
-      outreachConversationStage === 'NOT_INTERESTED';
+    const shouldStopSequence = outreachConversationStage === 'NOT_INTERESTED';
 
     if (shouldStopSequence) {
       await this.outreachProjectOutreachControlService.stopCandidates({
@@ -604,9 +655,7 @@ export class OutreachCandidateJourneyService {
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
-    const resumeAtDate = isNonEmptyString(resumeAt)
-      ? new Date(resumeAt)
-      : null;
+    const resumeAtDate = isNonEmptyString(resumeAt) ? new Date(resumeAt) : null;
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
@@ -688,10 +737,12 @@ export class OutreachCandidateJourneyService {
       async () => {
         await this.getCandidateOrFail({ workspaceId, projectId, candidateId });
 
-        const run = await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
-          workflowRunId,
-          workspaceId,
-        });
+        const run = await this.workflowRunWorkspaceService.getWorkflowRunOrFail(
+          {
+            workflowRunId,
+            workspaceId,
+          },
+        );
 
         if (run.candidateId !== candidateId) {
           throw new Error('Workflow run does not belong to candidate');
@@ -785,7 +836,9 @@ export class OutreachCandidateJourneyService {
     extractedTimeHint: string;
     currentStage?: string | null;
     existingAnalytics?: unknown;
-  }): { outreachAnalytics: ReturnType<typeof patchOutreachAnalyticsDeferredResume> } {
+  }): {
+    outreachAnalytics: ReturnType<typeof patchOutreachAnalyticsDeferredResume>;
+  } {
     const resumeAt = parseOutreachResumeAtFromHint(extractedTimeHint) ?? null;
     const stageBeforeDefer =
       isNonEmptyString(currentStage) &&
@@ -806,48 +859,19 @@ export class OutreachCandidateJourneyService {
     candidate,
     projectId,
     activeRuns,
+    lastFailedRun,
   }: {
     candidate: CandidateRecord;
     projectId: string;
     activeRuns: WorkflowRunRecord[];
+    lastFailedRun: WorkflowRunRecord | null;
   }): CandidateOutreachJourney {
     const mappedRuns: CandidateOutreachJourneyActiveRun[] = activeRuns.map(
-      (run) => {
-        const progress = computeWorkflowRunProgressFields({
-          state: run.state,
-          status: run.status,
-        });
-        const pendingFormStepId = findPendingFormStepId(run);
-        const pendingStepId =
-          pendingFormStepId ??
-          Object.entries(run.state?.stepInfos ?? {}).find(
-            ([, stepInfo]) => stepInfo.status === StepStatus.PENDING,
-          )?.[0] ??
-          null;
-
-        const pendingReason = pendingStepId
-          ? readWorkflowRunStepPendingReason(
-              run.state?.stepInfos?.[pendingStepId] ?? {},
-            ) ?? null
-          : null;
-
-        return {
-          workflowRunId: run.id,
-          workflowName: run.name ?? 'Workflow run',
-          status: run.status,
-          currentStepName: progress.currentStepName,
-          currentStepKind: progress.currentStepKind,
-          resumeAt: progress.resumeAt,
-          pendingReason,
-          pendingStepId,
-          pendingFormStepId,
-          draftPreview: pendingFormStepId
-            ? extractDraftPreview(run, pendingFormStepId)
-            : null,
-          upcomingSteps: progress.upcomingSteps,
-        };
-      },
+      (run) => this.mapRunToJourneyActiveRun(run),
     );
+    const mappedFailedRun = isDefined(lastFailedRun)
+      ? this.mapRunToJourneyActiveRun(lastFailedRun)
+      : null;
 
     const outreachPaused = mappedRuns.some(
       (run) => run.pendingReason === OUTREACH_CANDIDATE_PAUSED_PENDING_REASON,
@@ -867,7 +891,54 @@ export class OutreachCandidateJourneyService {
       outreachResumeAt: resolveOutreachResumeAt(candidate.outreachAnalytics),
       outreachPaused,
       activeRuns: mappedRuns,
+      lastFailedRun: mappedFailedRun,
       stageHistory: this.buildStageHistory(candidate),
+    };
+  }
+
+  private mapRunToJourneyActiveRun(
+    run: WorkflowRunRecord,
+  ): CandidateOutreachJourneyActiveRun {
+    const progress = computeWorkflowRunProgressFields({
+      state: run.state,
+      status: run.status,
+    });
+    const pendingFormStepId = findPendingFormStepId(run);
+    const pendingStepId =
+      pendingFormStepId ??
+      Object.entries(run.state?.stepInfos ?? {}).find(
+        ([, stepInfo]) => stepInfo.status === StepStatus.PENDING,
+      )?.[0] ??
+      null;
+
+    const pendingReason = pendingStepId
+      ? (readWorkflowRunStepPendingReason(
+          run.state?.stepInfos?.[pendingStepId] ?? {},
+        ) ?? null)
+      : null;
+
+    const failedFields =
+      run.status === WorkflowRunStatus.FAILED
+        ? buildFailedRunSummaryFields(run)
+        : null;
+
+    return {
+      workflowRunId: run.id,
+      workflowName: run.name ?? 'Workflow run',
+      status: run.status,
+      currentStepName:
+        failedFields?.currentStepName ?? progress.currentStepName,
+      currentStepKind:
+        failedFields?.currentStepKind ?? progress.currentStepKind,
+      resumeAt: progress.resumeAt,
+      pendingReason,
+      pendingStepId,
+      pendingFormStepId,
+      draftPreview: pendingFormStepId
+        ? extractDraftPreview(run, pendingFormStepId)
+        : null,
+      upcomingSteps: progress.upcomingSteps,
+      errorMessage: failedFields?.errorMessage ?? null,
     };
   }
 
@@ -927,6 +998,29 @@ export class OutreachCandidateJourneyService {
       },
       order: { createdAt: 'DESC' },
       take: 20,
+    });
+  }
+
+  private async findLatestFailedRunForCandidate({
+    workspaceId,
+    candidateId,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+  }): Promise<WorkflowRunRecord | null> {
+    const workflowRunRepository =
+      await this.globalWorkspaceOrmManager.getRepository<WorkflowRunRecord>(
+        workspaceId,
+        'workflowRun',
+        { shouldBypassPermissionChecks: true },
+      );
+
+    return workflowRunRepository.findOne({
+      where: {
+        candidateId,
+        status: WorkflowRunStatus.FAILED,
+      },
+      order: { createdAt: 'DESC' },
     });
   }
 

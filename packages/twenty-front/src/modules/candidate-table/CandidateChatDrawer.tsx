@@ -1,13 +1,26 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { CandidateOutreachJourneyTab, resolveJourneyHeaderLabels } from '@/candidate-table/CandidateOutreachJourneyTab';
+import {
+  CandidateOutreachJourneyTab,
+  resolveJourneyHeaderLabels,
+} from '@/candidate-table/CandidateOutreachJourneyTab';
 import { CandidateWorkflowRunsTab } from '@/candidate-table/CandidateWorkflowRunsTab';
 import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { findSelectedTableRow, isUUID, resolveChatLookupIds } from '@/candidate-table/HotHooks';
-import { candidateDataState, processedDataSelector, selectedCandidateIdState, tableStateAtom, unreadMessagesCountsState } from '@/candidate-table/states/states';
+import {
+  findSelectedTableRow,
+  isUUID,
+  resolveChatLookupIds,
+} from '@/candidate-table/HotHooks';
+import {
+  candidateDataState,
+  processedDataSelector,
+  selectedCandidateIdState,
+  tableStateAtom,
+  unreadMessagesCountsState,
+} from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
@@ -18,10 +31,25 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { styled } from '@linaria/react';
 import axios from 'axios';
 import dayjs from 'dayjs';
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
-import { IconArrowsSplit2, IconFileText, IconMessage, IconSettingsAutomation, IconTimelineEvent, IconUser } from 'twenty-ui/icon';
+import {
+  IconArrowsSplit2,
+  IconFileText,
+  IconMessage,
+  IconSettingsAutomation,
+  IconTimelineEvent,
+  IconUser,
+} from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
@@ -73,8 +101,8 @@ const ChatView = styled.div`
 `;
 
 const DateSeparator = styled.div`
-  color: ${props => themeCssVariables.font.color.secondary};
-  font-size: ${props => themeCssVariables.font.size.sm};
+  color: ${(props) => themeCssVariables.font.color.secondary};
+  font-size: ${(props) => themeCssVariables.font.size.sm};
   margin: 16px 0;
   text-align: center;
 `;
@@ -85,7 +113,7 @@ const MessageContainer = styled.div`
 `;
 
 const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
-  background-color: ${props => {
+  background-color: ${(props) => {
     if (props.deliveryFailed && props.isSent) {
       return '#1e40af';
     }
@@ -93,17 +121,17 @@ const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
       ? themeCssVariables.color.blue
       : themeCssVariables.background.tertiary;
   }};
-  border: ${props =>
+  border: ${(props) =>
     props.deliveryFailed ? `2px solid ${themeCssVariables.color.red}` : 'none'};
-  border-bottom-left-radius: ${props => (props.isSent ? '16px' : '4px')};
-  border-bottom-right-radius: ${props => (props.isSent ? '4px' : '16px')};
+  border-bottom-left-radius: ${(props) => (props.isSent ? '16px' : '4px')};
+  border-bottom-right-radius: ${(props) => (props.isSent ? '4px' : '16px')};
   border-radius: 16px;
   box-sizing: border-box;
-  color: ${props =>
+  color: ${(props) =>
     props.isSent ? 'white' : themeCssVariables.font.color.primary};
   font-size: 14px;
   line-height: 1.5;
-  margin: ${props => props.isSent ? '8px 8px 8px auto' : '8px'};
+  margin: ${(props) => (props.isSent ? '8px 8px 8px auto' : '8px')};
   max-width: 70%;
   padding: 12px 16px;
   position: relative;
@@ -114,13 +142,13 @@ const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
 
 const MessageStatus = styled.div<{ isSent: boolean }>`
   align-items: center;
-  color: ${props => themeCssVariables.font.color.light};
+  color: ${(props) => themeCssVariables.font.color.light};
   display: flex;
   font-size: 11px;
   gap: 4px;
-  justify-content: ${props => props.isSent ? 'flex-end' : 'flex-start'};
+  justify-content: ${(props) => (props.isSent ? 'flex-end' : 'flex-start')};
   margin-top: 4px;
-  text-align: ${props => props.isSent ? 'right' : 'left'};
+  text-align: ${(props) => (props.isSent ? 'right' : 'left')};
 `;
 
 const StatusIcon = styled.span<{ status: string }>`
@@ -131,7 +159,7 @@ const StatusIcon = styled.span<{ status: string }>`
   width: 16px;
 
   &::before {
-    background-color: ${props => {
+    background-color: ${(props) => {
       switch (props.status) {
         case 'sent':
           return '#9CA3AF';
@@ -153,10 +181,10 @@ const StatusIcon = styled.span<{ status: string }>`
 `;
 
 const MessageTime = styled.div<{ isSent: boolean }>`
-  color: ${props => themeCssVariables.font.color.light};
+  color: ${(props) => themeCssVariables.font.color.light};
   font-size: 11px;
   margin-top: 4px;
-  text-align: ${props => props.isSent ? 'right' : 'left'};
+  text-align: ${(props) => (props.isSent ? 'right' : 'left')};
 `;
 
 const MessageGroup = styled.div`
@@ -164,8 +192,8 @@ const MessageGroup = styled.div`
 `;
 
 const DateLabel = styled.span`
-  background-color: ${props => themeCssVariables.background.primary};
-  color: ${props => themeCssVariables.font.color.light};
+  background-color: ${(props) => themeCssVariables.background.primary};
+  color: ${(props) => themeCssVariables.font.color.light};
   font-size: 12px;
   padding: 0 12px;
   position: relative;
@@ -174,72 +202,90 @@ const DateLabel = styled.span`
 
 // Message input styles
 const MessageInputContainer = styled.div`
-  background-color: ${props => themeCssVariables.background.primary};
-  border-top: 1px solid ${props => themeCssVariables.border.color.light};
+  background-color: ${(props) => themeCssVariables.background.primary};
+  border-top: 1px solid ${(props) => themeCssVariables.border.color.light};
   bottom: 0;
   box-sizing: border-box;
-  padding: ${props => themeCssVariables.spacing[2]};
+  padding: ${(props) => themeCssVariables.spacing[2]};
   position: sticky;
   width: 100%;
   z-index: 1;
 `;
 
 const MessageInputTabContainer = styled.div`
-  border-bottom: 1px solid ${props => themeCssVariables.border.color.light};
+  border-bottom: 1px solid ${(props) => themeCssVariables.border.color.light};
   box-sizing: border-box;
   display: flex;
-  margin-bottom: ${props => themeCssVariables.spacing[2]};
+  margin-bottom: ${(props) => themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const MessageInputTab = styled.div<{ isActive: boolean }>`
-  border-bottom: 2px solid ${props => props.isActive ? themeCssVariables.font.color.primary : 'transparent'};
-  color: ${props => props.isActive ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
+  border-bottom: 2px solid
+    ${(props) =>
+      props.isActive ? themeCssVariables.font.color.primary : 'transparent'};
+  color: ${(props) =>
+    props.isActive
+      ? themeCssVariables.font.color.primary
+      : themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-weight: ${props => props.isActive ? 'bold' : 'normal'};
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
+  font-weight: ${(props) => (props.isActive ? 'bold' : 'normal')};
+  padding: ${(props) => themeCssVariables.spacing[1]}
+    ${(props) => themeCssVariables.spacing[2]};
 `;
 
 const InputWrapper = styled.div`
   align-items: center;
   box-sizing: border-box;
   display: flex;
-  gap: ${props => themeCssVariables.spacing[2]};
+  gap: ${(props) => themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const StyledChatInput = styled.input`
-  background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
-  border: 1px solid ${props => themeCssVariables.border.color.medium};
-  border-radius: ${props => themeCssVariables.border.radius.md};
+  background-color: ${(props) =>
+    props.disabled
+      ? themeCssVariables.background.secondary
+      : themeCssVariables.background.primary};
+  border: 1px solid ${(props) => themeCssVariables.border.color.medium};
+  border-radius: ${(props) => themeCssVariables.border.radius.md};
   box-sizing: border-box;
-  color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
-  cursor: ${props => props.disabled ? 'not-allowed' : 'text'};
+  color: ${(props) =>
+    props.disabled
+      ? themeCssVariables.font.color.tertiary
+      : themeCssVariables.font.color.primary};
+  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'text')};
   flex: 1;
-  font-size: ${props => themeCssVariables.font.size.md}; /* Prevents input from overflowing */
+  font-size: ${(props) =>
+    themeCssVariables.font.size.md}; /* Prevents input from overflowing */
   min-width: 0;
   outline: none;
-  padding: ${props => themeCssVariables.spacing[2]};
+  padding: ${(props) => themeCssVariables.spacing[2]};
 
   &:focus:not(:disabled) {
-    border-color: ${props => themeCssVariables.font.color.primary};
+    border-color: ${(props) => themeCssVariables.font.color.primary};
   }
 `;
 
 const StyledButton = styled.button`
-  background-color: ${props => props.disabled ? themeCssVariables.color.gray : themeCssVariables.color.blue8};
+  background-color: ${(props) =>
+    props.disabled
+      ? themeCssVariables.color.gray
+      : themeCssVariables.color.blue8};
   border: none;
-  border-radius: ${props => themeCssVariables.border.radius.md};
-  color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : 'white'};
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  border-radius: ${(props) => themeCssVariables.border.radius.md};
+  color: ${(props) =>
+    props.disabled ? themeCssVariables.font.color.tertiary : 'white'};
+  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
   font-weight: 500;
-  opacity: ${props => props.disabled ? 0.6 : 1};
-  padding: ${props => themeCssVariables.spacing[2]} ${props => themeCssVariables.spacing[3]};
+  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
+  padding: ${(props) => themeCssVariables.spacing[2]}
+    ${(props) => themeCssVariables.spacing[3]};
   transition: all 0.2s ease;
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background-color: ${props => themeCssVariables.color.gray};
+    background-color: ${(props) => themeCssVariables.color.gray};
     color: black;
   }
 `;
@@ -248,68 +294,76 @@ const TemplateContainer = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: ${props => themeCssVariables.spacing[2]};
+  gap: ${(props) => themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const TemplateSelect = styled.select`
-  background-color: ${props => props.disabled ? themeCssVariables.background.secondary : themeCssVariables.background.primary};
-  border: 1px solid ${props => themeCssVariables.border.color.medium};
-  border-radius: ${props => themeCssVariables.border.radius.md};
+  background-color: ${(props) =>
+    props.disabled
+      ? themeCssVariables.background.secondary
+      : themeCssVariables.background.primary};
+  border: 1px solid ${(props) => themeCssVariables.border.color.medium};
+  border-radius: ${(props) => themeCssVariables.border.radius.md};
   box-sizing: border-box;
-  color: ${props => props.disabled ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  font-size: ${props => themeCssVariables.font.size.md};
+  color: ${(props) =>
+    props.disabled
+      ? themeCssVariables.font.color.tertiary
+      : themeCssVariables.font.color.primary};
+  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
+  font-size: ${(props) => themeCssVariables.font.size.md};
   outline: none;
-  padding: ${props => themeCssVariables.spacing[2]};
+  padding: ${(props) => themeCssVariables.spacing[2]};
   width: 100%;
 
   &:focus:not(:disabled) {
-    border-color: ${props => themeCssVariables.font.color.primary};
+    border-color: ${(props) => themeCssVariables.font.color.primary};
   }
 `;
 
 const TemplatePreview = styled.div`
-  background-color: ${props => themeCssVariables.background.secondary};
-  border: 1px solid ${props => themeCssVariables.border.color.light};
-  border-radius: ${props => themeCssVariables.border.radius.md};
+  background-color: ${(props) => themeCssVariables.background.secondary};
+  border: 1px solid ${(props) => themeCssVariables.border.color.light};
+  border-radius: ${(props) => themeCssVariables.border.radius.md};
   box-sizing: border-box;
-  color: ${props => themeCssVariables.font.color.secondary};
-  font-size: ${props => themeCssVariables.font.size.sm};
+  color: ${(props) => themeCssVariables.font.color.secondary};
+  font-size: ${(props) => themeCssVariables.font.size.sm};
   min-height: 80px;
-  padding: ${props => themeCssVariables.spacing[2]};
+  padding: ${(props) => themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const ChatStatusBar = styled.div`
-  background-color: ${props => themeCssVariables.background.secondary};
-  border-left: 3px solid ${props => themeCssVariables.color.blue8};
-  border-radius: ${props => themeCssVariables.border.radius.sm};
-  color: ${props => themeCssVariables.font.color.secondary};
-  font-size: ${props => themeCssVariables.font.size.sm};
-  margin-bottom: ${props => themeCssVariables.spacing[1]};
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
+  background-color: ${(props) => themeCssVariables.background.secondary};
+  border-left: 3px solid ${(props) => themeCssVariables.color.blue8};
+  border-radius: ${(props) => themeCssVariables.border.radius.sm};
+  color: ${(props) => themeCssVariables.font.color.secondary};
+  font-size: ${(props) => themeCssVariables.font.size.sm};
+  margin-bottom: ${(props) => themeCssVariables.spacing[1]};
+  padding: ${(props) => themeCssVariables.spacing[1]}
+    ${(props) => themeCssVariables.spacing[2]};
 `;
 
 const DoNotRespondBanner = styled.div`
   align-items: center;
-  background-color: ${props => themeCssVariables.background.tertiary};
-  border-left: 3px solid ${props => themeCssVariables.color.orange};
-  border-radius: ${props => themeCssVariables.border.radius.sm};
-  color: ${props => themeCssVariables.font.color.primary};
+  background-color: ${(props) => themeCssVariables.background.tertiary};
+  border-left: 3px solid ${(props) => themeCssVariables.color.orange};
+  border-radius: ${(props) => themeCssVariables.border.radius.sm};
+  color: ${(props) => themeCssVariables.font.color.primary};
   display: flex;
-  font-size: ${props => themeCssVariables.font.size.sm};
-  gap: ${props => themeCssVariables.spacing[1]};
-  margin-bottom: ${props => themeCssVariables.spacing[1]};
-  padding: ${props => themeCssVariables.spacing[1]} ${props => themeCssVariables.spacing[2]};
+  font-size: ${(props) => themeCssVariables.font.size.sm};
+  gap: ${(props) => themeCssVariables.spacing[1]};
+  margin-bottom: ${(props) => themeCssVariables.spacing[1]};
+  padding: ${(props) => themeCssVariables.spacing[1]}
+    ${(props) => themeCssVariables.spacing[2]};
 `;
 
 const DoNotRespondBubble = styled.div`
-  background-color: ${props => themeCssVariables.background.tertiary};
-  border: 1px dashed ${props => themeCssVariables.border.color.medium};
+  background-color: ${(props) => themeCssVariables.background.tertiary};
+  border: 1px dashed ${(props) => themeCssVariables.border.color.medium};
   border-bottom-right-radius: 4px;
   border-radius: 16px;
-  color: ${props => themeCssVariables.font.color.tertiary};
+  color: ${(props) => themeCssVariables.font.color.tertiary};
   font-size: 13px;
   font-style: italic;
   margin: 8px 8px 8px auto;
@@ -342,7 +396,7 @@ const formatTime = (date: string) => {
 const groupMessagesByDate = (messages: MessageNode[]) => {
   const groups: { [key: string]: MessageNode[] } = {};
 
-  messages.forEach(message => {
+  messages.forEach((message) => {
     const date = formatDate(message.createdAt);
     if (!groups[date]) {
       groups[date] = [];
@@ -380,8 +434,6 @@ export const CandidateChatDrawer = React.memo(() => {
   // Memoize selectedCandidateId to prevent unnecessary re-renders
   const selectedCandidateId = useAtomStateValue(selectedCandidateIdState);
 
-
-
   const [messageHistory, setMessageHistory] = useState<MessageNode[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(true);
   const [isCandidateDataLoading, setIsCandidateDataLoading] = useState(true);
@@ -397,7 +449,11 @@ export const CandidateChatDrawer = React.memo(() => {
   const prevConversationStatusRef = useRef<string | null>(null);
 
   // Use the templates hook
-  const { templates, templatePreviews, isLoading: isLoadingTemplates } = useTemplates();
+  const {
+    templates,
+    templatePreviews,
+    isLoading: isLoadingTemplates,
+  } = useTemplates();
 
   // Tab handling for main tabs
   const tabListId = 'candidate-chat-drawer-tabs';
@@ -407,38 +463,41 @@ export const CandidateChatDrawer = React.memo(() => {
   );
 
   // Memoize tabs array to prevent recreation on every render
-  const tabs = useMemo(() => [
-    {
-      id: 'journey',
-      title: 'Journey',
-      Icon: IconTimelineEvent,
-    },
-    {
-      id: 'workflow-runs',
-      title: 'Workflow runs',
-      Icon: IconSettingsAutomation,
-    },
-    {
-      id: 'chat',
-      title: 'Chat',
-      Icon: IconMessage,
-    },
-    {
-      id: 'profile',
-      title: 'Profile',
-      Icon: IconUser,
-    },
-    {
-      id: 'warm-path',
-      title: 'Warm path',
-      Icon: IconArrowsSplit2,
-    },
-    {
-      id: 'cv',
-      title: 'CV',
-      Icon: IconFileText,
-    },
-  ], []);
+  const tabs = useMemo(
+    () => [
+      {
+        id: 'journey',
+        title: 'Journey',
+        Icon: IconTimelineEvent,
+      },
+      {
+        id: 'workflow-runs',
+        title: 'Workflow runs',
+        Icon: IconSettingsAutomation,
+      },
+      {
+        id: 'chat',
+        title: 'Chat',
+        Icon: IconMessage,
+      },
+      {
+        id: 'profile',
+        title: 'Profile',
+        Icon: IconUser,
+      },
+      {
+        id: 'warm-path',
+        title: 'Warm path',
+        Icon: IconArrowsSplit2,
+      },
+      {
+        id: 'cv',
+        title: 'CV',
+        Icon: IconFileText,
+      },
+    ],
+    [],
+  );
 
   const selectedTableRow = useMemo(() => {
     return findSelectedTableRow(selectedCandidateId, [
@@ -464,11 +523,7 @@ export const CandidateChatDrawer = React.memo(() => {
         ? candidateData.projectsId
         : null)
     );
-  }, [
-    candidateData?.projectsId,
-    currentProjectId,
-    outreachContext.projectId,
-  ]);
+  }, [candidateData?.projectsId, currentProjectId, outreachContext.projectId]);
 
   const enrolledCandidateId = useMemo(() => {
     return chatLookupIds.candidateId && isUUID(chatLookupIds.candidateId)
@@ -508,12 +563,22 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Get personId from the selected table row first (GTM people rows), then candidateData
   const personId = useMemo(() => {
-    return chatLookupIds.personId || candidateData?.peopleId || candidateData?.personId || null;
-  }, [candidateData?.peopleId, candidateData?.personId, chatLookupIds.personId]);
-
+    return (
+      chatLookupIds.personId ||
+      candidateData?.peopleId ||
+      candidateData?.personId ||
+      null
+    );
+  }, [
+    candidateData?.peopleId,
+    candidateData?.personId,
+    chatLookupIds.personId,
+  ]);
 
   // Message input tabs
-  const [activeMessageTab, setActiveMessageTab] = useState<'direct' | 'template'>('direct');
+  const [activeMessageTab, setActiveMessageTab] = useState<
+    'direct' | 'template'
+  >('direct');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
@@ -548,76 +613,96 @@ export const CandidateChatDrawer = React.memo(() => {
     [enqueueSuccessSnackBar, enqueueErrorSnackBar],
   );
 
-  const getTemplatePreview = useCallback((templateName: string): string => {
-    if (!templateName) return 'Select a template to see preview';
-    return templatePreviews[templateName] || 'Template preview not available';
-  }, [templatePreviews]);
+  const getTemplatePreview = useCallback(
+    (templateName: string): string => {
+      if (!templateName) return 'Select a template to see preview';
+      return templatePreviews[templateName] || 'Template preview not available';
+    },
+    [templatePreviews],
+  );
 
-  const fetchMessages = React.useCallback(async (options?: { background?: boolean }) => {
-    const isBackgroundRefresh = options?.background === true;
+  const fetchMessages = React.useCallback(
+    async (options?: { background?: boolean }) => {
+      const isBackgroundRefresh = options?.background === true;
 
-    if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
-      console.log('Missing selectedCandidateId or token, skipping fetch');
-      if (!isBackgroundRefresh) {
-        setIsChatLoading(false);
-      }
-      return;
-    }
-
-    const { candidateId, personId: lookupPersonId } = chatLookupIds;
-    if (
-      (!candidateId || !isUUID(candidateId)) &&
-      (!lookupPersonId || !isUUID(lookupPersonId))
-    ) {
-      console.log(`Skipping fetch messages for candidate ${selectedCandidateId} - no valid UUID found (candidateId: ${candidateId}, personId: ${lookupPersonId})`);
-      if (!isBackgroundRefresh) {
-        setIsChatLoading(false);
-      }
-      return;
-    }
-
-    if (!isBackgroundRefresh) {
-      setIsChatLoading(true);
-    }
-
-    try {
-
-      const response = await axios.post(
-        `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-        { candidateId, personId: lookupPersonId },
-        { headers: { Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}` } }
-      );
-
-      const sortedMessages = response.data.sort(
-        (a: any, b: any) => b.position - a.position
-      );
-
-      // Check if messages have actually changed by comparing with current state
-      setMessageHistory(prevMessageHistory => {
-        const hasMessagesChanged = JSON.stringify(sortedMessages) !== JSON.stringify(prevMessageHistory);
-
-        if (hasMessagesChanged) {
-          // Fetch candidate name if available in the messages
-          if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
-            setCandidateName(sortedMessages[0].candidateName);
-          }
-          return sortedMessages;
-        } else {
-          return prevMessageHistory;
+      if (
+        !selectedCandidateId ||
+        !tokenPair?.accessOrWorkspaceAgnosticToken?.token
+      ) {
+        console.log('Missing selectedCandidateId or token, skipping fetch');
+        if (!isBackgroundRefresh) {
+          setIsChatLoading(false);
         }
-      });
-    } catch (error) {
-      console.error('Error fetching chat messages:', error);
-      if (!isBackgroundRefresh) {
-        setChatError('Failed to load chat messages');
-        setMessageHistory([]);
+        return;
       }
-    } finally {
-      if (!isBackgroundRefresh) {
-        setIsChatLoading(false);
+
+      const { candidateId, personId: lookupPersonId } = chatLookupIds;
+      if (
+        (!candidateId || !isUUID(candidateId)) &&
+        (!lookupPersonId || !isUUID(lookupPersonId))
+      ) {
+        console.log(
+          `Skipping fetch messages for candidate ${selectedCandidateId} - no valid UUID found (candidateId: ${candidateId}, personId: ${lookupPersonId})`,
+        );
+        if (!isBackgroundRefresh) {
+          setIsChatLoading(false);
+        }
+        return;
       }
-    }
-  }, [chatLookupIds, selectedCandidateId, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+
+      if (!isBackgroundRefresh) {
+        setIsChatLoading(true);
+      }
+
+      try {
+        const response = await axios.post(
+          `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
+          { candidateId, personId: lookupPersonId },
+          {
+            headers: {
+              Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
+            },
+          },
+        );
+
+        const sortedMessages = response.data.sort(
+          (a: any, b: any) => b.position - a.position,
+        );
+
+        // Check if messages have actually changed by comparing with current state
+        setMessageHistory((prevMessageHistory) => {
+          const hasMessagesChanged =
+            JSON.stringify(sortedMessages) !==
+            JSON.stringify(prevMessageHistory);
+
+          if (hasMessagesChanged) {
+            // Fetch candidate name if available in the messages
+            if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
+              setCandidateName(sortedMessages[0].candidateName);
+            }
+            return sortedMessages;
+          } else {
+            return prevMessageHistory;
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching chat messages:', error);
+        if (!isBackgroundRefresh) {
+          setChatError('Failed to load chat messages');
+          setMessageHistory([]);
+        }
+      } finally {
+        if (!isBackgroundRefresh) {
+          setIsChatLoading(false);
+        }
+      }
+    },
+    [
+      chatLookupIds,
+      selectedCandidateId,
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    ],
+  );
 
   // Debounced version of fetchMessages to prevent excessive API calls
   const debouncedFetchMessages = useCallback(() => {
@@ -644,7 +729,8 @@ export const CandidateChatDrawer = React.memo(() => {
         typeof row.phoneNumber === 'object' &&
         typeof (row.phoneNumber as { primaryPhoneNumber?: unknown })
           .primaryPhoneNumber === 'string'
-          ? (row.phoneNumber as { primaryPhoneNumber: string }).primaryPhoneNumber
+          ? (row.phoneNumber as { primaryPhoneNumber: string })
+              .primaryPhoneNumber
           : '';
       const phone =
         typeof row.phone === 'string' && row.phone
@@ -657,87 +743,95 @@ export const CandidateChatDrawer = React.memo(() => {
     [setCandidateData],
   );
 
-  const fetchCandidateData = React.useCallback(async (options?: { background?: boolean }) => {
-    const isBackgroundRefresh = options?.background === true;
+  const fetchCandidateData = React.useCallback(
+    async (options?: { background?: boolean }) => {
+      const isBackgroundRefresh = options?.background === true;
 
-    if (!selectedCandidateId || !tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
-      return;
-    }
-
-    const candidateIdToFetch = chatLookupIds.candidateId;
-    const shouldFetchCandidate = !!candidateIdToFetch && isUUID(candidateIdToFetch);
-
-    if (!shouldFetchCandidate) {
-      applyTableRowAsCandidateData(selectedTableRow);
-      if (!isBackgroundRefresh) {
-        setIsCandidateDataLoading(false);
+      if (
+        !selectedCandidateId ||
+        !tokenPair?.accessOrWorkspaceAgnosticToken?.token
+      ) {
+        return;
       }
-      return;
-    }
 
-    if (!isBackgroundRefresh) {
-      setIsCandidateDataLoading(true);
-    }
+      const candidateIdToFetch = chatLookupIds.candidateId;
+      const shouldFetchCandidate =
+        !!candidateIdToFetch && isUUID(candidateIdToFetch);
 
-    try {
-      const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/graphql`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
-        },
-        body: JSON.stringify({
-          query: graphqlToFetchAllCandidateDataWithFieldValues,
-          variables: {
-            filter: {
-              id: { eq: candidateIdToFetch }
-            }
-          },
-        }),
-      });
-
-      const responseData = await response.json();
-      if (responseData?.data?.candidates?.edges?.[0]?.node) {
-        const candidate = responseData.data.candidates.edges[0].node;
-        setCandidateData((prev: any) => {
-          if (prev?.id === candidate.id) {
-            if (
-              prev.name === candidate.name &&
-              prev.status === candidate.status &&
-              prev.candConversationStatus === candidate.candConversationStatus &&
-              prev.updatedAt === candidate.updatedAt
-            ) {
-              return prev;
-            }
-          }
-          return candidate;
-        });
-        if (candidate.name) {
-          setCandidateName(candidate.name);
-        }
-        if (candidate?.phoneNumber?.primaryPhoneNumber) {
-          setPhoneNumber(candidate?.phoneNumber?.primaryPhoneNumber);
-        }
-      } else {
+      if (!shouldFetchCandidate) {
         applyTableRowAsCandidateData(selectedTableRow);
+        if (!isBackgroundRefresh) {
+          setIsCandidateDataLoading(false);
+        }
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching candidate data:', error);
-      applyTableRowAsCandidateData(selectedTableRow);
-    } finally {
+
       if (!isBackgroundRefresh) {
-        setIsCandidateDataLoading(false);
+        setIsCandidateDataLoading(true);
       }
-    }
-  }, [
-    applyTableRowAsCandidateData,
-    chatLookupIds.candidateId,
-    chatLookupIds.personId,
-    selectedCandidateId,
-    selectedTableRow,
-    setCandidateData,
-    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
-  ]);
+
+      try {
+        const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/graphql`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
+          },
+          body: JSON.stringify({
+            query: graphqlToFetchAllCandidateDataWithFieldValues,
+            variables: {
+              filter: {
+                id: { eq: candidateIdToFetch },
+              },
+            },
+          }),
+        });
+
+        const responseData = await response.json();
+        if (responseData?.data?.candidates?.edges?.[0]?.node) {
+          const candidate = responseData.data.candidates.edges[0].node;
+          setCandidateData((prev: any) => {
+            if (prev?.id === candidate.id) {
+              if (
+                prev.name === candidate.name &&
+                prev.status === candidate.status &&
+                prev.candConversationStatus ===
+                  candidate.candConversationStatus &&
+                prev.updatedAt === candidate.updatedAt
+              ) {
+                return prev;
+              }
+            }
+            return candidate;
+          });
+          if (candidate.name) {
+            setCandidateName(candidate.name);
+          }
+          if (candidate?.phoneNumber?.primaryPhoneNumber) {
+            setPhoneNumber(candidate?.phoneNumber?.primaryPhoneNumber);
+          }
+        } else {
+          applyTableRowAsCandidateData(selectedTableRow);
+        }
+      } catch (error) {
+        console.error('Error fetching candidate data:', error);
+        applyTableRowAsCandidateData(selectedTableRow);
+      } finally {
+        if (!isBackgroundRefresh) {
+          setIsCandidateDataLoading(false);
+        }
+      }
+    },
+    [
+      applyTableRowAsCandidateData,
+      chatLookupIds.candidateId,
+      chatLookupIds.personId,
+      selectedCandidateId,
+      selectedTableRow,
+      setCandidateData,
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+    ],
+  );
 
   // Start polling when component mounts and selectedCandidateId is available
   useEffect(() => {
@@ -776,7 +870,14 @@ export const CandidateChatDrawer = React.memo(() => {
     if (!activeTabId) {
       // Check if we have a default tab in localStorage
       const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (defaultTab && (defaultTab === 'chat' || defaultTab === 'profile' || defaultTab === 'warm-path' || defaultTab === 'cv' || defaultTab === 'journey')) {
+      if (
+        defaultTab &&
+        (defaultTab === 'chat' ||
+          defaultTab === 'profile' ||
+          defaultTab === 'warm-path' ||
+          defaultTab === 'cv' ||
+          defaultTab === 'journey')
+      ) {
         setActiveTabId(defaultTab);
         // Clear the stored value after using it
         localStorage.removeItem('candidate-chat-default-tab');
@@ -788,7 +889,11 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Add effect to mark messages as read when drawer opens
   useEffect(() => {
-    if (selectedCandidateId && tokenPair?.accessOrWorkspaceAgnosticToken?.token && messageHistory.length > 0) {
+    if (
+      selectedCandidateId &&
+      tokenPair?.accessOrWorkspaceAgnosticToken?.token &&
+      messageHistory.length > 0
+    ) {
       // Get permanent ID (UUID) - ensure we only use UUIDs, not LinkedIn IDs or tempIds
       const permanentId =
         chatLookupIds.candidateId && isUUID(chatLookupIds.candidateId)
@@ -797,7 +902,9 @@ export const CandidateChatDrawer = React.memo(() => {
             ? chatLookupIds.personId
             : null;
       if (!permanentId) {
-        console.log(`Skipping mark as read for candidate ${selectedCandidateId} - no valid UUID found`);
+        console.log(
+          `Skipping mark as read for candidate ${selectedCandidateId} - no valid UUID found`,
+        );
         return;
       }
 
@@ -807,46 +914,56 @@ export const CandidateChatDrawer = React.memo(() => {
       }
 
       // Get unread messages from the message history
-      const unreadMessageIds = messageHistory
-        ?.filter(msg => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
-        ?.map(msg => msg.id) || [];
+      const unreadMessageIds =
+        messageHistory
+          ?.filter(
+            (msg) => msg.whatsappDeliveryStatus === 'receivedFromCandidate',
+          )
+          ?.map((msg) => msg.id) || [];
 
       if (unreadMessageIds.length > 0) {
         // Update messages in the database
-        axios.post(
-          `${REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
-          { listOfMessagesIds: unreadMessageIds },
-          { headers: { Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}` } },
-        ).then(() => {
-          // Update local message history to mark messages as read
-          setMessageHistory(prev =>
-            prev.map(msg =>
-              unreadMessageIds.includes(msg.id)
-                ? { ...msg, whatsappDeliveryStatus: 'read' }
-                : msg
-            )
-          );
+        axios
+          .post(
+            `${REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
+            { listOfMessagesIds: unreadMessageIds },
+            {
+              headers: {
+                Authorization: `Bearer ${tokenPair.accessOrWorkspaceAgnosticToken.token}`,
+              },
+            },
+          )
+          .then(() => {
+            // Update local message history to mark messages as read
+            setMessageHistory((prev) =>
+              prev.map((msg) =>
+                unreadMessageIds.includes(msg.id)
+                  ? { ...msg, whatsappDeliveryStatus: 'read' }
+                  : msg,
+              ),
+            );
 
-          // Immediately update unread messages count in state to 0 for this candidate
-          // Update for both permanentId (UUID) and selectedCandidateId (in case it's different, e.g., LinkedIn ID)
-          setUnreadMessagesCounts(prev => {
-            const updated = { ...prev };
-            updated[permanentId] = 0;
-            // Also update selectedCandidateId if it's different from permanentId (for search result candidates)
-            if (selectedCandidateId !== permanentId) {
-              updated[selectedCandidateId] = 0;
-            }
-            return updated;
+            // Immediately update unread messages count in state to 0 for this candidate
+            // Update for both permanentId (UUID) and selectedCandidateId (in case it's different, e.g., LinkedIn ID)
+            setUnreadMessagesCounts((prev) => {
+              const updated = { ...prev };
+              updated[permanentId] = 0;
+              // Also update selectedCandidateId if it's different from permanentId (for search result candidates)
+              if (selectedCandidateId !== permanentId) {
+                updated[selectedCandidateId] = 0;
+              }
+              return updated;
+            });
+
+            // Mark that we've processed this candidate
+            hasMarkedAsReadRef.current = selectedCandidateId;
+          })
+          .catch((error) => {
+            console.error('Error updating message status:', error);
           });
-
-          // Mark that we've processed this candidate
-          hasMarkedAsReadRef.current = selectedCandidateId;
-        }).catch(error => {
-          console.error('Error updating message status:', error);
-        });
       } else {
         // No unread messages, but still mark as processed and update count to 0
-        setUnreadMessagesCounts(prev => {
+        setUnreadMessagesCounts((prev) => {
           const updated = { ...prev };
           updated[permanentId] = 0;
           if (selectedCandidateId !== permanentId) {
@@ -862,7 +979,14 @@ export const CandidateChatDrawer = React.memo(() => {
     if (hasMarkedAsReadRef.current !== selectedCandidateId) {
       hasMarkedAsReadRef.current = null;
     }
-  }, [selectedCandidateId, tokenPair, messageHistory, chatLookupIds.candidateId, chatLookupIds.personId, setUnreadMessagesCounts]);
+  }, [
+    selectedCandidateId,
+    tokenPair,
+    messageHistory,
+    chatLookupIds.candidateId,
+    chatLookupIds.personId,
+    setUnreadMessagesCounts,
+  ]);
 
   const sendMessage = async (messageText: string) => {
     if (!phoneNumber) {
@@ -877,12 +1001,12 @@ export const CandidateChatDrawer = React.memo(() => {
         `${REACT_APP_SERVER_BASE_URL}/arx-chat/send-chat`,
         {
           messageToSend: messageText,
-          phoneNumberTo: phoneNumber
+          phoneNumberTo: phoneNumber,
         },
         {
           headers: {
-            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`
-          }
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+          },
         },
       );
 
@@ -913,7 +1037,7 @@ export const CandidateChatDrawer = React.memo(() => {
         whatsappDeliveryStatus: 'sent',
       };
 
-      setMessageHistory(prev => [newMessage, ...prev]);
+      setMessageHistory((prev) => [newMessage, ...prev]);
 
       // Clear input
       if (inputRef.current) {
@@ -930,7 +1054,8 @@ export const CandidateChatDrawer = React.memo(() => {
       const serverMsg =
         typeof body?.message === 'string' ? body.message : undefined;
       showSnackbar(
-        serverMsg || (error instanceof Error ? error.message : 'Failed to send message'),
+        serverMsg ||
+          (error instanceof Error ? error.message : 'Failed to send message'),
         'error',
       );
       await fetchMessages();
@@ -955,8 +1080,15 @@ export const CandidateChatDrawer = React.memo(() => {
     try {
       await axios.post(
         `${REACT_APP_SERVER_BASE_URL}/meta-whatsapp-controller/send-template-message`,
-        { templateName: templateName, phoneNumberTo: phoneNumber.replace('+', ''), },
-        { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` }, },
+        {
+          templateName: templateName,
+          phoneNumberTo: phoneNumber.replace('+', ''),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+          },
+        },
       );
       console.log('Template sent successfully');
       showSnackbar('Template sent successfully', 'success');
@@ -978,7 +1110,7 @@ export const CandidateChatDrawer = React.memo(() => {
         messageObj: { content: templateName },
         whatsappDeliveryStatus: 'sent',
       };
-      setMessageHistory(prev => [newMessage, ...prev]);
+      setMessageHistory((prev) => [newMessage, ...prev]);
     } catch (error) {
       showSnackbar('Failed to send template', 'error');
       console.error('Error sending template:', error);
@@ -995,7 +1127,9 @@ export const CandidateChatDrawer = React.memo(() => {
   };
 
   const conversationStatusLabel = candidateData?.candConversationStatus
-    ? (CANDIDATE_CONVERSATION_STATUS_LABELS[candidateData.candConversationStatus] || candidateData.candConversationStatus)
+    ? CANDIDATE_CONVERSATION_STATUS_LABELS[
+        candidateData.candConversationStatus
+      ] || candidateData.candConversationStatus
     : null;
 
   const conversationStatusChanged =
@@ -1011,8 +1145,10 @@ export const CandidateChatDrawer = React.memo(() => {
 
   const hasLatestDoNotRespond = useMemo(() => {
     if (!messageHistory.length) return false;
-    const sorted = [...messageHistory].sort((a, b) => (b.position ?? 0) - (a.position ?? 0));
-    const latestBot = sorted.find(m => m.name === 'botMessage');
+    const sorted = [...messageHistory].sort(
+      (a, b) => (b.position ?? 0) - (a.position ?? 0),
+    );
+    const latestBot = sorted.find((m) => m.name === 'botMessage');
     return latestBot ? isDoNotRespondMessage(latestBot.message) : false;
   }, [messageHistory]);
 
@@ -1032,45 +1168,59 @@ export const CandidateChatDrawer = React.memo(() => {
       ) : chatError ? (
         <div>{chatError}</div>
       ) : messageHistory.length === 0 ? (
-        <div id = "candidate-chat-no-messages" data-candidate-id={selectedCandidateId} data-person-id={personId}>No chat messages found for {candidateName}</div>
+        <div
+          id="candidate-chat-no-messages"
+          data-candidate-id={selectedCandidateId}
+          data-person-id={personId}
+        >
+          No chat messages found for {candidateName}
+        </div>
       ) : (
         <MessageContainer>
-          {Object.entries(groupMessagesByDate(messageHistory)).map(([date, messages]) => (
-            <React.Fragment key={date}>
-              <DateSeparator>
-                <DateLabel>{date}</DateLabel>
-              </DateSeparator>
-              {messages.map((message) => {
-                const isSent = message.name === 'botMessage';
-                const status = message.whatsappDeliveryStatus || 'sent';
-                const isDoNotRespond = isSent && isDoNotRespondMessage(message.message);
-                const deliveryFailed = isSent && status === 'failed';
-                return (
-                  <MessageGroup key={message.id}>
-                    {isDoNotRespond ? (
-                      <DoNotRespondBubble>AI chose not to respond</DoNotRespondBubble>
-                    ) : (
-                      <MessageBubble isSent={isSent} deliveryFailed={deliveryFailed}>
-                        {message.message}
-                      </MessageBubble>
-                    )}
-                    <MessageStatus isSent={isSent}>
-                      <StatusIcon status={status} />
-                      {formatTime(message.createdAt)}
-                      {isSent && !isDoNotRespond && (
-                        <span>
-                          {status === 'sent' && 'Sent'}
-                          {status === 'delivered' && 'Delivered'}
-                          {status === 'read' && 'Read'}
-                          {status === 'failed' && 'Failed'}
-                        </span>
+          {Object.entries(groupMessagesByDate(messageHistory)).map(
+            ([date, messages]) => (
+              <React.Fragment key={date}>
+                <DateSeparator>
+                  <DateLabel>{date}</DateLabel>
+                </DateSeparator>
+                {messages.map((message) => {
+                  const isSent = message.name === 'botMessage';
+                  const status = message.whatsappDeliveryStatus || 'sent';
+                  const isDoNotRespond =
+                    isSent && isDoNotRespondMessage(message.message);
+                  const deliveryFailed = isSent && status === 'failed';
+                  return (
+                    <MessageGroup key={message.id}>
+                      {isDoNotRespond ? (
+                        <DoNotRespondBubble>
+                          AI chose not to respond
+                        </DoNotRespondBubble>
+                      ) : (
+                        <MessageBubble
+                          isSent={isSent}
+                          deliveryFailed={deliveryFailed}
+                        >
+                          {message.message}
+                        </MessageBubble>
                       )}
-                    </MessageStatus>
-                  </MessageGroup>
-                );
-              })}
-            </React.Fragment>
-          ))}
+                      <MessageStatus isSent={isSent}>
+                        <StatusIcon status={status} />
+                        {formatTime(message.createdAt)}
+                        {isSent && !isDoNotRespond && (
+                          <span>
+                            {status === 'sent' && 'Sent'}
+                            {status === 'delivered' && 'Delivered'}
+                            {status === 'read' && 'Read'}
+                            {status === 'failed' && 'Failed'}
+                          </span>
+                        )}
+                      </MessageStatus>
+                    </MessageGroup>
+                  );
+                })}
+              </React.Fragment>
+            ),
+          )}
         </MessageContainer>
       )}
     </ChatView>
@@ -1102,7 +1252,6 @@ export const CandidateChatDrawer = React.memo(() => {
     />
   );
 
-
   const renderMessageInput = () => (
     <MessageInputContainer>
       {hasLatestDoNotRespond && (
@@ -1130,7 +1279,9 @@ export const CandidateChatDrawer = React.memo(() => {
           <StyledChatInput
             ref={inputRef}
             type="text"
-            placeholder={isSendingMessage ? "Sending message..." : "Type your message"}
+            placeholder={
+              isSendingMessage ? 'Sending message...' : 'Type your message'
+            }
             disabled={isSendingMessage}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !isSendingMessage) {
@@ -1150,14 +1301,18 @@ export const CandidateChatDrawer = React.memo(() => {
             onChange={(e) => setSelectedTemplate(e.target.value)}
             disabled={isSendingMessage}
           >
-            <option value="" disabled>Select a template</option>
+            <option value="" disabled>
+              Select a template
+            </option>
             {templates.map((template) => (
-              <option key={template} value={template}>{template}</option>
+              <option key={template} value={template}>
+                {template}
+              </option>
             ))}
           </TemplateSelect>
           <TemplatePreview>
             {isLoadingTemplates
-              ? "Loading templates..."
+              ? 'Loading templates...'
               : getTemplatePreview(selectedTemplate)}
           </TemplatePreview>
           <StyledButton
@@ -1170,7 +1325,6 @@ export const CandidateChatDrawer = React.memo(() => {
       )}
     </MessageInputContainer>
   );
-
 
   return (
     <StyledContainer>
@@ -1191,7 +1345,7 @@ export const CandidateChatDrawer = React.memo(() => {
       </TabContainer>
       <TabContent>
         {!selectedCandidateId ? (
-          <div style={{padding: '20px'}}>No candidate selected</div>
+          <div style={{ padding: '20px' }}>No candidate selected</div>
         ) : (
           <>
             {activeTabId === 'journey' && enrolledCandidateId ? (
@@ -1225,6 +1379,7 @@ export const CandidateChatDrawer = React.memo(() => {
             {activeTabId === 'workflow-runs' && enrolledCandidateId ? (
               <CandidateWorkflowRunsTab
                 activeRuns={outreachJourney?.activeRuns ?? []}
+                lastFailedRun={outreachJourney?.lastFailedRun ?? null}
                 isLoading={isOutreachJourneyLoading}
               />
             ) : null}

@@ -16,13 +16,66 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared/graphql';
-import { getCandidateCustomField } from 'twenty-shared/utils';
+import { getCandidateCustomField, isDefined } from 'twenty-shared/utils';
 import { Status } from 'twenty-ui/data-display';
 import { IconCopy, IconExternalLink, IconId, IconMessageCircle, IconPhone, IconUserCircle, IconX } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { getCandidateProfileUrl } from './utils/getCandidateProfileUrl';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+const firstUuid = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === 'string' && isUUID(value)) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
+// Outreach people rows use person id as row id; candidate table rows use candidate id.
+const resolvePersonAndCandidateIds = ({
+  candidateData,
+  selectedCandidateId,
+}: {
+  candidateData: Record<string, unknown>;
+  selectedCandidateId: string | null | undefined;
+}): { personId?: string; candidateId?: string } => {
+  const otherFields = asRecord(candidateData.otherFields);
+  const isOutreachHomeRow = candidateData.isOutreachHomeRow === true;
+
+  const personId = firstUuid(
+    candidateData.peopleId,
+    candidateData.personId,
+    isOutreachHomeRow ? selectedCandidateId : undefined,
+    isOutreachHomeRow ? candidateData.id : undefined,
+    // After candidate fetch replaces an outreach people row, selected id is still the person
+    selectedCandidateId !== candidateData.id ? selectedCandidateId : undefined,
+  );
+
+  // Never treat the person id as a candidate id (outreach selects by person).
+  const explicitCandidateId = firstUuid(
+    otherFields?.candidateId,
+    candidateData.candidateId,
+  );
+  const candidateIdFromRecord =
+    !isOutreachHomeRow &&
+    typeof candidateData.id === 'string' &&
+    isUUID(candidateData.id) &&
+    candidateData.id !== personId
+      ? candidateData.id
+      : undefined;
+
+  const candidateId = firstUuid(explicitCandidateId, candidateIdFromRecord);
+
+  return { personId, candidateId };
+};
 
 // Status colors mapping
 const STATUS_COLORS: Record<string, "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow"> = {
@@ -317,10 +370,56 @@ export const CandidateInfoHeader = React.memo(({
     );
   }
 
+  const { personId, candidateId } = resolvePersonAndCandidateIds({
+    candidateData,
+    selectedCandidateId: activeCandidateId,
+  });
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     enqueueSuccessSnackBar({ message: `${label} copied to clipboard`, options: { duration: 3000, } });
   };
+
+  const handleNavigateToRecord = (
+    objectNameSingular: 'person' | 'candidate',
+    recordId: string,
+  ) => {
+    navigate(`/object/${objectNameSingular}/${recordId}`);
+  };
+
+  const renderIdItem = ({
+    label,
+    recordId,
+    objectNameSingular,
+  }: {
+    label: string;
+    recordId: string;
+    objectNameSingular: 'person' | 'candidate';
+  }) => (
+    <StyledInfoItem key={`${objectNameSingular}-${recordId}`}>
+      <StyledIconWrapper
+        onClick={() => handleNavigateToRecord(objectNameSingular, recordId)}
+        title={`Open ${label.toLowerCase()} record`}
+      >
+        <IconId size={16} />
+      </StyledIconWrapper>
+      <span>
+        {label}: {recordId.substring(0, 8)}...
+      </span>
+      <StyledIconWrapper
+        onClick={() => handleCopy(recordId, `${label} ID`)}
+        title={`Copy ${label.toLowerCase()} ID`}
+      >
+        <IconCopy size={14} />
+      </StyledIconWrapper>
+      <StyledIconWrapper
+        onClick={() => handleNavigateToRecord(objectNameSingular, recordId)}
+        title={`Open ${label.toLowerCase()} record`}
+      >
+        <IconExternalLink size={14} />
+      </StyledIconWrapper>
+    </StyledInfoItem>
+  );
 
   const handleStatusUpdate = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = event.target.value;
@@ -399,10 +498,6 @@ export const CandidateInfoHeader = React.memo(({
     }
   };
 
-  const handleNavigateToCandidate = () => {
-    navigate(`/object/candidate/${activeCandidateId}`);
-  };
-
   // Get status color based on current status
   const getStatusColor = (status: string): "red" | "green" | "orange" | "turquoise" | "sky" | "blue" | "purple" | "gray" | "pink" | "yellow" => {
     return STATUS_COLORS[status] || 'gray';
@@ -476,15 +571,27 @@ export const CandidateInfoHeader = React.memo(({
       </StyledTopRow>
 
       <StyledInfoRow>
-        <StyledInfoItem>
-          <StyledIconWrapper onClick={handleNavigateToCandidate}>
-            <IconId size={16} />
-          </StyledIconWrapper>
-          <span>ID: {activeCandidateId?.substring(0, 8)}...</span>
-          <StyledIconWrapper onClick={() => handleCopy(activeCandidateId || '', 'Candidate ID')}>
-            <IconCopy size={14} />
-          </StyledIconWrapper>
-        </StyledInfoItem>
+        {isDefined(personId) &&
+          renderIdItem({
+            label: 'Person',
+            recordId: personId,
+            objectNameSingular: 'person',
+          })}
+        {isDefined(candidateId) &&
+          candidateId !== personId &&
+          renderIdItem({
+            label: 'Candidate',
+            recordId: candidateId,
+            objectNameSingular: 'candidate',
+          })}
+        {!isDefined(personId) &&
+          !isDefined(candidateId) &&
+          isUUID(activeCandidateId) &&
+          renderIdItem({
+            label: 'ID',
+            recordId: activeCandidateId,
+            objectNameSingular: 'candidate',
+          })}
 
         {phoneValue && (
           <StyledInfoItem onClick={() => handleCopy(phoneValue, 'Phone number')}>

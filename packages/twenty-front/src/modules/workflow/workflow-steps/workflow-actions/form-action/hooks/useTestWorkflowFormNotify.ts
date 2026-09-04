@@ -59,7 +59,7 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
         },
       }));
     },
-    [setTestData],
+    [],
   );
 
   const pollTest = useCallback(

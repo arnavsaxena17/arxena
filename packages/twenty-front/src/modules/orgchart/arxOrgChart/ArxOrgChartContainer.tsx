@@ -18,6 +18,7 @@ import { useUnipile } from '@/unipile/contexts/UnipileContext';
 import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import {
     type OrgChartDiagramHandle,
     normalizeCompanyIdForUrl,
@@ -26,6 +27,7 @@ import {
 } from 'twenty-orgchart';
 import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartNodeData, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared/utils';
 import { useThemeColorScheme } from 'twenty-ui/theme-constants';
+import { FeatureFlagKey } from '~/generated-metadata/graphql';
 import { Mixpanel } from '~/mixpanel';
 
 import { getArxenaSiteBaseUrl } from '@/auth/utils/arxenaSiteUrl';
@@ -204,6 +206,9 @@ export const ArxOrgChartContainer = ({
   const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
   const showNodeCapabilitiesHoverHint =
     process.env.REACT_APP_EXPERIMENTAL_ORGCHART_NODE_HOVER_HINTS === 'true';
+  const isOrgChartGradeAlignedLayoutEnabled = useIsFeatureEnabled(
+    FeatureFlagKey.IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED,
+  );
 
   const { isLinkedinConnected } = useUnipile();
   const workspaceMemberProfileUnipileFields = useAtomStateValue(
@@ -1942,9 +1947,10 @@ export const ArxOrgChartContainer = ({
         showContextProgressBanner={showContextProgressBanner}
         isContextLoading={actions.isContextLoading}
         diagramHandleRef={diagramHandleRef}
-        diagramRemountKey={`${companyId}-${colorScheme}`}
+        diagramRemountKey={`${companyId}-${colorScheme}-${isOrgChartGradeAlignedLayoutEnabled ? 'grade-aligned' : 'default'}`}
         diagramProps={{
           colorScheme,
+          gradeAlignedLayout: isOrgChartGradeAlignedLayoutEnabled,
           m7kqContactMode: isM7kqOrgChartSource,
           showLinkedInUrlOnNodes: orgChartLinkedinCandidateSource === 'apify',
           onLockedContactChannelClick: handleM7kqLockedContactClick,

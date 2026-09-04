@@ -7,6 +7,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OutreachWorkflowRunDiagramEmbed } from '@/outreach-home/components/OutreachWorkflowRunDiagramEmbed';
 import { type CandidateOutreachJourneyActiveRun } from '@/outreach-home/types/outreach-journey.types';
+import { resolveOutreachPendingStepLabel } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { Select } from '@/ui/input/components/Select';
 
 const StyledContainer = styled.div`
@@ -39,6 +40,17 @@ const StyledMuted = styled.p`
   margin: 0;
 `;
 
+const StyledFailureBanner = styled.div`
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.primary};
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[3]};
+`;
+
 const StyledCanvas = styled.div`
   background: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
@@ -54,11 +66,13 @@ const StyledCanvas = styled.div`
 
 type CandidateWorkflowRunsTabProps = {
   activeRuns: CandidateOutreachJourneyActiveRun[];
+  lastFailedRun?: CandidateOutreachJourneyActiveRun | null;
   isLoading: boolean;
 };
 
 export const CandidateWorkflowRunsTab = ({
   activeRuns,
+  lastFailedRun = null,
   isLoading,
 }: CandidateWorkflowRunsTabProps) => {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -73,7 +87,7 @@ export const CandidateWorkflowRunsTab = ({
     value: run.workflowRunId,
   }));
 
-  if (isLoading && activeRuns.length === 0) {
+  if (isLoading && activeRuns.length === 0 && !isDefined(lastFailedRun)) {
     return (
       <StyledContainer>
         <Loader />
@@ -82,6 +96,32 @@ export const CandidateWorkflowRunsTab = ({
   }
 
   if (activeRuns.length === 0 || !isDefined(selectedRun)) {
+    if (isDefined(lastFailedRun)) {
+      const failureLabel = resolveOutreachPendingStepLabel({
+        currentStepName: lastFailedRun.currentStepName,
+        currentStepKind: lastFailedRun.currentStepKind,
+        pendingReason: lastFailedRun.pendingReason,
+        errorMessage: lastFailedRun.errorMessage,
+        status: lastFailedRun.status,
+      });
+
+      return (
+        <StyledContainer>
+          <StyledFailureBanner>
+            <StyledSectionTitle>Last failed run</StyledSectionTitle>
+            <StyledMuted>{lastFailedRun.workflowName}</StyledMuted>
+            <strong>{failureLabel}</strong>
+          </StyledFailureBanner>
+          <StyledCanvas>
+            <OutreachWorkflowRunDiagramEmbed
+              key={lastFailedRun.workflowRunId}
+              workflowRunId={lastFailedRun.workflowRunId}
+            />
+          </StyledCanvas>
+        </StyledContainer>
+      );
+    }
+
     return (
       <StyledContainer>
         <StyledMuted>No active workflow runs for this candidate.</StyledMuted>

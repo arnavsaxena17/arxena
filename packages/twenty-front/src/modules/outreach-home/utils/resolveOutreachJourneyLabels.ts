@@ -15,6 +15,8 @@ type OutreachRunProgressInput = {
   currentStepKind: string | null;
   resumeAt: string | null;
   pendingReason: string | null;
+  errorMessage?: string | null;
+  status?: string | null;
 };
 
 const PENDING_REASON_STEP_SUFFIX: Record<string, string> = {
@@ -115,7 +117,29 @@ export function resolveOutreachPendingStepLabel({
   currentStepName,
   currentStepKind,
   pendingReason,
+  errorMessage,
+  status,
 }: Omit<OutreachRunProgressInput, 'resumeAt'>): string {
+  if (status === 'FAILED' || currentStepKind === 'FAILED') {
+    if (
+      currentStepName !== null &&
+      currentStepName.length > 0 &&
+      isNonEmptyErrorMessage(errorMessage)
+    ) {
+      return `${currentStepName} · ${errorMessage}`;
+    }
+
+    if (isNonEmptyErrorMessage(errorMessage)) {
+      return errorMessage;
+    }
+
+    if (currentStepName !== null && currentStepName.length > 0) {
+      return `Failed · ${currentStepName}`;
+    }
+
+    return 'Workflow failed';
+  }
+
   if (currentStepKind === 'FORM') {
     return 'Needs approval';
   }
@@ -151,6 +175,11 @@ export function resolveOutreachPendingStepLabel({
 
   return '—';
 }
+
+const isNonEmptyErrorMessage = (
+  errorMessage: string | null | undefined,
+): errorMessage is string =>
+  typeof errorMessage === 'string' && errorMessage.trim().length > 0;
 
 export function resolveOutreachNextRetryAt({
   currentStepKind,

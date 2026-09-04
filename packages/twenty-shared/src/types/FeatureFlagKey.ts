@@ -12,4 +12,6 @@ export enum FeatureFlagKey {
   IS_WORKFLOW_VERSION_IN_CORE_ENABLED = 'IS_WORKFLOW_VERSION_IN_CORE_ENABLED',
   // Admin-only: dead LinkedIn Unipile sends for outreach workflow UI testing
   IS_OUTREACH_MOCK_UNIPILE_ENABLED = 'IS_OUTREACH_MOCK_UNIPILE_ENABLED',
+  // Org chart: grade-band spacing (managers/teams align on longer drops)
+  IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED = 'IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED',
 }

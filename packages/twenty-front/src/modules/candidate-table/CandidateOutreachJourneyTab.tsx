@@ -157,16 +157,28 @@ export const CandidateOutreachJourneyTab = ({
   }, [hasFormPending, journey]);
 
   const pendingStepLabel = useMemo(() => {
-    if (!primaryRun) {
-      return 'No active workflow run';
+    if (primaryRun) {
+      return resolveOutreachPendingStepLabel({
+        currentStepName: primaryRun.currentStepName,
+        currentStepKind: primaryRun.currentStepKind,
+        pendingReason: primaryRun.pendingReason,
+        errorMessage: primaryRun.errorMessage,
+        status: primaryRun.status,
+      });
     }
 
-    return resolveOutreachPendingStepLabel({
-      currentStepName: primaryRun.currentStepName,
-      currentStepKind: primaryRun.currentStepKind,
-      pendingReason: primaryRun.pendingReason,
-    });
-  }, [primaryRun]);
+    if (journey?.lastFailedRun) {
+      return resolveOutreachPendingStepLabel({
+        currentStepName: journey.lastFailedRun.currentStepName,
+        currentStepKind: journey.lastFailedRun.currentStepKind,
+        pendingReason: journey.lastFailedRun.pendingReason,
+        errorMessage: journey.lastFailedRun.errorMessage,
+        status: journey.lastFailedRun.status,
+      });
+    }
+
+    return 'No active workflow run';
+  }, [journey?.lastFailedRun, primaryRun]);
 
   const nextRetryLabel = useMemo(() => {
     if (!primaryRun) {
@@ -192,7 +204,8 @@ export const CandidateOutreachJourneyTab = ({
     return (
       <StyledContainer>
         <StyledMuted>
-          No enrolled outreach journey for this candidate in the current project.
+          No enrolled outreach journey for this candidate in the current
+          project.
         </StyledMuted>
       </StyledContainer>
     );
@@ -235,8 +248,15 @@ export const CandidateOutreachJourneyTab = ({
       <StyledSection>
         <StyledSectionTitle>Active step</StyledSectionTitle>
         <StyledCard>
-          <StyledMuted>{primaryRun?.workflowName ?? 'No active run'}</StyledMuted>
+          <StyledMuted>
+            {primaryRun?.workflowName ??
+              journey.lastFailedRun?.workflowName ??
+              'No active run'}
+          </StyledMuted>
           <strong>{pendingStepLabel}</strong>
+          {!primaryRun && journey.lastFailedRun?.errorMessage ? (
+            <StyledMuted>{journey.lastFailedRun.errorMessage}</StyledMuted>
+          ) : null}
           {nextRetryLabel ? (
             <StyledMuted>Next retry {nextRetryLabel}</StyledMuted>
           ) : null}
@@ -308,11 +328,7 @@ export const CandidateOutreachJourneyTab = ({
               onClick={onPause}
             />
           )}
-          <Button
-            title="Stop outreach"
-            variant="secondary"
-            onClick={onStop}
-          />
+          <Button title="Stop outreach" variant="secondary" onClick={onStop} />
           {primaryRun?.currentStepKind === 'DELAY' &&
           primaryRun.pendingStepId ? (
             <Button
@@ -410,6 +426,8 @@ export const resolveJourneyHeaderLabels = (
   journey: CandidateOutreachJourney | null,
 ) => {
   const primaryRun = journey?.activeRuns[0] ?? null;
+  const failedRun = journey?.lastFailedRun ?? null;
+  const displayRun = primaryRun ?? failedRun;
   const hasFormPending = primaryRun?.currentStepKind === 'FORM';
 
   return {
@@ -420,11 +438,13 @@ export const resolveJourneyHeaderLabels = (
           hasFormPending,
         })
       : null,
-    outreachNextStepLabel: primaryRun
+    outreachNextStepLabel: displayRun
       ? resolveOutreachPendingStepLabel({
-          currentStepName: primaryRun.currentStepName,
-          currentStepKind: primaryRun.currentStepKind,
-          pendingReason: primaryRun.pendingReason,
+          currentStepName: displayRun.currentStepName,
+          currentStepKind: displayRun.currentStepKind,
+          pendingReason: displayRun.pendingReason,
+          errorMessage: displayRun.errorMessage,
+          status: displayRun.status,
         })
       : null,
     outreachNextRetryLabel: primaryRun

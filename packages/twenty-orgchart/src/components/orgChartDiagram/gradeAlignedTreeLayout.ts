@@ -11,6 +11,13 @@ const ALIGNABLE_GRADE_TIERS: OrgChartGradeTier[] = [
   'executives',
 ];
 
+// Leadership subtrees first; long-drop managers/teams pack to the right.
+const GRADE_SORT_RANK: Record<OrgChartGradeTier, number> = {
+  leadership: 0,
+  managers: 2,
+  executives: 3,
+};
+
 const ALIGNMENT_EPSILON_PX = 1;
 const MIXED_DEPTH_THRESHOLD_PX = 24;
 
@@ -34,6 +41,29 @@ const readNodeTier = (
         ? data.std_grade_category
         : undefined,
   });
+};
+
+const gradeSortRankForData = (data: go.ObjectData | null): number => {
+  const tier = readNodeTier(data);
+  if (!tier) {
+    return 1;
+  }
+  return GRADE_SORT_RANK[tier];
+};
+
+export const compareTreeVertexByGradeTier = (
+  left: go.TreeVertex,
+  right: go.TreeVertex,
+): number => {
+  const rankDelta =
+    gradeSortRankForData(left.node?.data ?? null) -
+    gradeSortRankForData(right.node?.data ?? null);
+  if (rankDelta !== 0) {
+    return rankDelta;
+  }
+  const leftHeadline = String(left.node?.data?.headline ?? '');
+  const rightHeadline = String(right.node?.data?.headline ?? '');
+  return leftHeadline.localeCompare(rightHeadline);
 };
 
 const estimateLayerStepPx = (
@@ -122,11 +152,9 @@ export const alignTreeNodesByGradeTier = (layout: go.TreeLayout): void => {
       if (entry.tier !== tier) {
         continue;
       }
-      // Tree roots stay put; only non-root shallow nodes drop to the grade band.
       if (entry.node.findTreeParentNode() === null) {
         continue;
       }
-      // Re-read Y in case an ancestor subtree was already shifted.
       const currentY = entry.node.location.y;
       const deltaY = bandY - currentY;
       if (deltaY > ALIGNMENT_EPSILON_PX) {
@@ -145,8 +173,8 @@ const collectTreeChildLinks = (parent: go.Node): go.Link[] => {
   return links;
 };
 
-// TreeLayout's child bus sits near the shallow children. After grade shifts,
-// that bus cuts through deeper nodes — move it just under the parent instead.
+// Keep the sibling bus just under the parent so long drops stay in empty
+// columns on the right instead of cutting through leadership cards.
 export const rerouteMixedDepthTreeLinks = (layout: go.TreeLayout): void => {
   const diagram = layout.diagram;
   if (!diagram) {
@@ -198,6 +226,17 @@ export const rerouteMixedDepthTreeLinks = (layout: go.TreeLayout): void => {
 };
 
 export class GradeAlignedTreeLayout extends go.TreeLayout {
+  constructor(init?: Partial<go.TreeLayout>) {
+    super();
+    this.sorting = go.TreeSorting.Ascending;
+    this.comparer = compareTreeVertexByGradeTier;
+    this.nodeSpacing = 30;
+    this.layerSpacing = 45;
+    if (init) {
+      Object.assign(this, init);
+    }
+  }
+
   override commitNodes(): void {
     super.commitNodes();
     alignTreeNodesByGradeTier(this);

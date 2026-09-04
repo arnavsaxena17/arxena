@@ -1396,7 +1396,7 @@ export interface FeatureFlag {
     __typename: 'FeatureFlag'
 }
 
-export type FeatureFlagKey = 'IS_APP_CLAIMING_ENABLED' | 'IS_UNIQUE_INDEXES_ENABLED' | 'IS_JSON_FILTER_ENABLED' | 'IS_CALENDAR_WEEK_VIEW_ENABLED' | 'IS_EMAIL_GROUP_ENABLED' | 'IS_JUNCTION_RELATIONS_ENABLED' | 'IS_REST_METADATA_API_NEW_FORMAT_DIRECT' | 'IS_LOGIC_FUNCTION_PREBUILT_MODE_ENABLED' | 'IS_ONBOARDING_AI_CHAT_ENABLED' | 'IS_SETTINGS_DISCOVERY_HERO_ENABLED' | 'IS_WORKFLOW_VERSION_IN_CORE_ENABLED'
+export type FeatureFlagKey = 'IS_APP_CLAIMING_ENABLED' | 'IS_UNIQUE_INDEXES_ENABLED' | 'IS_JSON_FILTER_ENABLED' | 'IS_CALENDAR_WEEK_VIEW_ENABLED' | 'IS_EMAIL_GROUP_ENABLED' | 'IS_JUNCTION_RELATIONS_ENABLED' | 'IS_REST_METADATA_API_NEW_FORMAT_DIRECT' | 'IS_LOGIC_FUNCTION_PREBUILT_MODE_ENABLED' | 'IS_ONBOARDING_AI_CHAT_ENABLED' | 'IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED' | 'IS_SETTINGS_DISCOVERY_HERO_ENABLED' | 'IS_WORKFLOW_VERSION_IN_CORE_ENABLED' | 'IS_OUTREACH_MOCK_UNIPILE_ENABLED'
 
 export interface WorkspaceUrls {
     customUrl?: Scalars['String']
@@ -3362,12 +3362,12 @@ export interface ObjectGenqlSelection{
     searchFieldMetadataList?: SearchFieldGenqlSelection
     fields?: (ObjectFieldsConnectionGenqlSelection & { __args: {
     /** Limit or page results. */
-    paging: CursorPaging, 
+    paging: CursorPaging,
     /** Specify to filter the records returned. */
     filter: FieldFilter} })
     indexMetadatas?: (ObjectIndexMetadatasConnectionGenqlSelection & { __args: {
     /** Limit or page results. */
-    paging: CursorPaging, 
+    paging: CursorPaging,
     /** Specify to filter the records returned. */
     filter: IndexFilter} })
     __typename?: boolean | number
@@ -6018,7 +6018,7 @@ export interface QueryGenqlSelection{
     id: Scalars['UUID']} })
     objects?: (ObjectConnectionGenqlSelection & { __args: {
     /** Limit or page results. */
-    paging: CursorPaging, 
+    paging: CursorPaging,
     /** Specify to filter the records returned. */
     filter: ObjectFilter} })
     findOneLogicFunction?: (LogicFunctionGenqlSelection & { __args: {input: LogicFunctionIdInput} })
@@ -6052,7 +6052,7 @@ export interface QueryGenqlSelection{
     id: Scalars['UUID']} })
     fields?: (FieldConnectionGenqlSelection & { __args: {
     /** Limit or page results. */
-    paging: CursorPaging, 
+    paging: CursorPaging,
     /** Specify to filter the records returned. */
     filter: FieldFilter} })
     getViewGroups?: (ViewGroupGenqlSelection & { __args?: {viewId?: (Scalars['String'] | null)} })
@@ -6778,7 +6778,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingProductDTO"')
       return BillingProductDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationRegistrationVariable_possibleTypes: string[] = ['ApplicationRegistrationVariable']
@@ -6786,7 +6786,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRegistrationVariable"')
       return ApplicationRegistrationVariable_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApiKey_possibleTypes: string[] = ['ApiKey']
@@ -6794,7 +6794,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApiKey"')
       return ApiKey_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationRegistrationSummary_possibleTypes: string[] = ['ApplicationRegistrationSummary']
@@ -6802,7 +6802,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRegistrationSummary"')
       return ApplicationRegistrationSummary_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationVariable_possibleTypes: string[] = ['ApplicationVariable']
@@ -6810,7 +6810,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationVariable"')
       return ApplicationVariable_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Agent_possibleTypes: string[] = ['Agent']
@@ -6818,7 +6818,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgent"')
       return Agent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthToken_possibleTypes: string[] = ['AuthToken']
@@ -6826,7 +6826,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthToken"')
       return AuthToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationTokenPair_possibleTypes: string[] = ['ApplicationTokenPair']
@@ -6834,7 +6834,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationTokenPair"')
       return ApplicationTokenPair_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FrontComponent_possibleTypes: string[] = ['FrontComponent']
@@ -6842,7 +6842,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFrontComponent"')
       return FrontComponent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CommandMenuItem_possibleTypes: string[] = ['CommandMenuItem']
@@ -6850,7 +6850,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCommandMenuItem"')
       return CommandMenuItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CommandMenuItemPayload_possibleTypes: string[] = ['PathCommandMenuItemPayload','ObjectMetadataCommandMenuItemPayload']
@@ -6858,7 +6858,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCommandMenuItemPayload"')
       return CommandMenuItemPayload_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PathCommandMenuItemPayload_possibleTypes: string[] = ['PathCommandMenuItemPayload']
@@ -6866,7 +6866,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPathCommandMenuItemPayload"')
       return PathCommandMenuItemPayload_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectMetadataCommandMenuItemPayload_possibleTypes: string[] = ['ObjectMetadataCommandMenuItemPayload']
@@ -6874,7 +6874,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectMetadataCommandMenuItemPayload"')
       return ObjectMetadataCommandMenuItemPayload_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LogicFunction_possibleTypes: string[] = ['LogicFunction']
@@ -6882,7 +6882,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLogicFunction"')
       return LogicFunction_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Field_possibleTypes: string[] = ['Field']
@@ -6890,7 +6890,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isField"')
       return Field_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Index_possibleTypes: string[] = ['Index']
@@ -6898,7 +6898,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isIndex"')
       return Index_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Object_possibleTypes: string[] = ['Object']
@@ -6906,7 +6906,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObject"')
       return Object_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FullName_possibleTypes: string[] = ['FullName']
@@ -6914,7 +6914,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFullName"')
       return FullName_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceMember_possibleTypes: string[] = ['WorkspaceMember']
@@ -6922,7 +6922,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceMember"')
       return WorkspaceMember_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldPermission_possibleTypes: string[] = ['FieldPermission']
@@ -6930,7 +6930,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldPermission"')
       return FieldPermission_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RowLevelPermissionPredicateGroup_possibleTypes: string[] = ['RowLevelPermissionPredicateGroup']
@@ -6938,7 +6938,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRowLevelPermissionPredicateGroup"')
       return RowLevelPermissionPredicateGroup_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RowLevelPermissionPredicate_possibleTypes: string[] = ['RowLevelPermissionPredicate']
@@ -6946,7 +6946,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRowLevelPermissionPredicate"')
       return RowLevelPermissionPredicate_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectPermission_possibleTypes: string[] = ['ObjectPermission']
@@ -6954,7 +6954,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectPermission"')
       return ObjectPermission_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RolePermissionFlag_possibleTypes: string[] = ['RolePermissionFlag']
@@ -6962,7 +6962,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRolePermissionFlag"')
       return RolePermissionFlag_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApiKeyForRole_possibleTypes: string[] = ['ApiKeyForRole']
@@ -6970,7 +6970,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApiKeyForRole"')
       return ApiKeyForRole_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Role_possibleTypes: string[] = ['Role']
@@ -6978,7 +6978,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRole"')
       return Role_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Application_possibleTypes: string[] = ['Application']
@@ -6986,7 +6986,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplication"')
       return Application_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const TwoFactorAuthenticationMethodSummary_possibleTypes: string[] = ['TwoFactorAuthenticationMethodSummary']
@@ -6994,7 +6994,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isTwoFactorAuthenticationMethodSummary"')
       return TwoFactorAuthenticationMethodSummary_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UserWorkspace_possibleTypes: string[] = ['UserWorkspace']
@@ -7002,7 +7002,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUserWorkspace"')
       return UserWorkspace_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewField_possibleTypes: string[] = ['ViewField']
@@ -7010,7 +7010,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewField"')
       return ViewField_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewFilterGroup_possibleTypes: string[] = ['ViewFilterGroup']
@@ -7018,7 +7018,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewFilterGroup"')
       return ViewFilterGroup_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewFilter_possibleTypes: string[] = ['ViewFilter']
@@ -7026,7 +7026,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewFilter"')
       return ViewFilter_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewGroup_possibleTypes: string[] = ['ViewGroup']
@@ -7034,7 +7034,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewGroup"')
       return ViewGroup_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewSort_possibleTypes: string[] = ['ViewSort']
@@ -7042,7 +7042,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewSort"')
       return ViewSort_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewFieldGroup_possibleTypes: string[] = ['ViewFieldGroup']
@@ -7050,7 +7050,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewFieldGroup"')
       return ViewFieldGroup_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const View_possibleTypes: string[] = ['View']
@@ -7058,7 +7058,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isView"')
       return View_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Workspace_possibleTypes: string[] = ['Workspace']
@@ -7066,7 +7066,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspace"')
       return Workspace_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const User_possibleTypes: string[] = ['User']
@@ -7074,7 +7074,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUser"')
       return User_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationRegistration_possibleTypes: string[] = ['ApplicationRegistration']
@@ -7082,7 +7082,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRegistration"')
       return ApplicationRegistration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SdkClientChecksums_possibleTypes: string[] = ['SdkClientChecksums']
@@ -7090,7 +7090,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSdkClientChecksums"')
       return SdkClientChecksums_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RatioAggregateConfig_possibleTypes: string[] = ['RatioAggregateConfig']
@@ -7098,7 +7098,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRatioAggregateConfig"')
       return RatioAggregateConfig_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RichTextBody_possibleTypes: string[] = ['RichTextBody']
@@ -7106,7 +7106,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRichTextBody"')
       return RichTextBody_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const GridPosition_possibleTypes: string[] = ['GridPosition']
@@ -7114,7 +7114,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isGridPosition"')
       return GridPosition_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutWidget_possibleTypes: string[] = ['PageLayoutWidget']
@@ -7122,7 +7122,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutWidget"')
       return PageLayoutWidget_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutWidgetPosition_possibleTypes: string[] = ['PageLayoutWidgetGridPosition','PageLayoutWidgetVerticalListPosition','PageLayoutWidgetCanvasPosition']
@@ -7130,7 +7130,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutWidgetPosition"')
       return PageLayoutWidgetPosition_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutWidgetGridPosition_possibleTypes: string[] = ['PageLayoutWidgetGridPosition']
@@ -7138,7 +7138,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutWidgetGridPosition"')
       return PageLayoutWidgetGridPosition_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutWidgetVerticalListPosition_possibleTypes: string[] = ['PageLayoutWidgetVerticalListPosition']
@@ -7146,7 +7146,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutWidgetVerticalListPosition"')
       return PageLayoutWidgetVerticalListPosition_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutWidgetCanvasPosition_possibleTypes: string[] = ['PageLayoutWidgetCanvasPosition']
@@ -7154,7 +7154,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutWidgetCanvasPosition"')
       return PageLayoutWidgetCanvasPosition_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WidgetConfiguration_possibleTypes: string[] = ['AggregateChartConfiguration','StandaloneRichTextConfiguration','PieChartConfiguration','LineChartConfiguration','IframeConfiguration','BarChartConfiguration','CalendarConfiguration','FrontComponentConfiguration','EmailsConfiguration','EmailThreadConfiguration','FieldConfiguration','FieldRichTextConfiguration','FieldsConfiguration','FilesConfiguration','NotesConfiguration','TasksConfiguration','TimelineConfiguration','ViewConfiguration','RecordTableConfiguration','WorkflowConfiguration','WorkflowRunConfiguration','WorkflowVersionConfiguration']
@@ -7162,7 +7162,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWidgetConfiguration"')
       return WidgetConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AggregateChartConfiguration_possibleTypes: string[] = ['AggregateChartConfiguration']
@@ -7170,7 +7170,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAggregateChartConfiguration"')
       return AggregateChartConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const StandaloneRichTextConfiguration_possibleTypes: string[] = ['StandaloneRichTextConfiguration']
@@ -7178,7 +7178,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isStandaloneRichTextConfiguration"')
       return StandaloneRichTextConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PieChartConfiguration_possibleTypes: string[] = ['PieChartConfiguration']
@@ -7186,7 +7186,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPieChartConfiguration"')
       return PieChartConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LineChartConfiguration_possibleTypes: string[] = ['LineChartConfiguration']
@@ -7194,7 +7194,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLineChartConfiguration"')
       return LineChartConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const IframeConfiguration_possibleTypes: string[] = ['IframeConfiguration']
@@ -7202,7 +7202,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isIframeConfiguration"')
       return IframeConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BarChartConfiguration_possibleTypes: string[] = ['BarChartConfiguration']
@@ -7210,7 +7210,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBarChartConfiguration"')
       return BarChartConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CalendarConfiguration_possibleTypes: string[] = ['CalendarConfiguration']
@@ -7218,7 +7218,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCalendarConfiguration"')
       return CalendarConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FrontComponentConfiguration_possibleTypes: string[] = ['FrontComponentConfiguration']
@@ -7226,7 +7226,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFrontComponentConfiguration"')
       return FrontComponentConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EmailsConfiguration_possibleTypes: string[] = ['EmailsConfiguration']
@@ -7234,7 +7234,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailsConfiguration"')
       return EmailsConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EmailThreadConfiguration_possibleTypes: string[] = ['EmailThreadConfiguration']
@@ -7242,7 +7242,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailThreadConfiguration"')
       return EmailThreadConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldConfiguration_possibleTypes: string[] = ['FieldConfiguration']
@@ -7250,7 +7250,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldConfiguration"')
       return FieldConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldRichTextConfiguration_possibleTypes: string[] = ['FieldRichTextConfiguration']
@@ -7258,7 +7258,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldRichTextConfiguration"')
       return FieldRichTextConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldsConfiguration_possibleTypes: string[] = ['FieldsConfiguration']
@@ -7266,7 +7266,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldsConfiguration"')
       return FieldsConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FilesConfiguration_possibleTypes: string[] = ['FilesConfiguration']
@@ -7274,7 +7274,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFilesConfiguration"')
       return FilesConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const NotesConfiguration_possibleTypes: string[] = ['NotesConfiguration']
@@ -7282,7 +7282,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isNotesConfiguration"')
       return NotesConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const TasksConfiguration_possibleTypes: string[] = ['TasksConfiguration']
@@ -7290,7 +7290,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isTasksConfiguration"')
       return TasksConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const TimelineConfiguration_possibleTypes: string[] = ['TimelineConfiguration']
@@ -7298,7 +7298,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isTimelineConfiguration"')
       return TimelineConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ViewConfiguration_possibleTypes: string[] = ['ViewConfiguration']
@@ -7306,7 +7306,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isViewConfiguration"')
       return ViewConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RecordTableConfiguration_possibleTypes: string[] = ['RecordTableConfiguration']
@@ -7314,7 +7314,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRecordTableConfiguration"')
       return RecordTableConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkflowConfiguration_possibleTypes: string[] = ['WorkflowConfiguration']
@@ -7322,7 +7322,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkflowConfiguration"')
       return WorkflowConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkflowRunConfiguration_possibleTypes: string[] = ['WorkflowRunConfiguration']
@@ -7330,7 +7330,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkflowRunConfiguration"')
       return WorkflowRunConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkflowVersionConfiguration_possibleTypes: string[] = ['WorkflowVersionConfiguration']
@@ -7338,7 +7338,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkflowVersionConfiguration"')
       return WorkflowVersionConfiguration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayoutTab_possibleTypes: string[] = ['PageLayoutTab']
@@ -7346,7 +7346,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayoutTab"')
       return PageLayoutTab_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageLayout_possibleTypes: string[] = ['PageLayout']
@@ -7354,7 +7354,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageLayout"')
       return PageLayout_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationConnectionProviderOAuthConfig_possibleTypes: string[] = ['ApplicationConnectionProviderOAuthConfig']
@@ -7362,7 +7362,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationConnectionProviderOAuthConfig"')
       return ApplicationConnectionProviderOAuthConfig_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationConnectionProvider_possibleTypes: string[] = ['ApplicationConnectionProvider']
@@ -7370,7 +7370,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationConnectionProvider"')
       return ApplicationConnectionProvider_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingSubscriptionSchedulePhaseItem_possibleTypes: string[] = ['BillingSubscriptionSchedulePhaseItem']
@@ -7378,7 +7378,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingSubscriptionSchedulePhaseItem"')
       return BillingSubscriptionSchedulePhaseItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingSubscriptionSchedulePhase_possibleTypes: string[] = ['BillingSubscriptionSchedulePhase']
@@ -7386,7 +7386,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingSubscriptionSchedulePhase"')
       return BillingSubscriptionSchedulePhase_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingProductMetadata_possibleTypes: string[] = ['BillingProductMetadata']
@@ -7394,7 +7394,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingProductMetadata"')
       return BillingProductMetadata_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingPriceLicensed_possibleTypes: string[] = ['BillingPriceLicensed']
@@ -7402,7 +7402,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingPriceLicensed"')
       return BillingPriceLicensed_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingPriceTier_possibleTypes: string[] = ['BillingPriceTier']
@@ -7410,7 +7410,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingPriceTier"')
       return BillingPriceTier_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingPriceMetered_possibleTypes: string[] = ['BillingPriceMetered']
@@ -7418,7 +7418,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingPriceMetered"')
       return BillingPriceMetered_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingProduct_possibleTypes: string[] = ['BillingProduct']
@@ -7426,7 +7426,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingProduct"')
       return BillingProduct_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingLicensedProduct_possibleTypes: string[] = ['BillingLicensedProduct']
@@ -7434,7 +7434,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingLicensedProduct"')
       return BillingLicensedProduct_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingMeteredProduct_possibleTypes: string[] = ['BillingMeteredProduct']
@@ -7442,7 +7442,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingMeteredProduct"')
       return BillingMeteredProduct_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingSubscriptionItem_possibleTypes: string[] = ['BillingSubscriptionItem']
@@ -7450,7 +7450,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingSubscriptionItem"')
       return BillingSubscriptionItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingSubscription_possibleTypes: string[] = ['BillingSubscription']
@@ -7458,7 +7458,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingSubscription"')
       return BillingSubscription_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingCustomer_possibleTypes: string[] = ['BillingCustomer']
@@ -7466,7 +7466,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingCustomer"')
       return BillingCustomer_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LogicFunctionExecutionResult_possibleTypes: string[] = ['LogicFunctionExecutionResult']
@@ -7474,7 +7474,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLogicFunctionExecutionResult"')
       return LogicFunctionExecutionResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EnterpriseLicenseInfoDTO_possibleTypes: string[] = ['EnterpriseLicenseInfoDTO']
@@ -7482,7 +7482,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEnterpriseLicenseInfoDTO"')
       return EnterpriseLicenseInfoDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EnterpriseSubscriptionStatusDTO_possibleTypes: string[] = ['EnterpriseSubscriptionStatusDTO']
@@ -7490,7 +7490,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEnterpriseSubscriptionStatusDTO"')
       return EnterpriseSubscriptionStatusDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApprovedAccessDomain_possibleTypes: string[] = ['ApprovedAccessDomain']
@@ -7498,7 +7498,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApprovedAccessDomain"')
       return ApprovedAccessDomain_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FileWithSignedUrl_possibleTypes: string[] = ['FileWithSignedUrl']
@@ -7506,7 +7506,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFileWithSignedUrl"')
       return FileWithSignedUrl_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FileUploadTarget_possibleTypes: string[] = ['FileUploadTarget']
@@ -7514,7 +7514,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFileUploadTarget"')
       return FileUploadTarget_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingEndTrialPeriod_possibleTypes: string[] = ['BillingEndTrialPeriod']
@@ -7522,7 +7522,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingEndTrialPeriod"')
       return BillingEndTrialPeriod_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingResourceCreditUsage_possibleTypes: string[] = ['BillingResourceCreditUsage']
@@ -7530,7 +7530,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingResourceCreditUsage"')
       return BillingResourceCreditUsage_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingPlan_possibleTypes: string[] = ['BillingPlan']
@@ -7538,7 +7538,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingPlan"')
       return BillingPlan_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingPaymentIntent_possibleTypes: string[] = ['BillingPaymentIntent']
@@ -7546,7 +7546,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingPaymentIntent"')
       return BillingPaymentIntent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingSession_possibleTypes: string[] = ['BillingSession']
@@ -7554,7 +7554,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingSession"')
       return BillingSession_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingUpdate_possibleTypes: string[] = ['BillingUpdate']
@@ -7562,7 +7562,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingUpdate"')
       return BillingUpdate_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const InviteSuggestion_possibleTypes: string[] = ['InviteSuggestion']
@@ -7570,7 +7570,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isInviteSuggestion"')
       return InviteSuggestion_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const OnboardingStepSuccess_possibleTypes: string[] = ['OnboardingStepSuccess']
@@ -7578,7 +7578,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isOnboardingStepSuccess"')
       return OnboardingStepSuccess_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceInvitation_possibleTypes: string[] = ['WorkspaceInvitation']
@@ -7586,7 +7586,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceInvitation"')
       return WorkspaceInvitation_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SendInvitations_possibleTypes: string[] = ['SendInvitations']
@@ -7594,7 +7594,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSendInvitations"')
       return SendInvitations_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RecordIdentifier_possibleTypes: string[] = ['RecordIdentifier']
@@ -7602,7 +7602,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRecordIdentifier"')
       return RecordIdentifier_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const NavigationMenuItem_possibleTypes: string[] = ['NavigationMenuItem']
@@ -7610,7 +7610,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isNavigationMenuItem"')
       return NavigationMenuItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectRecordEventProperties_possibleTypes: string[] = ['ObjectRecordEventProperties']
@@ -7618,7 +7618,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectRecordEventProperties"')
       return ObjectRecordEventProperties_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MetadataEvent_possibleTypes: string[] = ['MetadataEvent']
@@ -7626,7 +7626,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMetadataEvent"')
       return MetadataEvent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectRecordEvent_possibleTypes: string[] = ['ObjectRecordEvent']
@@ -7634,7 +7634,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectRecordEvent"')
       return ObjectRecordEvent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectRecordEventWithQueryIds_possibleTypes: string[] = ['ObjectRecordEventWithQueryIds']
@@ -7642,7 +7642,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectRecordEventWithQueryIds"')
       return ObjectRecordEventWithQueryIds_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EventSubscription_possibleTypes: string[] = ['EventSubscription']
@@ -7650,7 +7650,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventSubscription"')
       return EventSubscription_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FeatureFlag_possibleTypes: string[] = ['FeatureFlag']
@@ -7658,7 +7658,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFeatureFlag"')
       return FeatureFlag_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceUrls_possibleTypes: string[] = ['WorkspaceUrls']
@@ -7666,7 +7666,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceUrls"')
       return WorkspaceUrls_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationRegistrationVariableDTO_possibleTypes: string[] = ['ApplicationRegistrationVariableDTO']
@@ -7674,7 +7674,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRegistrationVariableDTO"')
       return ApplicationRegistrationVariableDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const VersionDistributionEntry_possibleTypes: string[] = ['VersionDistributionEntry']
@@ -7682,7 +7682,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isVersionDistributionEntry"')
       return VersionDistributionEntry_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApplicationRegistrationStats_possibleTypes: string[] = ['ApplicationRegistrationStats']
@@ -7690,7 +7690,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApplicationRegistrationStats"')
       return ApplicationRegistrationStats_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingTrialPeriod_possibleTypes: string[] = ['BillingTrialPeriod']
@@ -7698,7 +7698,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingTrialPeriod"')
       return BillingTrialPeriod_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SSOIdentityProvider_possibleTypes: string[] = ['SSOIdentityProvider']
@@ -7706,7 +7706,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSSOIdentityProvider"')
       return SSOIdentityProvider_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthProviders_possibleTypes: string[] = ['AuthProviders']
@@ -7714,7 +7714,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthProviders"')
       return AuthProviders_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthBypassProviders_possibleTypes: string[] = ['AuthBypassProviders']
@@ -7722,7 +7722,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthBypassProviders"')
       return AuthBypassProviders_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicWorkspaceData_possibleTypes: string[] = ['PublicWorkspaceData']
@@ -7730,7 +7730,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicWorkspaceData"')
       return PublicWorkspaceData_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicWorkspaceDataSummary_possibleTypes: string[] = ['PublicWorkspaceDataSummary']
@@ -7738,7 +7738,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicWorkspaceDataSummary"')
       return PublicWorkspaceDataSummary_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const NativeModelCapabilities_possibleTypes: string[] = ['NativeModelCapabilities']
@@ -7746,7 +7746,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isNativeModelCapabilities"')
       return NativeModelCapabilities_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ClientAiModelConfig_possibleTypes: string[] = ['ClientAiModelConfig']
@@ -7754,7 +7754,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isClientAiModelConfig"')
       return ClientAiModelConfig_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Billing_possibleTypes: string[] = ['Billing']
@@ -7762,7 +7762,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBilling"')
       return Billing_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Support_possibleTypes: string[] = ['Support']
@@ -7770,7 +7770,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSupport"')
       return Support_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Sentry_possibleTypes: string[] = ['Sentry']
@@ -7778,7 +7778,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSentry"')
       return Sentry_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Captcha_possibleTypes: string[] = ['Captcha']
@@ -7786,7 +7786,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCaptcha"')
       return Captcha_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApiConfig_possibleTypes: string[] = ['ApiConfig']
@@ -7794,7 +7794,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApiConfig"')
       return ApiConfig_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicFeatureFlagMetadata_possibleTypes: string[] = ['PublicFeatureFlagMetadata']
@@ -7802,7 +7802,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicFeatureFlagMetadata"')
       return PublicFeatureFlagMetadata_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicFeatureFlag_possibleTypes: string[] = ['PublicFeatureFlag']
@@ -7810,7 +7810,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicFeatureFlag"')
       return PublicFeatureFlag_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ClientConfigMaintenanceMode_possibleTypes: string[] = ['ClientConfigMaintenanceMode']
@@ -7818,7 +7818,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isClientConfigMaintenanceMode"')
       return ClientConfigMaintenanceMode_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ClientConfig_possibleTypes: string[] = ['ClientConfig']
@@ -7826,7 +7826,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isClientConfig"')
       return ClientConfig_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UsageBreakdownItem_possibleTypes: string[] = ['UsageBreakdownItem']
@@ -7834,7 +7834,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUsageBreakdownItem"')
       return UsageBreakdownItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ClaimableApplicationRegistration_possibleTypes: string[] = ['ClaimableApplicationRegistration']
@@ -7842,7 +7842,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isClaimableApplicationRegistration"')
       return ClaimableApplicationRegistration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CreateApplicationRegistration_possibleTypes: string[] = ['CreateApplicationRegistration']
@@ -7850,7 +7850,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCreateApplicationRegistration"')
       return CreateApplicationRegistration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicApplicationRegistration_possibleTypes: string[] = ['PublicApplicationRegistration']
@@ -7858,7 +7858,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicApplicationRegistration"')
       return PublicApplicationRegistration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RotateClientSecret_possibleTypes: string[] = ['RotateClientSecret']
@@ -7866,7 +7866,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRotateClientSecret"')
       return RotateClientSecret_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AppConnection_possibleTypes: string[] = ['AppConnection']
@@ -7874,7 +7874,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppConnection"')
       return AppConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ResendEmailVerificationToken_possibleTypes: string[] = ['ResendEmailVerificationToken']
@@ -7882,7 +7882,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isResendEmailVerificationToken"')
       return ResendEmailVerificationToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DeleteSso_possibleTypes: string[] = ['DeleteSso']
@@ -7890,7 +7890,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDeleteSso"')
       return DeleteSso_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EditSso_possibleTypes: string[] = ['EditSso']
@@ -7898,7 +7898,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEditSso"')
       return EditSso_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceNameAndId_possibleTypes: string[] = ['WorkspaceNameAndId']
@@ -7906,7 +7906,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceNameAndId"')
       return WorkspaceNameAndId_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FindAvailableSSOIDP_possibleTypes: string[] = ['FindAvailableSSOIDP']
@@ -7914,7 +7914,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFindAvailableSSOIDP"')
       return FindAvailableSSOIDP_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SetupSso_possibleTypes: string[] = ['SetupSso']
@@ -7922,7 +7922,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSetupSso"')
       return SetupSso_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SSOConnection_possibleTypes: string[] = ['SSOConnection']
@@ -7930,7 +7930,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSSOConnection"')
       return SSOConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AvailableWorkspace_possibleTypes: string[] = ['AvailableWorkspace']
@@ -7938,7 +7938,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAvailableWorkspace"')
       return AvailableWorkspace_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AvailableWorkspaces_possibleTypes: string[] = ['AvailableWorkspaces']
@@ -7946,7 +7946,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAvailableWorkspaces"')
       return AvailableWorkspaces_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DeletedWorkspaceMember_possibleTypes: string[] = ['DeletedWorkspaceMember']
@@ -7954,7 +7954,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDeletedWorkspaceMember"')
       return DeletedWorkspaceMember_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MarketplaceApp_possibleTypes: string[] = ['MarketplaceApp']
@@ -7962,7 +7962,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceApp"')
       return MarketplaceApp_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MarketplaceAppRoleObjectPermission_possibleTypes: string[] = ['MarketplaceAppRoleObjectPermission']
@@ -7970,7 +7970,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppRoleObjectPermission"')
       return MarketplaceAppRoleObjectPermission_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MarketplaceAppRoleFieldPermission_possibleTypes: string[] = ['MarketplaceAppRoleFieldPermission']
@@ -7978,7 +7978,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppRoleFieldPermission"')
       return MarketplaceAppRoleFieldPermission_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MarketplaceAppRole_possibleTypes: string[] = ['MarketplaceAppRole']
@@ -7986,7 +7986,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppRole"')
       return MarketplaceAppRole_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MarketplaceAppDetail_possibleTypes: string[] = ['MarketplaceAppDetail']
@@ -7994,7 +7994,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMarketplaceAppDetail"')
       return MarketplaceAppDetail_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Relation_possibleTypes: string[] = ['Relation']
@@ -8002,7 +8002,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRelation"')
       return Relation_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const IndexField_possibleTypes: string[] = ['IndexField']
@@ -8010,7 +8010,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isIndexField"')
       return IndexField_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectRecordCount_possibleTypes: string[] = ['ObjectRecordCount']
@@ -8018,7 +8018,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectRecordCount"')
       return ObjectRecordCount_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SearchField_possibleTypes: string[] = ['SearchField']
@@ -8026,7 +8026,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSearchField"')
       return SearchField_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectEdge_possibleTypes: string[] = ['ObjectEdge']
@@ -8034,7 +8034,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectEdge"')
       return ObjectEdge_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PageInfo_possibleTypes: string[] = ['PageInfo']
@@ -8042,7 +8042,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPageInfo"')
       return PageInfo_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectConnection_possibleTypes: string[] = ['ObjectConnection']
@@ -8050,7 +8050,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectConnection"')
       return ObjectConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const IndexEdge_possibleTypes: string[] = ['IndexEdge']
@@ -8058,7 +8058,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isIndexEdge"')
       return IndexEdge_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectIndexMetadatasConnection_possibleTypes: string[] = ['ObjectIndexMetadatasConnection']
@@ -8066,7 +8066,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectIndexMetadatasConnection"')
       return ObjectIndexMetadatasConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldEdge_possibleTypes: string[] = ['FieldEdge']
@@ -8074,7 +8074,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldEdge"')
       return FieldEdge_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ObjectFieldsConnection_possibleTypes: string[] = ['ObjectFieldsConnection']
@@ -8082,7 +8082,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isObjectFieldsConnection"')
       return ObjectFieldsConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const FieldConnection_possibleTypes: string[] = ['FieldConnection']
@@ -8090,7 +8090,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFieldConnection"')
       return FieldConnection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BillingEntitlement_possibleTypes: string[] = ['BillingEntitlement']
@@ -8098,7 +8098,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBillingEntitlement"')
       return BillingEntitlement_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DomainRecord_possibleTypes: string[] = ['DomainRecord']
@@ -8106,7 +8106,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDomainRecord"')
       return DomainRecord_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DomainValidRecords_possibleTypes: string[] = ['DomainValidRecords']
@@ -8114,7 +8114,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDomainValidRecords"')
       return DomainValidRecords_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UpsertRowLevelPermissionPredicatesResult_possibleTypes: string[] = ['UpsertRowLevelPermissionPredicatesResult']
@@ -8122,7 +8122,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUpsertRowLevelPermissionPredicatesResult"')
       return UpsertRowLevelPermissionPredicatesResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LogicFunctionLogs_possibleTypes: string[] = ['LogicFunctionLogs']
@@ -8130,7 +8130,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLogicFunctionLogs"')
       return LogicFunctionLogs_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicConnectionParametersOutput_possibleTypes: string[] = ['PublicConnectionParametersOutput']
@@ -8138,7 +8138,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicConnectionParametersOutput"')
       return PublicConnectionParametersOutput_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicImapSmtpCaldavConnectionParameters_possibleTypes: string[] = ['PublicImapSmtpCaldavConnectionParameters']
@@ -8146,7 +8146,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicImapSmtpCaldavConnectionParameters"')
       return PublicImapSmtpCaldavConnectionParameters_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ConnectedAccountPublicDTO_possibleTypes: string[] = ['ConnectedAccountPublicDTO']
@@ -8154,7 +8154,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isConnectedAccountPublicDTO"')
       return ConnectedAccountPublicDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DeleteTwoFactorAuthenticationMethod_possibleTypes: string[] = ['DeleteTwoFactorAuthenticationMethod']
@@ -8162,7 +8162,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDeleteTwoFactorAuthenticationMethod"')
       return DeleteTwoFactorAuthenticationMethod_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const InitiateTwoFactorAuthenticationProvisioning_possibleTypes: string[] = ['InitiateTwoFactorAuthenticationProvisioning']
@@ -8170,7 +8170,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isInitiateTwoFactorAuthenticationProvisioning"')
       return InitiateTwoFactorAuthenticationProvisioning_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const VerifyTwoFactorAuthenticationMethod_possibleTypes: string[] = ['VerifyTwoFactorAuthenticationMethod']
@@ -8178,7 +8178,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isVerifyTwoFactorAuthenticationMethod"')
       return VerifyTwoFactorAuthenticationMethod_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthorizeApp_possibleTypes: string[] = ['AuthorizeApp']
@@ -8186,7 +8186,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthorizeApp"')
       return AuthorizeApp_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthTokenPair_possibleTypes: string[] = ['AuthTokenPair']
@@ -8194,7 +8194,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthTokenPair"')
       return AuthTokenPair_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AvailableWorkspacesAndAccessTokens_possibleTypes: string[] = ['AvailableWorkspacesAndAccessTokens']
@@ -8202,7 +8202,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAvailableWorkspacesAndAccessTokens"')
       return AvailableWorkspacesAndAccessTokens_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EmailPasswordResetLink_possibleTypes: string[] = ['EmailPasswordResetLink']
@@ -8210,7 +8210,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailPasswordResetLink"')
       return EmailPasswordResetLink_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const GetAuthorizationUrlForSSO_possibleTypes: string[] = ['GetAuthorizationUrlForSSO']
@@ -8218,7 +8218,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isGetAuthorizationUrlForSSO"')
       return GetAuthorizationUrlForSSO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const InvalidatePassword_possibleTypes: string[] = ['InvalidatePassword']
@@ -8226,7 +8226,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isInvalidatePassword"')
       return InvalidatePassword_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceUrlsAndId_possibleTypes: string[] = ['WorkspaceUrlsAndId']
@@ -8234,7 +8234,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceUrlsAndId"')
       return WorkspaceUrlsAndId_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SignUp_possibleTypes: string[] = ['SignUp']
@@ -8242,7 +8242,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSignUp"')
       return SignUp_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const TransientToken_possibleTypes: string[] = ['TransientToken']
@@ -8250,7 +8250,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isTransientToken"')
       return TransientToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ValidatePasswordResetToken_possibleTypes: string[] = ['ValidatePasswordResetToken']
@@ -8258,7 +8258,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isValidatePasswordResetToken"')
       return ValidatePasswordResetToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const VerifyEmailAndGetLoginToken_possibleTypes: string[] = ['VerifyEmailAndGetLoginToken']
@@ -8266,7 +8266,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isVerifyEmailAndGetLoginToken"')
       return VerifyEmailAndGetLoginToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SubdomainAvailabilityDTO_possibleTypes: string[] = ['SubdomainAvailabilityDTO']
@@ -8274,7 +8274,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSubdomainAvailabilityDTO"')
       return SubdomainAvailabilityDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceCreationDefaultsDTO_possibleTypes: string[] = ['WorkspaceCreationDefaultsDTO']
@@ -8282,7 +8282,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceCreationDefaultsDTO"')
       return WorkspaceCreationDefaultsDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ApiKeyToken_possibleTypes: string[] = ['ApiKeyToken']
@@ -8290,7 +8290,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isApiKeyToken"')
       return ApiKeyToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AuthTokens_possibleTypes: string[] = ['AuthTokens']
@@ -8298,7 +8298,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAuthTokens"')
       return AuthTokens_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LoginToken_possibleTypes: string[] = ['LoginToken']
@@ -8306,7 +8306,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLoginToken"')
       return LoginToken_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CheckUserExist_possibleTypes: string[] = ['CheckUserExist']
@@ -8314,7 +8314,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCheckUserExist"')
       return CheckUserExist_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceInviteHashValid_possibleTypes: string[] = ['WorkspaceInviteHashValid']
@@ -8322,7 +8322,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceInviteHashValid"')
       return WorkspaceInviteHashValid_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Impersonate_possibleTypes: string[] = ['Impersonate']
@@ -8330,7 +8330,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isImpersonate"')
       return Impersonate_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UsageTimeSeries_possibleTypes: string[] = ['UsageTimeSeries']
@@ -8338,7 +8338,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUsageTimeSeries"')
       return UsageTimeSeries_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UsageUserDaily_possibleTypes: string[] = ['UsageUserDaily']
@@ -8346,7 +8346,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUsageUserDaily"')
       return UsageUserDaily_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UsageAnalytics_possibleTypes: string[] = ['UsageAnalytics']
@@ -8354,7 +8354,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUsageAnalytics"')
       return UsageAnalytics_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DevelopmentApplication_possibleTypes: string[] = ['DevelopmentApplication']
@@ -8362,7 +8362,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDevelopmentApplication"')
       return DevelopmentApplication_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceMigration_possibleTypes: string[] = ['WorkspaceMigration']
@@ -8370,7 +8370,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceMigration"')
       return WorkspaceMigration_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const File_possibleTypes: string[] = ['File']
@@ -8378,7 +8378,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isFile"')
       return File_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PublicDomain_possibleTypes: string[] = ['PublicDomain']
@@ -8386,7 +8386,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPublicDomain"')
       return PublicDomain_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const VerificationRecord_possibleTypes: string[] = ['VerificationRecord']
@@ -8394,7 +8394,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isVerificationRecord"')
       return VerificationRecord_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EmailingDomain_possibleTypes: string[] = ['EmailingDomain']
@@ -8402,7 +8402,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEmailingDomain"')
       return EmailingDomain_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MessageChannel_possibleTypes: string[] = ['MessageChannel']
@@ -8410,7 +8410,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMessageChannel"')
       return MessageChannel_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CreateEmailGroupChannelOutput_possibleTypes: string[] = ['CreateEmailGroupChannelOutput']
@@ -8418,7 +8418,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCreateEmailGroupChannelOutput"')
       return CreateEmailGroupChannelOutput_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CampaignAudiencePreviewDTO_possibleTypes: string[] = ['CampaignAudiencePreviewDTO']
@@ -8426,7 +8426,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCampaignAudiencePreviewDTO"')
       return CampaignAudiencePreviewDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SendEmailViaDomainOutput_possibleTypes: string[] = ['SendEmailViaDomainOutput']
@@ -8434,7 +8434,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSendEmailViaDomainOutput"')
       return SendEmailViaDomainOutput_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CampaignSkippedRecipientsDTO_possibleTypes: string[] = ['CampaignSkippedRecipientsDTO']
@@ -8442,7 +8442,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCampaignSkippedRecipientsDTO"')
       return CampaignSkippedRecipientsDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SendMessageCampaignOutputDTO_possibleTypes: string[] = ['SendMessageCampaignOutputDTO']
@@ -8450,7 +8450,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSendMessageCampaignOutputDTO"')
       return SendMessageCampaignOutputDTO_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MessageSuppression_possibleTypes: string[] = ['MessageSuppression']
@@ -8458,7 +8458,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMessageSuppression"')
       return MessageSuppression_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MessageSuppressionList_possibleTypes: string[] = ['MessageSuppressionList']
@@ -8466,7 +8466,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMessageSuppressionList"')
       return MessageSuppressionList_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const UnsubscribeTopic_possibleTypes: string[] = ['UnsubscribeTopic']
@@ -8474,7 +8474,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isUnsubscribeTopic"')
       return UnsubscribeTopic_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AutocompleteResult_possibleTypes: string[] = ['AutocompleteResult']
@@ -8482,7 +8482,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAutocompleteResult"')
       return AutocompleteResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Location_possibleTypes: string[] = ['Location']
@@ -8490,7 +8490,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLocation"')
       return Location_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PlaceDetailsResult_possibleTypes: string[] = ['PlaceDetailsResult']
@@ -8498,7 +8498,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPlaceDetailsResult"')
       return PlaceDetailsResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ImapSmtpCaldavPublicConnectionParams_possibleTypes: string[] = ['ImapSmtpCaldavPublicConnectionParams']
@@ -8506,7 +8506,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isImapSmtpCaldavPublicConnectionParams"')
       return ImapSmtpCaldavPublicConnectionParams_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ImapSmtpCaldavPublicConnectionParameters_possibleTypes: string[] = ['ImapSmtpCaldavPublicConnectionParameters']
@@ -8514,7 +8514,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isImapSmtpCaldavPublicConnectionParameters"')
       return ImapSmtpCaldavPublicConnectionParameters_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ConnectedImapSmtpCaldavAccount_possibleTypes: string[] = ['ConnectedImapSmtpCaldavAccount']
@@ -8522,7 +8522,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isConnectedImapSmtpCaldavAccount"')
       return ConnectedImapSmtpCaldavAccount_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ImapSmtpCaldavConnectionSuccess_possibleTypes: string[] = ['ImapSmtpCaldavConnectionSuccess']
@@ -8530,7 +8530,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isImapSmtpCaldavConnectionSuccess"')
       return ImapSmtpCaldavConnectionSuccess_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Webhook_possibleTypes: string[] = ['Webhook']
@@ -8538,7 +8538,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWebhook"')
       return Webhook_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ToolIndexEntry_possibleTypes: string[] = ['ToolIndexEntry']
@@ -8546,7 +8546,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isToolIndexEntry"')
       return ToolIndexEntry_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentMessagePart_possibleTypes: string[] = ['AgentMessagePart']
@@ -8554,7 +8554,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentMessagePart"')
       return AgentMessagePart_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const RunAgentResult_possibleTypes: string[] = ['RunAgentResult']
@@ -8562,7 +8562,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isRunAgentResult"')
       return RunAgentResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ChannelSyncSuccess_possibleTypes: string[] = ['ChannelSyncSuccess']
@@ -8570,7 +8570,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isChannelSyncSuccess"')
       return ChannelSyncSuccess_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CreateCalendarEventOutput_possibleTypes: string[] = ['CreateCalendarEventOutput']
@@ -8578,7 +8578,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCreateCalendarEventOutput"')
       return CreateCalendarEventOutput_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BarChartSeries_possibleTypes: string[] = ['BarChartSeries']
@@ -8586,7 +8586,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBarChartSeries"')
       return BarChartSeries_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const BarChartData_possibleTypes: string[] = ['BarChartData']
@@ -8594,7 +8594,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isBarChartData"')
       return BarChartData_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LineChartDataPoint_possibleTypes: string[] = ['LineChartDataPoint']
@@ -8602,7 +8602,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLineChartDataPoint"')
       return LineChartDataPoint_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LineChartSeries_possibleTypes: string[] = ['LineChartSeries']
@@ -8610,7 +8610,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLineChartSeries"')
       return LineChartSeries_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const LineChartData_possibleTypes: string[] = ['LineChartData']
@@ -8618,7 +8618,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isLineChartData"')
       return LineChartData_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PieChartDataItem_possibleTypes: string[] = ['PieChartDataItem']
@@ -8626,7 +8626,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPieChartDataItem"')
       return PieChartDataItem_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const PieChartData_possibleTypes: string[] = ['PieChartData']
@@ -8634,7 +8634,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isPieChartData"')
       return PieChartData_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const DuplicatedDashboard_possibleTypes: string[] = ['DuplicatedDashboard']
@@ -8642,7 +8642,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isDuplicatedDashboard"')
       return DuplicatedDashboard_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SendEmailOutput_possibleTypes: string[] = ['SendEmailOutput']
@@ -8650,7 +8650,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSendEmailOutput"')
       return SendEmailOutput_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Analytics_possibleTypes: string[] = ['Analytics']
@@ -8658,7 +8658,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAnalytics"')
       return Analytics_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EventLogRecord_possibleTypes: string[] = ['EventLogRecord']
@@ -8666,7 +8666,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventLogRecord"')
       return EventLogRecord_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EventLogPageInfo_possibleTypes: string[] = ['EventLogPageInfo']
@@ -8674,7 +8674,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventLogPageInfo"')
       return EventLogPageInfo_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const EventLogQueryResult_possibleTypes: string[] = ['EventLogQueryResult']
@@ -8682,7 +8682,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isEventLogQueryResult"')
       return EventLogQueryResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Skill_possibleTypes: string[] = ['Skill']
@@ -8690,7 +8690,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSkill"')
       return Skill_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentMessage_possibleTypes: string[] = ['AgentMessage']
@@ -8698,7 +8698,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentMessage"')
       return AgentMessage_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentChatThread_possibleTypes: string[] = ['AgentChatThread']
@@ -8706,7 +8706,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentChatThread"')
       return AgentChatThread_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AiSystemPromptSection_possibleTypes: string[] = ['AiSystemPromptSection']
@@ -8714,7 +8714,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAiSystemPromptSection"')
       return AiSystemPromptSection_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AiSystemPromptPreview_possibleTypes: string[] = ['AiSystemPromptPreview']
@@ -8722,7 +8722,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAiSystemPromptPreview"')
       return AiSystemPromptPreview_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ChatStreamError_possibleTypes: string[] = ['ChatStreamError']
@@ -8730,7 +8730,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isChatStreamError"')
       return ChatStreamError_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const ChatStreamCatchupChunks_possibleTypes: string[] = ['ChatStreamCatchupChunks']
@@ -8738,7 +8738,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isChatStreamCatchupChunks"')
       return ChatStreamCatchupChunks_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const SendChatMessageResult_possibleTypes: string[] = ['SendChatMessageResult']
@@ -8746,7 +8746,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSendChatMessageResult"')
       return SendChatMessageResult_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentChatEvent_possibleTypes: string[] = ['AgentChatEvent']
@@ -8754,7 +8754,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentChatEvent"')
       return AgentChatEvent_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentTurnEvaluation_possibleTypes: string[] = ['AgentTurnEvaluation']
@@ -8762,7 +8762,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentTurnEvaluation"')
       return AgentTurnEvaluation_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AgentTurn_possibleTypes: string[] = ['AgentTurn']
@@ -8770,7 +8770,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAgentTurn"')
       return AgentTurn_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const WorkspaceAiStats_possibleTypes: string[] = ['WorkspaceAiStats']
@@ -8778,7 +8778,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isWorkspaceAiStats"')
       return WorkspaceAiStats_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const AppKeyValue_possibleTypes: string[] = ['AppKeyValue']
@@ -8786,7 +8786,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isAppKeyValue"')
       return AppKeyValue_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CalendarChannel_possibleTypes: string[] = ['CalendarChannel']
@@ -8794,7 +8794,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCalendarChannel"')
       return CalendarChannel_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MessageFolder_possibleTypes: string[] = ['MessageFolder']
@@ -8802,7 +8802,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMessageFolder"')
       return MessageFolder_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const CollectionHash_possibleTypes: string[] = ['CollectionHash']
@@ -8810,7 +8810,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isCollectionHash"')
       return CollectionHash_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MinimalObjectMetadata_possibleTypes: string[] = ['MinimalObjectMetadata']
@@ -8818,7 +8818,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMinimalObjectMetadata"')
       return MinimalObjectMetadata_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MinimalView_possibleTypes: string[] = ['MinimalView']
@@ -8826,7 +8826,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMinimalView"')
       return MinimalView_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const MinimalMetadata_possibleTypes: string[] = ['MinimalMetadata']
@@ -8834,7 +8834,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMinimalMetadata"')
       return MinimalMetadata_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Query_possibleTypes: string[] = ['Query']
@@ -8842,7 +8842,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isQuery"')
       return Query_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Mutation_possibleTypes: string[] = ['Mutation']
@@ -8850,7 +8850,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isMutation"')
       return Mutation_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 
     const Subscription_possibleTypes: string[] = ['Subscription']
@@ -8858,7 +8858,7 @@ export interface LogicFunctionLogsInput {applicationId?: (Scalars['UUID'] | null
       if (!obj?.__typename) throw new Error('__typename is missing in "isSubscription"')
       return Subscription_possibleTypes.includes(obj.__typename)
     }
-    
+
 
 export const enumApplicationRegistrationSourceType = {
    NPM: 'NPM' as const,
@@ -9340,8 +9340,10 @@ export const enumFeatureFlagKey = {
    IS_REST_METADATA_API_NEW_FORMAT_DIRECT: 'IS_REST_METADATA_API_NEW_FORMAT_DIRECT' as const,
    IS_LOGIC_FUNCTION_PREBUILT_MODE_ENABLED: 'IS_LOGIC_FUNCTION_PREBUILT_MODE_ENABLED' as const,
    IS_ONBOARDING_AI_CHAT_ENABLED: 'IS_ONBOARDING_AI_CHAT_ENABLED' as const,
+   IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED: 'IS_ORG_CHART_GRADE_ALIGNED_LAYOUT_ENABLED' as const,
    IS_SETTINGS_DISCOVERY_HERO_ENABLED: 'IS_SETTINGS_DISCOVERY_HERO_ENABLED' as const,
-   IS_WORKFLOW_VERSION_IN_CORE_ENABLED: 'IS_WORKFLOW_VERSION_IN_CORE_ENABLED' as const
+   IS_WORKFLOW_VERSION_IN_CORE_ENABLED: 'IS_WORKFLOW_VERSION_IN_CORE_ENABLED' as const,
+   IS_OUTREACH_MOCK_UNIPILE_ENABLED: 'IS_OUTREACH_MOCK_UNIPILE_ENABLED' as const
 }
 
 export const enumIdentityProviderType = {
