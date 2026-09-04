@@ -226,7 +226,8 @@ export class OrgChartS3Service {
     }
   }
 
-  // Stored under variant `unipile_raw` so default rebuild folder deletes leave it intact.
+  // Stored under variant `unipile_raw`. Never deleted by default/rebuild/clear
+  // paths — only overwritten when a new Unipile search is saved.
   async saveUnipileRawSearch(
     companyId: string,
     payload: OrgChartUnipileRawSearchPayload,
@@ -294,21 +295,36 @@ export class OrgChartS3Service {
   }
 
   /**
-   * Removes orgchart.json / candidates.json (and folder prefix objects) for a persisted company key.
-   * Same key as {@link saveOrgChart} / {@link persistedCompanyFolderKey}.
+   * Removes persisted org-chart artifacts for a company key.
    *
-   * When {@link variant} is provided, only that sub-folder is deleted. When
-   * omitted, deletes the default folder prefix — which can also remove sibling
-   * variant keys under some S3 drivers. Prefer
-   * {@link deleteDefaultOrgChartArtifacts} when `unipile_raw` must survive.
+   * - No variant: deletes only default `orgchart.json` + `candidates.json`
+   *   (never touches `unipile_raw` or other variants).
+   * - Explicit variant: deletes that variant folder, except `unipile_raw`
+   *   which is refused — raw search people must survive rebuild/clear.
    */
   async deletePersistedCompanyFolder(
     persistedKey: string,
     variant?: OrgChartS3Variant,
   ): Promise<void> {
+    const normalizedVariant = this.normalizeVariant(variant);
+
+    if (!normalizedVariant) {
+      await this.deleteDefaultOrgChartArtifacts(persistedKey);
+
+      return;
+    }
+
+    if (normalizedVariant === ORG_CHART_UNIPILE_RAW_S3_VARIANT) {
+      this.logger.warn(
+        `Refusing to delete Unipile raw search folder for persistKey=${persistedKey}`,
+      );
+
+      return;
+    }
+
     const folderPath = this.buildRelativeFolderPathFromPersistedKey(
       persistedKey,
-      variant,
+      normalizedVariant,
     );
     try {
       await this.fileStorageService.delete({ folderPath });
@@ -322,7 +338,7 @@ export class OrgChartS3Service {
   }
 
   // Deletes only default orgchart.json + candidates.json so variants like
-  // unipile_raw / in_progress_* survive rebuilds.
+  // unipile_raw / in_progress_* survive rebuilds and cache clears.
   async deleteDefaultOrgChartArtifacts(persistedKey: string): Promise<void> {
     const folderPath =
       this.buildRelativeFolderPathFromPersistedKey(persistedKey);

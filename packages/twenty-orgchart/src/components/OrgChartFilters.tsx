@@ -387,9 +387,11 @@ const StyledGradeFilterTrigger = styled(StyledSearchButton)`
   gap: ${themeCssVariables.spacing['0.5']};
 `;
 
+// Open upward — this control sits in the bottom search overlay, so a
+// downward menu is clipped by the diagram area's overflow:hidden.
 const StyledGradeFilterMenu = styled.div`
   position: absolute;
-  top: calc(100% + ${themeCssVariables.spacing['0.5']});
+  bottom: calc(100% + ${themeCssVariables.spacing['0.5']});
   right: 0;
   z-index: 40;
   min-width: 200px;

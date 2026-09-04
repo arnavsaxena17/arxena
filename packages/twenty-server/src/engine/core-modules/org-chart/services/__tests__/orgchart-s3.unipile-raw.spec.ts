@@ -61,4 +61,35 @@ describe('OrgChartS3Service Unipile raw search', () => {
 
     await expect(service.getUnipileRawSearch('missing-co')).resolves.toBeNull();
   });
+
+  it('never deletes unipile_raw via deletePersistedCompanyFolder', async () => {
+    const deletes: Array<{ folderPath: string; filename?: string }> = [];
+    const fileStorageService = {
+      delete: jest.fn(
+        async (input: { folderPath: string; filename?: string }) => {
+          deletes.push(input);
+        },
+      ),
+    };
+    const service = new OrgChartS3Service(
+      fileStorageService as never,
+      { ingestOrgChartData: jest.fn(), ingestBatch: jest.fn() } as never,
+    );
+
+    await service.deletePersistedCompanyFolder('british-airways');
+    await service.deletePersistedCompanyFolder(
+      'british-airways',
+      ORG_CHART_UNIPILE_RAW_S3_VARIANT,
+    );
+
+    expect(deletes).toEqual([
+      { folderPath: 'org-charts/british_airways', filename: 'orgchart.json' },
+      { folderPath: 'org-charts/british_airways', filename: 'candidates.json' },
+    ]);
+    expect(
+      deletes.some((entry) =>
+        entry.folderPath.includes(ORG_CHART_UNIPILE_RAW_S3_VARIANT),
+      ),
+    ).toBe(false);
+  });
 });
